@@ -305,27 +305,27 @@ export default function SystemSettings() {
     <Form {...form}>
       <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="system" className="w-full">
-          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-5 gap-1 p-1">
-              <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <SettingsIcon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:system', 'System')}</span>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
+            <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-5 gap-1 p-1">
+              <TabsTrigger value="system" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:system', 'System')}
               </TabsTrigger>
-              <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Database className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:data', 'Data')}</span>
+              <TabsTrigger value="data" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Database className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:data', 'Data')}
               </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:security', 'Security')}</span>
+              <TabsTrigger value="security" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:security', 'Security')}
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Plug className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:integrations', 'Integrations')}</span>
+              <TabsTrigger value="integrations" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Plug className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:integrations', 'Integrations')}
               </TabsTrigger>
-              <TabsTrigger value="ai" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Bot className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:aiAutomation', 'AI & Automation')}</span>
+              <TabsTrigger value="ai" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:aiAutomation', 'AI')}
               </TabsTrigger>
             </TabsList>
           </div>

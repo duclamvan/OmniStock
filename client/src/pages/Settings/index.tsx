@@ -25,36 +25,36 @@ export default function Settings() {
       </div>
 
       <Tabs value={tab} onValueChange={(value) => navigate(`/settings/${value}`)} className="space-y-4">
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 sm:gap-1.5 h-auto p-1 sm:p-1.5">
-          <TabsTrigger value="general" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-general">
-            <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:general')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="shipping" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-shipping">
-            <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:shipping')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-orders">
-            <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:orders')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="financial" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-financial">
-            <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:financial')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-inventory">
-            <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:inventory')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="system" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-system">
-            <Warehouse className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('common:system')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="roles" className="gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap" data-testid="tab-roles">
-            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">{t('system:roles')}</span>
-          </TabsTrigger>
+        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
+          <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 h-auto p-1">
+            <TabsTrigger value="general" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-general">
+              <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:general')}
+            </TabsTrigger>
+            <TabsTrigger value="shipping" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-shipping">
+              <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:shipping')}
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-orders">
+              <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:orders')}
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-financial">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:financial')}
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-inventory">
+              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:inventory')}
+            </TabsTrigger>
+            <TabsTrigger value="system" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-system">
+              <Warehouse className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:system')}
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-roles">
+              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('system:roles')}
+            </TabsTrigger>
           </TabsList>
         </div>
 

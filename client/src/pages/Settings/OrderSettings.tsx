@@ -229,35 +229,35 @@ export default function OrderSettings() {
     <Form {...form}>
       <form className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="defaults" className="w-full">
-          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
-              <TabsTrigger value="defaults" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:orderDefaults', 'Order Defaults')}</span>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
+            <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
+              <TabsTrigger value="defaults" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:orderDefaults', 'Defaults')}
               </TabsTrigger>
-              <TabsTrigger value="locations" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:locations', 'Locations')}</span>
+              <TabsTrigger value="locations" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:locations', 'Locations')}
               </TabsTrigger>
-              <TabsTrigger value="fulfillment" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:fulfillment', 'Fulfillment')}</span>
+              <TabsTrigger value="fulfillment" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:fulfillment', 'Fulfillment')}
               </TabsTrigger>
-              <TabsTrigger value="validation" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:validation', 'Validation')}</span>
+              <TabsTrigger value="validation" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:validation', 'Validation')}
               </TabsTrigger>
-              <TabsTrigger value="automation" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:automation', 'Automation')}</span>
+              <TabsTrigger value="automation" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:automation', 'Automation')}
               </TabsTrigger>
-              <TabsTrigger value="cod" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:cod', 'COD')}</span>
+              <TabsTrigger value="cod" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:cod', 'COD')}
               </TabsTrigger>
-              <TabsTrigger value="services" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Wrench className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('common:services', 'Services')}</span>
+              <TabsTrigger value="services" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Wrench className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('common:services', 'Services')}
               </TabsTrigger>
             </TabsList>
           </div>

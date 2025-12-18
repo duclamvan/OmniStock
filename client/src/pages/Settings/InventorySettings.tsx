@@ -454,35 +454,35 @@ export default function InventorySettings() {
     <Form {...form}>
       <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="products" className="w-full">
-          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
-              <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:products', 'Products')}</span>
+          <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
+            <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 p-1">
+              <TabsTrigger value="products" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:products', 'Products')}
               </TabsTrigger>
-              <TabsTrigger value="stock" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:stock', 'Stock')}</span>
+              <TabsTrigger value="stock" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <ClipboardCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:stock', 'Stock')}
               </TabsTrigger>
-              <TabsTrigger value="warehouse" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:warehouse', 'Warehouse')}</span>
+              <TabsTrigger value="warehouse" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Warehouse className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:warehouse', 'Warehouse')}
               </TabsTrigger>
-              <TabsTrigger value="quality" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:quality', 'Quality')}</span>
+              <TabsTrigger value="quality" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:quality', 'Quality')}
               </TabsTrigger>
-              <TabsTrigger value="units" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Ruler className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:units', 'Units')}</span>
+              <TabsTrigger value="units" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Ruler className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:units', 'Units')}
               </TabsTrigger>
-              <TabsTrigger value="catalog" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <Image className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:catalog', 'Catalog')}</span>
+              <TabsTrigger value="catalog" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Image className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:catalog', 'Catalog')}
               </TabsTrigger>
-              <TabsTrigger value="returns" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm whitespace-nowrap">
-                <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('settings:returns', 'Returns')}</span>
+              <TabsTrigger value="returns" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:returns', 'Returns')}
               </TabsTrigger>
             </TabsList>
           </div>
