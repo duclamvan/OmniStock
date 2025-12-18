@@ -474,6 +474,7 @@ const common = {
   shipped: 'Shipped',
   payLater: 'Pay Later',
   productManagement: 'Product Management',
+  inventoryDashboard: 'Inventory Dashboard',
   allProducts: 'All Products',
   categories: 'Categories',
   productBundles: 'Product Bundles',

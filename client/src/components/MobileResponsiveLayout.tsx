@@ -429,6 +429,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           color: "text-purple-600 dark:text-purple-400",
           description: t('common:productManagement'),
           children: [
+            { name: t('common:inventoryDashboard'), href: "/inventory/dashboard" },
             { name: t('common:allProducts'), href: "/inventory" },
             { name: t('common:categories'), href: "/inventory/categories" },
             { name: t('common:productBundles'), href: "/inventory/bundles" },

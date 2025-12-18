@@ -452,6 +452,7 @@ const common = {
   shipped: 'Đã giao vận',
   payLater: 'Trả sau',
   productManagement: 'Quản lý sản phẩm',
+  inventoryDashboard: 'Bảng điều khiển kho',
   allProducts: 'Tất cả sản phẩm',
   categories: 'Danh mục',
   productBundles: 'Combo sản phẩm',
