@@ -125,11 +125,13 @@ async function aggregateBusinessMetrics(): Promise<{
   for (const product of allProducts) {
     const salesData = productSales[product.id];
     if (salesData) {
-      totalCost += (parseFloat(product.importCostCzk || '0') * salesData.unitsSold);
+      const importCost = parseFloat(product.importCostCzk || '0') || 0;
+      totalCost += importCost * (salesData.unitsSold || 0);
     }
   }
   
-  const grossProfit = revenue - totalCost;
+  // Gross Profit = Revenue - (COGS + Expenses)
+  const grossProfit = revenue - (totalCost + expensesTotal);
 
   let lowStockCount = 0;
   let totalStockValue = 0;
@@ -160,6 +162,19 @@ async function aggregateBusinessMetrics(): Promise<{
     );
   const deadStockCount = deadStockQuery.length;
 
+  // Aggregate stock from productLocations table to get accurate stock quantities
+  const locationStocks = await db.select({
+    productId: productLocations.productId,
+    totalQuantity: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)::int`,
+  })
+    .from(productLocations)
+    .groupBy(productLocations.productId);
+
+  const productLocationStockMap: Record<string, number> = {};
+  for (const loc of locationStocks) {
+    productLocationStockMap[loc.productId] = Number(loc.totalQuantity) || 0;
+  }
+
   const velocityAlerts: VelocityAlert[] = [];
   const daysInPeriod = 30;
   
@@ -167,10 +182,15 @@ async function aggregateBusinessMetrics(): Promise<{
     const sales = productSales[product.id];
     if (!sales) continue;
     
-    const dailyVelocity = sales.unitsSold / daysInPeriod;
+    const dailyVelocity = (sales.unitsSold || 0) / daysInPeriod;
     if (dailyVelocity <= 0) continue;
     
-    const currentStock = product.stock || 0;
+    // Use productLocations aggregated stock if available, fallback to product.stock
+    const locationStock = productLocationStockMap[product.id];
+    const currentStock = locationStock !== undefined ? locationStock : (product.stock || 0);
+    
+    if (currentStock <= 0) continue;
+    
     const daysUntilEmpty = Math.floor(currentStock / dailyVelocity);
     
     let urgency: 'critical' | 'warning' | 'normal' = 'normal';

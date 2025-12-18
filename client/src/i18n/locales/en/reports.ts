@@ -727,7 +727,6 @@ const reports = {
   cashTrap: 'Cash Trap',
   noSalesIn90Days: 'No sales in 90+ days',
   velocityAlertsDesc: 'Products selling faster than restock rate',
-  deadStockDesc: 'Products tying up capital with no recent sales',
   noVelocityAlerts: 'No velocity alerts - stock levels are healthy',
   noDeadStock: 'No dead stock detected',
   reportGeneratedSuccessfully: 'Business report generated successfully',

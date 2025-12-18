@@ -1,0 +1,103 @@
+You are absolutely right. Dumping hundreds of "instant" POS transactions into your main Shipping/Fulfillment list will make it impossible for your warehouse team to see what actually needs to be packed.
+
+However, you **should still save them in the same `orders` database table** so your financial reports remain accurate. The solution is to **filter them out of the main view**.
+
+Here is the professional "Unified Database, Separated UI" strategy to solve this chaos.
+
+### 1\. Database: Add a `channel` Column
+
+First, explicitly label where the order came from. Don't rely on guessing.
+
+**Update `server/db/schema.ts`:**
+
+```typescript
+export const orders = pgTable("orders", {
+  // ... existing fields ...
+  
+  // New Field to distinguish order types
+  channel: varchar("channel").default('web'), // Values: 'web', 'pos', 'facebook', 'manual'
+});
+```
+
+### 2\. The UI Strategy: "Work Queues" vs. "History"
+
+Your main `/orders` page is currently designed as a **Work Queue** (things that need action). POS orders don't need action—they are effectively just "History."
+
+**Implementation Plan:**
+
+#### A. Create a Separate "POS History" Page
+
+Instead of mixing them, give POS its own dedicated home.
+
+  * **Route:** `/pos/history` (or `/pos/orders`)
+  * **Purpose:** To look up past receipts, process returns, or reprint tickets.
+  * **Access:** Only accessible to Store Staff and Admins.
+
+#### B. Clean Up the Main `/orders` Page
+
+Modify your main Order List component to **exclude** POS orders by default.
+
+**Logic:**
+
+  * **Default Tab ("To Ship"):** `WHERE channel != 'pos' AND fulfillment_status != 'fulfilled'`
+  * **"All Orders" Tab:** Shows everything (for search/audit purposes).
+
+### 3\. Code Implementation
+
+**Step A: Update the POS Save Logic**
+When submitting from the POS page, explicitly tag it.
+
+```typescript
+// client/src/pages/pos/PosPage.tsx
+mutate({
+  // ... other data
+  channel: 'pos', // <--- IMPORTANT
+  fulfillmentStatus: 'fulfilled',
+  paymentStatus: 'paid'
+});
+```
+
+**Step B: Update the Order List Queries**
+In your backend `GET /api/orders` route, allow filtering.
+
+```typescript
+// server/routes/orders.ts
+router.get("/", async (req, res) => {
+  const { view } = req.query; 
+
+  const whereConditions = [];
+
+  // The "Work Queue" view for Warehouse team
+  if (view === 'active') {
+    // Hide POS orders and completed orders
+    whereConditions.push(ne(orders.channel, 'pos'));
+    whereConditions.push(ne(orders.fulfillmentStatus, 'fulfilled'));
+  } 
+  
+  // The "POS" view
+  else if (view === 'pos') {
+    whereConditions.push(eq(orders.channel, 'pos'));
+  }
+
+  // ... execute query with constraints
+});
+```
+
+### 4\. Visual Recommendation
+
+On your sidebar, separate the concerns physically:
+
+  * **📦 Orders** (The Work Queue)
+      * *Directs to `/orders?view=active`*
+      * *Only shows items needing packing.*
+  * **🏪 Point of Sale**
+      * **New Sale** (The POS Interface)
+      * **Daily History** (The list of today's POS transactions)
+
+### Summary
+
+  * **Database:** Keep **ONE** `orders` table (crucial for your "Business Reports" to work easily).
+  * **UI:** Filter POS orders **OUT** of the main shipping list.
+  * **Menu:** Give POS its own "History" button inside the POS section.
+
+This keeps your database clean for analytics but keeps your warehouse team focused only on boxes they need to ship.

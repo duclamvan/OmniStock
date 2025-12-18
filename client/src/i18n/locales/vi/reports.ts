@@ -726,7 +726,6 @@ const reports = {
   cashTrap: 'Kẹt vốn',
   noSalesIn90Days: 'Không bán được trong 90+ ngày',
   velocityAlertsDesc: 'Sản phẩm bán nhanh hơn tốc độ nhập kho',
-  deadStockDesc: 'Sản phẩm đang kẹt vốn không có doanh số gần đây',
   noVelocityAlerts: 'Không có cảnh báo tốc độ - mức tồn kho ổn định',
   noDeadStock: 'Không phát hiện hàng tồn ế',
   reportGeneratedSuccessfully: 'Đã tạo báo cáo kinh doanh thành công',
