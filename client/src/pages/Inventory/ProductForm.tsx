@@ -2613,13 +2613,13 @@ export default function ProductForm() {
                           <DollarSign className="h-4 w-4 text-amber-600" />
                           {t('products:tieredPricing.title')}
                         </Label>
-                        <Dialog open={tieredPricingDialogOpen} onOpenChange={setTieredPricingDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button type="button" size="sm" variant="outline" data-testid="button-add-tier">
-                              <Plus className="h-4 w-4 mr-1" />
-                              {t('products:tieredPricing.addTier')}
-                            </Button>
-                          </DialogTrigger>
+                        <Dialog open={tieredPricingDialogOpen} onOpenChange={(open) => {
+                          if (!open) setTieredPricingDialogOpen(false);
+                        }}>
+                          <Button type="button" size="sm" variant="outline" onClick={openAddTierDialog} data-testid="button-add-tier">
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t('products:tieredPricing.addTier')}
+                          </Button>
                           <DialogContent className="sm:max-w-[500px]">
                             <DialogHeader>
                               <DialogTitle>{editingTier ? t('common:edit') : t('common:add')} {t('products:tieredPricing.title')}</DialogTitle>
@@ -2668,12 +2668,13 @@ export default function ProductForm() {
                                   <Input 
                                     type="number" 
                                     step="0.01" 
-                                    {...tierForm.register('priceCzk')} 
+                                    value={tierForm.watch('priceCzk') || ''}
                                     placeholder="0.00" 
                                     data-testid="input-tier-czk"
                                     onChange={(e) => {
                                       tierPriceManualRef.current.czk = true;
-                                      tierForm.register('priceCzk').onChange(e);
+                                      const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                      tierForm.setValue('priceCzk', value);
                                     }}
                                     onBlur={(e) => {
                                       const value = parseFloat(e.target.value);
@@ -2688,12 +2689,13 @@ export default function ProductForm() {
                                   <Input 
                                     type="number" 
                                     step="0.01" 
-                                    {...tierForm.register('priceEur')} 
+                                    value={tierForm.watch('priceEur') || ''}
                                     placeholder="0.00" 
                                     data-testid="input-tier-eur"
                                     onChange={(e) => {
                                       tierPriceManualRef.current.eur = true;
-                                      tierForm.register('priceEur').onChange(e);
+                                      const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                      tierForm.setValue('priceEur', value);
                                     }}
                                     onBlur={(e) => {
                                       const value = parseFloat(e.target.value);
