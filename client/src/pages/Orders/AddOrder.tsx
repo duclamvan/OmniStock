@@ -6319,9 +6319,9 @@ export default function AddOrder() {
                       </div>
                     )}
                     
-                    {/* Grand Total */}
+                    {/* Items Total (before shipping) */}
                     <div className="flex justify-between items-center pt-3 border-t-2 border-slate-300 dark:border-slate-600">
-                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{t('orders:grandTotal')}</span>
+                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{t('orders:orderSubtotal')}</span>
                       <span className="text-xl font-bold text-primary">
                         {formatCurrency(totals.grandTotal, form.watch('currency'))}
                       </span>
