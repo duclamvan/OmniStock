@@ -92,13 +92,18 @@ export function useDefaultWarehouseSelection(options: UseDefaultWarehouseSelecti
     }
   }, [inventorySettings.defaultWarehouse, hasManualOverride, initialValue, onChange]);
   
-  // Sync with external value changes
+  // Sync with external value changes (only when initialValue changes, not on internal value changes)
+  const prevInitialValueRef = useRef<string | undefined>(initialValue);
   useEffect(() => {
-    if (initialValue !== undefined && initialValue !== value) {
-      setValue(initialValue);
-      setHasManualOverride(true);
+    // Only update if initialValue actually changed from external source
+    if (initialValue !== undefined && initialValue !== prevInitialValueRef.current) {
+      prevInitialValueRef.current = initialValue;
+      if (initialValue !== value) {
+        setValue(initialValue);
+        setHasManualOverride(true);
+      }
     }
-  }, [initialValue, value]);
+  }, [initialValue]); // Remove 'value' from deps to prevent loop
   
   const handleChange = (newValue: string, isManual = true) => {
     setValue(newValue);
