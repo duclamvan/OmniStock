@@ -394,7 +394,7 @@ export default function AddOrder() {
   const { user, canViewProfit, canViewMargin, canViewImportCost } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
-  const { generalSettings, financialHelpers, shippingSettings } = useSettings();
+  const { generalSettings, financialHelpers, shippingSettings, serviceSettings } = useSettings();
   const { formatCurrency, settings: localizationSettings } = useLocalization();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
   
@@ -2189,7 +2189,24 @@ export default function AddOrder() {
       const selectedCurrency = form.watch('currency') || 'EUR';
       const serviceCurrency = (product.currency || 'EUR') as Currency;
       const rawServicePrice = parseFloat(product.totalCost || '0');
-      const servicePrice = convertCurrency(rawServicePrice, serviceCurrency, selectedCurrency as Currency);
+      
+      // Try to get the direct currency price from service type settings
+      let servicePrice: number;
+      const serviceTypeName = product.name?.replace('Service Fee: ', '') || product.name;
+      const matchingServiceType = serviceSettings?.serviceTypes?.find(
+        (st: any) => st.name === serviceTypeName || st.name === product.name
+      );
+      
+      if (matchingServiceType) {
+        // Use the direct currency price from service type settings
+        servicePrice = selectedCurrency === 'CZK' 
+          ? (matchingServiceType.costCzk || 0)
+          : (matchingServiceType.costEur || 0);
+      } else {
+        // Fall back to converting from the stored service price
+        servicePrice = convertCurrency(rawServicePrice, serviceCurrency, selectedCurrency as Currency);
+      }
+      
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         serviceId: product.id,
