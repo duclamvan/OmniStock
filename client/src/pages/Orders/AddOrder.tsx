@@ -1601,18 +1601,37 @@ export default function AddOrder() {
     const customerCountry = selectedShippingAddress?.country || selectedCustomer.country;
     if (!customerCountry) return;
     
-    // Get the country carrier mapping from settings
-    const countryCarrierMapping = shippingSettings?.countryCarrierMapping as Record<string, string> | undefined;
-    if (!countryCarrierMapping || Object.keys(countryCarrierMapping).length === 0) return;
-    
     // Convert country name to ISO code
     const countryCode = getCountryCode(customerCountry);
     if (!countryCode) return;
     
+    // Default country-to-carrier mapping (used when no custom mapping is configured)
+    const defaultMapping: Record<string, string> = {
+      'CZ': 'PPL CZ',
+      'DE': 'GLS DE',
+      'AT': 'GLS DE',
+      'SK': 'PPL CZ',
+      'PL': 'GLS DE',
+      'HU': 'GLS DE',
+      'NL': 'GLS DE',
+      'BE': 'GLS DE',
+      'FR': 'GLS DE',
+      'IT': 'GLS DE',
+      'ES': 'GLS DE',
+    };
+    
+    // Get the country carrier mapping from settings, with default fallback
+    const countryCarrierMapping = shippingSettings?.countryCarrierMapping as Record<string, string> | undefined;
+    const effectiveMapping = (countryCarrierMapping && Object.keys(countryCarrierMapping).length > 0) 
+      ? countryCarrierMapping 
+      : defaultMapping;
+    
     // Look up the carrier for this country (case-insensitive)
-    const mappedCarrier = countryCarrierMapping[countryCode] || 
-      countryCarrierMapping[countryCode.toLowerCase()] ||
-      Object.entries(countryCarrierMapping).find(([key]) => key.toUpperCase() === countryCode.toUpperCase())?.[1];
+    const mappedCarrier = effectiveMapping[countryCode] || 
+      effectiveMapping[countryCode.toLowerCase()] ||
+      Object.entries(effectiveMapping).find(([key]) => key.toUpperCase() === countryCode.toUpperCase())?.[1] ||
+      'GLS DE'; // Final fallback for unknown countries
+    
     if (mappedCarrier) {
       form.setValue('shippingMethod', mappedCarrier as any);
       if (import.meta.env.DEV) {
