@@ -233,21 +233,20 @@ export default function AddService() {
     }
   }, [form.watch('orderId'), orders, form]);
 
-  // Auto-fill service cost when service type changes
-  const watchedServiceType = form.watch('name');
+  // Watch currency for service cost updates
   const watchedCurrency = form.watch('currency');
   
-  useEffect(() => {
-    if (!watchedServiceType || isEditing) return;
-    
-    const selectedType = serviceTypes.find(st => st.name === watchedServiceType);
+  // Helper function to set service cost based on selected service type
+  const setServiceCostFromType = (serviceName: string) => {
+    const selectedType = serviceTypes.find(st => st.name === serviceName);
     if (selectedType) {
-      const cost = watchedCurrency === 'CZK' ? selectedType.costCzk : selectedType.costEur;
+      const currentCurrency = form.watch('currency') || 'EUR';
+      const cost = currentCurrency === 'CZK' ? selectedType.costCzk : selectedType.costEur;
       if (cost && cost > 0) {
         form.setValue('serviceCost', cost.toString());
       }
     }
-  }, [watchedServiceType, watchedCurrency, serviceTypes, isEditing, form]);
+  };
 
   const partsCost = useMemo(() => {
     return serviceItems.reduce((sum, item) => {
@@ -778,6 +777,8 @@ export default function AddService() {
                                   value={service.name}
                                   onSelect={() => {
                                     form.setValue('name', service.name);
+                                    // Auto-fill service cost from service type settings
+                                    setServiceCostFromType(service.name);
                                     setServiceTypeSearch("");
                                     setServiceTypeOpen(false);
                                   }}
