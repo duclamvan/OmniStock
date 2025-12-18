@@ -425,6 +425,10 @@ export default function AddOrder() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   
+  // Mobile compact view state
+  const [expandedMobileNotes, setExpandedMobileNotes] = useState<string | null>(null);
+  const [mobileImagePopup, setMobileImagePopup] = useState<{ open: boolean; src: string; alt: string }>({ open: false, src: '', alt: '' });
+  
   // Variant/Bundle selection state
   const [showVariantDialog, setShowVariantDialog] = useState(false);
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
@@ -6025,80 +6029,55 @@ export default function AddOrder() {
                     : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-slate-800'}`} 
                     data-testid={`mobile-order-item-${item.id}`}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-4">
-                        {/* Product Image - Gift icon for free items */}
+                    <CardContent className="p-2.5">
+                      <div className="flex items-start gap-2 mb-2">
+                        {/* Product Image - Compact & Clickable */}
                         <div className="flex-shrink-0">
                           {item.isFreeItem ? (
-                            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
-                              <Gift className="h-10 w-10 text-green-600 dark:text-green-400" />
+                            <div className="w-14 h-14 bg-green-100 dark:bg-green-900/50 rounded border border-green-200 dark:border-green-700 flex items-center justify-center">
+                              <Gift className="h-7 w-7 text-green-600 dark:text-green-400" />
                             </div>
                           ) : item.image ? (
                             <img 
                               src={item.image} 
                               alt={item.productName}
-                              className="w-20 h-20 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900"
+                              className="w-14 h-14 object-contain rounded border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-900 cursor-pointer active:opacity-80"
+                              onClick={() => setMobileImagePopup({ open: true, src: item.image!, alt: item.productName })}
                             />
                           ) : (
-                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
-                              <Package className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-gray-700 flex items-center justify-center">
+                              <Package className="h-7 w-7 text-slate-300 dark:text-slate-600" />
                             </div>
                           )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2 mb-1">
-                            {item.serviceId && <Wrench className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />}
-                            <h4 className={`font-semibold text-base ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
+                          <div className="flex items-start gap-1.5">
+                            {item.serviceId && <Wrench className="h-3.5 w-3.5 text-orange-500 flex-shrink-0 mt-0.5" />}
+                            <h4 className={`font-semibold text-sm leading-tight line-clamp-2 ${item.isFreeItem ? 'text-green-800 dark:text-green-200' : 'text-slate-900 dark:text-slate-100'}`}>
                               {item.productName}
                             </h4>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 mb-1">
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {item.isFreeItem && (
-                              <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                              <Badge className="text-[10px] px-1 py-0 h-4 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
                                 {t('orders:freeItem')}
                               </Badge>
                             )}
                             {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
-                              <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
-                                <Box className="h-3 w-3 mr-0.5" />
-                                {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'carton'}
-                              </Badge>
-                            )}
-                            {item.priceTier === 'bulk' && (
-                              <Badge className="text-xs px-1.5 py-0 bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-600">
-                                <TrendingUp className="h-3 w-3 mr-0.5" />
-                                {t('orders:bulkPriceBadge')}
+                              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
+                                <Box className="h-2.5 w-2.5 mr-0.5" />
+                                {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'ctn'}
                               </Badge>
                             )}
                             {item.variantName && (
-                              <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                              <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300">
                                 {item.variantName}
                               </Badge>
                             )}
-                            {item.bundleId && (
-                              <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300">
-                                {t('orders:bundle')}
-                              </Badge>
-                            )}
-                            {item.serviceId && !item.isServicePart && (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
-                                {t('orders:service')}
-                              </Badge>
-                            )}
-                            {item.isServicePart && (
-                              <Badge className="text-xs px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-600">
-                                {t('orders:serviceParts')}
-                              </Badge>
-                            )}
-                            {item.appliedDiscountLabel && !item.isFreeItem && (
-                              <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300">
-                                {t('orders:offer')}: {item.appliedDiscountLabel}
-                              </Badge>
-                            )}
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {item.serviceId ? t('orders:service') : item.sku}
                           </p>
                         </div>
                         
@@ -6107,20 +6086,20 @@ export default function AddOrder() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removeOrderItem(item.id)}
-                          className="h-11 w-11 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 dark:hover:text-red-400 flex-shrink-0"
+                          className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 dark:hover:text-red-400 flex-shrink-0 -mr-1"
                           data-testid={`mobile-button-remove-${item.id}`}
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                       
-                      {/* Mobile form fields */}
-                      <div className="space-y-3">
-                        {/* Quantity & Price Row */}
-                        <div className="grid grid-cols-2 gap-3">
+                      {/* Compact form fields */}
+                      <div className="space-y-2">
+                        {/* Quantity, Price & Total in one row */}
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <Label htmlFor={`mobile-qty-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                              Quantity
+                            <Label htmlFor={`mobile-qty-${item.id}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                              {t('orders:qty')}
                             </Label>
                             <MathInput
                               id={`mobile-qty-${item.id}`}
@@ -6128,7 +6107,7 @@ export default function AddOrder() {
                               value={item.quantity}
                               onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
                               isInteger={true}
-                              className="h-11 text-base"
+                              className="h-9 text-sm"
                               data-testid={`mobile-input-quantity-${item.id}`}
                               onBlur={() => {
                                 if (item.isFreeItem) {
@@ -6138,15 +6117,12 @@ export default function AddOrder() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`mobile-price-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                              Price ({form.watch('currency')})
+                            <Label htmlFor={`mobile-price-${item.id}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                              {t('orders:price')}
                             </Label>
                             {item.isFreeItem ? (
-                              <div className="h-11 flex flex-col justify-center">
-                                <span className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
-                                {item.originalPrice && item.originalPrice > 0 && (
-                                  <span className="text-xs text-slate-400 line-through">{formatCurrency(item.originalPrice, form.watch('currency'))}</span>
-                                )}
+                              <div className="h-9 flex items-center">
+                                <span className="text-sm font-bold text-green-600 dark:text-green-400">0</span>
                               </div>
                             ) : (
                               <MathInput
@@ -6155,22 +6131,32 @@ export default function AddOrder() {
                                 step={0.01}
                                 value={item.price}
                                 onChange={(val) => updateOrderItem(item.id, 'price', val)}
-                                className="h-11 text-base"
+                                className="h-9 text-sm"
                                 data-testid={`mobile-input-price-${item.id}`}
                               />
                             )}
+                          </div>
+                          <div>
+                            <Label className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                              {t('orders:total')}
+                            </Label>
+                            <div className="h-9 flex items-center justify-end">
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {formatCurrency(item.total, form.watch('currency'))}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
                         {/* Discount & VAT Row - Conditional */}
                         {(showDiscountColumn || showVatColumn) && (
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-2">
                             {showDiscountColumn && (
                               <div>
-                                <Label htmlFor={`mobile-discount-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  {t('orders:discountPercent', 'Discount %')}
+                                <Label htmlFor={`mobile-discount-${item.id}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                                  {t('orders:discountPercent', 'Discount')} %
                                 </Label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                   <MathInput
                                     id={`mobile-discount-${item.id}`}
                                     min={0}
@@ -6178,22 +6164,21 @@ export default function AddOrder() {
                                     step={1}
                                     value={item.discountPercentage}
                                     onChange={(val) => updateOrderItem(item.id, 'discountPercentage', val)}
-                                    className="h-11 text-base flex-1"
+                                    className="h-9 text-sm flex-1"
                                     data-testid={`mobile-input-discount-${item.id}`}
                                   />
-                                  <span className="text-sm text-muted-foreground">%</span>
+                                  {item.discount > 0 && (
+                                    <span className="text-[10px] text-green-600 dark:text-green-400 whitespace-nowrap">
+                                      -{formatCurrency(item.discount, form.watch('currency'))}
+                                    </span>
+                                  )}
                                 </div>
-                                {item.discount > 0 && (
-                                  <span className="text-xs text-green-600 dark:text-green-400 mt-1 block">
-                                    -{formatCurrency(item.discount, form.watch('currency'))}
-                                  </span>
-                                )}
                               </div>
                             )}
                             {showVatColumn && (
                               <div>
-                                <Label htmlFor={`mobile-vat-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                                  VAT ({form.watch('currency')})
+                                <Label htmlFor={`mobile-vat-${item.id}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">
+                                  VAT
                                 </Label>
                                 <MathInput
                                   id={`mobile-vat-${item.id}`}
@@ -6201,7 +6186,7 @@ export default function AddOrder() {
                                   step={0.01}
                                   value={item.tax}
                                   onChange={(val) => updateOrderItem(item.id, 'tax', val)}
-                                  className="h-11 text-base"
+                                  className="h-9 text-sm"
                                   data-testid={`mobile-input-vat-${item.id}`}
                                 />
                               </div>
@@ -6209,29 +6194,30 @@ export default function AddOrder() {
                           </div>
                         )}
                         
-                        {/* Notes Section */}
-                        <div>
-                          <Label htmlFor={`mobile-notes-${item.id}`} className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                            <MessageSquare className="h-3.5 w-3.5" />
-                            {t('orders:shippingNotesOptional')}
-                          </Label>
+                        {/* Collapsible Notes Section */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="w-full h-7 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 justify-start px-1"
+                          onClick={() => setExpandedMobileNotes(prev => prev === item.id ? null : item.id)}
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1.5" />
+                          {item.notes ? t('orders:editNotes') : t('orders:addNotes')}
+                          {item.notes && <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">1</Badge>}
+                          {expandedMobileNotes === item.id ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+                        </Button>
+                        
+                        {expandedMobileNotes === item.id && (
                           <Textarea
                             id={`mobile-notes-${item.id}`}
                             placeholder={t('orders:addSpecialInstructions')}
                             value={item.notes || ''}
                             onChange={(e) => updateOrderItem(item.id, 'notes', e.target.value)}
-                            className="min-h-[80px] text-sm resize-none"
+                            className="min-h-[60px] text-sm resize-none"
                             data-testid={`mobile-textarea-notes-${item.id}`}
                           />
-                        </div>
-                        
-                        {/* Total Display */}
-                        <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('orders:itemTotal')}</span>
-                          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                            {formatCurrency(item.total, form.watch('currency'))}
-                          </span>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -7963,6 +7949,69 @@ export default function AddOrder() {
           title={editingAddress ? t('orders:editShippingAddress') : t('orders:addShippingAddress')}
           description={editingAddress ? t('orders:updateShippingAddressDetails') : t('orders:enterNewShippingAddressDetails')}
         />
+
+        {/* Mobile Image Popup with Swipe to Close */}
+        {mobileImagePopup.open && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setMobileImagePopup({ open: false, src: '', alt: '' })}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              (e.currentTarget as any).touchStartY = touch.clientY;
+              (e.currentTarget as any).translateY = 0;
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              const startY = (e.currentTarget as any).touchStartY || 0;
+              const deltaY = touch.clientY - startY;
+              if (deltaY > 0) {
+                (e.currentTarget as any).translateY = deltaY;
+                const imageEl = e.currentTarget.querySelector('img');
+                if (imageEl) {
+                  imageEl.style.transform = `translateY(${deltaY}px) scale(${1 - deltaY / 1000})`;
+                  imageEl.style.opacity = `${1 - deltaY / 300}`;
+                }
+              }
+            }}
+            onTouchEnd={(e) => {
+              const translateY = (e.currentTarget as any).translateY || 0;
+              if (translateY > 100) {
+                setMobileImagePopup({ open: false, src: '', alt: '' });
+              } else {
+                const imageEl = e.currentTarget.querySelector('img');
+                if (imageEl) {
+                  imageEl.style.transform = '';
+                  imageEl.style.opacity = '';
+                }
+              }
+            }}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileImagePopup({ open: false, src: '', alt: '' });
+                }}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="absolute top-4 left-4 right-16 z-10">
+              <p className="text-white text-sm font-medium truncate">{mobileImagePopup.alt}</p>
+              <p className="text-white/60 text-xs">{t('orders:swipeDownToClose')}</p>
+            </div>
+            <img 
+              src={mobileImagePopup.src} 
+              alt={mobileImagePopup.alt}
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg transition-all duration-200"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
