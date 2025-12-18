@@ -1118,7 +1118,7 @@ export default function POS() {
       <div className="w-full lg:w-[420px] bg-white dark:bg-gray-800 border-t lg:border-t-0 lg:border-l flex flex-col shadow-xl lg:max-h-screen">
         {/* Cart Header */}
         <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-2 sm:p-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg">
                 <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
