@@ -274,7 +274,7 @@ export default function EmployeeDetail() {
   });
 
   const resolveIncidentMutation = useMutation({
-    mutationFn: async ({ incidentId, status }: { incidentId: number; status: string }) => {
+    mutationFn: async ({ incidentId, status }: { incidentId: string; status: string }) => {
       const response = await apiRequest("PATCH", `/api/employees/${employeeId}/incidents/${incidentId}`, {
         status,
         resolvedAt: status === "resolved" || status === "dismissed" ? new Date().toISOString() : null,
@@ -299,7 +299,7 @@ export default function EmployeeDetail() {
   });
 
   const deleteIncidentMutation = useMutation({
-    mutationFn: async (incidentId: number) => {
+    mutationFn: async (incidentId: string) => {
       const response = await apiRequest("DELETE", `/api/employees/${employeeId}/incidents/${incidentId}`);
       return response.json();
     },
