@@ -328,6 +328,7 @@ const common = {
   viewAllNotifications: 'Xem tất cả thông báo',
   markAsRead: 'Đánh dấu đã đọc',
   noNotifications: 'Không có thông báo',
+  orderUpdatedSuccess: 'Đã cập nhật đơn hàng thành công',
   
   // Language Messages
   languageChanged: 'Đã thay đổi ngôn ngữ thành công',

@@ -814,6 +814,7 @@ const orders = {
   // Toast Messages - Additional
   orderCreatedWithPacking: 'Order created successfully with packing plan',
   orderCreatedSuccess: 'Order created successfully',
+  orderUpdatedSuccess: 'Order updated successfully',
   orderCreatedError: 'Failed to create order. Please try again',
   aiPackingDisabled: 'AI Packing Disabled',
   aiPackingDisabledDesc: 'AI Carton Packing is disabled in settings',

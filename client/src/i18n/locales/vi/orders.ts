@@ -818,6 +818,7 @@ const orders = {
   // Toast Messages - Additional
   orderCreatedWithPacking: 'Đơn hàng đã được tạo thành công với kế hoạch đóng gói',
   orderCreatedSuccess: 'Đơn hàng đã được tạo thành công',
+  orderUpdatedSuccess: 'Đã cập nhật đơn hàng thành công',
   orderCreatedError: 'Không thể tạo đơn hàng. Vui lòng thử lại',
   aiPackingDisabled: 'Đã tắt đóng gói AI',
   aiPackingDisabledDesc: 'Đóng gói thùng AI đã bị tắt trong cài đặt',

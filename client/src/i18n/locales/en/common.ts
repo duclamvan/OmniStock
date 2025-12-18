@@ -352,6 +352,7 @@ const common = {
   viewAllNotifications: 'View all notifications',
   markAsRead: 'Mark as read',
   noNotifications: 'No notifications',
+  orderUpdatedSuccess: 'Order updated successfully',
   
   // Language Messages
   languageChanged: 'Language changed successfully',
