@@ -743,6 +743,17 @@ const reports = {
   lowPriority: 'Ưu tiên thấp',
   itemsNeedReorder: 'sản phẩm cần đặt lại',
   itemsDeadStock: 'sản phẩm tồn ế',
+  
+  // POS Sales Report
+  posSales: 'Bán hàng POS',
+  pos: 'POS',
+  posSalesReport: 'Báo cáo bán hàng POS',
+  totalPosSales: 'Tổng đơn POS',
+  todaysSales: 'Doanh số hôm nay',
+  averageSaleValue: 'Giá trị trung bình',
+  walkInCustomer: 'Khách vãng lai',
+  itemsCount: 'Số sản phẩm',
+  noPosSalesFound: 'Không tìm thấy đơn POS',
 } as const;
 
 export default reports;

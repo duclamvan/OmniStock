@@ -15,6 +15,7 @@ import {
   BarChart3,
   Coins,
   ShoppingBag,
+  ShoppingCart,
   Package,
   Users,
   Receipt,
@@ -26,6 +27,7 @@ import SalesReports from "./SalesReports";
 import InventoryReports from "./InventoryReports";
 import CustomerReports from "./CustomerReports";
 import ExpenseReports from "./ExpenseReports";
+import POSSalesReports from "./POSSalesReports";
 
 export default function ReportsIndex() {
   const [location, setLocation] = useLocation();
@@ -35,6 +37,7 @@ export default function ReportsIndex() {
     { value: '/reports', label: t('overview'), shortLabel: t('overview'), icon: LayoutDashboard },
     { value: '/reports/financial', label: t('financialReport'), shortLabel: t('financial'), icon: Coins },
     { value: '/reports/sales', label: t('salesReport'), shortLabel: t('sales'), icon: ShoppingBag },
+    { value: '/reports/pos', label: t('posSales'), shortLabel: t('pos'), icon: ShoppingCart },
     { value: '/reports/inventory', label: t('inventoryReport'), shortLabel: t('inventory'), icon: Package },
     { value: '/reports/customers', label: t('customerReport'), shortLabel: t('customers'), icon: Users },
     { value: '/reports/expenses', label: t('expenseReport'), shortLabel: t('expenses'), icon: Receipt },
@@ -54,6 +57,8 @@ export default function ReportsIndex() {
         return <FinancialReports />;
       case '/reports/sales':
         return <SalesReports />;
+      case '/reports/pos':
+        return <POSSalesReports />;
       case '/reports/inventory':
         return <InventoryReports />;
       case '/reports/customers':
@@ -134,7 +139,7 @@ export default function ReportsIndex() {
         <div className="hidden lg:block">
           <Card className="p-1">
             <Tabs value={activeTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-6 gap-1">
+              <TabsList className="grid w-full grid-cols-7 gap-1">
                 {reportTabs.map((tab) => {
                   const Icon = tab.icon;
                   return (

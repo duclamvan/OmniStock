@@ -413,6 +413,9 @@ function Router() {
         <Route path="/reports/expenses">
           {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
         </Route>
+        <Route path="/reports/pos">
+          {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
+        </Route>
         <Route path="/reports">
           {() => <ProtectedRoute requireAdmin><ReportsIndex /></ProtectedRoute>}
         </Route>

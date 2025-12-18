@@ -744,6 +744,17 @@ const reports = {
   lowPriority: 'Low Priority',
   itemsNeedReorder: 'items need reorder',
   itemsDeadStock: 'items are dead stock',
+  
+  // POS Sales Report
+  posSales: 'POS Sales',
+  pos: 'POS',
+  posSalesReport: 'Point of Sale Sales Report',
+  totalPosSales: 'Total POS Sales',
+  todaysSales: "Today's Sales",
+  averageSaleValue: 'Average Sale Value',
+  walkInCustomer: 'Walk-in Customer',
+  itemsCount: 'Items',
+  noPosSalesFound: 'No POS sales found',
 } as const;
 
 export default reports;
