@@ -210,15 +210,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return {
       order: true,
       customer: true,
-      items: true,
-      total: true,
-      status: true,
       date: true,
-      biller: false,
-      payment: false,
+      status: true,
+      payment: true,
+      tracking: false,
+      total: true,
       profit: false,
-      trackingStatus: false,
-      trackingNumber: false,
+      biller: false,
     };
   });
 
@@ -742,6 +740,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const highScores = useDailyHighScores(statistics);
 
   // Define table columns - Clean professional design
+  // Column order: Order ID → Customer → Date → Status → Payment → Tracking → Total → Profit → Biller
   const columns: DataTableColumn<any>[] = [
     {
       key: "order",
@@ -788,12 +787,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       },
     },
     {
-      key: "biller",
-      header: t('orders:biller'),
-      sortable: false,
+      key: "date",
+      header: t('orders:date'),
+      sortable: true,
+      sortKey: "createdAt",
       cell: (order) => (
-        <div className="text-sm text-slate-700 dark:text-slate-300">
-          {order.biller?.email || 'N/A'}
+        <div className="text-sm text-slate-600 dark:text-slate-400">
+          {formatDate(order.createdAt)}
         </div>
       ),
     },
@@ -803,35 +803,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortable: true,
       sortKey: "orderStatus",
       cell: (order) => (
-        <div className="flex gap-2">
-          <Badge
-            className={cn(
-              "text-xs font-medium",
-              order.orderStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
-              order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200 border-orange-200 dark:border-orange-700' :
-              order.orderStatus === 'to_fulfill' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
-              order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-200 border-cyan-200 dark:border-cyan-700' :
-              order.orderStatus === 'shipped' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 border-purple-200 dark:border-purple-700' :
-              order.orderStatus === 'delivered' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700' :
-              order.orderStatus === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 border-red-200 dark:border-red-700' :
-              'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-            )}
-          >
-            {order.orderStatus?.replace(/_/g, ' ')}
-          </Badge>
-        </div>
+        <Badge
+          className={cn(
+            "text-xs font-medium",
+            order.orderStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 border-amber-200 dark:border-amber-700' :
+            order.orderStatus === 'awaiting_stock' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200 border-orange-200 dark:border-orange-700' :
+            order.orderStatus === 'to_fulfill' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-700' :
+            order.orderStatus === 'ready_to_ship' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-200 border-cyan-200 dark:border-cyan-700' :
+            order.orderStatus === 'shipped' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 border-purple-200 dark:border-purple-700' :
+            order.orderStatus === 'delivered' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700' :
+            order.orderStatus === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 border-red-200 dark:border-red-700' :
+            'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+          )}
+        >
+          {order.orderStatus?.replace(/_/g, ' ')}
+        </Badge>
       ),
-    },
-    {
-      key: "trackingStatus",
-      header: t('orders:tracking'),
-      sortable: false,
-      cell: (order) => {
-        if (order.orderStatus !== 'shipped') {
-          return <span className="text-muted-foreground text-xs">-</span>;
-        }
-        return <TrackingStatusBadge orderId={order.id} />;
-      },
     },
     {
       key: "payment",
@@ -853,15 +840,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       ),
     },
     {
-      key: "date",
-      header: t('orders:date'),
+      key: "tracking",
+      header: t('orders:tracking'),
       sortable: true,
-      sortKey: "createdAt",
-      cell: (order) => (
-        <div className="text-sm text-slate-600 dark:text-slate-400">
-          {formatDate(order.createdAt)}
-        </div>
-      ),
+      sortKey: "trackingNumber",
+      cell: (order) => {
+        // Only show tracking info for shipped/delivered orders
+        if (order.orderStatus !== 'shipped' && order.orderStatus !== 'delivered') {
+          return <span className="text-muted-foreground text-xs">—</span>;
+        }
+        return (
+          <div className="flex flex-col gap-1">
+            <TrackingStatusBadge orderId={order.id} />
+            {order.trackingNumber && (
+              <span className="font-mono text-xs text-slate-600 dark:text-slate-400">{order.trackingNumber}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "total",
@@ -893,17 +889,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       className: "text-right",
     },
     {
-      key: "trackingNumber",
-      header: t('orders:trackingNumberShort'),
-      sortable: true,
-      sortKey: "trackingNumber",
+      key: "biller",
+      header: t('orders:biller'),
+      sortable: false,
       cell: (order) => (
-        <div className="text-sm">
-          {order.trackingNumber ? (
-            <span className="font-mono text-slate-700 dark:text-slate-300">{order.trackingNumber}</span>
-          ) : (
-            <span className="text-slate-400 dark:text-slate-500">—</span>
-          )}
+        <div className="text-sm text-slate-700 dark:text-slate-300">
+          {order.biller?.email || 'N/A'}
         </div>
       ),
     },
