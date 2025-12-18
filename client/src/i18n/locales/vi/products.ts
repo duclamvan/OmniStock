@@ -466,6 +466,19 @@ const products = {
     addButton: 'Thêm bậc',
     units: 'đơn vị',
     removeButton: 'Xóa bậc',
+    minQuantity: 'Số lượng tối thiểu',
+    maxQuantity: 'Số lượng tối đa',
+    priceType: 'Loại giá',
+    tiered: 'Theo bậc',
+    wholesale: 'Bán sỉ',
+  },
+  
+  // Pricing - Common
+  pricing: {
+    autoConvertHelper: 'Tiền tệ tự động chuyển đổi khi rời khỏi ô',
+    czk: 'CZK',
+    eur: 'EUR',
+    usd: 'USD',
   },
   
   // Packing & Shipping

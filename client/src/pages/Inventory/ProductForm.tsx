@@ -2664,7 +2664,7 @@ export default function ProductForm() {
                               
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <Label className="text-xs">CZK</Label>
+                                  <Label className="text-xs">{t('products:pricing.czk')}</Label>
                                   <Input 
                                     type="number" 
                                     step="0.01" 
@@ -2684,7 +2684,7 @@ export default function ProductForm() {
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">EUR</Label>
+                                  <Label className="text-xs">{t('products:pricing.eur')}</Label>
                                   <Input 
                                     type="number" 
                                     step="0.01" 
@@ -2734,8 +2734,8 @@ export default function ProductForm() {
                                     </span>
                                   </div>
                                   <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex gap-2 flex-wrap">
-                                    {tier.priceCzk && <span>CZK {parseFloat(tier.priceCzk).toFixed(2)}</span>}
-                                    {tier.priceEur && <span>EUR {parseFloat(tier.priceEur).toFixed(2)}</span>}
+                                    {tier.priceCzk && <span>{t('products:pricing.czk')} {parseFloat(tier.priceCzk).toFixed(2)}</span>}
+                                    {tier.priceEur && <span>{t('products:pricing.eur')} {parseFloat(tier.priceEur).toFixed(2)}</span>}
                                   </div>
                                 </div>
                                 <div className="flex gap-1">

@@ -359,6 +359,19 @@ const products = {
     addButton: 'Add Tier',
     units: 'units',
     removeButton: 'Remove Tier',
+    minQuantity: 'Min Quantity',
+    maxQuantity: 'Max Quantity',
+    priceType: 'Price Type',
+    tiered: 'Tiered',
+    wholesale: 'Wholesale',
+  },
+  
+  // Pricing - Common
+  pricing: {
+    autoConvertHelper: 'Currency auto-converts on blur',
+    czk: 'CZK',
+    eur: 'EUR',
+    usd: 'USD',
   },
   
   // Packing & Shipping
