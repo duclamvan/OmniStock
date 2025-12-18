@@ -81,10 +81,11 @@ export default function POSSalesReports() {
   }, [orders, filterStartDate, filterEndDate, searchQuery, customers]);
 
   const orderItemsMap = useMemo(() => {
-    const map = new Map<number, number>();
+    const map = new Map<string, number>();
     orderItems.forEach((item: any) => {
-      const current = map.get(item.orderId) || 0;
-      map.set(item.orderId, current + (item.quantity || 1));
+      const orderId = String(item.orderId);
+      const current = map.get(orderId) || 0;
+      map.set(orderId, current + (item.quantity || 1));
     });
     return map;
   }, [orderItems]);
@@ -92,21 +93,22 @@ export default function POSSalesReports() {
   const productCostMap = useMemo(() => {
     const map = new Map<string, number>();
     products.forEach((product: any) => {
-      map.set(product.id, parseFloat(product.cost || product.landedCost || '0'));
+      map.set(String(product.id), parseFloat(product.cost || product.landedCost || '0'));
     });
     return map;
   }, [products]);
 
   const orderProfitMap = useMemo(() => {
-    const map = new Map<number, number>();
+    const map = new Map<string, number>();
     orders.forEach((order: any) => {
-      const items = orderItems.filter((item: any) => item.orderId === order.id);
+      const orderId = String(order.id);
+      const items = orderItems.filter((item: any) => String(item.orderId) === orderId);
       const totalCost = items.reduce((sum: number, item: any) => {
-        const productCost = productCostMap.get(item.productId) || 0;
+        const productCost = productCostMap.get(String(item.productId)) || 0;
         return sum + (productCost * (item.quantity || 1));
       }, 0);
       const revenue = parseFloat(order.grandTotal || '0');
-      map.set(order.id, revenue - totalCost);
+      map.set(orderId, revenue - totalCost);
     });
     return map;
   }, [orders, orderItems, productCostMap]);
@@ -271,7 +273,7 @@ export default function POSSalesReports() {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-3">
                 {filteredOrders.map((order: any) => {
-                  const profit = orderProfitMap.get(order.id) || 0;
+                  const profit = orderProfitMap.get(String(order.id)) || 0;
                   const profitColor = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
                   return (
                     <div key={order.id} className="border rounded-lg p-4 space-y-3" data-testid={`card-pos-order-${order.id}`}>
@@ -331,7 +333,7 @@ export default function POSSalesReports() {
                           {getCustomerName(order.customerId)}
                         </TableCell>
                         <TableCell className="text-center">
-                          {orderItemsMap.get(order.id) || 0}
+                          {orderItemsMap.get(String(order.id)) || 0}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">
@@ -346,7 +348,7 @@ export default function POSSalesReports() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {(() => {
-                            const profit = orderProfitMap.get(order.id) || 0;
+                            const profit = orderProfitMap.get(String(order.id)) || 0;
                             const color = profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
                             return <span className={color}>{formatCurrency(profit, order.currency || 'CZK')}</span>;
                           })()}
