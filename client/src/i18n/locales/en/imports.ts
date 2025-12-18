@@ -436,10 +436,12 @@ const imports = {
   enterItemName: 'Enter item name',
   optionalNotes: 'Optional notes for this item',
   itemName: 'Item Name',
+  itemNotes: 'Item Notes',
   category: 'Category',
   selectCategory: 'Select a category',
   selectACategory: 'Select category',
   productPreview: 'Product preview',
+  addNewCategory: 'Add New Category',
   
   // CreatePurchase - Variant Operations
   addVariantSeries: 'Add Variant Series',

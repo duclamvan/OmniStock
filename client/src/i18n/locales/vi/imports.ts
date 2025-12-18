@@ -442,10 +442,12 @@ const imports = {
   enterItemName: 'Nhập tên sản phẩm',
   optionalNotes: 'Ghi chú (không bắt buộc)',
   itemName: 'Tên sản phẩm',
+  itemNotes: 'Ghi chú sản phẩm',
   category: 'Danh mục',
   selectCategory: 'Chọn danh mục',
   selectACategory: 'Chọn danh mục',
   productPreview: 'Xem trước sản phẩm',
+  addNewCategory: 'Thêm danh mục mới',
   
   // CreatePurchase - Variant Operations
   addVariantSeries: 'Thêm chuỗi biến thể',
