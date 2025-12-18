@@ -285,7 +285,7 @@ export default function POSSalesReports() {
                   {filteredOrders.map((order: any) => (
                     <TableRow key={order.id} data-testid={`row-pos-order-${order.id}`}>
                       <TableCell className="font-medium">
-                        {order.orderNumber || `#${order.id}`}
+                        {order.orderId || order.orderNumber || `#${order.id}`}
                       </TableCell>
                       <TableCell>
                         {format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm')}
