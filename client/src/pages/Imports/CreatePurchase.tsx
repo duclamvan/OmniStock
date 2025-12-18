@@ -1569,7 +1569,7 @@ export default function CreatePurchase() {
         </div>
       </div>
 
-      <div className="px-2 sm:px-4 md:px-6 pb-20 md:pb-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
+      <div className="px-2 sm:px-4 md:px-4 pb-20 md:pb-6 space-y-4 md:space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-4 md:gap-8">
         {/* Left Column - Form */}
         <div className="space-y-6">
