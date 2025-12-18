@@ -1442,8 +1442,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm sm:text-lg font-semibold">{t('orders:orders')} ({filteredOrders?.length || 0})</h2>
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* View Mode Toggle */}
-                <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
+                {/* View Mode Toggle - Desktop only */}
+                <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
                     variant={viewMode === 'normal' ? 'default' : 'ghost'}
                     size="sm"
@@ -1466,8 +1466,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </Button>
                 </div>
 
-                {/* Expand/Collapse All Toggle */}
-                <div className="flex items-center gap-0.5 sm:gap-1 border rounded-md">
+                {/* Expand/Collapse All Toggle - Desktop only */}
+                <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 border rounded-md">
                   <Button
                     variant={!expandAll ? 'default' : 'ghost'}
                     size="sm"
