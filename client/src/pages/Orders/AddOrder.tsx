@@ -6993,6 +6993,17 @@ export default function AddOrder() {
                         <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                       </div>
                       {(() => {
+                        const adjustmentValue = Number(form.watch('adjustment')) || 0;
+                        return adjustmentValue !== 0 ? (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">{t('orders:adjustment')}:</span>
+                            <span className={`font-medium ${adjustmentValue >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                              {adjustmentValue >= 0 ? '+' : ''}{formatCurrency(adjustmentValue, form.watch('currency'))}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
+                      {(() => {
                         const discountAmount = form.watch('discountType') === 'rate' 
                           ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
                           : Number(form.watch('discountValue')) || 0;
@@ -7268,6 +7279,17 @@ export default function AddOrder() {
                   <span className="text-gray-600">{t('orders:shippingColon')}</span>
                   <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                 </div>
+                {(() => {
+                  const adjustmentValue = Number(form.watch('adjustment')) || 0;
+                  return adjustmentValue !== 0 ? (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('orders:adjustment')}:</span>
+                      <span className={`font-medium ${adjustmentValue >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                        {adjustmentValue >= 0 ? '+' : ''}{formatCurrency(adjustmentValue, form.watch('currency'))}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
                 {(() => {
                   const discountAmount = form.watch('discountType') === 'rate' 
                     ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
