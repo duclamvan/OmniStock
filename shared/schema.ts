@@ -3124,3 +3124,61 @@ export const importBatchItemsRelations = relations(importBatchItems, ({ one }) =
     references: [importBatches.id],
   }),
 }));
+
+// Business Reports table - AI-powered business intelligence reports
+export const businessReports = pgTable("business_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: date("date").notNull(),
+  
+  // Cash Flow Metrics
+  revenue: decimal("revenue", { precision: 15, scale: 2 }).notNull(),
+  cashCollected: decimal("cash_collected", { precision: 15, scale: 2 }),
+  expenses: decimal("expenses", { precision: 15, scale: 2 }),
+  netCashFlow: decimal("net_cash_flow", { precision: 15, scale: 2 }),
+  
+  // Inventory Health
+  totalStockValue: decimal("total_stock_value", { precision: 15, scale: 2 }),
+  lowStockCount: integer("low_stock_count"),
+  deadStockCount: integer("dead_stock_count"),
+  
+  // Growth Data
+  orderCount: integer("order_count"),
+  averageOrderValue: decimal("average_order_value", { precision: 15, scale: 2 }),
+  topSellingItems: jsonb("top_selling_items"),
+  velocityAlerts: jsonb("velocity_alerts"),
+  
+  // Profitability
+  grossProfit: decimal("gross_profit", { precision: 15, scale: 2 }),
+  grossMargin: decimal("gross_margin", { precision: 5, scale: 2 }),
+  
+  // The AI Analysis
+  aiAnalysis: text("ai_analysis"),
+  aiRecommendations: jsonb("ai_recommendations"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBusinessReportSchema = createInsertSchema(businessReports, {
+  date: z.string(),
+  revenue: z.string(),
+  cashCollected: z.string().optional(),
+  expenses: z.string().optional(),
+  netCashFlow: z.string().optional(),
+  totalStockValue: z.string().optional(),
+  lowStockCount: z.number().int().optional(),
+  deadStockCount: z.number().int().optional(),
+  orderCount: z.number().int().optional(),
+  averageOrderValue: z.string().optional(),
+  topSellingItems: z.array(z.any()).optional(),
+  velocityAlerts: z.array(z.any()).optional(),
+  grossProfit: z.string().optional(),
+  grossMargin: z.string().optional(),
+  aiAnalysis: z.string().optional(),
+  aiRecommendations: z.array(z.any()).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type BusinessReport = typeof businessReports.$inferSelect;
+export type InsertBusinessReport = z.infer<typeof insertBusinessReportSchema>;

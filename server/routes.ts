@@ -16144,6 +16144,63 @@ Important rules:
   });
 
   // ============================================================================
+  // BUSINESS INTELLIGENCE REPORTS ROUTES
+  // ============================================================================
+  
+  // Generate a new business report with AI analysis
+  app.post('/api/business-reports/generate', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { generateBusinessReport } = await import('./services/businessReportService');
+      const report = await generateBusinessReport();
+      res.json(report);
+    } catch (error: any) {
+      console.error('Error generating business report:', error);
+      res.status(500).json({ message: error.message || 'Failed to generate business report' });
+    }
+  });
+
+  // Get the latest business report
+  app.get('/api/business-reports/latest', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { getLatestBusinessReport } = await import('./services/businessReportService');
+      const report = await getLatestBusinessReport();
+      res.json(report);
+    } catch (error: any) {
+      console.error('Error fetching latest business report:', error);
+      res.status(500).json({ message: 'Failed to fetch latest business report' });
+    }
+  });
+
+  // Get all business reports with pagination
+  app.get('/api/business-reports', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { getBusinessReports } = await import('./services/businessReportService');
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const result = await getBusinessReports(limit, offset);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching business reports:', error);
+      res.status(500).json({ message: 'Failed to fetch business reports' });
+    }
+  });
+
+  // Get a specific business report by ID
+  app.get('/api/business-reports/:id', isAuthenticated, requireRole(['administrator']), async (req, res) => {
+    try {
+      const { getBusinessReportById } = await import('./services/businessReportService');
+      const report = await getBusinessReportById(req.params.id);
+      if (!report) {
+        return res.status(404).json({ message: 'Business report not found' });
+      }
+      res.json(report);
+    } catch (error: any) {
+      console.error('Error fetching business report:', error);
+      res.status(500).json({ message: 'Failed to fetch business report' });
+    }
+  });
+
+  // ============================================================================
   // IMPORT/EXPORT DATA ROUTES
   // ============================================================================
 

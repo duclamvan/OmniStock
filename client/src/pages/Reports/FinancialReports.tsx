@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useReports } from "@/contexts/ReportsContext";
 import { ReportHeader } from "@/components/reports/ReportHeader";
@@ -13,21 +13,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Coins, TrendingUp, TrendingDown, PiggyBank, Percent, 
   ArrowUpRight, ArrowDownRight, Calculator, Target, 
-  BarChart3, DollarSign, Receipt, Wallet, LineChart
+  BarChart3, DollarSign, Receipt, Wallet, LineChart,
+  Brain, RefreshCw, AlertTriangle, Package, Clock, Sparkles, Loader2
 } from "lucide-react";
 import { aggregateMonthlyRevenue, convertToBaseCurrency, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   format, subMonths, subYears, startOfMonth, endOfMonth, 
   startOfYear, endOfYear, eachMonthOfInterval, subWeeks, 
   startOfWeek, endOfWeek 
 } from "date-fns";
+import type { BusinessReport } from "@shared/schema";
 
 interface PeriodMetrics {
   revenue: number;
@@ -79,6 +83,28 @@ export default function FinancialReports() {
     },
   });
   const { data: expenses = [], isLoading: expensesLoading } = useQuery({ queryKey: ['/api/expenses'] });
+  
+  const { data: latestBusinessReport, isLoading: businessReportLoading } = useQuery<BusinessReport | null>({
+    queryKey: ['/api/business-reports', 'latest'],
+    queryFn: async () => {
+      const response = await fetch('/api/business-reports/latest', { credentials: 'include' });
+      if (!response.ok) return null;
+      return response.json();
+    },
+  });
+
+  const generateReportMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/business-reports/generate', { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/business-reports'] });
+      toast({ title: t('reportGeneratedSuccessfully'), description: t('aiPoweredInsights') });
+    },
+    onError: (error: any) => {
+      toast({ title: t('failedToGenerateReport'), description: error.message, variant: "destructive" });
+    },
+  });
 
   const isLoading = ordersLoading || productsLoading || itemsLoading || expensesLoading;
   const now = useMemo(() => new Date(), []);
@@ -407,22 +433,26 @@ export default function FinancialReports() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="tab-overview">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">{t('overview')}</span>
           </TabsTrigger>
-          <TabsTrigger value="profitability" className="flex items-center gap-2">
+          <TabsTrigger value="profitability" className="flex items-center gap-2" data-testid="tab-profitability">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">{t('profitability')}</span>
           </TabsTrigger>
-          <TabsTrigger value="cashflow" className="flex items-center gap-2">
+          <TabsTrigger value="cashflow" className="flex items-center gap-2" data-testid="tab-cashflow">
             <Wallet className="h-4 w-4" />
             <span className="hidden sm:inline">{t('cashFlow')}</span>
           </TabsTrigger>
-          <TabsTrigger value="breakdown" className="flex items-center gap-2">
+          <TabsTrigger value="breakdown" className="flex items-center gap-2" data-testid="tab-breakdown">
             <Receipt className="h-4 w-4" />
             <span className="hidden sm:inline">{t('breakdown')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="business-report" className="flex items-center gap-2" data-testid="tab-business-report">
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('businessReport')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -673,6 +703,311 @@ export default function FinancialReports() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="business-report" className="space-y-6 mt-6" data-testid="business-report-content">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-600" />
+                {t('businessReport')}
+              </h3>
+              <p className="text-sm text-muted-foreground">{t('businessReportDesc')}</p>
+            </div>
+            <Button
+              onClick={() => generateReportMutation.mutate()}
+              disabled={generateReportMutation.isPending}
+              data-testid="button-generate-report"
+            >
+              {generateReportMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('generatingBusinessReport')}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {t('generateNewReport')}
+                </>
+              )}
+            </Button>
+          </div>
+
+          {businessReportLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-32" />)}
+            </div>
+          ) : !latestBusinessReport ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Brain className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h4 className="text-lg font-semibold mb-2">{t('noBusinessReportYet')}</h4>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  {t('generateFirstReport')}
+                </p>
+                <Button
+                  onClick={() => generateReportMutation.mutate()}
+                  disabled={generateReportMutation.isPending}
+                  data-testid="button-generate-first-report"
+                >
+                  {generateReportMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  {t('generateNewReport')}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="text-sm text-muted-foreground mb-4">
+                {t('lastGenerated')}: {latestBusinessReport.createdAt ? format(new Date(latestBusinessReport.createdAt), 'PPpp') : t('noData')}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card data-testid="metric-revenue">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-blue-600" />
+                      {t('revenue')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{formatCurrency(parseFloat(latestBusinessReport.revenue || '0'), 'CZK')}</p>
+                    <p className="text-xs text-muted-foreground">{t('last30Days')}</p>
+                  </CardContent>
+                </Card>
+
+                <Card data-testid="metric-cash-collected">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-green-600" />
+                      {t('cashCollected')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-green-600">{formatCurrency(parseFloat(latestBusinessReport.cashCollected || '0'), 'CZK')}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('collectionRate')}: {latestBusinessReport.revenue && parseFloat(latestBusinessReport.revenue) > 0 
+                        ? ((parseFloat(latestBusinessReport.cashCollected || '0') / parseFloat(latestBusinessReport.revenue)) * 100).toFixed(1)
+                        : '0'}%
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card data-testid="metric-net-cash-flow">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      {parseFloat(latestBusinessReport.netCashFlow || '0') >= 0 ? (
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                      )}
+                      {t('netCashFlowLabel')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className={`text-2xl font-bold ${parseFloat(latestBusinessReport.netCashFlow || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {parseFloat(latestBusinessReport.netCashFlow || '0') >= 0 ? '+' : ''}
+                      {formatCurrency(parseFloat(latestBusinessReport.netCashFlow || '0'), 'CZK')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t('moneyIn')} - {t('moneyOut')}</p>
+                  </CardContent>
+                </Card>
+
+                <Card data-testid="metric-gross-margin">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Percent className="h-4 w-4 text-purple-600" />
+                      {t('grossMargin')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold text-purple-600">{parseFloat(latestBusinessReport.grossMargin || '0').toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">{t('profit')}: {formatCurrency(parseFloat(latestBusinessReport.grossProfit || '0'), 'CZK')}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="lg:col-span-2" data-testid="cash-flow-summary">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <LineChart className="h-5 w-5 text-blue-600" />
+                      {t('cashFlowSummary')}
+                    </CardTitle>
+                    <CardDescription>{t('cashFlowHealth')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950">
+                        <div className="flex items-center gap-3">
+                          <ArrowUpRight className="h-5 w-5 text-green-600" />
+                          <span className="font-medium">{t('moneyIn')}</span>
+                        </div>
+                        <span className="text-lg font-bold text-green-600">
+                          {formatCurrency(parseFloat(latestBusinessReport.cashCollected || '0'), 'CZK')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950">
+                        <div className="flex items-center gap-3">
+                          <ArrowDownRight className="h-5 w-5 text-red-600" />
+                          <span className="font-medium">{t('moneyOut')}</span>
+                        </div>
+                        <span className="text-lg font-bold text-red-600">
+                          {formatCurrency(parseFloat(latestBusinessReport.expenses || '0'), 'CZK')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                        <div className="flex items-center gap-3">
+                          <Calculator className="h-5 w-5" />
+                          <span className="font-medium">{t('netCashFlowLabel')}</span>
+                        </div>
+                        <span className={`text-lg font-bold ${parseFloat(latestBusinessReport.netCashFlow || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(parseFloat(latestBusinessReport.netCashFlow || '0'), 'CZK')}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card data-testid="inventory-health">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-orange-600" />
+                      {t('inventoryHealth')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">{t('lowStockAlertsCount')}</span>
+                      <Badge variant={latestBusinessReport.lowStockCount && latestBusinessReport.lowStockCount > 0 ? "destructive" : "secondary"}>
+                        {latestBusinessReport.lowStockCount || 0} {t('itemsNeedReorder')}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">{t('deadStock')}</span>
+                      <Badge variant={latestBusinessReport.deadStockCount && latestBusinessReport.deadStockCount > 0 ? "outline" : "secondary"}>
+                        {latestBusinessReport.deadStockCount || 0} {t('itemsDeadStock')}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">{t('stockValue')}</span>
+                      <span className="font-medium">
+                        {formatCurrency(parseFloat(latestBusinessReport.totalStockValue || '0'), 'CZK')}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card data-testid="velocity-alerts">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      {t('urgentActions')}
+                    </CardTitle>
+                    <CardDescription>{t('velocityAlertsDesc')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {latestBusinessReport.velocityAlerts && (latestBusinessReport.velocityAlerts as any[]).length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {(latestBusinessReport.velocityAlerts as any[]).slice(0, 5).map((alert: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50" data-testid={`velocity-alert-${index}`}>
+                            <div>
+                              <p className="font-medium text-sm">{alert.name}</p>
+                              <p className="text-xs text-muted-foreground">{alert.sku}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={alert.urgency === 'critical' ? 'destructive' : 'outline'}>
+                                <Clock className="h-3 w-3 mr-1" />
+                                {alert.daysUntilEmpty} {t('daysUntilEmpty')}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">{alert.currentStock} {t('left')}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">{t('noVelocityAlerts')}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card data-testid="top-sellers">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                      {t('topSellers')}
+                    </CardTitle>
+                    <CardDescription>{t('last30Days')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {latestBusinessReport.topSellingItems && (latestBusinessReport.topSellingItems as any[]).length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {(latestBusinessReport.topSellingItems as any[]).slice(0, 5).map((item: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50" data-testid={`top-seller-${index}`}>
+                            <div>
+                              <p className="font-medium text-sm">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.sku}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium text-green-600">{formatCurrency(item.revenue, 'CZK')}</p>
+                              <p className="text-xs text-muted-foreground">{item.unitsSold} {t('units')}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">{t('noSalesDataAvailable')}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card data-testid="ai-recommendations">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    {t('aiRecommendations')}
+                  </CardTitle>
+                  <CardDescription>{t('aiPoweredInsights')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {latestBusinessReport.aiAnalysis && (
+                    <div className="p-4 rounded-lg bg-muted/50 mb-4">
+                      <h4 className="font-medium mb-2">{t('latestAnalysis')}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{latestBusinessReport.aiAnalysis}</p>
+                    </div>
+                  )}
+                  
+                  {latestBusinessReport.aiRecommendations && (latestBusinessReport.aiRecommendations as any[]).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(latestBusinessReport.aiRecommendations as any[]).map((rec: any, index: number) => (
+                        <div key={index} className="p-4 rounded-lg border" data-testid={`ai-rec-${index}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'outline' : 'secondary'}>
+                              {rec.priority === 'high' ? t('highPriority') : rec.priority === 'medium' ? t('mediumPriority') : t('lowPriority')}
+                            </Badge>
+                            <Badge variant="secondary">{rec.category}</Badge>
+                          </div>
+                          <h5 className="font-medium mb-1">{rec.title}</h5>
+                          <p className="text-sm text-muted-foreground mb-2">{rec.description}</p>
+                          <p className="text-sm font-medium text-primary">→ {rec.action}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {t('generateFirstReport')}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>
