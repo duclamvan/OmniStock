@@ -240,9 +240,19 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     const currency = currencyCode || settings.currency;
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
     
-    // Use 0 decimals for CZK if the no decimals setting is enabled
-    const decimals = (currency === 'CZK' && settings.numberFormatNoDecimals) ? 0 : 2;
-    const formattedNumber = formatNumber(num, decimals);
+    // Use special formatting for CZK when no decimals setting is enabled:
+    // - No decimal places
+    // - Space as thousands separator (e.g., "1 000 Kč")
+    const useCzkSimpleFormat = currency === 'CZK' && settings.numberFormatNoDecimals;
+    
+    let formattedNumber: string;
+    if (useCzkSimpleFormat) {
+      // Round to whole number and use space as thousands separator
+      const rounded = Math.round(num);
+      formattedNumber = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    } else {
+      formattedNumber = formatNumber(num, 2);
+    }
     
     switch (settings.currencyDisplay) {
       case 'symbol':

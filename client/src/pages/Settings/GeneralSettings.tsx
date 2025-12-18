@@ -971,9 +971,9 @@ export default function GeneralSettings() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t('settings:noDecimalsCZK', 'CZK without decimals')}</FormLabel>
+                          <FormLabel>{t('settings:noDecimalsCZK', 'CZK simple format')}</FormLabel>
                           <FormDescription>
-                            {t('settings:noDecimalsCZKDescription', 'Display CZK amounts without .00')}
+                            {t('settings:noDecimalsCZKDescription', 'Display CZK as whole numbers with space separator (e.g., 1 000 Kč)')}
                           </FormDescription>
                         </div>
                       </FormItem>
