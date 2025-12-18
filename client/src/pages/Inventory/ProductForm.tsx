@@ -2461,7 +2461,7 @@ export default function ProductForm() {
                   {canAccessFinancialData && (
                     <div>
                       <Label className="text-sm font-medium mb-2 block">{t('products:formLabels.importCosts')}</Label>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                         <div>
                           <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
                           <Input
