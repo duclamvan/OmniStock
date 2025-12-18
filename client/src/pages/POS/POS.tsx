@@ -1130,11 +1130,10 @@ export default function POS() {
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Currency Toggle */}
-              <div className="flex bg-white/10 rounded-lg">
+              <div className="flex bg-white/10 rounded-lg overflow-hidden h-8 sm:h-10">
                 <Button
                   variant={currency === 'EUR' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={cn("h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm rounded-r-none", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-full px-2 sm:px-3 text-xs sm:text-sm rounded-none border-0", currency !== 'EUR' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('EUR')}
                   data-testid="button-currency-eur"
                 >
@@ -1143,8 +1142,7 @@ export default function POS() {
                 </Button>
                 <Button
                   variant={currency === 'CZK' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={cn("h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm rounded-l-none", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
+                  className={cn("h-full px-2 sm:px-3 text-xs sm:text-sm rounded-none border-0", currency !== 'CZK' && "text-white hover:text-white hover:bg-white/10")}
                   onClick={() => setCurrency('CZK')}
                   data-testid="button-currency-czk"
                 >
@@ -1154,7 +1152,6 @@ export default function POS() {
               {cart.length > 0 && (
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={clearCart}
                   className="text-red-300 hover:text-red-200 hover:bg-red-500/20 h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm"
                   data-testid="button-clear-cart"
