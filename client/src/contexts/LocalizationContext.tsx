@@ -10,6 +10,7 @@ export interface LocalizationSettings {
   timeFormat: '12-hour' | '24-hour';
   timezone: string;
   numberFormat: '1,000.00' | '1.000,00';
+  numberFormatNoDecimals: boolean;
   currency: 'CZK' | 'EUR' | 'USD' | 'VND' | 'CNY';
   currencyDisplay: 'symbol' | 'code' | 'both';
 }
@@ -33,6 +34,7 @@ const defaultSettings: LocalizationSettings = {
   timeFormat: '24-hour',
   timezone: 'Europe/Prague',
   numberFormat: '1,000.00',
+  numberFormatNoDecimals: false,
   currency: 'CZK',
   currencyDisplay: 'symbol',
 };
@@ -68,6 +70,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
         timeFormat: (generalSettings.defaultTimeFormat as LocalizationSettings['timeFormat']) || '24-hour',
         timezone: generalSettings.defaultTimezone || 'Europe/Prague',
         numberFormat: (generalSettings.numberFormat as LocalizationSettings['numberFormat']) || '1,000.00',
+        numberFormatNoDecimals: generalSettings.numberFormatNoDecimals || false,
         currency: (generalSettings.defaultCurrency as LocalizationSettings['currency']) || 'CZK',
         currencyDisplay: (generalSettings.currencyDisplay as LocalizationSettings['currencyDisplay']) || 'symbol',
       };
@@ -236,7 +239,10 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     
     const currency = currencyCode || settings.currency;
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
-    const formattedNumber = formatNumber(num, 2);
+    
+    // Use 0 decimals for CZK if the no decimals setting is enabled
+    const decimals = (currency === 'CZK' && settings.numberFormatNoDecimals) ? 0 : 2;
+    const formattedNumber = formatNumber(num, decimals);
     
     switch (settings.currencyDisplay) {
       case 'symbol':
@@ -252,7 +258,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       default:
         return `${formattedNumber} ${currency}`;
     }
-  }, [settings.currency, settings.currencyDisplay, formatNumber]);
+  }, [settings.currency, settings.currencyDisplay, settings.numberFormatNoDecimals, formatNumber]);
 
   const applySettings = useCallback((newSettings: Partial<LocalizationSettings>) => {
     setSettings(prev => {

@@ -79,6 +79,7 @@ export interface GeneralSettings {
   defaultTimeFormat?: '12-hour' | '24-hour';
   defaultTimezone?: string;
   numberFormat?: '1,000.00' | '1.000,00';
+  numberFormatNoDecimals?: boolean;
   defaultCurrency?: 'CZK' | 'EUR' | 'USD' | 'VND' | 'CNY';
   currencyDisplay?: 'symbol' | 'code' | 'both';
   defaultPriority?: 'low' | 'medium' | 'high';

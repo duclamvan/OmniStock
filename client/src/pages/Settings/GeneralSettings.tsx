@@ -49,6 +49,7 @@ const formSchema = z.object({
   default_time_format: z.enum(['12-hour', '24-hour']).default('24-hour'),
   default_timezone: z.string().default('Europe/Prague'),
   number_format: z.enum(['1,000.00', '1.000,00']).default('1,000.00'),
+  number_format_no_decimals: z.boolean().default(false),
 
   // Currency Settings
   default_currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']).default('CZK'),
@@ -140,6 +141,7 @@ export default function GeneralSettings() {
       default_time_format: generalSettings.defaultTimeFormat || '24-hour',
       default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
       number_format: generalSettings.numberFormat || '1,000.00',
+      number_format_no_decimals: generalSettings.numberFormatNoDecimals ?? false,
       default_currency: generalSettings.defaultCurrency || 'CZK',
       currency_display: generalSettings.currencyDisplay || 'symbol',
       default_priority: generalSettings.defaultPriority || 'medium',
@@ -239,6 +241,7 @@ export default function GeneralSettings() {
         default_time_format: generalSettings.defaultTimeFormat || '24-hour',
         default_timezone: generalSettings.defaultTimezone || 'Europe/Prague',
         number_format: generalSettings.numberFormat || '1,000.00',
+        number_format_no_decimals: generalSettings.numberFormatNoDecimals ?? false,
         default_currency: generalSettings.defaultCurrency || 'CZK',
         currency_display: generalSettings.currencyDisplay || 'symbol',
         default_priority: generalSettings.defaultPriority || 'medium',
@@ -297,6 +300,7 @@ export default function GeneralSettings() {
         timeFormat: values.default_time_format,
         timezone: values.default_timezone,
         numberFormat: values.number_format,
+        numberFormatNoDecimals: values.number_format_no_decimals,
         currency: values.default_currency,
         currencyDisplay: values.currency_display,
       });
