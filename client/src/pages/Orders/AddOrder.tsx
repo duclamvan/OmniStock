@@ -395,8 +395,12 @@ export default function AddOrder() {
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers, shippingSettings } = useSettings();
-  const { formatCurrency } = useLocalization();
+  const { formatCurrency, settings: localizationSettings } = useLocalization();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? true;
+  
+  // Grand total editing state - allows free typing in the grand total input
+  const [grandTotalInput, setGrandTotalInput] = useState<string>("");
+  const [isEditingGrandTotal, setIsEditingGrandTotal] = useState(false);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [buyXGetYAllocations, setBuyXGetYAllocations] = useState<BuyXGetYAllocation[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -7021,12 +7025,26 @@ export default function AddOrder() {
                         <div className="flex items-center gap-1">
                           <Input
                             id="grandTotal"
-                            type="number"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             placeholder={t('orders:clickToEnter')}
-                            value={calculateGrandTotal().toFixed(2)}
+                            value={isEditingGrandTotal ? grandTotalInput : (() => {
+                              const total = calculateGrandTotal();
+                              const currency = form.watch('currency');
+                              const useNoDecimals = currency === 'CZK' && localizationSettings.numberFormatNoDecimals;
+                              return useNoDecimals ? Math.round(total).toString() : total.toFixed(2);
+                            })()}
+                            onFocus={(e) => {
+                              setIsEditingGrandTotal(true);
+                              setGrandTotalInput(e.target.value);
+                              e.target.select();
+                            }}
                             onChange={(e) => {
-                              const desiredTotal = parseFloat(e.target.value);
+                              setGrandTotalInput(e.target.value);
+                            }}
+                            onBlur={(e) => {
+                              setIsEditingGrandTotal(false);
+                              const desiredTotal = parseFloat(e.target.value.replace(',', '.'));
                               if (!isNaN(desiredTotal) && desiredTotal > 0) {
                                 const subtotal = calculateSubtotal();
                                 const tax = showTaxInvoice ? calculateTax() : 0;
@@ -7060,11 +7078,6 @@ export default function AddOrder() {
                               
                               if (difference > 0) {
                                 form.setValue('adjustment', parseFloat(difference.toFixed(2)));
-                                
-                                const grandTotalInput = document.getElementById('grandTotal') as HTMLInputElement;
-                                if (grandTotalInput) {
-                                  grandTotalInput.value = roundedTotal.toFixed(2);
-                                }
                                 
                                 toast({
                                   title: t('orders:totalRoundedUp'),
@@ -7287,12 +7300,26 @@ export default function AddOrder() {
                   <div className="flex items-center gap-1">
                     <Input
                       id="grandTotalMobile"
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       placeholder={t('orders:clickToEnter')}
-                      value={calculateGrandTotal().toFixed(2)}
+                      value={isEditingGrandTotal ? grandTotalInput : (() => {
+                        const total = calculateGrandTotal();
+                        const currency = form.watch('currency');
+                        const useNoDecimals = currency === 'CZK' && localizationSettings.numberFormatNoDecimals;
+                        return useNoDecimals ? Math.round(total).toString() : total.toFixed(2);
+                      })()}
+                      onFocus={(e) => {
+                        setIsEditingGrandTotal(true);
+                        setGrandTotalInput(e.target.value);
+                        e.target.select();
+                      }}
                       onChange={(e) => {
-                        const desiredTotal = parseFloat(e.target.value);
+                        setGrandTotalInput(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        setIsEditingGrandTotal(false);
+                        const desiredTotal = parseFloat(e.target.value.replace(',', '.'));
                         if (!isNaN(desiredTotal) && desiredTotal > 0) {
                           const subtotal = calculateSubtotal();
                           const tax = showTaxInvoice ? calculateTax() : 0;
@@ -7325,11 +7352,6 @@ export default function AddOrder() {
                         
                         if (difference > 0) {
                           form.setValue('adjustment', parseFloat(difference.toFixed(2)));
-                          
-                          const grandTotalInput = document.getElementById('grandTotalMobile') as HTMLInputElement;
-                          if (grandTotalInput) {
-                            grandTotalInput.value = roundedTotal.toFixed(2);
-                          }
                           
                           toast({
                             title: t('orders:totalRoundedUp'),
