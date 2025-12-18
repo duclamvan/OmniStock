@@ -611,6 +611,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700">{t('orders:readyToShip')}</Badge>;
       case 'shipped':
         return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">{t('orders:shipped')}</Badge>;
+      case 'completed':
+        return <Badge className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700">{t('orders:completed')}</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">{t('orders:cancelled')}</Badge>;
       default:
