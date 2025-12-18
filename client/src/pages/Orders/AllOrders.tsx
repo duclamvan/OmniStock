@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -146,6 +146,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [ordersToDelete, setOrdersToDelete] = useState<any[]>([]);
+  
+  // Ref to store clearSelection function from DataTable
+  const clearSelectionRef = useRef<(() => void) | null>(null);
 
   // Prevent initial scroll to top and restore position
   useEffect(() => {
@@ -404,6 +407,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return { previousQueries };
     },
     onSuccess: (_, ids) => {
+      // Clear selection after successful delete
+      clearSelectionRef.current?.();
       toast({
         title: t('common:success'),
         description: t('orders:deleteSuccess', { count: ids.length }),
@@ -423,7 +428,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         variant: "destructive",
       });
     },
-    // Only refetch on error (handled in onError), not on success
+    onSettled: () => {
+      // Always refetch to ensure data consistency after all deletions complete
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
   });
 
   const bulkUpdateStatusMutation = useMutation({
@@ -462,6 +470,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return { previousQueries };
     },
     onSuccess: (_, { orderIds }) => {
+      // Clear selection after successful status update
+      clearSelectionRef.current?.();
       toast({
         title: t('common:success'),
         description: t('orders:bulkUpdateSuccess', { count: orderIds.length }),
@@ -518,6 +528,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return { previousQueries };
     },
     onSuccess: (_, { orderIds }) => {
+      // Clear selection after successful payment update
+      clearSelectionRef.current?.();
       toast({
         title: t('common:success'),
         description: t('orders:paymentUpdateSuccess', { count: orderIds.length }),
@@ -1786,8 +1798,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 sessionStorage.setItem('orderDetailsReferrer', location);
                 navigate(`/orders/${order.id}`);
               }}
-              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              selectedRows.size > 0 ? (
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions, clearSelection }) => {
+                // Store clearSelection in ref for use by mutations
+                clearSelectionRef.current = clearSelection;
+                return selectedRows.size > 0 ? (
                 <div className="px-4 sm:px-0 pb-6">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary" className="text-xs h-6 px-2">
@@ -1828,8 +1842,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     })}
                   </div>
                 </div>
-              ) : null
-            )}
+              ) : null;
+            }}
             />
           ) : (
             <div className="space-y-1">
