@@ -146,17 +146,17 @@ export default function InventoryReports() {
   }, [products]);
 
   const dashboardSummary: DashboardSummary = useMemo(() => {
-    if (dashboardData) {
+    if (dashboardData?.summary) {
       return {
-        totalProducts: dashboardData.totalProducts || 0,
-        totalUnits: dashboardData.totalUnits || inventoryMetrics.totalStock,
-        inventoryValue: dashboardData.inventoryValue || inventoryMetrics.totalValue,
-        healthyStock: dashboardData.healthyStock || 0,
-        lowStock: dashboardData.lowStock || inventoryMetrics.lowStockCount,
-        outOfStock: dashboardData.outOfStock || inventoryMetrics.outOfStockCount,
-        overstocked: dashboardData.overstocked || 0,
-        slowMoving: dashboardData.slowMoving || 0,
-        incomingShipments: dashboardData.incomingShipments || 0,
+        totalProducts: dashboardData.summary.totalProducts || 0,
+        totalUnits: dashboardData.summary.totalUnits || inventoryMetrics.totalStock,
+        inventoryValue: dashboardData.summary.totalInventoryValue || inventoryMetrics.totalValue,
+        healthyStock: dashboardData.summary.healthyStock || 0,
+        lowStock: dashboardData.summary.lowStock || inventoryMetrics.lowStockCount,
+        outOfStock: dashboardData.summary.outOfStock || inventoryMetrics.outOfStockCount,
+        overstocked: dashboardData.summary.overstocked || 0,
+        slowMoving: dashboardData.summary.slowMoving || 0,
+        incomingShipments: dashboardData.summary.incomingShipments || 0,
       };
     }
     return {
