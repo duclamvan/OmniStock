@@ -964,20 +964,30 @@ export default function POS() {
           </Select>
           
           {/* View Toggle */}
-          <div className="flex bg-muted rounded-lg p-0.5 sm:p-1 order-3">
+          <div className="flex bg-muted rounded-xl p-1 order-3 shadow-inner">
             <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-12 sm:w-12"
+              className={cn(
+                "h-9 w-9 sm:h-11 sm:w-11 rounded-lg transition-all duration-200",
+                viewMode === 'grid' 
+                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90" 
+                  : "hover:bg-muted-foreground/10 text-muted-foreground"
+              )}
               onClick={() => setViewMode('grid')}
               data-testid="button-view-grid"
             >
               <Grid3X3 className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-12 sm:w-12"
+              className={cn(
+                "h-9 w-9 sm:h-11 sm:w-11 rounded-lg transition-all duration-200",
+                viewMode === 'list' 
+                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90" 
+                  : "hover:bg-muted-foreground/10 text-muted-foreground"
+              )}
               onClick={() => setViewMode('list')}
               data-testid="button-view-list"
             >
