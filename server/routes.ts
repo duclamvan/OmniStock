@@ -1035,10 +1035,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const nextExpenseNum = allExpenses.length + 1;
         const expenseId = `EXP${String(nextExpenseNum).padStart(5, '0')}`;
         
+        // Extract day of month from hire date for recurring expense
+        const hireDateObj = new Date(employee.hireDate);
+        const dayOfMonth = hireDateObj.getDate();
+        
         await storage.createExpense({
           expenseId,
           name: `Salary - ${employee.firstName} ${employee.lastName} (${employee.employeeId})`,
-          category: 'Salary',
+          category: 'Salaries',
           amount: employee.salary.toString(),
           currency: employee.currency || 'CZK',
           paymentMethod: 'bank_transfer',
@@ -1048,6 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isRecurring: true,
           recurringType,
           recurringInterval,
+          recurringDayOfMonth: dayOfMonth,
           recurringStartDate: new Date(employee.hireDate),
         });
       }
