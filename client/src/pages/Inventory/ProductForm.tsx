@@ -2627,7 +2627,7 @@ export default function ProductForm() {
                                 {t('products:tieredPricing.dialogDescription')}
                               </DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={tierForm.handleSubmit(onTierSubmit)} className="space-y-4">
+                            <form onSubmit={(e) => { e.stopPropagation(); tierForm.handleSubmit(onTierSubmit)(e); }} className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label htmlFor="minQuantity">{t('products:tieredPricing.minQuantity')} *</Label>
