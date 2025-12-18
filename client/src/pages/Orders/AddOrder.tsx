@@ -7118,36 +7118,6 @@ export default function AddOrder() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 space-y-3">
-                    {/* Receipt-Style Item List */}
-                    {orderItems.length > 0 && (
-                      <div className="pb-3 mb-3 border-b border-dashed">
-                        <div className="text-center mb-2">
-                          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{t('orders:orderItems')}</p>
-                        </div>
-                        <div className="space-y-1.5 font-mono text-xs">
-                          {orderItems.map((item, index) => (
-                            <div key={index} className="flex justify-between items-start gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 dark:text-gray-100 truncate" title={item.name}>
-                                  {item.name}
-                                </p>
-                                <p className="text-gray-500 text-[10px]">
-                                  {item.quantity} x {formatCurrency(item.price, form.watch('currency'))}
-                                </p>
-                              </div>
-                              <span className="font-medium text-right whitespace-nowrap">
-                                {formatCurrency(item.price * item.quantity, form.watch('currency'))}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-dotted flex justify-between text-xs font-mono">
-                          <span className="text-gray-500">{orderItems.length} {t('orders:items')}</span>
-                          <span className="font-semibold">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
-                        </div>
-                      </div>
-                    )}
-
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">{t('orders:subtotalColon')}</span>
