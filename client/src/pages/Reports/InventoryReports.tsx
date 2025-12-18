@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
+import { Link } from "wouter";
 import { useReports } from "@/contexts/ReportsContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ReportHeader } from "@/components/reports/ReportHeader";
@@ -14,13 +15,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Package, AlertTriangle, TrendingDown, Coins, Clock, Mail, Palette, History, ChevronLeft, ChevronRight, FileSpreadsheet, FileText } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { 
+  Package, AlertTriangle, TrendingDown, Coins, Clock, Mail, Palette, History, 
+  ChevronLeft, ChevronRight, FileSpreadsheet, FileText, TrendingUp, Activity,
+  ShoppingCart, Eye, ChevronDown, Zap, BarChart3, Truck, PackageCheck, AlertCircle
+} from "lucide-react";
 import { calculateInventoryMetrics, preparePieChartData } from "@/lib/reportUtils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
-import { format, differenceInDays } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { format, differenceInDays, subDays } from "date-fns";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  LineChart, Line, AreaChart, Area, Legend, Cell, PieChart, Pie 
+} from "recharts";
+
+interface DashboardSummary {
+  totalProducts: number;
+  totalUnits: number;
+  inventoryValue: number;
+  healthyStock: number;
+  lowStock: number;
+  outOfStock: number;
+  overstocked: number;
+  slowMoving: number;
+  incomingShipments: number;
+}
+
+interface FastMovingProduct {
+  id: string;
+  name: string;
+  sku: string;
+  unitsSold: number;
+  currentStock: number;
+  velocity: number;
+}
 
 export default function InventoryReports() {
   const { toast } = useToast();
@@ -33,11 +65,24 @@ export default function InventoryReports() {
   const [adjustmentHistoryStartDate, setAdjustmentHistoryStartDate] = useState('');
   const [adjustmentHistoryEndDate, setAdjustmentHistoryEndDate] = useState('');
   const [adjustmentHistoryOffset, setAdjustmentHistoryOffset] = useState(0);
+  const [movementTypeFilter, setMovementTypeFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [isReorderInsightsOpen, setIsReorderInsightsOpen] = useState(true);
+  const [isFastMovingOpen, setIsFastMovingOpen] = useState(true);
   const ADJUSTMENT_HISTORY_LIMIT = 20;
 
   const { data: products = [], isLoading: productsLoading } = useQuery({ queryKey: ['/api/products'] });
   const { data: categories = [] } = useQuery({ queryKey: ['/api/categories'] });
   
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
+    queryKey: ['/api/dashboard/inventory'],
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/inventory');
+      if (!response.ok) throw new Error('Failed to fetch dashboard data');
+      return response.json();
+    }
+  });
+
   const { data: deadStockProducts = [], isLoading: deadStockLoading } = useQuery({ 
     queryKey: ['/api/reports/dead-stock', deadStockDays],
     queryFn: async () => {
@@ -100,6 +145,33 @@ export default function InventoryReports() {
     return calculateInventoryMetrics(products as any[]);
   }, [products]);
 
+  const dashboardSummary: DashboardSummary = useMemo(() => {
+    if (dashboardData) {
+      return {
+        totalProducts: dashboardData.totalProducts || 0,
+        totalUnits: dashboardData.totalUnits || inventoryMetrics.totalStock,
+        inventoryValue: dashboardData.inventoryValue || inventoryMetrics.totalValue,
+        healthyStock: dashboardData.healthyStock || 0,
+        lowStock: dashboardData.lowStock || inventoryMetrics.lowStockCount,
+        outOfStock: dashboardData.outOfStock || inventoryMetrics.outOfStockCount,
+        overstocked: dashboardData.overstocked || 0,
+        slowMoving: dashboardData.slowMoving || 0,
+        incomingShipments: dashboardData.incomingShipments || 0,
+      };
+    }
+    return {
+      totalProducts: (products as any[]).length,
+      totalUnits: inventoryMetrics.totalStock,
+      inventoryValue: inventoryMetrics.totalValue,
+      healthyStock: (products as any[]).filter((p: any) => (p.quantity || 0) > (p.lowStockAlert || 5)).length,
+      lowStock: inventoryMetrics.lowStockCount,
+      outOfStock: inventoryMetrics.outOfStockCount,
+      overstocked: 0,
+      slowMoving: 0,
+      incomingShipments: 0,
+    };
+  }, [dashboardData, products, inventoryMetrics]);
+
   const stockByCategory = useMemo(() => {
     const categoryStock: { [key: string]: number } = {};
 
@@ -114,7 +186,16 @@ export default function InventoryReports() {
 
     const data = Object.entries(categoryStock).map(([name, value]) => ({ name, value }));
     return preparePieChartData(data);
-  }, [products, categories, t]);
+  }, [products, categories, tCommon]);
+
+  const stockHealthData = useMemo(() => {
+    return preparePieChartData([
+      { name: t('healthyStock'), value: dashboardSummary.healthyStock },
+      { name: t('lowStock'), value: dashboardSummary.lowStock },
+      { name: t('outOfStock'), value: dashboardSummary.outOfStock },
+      { name: t('overstocked'), value: dashboardSummary.overstocked },
+    ]);
+  }, [dashboardSummary, t]);
 
   const stockLevelData = useMemo(() => {
     const inStock = (products as any[]).filter((p: any) => (p.quantity || 0) > (p.lowStockAlert || 5)).length;
@@ -142,6 +223,103 @@ export default function InventoryReports() {
       .sort((a, b) => b.totalValue - a.totalValue)
       .slice(0, 10);
   }, [products]);
+
+  const fastMovingProducts: FastMovingProduct[] = useMemo(() => {
+    const productsWithSales = (products as any[])
+      .filter((p: any) => p.totalSold && p.totalSold > 0)
+      .map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku || 'N/A',
+        unitsSold: p.totalSold || 0,
+        currentStock: p.quantity || 0,
+        velocity: p.totalSold / 30,
+      }))
+      .sort((a, b) => b.unitsSold - a.unitsSold)
+      .slice(0, 10);
+    return productsWithSales;
+  }, [products]);
+
+  const strategicReorderProducts = useMemo(() => {
+    return (products as any[])
+      .filter((p: any) => {
+        const currentStock = p.quantity || 0;
+        const minLevel = p.minStockLevel || p.lowStockAlert || 5;
+        return currentStock <= minLevel * 1.5;
+      })
+      .map((p: any) => {
+        const currentStock = p.quantity || 0;
+        const avgDailyDemand = p.totalSold ? p.totalSold / 30 : 0.5;
+        const daysOfCover = avgDailyDemand > 0 ? currentStock / avgDailyDemand : 999;
+        const leadTimeDays = p.leadTimeDays || 7;
+        const minLevel = p.minStockLevel || p.lowStockAlert || 5;
+        
+        let priority: 'critical' | 'warning' | 'normal' = 'normal';
+        if (currentStock === 0 || daysOfCover <= leadTimeDays) {
+          priority = 'critical';
+        } else if (daysOfCover <= leadTimeDays * 2 || currentStock <= minLevel) {
+          priority = 'warning';
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          sku: p.sku || 'N/A',
+          currentStock,
+          minLevel,
+          avgDailyDemand: avgDailyDemand.toFixed(1),
+          daysOfCover: Math.round(daysOfCover),
+          leadTimeDays,
+          priority,
+        };
+      })
+      .sort((a, b) => {
+        const priorityOrder = { critical: 0, warning: 1, normal: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority] || a.daysOfCover - b.daysOfCover;
+      })
+      .slice(0, 15);
+  }, [products]);
+
+  const stockMovementTrendData = useMemo(() => {
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = subDays(new Date(), 29 - i);
+      return {
+        date: format(date, 'MMM dd'),
+        fullDate: format(date, 'yyyy-MM-dd'),
+        additions: 0,
+        removals: 0,
+        adjustments: 0,
+      };
+    });
+
+    stockAdjustmentHistory.forEach((item: any) => {
+      const itemDate = format(new Date(item.createdAt), 'yyyy-MM-dd');
+      const dayData = last30Days.find(d => d.fullDate === itemDate);
+      if (dayData) {
+        if (item.adjustmentType === 'add') {
+          dayData.additions += item.adjustedQuantity || 0;
+        } else if (item.adjustmentType === 'remove') {
+          dayData.removals += item.adjustedQuantity || 0;
+        } else {
+          dayData.adjustments += 1;
+        }
+      }
+    });
+
+    return last30Days;
+  }, [stockAdjustmentHistory]);
+
+  const filteredAdjustmentHistory = useMemo(() => {
+    return stockAdjustmentHistory.filter((item: any) => {
+      if (movementTypeFilter !== 'all' && item.adjustmentType !== movementTypeFilter) {
+        return false;
+      }
+      if (sourceFilter !== 'all' && item.source !== sourceFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [stockAdjustmentHistory, movementTypeFilter, sourceFilter]);
 
   const productLookup = useMemo(() => {
     const map = new Map<string, string>();
@@ -331,6 +509,17 @@ export default function InventoryReports() {
     }
   };
 
+  const getPriorityBadge = (priority: 'critical' | 'warning' | 'normal') => {
+    switch (priority) {
+      case 'critical':
+        return <Badge variant="destructive" className="gap-1" data-testid="badge-priority-critical"><AlertCircle className="h-3 w-3" />{t('critical')}</Badge>;
+      case 'warning':
+        return <Badge variant="default" className="gap-1 bg-yellow-500" data-testid="badge-priority-warning"><AlertTriangle className="h-3 w-3" />{t('warning')}</Badge>;
+      default:
+        return <Badge variant="secondary" data-testid="badge-priority-normal">{t('normal')}</Badge>;
+    }
+  };
+
   const sendReorderAlertsMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/reports/reorder-alerts/notify');
@@ -356,9 +545,9 @@ export default function InventoryReports() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-12 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
         <Skeleton className="h-96 w-full" />
@@ -376,7 +565,301 @@ export default function InventoryReports() {
         showDateFilter
       />
 
-      {/* Key Metrics */}
+      {/* Dashboard Summary Section */}
+      <Card data-testid="card-dashboard-summary">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            {t('dashboardSummary')}
+          </CardTitle>
+          <CardDescription>{t('dashboardSummaryDesc')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {dashboardLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[...Array(9)].map((_, i) => <Skeleton key={i} className="h-20" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-blue-500 rounded-lg p-4 shadow-sm" data-testid="summary-total-products">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('totalProducts')}</div>
+                <div className="text-2xl font-bold">{dashboardSummary.totalProducts.toLocaleString()}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-indigo-500 rounded-lg p-4 shadow-sm" data-testid="summary-total-units">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('totalUnits')}</div>
+                <div className="text-2xl font-bold">{dashboardSummary.totalUnits.toLocaleString()}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-emerald-500 rounded-lg p-4 shadow-sm" data-testid="summary-inventory-value">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('inventoryValue')}</div>
+                <div className="text-2xl font-bold">{formatCurrency(dashboardSummary.inventoryValue, 'CZK')}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-green-500 rounded-lg p-4 shadow-sm" data-testid="summary-healthy-stock">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('healthyStock')}</div>
+                <div className="text-2xl font-bold text-green-600">{dashboardSummary.healthyStock}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-yellow-500 rounded-lg p-4 shadow-sm" data-testid="summary-low-stock">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('lowStock')}</div>
+                <div className="text-2xl font-bold text-yellow-600">{dashboardSummary.lowStock}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-red-500 rounded-lg p-4 shadow-sm" data-testid="summary-out-of-stock">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('outOfStock')}</div>
+                <div className="text-2xl font-bold text-red-600">{dashboardSummary.outOfStock}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-purple-500 rounded-lg p-4 shadow-sm" data-testid="summary-overstocked">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('overstocked')}</div>
+                <div className="text-2xl font-bold text-purple-600">{dashboardSummary.overstocked}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-orange-500 rounded-lg p-4 shadow-sm" data-testid="summary-slow-moving">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('slowMoving')}</div>
+                <div className="text-2xl font-bold text-orange-600">{dashboardSummary.slowMoving}</div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 border-l-4 border-l-cyan-500 rounded-lg p-4 shadow-sm" data-testid="summary-incoming-shipments">
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('incomingShipments')}</div>
+                <div className="text-2xl font-bold text-cyan-600">{dashboardSummary.incomingShipments}</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Stock Distribution Analytics Section */}
+      <Card data-testid="card-stock-distribution-analytics">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-purple-600" />
+            {t('stockDistributionAnalytics')}
+          </CardTitle>
+          <CardDescription>{t('stockDistributionAnalyticsDesc')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div data-testid="chart-stock-health-distribution">
+              <h4 className="text-sm font-medium mb-4">{t('stockHealthDistribution')}</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={stockHealthData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {stockHealthData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div data-testid="chart-stock-value-by-category">
+              <h4 className="text-sm font-medium mb-4">{t('stockValueByCategory')}</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={stockByCategory.slice(0, 6)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-20} textAnchor="end" height={60} />
+                  <YAxis tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value, 'CZK')} />
+                  <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stock Movement Trends Section */}
+      <Card data-testid="card-stock-movement-trends">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            {t('stockMovementTrends')}
+          </CardTitle>
+          <CardDescription>{t('stockMovementTrendsDesc')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 mb-6" data-testid="chart-stock-movement-trends">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stockMovementTrendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="additions" stackId="1" stroke="#10b981" fill="#10b981" name={t('additions')} />
+                <Area type="monotone" dataKey="removals" stackId="2" stroke="#ef4444" fill="#ef4444" name={t('removals')} />
+                <Area type="monotone" dataKey="adjustments" stackId="3" stroke="#6366f1" fill="#6366f1" name={t('adjustments')} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex flex-wrap gap-4 mb-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="movement-type-filter" className="whitespace-nowrap">{t('movementType')}:</Label>
+              <Select value={movementTypeFilter} onValueChange={setMovementTypeFilter}>
+                <SelectTrigger className="w-32" id="movement-type-filter" data-testid="select-movement-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('allTypes')}</SelectItem>
+                  <SelectItem value="add">{t('add')}</SelectItem>
+                  <SelectItem value="remove">{t('remove')}</SelectItem>
+                  <SelectItem value="set">{t('set')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="source-filter" className="whitespace-nowrap">{t('source')}:</Label>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-40" id="source-filter" data-testid="select-source-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('allSources')}</SelectItem>
+                  <SelectItem value="direct">{t('direct')}</SelectItem>
+                  <SelectItem value="approved_request">{t('approvedRequest')}</SelectItem>
+                  <SelectItem value="receiving">{t('receiving')}</SelectItem>
+                  <SelectItem value="order_fulfillment">{t('fulfillment')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Strategic Reordering Insights */}
+      <Collapsible open={isReorderInsightsOpen} onOpenChange={setIsReorderInsightsOpen}>
+        <Card data-testid="card-strategic-reordering">
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full">
+              <div className="flex flex-col items-start">
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-indigo-600" />
+                  {t('strategicReorderingInsights')}
+                </CardTitle>
+                <CardDescription className="mt-1">{t('strategicReorderingDesc')}</CardDescription>
+              </div>
+              <ChevronDown className={`h-5 w-5 transition-transform ${isReorderInsightsOpen ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('productName')}</TableHead>
+                      <TableHead>{t('sku')}</TableHead>
+                      <TableHead className="text-right">{t('currentStock')}</TableHead>
+                      <TableHead className="text-right">{t('minLevel')}</TableHead>
+                      <TableHead className="text-right">{t('avgDailyDemand')}</TableHead>
+                      <TableHead className="text-right">{t('daysOfCover')}</TableHead>
+                      <TableHead className="text-right">{t('leadTimeDays')}</TableHead>
+                      <TableHead>{t('reorderPriority')}</TableHead>
+                      <TableHead>{t('actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {strategicReorderProducts.map((product) => (
+                      <TableRow key={product.id} data-testid={`row-strategic-reorder-${product.id}`}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.sku}</TableCell>
+                        <TableCell className="text-right">{product.currentStock}</TableCell>
+                        <TableCell className="text-right">{product.minLevel}</TableCell>
+                        <TableCell className="text-right">{product.avgDailyDemand}</TableCell>
+                        <TableCell className="text-right">{product.daysOfCover === 999 ? '∞' : product.daysOfCover}</TableCell>
+                        <TableCell className="text-right">{product.leadTimeDays}</TableCell>
+                        <TableCell>{getPriorityBadge(product.priority)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Link href={`/products/${product.id}`}>
+                              <Button variant="outline" size="sm" data-testid={`button-view-product-${product.id}`}>
+                                <Eye className="h-3 w-3 mr-1" />
+                                {t('viewProduct')}
+                              </Button>
+                            </Link>
+                            <Link href={`/purchase-orders/new?productId=${product.id}`}>
+                              <Button variant="default" size="sm" data-testid={`button-create-po-${product.id}`}>
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                {t('createPO')}
+                              </Button>
+                            </Link>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {strategicReorderProducts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-slate-500">
+                          {t('noReorderRequired')}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Fast Moving Products */}
+      <Collapsible open={isFastMovingOpen} onOpenChange={setIsFastMovingOpen}>
+        <Card data-testid="card-fast-moving-products">
+          <CardHeader>
+            <CollapsibleTrigger className="flex items-center justify-between w-full">
+              <div className="flex flex-col items-start">
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-600" />
+                  {t('fastMovingProducts')}
+                </CardTitle>
+                <CardDescription className="mt-1">{t('fastMovingProductsDesc')}</CardDescription>
+              </div>
+              <ChevronDown className={`h-5 w-5 transition-transform ${isFastMovingOpen ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="space-y-4">
+                {fastMovingProducts.length > 0 ? (
+                  fastMovingProducts.map((product, index) => {
+                    const maxSold = fastMovingProducts[0]?.unitsSold || 1;
+                    const percentage = (product.unitsSold / maxSold) * 100;
+                    
+                    return (
+                      <div key={product.id} className="flex items-center gap-4" data-testid={`row-fast-moving-${product.id}`}>
+                        <div className="w-8 text-center font-bold text-slate-500">#{index + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium truncate">{product.name}</span>
+                            <Badge variant="outline" className="ml-2 shrink-0">
+                              {product.unitsSold} {t('unitsSoldLabel')}
+                            </Badge>
+                          </div>
+                          <Progress value={percentage} className="h-2" />
+                          <div className="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>{t('sku')}: {product.sku}</span>
+                            <span>{t('currentStock')}: {product.currentStock}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8 text-slate-500" data-testid="text-no-fast-moving">
+                    {t('noFastMovingProducts')}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Key Metrics (existing) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title={t('totalStock')}
@@ -415,7 +898,7 @@ export default function InventoryReports() {
         />
       </div>
 
-      {/* Charts */}
+      {/* Charts (existing) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PieChartCard
           title={t('inventoryValueByCategory')}
@@ -431,10 +914,13 @@ export default function InventoryReports() {
         />
       </div>
 
-      {/* Low Stock Alerts */}
+      {/* Enhanced Low Stock Alerts */}
       <Card data-testid="table-low-stock">
         <CardHeader>
-          <CardTitle>{t('lowStockAlerts')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
+            {t('lowStockAlerts')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -445,24 +931,52 @@ export default function InventoryReports() {
                   <TableHead>{t('sku')}</TableHead>
                   <TableHead className="text-right">{t('currentStock')}</TableHead>
                   <TableHead className="text-right">{t('alertLevel')}</TableHead>
+                  <TableHead className="text-right">{t('estimatedStockoutDays')}</TableHead>
                   <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventoryMetrics.lowStockProducts.slice(0, 10).map((product: any) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.sku}</TableCell>
-                    <TableCell className="text-right">{product.quantity}</TableCell>
-                    <TableCell className="text-right">{product.lowStockAlert || 5}</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">{t('lowStock')}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {inventoryMetrics.lowStockProducts.slice(0, 10).map((product: any) => {
+                  const avgDailyDemand = product.totalSold ? product.totalSold / 30 : 0.5;
+                  const daysUntilStockout = avgDailyDemand > 0 ? Math.round((product.quantity || 0) / avgDailyDemand) : 999;
+                  
+                  return (
+                    <TableRow key={product.id} data-testid={`row-low-stock-${product.id}`}>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.sku}</TableCell>
+                      <TableCell className="text-right">{product.quantity}</TableCell>
+                      <TableCell className="text-right">{product.lowStockAlert || 5}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={daysUntilStockout <= 7 ? "destructive" : "secondary"}>
+                          {daysUntilStockout === 999 ? '∞' : `${daysUntilStockout}d`}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">{t('lowStock')}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Link href={`/products/${product.id}`}>
+                            <Button variant="outline" size="sm" data-testid={`button-view-low-stock-${product.id}`}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              {t('viewProduct')}
+                            </Button>
+                          </Link>
+                          <Link href={`/purchase-orders/new?productId=${product.id}`}>
+                            <Button variant="default" size="sm" data-testid={`button-create-po-low-stock-${product.id}`}>
+                              <ShoppingCart className="h-3 w-3 mr-1" />
+                              {t('createPO')}
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {inventoryMetrics.lowStockProducts.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-slate-500">
+                    <TableCell colSpan={7} className="text-center text-slate-500">
                       {t('noLowStockItems')}
                     </TableCell>
                   </TableRow>
@@ -476,7 +990,10 @@ export default function InventoryReports() {
       {/* Top Value Products */}
       <Card data-testid="table-top-value">
         <CardHeader>
-          <CardTitle>{t('highestValueInventory')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-emerald-600" />
+            {t('highestValueInventory')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -492,7 +1009,7 @@ export default function InventoryReports() {
               </TableHeader>
               <TableBody>
                 {topValueProducts.map((product) => (
-                  <TableRow key={product.id}>
+                  <TableRow key={product.id} data-testid={`row-top-value-${product.id}`}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell className="text-right">{product.quantity}</TableCell>
                     <TableCell className="text-right">{formatCurrency(product.price, 'CZK')}</TableCell>
@@ -832,7 +1349,7 @@ export default function InventoryReports() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : stockAdjustmentHistory.length === 0 ? (
+          ) : filteredAdjustmentHistory.length === 0 ? (
             <div className="text-center py-8 text-slate-500" data-testid="text-no-adjustment-history">
               {t('noAdjustmentHistory')}
             </div>
@@ -855,7 +1372,7 @@ export default function InventoryReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stockAdjustmentHistory.map((item: any, index: number) => (
+                    {filteredAdjustmentHistory.map((item: any, index: number) => (
                       <TableRow key={item.id} data-testid={`row-adjustment-history-${index}`}>
                         <TableCell className="whitespace-nowrap">
                           {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}
