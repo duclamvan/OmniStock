@@ -7200,12 +7200,25 @@ export default function AddOrder() {
                           <>
                             <Button 
                               type="submit" 
-                              className="w-full" 
+                              className="w-full relative transition-all duration-200 ease-out" 
                               size="lg"
                               disabled={createOrderMutation.isPending}
+                              data-testid="button-update-order"
                             >
-                              <Save className="h-4 w-4 mr-2" />
-                              {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                              {createOrderMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4 mr-2" />
+                              )}
+                              <span className="transition-opacity duration-150">
+                                {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                              </span>
+                              {!createOrderMutation.isPending && (
+                                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5" aria-hidden="true">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                                </span>
+                              )}
                             </Button>
                             <Button 
                               type="button" 
@@ -7220,7 +7233,7 @@ export default function AddOrder() {
                           <>
                             <Button 
                               type="button" 
-                              className="w-full" 
+                              className="w-full transition-all duration-200 ease-out" 
                               size="lg" 
                               onClick={() => setLocation(`/orders/${orderId}`)}
                             >
@@ -7239,8 +7252,12 @@ export default function AddOrder() {
                         )
                       ) : (
                         <>
-                          <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
-                            <ShoppingCart className="h-4 w-4 mr-2" />
+                          <Button ref={submitButtonRef} type="submit" className="w-full transition-all duration-200 ease-out" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
+                            {createOrderMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                            )}
                             {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                           </Button>
                           <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
@@ -7456,12 +7473,25 @@ export default function AddOrder() {
                     <>
                       <Button 
                         type="submit" 
-                        className="w-full" 
+                        className="w-full relative transition-all duration-200 ease-out" 
                         size="lg"
                         disabled={createOrderMutation.isPending}
+                        data-testid="button-update-order-mobile"
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                        {createOrderMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        <span className="transition-opacity duration-150">
+                          {createOrderMutation.isPending ? t('orders:updatingOrder') : t('orders:updateOrder')}
+                        </span>
+                        {!createOrderMutation.isPending && (
+                          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5" aria-hidden="true">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                          </span>
+                        )}
                       </Button>
                       <Button 
                         type="button" 
@@ -7476,7 +7506,7 @@ export default function AddOrder() {
                     <>
                       <Button 
                         type="button" 
-                        className="w-full" 
+                        className="w-full transition-all duration-200 ease-out" 
                         size="lg" 
                         onClick={() => setLocation(`/orders/${orderId}`)}
                       >
@@ -7495,8 +7525,12 @@ export default function AddOrder() {
                   )
                 ) : (
                   <>
-                    <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
-                      <ShoppingCart className="h-4 w-4 mr-2" />
+                    <Button type="submit" className="w-full transition-all duration-200 ease-out" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
+                      {createOrderMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                      )}
                       {createOrderMutation.isPending ? t('orders:creatingOrder') : t('orders:createOrder')}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
