@@ -761,29 +761,35 @@ export default function AddPreOrder() {
                     </Select>
                   </div>
 
-                  {/* Days Before - Compact */}
+                  {/* Reminder Timing - When to notify */}
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      {t('reminderDaysBefore')}
+                      {t('reminderTiming')}
                     </Label>
                     <div className="flex flex-wrap gap-3 mt-2">
-                      {[1, 3, 7].map((day) => (
-                        <div key={day} className="flex items-center space-x-1.5">
+                      {[
+                        { value: -3, label: t('daysBefore', { count: 3 }) },
+                        { value: -1, label: t('daysBefore', { count: 1 }) },
+                        { value: 0, label: t('sameDay') },
+                        { value: 1, label: t('daysAfter', { count: 1 }) },
+                        { value: 2, label: t('daysAfter', { count: 2 }) },
+                      ].map((option) => (
+                        <div key={option.value} className="flex items-center space-x-1.5">
                           <Checkbox
-                            id={`day-${day}`}
-                            checked={form.watch("reminderDaysBefore")?.includes(day)}
+                            id={`day-${option.value}`}
+                            checked={form.watch("reminderDaysBefore")?.includes(option.value)}
                             onCheckedChange={(checked) => {
                               const current = form.watch("reminderDaysBefore") || [];
                               if (checked) {
-                                form.setValue("reminderDaysBefore", [...current, day].sort((a, b) => a - b));
+                                form.setValue("reminderDaysBefore", [...current, option.value].sort((a, b) => a - b));
                               } else {
-                                form.setValue("reminderDaysBefore", current.filter((d: number) => d !== day));
+                                form.setValue("reminderDaysBefore", current.filter((d: number) => d !== option.value));
                               }
                             }}
-                            data-testid={`checkbox-days-${day}`}
+                            data-testid={`checkbox-days-${option.value}`}
                           />
-                          <Label htmlFor={`day-${day}`} className="text-sm font-normal">
-                            {t('daysBefore', { count: day })}
+                          <Label htmlFor={`day-${option.value}`} className="text-sm font-normal">
+                            {option.label}
                           </Label>
                         </div>
                       ))}

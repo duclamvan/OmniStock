@@ -268,11 +268,13 @@ export async function getDueReminders(): Promise<ScheduledReminder[]> {
     if (!preOrder.expectedDate) continue;
 
     const expectedDate = new Date(preOrder.expectedDate);
-    const daysBefore = preOrder.reminderDaysBefore || [1, 3];
+    const daysBefore = preOrder.reminderDaysBefore || [-1, 0];
 
     for (const days of daysBefore) {
       const reminderDate = new Date(expectedDate);
-      reminderDate.setDate(reminderDate.getDate() - days);
+      // days can be negative (before arrival), 0 (same day), or positive (after arrival)
+      // Add the days value to expectedDate: -3 = 3 days before, 0 = same day, 2 = 2 days after
+      reminderDate.setDate(reminderDate.getDate() + days);
 
       if (reminderDate <= now) {
         if (!preOrder.lastReminderSentAt || 
