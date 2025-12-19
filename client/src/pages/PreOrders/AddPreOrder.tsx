@@ -34,7 +34,9 @@ import {
   Search,
   UserPlus,
   Bell,
-  Loader2
+  Loader2,
+  Phone,
+  Mail
 } from "lucide-react";
 import {
   Select,
@@ -722,53 +724,70 @@ export default function AddPreOrder() {
             {/* Conditional Reminder Options */}
             {form.watch("reminderEnabled") && (
               <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                {/* Reminder Channel */}
-                <div>
-                  <Label htmlFor="reminderChannel" className="text-sm font-medium text-slate-700">
-                    {t('reminderChannel')}
-                  </Label>
-                  <Select
-                    value={form.watch("reminderChannel")}
-                    onValueChange={(value: 'sms' | 'email' | 'both') => form.setValue("reminderChannel", value)}
-                  >
-                    <SelectTrigger className="mt-1.5" data-testid="select-reminder-channel">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sms" data-testid="option-channel-sms">{t('sms')}</SelectItem>
-                      <SelectItem value="email" data-testid="option-channel-email">{t('email')}</SelectItem>
-                      <SelectItem value="both" data-testid="option-channel-both">{t('smsBothEmail')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Channel and Days Before - Side by side on desktop */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Reminder Channel */}
+                  <div>
+                    <Label htmlFor="reminderChannel" className="text-sm font-medium text-slate-700">
+                      {t('reminderChannel')}
+                    </Label>
+                    <Select
+                      value={form.watch("reminderChannel")}
+                      onValueChange={(value: 'sms' | 'email' | 'both') => form.setValue("reminderChannel", value)}
+                    >
+                      <SelectTrigger className="mt-1.5" data-testid="select-reminder-channel">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="email" data-testid="option-channel-email">
+                          <span className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            {t('email')}
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="sms" data-testid="option-channel-sms">
+                          <span className="flex items-center gap-2">
+                            <Phone className="h-4 w-4" />
+                            {t('sms')}
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="both" data-testid="option-channel-both">
+                          <span className="flex items-center gap-2">
+                            <Bell className="h-4 w-4" />
+                            {t('smsBothEmail')}
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Days Before - Multi-select with Checkboxes */}
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t('reminderDaysBefore')}
-                  </Label>
-                  <p className="text-xs text-slate-500 mb-2">{t('reminderDaysBeforeHint')}</p>
-                  <div className="flex flex-wrap gap-4">
-                    {[1, 3, 7].map((day) => (
-                      <div key={day} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`day-${day}`}
-                          checked={form.watch("reminderDaysBefore")?.includes(day)}
-                          onCheckedChange={(checked) => {
-                            const current = form.watch("reminderDaysBefore") || [];
-                            if (checked) {
-                              form.setValue("reminderDaysBefore", [...current, day].sort((a, b) => a - b));
-                            } else {
-                              form.setValue("reminderDaysBefore", current.filter((d: number) => d !== day));
-                            }
-                          }}
-                          data-testid={`checkbox-days-${day}`}
-                        />
-                        <Label htmlFor={`day-${day}`} className="text-sm font-normal">
-                          {t('daysBefore', { count: day })}
-                        </Label>
-                      </div>
-                    ))}
+                  {/* Days Before - Compact */}
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">
+                      {t('reminderDaysBefore')}
+                    </Label>
+                    <div className="flex flex-wrap gap-3 mt-2">
+                      {[1, 3, 7].map((day) => (
+                        <div key={day} className="flex items-center space-x-1.5">
+                          <Checkbox
+                            id={`day-${day}`}
+                            checked={form.watch("reminderDaysBefore")?.includes(day)}
+                            onCheckedChange={(checked) => {
+                              const current = form.watch("reminderDaysBefore") || [];
+                              if (checked) {
+                                form.setValue("reminderDaysBefore", [...current, day].sort((a, b) => a - b));
+                              } else {
+                                form.setValue("reminderDaysBefore", current.filter((d: number) => d !== day));
+                              }
+                            }}
+                            data-testid={`checkbox-days-${day}`}
+                          />
+                          <Label htmlFor={`day-${day}`} className="text-sm font-normal">
+                            {t('daysBefore', { count: day })}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -778,13 +797,12 @@ export default function AddPreOrder() {
                     <Label htmlFor="reminderTimeUtc" className="text-sm font-medium text-slate-700">
                       {t('reminderTime')}
                     </Label>
-                    <p className="text-xs text-slate-500 mb-1.5">{t('reminderTimeHint')}</p>
                     <Input
                       id="reminderTimeUtc"
                       type="time"
                       value={form.watch("reminderTimeUtc")}
                       onChange={(e) => form.setValue("reminderTimeUtc", e.target.value)}
-                      className="mt-1"
+                      className="mt-1.5"
                       data-testid="input-reminder-time"
                     />
                   </div>
@@ -810,10 +828,11 @@ export default function AddPreOrder() {
                   </div>
                 </div>
 
-                {/* Override Phone/Email */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Contact Override - Show based on selected channel */}
+                {(form.watch("reminderChannel") === 'sms' || form.watch("reminderChannel") === 'both') && (
                   <div>
-                    <Label htmlFor="reminderPhone" className="text-sm font-medium text-slate-700">
+                    <Label htmlFor="reminderPhone" className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5" />
                       {t('reminderPhone')}
                     </Label>
                     <p className="text-xs text-slate-500 mb-1.5">{t('reminderPhoneHint')}</p>
@@ -826,8 +845,12 @@ export default function AddPreOrder() {
                       data-testid="input-reminder-phone"
                     />
                   </div>
+                )}
+
+                {(form.watch("reminderChannel") === 'email' || form.watch("reminderChannel") === 'both') && (
                   <div>
-                    <Label htmlFor="reminderEmail" className="text-sm font-medium text-slate-700">
+                    <Label htmlFor="reminderEmail" className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" />
                       {t('reminderEmail')}
                     </Label>
                     <p className="text-xs text-slate-500 mb-1.5">{t('reminderEmailHint')}</p>
@@ -845,7 +868,7 @@ export default function AddPreOrder() {
                       </p>
                     )}
                   </div>
-                </div>
+                )}
               </div>
             )}
           </CardContent>
