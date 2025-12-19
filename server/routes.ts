@@ -18047,8 +18047,9 @@ Important rules:
       estimatedHeight += 14; // Bottom margin
 
       // Register Unicode fonts for Vietnamese, Czech, German, English support
-      const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
-      const fontBoldPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono-Bold.ttf');
+      // Noto Sans Mono has full Vietnamese diacritics support
+      const fontPath = path.join(process.cwd(), 'server', 'fonts', 'NotoSansMono-Regular.ttf');
+      const fontBoldPath = path.join(process.cwd(), 'server', 'fonts', 'NotoSansMono-Bold.ttf');
 
       const doc = new PDFDocument({
         size: [pageWidth, estimatedHeight],
