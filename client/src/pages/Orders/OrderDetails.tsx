@@ -2964,8 +2964,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900 text-xs sm:text-sm leading-tight line-clamp-2">{item.productName}</div>
-                        <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                        <div className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">{item.productName}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
                           <span className="font-extrabold text-slate-900">{item.quantity}</span>
                           <span> × {formatCurrency(item.unitPrice || item.price || 0, order?.currency || 'EUR')}</span>
                         </div>
@@ -2975,18 +2975,18 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       <div className="text-right flex flex-col items-end flex-shrink-0">
                         {item.discount > 0 ? (
                           <>
-                            <span className="text-[10px] sm:text-xs text-slate-400 relative inline-block whitespace-nowrap">
+                            <span className="text-xs text-slate-400 relative inline-block whitespace-nowrap">
                               {formatCurrency(originalPrice, order?.currency || 'EUR')}
                               <span 
                                 className="absolute left-0 right-0 top-1/2 bg-slate-400"
                                 style={{ height: '1px', transform: 'translateY(-50%)' }}
                               />
                             </span>
-                            <span className="text-[10px] sm:text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
-                            <span className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                            <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
+                            <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
                           </>
                         ) : (
-                          <span className="text-sm sm:text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
+                          <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
                         )}
                       </div>
                     </div>
@@ -3006,26 +3006,26 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     <>
                       {totalItemDiscounts > 0 && (
                         <>
-                          <div className="flex justify-between py-1 sm:py-1.5">
-                            <span className="text-xs sm:text-sm text-slate-500 font-medium">Tổng hàng hóa</span>
-                            <span className="text-xs sm:text-sm font-semibold text-slate-900">{formatCurrency(merchandiseTotal, order?.currency || 'EUR')}</span>
+                          <div className="flex justify-between py-1.5">
+                            <span className="text-sm text-slate-500 font-medium">Tổng hàng hóa</span>
+                            <span className="text-sm font-semibold text-slate-900">{formatCurrency(merchandiseTotal, order?.currency || 'EUR')}</span>
                           </div>
-                          <div className="flex justify-between py-1 sm:py-1.5">
-                            <span className="text-xs sm:text-sm text-green-600 font-medium">Tiết kiệm khuyến mãi</span>
-                            <span className="text-xs sm:text-sm font-semibold text-green-600">-{formatCurrency(totalItemDiscounts, order?.currency || 'EUR')}</span>
+                          <div className="flex justify-between py-1.5">
+                            <span className="text-sm text-green-600 font-medium">Tiết kiệm khuyến mãi</span>
+                            <span className="text-sm font-semibold text-green-600">-{formatCurrency(totalItemDiscounts, order?.currency || 'EUR')}</span>
                           </div>
                         </>
                       )}
-                      <div className="flex justify-between py-1 sm:py-1.5">
-                        <span className="text-xs sm:text-sm text-slate-500 font-medium">Tạm tính</span>
-                        <span className="text-xs sm:text-sm font-semibold text-slate-900">{formatCurrency(order?.subtotal || 0, order?.currency || 'EUR')}</span>
+                      <div className="flex justify-between py-1.5">
+                        <span className="text-sm text-slate-500 font-medium">Tạm tính</span>
+                        <span className="text-sm font-semibold text-slate-900">{formatCurrency(order?.subtotal || 0, order?.currency || 'EUR')}</span>
                       </div>
                       {order?.discountValue > 0 && (
-                        <div className="flex justify-between py-1 sm:py-1.5">
-                          <span className="text-xs sm:text-sm text-green-600 font-medium">
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-green-600 font-medium">
                             Giảm giá {order.discountType === 'rate' ? `(${order.discountValue}%)` : ''}
                           </span>
-                          <span className="text-xs sm:text-sm font-semibold text-green-600">
+                          <span className="text-sm font-semibold text-green-600">
                             -{formatCurrency(
                               order.discountType === 'rate' 
                                 ? (order.subtotal * order.discountValue / 100) 
@@ -3036,31 +3036,31 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         </div>
                       )}
                       {order?.taxAmount > 0 && (
-                        <div className="flex justify-between py-1 sm:py-1.5">
-                          <span className="text-xs sm:text-sm text-slate-500 font-medium">Thuế ({order.taxRate}%)</span>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-900">{formatCurrency(order.taxAmount, order?.currency || 'EUR')}</span>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-slate-500 font-medium">Thuế ({order.taxRate}%)</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.taxAmount, order?.currency || 'EUR')}</span>
                         </div>
                       )}
                       {order?.shippingCost > 0 && (
-                        <div className="flex justify-between py-1 sm:py-1.5">
-                          <span className="text-xs sm:text-sm text-slate-500 font-medium">Phí vận chuyển</span>
-                          <span className="text-xs sm:text-sm font-semibold text-slate-900">{formatCurrency(order.shippingCost, order?.currency || 'EUR')}</span>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-sm text-slate-500 font-medium">Phí vận chuyển</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatCurrency(order.shippingCost, order?.currency || 'EUR')}</span>
                         </div>
                       )}
                       {order?.adjustment != null && Number(order.adjustment) !== 0 && (
-                        <div className="flex justify-between py-1 sm:py-1.5">
-                          <span className={cn("text-xs sm:text-sm font-medium", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                        <div className="flex justify-between py-1.5">
+                          <span className={cn("text-sm font-medium", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
                             Điều chỉnh
                           </span>
-                          <span className={cn("text-xs sm:text-sm font-semibold", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
+                          <span className={cn("text-sm font-semibold", order.adjustment > 0 ? "text-blue-600" : "text-orange-600")}>
                             {order.adjustment > 0 ? '+' : ''}{formatCurrency(order.adjustment, order?.currency || 'EUR')}
                           </span>
                         </div>
                       )}
-                      <div className="border-t-2 border-slate-300 my-1.5 sm:my-2" />
-                      <div className="flex justify-between py-1.5 sm:py-2">
-                        <span className="text-base sm:text-lg font-bold text-slate-900">Tổng cộng</span>
-                        <span className="text-lg sm:text-xl font-extrabold text-slate-900">{formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}</span>
+                      <div className="border-t-2 border-slate-300 my-2" />
+                      <div className="flex justify-between py-2">
+                        <span className="text-lg font-bold text-slate-900">Tổng cộng</span>
+                        <span className="text-xl font-extrabold text-slate-900">{formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}</span>
                       </div>
                     </>
                   );
