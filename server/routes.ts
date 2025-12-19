@@ -17994,9 +17994,9 @@ Important rules:
 
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
-      const sideMargin = 6; // ~2mm side margin
+      const sideMargin = 2; // Nuclear: minimal side margin (0.7mm)
       const contentWidth = pageWidth - (sideMargin * 2); // Full width minus margins
-      const topMargin = 4; // Minimal top margin
+      const topMargin = 0; // Nuclear: no top margin at all
 
       // Calculate content height - tight fit, no excess whitespace
       let estimatedHeight = topMargin;
@@ -18071,24 +18071,24 @@ Important rules:
 
       let yPos = topMargin;
 
-      // Company Header
+      // Company Header - Left aligned for top-left nuclear option
       doc.fontSize(11)
          .font('Receipt-Bold')
          .fillColor('#000000')
-         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'center' });
+         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'left' });
       yPos += 14;
 
       doc.fontSize(7).font('Receipt').fillColor('#333333');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
-        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
         yPos += 10;
       }
 
       if (companyInfo?.phone || companyInfo?.country) {
         const contactLine = [companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ');
-        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
         yPos += 10;
       }
 
@@ -18097,13 +18097,13 @@ Important rules:
         if (companyInfo.ico) idLine += `${t.companyId}: ${companyInfo.ico}`;
         if (companyInfo.ico && companyInfo.vatId) idLine += ' | ';
         if (companyInfo.vatId) idLine += `${t.vatId}: ${companyInfo.vatId}`;
-        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
         yPos += 10;
       }
 
       // Receipt Title
       doc.fontSize(8).font('Receipt-Bold').fillColor('#000000')
-         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'center' });
+         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'left' });
       yPos += 12;
 
       drawDashedLine(yPos);
@@ -18186,7 +18186,7 @@ Important rules:
       yPos += 12;
 
       doc.fontSize(6).font('Receipt').fillColor('#666666');
-      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'center' });
+      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'left' });
       yPos += 8;
 
       drawDashedLine(yPos);
@@ -18227,14 +18227,14 @@ Important rules:
       drawDashedLine(yPos);
       yPos += 6;
 
-      // Footer
+      // Footer - Left aligned for top-left nuclear option
       doc.fontSize(7).font('Receipt').fillColor('#000000');
-      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'center' });
+      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'left' });
       yPos += 10;
 
       if (companyInfo?.website) {
         doc.fontSize(6).fillColor('#666666');
-        doc.text(companyInfo.website, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        doc.text(companyInfo.website, sideMargin, yPos, { width: contentWidth, align: 'left' });
       }
 
       doc.end();
