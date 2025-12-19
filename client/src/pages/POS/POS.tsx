@@ -718,9 +718,7 @@ export default function POS() {
     queryKey: ['/api/settings/pos'],
   });
 
-  const { data: generalSettings } = useQuery<any>({
-    queryKey: ['/api/settings/general'],
-  });
+  const { generalSettings } = useSettings();
 
   const companyInfo: CompanyInfo = useMemo(() => ({
     name: generalSettings?.companyName,
