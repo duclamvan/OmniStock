@@ -1135,7 +1135,7 @@ router.post("/consolidations", async (req, res) => {
 // Add items to consolidation
 router.post("/consolidations/:id/items", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     const { itemIds } = req.body;
     
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
@@ -1143,7 +1143,7 @@ router.post("/consolidations/:id/items", async (req, res) => {
     }
     
     // Add items to consolidation
-    const itemsToAdd = itemIds.map((itemId: number) => ({
+    const itemsToAdd = itemIds.map((itemId: string) => ({
       consolidationId: consolidationId,
       itemId: itemId,
       itemType: 'custom',
@@ -1168,7 +1168,7 @@ router.post("/consolidations/:id/items", async (req, res) => {
 // Delete consolidation
 router.delete("/consolidations/:id", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     
     // First, update status of items back to 'available'
     const itemsToRelease = await db
@@ -1200,8 +1200,8 @@ router.delete("/consolidations/:id", async (req, res) => {
 // Remove item from consolidation
 router.delete("/consolidations/:consolidationId/items/:itemId", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.consolidationId);
-    const itemId = parseInt(req.params.itemId);
+    const consolidationId = req.params.consolidationId; // UUID string
+    const itemId = req.params.itemId; // UUID string
     
     // Remove item from consolidation
     await db
@@ -1229,7 +1229,7 @@ router.delete("/consolidations/:consolidationId/items/:itemId", async (req, res)
 // Get consolidation items
 router.get("/consolidations/:id/items", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     
     const items = await db
       .select({
@@ -1263,7 +1263,7 @@ router.get("/consolidations/:id/items", async (req, res) => {
 // Update consolidation
 router.patch("/consolidations/:id", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     const { name, location, shippingMethod, notes, targetWeight } = req.body;
     
     await db
@@ -1288,7 +1288,7 @@ router.patch("/consolidations/:id", async (req, res) => {
 // Update consolidation status
 router.patch("/consolidations/:id/status", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     const { status } = req.body;
     
     await db
@@ -1309,7 +1309,7 @@ router.patch("/consolidations/:id/status", async (req, res) => {
 // Ship consolidation
 router.post("/consolidations/:id/ship", async (req, res) => {
   try {
-    const consolidationId = parseInt(req.params.id);
+    const consolidationId = req.params.id; // UUID string
     const { trackingNumber, carrier } = req.body;
     
     // Update consolidation status

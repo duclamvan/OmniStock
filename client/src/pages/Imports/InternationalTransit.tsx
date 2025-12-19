@@ -495,7 +495,7 @@ export default function InternationalTransit() {
       .filter(num => num.length > 0);
     
     const data = {
-      consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
+      consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') as string) || null,
       carrier: formData.get('carrier') as string || t('standardCarrier'),
       trackingNumber: formData.get('trackingNumber') as string,
       endCarrier: formData.get('endCarrier') as string || null,

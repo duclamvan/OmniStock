@@ -763,8 +763,8 @@ export default function AtWarehouse() {
   });
   
   // Fetch consolidation items for expanded consolidations - expanded by default
-  const [expandedConsolidations, setExpandedConsolidations] = useState<Set<number>>(new Set());
-  const [consolidationItems, setConsolidationItems] = useState<Record<number, any[]>>({});
+  const [expandedConsolidations, setExpandedConsolidations] = useState<Set<string>>(new Set());
+  const [consolidationItems, setConsolidationItems] = useState<Record<string, any[]>>({});
   const [editingConsolidation, setEditingConsolidation] = useState<any>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("");
   const [warehouseComboOpen, setWarehouseComboOpen] = useState(false);
@@ -1034,7 +1034,7 @@ export default function AtWarehouse() {
   });
 
   // Fetch items for a consolidation
-  const fetchConsolidationItems = async (consolidationId: number) => {
+  const fetchConsolidationItems = async (consolidationId: string) => {
     try {
       const response = await fetch(`/api/imports/consolidations/${consolidationId}/items`);
       if (response.ok) {
@@ -1084,7 +1084,7 @@ export default function AtWarehouse() {
   }, [warehouses.length]); // Only depend on length to avoid re-running on every warehouse change
   
   // Toggle consolidation expansion
-  const toggleConsolidationExpanded = (consolidationId: number) => {
+  const toggleConsolidationExpanded = (consolidationId: string) => {
     const newExpanded = new Set(expandedConsolidations);
     if (newExpanded.has(consolidationId)) {
       newExpanded.delete(consolidationId);
@@ -1131,7 +1131,7 @@ export default function AtWarehouse() {
 
   // Simple add items mutation with optimized cache updates
   const addItemsToConsolidationMutation = useMutation({
-    mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
+    mutationFn: async ({ consolidationId, itemIds }: { consolidationId: string, itemIds: string[] }) => {
       return apiRequest('POST', `/api/imports/consolidations/${consolidationId}/items`, { itemIds });
     },
     onMutate: async ({ consolidationId, itemIds }) => {
@@ -1203,7 +1203,7 @@ export default function AtWarehouse() {
 
   // Delete consolidation mutation
   const deleteConsolidationMutation = useMutation({
-    mutationFn: async (consolidationId: number) => {
+    mutationFn: async (consolidationId: string) => {
       return apiRequest('DELETE', `/api/imports/consolidations/${consolidationId}`);
     },
     onSuccess: () => {
@@ -1218,7 +1218,7 @@ export default function AtWarehouse() {
   
   // Remove item from consolidation mutation with optimistic updates
   const removeItemFromConsolidationMutation = useMutation({
-    mutationFn: async ({ consolidationId, itemId }: { consolidationId: number, itemId: number }) => {
+    mutationFn: async ({ consolidationId, itemId }: { consolidationId: string, itemId: string }) => {
       return apiRequest('DELETE', `/api/imports/consolidations/${consolidationId}/items/${itemId}`);
     },
     onMutate: async ({ consolidationId }) => {
@@ -1569,10 +1569,12 @@ export default function AtWarehouse() {
     }
     // Handle drops to consolidations
     else if (destinationId.startsWith('consolidation-')) {
-      const itemId = parseInt(result.draggableId.replace('item-', ''));
-      const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
+      // Extract UUID item ID (format: "item-{uuid}")
+      const itemId = result.draggableId.replace('item-', '');
+      // Extract UUID consolidation ID (format: "consolidation-{uuid}")
+      const consolidationId = destinationId.replace('consolidation-', '');
       
-      if (!isNaN(itemId) && !isNaN(consolidationId)) {
+      if (itemId && consolidationId) {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
         
         if (manualItemOrder.length > 0) {
@@ -2862,8 +2864,8 @@ export default function AtWarehouse() {
                                 onValueChange={(consolidationId) => {
                                   if (consolidationId) {
                                     addItemsToConsolidationMutation.mutate({
-                                      consolidationId: parseInt(consolidationId),
-                                      itemIds: Array.from(selectedItemsForAI)
+                                      consolidationId,
+                                      itemIds: Array.from(selectedItemsForAI) as string[]
                                     });
                                     setSelectedItemsForAI(new Set());
                                   }
