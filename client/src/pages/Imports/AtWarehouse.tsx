@@ -2272,7 +2272,7 @@ export default function AtWarehouse() {
                             {order.location === 'Vietnam' && '🇻🇳'}
                             {!order.location && '🌍'}
                           </span>
-                          <h3 className="text-lg font-semibold">PO #{order.id} - {order.supplier}</h3>
+                          <h3 className="text-lg font-semibold">PO #{order.id.substring(0, 8).toUpperCase()} - {order.supplier}</h3>
                           {getStatusBadge(order.status)}
                         </div>
                         
@@ -4057,7 +4057,7 @@ export default function AtWarehouse() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="font-medium">{selectedOrder.supplier}</div>
                 <div className="text-sm text-muted-foreground">
-                  PO #{selectedOrder.id} • {selectedOrder.items?.length || 0} items
+                  PO #{selectedOrder.id.substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
                 </div>
               </div>
 
@@ -4112,7 +4112,7 @@ export default function AtWarehouse() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="font-medium">{selectedOrder.supplier}</div>
                 <div className="text-sm text-muted-foreground">
-                  PO #{selectedOrder.id} • {selectedOrder.items?.length || 0} items
+                  PO #{selectedOrder.id.substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
                 </div>
               </div>
 
