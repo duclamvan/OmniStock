@@ -32,6 +32,7 @@ const formSchema = z.object({
   company_zip: z.string().default(''),
   company_country: z.string().default(''),
   company_website: z.string().default(''),
+  company_ico: z.string().default(''),
   company_vat_id: z.string().default(''),
   
   // Brand & Identity
@@ -128,6 +129,7 @@ export default function GeneralSettings() {
       company_zip: generalSettings.companyZip || '',
       company_country: generalSettings.companyCountry || '',
       company_website: generalSettings.companyWebsite || '',
+      company_ico: generalSettings.companyIco || '',
       company_vat_id: generalSettings.companyVatId || '',
       company_logo_url: generalSettings.companyLogoUrl || '',
       company_invoice_stamp: generalSettings.companyInvoiceStamp || '',
@@ -228,6 +230,7 @@ export default function GeneralSettings() {
         company_zip: generalSettings.companyZip || '',
         company_country: generalSettings.companyCountry || '',
         company_website: generalSettings.companyWebsite || '',
+        company_ico: generalSettings.companyIco || '',
         company_vat_id: generalSettings.companyVatId || '',
         company_logo_url: generalSettings.companyLogoUrl || '',
         company_invoice_stamp: generalSettings.companyInvoiceStamp || '',
@@ -579,10 +582,34 @@ export default function GeneralSettings() {
 
                   <FormField
                     control={form.control}
+                    name="company_ico"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:companyIco', 'Company ID (IČO)')}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder={t('settings:companyIcoPlaceholder', 'Enter company ID')} 
+                            data-testid="input-company_ico"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('company_ico');
+                            }}
+                            onBlur={handleTextBlur('company_ico')}
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:companyIcoDescription', 'Company registration number (IČO in Czech)')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="company_vat_id"
                     render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>{t('settings:companyVatId', 'VAT ID')}</FormLabel>
+                      <FormItem>
+                        <FormLabel>{t('settings:companyVatId', 'VAT ID (DIČ)')}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -595,7 +622,7 @@ export default function GeneralSettings() {
                             onBlur={handleTextBlur('company_vat_id')}
                           />
                         </FormControl>
-                        <FormDescription>{t('common:yourCompanyTaxId', 'Your company tax ID')}</FormDescription>
+                        <FormDescription>{t('common:yourCompanyTaxId', 'Your company tax ID (DIČ in Czech)')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

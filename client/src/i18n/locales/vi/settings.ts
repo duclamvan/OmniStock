@@ -51,7 +51,11 @@ const settings = {
   companyZip: 'Mã bưu điện',
   companyCountry: 'Quốc gia',
   companyWebsite: 'Website',
-  companyVatId: 'Mã số thuế',
+  companyIco: 'Mã đăng ký kinh doanh (IČO)',
+  companyIcoPlaceholder: 'Nhập mã đăng ký kinh doanh',
+  companyIcoDescription: 'Số đăng ký doanh nghiệp (IČO tại Séc)',
+  companyVatId: 'Mã số thuế (DIČ)',
+  companyVatIdPlaceholder: 'Nhập mã số thuế',
   companyLogoUrl: 'URL logo công ty',
   
   // Brand & Identity
@@ -875,7 +879,7 @@ const settings = {
   companyCityPlaceholder: 'Thành phố',
   companyZipPlaceholder: '12345',
   companyWebsitePlaceholder: 'https://vidu.com',
-  companyVatIdPlaceholder: 'XX123456789',
+  companyIcoPlaceholderAlt: 'XX123456789',
   companyLogoUrlDescription: 'URL công khai đến logo công ty (dùng trong hóa đơn và email)',
   
   // Localization descriptions

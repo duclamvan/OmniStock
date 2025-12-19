@@ -51,7 +51,11 @@ const settings = {
   companyZip: 'Postal Code',
   companyCountry: 'Country',
   companyWebsite: 'Website',
-  companyVatId: 'VAT ID / Tax Number',
+  companyIco: 'Company ID (IČO)',
+  companyIcoPlaceholder: 'Enter company registration number',
+  companyIcoDescription: 'Company registration number (IČO in Czech Republic)',
+  companyVatId: 'VAT ID (DIČ)',
+  companyVatIdPlaceholder: 'Enter VAT ID',
   companyLogoUrl: 'Company Logo URL',
   
   // Brand & Identity
@@ -874,7 +878,7 @@ const settings = {
   companyCityPlaceholder: 'City',
   companyZipPlaceholder: '12345',
   companyWebsitePlaceholder: 'https://example.com',
-  companyVatIdPlaceholder: 'XX123456789',
+  companyIcoPlaceholderAlt: 'XX123456789',
   companyLogoUrlDescription: 'Public URL to your company logo (used in invoices and emails)',
   
   // Localization descriptions

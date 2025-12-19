@@ -146,7 +146,18 @@ const receiptLocales: Record<ReceiptLanguage, { locale: string; dateFormat: Intl
   },
 };
 
-function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose: () => void; onPrint: () => void }) {
+interface CompanyInfo {
+  name?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  ico?: string;
+  vatId?: string;
+  website?: string;
+}
+
+function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: ReceiptData; onClose: () => void; onPrint: () => void; companyInfo: CompanyInfo }) {
   const { t } = useTranslation(['common', 'financial']);
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -366,13 +377,19 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
       <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
         {/* Header with Business Info - EU Compliant */}
         <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <h2 className="text-xl font-bold">DAVIE SUPPLY s.r.o.</h2>
-          <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
-            Dlouhá 123, 110 00 Praha 1
-          </p>
-          <p className="text-[10px] text-gray-600 dark:text-gray-400">
-            {getLabel('companyId')}: 12345678 | {getLabel('vatId')}: CZ12345678
-          </p>
+          <h2 className="text-xl font-bold">{companyInfo.name || 'Company Name'}</h2>
+          {(companyInfo.address || companyInfo.city || companyInfo.zip) && (
+            <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
+              {[companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ')}
+            </p>
+          )}
+          {(companyInfo.ico || companyInfo.vatId) && (
+            <p className="text-[10px] text-gray-600 dark:text-gray-400">
+              {companyInfo.ico && <>{getLabel('companyId')}: {companyInfo.ico}</>}
+              {companyInfo.ico && companyInfo.vatId && ' | '}
+              {companyInfo.vatId && <>{getLabel('vatId')}: {companyInfo.vatId}</>}
+            </p>
+          )}
           <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">{getLabel('receipt')}</p>
         </div>
         
@@ -463,7 +480,9 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
         {/* Footer */}
         <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
           <p className="text-sm text-gray-600 dark:text-gray-400">{getLabel('thankYou')}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">www.davie.shop</p>
+          {companyInfo.website && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{companyInfo.website}</p>
+          )}
         </div>
       </div>
       
@@ -698,6 +717,21 @@ export default function POS() {
   const { data: posSettings } = useQuery({
     queryKey: ['/api/settings/pos'],
   });
+
+  const { data: generalSettings } = useQuery<any>({
+    queryKey: ['/api/settings/general'],
+  });
+
+  const companyInfo: CompanyInfo = useMemo(() => ({
+    name: generalSettings?.companyName,
+    address: generalSettings?.companyAddress,
+    city: generalSettings?.companyCity,
+    zip: generalSettings?.companyZip,
+    country: generalSettings?.companyCountry,
+    ico: generalSettings?.companyIco,
+    vatId: generalSettings?.companyVatId,
+    website: generalSettings?.companyWebsite,
+  }), [generalSettings]);
 
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -2368,6 +2402,7 @@ export default function POS() {
                 setLocation('/orders');
               }}
               onPrint={() => {}}
+              companyInfo={companyInfo}
             />
           )}
         </DialogContent>

@@ -66,6 +66,7 @@ export interface GeneralSettings {
   companyZip?: string;
   companyCountry?: string;
   companyWebsite?: string;
+  companyIco?: string;
   companyVatId?: string;
   companyLogoUrl?: string;
   companyInvoiceStamp?: string;
