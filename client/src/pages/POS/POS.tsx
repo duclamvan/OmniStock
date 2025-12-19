@@ -988,6 +988,8 @@ export default function POS() {
       return await apiRequest('POST', '/api/orders', orderData);
     },
     onSuccess: (data: any) => {
+      console.log('[POS] Order response received:', JSON.stringify(data, null, 2));
+      console.log('[POS] data.orderId =', data.orderId, 'data.id =', data.id);
       if (soundEnabled) soundEffects.playSuccessBeep();
       toast({
         title: t('common:success'),
