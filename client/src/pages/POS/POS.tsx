@@ -1666,11 +1666,22 @@ export default function POS() {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent 
+          className="sm:max-w-lg"
+          onKeyDown={(e) => {
+            if (createOrderMutation.isPending) return;
+            // Number key shortcuts for payment methods
+            if (e.key === '1') { handlePaymentSelect('cash'); }
+            else if (e.key === '3') { handlePaymentSelect('bank_transfer_private'); }
+            else if (e.key === '5') { setShowPaymentDialog(false); setPayLaterCustomerSearchQuery(''); setShowPayLaterCustomerSearch(true); }
+            else if (e.key === '6') { setShowPaymentDialog(false); setShowQRCodePreview(true); }
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-2xl">Select Payment Method</DialogTitle>
             <DialogDescription>
               Total: <span className="font-bold text-xl text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
+              <span className="block text-xs mt-1 text-muted-foreground">Press 1-6 to select method</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -1678,11 +1689,12 @@ export default function POS() {
             {/* Cash - Enabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5 relative"
               onClick={() => handlePaymentSelect('cash')}
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-cash"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">1</span>
               <div className="p-3 rounded-full text-white bg-green-500">
                 <Banknote className="h-6 w-6" />
               </div>
@@ -1692,10 +1704,11 @@ export default function POS() {
             {/* Card - Disabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed"
+              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed relative"
               disabled={true}
               data-testid="button-payment-card"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">2</span>
               <div className="p-3 rounded-full text-white bg-blue-500">
                 <CreditCard className="h-6 w-6" />
               </div>
@@ -1708,11 +1721,12 @@ export default function POS() {
             {/* Bank Transfer - Privat Konto - Enabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5 relative"
               onClick={() => handlePaymentSelect('bank_transfer_private')}
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-bank-private"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">3</span>
               <div className="p-3 rounded-full text-white bg-purple-500">
                 <Building2 className="h-6 w-6" />
               </div>
@@ -1722,10 +1736,11 @@ export default function POS() {
             {/* Bank Transfer - Invoice - Disabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed"
+              className="h-24 flex-col gap-2 text-base opacity-50 cursor-not-allowed relative"
               disabled={true}
               data-testid="button-payment-bank-invoice"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">4</span>
               <div className="p-3 rounded-full text-white bg-indigo-500">
                 <FileText className="h-6 w-6" />
               </div>
@@ -1738,7 +1753,7 @@ export default function POS() {
             {/* Pay Later - Enabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5 relative"
               onClick={() => {
                 setShowPaymentDialog(false);
                 setPayLaterCustomerSearchQuery('');
@@ -1747,6 +1762,7 @@ export default function POS() {
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-pay_later"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">5</span>
               <div className="p-3 rounded-full text-white bg-amber-500">
                 <Clock className="h-6 w-6" />
               </div>
@@ -1756,7 +1772,7 @@ export default function POS() {
             {/* QR Code CZK - Enabled */}
             <Button
               variant="outline"
-              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5"
+              className="h-24 flex-col gap-2 text-base hover:border-primary hover:bg-primary/5 relative"
               onClick={() => {
                 setShowPaymentDialog(false);
                 setShowQRCodePreview(true);
@@ -1764,6 +1780,7 @@ export default function POS() {
               disabled={createOrderMutation.isPending}
               data-testid="button-payment-qr_czk"
             >
+              <span className="absolute top-1 left-2 text-xs text-muted-foreground font-mono">6</span>
               <div className="p-3 rounded-full text-white bg-cyan-500">
                 <QrCode className="h-6 w-6" />
               </div>
@@ -1867,6 +1884,12 @@ export default function POS() {
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
                   onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && parseFloat(cashReceived || '0') >= total && !createOrderMutation.isPending) {
+                      e.preventDefault();
+                      handleCashPayment();
+                    }
+                  }}
                   placeholder="0.00"
                   className="h-16 text-3xl font-bold text-center pl-4 pr-16 tabular-nums"
                   autoFocus
@@ -1963,6 +1986,12 @@ export default function POS() {
                 placeholder={t('pos:searchCustomerPlaceholder', 'Search customers...')}
                 value={customerSearchQuery}
                 onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filteredCustomers.length > 0) {
+                    setSelectedCustomerId(filteredCustomers[0].id);
+                    setShowCustomerSearch(false);
+                  }
+                }}
                 className="pl-10 h-12"
                 autoFocus
                 data-testid="input-customer-search"
@@ -2068,6 +2097,13 @@ export default function POS() {
               placeholder="Search customers (including Facebook name)..."
               value={payLaterCustomerSearchQuery}
               onChange={(e) => setPayLaterCustomerSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && filteredPayLaterCustomers.length > 0) {
+                  setSelectedCustomerId(filteredPayLaterCustomers[0].id);
+                  setShowPayLaterCustomerSearch(false);
+                  handlePaymentSelect('pay_later');
+                }
+              }}
               className="h-12"
               autoFocus
               data-testid="input-pay-later-customer-search"
@@ -2240,7 +2276,13 @@ export default function POS() {
           <Textarea
             value={orderNotes}
             onChange={(e) => setOrderNotes(e.target.value)}
-            placeholder="Add any notes for this order..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                setShowNotesDialog(false);
+              }
+            }}
+            placeholder="Add any notes for this order... (Ctrl+Enter to save)"
             className="min-h-[120px]"
             data-testid="textarea-order-notes"
           />
