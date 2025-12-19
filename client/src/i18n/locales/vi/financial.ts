@@ -254,7 +254,7 @@ const financial = {
   receiptCz_companyId: 'IČO',
   receiptCz_vatId: 'DIČ',
   receiptCz_vatIncluded: 'Ceny včetně DPH',
-  receiptCz_walkInCustomer: 'Zákazník bez registrace',
+  receiptCz_walkInCustomer: 'Koncový zákazník',
   
   // German Receipt Labels
   receiptDe_receipt: 'Kassenbon',
