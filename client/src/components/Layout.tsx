@@ -1,3 +1,4 @@
+import { Switch } from "wouter";
 import { MobileResponsiveLayout } from "./MobileResponsiveLayout";
 
 interface LayoutProps {
@@ -7,7 +8,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <MobileResponsiveLayout>
-      {children}
+      <Switch>
+        {children}
+      </Switch>
     </MobileResponsiveLayout>
   );
 }
