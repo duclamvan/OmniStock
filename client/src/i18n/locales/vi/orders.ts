@@ -932,8 +932,11 @@ const orders = {
   // PreOrders - Details
   preOrderInformation: 'Thông tin đơn đặt trước',
   markPartiallyArrived: 'Đánh dấu đã về một phần',
+  markAsPartiallyArrived: 'Đánh dấu đã về một phần',
   markFullyArrived: 'Đánh dấu đã về đủ',
+  markAsFullyArrived: 'Đánh dấu đã về đủ',
   cancelPreOrder: 'Hủy đơn đặt trước',
+  deletePreOrder: 'Xóa đơn đặt trước',
   arrivedQuantityDisplay: '{{arrived}} / {{total}} đã về',
   arrivalProgress: 'Tiến độ hàng về',
   orderedQuantity: 'Số lượng đặt',

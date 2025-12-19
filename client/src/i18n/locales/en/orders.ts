@@ -928,8 +928,11 @@ const orders = {
   // PreOrders - Details
   preOrderInformation: 'Pre-Order Information',
   markPartiallyArrived: 'Mark as Partially Arrived',
+  markAsPartiallyArrived: 'Mark as Partially Arrived',
   markFullyArrived: 'Mark as Fully Arrived',
+  markAsFullyArrived: 'Mark as Fully Arrived',
   cancelPreOrder: 'Cancel Pre-Order',
+  deletePreOrder: 'Delete Pre-Order',
   arrivedQuantityDisplay: '{{arrived}} / {{total}} arrived',
   arrivalProgress: 'Arrival Progress',
   orderedQuantity: 'Ordered Quantity',
