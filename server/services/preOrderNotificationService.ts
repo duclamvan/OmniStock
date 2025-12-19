@@ -1,5 +1,5 @@
 import twilio from 'twilio';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { db } from '../db';
 import { preOrders, preOrderReminders, customers } from '@shared/schema';
 import { eq, and, lte, isNull, inArray } from 'drizzle-orm';
@@ -10,24 +10,11 @@ const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
 
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-// Email configuration
-const smtpHost = process.env.SMTP_HOST;
-const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-const smtpUser = process.env.SMTP_USER;
-const smtpPass = process.env.SMTP_PASS;
-const smtpFrom = process.env.SMTP_FROM || 'noreply@daviesupply.com';
+// Resend email configuration
+const resendApiKey = process.env.RESEND_API_KEY;
+const emailFrom = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-const emailTransporter = smtpHost && smtpUser && smtpPass 
-  ? nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      }
-    })
-  : null;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export interface ReminderResult {
   success: boolean;
@@ -90,17 +77,17 @@ export async function sendEmailReminder(
   subject: string,
   message: string
 ): Promise<ReminderResult> {
-  if (!emailTransporter) {
-    console.warn('⚠️ Email transporter not configured (SMTP_HOST, SMTP_USER, SMTP_PASS required). Email reminder not sent.');
+  if (!resend) {
+    console.warn('⚠️ Resend API not configured (RESEND_API_KEY required). Email reminder not sent.');
     return {
       success: false,
-      error: 'Email service not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.'
+      error: 'Email service not configured. Please set RESEND_API_KEY environment variable.'
     };
   }
 
   try {
-    const info = await emailTransporter.sendMail({
-      from: smtpFrom,
+    const { data, error } = await resend.emails.send({
+      from: emailFrom,
       to: email,
       subject: subject,
       text: message,
@@ -114,11 +101,19 @@ export async function sendEmailReminder(
       `
     });
 
-    console.log(`📧 Email reminder sent to ${email}, MessageID: ${info.messageId}`);
+    if (error) {
+      console.error('❌ Failed to send email reminder:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to send email'
+      };
+    }
+
+    console.log(`📧 Email reminder sent to ${email}, MessageID: ${data?.id}`);
 
     return {
       success: true,
-      messageId: info.messageId
+      messageId: data?.id
     };
   } catch (error: any) {
     console.error('❌ Failed to send email reminder:', error);
