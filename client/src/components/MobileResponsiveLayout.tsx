@@ -711,7 +711,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                             <button
                               className={cn(
                                 "w-full flex items-center justify-start px-3 py-2 rounded-md touch-target transition-all duration-150 text-sm relative",
-                                "text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:translate-x-0.5",
+                                "text-foreground hover:bg-muted/50 hover:translate-x-0.5",
                                 isChildActive && "text-foreground font-medium bg-muted/60 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
