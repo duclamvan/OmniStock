@@ -11237,8 +11237,23 @@ Important:
 
   app.post('/api/pre-orders', isAuthenticated, async (req: any, res) => {
     try {
-      const data = insertPreOrderSchema.parse(req.body);
+      const { items, ...preOrderData } = req.body;
+      const data = insertPreOrderSchema.parse(preOrderData);
       const preOrder = await storage.createPreOrder(data);
+
+      // Create pre-order items if provided
+      if (items && Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          await storage.createPreOrderItem({
+            preOrderId: preOrder.id,
+            productId: item.productId || null,
+            itemName: item.itemName,
+            itemDescription: item.itemDescription || null,
+            quantity: item.quantity,
+          });
+        }
+      }
+
       res.status(201).json(preOrder);
     } catch (error) {
       console.error("Error creating pre-order:", error);

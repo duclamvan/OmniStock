@@ -943,7 +943,7 @@ const orders = {
   deletePreOrderConfirm: 'Bạn có chắc chắn muốn xóa đơn đặt trước này? Hành động này không thể hoàn tác và sẽ xóa tất cả sản phẩm liên quan.',
   noPreOrdersMatchFilters: 'Không có đơn đặt trước nào phù hợp với bộ lọc',
   noPreOrdersYetClickAdd: 'Chưa có đơn đặt trước. Nhấn "Thêm đơn đặt trước" để tạo mới.',
-  itemsOrdered: 'Sản phẩm đã đặt',
+  itemsOrdered: 'Sản phẩm đặt trước',
   notSet: 'Chưa đặt',
   
   // PreOrders - Notifications

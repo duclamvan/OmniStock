@@ -939,7 +939,7 @@ const orders = {
   deletePreOrderConfirm: 'Are you sure you want to delete this pre-order? This action cannot be undone and will also delete all associated items.',
   noPreOrdersMatchFilters: 'No pre-orders match your filters',
   noPreOrdersYetClickAdd: 'No pre-orders yet. Click "Add Pre-Order" to create one.',
-  itemsOrdered: 'Items Ordered',
+  itemsOrdered: 'Items Pre-Ordered',
   notSet: 'Not set',
   
   // PreOrders - Notifications
