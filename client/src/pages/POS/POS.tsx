@@ -997,7 +997,7 @@ export default function POS() {
       
       const cashReceivedNum = parseFloat(cashReceived) || 0;
       const newReceiptData: ReceiptData = {
-        orderId: data.id,
+        orderId: data.orderId || data.id,
         items: [...cart],
         subtotal,
         discount,
