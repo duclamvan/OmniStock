@@ -251,36 +251,29 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position: fixed; top: -10000px; left: -10000px; width: 1px; height: 1px;';
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      
-      const cleanup = () => {
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
         setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
           window.URL.revokeObjectURL(url);
-        }, 2000);
-      };
-      
-      iframe.onload = () => {
-        try {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          }
-        } catch (e) {
-          console.error('Print error:', e);
-        }
-        cleanup();
-      };
-      
-      iframe.onerror = () => {
-        cleanup();
-        throw new Error('Failed to load PDF for printing');
-      };
+        }, 60000);
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.click();
+        toast({
+          title: t('financial:pdfOpened', 'PDF Opened'),
+          description: t('financial:useBrowserPrint', 'Use your browser\'s print function (Ctrl+P or Cmd+P)'),
+        });
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 60000);
+      }
       
       onPrint();
     } catch (error) {
