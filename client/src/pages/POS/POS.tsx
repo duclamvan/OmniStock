@@ -291,13 +291,12 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
         @media print {
           @page {
             size: 80mm auto;
-            margin: 0 !important;
+            margin: 0mm !important;
+            padding: 0mm !important;
           }
           
           * {
             visibility: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
           }
           
           html, body {
@@ -305,6 +304,15 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             width: 80mm !important;
             height: auto !important;
             overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
           }
           
           .print-receipt-container,
@@ -314,16 +322,19 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
           }
           
           .print-receipt-container {
-            position: absolute !important;
+            position: fixed !important;
             left: 0 !important;
             top: 0 !important;
             width: 80mm !important;
             background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
           }
           
           .print-receipt-container .thermal-receipt {
-            width: 72mm !important;
-            padding: 2mm 4mm !important;
+            width: 76mm !important;
+            padding: 0mm 2mm !important;
             margin: 0 !important;
             font-family: 'Courier New', Courier, monospace !important;
             font-size: 10px !important;
