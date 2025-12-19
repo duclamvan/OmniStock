@@ -201,7 +201,132 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
   };
   
   const handlePrint = () => {
-    window.print();
+    // Create an iframe for isolated printing with precise thermal receipt layout
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.top = '-9999px';
+    printFrame.style.left = '-9999px';
+    printFrame.style.width = '80mm';
+    printFrame.style.height = 'auto';
+    document.body.appendChild(printFrame);
+
+    const thermalReceipt = document.querySelector('.thermal-receipt');
+    if (!thermalReceipt) {
+      window.print();
+      onPrint();
+      return;
+    }
+
+    const printContent = thermalReceipt.outerHTML;
+    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+    
+    if (printDocument) {
+      printDocument.open();
+      printDocument.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Receipt</title>
+            <style>
+              @page {
+                size: 80mm auto;
+                margin: 0 !important;
+              }
+              
+              * {
+                box-sizing: border-box;
+              }
+              
+              html, body {
+                width: 80mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+              }
+              
+              body {
+                font-family: 'Courier New', Courier, monospace !important;
+                font-size: 10px !important;
+                line-height: 1.3 !important;
+                color: black !important;
+              }
+              
+              .thermal-receipt {
+                width: 76mm !important;
+                padding: 0mm 2mm !important;
+                margin: 0 !important;
+                background: white !important;
+                border: none !important;
+                box-shadow: none !important;
+              }
+              
+              h2, .text-xl { font-size: 14px !important; font-weight: bold !important; }
+              .text-lg { font-size: 12px !important; }
+              .text-sm { font-size: 10px !important; }
+              .text-xs, .text-\\[10px\\] { font-size: 8px !important; }
+              
+              .text-center { text-align: center !important; }
+              .font-bold { font-weight: bold !important; }
+              .font-mono { font-family: 'Courier New', Courier, monospace !important; }
+              
+              .flex { display: flex !important; }
+              .justify-between { justify-content: space-between !important; }
+              .items-start { align-items: flex-start !important; }
+              
+              .border-dashed { border-style: dashed !important; }
+              .border-b, .border-b-2 { border-bottom: 1px dashed #000 !important; }
+              .border-t, .border-t-2 { border-top: 1px dashed #000 !important; }
+              
+              .pb-4 { padding-bottom: 8px !important; }
+              .mb-4 { margin-bottom: 8px !important; }
+              .mb-3 { margin-bottom: 6px !important; }
+              .mb-2 { margin-bottom: 4px !important; }
+              .mt-6 { margin-top: 12px !important; }
+              .pt-4 { padding-top: 8px !important; }
+              .mt-1 { margin-top: 2px !important; }
+              .mt-2 { margin-top: 4px !important; }
+              .space-y-1\\.5 > * + * { margin-top: 2px !important; }
+              .space-y-2 > * + * { margin-top: 3px !important; }
+              
+              .text-gray-600, .text-gray-500, .text-muted-foreground { color: #333 !important; }
+              
+              .dark\\:bg-slate-800, .dark\\:text-gray-400, .dark\\:text-gray-300, .dark\\:border-slate-600 {
+                background: white !important;
+                color: black !important;
+                border-color: #000 !important;
+              }
+              
+              .p-6 { padding: 0 !important; }
+              .max-w-\\[320px\\] { max-width: none !important; }
+              .mx-auto { margin-left: 0 !important; margin-right: 0 !important; }
+              .rounded-lg { border-radius: 0 !important; }
+              
+              .bg-white { background: white !important; }
+              .border-2 { border: none !important; }
+              .border-gray-300 { border-color: #000 !important; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printDocument.close();
+
+      // Wait for content to load then print
+      printFrame.onload = () => {
+        setTimeout(() => {
+          printFrame.contentWindow?.focus();
+          printFrame.contentWindow?.print();
+          // Clean up after printing
+          setTimeout(() => {
+            document.body.removeChild(printFrame);
+          }, 1000);
+        }, 100);
+      };
+    }
+    
     onPrint();
   };
 
