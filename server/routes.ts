@@ -17998,45 +17998,45 @@ Important rules:
       const contentWidth = pageWidth - (sideMargin * 2); // Full width minus margins
       const topMargin = 0; // Nuclear: no top margin at all
 
-      // Calculate content height - tight fit, no excess whitespace
-      let estimatedHeight = topMargin;
-      estimatedHeight += 14; // Company name
-      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 10;
-      if (companyInfo.phone || companyInfo.country) estimatedHeight += 10;
-      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 10;
+      // Calculate content height - proper spacing like preview
+      let estimatedHeight = topMargin + 4; // Top padding
+      estimatedHeight += 16; // Company name (larger)
+      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 11;
+      if (companyInfo.phone || companyInfo.country) estimatedHeight += 11;
+      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 11;
       estimatedHeight += 14; // Receipt title
-      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 8; // Dashed line spacing
       estimatedHeight += 12 * 4; // Date, Time, Receipt No, Customer
-      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 8; // Dashed line spacing
       estimatedHeight += 12; // Items header
       
-      // Items - tight height estimation
+      // Items - proper height estimation
       for (const item of items) {
         const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
         const estimatedLines = Math.ceil(itemName.length / 28);
-        estimatedHeight += Math.max(12, estimatedLines * 10) + 2;
+        estimatedHeight += Math.max(12, estimatedLines * 10) + 3;
       }
       
-      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 8; // Dashed line spacing
       estimatedHeight += 12; // Subtotal
       if (discount > 0) estimatedHeight += 12; // Discount
       estimatedHeight += 14; // Total (larger font)
       estimatedHeight += 10; // VAT text
-      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 8; // Dashed line spacing
       estimatedHeight += 12; // Payment method
       if (cashReceived !== undefined) estimatedHeight += 12; // Cash received
       if (change !== undefined && change > 0) estimatedHeight += 12; // Change
       
-      // Notes - tight estimation
+      // Notes - proper estimation
       if (notes && notes.length > 0) {
         const notesLines = Math.ceil(notes.length / 38);
-        estimatedHeight += 8 + (notesLines * 9);
+        estimatedHeight += 10 + (notesLines * 10);
       }
       
-      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 8; // Dashed line spacing
       estimatedHeight += 12; // Thank you
-      if (companyInfo.website) estimatedHeight += 10;
-      estimatedHeight += 4; // Minimal bottom margin
+      if (companyInfo.website) estimatedHeight += 12;
+      estimatedHeight += 8; // Bottom margin
 
       // Register Unicode fonts for Vietnamese, Czech, German, English support
       const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
@@ -18069,27 +18069,27 @@ Important rules:
         }
       };
 
-      let yPos = topMargin;
+      let yPos = topMargin + 4; // Small top padding
 
-      // Company Header - Left aligned for top-left nuclear option
-      doc.fontSize(11)
+      // Company Header - Centered like the preview
+      doc.fontSize(12)
          .font('Receipt-Bold')
          .fillColor('#000000')
-         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'left' });
-      yPos += 14;
+         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 16;
 
-      doc.fontSize(7).font('Receipt').fillColor('#333333');
+      doc.fontSize(7).font('Receipt').fillColor('#444444');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
-        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
-        yPos += 10;
+        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 11;
       }
 
       if (companyInfo?.phone || companyInfo?.country) {
         const contactLine = [companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ');
-        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
-        yPos += 10;
+        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 11;
       }
 
       if (companyInfo?.ico || companyInfo?.vatId) {
@@ -18097,14 +18097,14 @@ Important rules:
         if (companyInfo.ico) idLine += `${t.companyId}: ${companyInfo.ico}`;
         if (companyInfo.ico && companyInfo.vatId) idLine += ' | ';
         if (companyInfo.vatId) idLine += `${t.vatId}: ${companyInfo.vatId}`;
-        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'left' });
-        yPos += 10;
+        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 11;
       }
 
-      // Receipt Title
-      doc.fontSize(8).font('Receipt-Bold').fillColor('#000000')
-         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'left' });
-      yPos += 12;
+      // Receipt Title - Centered like the preview
+      doc.fontSize(9).font('Receipt-Bold').fillColor('#000000')
+         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 14;
 
       drawDashedLine(yPos);
       yPos += 6;
@@ -18166,34 +18166,34 @@ Important rules:
       }
 
       drawDashedLine(yPos);
-      yPos += 6;
+      yPos += 8;
 
-      // Totals
-      doc.fontSize(7).font('Receipt');
+      // Totals - with better spacing like the preview
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos);
-      doc.text(formatMoney(subtotal), sideMargin + contentWidth - 60, yPos, { width: 60, align: 'right' });
-      yPos += 10;
+      doc.text(formatMoney(subtotal), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+      yPos += 12;
 
       if (discount && discount > 0) {
         doc.text(`${t.discount}:`, sideMargin, yPos);
-        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 60, yPos, { width: 60, align: 'right' });
-        yPos += 10;
+        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+        yPos += 12;
       }
 
-      doc.fontSize(9).font('Receipt-Bold');
+      doc.fontSize(10).font('Receipt-Bold');
       doc.text(`${t.total}:`, sideMargin, yPos);
-      doc.text(formatMoney(total), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-      yPos += 12;
+      doc.text(formatMoney(total), sideMargin + contentWidth - 75, yPos, { width: 75, align: 'right' });
+      yPos += 14;
 
-      doc.fontSize(6).font('Receipt').fillColor('#666666');
-      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'left' });
-      yPos += 8;
+      doc.fontSize(7).font('Receipt').fillColor('#666666');
+      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 10;
 
       drawDashedLine(yPos);
-      yPos += 6;
+      yPos += 8;
 
-      // Payment
-      doc.fontSize(7).font('Receipt').fillColor('#000000');
+      // Payment - with better spacing like the preview
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
       const paymentLabels: Record<string, string> = {
         cash: t.cash,
         card: t.card,
@@ -18202,39 +18202,39 @@ Important rules:
         qr_czk: t.qrCode
       };
       doc.text(`${t.payment}:`, sideMargin, yPos);
-      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 60, yPos, { width: 60, align: 'right' });
-      yPos += 10;
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+      yPos += 12;
 
       if (cashReceived !== undefined && cashReceived !== null) {
         doc.text(`${t.cashReceived}:`, sideMargin, yPos);
-        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 60, yPos, { width: 60, align: 'right' });
-        yPos += 10;
+        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+        yPos += 12;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
         doc.text(`${t.change}:`, sideMargin, yPos);
-        doc.text(formatMoney(change), sideMargin + contentWidth - 60, yPos, { width: 60, align: 'right' });
-        yPos += 10;
+        doc.text(formatMoney(change), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+        yPos += 12;
       }
 
       if (notes) {
-        doc.fontSize(6).font('Receipt').fillColor('#333333');
+        doc.fontSize(7).font('Receipt').fillColor('#333333');
         doc.text(`${t.notes}: ${notes}`, sideMargin, yPos, { width: contentWidth });
-        yPos += 10;
+        yPos += 12;
       }
 
       drawDashedLine(yPos);
-      yPos += 6;
+      yPos += 8;
 
-      // Footer - Left aligned for top-left nuclear option
-      doc.fontSize(7).font('Receipt').fillColor('#000000');
-      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'left' });
-      yPos += 10;
+      // Footer - Centered like the preview
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
+      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 12;
 
       if (companyInfo?.website) {
-        doc.fontSize(6).fillColor('#666666');
-        doc.text(companyInfo.website, sideMargin, yPos, { width: contentWidth, align: 'left' });
+        doc.fontSize(7).fillColor('#666666');
+        doc.text(companyInfo.website, sideMargin, yPos, { width: contentWidth, align: 'center' });
       }
 
       doc.end();
