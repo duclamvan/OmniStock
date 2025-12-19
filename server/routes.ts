@@ -18152,6 +18152,7 @@ Important rules:
       yPos += baseLineHeight;
 
       doc.fontSize(8).font('Receipt');
+      const priceColumnWidth = 75; // Wider to fit large prices like "27 615.00 Kč"
       for (const item of items) {
         if (!item || typeof item !== 'object') continue;
         
@@ -18165,11 +18166,11 @@ Important rules:
         const itemText = `${qty}x ${name}`;
         const priceText = formatMoney(lineTotal);
         
-        const nameWidth = contentWidth - 55;
+        const nameWidth = contentWidth - priceColumnWidth;
         const nameHeight = doc.heightOfString(itemText, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         
         doc.text(itemText, sideMargin, yPos, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
-        doc.text(priceText, sideMargin + nameWidth, yPos, { width: 55, align: 'right' });
+        doc.text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' });
         yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 5;
       }
 
@@ -18177,20 +18178,21 @@ Important rules:
       yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
+      const totalsColumnWidth = 80; // Wide enough for large totals
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-      doc.text(formatMoney(subtotal), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+      doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
       yPos += baseLineHeight;
 
       if (discount && discount > 0) {
         doc.text(`${t.discount}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
       doc.fontSize(11).font('Receipt-Bold');
       doc.text(`${t.total}:`, sideMargin, yPos, { lineGap: isVietnamese ? 4 : 2 });
-      doc.text(formatMoney(total), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+      doc.text(formatMoney(total), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
       yPos += Math.round(20 * lineHeightMultiplier);
 
       doc.fontSize(7).font('Receipt').fillColor('#666666');
@@ -18210,19 +18212,19 @@ Important rules:
         qr_czk: t.qrCode
       };
       doc.text(`${t.payment}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
       yPos += baseLineHeight;
 
       if (cashReceived !== undefined && cashReceived !== null) {
         doc.text(`${t.cashReceived}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
         doc.text(`${t.change}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(formatMoney(change), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        doc.text(formatMoney(change), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
