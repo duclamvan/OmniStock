@@ -17831,254 +17831,419 @@ Important rules:
   // ========================================
   app.post("/api/pos/receipt-pdf", isAuthenticated, async (req, res) => {
     try {
-      const { 
-        items, 
-        subtotal, 
-        total, 
-        paymentMethod, 
-        cashReceived, 
-        change,
-        orderId,
-        customerName,
-        currency = 'CZK'
-      } = req.body;
+      // Basic validation - reject if no items or total is completely missing
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ message: 'Invalid request body' });
+      }
+      
+      if (!Array.isArray(req.body.items) || req.body.items.length === 0) {
+        return res.status(400).json({ message: 'At least one item is required' });
+      }
+      
+      if (req.body.total === undefined && req.body.subtotal === undefined) {
+        return res.status(400).json({ message: 'Total or subtotal is required' });
+      }
+      
+      // Extract with safe defaults using Number.isFinite for zero-value safety
+      const items = req.body.items;
+      const subtotalParsed = Number(req.body.subtotal);
+      const subtotal = Number.isFinite(subtotalParsed) ? subtotalParsed : 0;
+      const discountParsed = Number(req.body.discount);
+      const discount = Number.isFinite(discountParsed) ? discountParsed : 0;
+      const totalParsed = Number(req.body.total);
+      const total = Number.isFinite(totalParsed) ? totalParsed : subtotal; // Allow 0 as valid total
+      const paymentMethod = req.body.paymentMethod || 'cash';
+      const cashReceivedParsed = Number(req.body.cashReceived);
+      const cashReceived = req.body.cashReceived !== undefined && Number.isFinite(cashReceivedParsed) ? cashReceivedParsed : undefined;
+      const changeParsed = Number(req.body.change);
+      const change = req.body.change !== undefined && Number.isFinite(changeParsed) ? changeParsed : undefined;
+      const orderId = req.body.orderId || '';
+      const customerName = req.body.customerName || 'Walk-in Customer';
+      const currency = req.body.currency || 'CZK';
+      const notes = req.body.notes || '';
+      const language = ['en', 'vi', 'cs', 'de'].includes(req.body.language) ? req.body.language : 'en';
+      
+      // Safe date parsing with fallback to current date
+      let receiptDate = new Date();
+      if (req.body.date) {
+        const parsedDate = new Date(req.body.date);
+        if (!Number.isNaN(parsedDate.getTime())) {
+          receiptDate = parsedDate;
+        }
+      }
+      
+      // Safe company info with fallback defaults
+      const rawCompanyInfo = req.body.companyInfo || {};
+      const companyInfo = {
+        name: rawCompanyInfo.name || 'Company Name',
+        address: rawCompanyInfo.address || '',
+        city: rawCompanyInfo.city || '',
+        zip: rawCompanyInfo.zip || '',
+        country: rawCompanyInfo.country || '',
+        phone: rawCompanyInfo.phone || '',
+        ico: rawCompanyInfo.ico || '',
+        vatId: rawCompanyInfo.vatId || '',
+        website: rawCompanyInfo.website || ''
+      };
+
+      // Multilingual labels for receipts (EN/VI/CS/DE)
+      const labels: Record<string, Record<string, string>> = {
+        en: {
+          receipt: 'SALES RECEIPT',
+          date: 'Date',
+          time: 'Time',
+          receiptNo: 'Receipt No.',
+          customer: 'Customer',
+          walkIn: 'Walk-in Customer',
+          items: 'Items',
+          subtotal: 'Subtotal',
+          discount: 'Discount',
+          total: 'TOTAL',
+          vatIncluded: 'VAT included in price',
+          payment: 'Payment',
+          cash: 'Cash',
+          card: 'Card',
+          transfer: 'Bank Transfer',
+          payLater: 'Pay Later',
+          qrCode: 'QR Code',
+          cashReceived: 'Cash Received',
+          change: 'Change',
+          thankYou: 'Thank you for your purchase!',
+          companyId: 'ID',
+          vatId: 'VAT',
+          notes: 'Notes'
+        },
+        vi: {
+          receipt: 'HÓA ĐƠN BÁN HÀNG',
+          date: 'Ngày',
+          time: 'Giờ',
+          receiptNo: 'Số HĐ',
+          customer: 'Khách hàng',
+          walkIn: 'Khách lẻ',
+          items: 'Sản phẩm',
+          subtotal: 'Tạm tính',
+          discount: 'Giảm giá',
+          total: 'TỔNG CỘNG',
+          vatIncluded: 'Đã bao gồm VAT',
+          payment: 'Thanh toán',
+          cash: 'Tiền mặt',
+          card: 'Thẻ',
+          transfer: 'Chuyển khoản',
+          payLater: 'Trả sau',
+          qrCode: 'Mã QR',
+          cashReceived: 'Tiền nhận',
+          change: 'Tiền thối',
+          thankYou: 'Cảm ơn quý khách!',
+          companyId: 'MST',
+          vatId: 'VAT',
+          notes: 'Ghi chú'
+        },
+        cs: {
+          receipt: 'PRODEJNÍ DOKLAD',
+          date: 'Datum',
+          time: 'Čas',
+          receiptNo: 'Číslo účtenky',
+          customer: 'Zákazník',
+          walkIn: 'Běžný zákazník',
+          items: 'Položky',
+          subtotal: 'Mezisoučet',
+          discount: 'Sleva',
+          total: 'CELKEM',
+          vatIncluded: 'Cena včetně DPH',
+          payment: 'Platba',
+          cash: 'Hotovost',
+          card: 'Karta',
+          transfer: 'Převod',
+          payLater: 'Platba později',
+          qrCode: 'QR kód',
+          cashReceived: 'Přijato',
+          change: 'Vráceno',
+          thankYou: 'Děkujeme za nákup!',
+          companyId: 'IČO',
+          vatId: 'DIČ',
+          notes: 'Poznámky'
+        },
+        de: {
+          receipt: 'KASSENBELEG',
+          date: 'Datum',
+          time: 'Uhrzeit',
+          receiptNo: 'Beleg-Nr.',
+          customer: 'Kunde',
+          walkIn: 'Laufkunde',
+          items: 'Artikel',
+          subtotal: 'Zwischensumme',
+          discount: 'Rabatt',
+          total: 'GESAMT',
+          vatIncluded: 'inkl. MwSt.',
+          payment: 'Zahlung',
+          cash: 'Bar',
+          card: 'Karte',
+          transfer: 'Überweisung',
+          payLater: 'Später zahlen',
+          qrCode: 'QR-Code',
+          cashReceived: 'Erhalten',
+          change: 'Rückgeld',
+          thankYou: 'Vielen Dank für Ihren Einkauf!',
+          companyId: 'Steuer-Nr.',
+          vatId: 'USt-IdNr.',
+          notes: 'Notizen'
+        }
+      };
+
+      const t = labels[language] || labels.en;
 
       // 83mm = 235.28 points (1mm = 2.834645669 points)
       const pageWidth = 235;
       const contentWidth = 220; // 78mm content area
       const margin = 7; // ~2.5mm margin on each side
 
-      // Calculate content height first by simulating the layout
-      let estimatedHeight = margin; // Start with top margin
-      estimatedHeight += 18; // Header - Company Name
-      estimatedHeight += 15; // Subtitle
-      estimatedHeight += 8; // Dashed line
-      estimatedHeight += 12 * 2; // Date and Time
-      if (orderId) estimatedHeight += 12; // Order ID
-      estimatedHeight += 12; // Customer
+      // Calculate content height dynamically with generous buffer
+      let estimatedHeight = margin + 8; // Top margin + padding
+      estimatedHeight += 18; // Company name
+      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 12;
+      if (companyInfo.phone || companyInfo.country) estimatedHeight += 12;
+      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 12;
+      estimatedHeight += 16; // Receipt title
       estimatedHeight += 10; // Dashed line
+      estimatedHeight += 14 * 4; // Date, Time, Receipt No, Customer
+      estimatedHeight += 12; // Dashed line
       estimatedHeight += 14; // Items header
       
-      // Estimate items height (each item ~15-25 points depending on name length)
-      if (items && Array.isArray(items)) {
-        for (const item of items) {
-          const itemName = `${item.quantity}x ${item.name}`;
-          // Rough estimate: ~12 points per line, with wrapping for long names
-          const estimatedLines = Math.ceil(itemName.length / 25);
-          estimatedHeight += Math.max(12, estimatedLines * 12) + 3;
-        }
+      // Items with proper height estimation
+      for (const item of items) {
+        const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
+        const estimatedLines = Math.ceil(itemName.length / 26);
+        estimatedHeight += Math.max(14, estimatedLines * 12) + 4;
       }
       
-      estimatedHeight += 5; // Gap
-      estimatedHeight += 10; // Dashed line
-      estimatedHeight += 14; // Subtotal
-      estimatedHeight += 16; // Total
-      estimatedHeight += 10; // Dashed line
-      estimatedHeight += 12; // Payment method
-      if (cashReceived !== undefined) estimatedHeight += 12;
-      if (change !== undefined) estimatedHeight += 14;
+      estimatedHeight += 8;
       estimatedHeight += 12; // Dashed line
-      estimatedHeight += 12; // Thank you
-      estimatedHeight += 15; // Footer
-      estimatedHeight += margin; // Bottom margin
+      estimatedHeight += 14; // Subtotal
+      if (discount > 0) estimatedHeight += 14; // Discount
+      estimatedHeight += 18; // Total (larger font)
+      estimatedHeight += 12; // VAT text
+      estimatedHeight += 12; // Dashed line
+      estimatedHeight += 14; // Payment method
+      if (cashReceived !== undefined) estimatedHeight += 14; // Cash received
+      if (change !== undefined && change > 0) estimatedHeight += 14; // Change
+      
+      // Notes with proper multi-line estimation
+      if (notes && notes.length > 0) {
+        const notesLines = Math.ceil(notes.length / 35);
+        estimatedHeight += 10 + (notesLines * 10);
+      }
+      
+      estimatedHeight += 12; // Dashed line
+      estimatedHeight += 14; // Thank you
+      if (companyInfo.website) estimatedHeight += 12;
+      estimatedHeight += margin + 20; // Bottom margin with generous buffer
+      
+      // Minimum height to prevent underflow
+      estimatedHeight = Math.max(estimatedHeight, 200);
 
-      // Create PDF with exact 83mm width and calculated height
       const doc = new PDFDocument({
         size: [pageWidth, estimatedHeight],
         margin: 0,
         bufferPages: false
       });
 
-      // Collect PDF data
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
       
-      // Format currency helper
+      // Currency symbol helper
+      const currencySymbol = currency === 'EUR' ? '€' : currency === 'CZK' ? 'Kč' : currency;
       const formatMoney = (amount: number) => {
-        return `${currency} ${amount.toFixed(2)}`;
+        const formatted = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        return `${formatted} ${currencySymbol}`;
       };
 
-      // Create dashed line
       const drawDashedLine = (y: number) => {
-        doc.strokeColor('#333333')
-           .lineWidth(0.5);
-        for (let x = margin; x < contentWidth + margin; x += 6) {
-          doc.moveTo(x, y).lineTo(x + 3, y).stroke();
+        doc.strokeColor('#333333').lineWidth(0.5);
+        for (let x = margin; x < contentWidth + margin; x += 5) {
+          doc.moveTo(x, y).lineTo(x + 2.5, y).stroke();
         }
       };
 
-      let yPos = margin;
+      let yPos = margin + 3;
 
-      // Header - Company Name
-      doc.fontSize(14)
+      // Company Header
+      doc.fontSize(12)
          .font('Courier-Bold')
          .fillColor('#000000')
-         .text('DAVIE SUPPLY', margin, yPos, { 
-           width: contentWidth, 
-           align: 'center' 
-         });
-      yPos += 18;
+         .text(companyInfo?.name || 'Company Name', margin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 16;
 
-      // Subtitle
-      doc.fontSize(9)
-         .font('Courier')
-         .text('Point of Sale Receipt', margin, yPos, { 
-           width: contentWidth, 
-           align: 'center' 
-         });
-      yPos += 15;
+      doc.fontSize(8).font('Courier').fillColor('#333333');
 
-      // Dashed line separator
+      if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
+        const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
+        doc.text(addressLine, margin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 10;
+      }
+
+      if (companyInfo?.phone || companyInfo?.country) {
+        const contactLine = [companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ');
+        doc.text(contactLine, margin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 10;
+      }
+
+      if (companyInfo?.ico || companyInfo?.vatId) {
+        let idLine = '';
+        if (companyInfo.ico) idLine += `${t.companyId}: ${companyInfo.ico}`;
+        if (companyInfo.ico && companyInfo.vatId) idLine += ' | ';
+        if (companyInfo.vatId) idLine += `${t.vatId}: ${companyInfo.vatId}`;
+        doc.text(idLine, margin, yPos, { width: contentWidth, align: 'center' });
+        yPos += 10;
+      }
+
+      // Receipt Title
+      doc.fontSize(10).font('Courier-Bold').fillColor('#000000')
+         .text(t.receipt, margin, yPos, { width: contentWidth, align: 'center' });
+      yPos += 14;
+
       drawDashedLine(yPos);
       yPos += 8;
 
-      // Date and Time
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-US', { 
-        month: '2-digit', 
-        day: '2-digit', 
-        year: 'numeric' 
+      // Transaction Details
+      // Use the safe receiptDate already parsed at the top of this function
+      const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
+        day: '2-digit', month: '2-digit', year: 'numeric' 
       });
-      const timeStr = now.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
+      const timeStr = receiptDate.toLocaleTimeString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
+        hour: '2-digit', minute: '2-digit' 
       });
 
-      doc.fontSize(9)
-         .font('Courier')
-         .text(`Date:`, margin, yPos)
-         .text(dateStr, margin + 70, yPos);
+      doc.fontSize(8).font('Courier').fillColor('#000000');
+      doc.text(`${t.date}:`, margin, yPos).text(dateStr, margin + 70, yPos);
+      yPos += 12;
+      doc.text(`${t.time}:`, margin, yPos).text(timeStr, margin + 70, yPos);
       yPos += 12;
 
-      doc.text(`Time:`, margin, yPos)
-         .text(timeStr, margin + 70, yPos);
-      yPos += 12;
-
-      // Order ID if available
       if (orderId) {
-        doc.text(`Order #:`, margin, yPos)
-           .text(orderId, margin + 70, yPos);
+        doc.text(`${t.receiptNo}:`, margin, yPos).text(orderId, margin + 70, yPos);
         yPos += 12;
       }
 
-      // Customer
-      doc.text(`Customer:`, margin, yPos)
-         .text(customerName || 'Walk-in Customer', margin + 70, yPos);
+      const customerDisplay = customerName === 'Walk-in Customer' ? t.walkIn : (customerName || t.walkIn);
+      doc.text(`${t.customer}:`, margin, yPos);
+      const custNameWidth = contentWidth - 75;
+      doc.text(customerDisplay.substring(0, 25), margin + 70, yPos, { width: custNameWidth });
       yPos += 12;
 
-      // Dashed line separator
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += 8;
 
-      // Items header
-      doc.fontSize(10)
-         .font('Courier-Bold')
-         .text('Items:', margin, yPos);
-      yPos += 14;
+      // Items
+      doc.fontSize(9).font('Courier-Bold').text(t.items + ':', margin, yPos);
+      yPos += 12;
 
-      // Items list
-      doc.fontSize(9)
-         .font('Courier');
-
-      if (items && Array.isArray(items)) {
-        for (const item of items) {
-          const itemName = `${item.quantity}x ${item.name}`;
-          const itemPrice = formatMoney(item.price * item.quantity);
-          
-          // Item name (may wrap)
-          const nameHeight = doc.heightOfString(itemName, { width: contentWidth - 70 });
-          doc.text(itemName, margin, yPos, { width: contentWidth - 70 });
-          doc.text(itemPrice, margin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-          yPos += Math.max(nameHeight, 12) + 3;
-        }
+      doc.fontSize(8).font('Courier');
+      for (const item of items) {
+        // Type guard: skip invalid items, normalize fields
+        if (!item || typeof item !== 'object') continue;
+        
+        const qtyRaw = Number(item.quantity);
+        const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? qtyRaw : 1;
+        const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Item';
+        const priceRaw = Number(item.price);
+        const unitPrice = Number.isFinite(priceRaw) ? priceRaw : 0;
+        const lineTotal = unitPrice * qty;
+        
+        const itemText = `${qty}x ${name}`;
+        const priceText = formatMoney(lineTotal);
+        
+        const nameWidth = contentWidth - 55;
+        const nameHeight = doc.heightOfString(itemText, { width: nameWidth });
+        
+        doc.text(itemText, margin, yPos, { width: nameWidth });
+        doc.text(priceText, margin + nameWidth, yPos, { width: 55, align: 'right' });
+        yPos += Math.max(nameHeight, 10) + 3;
       }
 
-      yPos += 5;
-
-      // Dashed line separator
+      yPos += 3;
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += 8;
 
-      // Subtotal
-      doc.fontSize(9)
-         .font('Courier')
-         .text('Subtotal:', margin, yPos)
-         .text(formatMoney(subtotal || total), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+      // Totals
+      doc.fontSize(8).font('Courier');
+      doc.text(`${t.subtotal}:`, margin, yPos);
+      doc.text(formatMoney(subtotal), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+      yPos += 12;
+
+      if (discount && discount > 0) {
+        doc.text(`${t.discount}:`, margin, yPos);
+        doc.text(`-${formatMoney(discount)}`, margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+        yPos += 12;
+      }
+
+      doc.fontSize(10).font('Courier-Bold');
+      doc.text(`${t.total}:`, margin, yPos);
+      doc.text(formatMoney(total), margin + contentWidth - 75, yPos, { width: 75, align: 'right' });
       yPos += 14;
 
-      // Total (bold)
-      doc.fontSize(11)
-         .font('Courier-Bold')
-         .text('Total:', margin, yPos)
-         .text(formatMoney(total), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
-      yPos += 16;
-
-      // Dashed line separator
-      drawDashedLine(yPos);
+      doc.fontSize(7).font('Courier').fillColor('#666666');
+      doc.text(t.vatIncluded, margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 10;
 
-      // Payment details
-      doc.fontSize(9)
-         .font('Courier');
+      drawDashedLine(yPos);
+      yPos += 8;
 
-      const paymentMethodLabel = paymentMethod === 'cash' ? 'Cash' : 
-                                  paymentMethod === 'card' ? 'Card' : 
-                                  paymentMethod === 'bank_transfer' ? 'Transfer' :
-                                  paymentMethod === 'pay_later' ? 'Pay Later' :
-                                  paymentMethod === 'qr_czk' ? 'QR Code' : paymentMethod;
-
-      doc.text('Payment Method:', margin, yPos)
-         .text(paymentMethodLabel, margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+      // Payment
+      doc.fontSize(8).font('Courier').fillColor('#000000');
+      const paymentLabels: Record<string, string> = {
+        cash: t.cash,
+        card: t.card,
+        bank_transfer: t.transfer,
+        pay_later: t.payLater,
+        qr_czk: t.qrCode
+      };
+      doc.text(`${t.payment}:`, margin, yPos);
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
       yPos += 12;
 
       if (cashReceived !== undefined && cashReceived !== null) {
-        doc.text('Cash Received:', margin, yPos)
-           .text(formatMoney(cashReceived), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
+        doc.text(`${t.cashReceived}:`, margin, yPos);
+        doc.text(formatMoney(cashReceived), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
         yPos += 12;
       }
 
-      if (change !== undefined && change !== null) {
-        doc.font('Courier-Bold')
-           .text('Change:', margin, yPos)
-           .text(formatMoney(change), margin + contentWidth - 85, yPos, { width: 85, align: 'right' });
-        yPos += 14;
+      if (change !== undefined && change !== null && change > 0) {
+        doc.font('Courier-Bold');
+        doc.text(`${t.change}:`, margin, yPos);
+        doc.text(formatMoney(change), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+        yPos += 12;
       }
 
-      // Dashed line separator
+      if (notes) {
+        yPos += 4;
+        doc.fontSize(7).font('Courier').fillColor('#333333');
+        doc.text(`${t.notes}: ${notes}`, margin, yPos, { width: contentWidth });
+        yPos += 16;
+      }
+
       drawDashedLine(yPos);
-      yPos += 12;
+      yPos += 10;
 
       // Footer
-      doc.fontSize(9)
-         .font('Courier')
-         .text('Thank you for your purchase!', margin, yPos, { 
-           width: contentWidth, 
-           align: 'center' 
-         });
+      doc.fontSize(9).font('Courier').fillColor('#000000');
+      doc.text(t.thankYou, margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 12;
 
-      doc.fontSize(8)
-         .fillColor('#666666')
-         .text('Powered by Davie Supply POS', margin, yPos, { 
-           width: contentWidth, 
-           align: 'center' 
-         });
-      yPos += 15;
+      if (companyInfo?.website) {
+        doc.fontSize(7).fillColor('#666666');
+        doc.text(companyInfo.website, margin, yPos, { width: contentWidth, align: 'center' });
+      }
 
-      // End the document
       doc.end();
 
-      // Wait for PDF to be complete
       await new Promise<void>((resolve) => {
         doc.on('end', () => resolve());
       });
 
       const pdfBuffer = Buffer.concat(chunks);
 
-      // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="receipt-${Date.now()}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="receipt-${orderId || Date.now()}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       res.send(pdfBuffer);
 

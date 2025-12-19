@@ -221,13 +221,28 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             price: item.price
           })),
           subtotal: data.subtotal,
+          discount: data.discount,
           total: data.total,
           paymentMethod: data.paymentMethod,
           cashReceived: data.cashReceived,
           change: data.change,
           orderId: data.orderId,
           customerName: data.customerName,
-          currency: data.currency
+          currency: data.currency,
+          notes: data.notes,
+          date: data.date?.toISOString(),
+          language: receiptLang === 'cz' ? 'cs' : receiptLang,
+          companyInfo: {
+            name: companyInfo.name,
+            address: companyInfo.address,
+            city: companyInfo.city,
+            zip: companyInfo.zip,
+            country: companyInfo.country,
+            phone: companyInfo.phone,
+            ico: companyInfo.ico,
+            vatId: companyInfo.vatId,
+            website: companyInfo.website
+          }
         })
       });
 
@@ -275,61 +290,62 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       <style>{`
         @media print {
           @page {
-            size: 83mm auto;
+            size: 80mm auto;
             margin: 0mm !important;
+            padding: 0mm !important;
           }
           
-          html {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          
-          body {
+          html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-            width: 83mm !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           
-          /* Hide everything */
+          /* Hide everything initially */
           body * {
             visibility: hidden !important;
             position: static !important;
           }
           
-          /* Show receipt container and children */
+          /* Show receipt container and children - Epson TM-T20III optimized (80mm/72mm printable) */
           .print-receipt-container {
             visibility: visible !important;
             display: block !important;
             position: fixed !important;
-            left: 0mm !important;
-            top: 0mm !important;
+            left: 0 !important;
+            top: 0 !important;
             right: auto !important;
             bottom: auto !important;
-            width: 83mm !important;
-            max-width: 83mm !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
             z-index: 999999 !important;
+            overflow: visible !important;
           }
           
           .print-receipt-container .thermal-receipt {
             visibility: visible !important;
             display: block !important;
             position: relative !important;
-            width: 79mm !important;
-            max-width: 79mm !important;
-            padding: 2mm !important;
+            width: 72mm !important;
+            max-width: 72mm !important;
+            padding: 2mm 4mm !important;
             margin: 0 !important;
             font-family: 'Courier New', Courier, monospace !important;
-            font-size: 11px !important;
-            line-height: 1.4 !important;
+            font-size: 10px !important;
+            line-height: 1.3 !important;
             background: white !important;
             color: black !important;
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;
+            page-break-inside: avoid !important;
           }
           
           .print-receipt-container .thermal-receipt *,
@@ -341,10 +357,38 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             color: black !important;
             background: transparent !important;
             position: static !important;
+            font-size: inherit !important;
+          }
+          
+          .print-receipt-container .thermal-receipt h2 {
+            font-size: 14px !important;
+            font-weight: bold !important;
+          }
+          
+          .print-receipt-container .thermal-receipt [class*="text-xl"] {
+            font-size: 14px !important;
+          }
+          
+          .print-receipt-container .thermal-receipt [class*="text-lg"] {
+            font-size: 12px !important;
+          }
+          
+          .print-receipt-container .thermal-receipt [class*="text-sm"] {
+            font-size: 10px !important;
+          }
+          
+          .print-receipt-container .thermal-receipt [class*="text-xs"],
+          .print-receipt-container .thermal-receipt [class*="text-\\[10px\\]"] {
+            font-size: 8px !important;
           }
           
           .print-receipt-container .thermal-receipt [class*="border-"] {
-            border-color: #333 !important;
+            border-color: #000 !important;
+            border-style: dashed !important;
+          }
+          
+          .print-receipt-container .thermal-receipt [class*="border-b"] {
+            border-bottom-width: 1px !important;
           }
           
           .no-print {
@@ -353,6 +397,8 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             width: 0 !important;
             height: 0 !important;
             overflow: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
           }
         }
       `}</style>
