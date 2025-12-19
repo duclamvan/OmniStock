@@ -1920,7 +1920,7 @@ export default function POS() {
                 })()}
               </div>
               
-              {/* Custom Amount Input */}
+              {/* Custom Amount Input - Auto-focused with select all on focus */}
               <div className="relative">
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
                   {currencySymbol}
@@ -1929,8 +1929,10 @@ export default function POS() {
                   type="number"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   placeholder="0.00"
                   className="h-16 text-3xl font-bold text-center pl-4 pr-16 tabular-nums"
+                  autoFocus
                   data-testid="input-cash-amount"
                 />
               </div>
