@@ -6324,9 +6324,9 @@ export default function AddOrder() {
                       </div>
                     )}
                     
-                    {/* Total - Emphasized */}
+                    {/* Order Subtotal - Emphasized */}
                     <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-300 dark:border-slate-600">
-                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('orders:total')}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('orders:orderSubtotal')}</span>
                       <span className="text-lg font-bold text-primary tabular-nums">
                         {formatCurrency(totals.grandTotal, form.watch('currency'))}
                       </span>
