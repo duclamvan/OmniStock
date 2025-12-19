@@ -758,7 +758,7 @@ export default function AtWarehouse() {
   });
   
   // Fetch warehouses
-  const { data: warehouses = [] } = useQuery<Array<{ id: string; name: string; code: string }>>({
+  const { data: warehouses = [] } = useQuery<Array<{ id: string; name: string; code: string; address?: string }>>({
     queryKey: ['/api/warehouses'],
   });
   
@@ -770,7 +770,6 @@ export default function AtWarehouse() {
   const [warehouseComboOpen, setWarehouseComboOpen] = useState(false);
   const [isAdditionalDetailsOpen, setIsAdditionalDetailsOpen] = useState(false);
   const [consolidationShippingMethod, setConsolidationShippingMethod] = useState<string>("");
-  const [consolidationLocation, setConsolidationLocation] = useState<string>("");
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
@@ -1099,9 +1098,10 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Generate smart consolidation name
+  // Generate smart consolidation name based on shipping method and warehouse
   const generateConsolidationName = () => {
-    if (!consolidationShippingMethod || !consolidationLocation) {
+    const selectedWh = warehouses.find(w => w.id === selectedWarehouse);
+    if (!consolidationShippingMethod || !selectedWh) {
       return t('newConsolidation');
     }
 
@@ -1117,11 +1117,8 @@ export default function AtWarehouse() {
       sensitive_sea: "SEN-SEA"
     };
 
-    // Get location code (first 3 letters uppercase)
-    const locationCode = consolidationLocation.substring(0, 3).toUpperCase();
-    
     // Get warehouse code (from selected warehouse)
-    const warehouseCode = warehouses.find(w => w.id === selectedWarehouse)?.code || "WH";
+    const warehouseCode = selectedWh.code || selectedWh.name?.substring(0, 3).toUpperCase() || "WH";
     
     // Get date code (MMDD)
     const now = new Date();
@@ -1129,7 +1126,7 @@ export default function AtWarehouse() {
     
     const methodPrefix = methodPrefixes[consolidationShippingMethod] || "CONSOL";
     
-    return `${methodPrefix}-${locationCode}-${warehouseCode}-${dateCode}`;
+    return `${methodPrefix}-${warehouseCode}-${dateCode}`;
   };
 
   // Simple add items mutation with optimized cache updates
@@ -1533,9 +1530,13 @@ export default function AtWarehouse() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Get warehouse address to use as location
+    const selectedWh = warehouses.find(w => w.id === selectedWarehouse);
+    const warehouseAddress = selectedWh?.address || selectedWh?.name || '';
+    
     const data = {
       name: generateConsolidationName(), // Auto-generated name
-      location: formData.get('location') as string,
+      location: warehouseAddress, // Use warehouse address as location
       shippingMethod: formData.get('shippingMethod') as string,
       warehouse: formData.get('warehouse') as string,
       notes: formData.get('notes') as string || null,
@@ -2030,20 +2031,7 @@ export default function AtWarehouse() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">{t('destinationLocation')} *</Label>
-                  <Input 
-                    id="location" 
-                    name="location" 
-                    required 
-                    data-testid="input-consolidation-location"
-                    placeholder={t('locationExamplePlaceholder')}
-                    value={consolidationLocation}
-                    onChange={(e) => setConsolidationLocation(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="warehouse">{t('warehouse')} *</Label>
+                  <Label htmlFor="warehouse">{t('destinationWarehouse')} *</Label>
                   <input type="hidden" name="warehouse" value={selectedWarehouse} required />
                   <Popover open={warehouseComboOpen} onOpenChange={setWarehouseComboOpen}>
                       <PopoverTrigger asChild>
@@ -2080,7 +2068,12 @@ export default function AtWarehouse() {
                                       selectedWarehouse === warehouse.id ? "opacity-100" : "opacity-0"
                                     }`}
                                   />
-                                  {warehouse.name}
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{warehouse.name}</span>
+                                    {warehouse.address && (
+                                      <span className="text-xs text-muted-foreground">{warehouse.address}</span>
+                                    )}
+                                  </div>
                                 </CommandItem>
                               ))}
                             </ScrollArea>
@@ -2091,7 +2084,7 @@ export default function AtWarehouse() {
                 </div>
 
                 {/* Auto-generated name preview */}
-                {consolidationShippingMethod && consolidationLocation && (
+                {consolidationShippingMethod && selectedWarehouse && (
                   <div className="space-y-2">
                     <Label>{t('autoGeneratedName')}</Label>
                     <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-md border text-sm font-mono text-slate-700 dark:text-slate-300">
