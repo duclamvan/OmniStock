@@ -12,7 +12,7 @@ const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
 // Resend email configuration
 const resendApiKey = process.env.RESEND_API_KEY;
-const emailFrom = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+const emailFrom = process.env.EMAIL_FROM || 'Davie Shop <info@davie.shop>';
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
