@@ -302,7 +302,8 @@ export interface IStorage {
   // Purchase Items
   getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]>;
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
-  updatePurchaseItem(id: number, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined>;
+  updatePurchaseItem(id: string, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined>;
+  deletePurchaseItem(id: string): Promise<boolean>;
 
   // Consolidations
   getConsolidations(): Promise<Consolidation[]>;
@@ -1164,13 +1165,20 @@ export class DatabaseStorage implements IStorage {
     return newItem;
   }
 
-  async updatePurchaseItem(id: number, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined> {
+  async updatePurchaseItem(id: string, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined> {
     const [updated] = await db
       .update(purchaseItems)
       .set({ ...item, updatedAt: new Date() })
       .where(eq(purchaseItems.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deletePurchaseItem(id: string): Promise<boolean> {
+    const result = await db
+      .delete(purchaseItems)
+      .where(eq(purchaseItems.id, id));
+    return true;
   }
 
   // Consolidations

@@ -16482,6 +16482,155 @@ Important rules:
     }
   });
 
+  // Update import purchase by ID
+  app.patch('/api/imports/purchases/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Zod validation schema for PATCH purchase
+      // Helper to coerce string/number to number, treating empty strings as null
+      const coerceNumber = z.union([z.string(), z.number(), z.null()])
+        .transform(v => {
+          if (v === null || v === undefined || v === '') return null;
+          const num = Number(v);
+          return isNaN(num) ? null : num;
+        });
+      
+      const coercePositiveInt = z.union([z.string(), z.number()])
+        .transform(v => {
+          const num = Number(v);
+          return isNaN(num) || num < 1 ? 1 : Math.floor(num);
+        });
+      
+      const purchaseItemUpdateSchema = z.object({
+        id: z.string().optional(),
+        name: z.string().min(1, 'Item name is required'),
+        sku: z.string().nullable().optional(),
+        quantity: coercePositiveInt,
+        unitPrice: coerceNumber.transform(v => v ?? 0),
+        weight: coerceNumber,
+        dimensions: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        notes: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        unitType: z.enum(['selling', 'original']).optional().default('selling'),
+        quantityInSellingUnits: coerceNumber,
+        processingTimeDays: coerceNumber
+      });
+      
+      const purchaseUpdateSchema = z.object({
+        supplier: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        supplierId: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        trackingNumber: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        estimatedArrival: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        notes: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        shippingCost: coerceNumber.transform(v => String(v ?? 0)),
+        shippingCurrency: z.string().optional().default('USD'),
+        consolidation: z.string().nullable().optional().transform(v => v === '' ? null : v),
+        totalCost: coerceNumber.transform(v => String(v ?? 0)),
+        paymentCurrency: z.string().optional().default('USD'),
+        totalPaid: coerceNumber.transform(v => String(v ?? 0)),
+        purchaseCurrency: z.string().optional().default('USD'),
+        status: z.string().optional(),
+        items: z.array(purchaseItemUpdateSchema).optional()
+      });
+      
+      // Validate and parse request body
+      const parseResult = purchaseUpdateSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: 'Validation failed',
+          errors: parseResult.error.errors 
+        });
+      }
+      
+      const { items, ...purchaseData } = parseResult.data;
+      
+      // Update the purchase order
+      const updatedPurchase = await storage.updateImportPurchase(id, {
+        supplier: purchaseData.supplier,
+        supplierId: purchaseData.supplierId,
+        trackingNumber: purchaseData.trackingNumber,
+        estimatedArrival: purchaseData.estimatedArrival ? new Date(purchaseData.estimatedArrival) : null,
+        notes: purchaseData.notes,
+        shippingCost: purchaseData.shippingCost,
+        shippingCurrency: purchaseData.shippingCurrency,
+        consolidation: purchaseData.consolidation,
+        totalCost: purchaseData.totalCost,
+        paymentCurrency: purchaseData.paymentCurrency,
+        totalPaid: purchaseData.totalPaid,
+        purchaseCurrency: purchaseData.purchaseCurrency,
+        status: purchaseData.status
+      });
+      
+      if (!updatedPurchase) {
+        return res.status(404).json({ message: 'Purchase order not found' });
+      }
+      
+      // If items are provided, update them
+      if (items && items.length > 0) {
+        // Get existing items
+        const existingItems = await storage.getPurchaseItems(id);
+        const existingItemsMap = new Map(existingItems.map(item => [item.id, item]));
+        const newItemIds = new Set(items.map(item => item.id).filter(Boolean));
+        
+        // Delete items that are no longer in the list
+        for (const existingItem of existingItems) {
+          if (!newItemIds.has(existingItem.id)) {
+            await storage.deletePurchaseItem(existingItem.id);
+          }
+        }
+        
+        // Update existing items or create new ones
+        for (const item of items) {
+          if (item.id && existingItemsMap.has(item.id)) {
+            // Update existing item - validated data from Zod
+            await storage.updatePurchaseItem(item.id, {
+              name: item.name,
+              sku: item.sku ?? null,
+              quantity: item.quantity,
+              unitPrice: String(item.unitPrice),
+              totalPrice: String(item.unitPrice * item.quantity),
+              weight: item.weight !== null ? String(item.weight) : null,
+              dimensions: item.dimensions ?? null,
+              notes: item.notes ?? null,
+              unitType: item.unitType,
+              quantityInSellingUnits: item.quantityInSellingUnits ?? item.quantity,
+              processingTimeDays: item.processingTimeDays ?? null
+            });
+          } else {
+            // Create new item - validated data from Zod
+            await storage.createPurchaseItem({
+              purchaseId: id,
+              name: item.name,
+              sku: item.sku ?? null,
+              quantity: item.quantity,
+              unitPrice: String(item.unitPrice),
+              totalPrice: String(item.unitPrice * item.quantity),
+              weight: item.weight !== null ? String(item.weight) : null,
+              dimensions: item.dimensions ?? null,
+              notes: item.notes ?? null,
+              status: 'ordered',
+              unitType: item.unitType,
+              quantityInSellingUnits: item.quantityInSellingUnits ?? item.quantity,
+              processingTimeDays: item.processingTimeDays ?? null
+            });
+          }
+        }
+      }
+      
+      // Fetch and return the updated purchase with items
+      const finalPurchase = await storage.getImportPurchase(id);
+      const finalItems = await storage.getPurchaseItems(id);
+      
+      res.json({
+        ...finalPurchase,
+        items: finalItems
+      });
+    } catch (error) {
+      console.error('Error updating purchase order:', error);
+      res.status(500).json({ message: 'Failed to update purchase order' });
+    }
+  });
+
   // Get shipments by receiving status - To Receive
   app.get('/api/imports/shipments/to-receive', isAuthenticated, async (req, res) => {
     try {

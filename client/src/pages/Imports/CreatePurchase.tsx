@@ -667,7 +667,7 @@ export default function CreatePurchase() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/imports/purchases/${purchaseId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases', purchaseId] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
       
       // Invalidate shipment queries if status was set to delivered
@@ -690,10 +690,141 @@ export default function CreatePurchase() {
 
 
   // Fetch existing purchase data from API when in edit mode
-  const { data: existingPurchase, isLoading: loadingPurchase } = useQuery({
-    queryKey: [`/api/imports/purchases/${purchaseId}`],
-    enabled: isEditMode
+  const { data: existingPurchase, isLoading: loadingPurchase } = useQuery<{
+    id: string;
+    supplier: string;
+    supplierId?: string;
+    location: string;
+    trackingNumber?: string;
+    estimatedArrival?: string;
+    notes?: string;
+    shippingCost?: string;
+    shippingCurrency?: string;
+    consolidation?: string;
+    totalCost?: string;
+    paymentCurrency?: string;
+    totalPaid?: string;
+    purchaseCurrency?: string;
+    purchaseTotal?: string;
+    exchangeRate?: string;
+    status: string;
+    createdAt: string;
+    items: Array<{
+      id: string;
+      name: string;
+      sku?: string;
+      quantity: number;
+      unitPrice?: string;
+      totalPrice?: string;
+      weight?: string;
+      dimensions?: any;
+      imageUrl?: string;
+      notes?: string;
+      warehouseLocation?: string;
+      unitType?: string;
+      unitName?: string;
+      quantityInSellingUnits?: number;
+      processingTimeDays?: number;
+    }>;
+  }>({
+    queryKey: ['/api/imports/purchases', purchaseId],
+    enabled: isEditMode && !!purchaseId
   });
+
+  // Hydrate form state when existing purchase data is loaded
+  useEffect(() => {
+    if (existingPurchase && isEditMode) {
+      // Set purchase-level fields
+      setSupplier(existingPurchase.supplier || '');
+      // Set or clear supplierId to avoid stale associations
+      setSupplierId(existingPurchase.supplierId || null);
+      
+      setPurchaseCurrency(existingPurchase.purchaseCurrency || 'USD');
+      setPaymentCurrency(existingPurchase.paymentCurrency || 'USD');
+      setDisplayCurrency(existingPurchase.purchaseCurrency || 'USD');
+      setShippingCurrency(existingPurchase.shippingCurrency || 'USD');
+      setTotalPaid(parseFloat(existingPurchase.totalPaid || '0'));
+      setShippingCost(parseFloat(existingPurchase.shippingCost || '0'));
+      setTrackingNumber(existingPurchase.trackingNumber || '');
+      setNotes(existingPurchase.notes || '');
+      setStatus(existingPurchase.status || 'pending');
+      setConsolidation(existingPurchase.consolidation || 'No');
+      
+      // If payment currency differs from purchase currency, mark it as manually set
+      if (existingPurchase.paymentCurrency && existingPurchase.purchaseCurrency && 
+          existingPurchase.paymentCurrency !== existingPurchase.purchaseCurrency) {
+        setPaymentCurrencyManuallySet(true);
+      }
+      
+      // Set purchase date from createdAt - use slice(0,16) for datetime-local format
+      if (existingPurchase.createdAt) {
+        const date = new Date(existingPurchase.createdAt);
+        setPurchaseDate(date.toISOString().slice(0, 16));
+      }
+      
+      // Calculate processing time from estimatedArrival if available
+      if (existingPurchase.estimatedArrival && existingPurchase.createdAt) {
+        const created = new Date(existingPurchase.createdAt);
+        const estimated = new Date(existingPurchase.estimatedArrival);
+        const daysDiff = Math.round((estimated.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 0) {
+          if (daysDiff >= 30 && daysDiff % 30 === 0) {
+            setProcessingTime(String(daysDiff / 30));
+            setProcessingUnit('months');
+          } else if (daysDiff >= 7 && daysDiff % 7 === 0) {
+            setProcessingTime(String(daysDiff / 7));
+            setProcessingUnit('weeks');
+          } else {
+            setProcessingTime(String(daysDiff));
+            setProcessingUnit('days');
+          }
+        }
+      }
+      
+      // Map items to the component's PurchaseItem format
+      if (existingPurchase.items && existingPurchase.items.length > 0) {
+        const mappedItems: PurchaseItem[] = existingPurchase.items.map((item) => {
+          const unitPrice = parseFloat(item.unitPrice || '0');
+          const quantity = item.quantity || 1;
+          const totalPrice = parseFloat(item.totalPrice || '0') || unitPrice * quantity;
+          
+          // Parse dimensions if it's a JSON object
+          let dimensionsStr = '';
+          if (item.dimensions) {
+            if (typeof item.dimensions === 'object') {
+              const d = item.dimensions as { length?: number; width?: number; height?: number };
+              if (d.length && d.width && d.height) {
+                dimensionsStr = `${d.length}×${d.width}×${d.height}`;
+              }
+            } else if (typeof item.dimensions === 'string') {
+              dimensionsStr = item.dimensions;
+            }
+          }
+          
+          return {
+            id: item.id,
+            name: item.name,
+            sku: item.sku || '',
+            category: '',
+            barcode: '',
+            quantity: quantity,
+            unitPrice: unitPrice,
+            weight: parseFloat(item.weight || '0'),
+            dimensions: dimensionsStr,
+            notes: item.notes || '',
+            totalPrice: totalPrice,
+            costWithShipping: totalPrice,
+            imageUrl: item.imageUrl,
+            binLocation: item.warehouseLocation || 'TBA',
+            unitType: (item.unitType as 'selling' | 'bulk') || 'selling',
+            quantityInSellingUnits: item.quantityInSellingUnits,
+            processingTimeDays: item.processingTimeDays
+          };
+        });
+        setItems(mappedItems);
+      }
+    }
+  }, [existingPurchase, isEditMode]);
 
 
   const selectProduct = async (product: Product) => {
@@ -1496,6 +1627,46 @@ export default function CreatePurchase() {
       createPurchaseMutation.mutate(purchaseData);
     }
   };
+
+  // Show loading state while fetching purchase data in edit mode
+  if (isEditMode && loadingPurchase) {
+    return (
+      <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
+        <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
+          <div className="flex items-center justify-between p-2 sm:p-4 md:p-0">
+            <div className="flex items-center gap-2 md:gap-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate('/purchase-orders')}
+                className="md:hidden"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/purchase-orders')}
+                className="hidden md:flex"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('backToPurchaseOrders')}
+              </Button>
+              <div>
+                <h1 className="text-lg md:text-2xl font-semibold">{t('editPurchase')}</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">{t('loading') || 'Loading...'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
