@@ -769,7 +769,7 @@ router.post("/purchases/unpack", async (req, res) => {
 // Get single purchase with items
 router.get("/purchases/:id", async (req: any, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     
     const [purchase] = await db
       .select()
@@ -865,7 +865,7 @@ router.post("/purchases", async (req, res) => {
 // Add item to purchase
 router.post("/purchases/:id/items", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     const itemData = {
       purchaseId,
       name: req.body.name,
@@ -889,7 +889,7 @@ router.post("/purchases/:id/items", async (req, res) => {
 // Update complete purchase
 router.patch("/purchases/:id", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     
     // Get current purchase to check consolidation field
     const [currentPurchase] = await db
@@ -1012,7 +1012,7 @@ router.patch("/purchases/:id", async (req, res) => {
 // Update purchase status
 router.patch("/purchases/:id/status", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     const { status } = req.body;
     
     // Get current purchase to check consolidation field
@@ -1082,7 +1082,7 @@ router.patch("/purchases/:id/status", async (req, res) => {
 // Delete purchase
 router.delete("/purchases/:id", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     
     // Delete associated items first
     await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
@@ -1144,7 +1144,7 @@ router.get("/purchases/archived", async (req, res) => {
 // Archive a purchase
 router.patch("/purchases/:id/archive", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     
     const [updated] = await db
       .update(importPurchases)
@@ -1166,7 +1166,7 @@ router.patch("/purchases/:id/archive", async (req, res) => {
 // Unarchive a purchase
 router.patch("/purchases/:id/unarchive", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.id);
+    const purchaseId = req.params.id;
     
     const [updated] = await db
       .update(importPurchases)
