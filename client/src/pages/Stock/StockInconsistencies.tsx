@@ -66,23 +66,39 @@ export default function StockInconsistencies() {
   });
 
   const adjustStockMutation = useMutation({
-    mutationFn: async ({ productId, variantId, quantity }: { productId: string; variantId?: string | null; quantity: number }) => {
-      if (variantId) {
-        return apiRequest('PATCH', `/api/products/${productId}/variants/${variantId}`, { quantity });
-      }
-      return apiRequest('PATCH', `/api/products/${productId}`, { quantity });
+    mutationFn: async ({ 
+      productId, 
+      variantId, 
+      quantity,
+      inconsistencyType 
+    }: { 
+      productId: string; 
+      variantId?: string | null; 
+      quantity: number;
+      inconsistencyType: string;
+    }) => {
+      return apiRequest('POST', '/api/stock/quick-fix', { 
+        productId, 
+        variantId: variantId || null, 
+        newQuantity: quantity,
+        inconsistencyType,
+        reason: 'Stock inconsistency quick fix'
+      });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: t('common:success'),
         description: t('stockAdjustedSuccessfully'),
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/stock-inconsistencies'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/over-allocated-items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/under-allocated-items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       setQuickFixItem(null);
       setNewQuantity("");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/stock-inconsistencies'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/over-allocated-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/under-allocated-items'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] }),
+      ]);
+      refetch();
     },
     onError: (error: any) => {
       toast({
@@ -119,6 +135,7 @@ export default function StockInconsistencies() {
       productId: quickFixItem.productId,
       variantId: quickFixItem.variantId,
       quantity: qty,
+      inconsistencyType: quickFixItem.inconsistencyType,
     });
   };
 

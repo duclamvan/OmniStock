@@ -6273,6 +6273,66 @@ Important:
     }
   });
 
+  // Quick fix for stock inconsistencies - directly updates product/variant quantity
+  app.post('/api/stock/quick-fix', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const { productId, variantId, newQuantity, inconsistencyType, reason } = req.body;
+
+      if (!productId || newQuantity === undefined) {
+        return res.status(400).json({ message: "Product ID and new quantity are required" });
+      }
+
+      const qty = parseInt(newQuantity, 10);
+      if (isNaN(qty) || qty < 0) {
+        return res.status(400).json({ message: "Invalid quantity" });
+      }
+
+      let oldQuantity: number;
+      let entityName: string;
+
+      if (variantId) {
+        // Update variant quantity
+        const variant = await storage.getProductVariant(variantId);
+        if (!variant) {
+          return res.status(404).json({ message: "Variant not found" });
+        }
+        oldQuantity = variant.quantity || 0;
+        await storage.updateProductVariant(variantId, { quantity: qty });
+        entityName = variant.name || 'Variant';
+      } else {
+        // Update product quantity
+        const product = await storage.getProductById(productId);
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        oldQuantity = product.quantity || 0;
+        await storage.updateProduct(productId, { quantity: qty });
+        entityName = product.name || 'Product';
+      }
+
+      // Create audit trail
+      await storage.createUserActivity({
+        userId: userId,
+        action: 'adjusted',
+        entityType: variantId ? 'product_variant' : 'product',
+        entityId: variantId || productId,
+        description: `Stock quick fix (${inconsistencyType || 'manual'}): ${entityName} quantity changed from ${oldQuantity} to ${qty}. Reason: ${reason || 'Stock inconsistency fix'}`,
+      });
+
+      res.json({ 
+        success: true, 
+        newQuantity: qty, 
+        oldQuantity,
+        productId,
+        variantId 
+      });
+    } catch (error: any) {
+      console.error("Error performing quick stock fix:", error);
+      res.status(500).json({ message: error.message || "Failed to fix stock" });
+    }
+  });
+
   app.patch('/api/stock-adjustment-requests/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;

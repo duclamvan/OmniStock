@@ -367,6 +367,7 @@ export interface IStorage {
 
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
+  getProductVariant(id: string): Promise<ProductVariant | undefined>;
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
@@ -2386,6 +2387,20 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching product variants:', error);
       return [];
+    }
+  }
+
+  async getProductVariant(id: string): Promise<ProductVariant | undefined> {
+    try {
+      const [variant] = await db
+        .select()
+        .from(productVariants)
+        .where(eq(productVariants.id, id))
+        .limit(1);
+      return variant;
+    } catch (error) {
+      console.error('Error fetching product variant:', error);
+      return undefined;
     }
   }
 
