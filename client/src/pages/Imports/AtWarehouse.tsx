@@ -3824,32 +3824,15 @@ export default function AtWarehouse() {
           </DialogHeader>
           {editingItem && (
             <form onSubmit={handleUpdateCustomItem} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">{t('itemName')} *</Label>
-                  <Input 
-                    id="edit-name" 
-                    name="name" 
-                    required 
-                    defaultValue={editingItem.name}
-                    data-testid="input-edit-item-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-source">{t('sourcePlatform')} *</Label>
-                  <Select name="source" defaultValue={editingItem.source} required>
-                    <SelectTrigger data-testid="select-edit-source">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="taobao">{t('taobao')}</SelectItem>
-                      <SelectItem value="pinduoduo">{t('pinduoduo')}</SelectItem>
-                      <SelectItem value="1688">1688</SelectItem>
-                      <SelectItem value="alibaba">{t('alibaba')}</SelectItem>
-                      <SelectItem value="other">{t('other')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">{t('itemName')} *</Label>
+                <Input 
+                  id="edit-name" 
+                  name="name" 
+                  required 
+                  defaultValue={editingItem.name}
+                  data-testid="input-edit-item-name"
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -3936,28 +3919,6 @@ export default function AtWarehouse() {
                   defaultValue={editingItem.dimensions || ''}
                   data-testid="input-edit-dimensions"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-customerName">{t('customerName')}</Label>
-                  <Input 
-                    id="edit-customerName" 
-                    name="customerName" 
-                    defaultValue={editingItem.customerName || ''}
-                    data-testid="input-edit-customer-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-customerEmail">{t('customerEmail')}</Label>
-                  <Input 
-                    id="edit-customerEmail" 
-                    name="customerEmail" 
-                    type="email" 
-                    defaultValue={editingItem.customerEmail || ''}
-                    data-testid="input-edit-customer-email"
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
