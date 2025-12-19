@@ -2951,12 +2951,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   
                   return (
                     <div key={idx} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3">
-                      {/* Image - Hidden on mobile to save space */}
-                      <div className="hidden sm:flex w-11 h-11 rounded-lg border border-slate-200 bg-slate-50 items-center justify-center flex-shrink-0 overflow-hidden">
+                      {/* Image */}
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {item.image ? (
                           <img src={item.image} alt={item.productName} className="w-full h-full object-contain" />
                         ) : (
-                          <Package className="h-5 w-5 text-slate-300" />
+                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
                         )}
                       </div>
                       
