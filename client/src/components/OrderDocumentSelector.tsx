@@ -247,19 +247,19 @@ export default function OrderDocumentSelector({
             return (
               <div key={product.productId} className="space-y-2">
                 {/* Product Header */}
-                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-center justify-between py-2 px-2 sm:px-3 bg-slate-50 dark:bg-slate-900/50 rounded-md border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
                     <Package className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                    <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
+                    <span className="font-medium text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
                       {product.productName}
                     </span>
-                    <Badge variant="outline" className="text-xs px-1.5 h-5 shrink-0">
+                    <Badge variant="outline" className="text-xs px-1.5 h-5 shrink-0 hidden sm:inline-flex">
                       {product.sku}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {t(selectedCount === 1 ? 'orders:documentSelected' : 'orders:documentsSelected', { count: selectedCount })}/{files.length}
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-1.5 sm:ml-2">
+                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                      {selectedCount}/{files.length}
                     </span>
                     <Checkbox
                       checked={allSelected}
