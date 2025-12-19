@@ -295,17 +295,14 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
         @media print {
           @page {
             size: 80mm auto;
-            margin: 2mm !important;
-          }
-          
-          * {
-            visibility: hidden !important;
+            margin: 0 !important;
           }
           
           html, body {
             background: white !important;
             width: 80mm !important;
             height: auto !important;
+            min-height: auto !important;
             overflow: visible !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -313,20 +310,52 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             print-color-adjust: exact !important;
           }
           
-          .print-receipt-container,
-          .print-receipt-container .thermal-receipt,
-          .print-receipt-container .thermal-receipt * {
-            visibility: visible !important;
+          body > *:not([data-radix-portal]) {
+            display: none !important;
+          }
+          
+          [data-radix-portal] {
+            position: static !important;
+            display: block !important;
+          }
+          
+          [data-radix-dialog-overlay] {
+            display: none !important;
+          }
+          
+          [role="dialog"] {
+            position: static !important;
+            transform: none !important;
+            max-width: 80mm !important;
+            max-height: none !important;
+            width: 80mm !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            left: 0 !important;
+            top: 0 !important;
+            inset: auto !important;
+          }
+          
+          [role="dialog"] > button,
+          [role="dialog"] > div:first-child,
+          .no-print {
+            display: none !important;
           }
           
           .print-receipt-container {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            position: static !important;
             width: 80mm !important;
             background: white !important;
             margin: 0 !important;
             padding: 2mm !important;
+          }
+          
+          .print-receipt-container .thermal-receipt {
+            visibility: visible !important;
           }
           
           .print-receipt-container .thermal-receipt {
