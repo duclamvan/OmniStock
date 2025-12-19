@@ -9501,45 +9501,6 @@ Important:
     }
   });
 
-  app.post('/api/pre-orders', isAuthenticated, async (req: any, res) => {
-    try {
-      const data = insertPreOrderSchema.parse(req.body);
-      const preOrder = await storage.createPreOrder(data);
-
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'create',
-        entityType: 'pre-order',
-        entityId: preOrder.id,
-        description: `Created pre-order for: ${preOrder.customerName}`,
-      });
-
-      res.json(preOrder);
-    } catch (error) {
-      console.error("Error creating pre-order:", error);
-      res.status(500).json({ message: "Failed to create pre-order" });
-    }
-  });
-
-  app.delete('/api/pre-orders/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      await storage.deletePreOrder(req.params.id);
-
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'delete',
-        entityType: 'pre-order',
-        entityId: req.params.id,
-        description: `Deleted pre-order`,
-      });
-
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting pre-order:", error);
-      res.status(500).json({ message: "Failed to delete pre-order" });
-    }
-  });
-
   // Expenses endpoints
   app.get('/api/expenses', requireRole(['administrator']), async (req, res) => {
     try {
