@@ -6002,12 +6002,13 @@ Important:
 
   app.post('/api/products/:id/locations/move', isAuthenticated, async (req: any, res) => {
     try {
-      const { fromLocationId, toLocationId, quantity } = req.body;
+      const productId = req.params.id;
+      const { fromLocationId, toLocationId, toLocationCode, quantity } = req.body;
 
       // Validate required fields
-      if (!fromLocationId || !toLocationId || !quantity) {
+      if (!fromLocationId || (!toLocationId && !toLocationCode) || !quantity) {
         return res.status(400).json({ 
-          message: "Missing required fields: fromLocationId, toLocationId, quantity" 
+          message: "Missing required fields: fromLocationId, toLocationId or toLocationCode, quantity" 
         });
       }
 
@@ -6017,7 +6018,31 @@ Important:
         });
       }
 
-      const success = await storage.moveInventory(fromLocationId, toLocationId, quantity);
+      let finalToLocationId = toLocationId;
+
+      // If toLocationCode is provided instead of toLocationId, find or create the location
+      if (!toLocationId && toLocationCode) {
+        // Check if location already exists for this product
+        const existingLocations = await storage.getProductLocations(productId);
+        const existingLocation = existingLocations.find(
+          loc => loc.locationCode.toUpperCase() === toLocationCode.toUpperCase()
+        );
+
+        if (existingLocation) {
+          finalToLocationId = existingLocation.id;
+        } else {
+          // Create new location for this product
+          const newLocation = await storage.createProductLocation({
+            productId,
+            locationCode: toLocationCode.toUpperCase(),
+            quantity: 0, // Will be updated by moveInventory
+            isPrimary: false,
+          });
+          finalToLocationId = newLocation.id;
+        }
+      }
+
+      const success = await storage.moveInventory(fromLocationId, finalToLocationId, quantity);
 
       if (!success) {
         return res.status(400).json({ 

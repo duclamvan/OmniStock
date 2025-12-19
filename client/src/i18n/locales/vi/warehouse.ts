@@ -669,10 +669,14 @@ const warehouse = {
   scanOrType: 'Quét / Nhập',
   selectFromList: 'Chọn từ danh sách',
   locationCodeFormat: 'Định dạng: WH1-A01, B01, v.v.',
+  locationCodeFormatExtended: 'Định dạng: WH1-A01, WH1-A01-R01-L01-B1, v.v.',
   locationFound: 'Đã tìm thấy vị trí',
   locationNotFound: 'Không tìm thấy vị trí',
   pleaseEnterValidLocationCode: 'Vui lòng nhập mã vị trí hợp lệ',
   locationNotRecognized: 'Mã vị trí không được nhận dạng',
+  newLocation: 'Vị trí mới',
+  newLocationWillBeCreated: 'Vị trí mới sẽ được tạo',
+  invalidLocationFormat: 'Định dạng vị trí không hợp lệ',
   
   // Stock Adjustment Dialog
   requestStockAdjustment: 'Yêu cầu điều chỉnh tồn kho',

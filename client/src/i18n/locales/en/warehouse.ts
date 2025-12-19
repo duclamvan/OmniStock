@@ -700,10 +700,13 @@ const warehouse = {
   scanOrType: 'Scan / Type',
   selectFromList: 'Select from List',
   locationCodeFormat: 'Format: WH1-A01, B01, etc.',
+  locationCodeFormatExtended: 'Format: WH1-A01, WH1-A01-R01-L01-B1, etc.',
   locationFound: 'Location Found',
   locationNotFound: 'Location Not Found',
   pleaseEnterValidLocationCode: 'Please enter a valid location code',
   locationNotRecognized: 'Location code not recognized',
+  newLocation: 'New Location',
+  newLocationWillBeCreated: 'New location will be created',
   
   // Location Selector
   selectLocationType: 'Select location type',

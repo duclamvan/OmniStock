@@ -90,6 +90,14 @@ export default function MoveInventoryDialog({
     }
   }, [open, locationInputMode]);
 
+  // Validate location code format (supports WH1-A01, WH1-A01-R01, WH1-A01-R01-L01, WH1-A01-R01-L01-B1, etc.)
+  const isValidLocationCode = (code: string): boolean => {
+    if (!code || code.length < 2) return false;
+    // Allow various formats: WH1-A01, A01-R01, WH1-A01-R01-L01-B1, etc.
+    const pattern = /^[A-Z0-9]+(-[A-Z0-9]+)*$/;
+    return pattern.test(code);
+  };
+
   const handleLocationCodeChange = (value: string) => {
     const upperValue = value.toUpperCase();
     setLocationCodeInput(upperValue);
@@ -100,6 +108,9 @@ export default function MoveInventoryDialog({
     
     if (matchingLocation) {
       setMoveToLocation(matchingLocation.id);
+    } else if (isValidLocationCode(upperValue)) {
+      // Valid format but new location - mark as "new" using special prefix
+      setMoveToLocation(`new:${upperValue}`);
     } else {
       setMoveToLocation("");
     }
@@ -118,9 +129,15 @@ export default function MoveInventoryDialog({
           title: t('warehouse:locationFound'),
           description: `${matchingLocation.locationCode} (${matchingLocation.quantity} ${t('warehouse:units')})`,
         });
+      } else if (isValidLocationCode(locationCodeInput)) {
+        setMoveToLocation(`new:${locationCodeInput}`);
+        toast({
+          title: t('warehouse:newLocationWillBeCreated'),
+          description: locationCodeInput,
+        });
       } else if (locationCodeInput.trim()) {
         toast({
-          title: t('warehouse:locationNotFound'),
+          title: t('warehouse:invalidLocationFormat'),
           description: t('warehouse:pleaseEnterValidLocationCode'),
           variant: "destructive",
         });
@@ -131,6 +148,8 @@ export default function MoveInventoryDialog({
   const matchedLocation = locations.find(
     (loc) => loc.locationCode.toUpperCase() === locationCodeInput.toUpperCase() && loc.id !== fromLocation?.id
   );
+  
+  const isNewLocation = !matchedLocation && isValidLocationCode(locationCodeInput);
 
   const moveInventoryMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -176,10 +195,15 @@ export default function MoveInventoryDialog({
       return;
     }
 
+    // Check if moving to a new location (prefixed with "new:")
+    const isMovingToNewLocation = moveToLocation.startsWith("new:");
+    
     moveInventoryMutation.mutate({
       productId,
       fromLocationId: fromLocation.id,
-      toLocationId: moveToLocation,
+      ...(isMovingToNewLocation 
+        ? { toLocationCode: moveToLocation.replace("new:", "") }
+        : { toLocationId: moveToLocation }),
       quantity: moveQuantity,
     });
   };
@@ -245,10 +269,16 @@ export default function MoveInventoryDialog({
                   <Scan className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('warehouse:locationCodeFormat')}
+                  {t('warehouse:locationCodeFormatExtended')}
                 </p>
                 {locationCodeInput && (
-                  <div className={`rounded-lg p-2 ${matchedLocation ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'}`}>
+                  <div className={`rounded-lg p-2 ${
+                    matchedLocation 
+                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                      : isNewLocation 
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                        : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                  }`}>
                     {matchedLocation ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -261,10 +291,22 @@ export default function MoveInventoryDialog({
                           {matchedLocation.quantity} {t('warehouse:units')}
                         </span>
                       </div>
+                    ) : isNewLocation ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                          <span className="text-sm font-mono font-medium text-blue-700 dark:text-blue-400">
+                            {locationCodeInput}
+                          </span>
+                        </div>
+                        <span className="text-xs text-blue-600 dark:text-blue-400">
+                          {t('warehouse:newLocation')}
+                        </span>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
                         <AlertCircle className="h-3 w-3" />
-                        <span className="text-xs">{t('warehouse:locationNotRecognized')}</span>
+                        <span className="text-xs">{t('warehouse:invalidLocationFormat')}</span>
                       </div>
                     )}
                   </div>
