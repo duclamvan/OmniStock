@@ -2404,7 +2404,6 @@ export default function POS() {
               data={receiptData} 
               onClose={() => {
                 setShowReceipt(false);
-                setLocation('/orders');
               }}
               onPrint={() => {}}
               companyInfo={companyInfo}
