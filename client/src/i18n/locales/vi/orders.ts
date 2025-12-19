@@ -903,7 +903,7 @@ const orders = {
   typeToSearchCustomers: 'Nhập để tìm kiếm khách hàng...',
   noCustomerFound: 'Không tìm thấy khách hàng',
   createNewCustomer: 'Tạo khách hàng mới',
-  expectedArrivalDate: 'Ngày dự kiến về hàng',
+  expectedArrivalDate: 'Ngày ước tính hàng về',
   pickADate: 'Chọn ngày',
   addNotesOrInstructions: 'Thêm ghi chú hoặc hướng dẫn đặc biệt...',
   preOrderItems: 'Sản phẩm đặt trước',

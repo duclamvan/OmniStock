@@ -899,7 +899,7 @@ const orders = {
   typeToSearchCustomers: 'Type to search customers...',
   noCustomerFound: 'No customer found',
   createNewCustomer: 'Create New Customer',
-  expectedArrivalDate: 'Expected Arrival Date',
+  expectedArrivalDate: 'Estimated Arrival Date',
   pickADate: 'Pick a date',
   addNotesOrInstructions: 'Add any notes or special instructions...',
   preOrderItems: 'Pre-Order Items',
