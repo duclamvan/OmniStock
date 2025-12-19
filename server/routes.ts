@@ -18050,6 +18050,14 @@ Important rules:
       // Noto Sans Mono has full Vietnamese diacritics support
       const fontPath = path.join(process.cwd(), 'server', 'fonts', 'NotoSansMono-Regular.ttf');
       const fontBoldPath = path.join(process.cwd(), 'server', 'fonts', 'NotoSansMono-Bold.ttf');
+      
+      // Fallback to DejaVu if Noto fonts don't exist
+      const fs = await import('fs');
+      const regularFontExists = fs.existsSync(fontPath);
+      const boldFontExists = fs.existsSync(fontBoldPath);
+      
+      const actualFontPath = regularFontExists ? fontPath : path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
+      const actualFontBoldPath = boldFontExists ? fontBoldPath : path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono-Bold.ttf');
 
       const doc = new PDFDocument({
         size: [pageWidth, estimatedHeight],
@@ -18058,8 +18066,8 @@ Important rules:
       });
 
       // Register custom fonts for multilingual support
-      doc.registerFont('Receipt', fontPath);
-      doc.registerFont('Receipt-Bold', fontBoldPath);
+      doc.registerFont('Receipt', actualFontPath);
+      doc.registerFont('Receipt-Bold', actualFontBoldPath);
 
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
