@@ -17992,52 +17992,59 @@ Important rules:
 
       const t = labels[language] || labels.en;
 
+      // Vietnamese text needs extra line height for diacritics (tones above/below)
+      const isVietnamese = language === 'vi';
+      const lineHeightMultiplier = isVietnamese ? 1.3 : 1.0;
+
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
       const sideMargin = 8; // Better side margins for breathing room
       const contentWidth = pageWidth - (sideMargin * 2);
       const topMargin = 8; // Top margin for cleaner look
 
-      // Calculate content height with improved spacing
-      let estimatedHeight = topMargin + 8; // Top padding
-      estimatedHeight += 18; // Company name (larger)
-      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 14;
-      if (companyInfo.phone || companyInfo.country) estimatedHeight += 14;
-      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 14;
-      estimatedHeight += 8; // Extra space before receipt title
-      estimatedHeight += 16; // Receipt title
-      estimatedHeight += 12; // Dashed line spacing
-      estimatedHeight += 14 * 4; // Date, Time, Receipt No, Customer with more space
-      estimatedHeight += 12; // Dashed line spacing
-      estimatedHeight += 14; // Items header
+      // Calculate content height with improved spacing (Vietnamese needs extra height for diacritics)
+      const baseLineHeight = isVietnamese ? 16 : 14;
+      const smallLineHeight = isVietnamese ? 14 : 12;
       
-      // Items - proper height estimation with more space
+      let estimatedHeight = topMargin + 8; // Top padding
+      estimatedHeight += 20 * lineHeightMultiplier; // Company name (larger)
+      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += baseLineHeight;
+      if (companyInfo.phone || companyInfo.country) estimatedHeight += baseLineHeight;
+      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += baseLineHeight;
+      estimatedHeight += 8; // Extra space before receipt title
+      estimatedHeight += 18 * lineHeightMultiplier; // Receipt title
+      estimatedHeight += smallLineHeight; // Dashed line spacing
+      estimatedHeight += baseLineHeight * 4; // Date, Time, Receipt No, Customer
+      estimatedHeight += smallLineHeight; // Dashed line spacing
+      estimatedHeight += baseLineHeight; // Items header
+      
+      // Items - proper height estimation with more space for Vietnamese
       for (const item of items) {
         const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
-        const estimatedLines = Math.ceil(itemName.length / 26);
-        estimatedHeight += Math.max(14, estimatedLines * 12) + 4;
+        const estimatedLines = Math.ceil(itemName.length / 24);
+        estimatedHeight += Math.max(baseLineHeight, estimatedLines * smallLineHeight) + 5;
       }
       
-      estimatedHeight += 12; // Dashed line spacing
-      estimatedHeight += 14; // Subtotal
-      if (discount > 0) estimatedHeight += 14; // Discount
-      estimatedHeight += 18; // Total (larger font)
-      estimatedHeight += 14; // VAT text
-      estimatedHeight += 12; // Dashed line spacing
-      estimatedHeight += 14; // Payment method
-      if (cashReceived !== undefined) estimatedHeight += 14; // Cash received
-      if (change !== undefined && change > 0) estimatedHeight += 14; // Change
+      estimatedHeight += smallLineHeight; // Dashed line spacing
+      estimatedHeight += baseLineHeight; // Subtotal
+      if (discount > 0) estimatedHeight += baseLineHeight; // Discount
+      estimatedHeight += 20 * lineHeightMultiplier; // Total (larger font)
+      estimatedHeight += baseLineHeight; // VAT text
+      estimatedHeight += smallLineHeight; // Dashed line spacing
+      estimatedHeight += baseLineHeight; // Payment method
+      if (cashReceived !== undefined) estimatedHeight += baseLineHeight; // Cash received
+      if (change !== undefined && change > 0) estimatedHeight += baseLineHeight; // Change
       
       // Notes - proper estimation
       if (notes && notes.length > 0) {
-        const notesLines = Math.ceil(notes.length / 34);
-        estimatedHeight += 14 + (notesLines * 12);
+        const notesLines = Math.ceil(notes.length / 32);
+        estimatedHeight += baseLineHeight + (notesLines * smallLineHeight);
       }
       
-      estimatedHeight += 12; // Dashed line spacing
-      estimatedHeight += 16; // Thank you
-      if (companyInfo.website) estimatedHeight += 14;
-      estimatedHeight += 12; // Bottom margin
+      estimatedHeight += smallLineHeight; // Dashed line spacing
+      estimatedHeight += 18 * lineHeightMultiplier; // Thank you
+      if (companyInfo.website) estimatedHeight += baseLineHeight;
+      estimatedHeight += 14; // Bottom margin
 
       // Register Unicode fonts for Vietnamese, Czech, German, English support
       const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
@@ -18076,21 +18083,21 @@ Important rules:
       doc.fontSize(12)
          .font('Receipt-Bold')
          .fillColor('#000000')
-         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 18;
+         .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 4 : 2 });
+      yPos += Math.round(20 * lineHeightMultiplier);
 
       doc.fontSize(7).font('Receipt').fillColor('#444444');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
-        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 14;
+        doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 3 : 1 });
+        yPos += baseLineHeight;
       }
 
       if (companyInfo?.phone || companyInfo?.country) {
         const contactLine = [companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ');
-        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 14;
+        doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 3 : 1 });
+        yPos += baseLineHeight;
       }
 
       if (companyInfo?.ico || companyInfo?.vatId) {
@@ -18098,19 +18105,19 @@ Important rules:
         if (companyInfo.ico) idLine += `${t.companyId}: ${companyInfo.ico}`;
         if (companyInfo.ico && companyInfo.vatId) idLine += ' | ';
         if (companyInfo.vatId) idLine += `${t.vatId}: ${companyInfo.vatId}`;
-        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 14;
+        doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 3 : 1 });
+        yPos += baseLineHeight;
       }
 
-      yPos += 4; // Extra breathing room before receipt title
+      yPos += 6; // Extra breathing room before receipt title
 
       // Receipt Title - Centered with emphasis
       doc.fontSize(10).font('Receipt-Bold').fillColor('#000000')
-         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 16;
+         .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 4 : 2 });
+      yPos += Math.round(18 * lineHeightMultiplier);
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
@@ -18121,28 +18128,28 @@ Important rules:
       });
 
       doc.fontSize(8).font('Receipt').fillColor('#000000');
-      doc.text(`${t.date}:`, sideMargin, yPos).text(dateStr, sideMargin + 55, yPos);
-      yPos += 13;
-      doc.text(`${t.time}:`, sideMargin, yPos).text(timeStr, sideMargin + 55, yPos);
-      yPos += 13;
+      doc.text(`${t.date}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(dateStr, sideMargin + 55, yPos);
+      yPos += baseLineHeight;
+      doc.text(`${t.time}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(timeStr, sideMargin + 55, yPos);
+      yPos += baseLineHeight;
 
       if (orderId) {
-        doc.text(`${t.receiptNo}:`, sideMargin, yPos).text(orderId, sideMargin + 55, yPos);
-        yPos += 13;
+        doc.text(`${t.receiptNo}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(orderId, sideMargin + 55, yPos);
+        yPos += baseLineHeight;
       }
 
       const customerDisplay = customerName === 'Walk-in Customer' ? t.walkIn : (customerName || t.walkIn);
-      doc.text(`${t.customer}:`, sideMargin, yPos);
+      doc.text(`${t.customer}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
       const custNameWidth = contentWidth - 60;
-      doc.text(customerDisplay.substring(0, 26), sideMargin + 55, yPos, { width: custNameWidth });
-      yPos += 13;
+      doc.text(customerDisplay.substring(0, 24), sideMargin + 55, yPos, { width: custNameWidth, lineGap: isVietnamese ? 3 : 1 });
+      yPos += baseLineHeight;
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += smallLineHeight;
 
       // Items Section
-      doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', sideMargin, yPos);
-      yPos += 14;
+      doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
+      yPos += baseLineHeight;
 
       doc.fontSize(8).font('Receipt');
       for (const item of items) {
@@ -18159,39 +18166,39 @@ Important rules:
         const priceText = formatMoney(lineTotal);
         
         const nameWidth = contentWidth - 55;
-        const nameHeight = doc.heightOfString(itemText, { width: nameWidth });
+        const nameHeight = doc.heightOfString(itemText, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         
-        doc.text(itemText, sideMargin, yPos, { width: nameWidth });
+        doc.text(itemText, sideMargin, yPos, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         doc.text(priceText, sideMargin + nameWidth, yPos, { width: 55, align: 'right' });
-        yPos += Math.max(nameHeight, 11) + 4;
+        yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 5;
       }
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
       doc.fontSize(8).font('Receipt').fillColor('#000000');
-      doc.text(`${t.subtotal}:`, sideMargin, yPos);
+      doc.text(`${t.subtotal}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
       doc.text(formatMoney(subtotal), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-      yPos += 14;
+      yPos += baseLineHeight;
 
       if (discount && discount > 0) {
-        doc.text(`${t.discount}:`, sideMargin, yPos);
+        doc.text(`${t.discount}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
         doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-        yPos += 14;
+        yPos += baseLineHeight;
       }
 
       doc.fontSize(11).font('Receipt-Bold');
-      doc.text(`${t.total}:`, sideMargin, yPos);
+      doc.text(`${t.total}:`, sideMargin, yPos, { lineGap: isVietnamese ? 4 : 2 });
       doc.text(formatMoney(total), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-      yPos += 18;
+      yPos += Math.round(20 * lineHeightMultiplier);
 
       doc.fontSize(7).font('Receipt').fillColor('#666666');
-      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 12;
+      doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 3 : 1 });
+      yPos += baseLineHeight;
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += smallLineHeight;
 
       // Payment Section
       doc.fontSize(8).font('Receipt').fillColor('#000000');
@@ -18202,37 +18209,37 @@ Important rules:
         pay_later: t.payLater,
         qr_czk: t.qrCode
       };
-      doc.text(`${t.payment}:`, sideMargin, yPos);
+      doc.text(`${t.payment}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
       doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-      yPos += 14;
+      yPos += baseLineHeight;
 
       if (cashReceived !== undefined && cashReceived !== null) {
-        doc.text(`${t.cashReceived}:`, sideMargin, yPos);
+        doc.text(`${t.cashReceived}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
         doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-        yPos += 14;
+        yPos += baseLineHeight;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
-        doc.text(`${t.change}:`, sideMargin, yPos);
+        doc.text(`${t.change}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
         doc.text(formatMoney(change), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
-        yPos += 14;
+        yPos += baseLineHeight;
       }
 
       if (notes) {
         yPos += 4;
         doc.fontSize(7).font('Receipt').fillColor('#333333');
-        doc.text(`${t.notes}: ${notes}`, sideMargin, yPos, { width: contentWidth });
-        yPos += 14;
+        doc.text(`${t.notes}: ${notes}`, sideMargin, yPos, { width: contentWidth, lineGap: isVietnamese ? 3 : 1 });
+        yPos += baseLineHeight;
       }
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += smallLineHeight;
 
       // Footer with warm closing
       doc.fontSize(9).font('Receipt').fillColor('#000000');
-      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 14;
+      doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'center', lineGap: isVietnamese ? 4 : 2 });
+      yPos += Math.round(16 * lineHeightMultiplier);
 
       if (companyInfo?.website) {
         doc.fontSize(7).fillColor('#666666');
