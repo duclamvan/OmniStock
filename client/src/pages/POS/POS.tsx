@@ -399,7 +399,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       <div className="flex justify-center">
         <div 
           className="bg-white rounded-lg shadow-lg overflow-hidden"
-          style={{ width: '320px', minHeight: '500px' }}
+          style={{ width: '420px', minHeight: '500px' }}
         >
           {isLoadingPdf ? (
             <div className="flex items-center justify-center h-[500px]">
@@ -409,7 +409,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
             <embed
               src={pdfUrl}
               type="application/pdf"
-              width="320"
+              width="420"
               height="600"
               style={{ border: 'none' }}
             />
