@@ -861,6 +861,7 @@ const orders = {
   // PreOrders - Page specific
   preOrderManagement: 'Pre-Order Management',
   manageCustomerPreOrders: 'Manage customer pre-orders and advance bookings',
+  totalPreOrders: 'Total Pre-Orders',
   activePreOrders: 'Active Pre-Orders',
   active: 'Active',
   pendingArrival: 'Pending Arrival',

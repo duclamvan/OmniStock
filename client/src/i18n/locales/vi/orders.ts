@@ -865,6 +865,7 @@ const orders = {
   // PreOrders - Page specific
   preOrderManagement: 'Quản lý đơn đặt trước',
   manageCustomerPreOrders: 'Quản lý đơn đặt trước và đặt cọc của khách hàng',
+  totalPreOrders: 'Tổng đơn đặt trước',
   activePreOrders: 'Đơn đặt trước hoạt động',
   active: 'Hoạt động',
   pendingArrival: 'Chờ hàng về',
