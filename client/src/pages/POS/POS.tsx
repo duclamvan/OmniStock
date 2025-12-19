@@ -502,6 +502,8 @@ export default function POS() {
   const barcodeBuffer = useRef<string>('');
   const cartScrollRef = useRef<HTMLDivElement>(null);
   const prevCartLengthRef = useRef<number>(0);
+  const quantityInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [focusedCartItemId, setFocusedCartItemId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('pos_currency', currency);
@@ -530,6 +532,20 @@ export default function POS() {
     }
     prevCartLengthRef.current = cart.length;
   }, [cart.length]);
+
+  // Focus quantity input when an item is added to cart
+  useEffect(() => {
+    if (focusedCartItemId) {
+      setTimeout(() => {
+        const input = quantityInputRefs.current[focusedCartItemId];
+        if (input) {
+          input.focus();
+          input.select();
+        }
+        setFocusedCartItemId(null);
+      }, 100);
+    }
+  }, [focusedCartItemId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -749,6 +765,7 @@ export default function POS() {
 
     if (existingItem) {
       updateQuantity(existingItem.cartId, existingItem.quantity + 1);
+      setFocusedCartItemId(existingItem.cartId);
     } else {
       const newCartId = `cart-${cartIdCounter}`;
       setCartIdCounter(prev => prev + 1);
@@ -766,6 +783,7 @@ export default function POS() {
         barcode: item.barcode,
         imageUrl: item.imageUrl,
       }]);
+      setFocusedCartItemId(newCartId);
     }
   };
 
@@ -1399,9 +1417,31 @@ export default function POS() {
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
-                        <span className="font-bold min-w-[1.5rem] text-center text-sm">
-                          {item.quantity}
-                        </span>
+                        <input
+                          ref={(el) => { quantityInputRefs.current[item.cartId] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            const num = parseInt(val, 10);
+                            if (!isNaN(num) && num > 0) {
+                              updateQuantity(item.cartId, num);
+                            } else if (val === '') {
+                              updateQuantity(item.cartId, 1);
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onBlur={(e) => {
+                            const num = parseInt(e.target.value, 10);
+                            if (isNaN(num) || num <= 0) {
+                              updateQuantity(item.cartId, 1);
+                            }
+                          }}
+                          className="font-bold w-10 text-center text-sm bg-transparent border-none outline-none focus:ring-2 focus:ring-primary rounded"
+                          data-testid={`input-quantity-${item.cartId}`}
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
