@@ -18041,11 +18041,19 @@ Important rules:
       // Minimum height to prevent underflow
       estimatedHeight = Math.max(estimatedHeight, 200);
 
+      // Register Unicode fonts for Vietnamese, Czech, German, English support
+      const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
+      const fontBoldPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono-Bold.ttf');
+
       const doc = new PDFDocument({
         size: [pageWidth, estimatedHeight],
         margin: 0,
         bufferPages: false
       });
+
+      // Register custom fonts for multilingual support
+      doc.registerFont('Receipt', fontPath);
+      doc.registerFont('Receipt-Bold', fontBoldPath);
 
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
@@ -18068,12 +18076,12 @@ Important rules:
 
       // Company Header
       doc.fontSize(12)
-         .font('Courier-Bold')
+         .font('Receipt-Bold')
          .fillColor('#000000')
          .text(companyInfo?.name || 'Company Name', margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 16;
 
-      doc.fontSize(8).font('Courier').fillColor('#333333');
+      doc.fontSize(8).font('Receipt').fillColor('#333333');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
@@ -18097,7 +18105,7 @@ Important rules:
       }
 
       // Receipt Title
-      doc.fontSize(10).font('Courier-Bold').fillColor('#000000')
+      doc.fontSize(10).font('Receipt-Bold').fillColor('#000000')
          .text(t.receipt, margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 14;
 
@@ -18113,7 +18121,7 @@ Important rules:
         hour: '2-digit', minute: '2-digit' 
       });
 
-      doc.fontSize(8).font('Courier').fillColor('#000000');
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.date}:`, margin, yPos).text(dateStr, margin + 70, yPos);
       yPos += 12;
       doc.text(`${t.time}:`, margin, yPos).text(timeStr, margin + 70, yPos);
@@ -18134,10 +18142,10 @@ Important rules:
       yPos += 8;
 
       // Items
-      doc.fontSize(9).font('Courier-Bold').text(t.items + ':', margin, yPos);
+      doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', margin, yPos);
       yPos += 12;
 
-      doc.fontSize(8).font('Courier');
+      doc.fontSize(8).font('Receipt');
       for (const item of items) {
         // Type guard: skip invalid items, normalize fields
         if (!item || typeof item !== 'object') continue;
@@ -18165,7 +18173,7 @@ Important rules:
       yPos += 8;
 
       // Totals
-      doc.fontSize(8).font('Courier');
+      doc.fontSize(8).font('Receipt');
       doc.text(`${t.subtotal}:`, margin, yPos);
       doc.text(formatMoney(subtotal), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
       yPos += 12;
@@ -18176,12 +18184,12 @@ Important rules:
         yPos += 12;
       }
 
-      doc.fontSize(10).font('Courier-Bold');
+      doc.fontSize(10).font('Receipt-Bold');
       doc.text(`${t.total}:`, margin, yPos);
       doc.text(formatMoney(total), margin + contentWidth - 75, yPos, { width: 75, align: 'right' });
       yPos += 14;
 
-      doc.fontSize(7).font('Courier').fillColor('#666666');
+      doc.fontSize(7).font('Receipt').fillColor('#666666');
       doc.text(t.vatIncluded, margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 10;
 
@@ -18189,7 +18197,7 @@ Important rules:
       yPos += 8;
 
       // Payment
-      doc.fontSize(8).font('Courier').fillColor('#000000');
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
       const paymentLabels: Record<string, string> = {
         cash: t.cash,
         card: t.card,
@@ -18208,7 +18216,7 @@ Important rules:
       }
 
       if (change !== undefined && change !== null && change > 0) {
-        doc.font('Courier-Bold');
+        doc.font('Receipt-Bold');
         doc.text(`${t.change}:`, margin, yPos);
         doc.text(formatMoney(change), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
         yPos += 12;
@@ -18216,7 +18224,7 @@ Important rules:
 
       if (notes) {
         yPos += 4;
-        doc.fontSize(7).font('Courier').fillColor('#333333');
+        doc.fontSize(7).font('Receipt').fillColor('#333333');
         doc.text(`${t.notes}: ${notes}`, margin, yPos, { width: contentWidth });
         yPos += 16;
       }
@@ -18225,7 +18233,7 @@ Important rules:
       yPos += 10;
 
       // Footer
-      doc.fontSize(9).font('Courier').fillColor('#000000');
+      doc.fontSize(9).font('Receipt').fillColor('#000000');
       doc.text(t.thankYou, margin, yPos, { width: contentWidth, align: 'center' });
       yPos += 12;
 
