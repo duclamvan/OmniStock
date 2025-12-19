@@ -912,11 +912,14 @@ export default function AddPreOrder() {
                             </span>
                           </span>
                         ) : (
-                          t('searchProductsPreOrdersSupplier')
+                          <span className="text-muted-foreground">{t('selectOrSearch')}</span>
                         )}
                         <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
+                    {!selectedProducts[item.id] && (
+                      <p className="text-xs text-muted-foreground mt-1">{t('searchProductsPreOrdersSupplier')}</p>
+                    )}
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 

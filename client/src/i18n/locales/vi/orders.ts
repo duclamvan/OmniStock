@@ -910,6 +910,7 @@ const orders = {
   itemNumber: 'Sản phẩm {{number}}',
   selectExistingItem: 'Chọn sản phẩm có sẵn (Tùy chọn)',
   searchProductsPreOrdersSupplier: 'Tìm sản phẩm, đơn đặt trước, hoặc hàng nhà cung cấp...',
+  selectOrSearch: 'Chọn hoặc tìm kiếm...',
   searchByNameSKU: 'Tìm theo tên, SKU...',
   noItemsFound: 'Không tìm thấy sản phẩm.',
   preOrderItemsGroup: 'Sản phẩm đặt trước',

@@ -906,6 +906,7 @@ const orders = {
   itemNumber: 'Item {{number}}',
   selectExistingItem: 'Select Existing Item (Optional)',
   searchProductsPreOrdersSupplier: 'Search products, pre-orders, or supplier items...',
+  selectOrSearch: 'Select or search...',
   searchByNameSKU: 'Search by name, SKU...',
   noItemsFound: 'No items found.',
   preOrderItemsGroup: 'Pre-Order Items',
