@@ -759,6 +759,8 @@ const imports = {
   dragItemsToConsolidations: 'Kéo sản phẩm sang tổng hợp hoặc chọn để phân loại AI',
   activeConsolidations: 'Tổng hợp đang hoạt động',
   readyForItems: 'sẵn sàng nhận hàng',
+  clickToAddSelectedItems: 'Nhấp để thêm {{count}} sản phẩm đã chọn',
+  new: 'Mới',
   aiGoodsClassification: 'Phân loại hàng hóa AI',
   autoClassifyDescription: 'Tự động phân loại sản phẩm là hàng nhạy cảm hoặc thông thường dựa trên tên, danh mục và dữ liệu lịch sử.',
   itemsSelected: '{{count}} sản phẩm đã chọn',

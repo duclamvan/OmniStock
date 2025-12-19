@@ -743,6 +743,8 @@ const imports = {
   dragItemsToConsolidations: 'Drag items to consolidations or select for AI classification',
   activeConsolidations: 'Active Consolidations',
   readyForItems: 'ready for items',
+  clickToAddSelectedItems: 'Click to add {{count}} selected items',
+  new: 'New',
   aiGoodsClassification: 'AI Goods Classification',
   autoClassifyDescription: 'Automatically classify items as sensitive or general goods based on product names, categories, and historical data.',
   itemsSelected: '{{count}} item(s) selected',
