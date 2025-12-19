@@ -17994,49 +17994,50 @@ Important rules:
 
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
-      const sideMargin = 2; // Nuclear: minimal side margin (0.7mm)
-      const contentWidth = pageWidth - (sideMargin * 2); // Full width minus margins
-      const topMargin = 0; // Nuclear: no top margin at all
+      const sideMargin = 8; // Better side margins for breathing room
+      const contentWidth = pageWidth - (sideMargin * 2);
+      const topMargin = 8; // Top margin for cleaner look
 
-      // Calculate content height - proper spacing like preview
-      let estimatedHeight = topMargin + 4; // Top padding
-      estimatedHeight += 16; // Company name (larger)
-      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 11;
-      if (companyInfo.phone || companyInfo.country) estimatedHeight += 11;
-      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 11;
-      estimatedHeight += 14; // Receipt title
-      estimatedHeight += 8; // Dashed line spacing
-      estimatedHeight += 12 * 4; // Date, Time, Receipt No, Customer
-      estimatedHeight += 8; // Dashed line spacing
-      estimatedHeight += 12; // Items header
+      // Calculate content height with improved spacing
+      let estimatedHeight = topMargin + 8; // Top padding
+      estimatedHeight += 18; // Company name (larger)
+      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 14;
+      if (companyInfo.phone || companyInfo.country) estimatedHeight += 14;
+      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 14;
+      estimatedHeight += 8; // Extra space before receipt title
+      estimatedHeight += 16; // Receipt title
+      estimatedHeight += 12; // Dashed line spacing
+      estimatedHeight += 14 * 4; // Date, Time, Receipt No, Customer with more space
+      estimatedHeight += 12; // Dashed line spacing
+      estimatedHeight += 14; // Items header
       
-      // Items - proper height estimation
+      // Items - proper height estimation with more space
       for (const item of items) {
         const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
-        const estimatedLines = Math.ceil(itemName.length / 28);
-        estimatedHeight += Math.max(12, estimatedLines * 10) + 3;
+        const estimatedLines = Math.ceil(itemName.length / 26);
+        estimatedHeight += Math.max(14, estimatedLines * 12) + 4;
       }
       
-      estimatedHeight += 8; // Dashed line spacing
-      estimatedHeight += 12; // Subtotal
-      if (discount > 0) estimatedHeight += 12; // Discount
-      estimatedHeight += 14; // Total (larger font)
-      estimatedHeight += 10; // VAT text
-      estimatedHeight += 8; // Dashed line spacing
-      estimatedHeight += 12; // Payment method
-      if (cashReceived !== undefined) estimatedHeight += 12; // Cash received
-      if (change !== undefined && change > 0) estimatedHeight += 12; // Change
+      estimatedHeight += 12; // Dashed line spacing
+      estimatedHeight += 14; // Subtotal
+      if (discount > 0) estimatedHeight += 14; // Discount
+      estimatedHeight += 18; // Total (larger font)
+      estimatedHeight += 14; // VAT text
+      estimatedHeight += 12; // Dashed line spacing
+      estimatedHeight += 14; // Payment method
+      if (cashReceived !== undefined) estimatedHeight += 14; // Cash received
+      if (change !== undefined && change > 0) estimatedHeight += 14; // Change
       
       // Notes - proper estimation
       if (notes && notes.length > 0) {
-        const notesLines = Math.ceil(notes.length / 38);
-        estimatedHeight += 10 + (notesLines * 10);
+        const notesLines = Math.ceil(notes.length / 34);
+        estimatedHeight += 14 + (notesLines * 12);
       }
       
-      estimatedHeight += 8; // Dashed line spacing
-      estimatedHeight += 12; // Thank you
-      if (companyInfo.website) estimatedHeight += 12;
-      estimatedHeight += 8; // Bottom margin
+      estimatedHeight += 12; // Dashed line spacing
+      estimatedHeight += 16; // Thank you
+      if (companyInfo.website) estimatedHeight += 14;
+      estimatedHeight += 12; // Bottom margin
 
       // Register Unicode fonts for Vietnamese, Czech, German, English support
       const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
@@ -18069,27 +18070,27 @@ Important rules:
         }
       };
 
-      let yPos = topMargin + 4; // Small top padding
+      let yPos = topMargin + 8; // Comfortable top padding
 
-      // Company Header - Centered like the preview
+      // Company Header - Centered with good spacing
       doc.fontSize(12)
          .font('Receipt-Bold')
          .fillColor('#000000')
          .text(companyInfo?.name || 'Company Name', sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 16;
+      yPos += 18;
 
       doc.fontSize(7).font('Receipt').fillColor('#444444');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
         doc.text(addressLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 11;
+        yPos += 14;
       }
 
       if (companyInfo?.phone || companyInfo?.country) {
         const contactLine = [companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ');
         doc.text(contactLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 11;
+        yPos += 14;
       }
 
       if (companyInfo?.ico || companyInfo?.vatId) {
@@ -18098,19 +18099,20 @@ Important rules:
         if (companyInfo.ico && companyInfo.vatId) idLine += ' | ';
         if (companyInfo.vatId) idLine += `${t.vatId}: ${companyInfo.vatId}`;
         doc.text(idLine, sideMargin, yPos, { width: contentWidth, align: 'center' });
-        yPos += 11;
+        yPos += 14;
       }
 
-      // Receipt Title - Centered like the preview
-      doc.fontSize(9).font('Receipt-Bold').fillColor('#000000')
+      yPos += 4; // Extra breathing room before receipt title
+
+      // Receipt Title - Centered with emphasis
+      doc.fontSize(10).font('Receipt-Bold').fillColor('#000000')
          .text(t.receipt, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 14;
+      yPos += 16;
 
       drawDashedLine(yPos);
-      yPos += 6;
+      yPos += 10;
 
-      // Transaction Details
-      // Use the safe receiptDate already parsed at the top of this function
+      // Transaction Details with comfortable spacing
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
         day: '2-digit', month: '2-digit', year: 'numeric' 
       });
@@ -18118,33 +18120,32 @@ Important rules:
         hour: '2-digit', minute: '2-digit' 
       });
 
-      doc.fontSize(7).font('Receipt').fillColor('#000000');
-      doc.text(`${t.date}:`, sideMargin, yPos).text(dateStr, sideMargin + 60, yPos);
-      yPos += 10;
-      doc.text(`${t.time}:`, sideMargin, yPos).text(timeStr, sideMargin + 60, yPos);
-      yPos += 10;
+      doc.fontSize(8).font('Receipt').fillColor('#000000');
+      doc.text(`${t.date}:`, sideMargin, yPos).text(dateStr, sideMargin + 55, yPos);
+      yPos += 13;
+      doc.text(`${t.time}:`, sideMargin, yPos).text(timeStr, sideMargin + 55, yPos);
+      yPos += 13;
 
       if (orderId) {
-        doc.text(`${t.receiptNo}:`, sideMargin, yPos).text(orderId, sideMargin + 60, yPos);
-        yPos += 10;
+        doc.text(`${t.receiptNo}:`, sideMargin, yPos).text(orderId, sideMargin + 55, yPos);
+        yPos += 13;
       }
 
       const customerDisplay = customerName === 'Walk-in Customer' ? t.walkIn : (customerName || t.walkIn);
       doc.text(`${t.customer}:`, sideMargin, yPos);
-      const custNameWidth = contentWidth - 65;
-      doc.text(customerDisplay.substring(0, 28), sideMargin + 60, yPos, { width: custNameWidth });
-      yPos += 10;
+      const custNameWidth = contentWidth - 60;
+      doc.text(customerDisplay.substring(0, 26), sideMargin + 55, yPos, { width: custNameWidth });
+      yPos += 13;
 
       drawDashedLine(yPos);
-      yPos += 6;
-
-      // Items
-      doc.fontSize(8).font('Receipt-Bold').text(t.items + ':', sideMargin, yPos);
       yPos += 10;
 
-      doc.fontSize(7).font('Receipt');
+      // Items Section
+      doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', sideMargin, yPos);
+      yPos += 14;
+
+      doc.fontSize(8).font('Receipt');
       for (const item of items) {
-        // Type guard: skip invalid items, normalize fields
         if (!item || typeof item !== 'object') continue;
         
         const qtyRaw = Number(item.quantity);
@@ -18157,42 +18158,42 @@ Important rules:
         const itemText = `${qty}x ${name}`;
         const priceText = formatMoney(lineTotal);
         
-        const nameWidth = contentWidth - 50;
+        const nameWidth = contentWidth - 55;
         const nameHeight = doc.heightOfString(itemText, { width: nameWidth });
         
         doc.text(itemText, sideMargin, yPos, { width: nameWidth });
-        doc.text(priceText, sideMargin + nameWidth, yPos, { width: 50, align: 'right' });
-        yPos += Math.max(nameHeight, 9) + 2;
+        doc.text(priceText, sideMargin + nameWidth, yPos, { width: 55, align: 'right' });
+        yPos += Math.max(nameHeight, 11) + 4;
       }
 
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 10;
 
-      // Totals - with better spacing like the preview
+      // Totals Section with clear hierarchy
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos);
-      doc.text(formatMoney(subtotal), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-      yPos += 12;
+      doc.text(formatMoney(subtotal), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+      yPos += 14;
 
       if (discount && discount > 0) {
         doc.text(`${t.discount}:`, sideMargin, yPos);
-        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        yPos += 14;
       }
 
-      doc.fontSize(10).font('Receipt-Bold');
+      doc.fontSize(11).font('Receipt-Bold');
       doc.text(`${t.total}:`, sideMargin, yPos);
-      doc.text(formatMoney(total), sideMargin + contentWidth - 75, yPos, { width: 75, align: 'right' });
-      yPos += 14;
+      doc.text(formatMoney(total), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
+      yPos += 18;
 
       doc.fontSize(7).font('Receipt').fillColor('#666666');
       doc.text(t.vatIncluded, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 10;
+      yPos += 12;
 
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 10;
 
-      // Payment - with better spacing like the preview
+      // Payment Section
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       const paymentLabels: Record<string, string> = {
         cash: t.cash,
@@ -18202,35 +18203,36 @@ Important rules:
         qr_czk: t.qrCode
       };
       doc.text(`${t.payment}:`, sideMargin, yPos);
-      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-      yPos += 12;
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+      yPos += 14;
 
       if (cashReceived !== undefined && cashReceived !== null) {
         doc.text(`${t.cashReceived}:`, sideMargin, yPos);
-        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        yPos += 14;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
         doc.text(`${t.change}:`, sideMargin, yPos);
-        doc.text(formatMoney(change), sideMargin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(formatMoney(change), sideMargin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+        yPos += 14;
       }
 
       if (notes) {
+        yPos += 4;
         doc.fontSize(7).font('Receipt').fillColor('#333333');
         doc.text(`${t.notes}: ${notes}`, sideMargin, yPos, { width: contentWidth });
-        yPos += 12;
+        yPos += 14;
       }
 
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 10;
 
-      // Footer - Centered like the preview
-      doc.fontSize(8).font('Receipt').fillColor('#000000');
+      // Footer with warm closing
+      doc.fontSize(9).font('Receipt').fillColor('#000000');
       doc.text(t.thankYou, sideMargin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 12;
+      yPos += 14;
 
       if (companyInfo?.website) {
         doc.fontSize(7).fillColor('#666666');
