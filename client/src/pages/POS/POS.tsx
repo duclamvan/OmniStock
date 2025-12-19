@@ -247,7 +247,9 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('PDF generation failed:', response.status, errorData);
+        throw new Error(errorData.message || `Failed to generate PDF (${response.status})`);
       }
 
       const blob = await response.blob();
