@@ -529,6 +529,7 @@ const warehouse = {
   weight: 'Trọng lượng',
   value: 'Giá trị',
   currentStock: 'Tồn kho hiện tại',
+  recordedQuantity: 'Số lượng ghi nhận',
   minStockAlert: 'Cảnh báo tồn tối thiểu',
   currentStockDescription: 'Số lượng hiện có trong kho',
   minStockAlertDescription: 'Cảnh báo khi tồn kho xuống dưới mức này',

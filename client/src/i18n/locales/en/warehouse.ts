@@ -536,6 +536,7 @@ const warehouse = {
   weight: 'Weight',
   value: 'Value',
   currentStock: 'Current Stock',
+  recordedQuantity: 'Recorded Quantity',
   minStockAlert: 'Min Stock Alert',
   currentStockDescription: 'Units currently in stock',
   minStockAlertDescription: 'Alert when stock falls below this level',
