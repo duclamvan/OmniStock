@@ -146,6 +146,7 @@ const imports = {
   priceUpdateError: 'Không thể cập nhật giá',
   perUnit: 'mỗi đơn vị',
   selectCurrency: 'Chọn đơn vị tiền tệ',
+  subtotal: 'Tạm tính',
 
   // Shipping Details
   shippingDetails: 'Thông tin vận chuyển',

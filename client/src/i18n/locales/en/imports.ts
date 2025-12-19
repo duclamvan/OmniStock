@@ -135,6 +135,7 @@ const imports = {
   priceUpdateError: 'Failed to update price',
   perUnit: 'per unit',
   selectCurrency: 'Select Currency',
+  subtotal: 'Subtotal',
 
   // Shipping Details
   shippingDetails: 'Shipping Details',
