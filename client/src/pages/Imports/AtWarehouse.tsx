@@ -930,10 +930,10 @@ export default function AtWarehouse() {
     },
   });
 
-  // AI auto-classification mutation
+  // AI auto-classification mutation using DeepSeek AI
   const aiClassifyMutation = useMutation({
     mutationFn: async (itemIds: number[]) => {
-      return apiRequest('/api/imports/items/auto-classify', 'POST', { itemIds });
+      return apiRequest('POST', '/api/imports/items/auto-classify', { itemIds });
     },
     onSuccess: (data: any) => {
       toast({
