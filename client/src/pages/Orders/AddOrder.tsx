@@ -2358,7 +2358,8 @@ export default function AddOrder() {
       if (availableFreeSlot && availableFreeSlot.remainingFreeSlots > 0) {
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
-          productId: product.id,
+          productId: product.isBundle ? undefined : product.id,
+          bundleId: product.isBundle ? product.id : undefined,
           productName: product.name,
           sku: product.sku,
           quantity: 1,
@@ -2369,7 +2370,7 @@ export default function AddOrder() {
           tax: 0,
           total: 0,
           landingCost: product.landingCost || product.latestLandingCost || null,
-          image: product.image || null,
+          image: product.image || product.imageUrl || null,
           appliedDiscountId: availableFreeSlot.discountId,
           appliedDiscountLabel: availableFreeSlot.discountName,
           appliedDiscountType: 'buy_x_get_y',
@@ -2438,7 +2439,8 @@ export default function AddOrder() {
 
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
-          productId: product.id,
+          productId: product.isBundle ? undefined : product.id,
+          bundleId: product.isBundle ? product.id : undefined,
           productName: product.name,
           sku: product.sku,
           quantity: 1,
@@ -2448,7 +2450,7 @@ export default function AddOrder() {
           tax: 0,
           total: productPrice - discountAmount,
           landingCost: product.landingCost || product.latestLandingCost || null,
-          image: product.image || null,
+          image: product.image || product.imageUrl || null,
           appliedDiscountId: discountId,
           appliedDiscountLabel: discountLabel || null,
           appliedDiscountType: discountType,
