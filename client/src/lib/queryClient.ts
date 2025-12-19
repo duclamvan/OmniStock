@@ -4,6 +4,32 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 let isMaintenanceMode = false;
 let maintenanceListeners: Array<(isMaintenance: boolean) => void> = [];
 
+// Track if we're already redirecting to login to prevent multiple redirects
+let isRedirectingToLogin = false;
+
+// Global handler for session timeout - redirect to login
+function handleSessionTimeout() {
+  if (isRedirectingToLogin) return;
+  
+  // Don't redirect if already on login page
+  if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+    return;
+  }
+  
+  isRedirectingToLogin = true;
+  
+  // Clear any cached auth state
+  // Small delay to prevent race conditions
+  setTimeout(() => {
+    window.location.href = '/login';
+    isRedirectingToLogin = false;
+  }, 100);
+}
+
+export function resetLoginRedirectFlag() {
+  isRedirectingToLogin = false;
+}
+
 export function getMaintenanceMode(): boolean {
   return isMaintenanceMode;
 }
@@ -20,7 +46,7 @@ export function subscribeToMaintenanceMode(listener: (isMaintenance: boolean) =>
   };
 }
 
-async function throwIfResNotOk(res: Response) {
+async function throwIfResNotOk(res: Response, skipSessionCheck = false) {
   if (!res.ok) {
     let errorData;
     const contentType = res.headers.get('content-type');
@@ -39,6 +65,11 @@ async function throwIfResNotOk(res: Response) {
     // Handle 503 maintenance mode response
     if (res.status === 503 && errorData?.maintenance === true) {
       setMaintenanceMode(true);
+    }
+    
+    // Handle 401 session timeout - redirect to login
+    if (res.status === 401 && !skipSessionCheck) {
+      handleSessionTimeout();
     }
     
     // Create an enhanced error object with all the details
