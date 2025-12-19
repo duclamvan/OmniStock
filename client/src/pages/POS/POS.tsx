@@ -617,6 +617,7 @@ export default function POS() {
       sku: b.sku,
       priceEur: b.priceEur,
       priceCzk: b.priceCzk,
+      imageUrl: b.imageUrl,
       bundleId: b.bundleId,
       itemType: 'bundle' as const
     }))
