@@ -508,7 +508,7 @@ export default function AllPreOrders() {
               {t('viewDetails')}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setLocation(`/orders/pre-orders/edit/${preOrder.id}`)}
+              onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}/edit`)}
               data-testid={`action-edit-${preOrder.id}`}
             >
               <Edit className="h-4 w-4 mr-2" />
@@ -899,7 +899,7 @@ export default function AllPreOrders() {
                                   {t('viewDetails')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => setLocation(`/orders/pre-orders/edit/${preOrder.id}`)}
+                                  onClick={() => setLocation(`/orders/pre-orders/${preOrder.id}/edit`)}
                                   data-testid={`action-edit-mobile-${preOrder.id}`}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />

@@ -222,7 +222,7 @@ export default function PreOrderDetails() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/orders/pre-orders/edit/${id}`)}
+            onClick={() => navigate(`/orders/pre-orders/${id}/edit`)}
             data-testid="button-edit"
           >
             <Edit className="h-4 w-4 sm:mr-2" />
