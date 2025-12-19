@@ -18120,6 +18120,9 @@ Important rules:
       yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
+      const labelColumnWidth = 80; // Wide enough for Czech "Číslo účtenky:"
+      const valueColumnWidth = contentWidth - labelColumnWidth;
+      
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
         day: '2-digit', month: '2-digit', year: 'numeric' 
       });
@@ -18128,20 +18131,22 @@ Important rules:
       });
 
       doc.fontSize(8).font('Receipt').fillColor('#000000');
-      doc.text(`${t.date}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(dateStr, sideMargin + 55, yPos);
+      doc.text(`${t.date}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(dateStr, sideMargin + labelColumnWidth, yPos, { width: valueColumnWidth });
       yPos += baseLineHeight;
-      doc.text(`${t.time}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(timeStr, sideMargin + 55, yPos);
+      doc.text(`${t.time}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(timeStr, sideMargin + labelColumnWidth, yPos, { width: valueColumnWidth });
       yPos += baseLineHeight;
 
       if (orderId) {
-        doc.text(`${t.receiptNo}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 }).text(orderId, sideMargin + 55, yPos);
+        doc.text(`${t.receiptNo}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+        doc.text(orderId, sideMargin + labelColumnWidth, yPos, { width: valueColumnWidth });
         yPos += baseLineHeight;
       }
 
       const customerDisplay = customerName === 'Walk-in Customer' ? t.walkIn : (customerName || t.walkIn);
-      doc.text(`${t.customer}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-      const custNameWidth = contentWidth - 60;
-      doc.text(customerDisplay.substring(0, 24), sideMargin + 55, yPos, { width: custNameWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(`${t.customer}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(customerDisplay.substring(0, 22), sideMargin + labelColumnWidth, yPos, { width: valueColumnWidth, lineGap: isVietnamese ? 3 : 1 });
       yPos += baseLineHeight;
 
       drawDashedLine(yPos);
@@ -18178,21 +18183,21 @@ Important rules:
       yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
-      const totalsColumnWidth = 80; // Wide enough for large totals
+      const totalsValueWidth = 85; // Wide enough for large totals like "27 615.00 Kč"
       doc.fontSize(8).font('Receipt').fillColor('#000000');
-      doc.text(`${t.subtotal}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-      doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+      doc.text(`${t.subtotal}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
       yPos += baseLineHeight;
 
       if (discount && discount > 0) {
-        doc.text(`${t.discount}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+        doc.text(`${t.discount}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+        doc.text(`-${formatMoney(discount)}`, sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
       doc.fontSize(11).font('Receipt-Bold');
-      doc.text(`${t.total}:`, sideMargin, yPos, { lineGap: isVietnamese ? 4 : 2 });
-      doc.text(formatMoney(total), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+      doc.text(`${t.total}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 4 : 2 });
+      doc.text(formatMoney(total), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
       yPos += Math.round(20 * lineHeightMultiplier);
 
       doc.fontSize(7).font('Receipt').fillColor('#666666');
@@ -18211,20 +18216,20 @@ Important rules:
         pay_later: t.payLater,
         qr_czk: t.qrCode
       };
-      doc.text(`${t.payment}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+      doc.text(`${t.payment}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
       yPos += baseLineHeight;
 
       if (cashReceived !== undefined && cashReceived !== null) {
-        doc.text(`${t.cashReceived}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+        doc.text(`${t.cashReceived}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+        doc.text(formatMoney(cashReceived), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
-        doc.text(`${t.change}:`, sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
-        doc.text(formatMoney(change), sideMargin + contentWidth - totalsColumnWidth, yPos, { width: totalsColumnWidth, align: 'right' });
+        doc.text(`${t.change}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
+        doc.text(formatMoney(change), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
         yPos += baseLineHeight;
       }
 
