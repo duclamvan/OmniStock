@@ -450,7 +450,8 @@ export default function GeneralSettings() {
                         <FormLabel>{t('settings:companyPhone', 'Company Phone')}</FormLabel>
                         <FormControl>
                           <Input 
-                            {...field} 
+                            {...field}
+                            value={field.value ?? ''} 
                             placeholder={t('settings:companyPhonePlaceholder', 'Enter phone number')} 
                             data-testid="input-company_phone"
                             onChange={(e) => {
