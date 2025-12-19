@@ -932,23 +932,27 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         isCollapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
-          "border-b flex-shrink-0 flex items-center justify-between h-[65px]",
-          isCollapsed ? "px-3" : "px-6"
+          "flex-shrink-0 flex items-center h-[65px] border-b border-gray-100 dark:border-gray-800 bg-gradient-to-b from-gray-50/50 to-transparent dark:from-slate-800/30 dark:to-transparent",
+          isCollapsed ? "justify-center px-2" : "justify-between px-5"
         )}>
           {!isCollapsed && (
-            <img src={logoPath} alt="Davie Professional" className="h-10" />
+            <div className="flex items-center gap-3 overflow-hidden">
+              <img src={logoPath} alt="Davie Professional" className="h-9 object-contain" />
+            </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={cn(
-              "shrink-0",
-              !isCollapsed && "ml-auto"
+              "flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200",
+              "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
+              "hover:bg-gray-100 dark:hover:bg-slate-800",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              isCollapsed && "mx-auto"
             )}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+          </button>
         </div>
         <nav 
           className={cn(
