@@ -74,6 +74,8 @@ interface BundleItem {
 
 interface BundleFormData {
   name: string;
+  nameEn: string;
+  nameVi: string;
   description: string;
   sku: string;
   pricingMode: 'percentage' | 'fixed' | 'per_item' | 'set_per_item' | 'manual';
@@ -507,6 +509,8 @@ export default function CreateBundle() {
   
   const [formData, setFormData] = useState<BundleFormData>({
     name: '',
+    nameEn: '',
+    nameVi: '',
     description: '',
     sku: '',
     pricingMode: 'percentage',
@@ -594,6 +598,8 @@ export default function CreateBundle() {
       // Create the bundle
       const bundleData = {
         name: data.name,
+        nameEn: data.nameEn || null,
+        nameVi: data.nameVi || null,
         description: data.description || null,
         sku: data.sku || null,
         priceCzk: data.pricingMode === 'manual' && data.priceCzk 
@@ -1067,6 +1073,29 @@ export default function CreateBundle() {
                 {errors.name && (
                   <p className="text-sm text-destructive mt-1">{errors.name}</p>
                 )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nameEn">{t('inventory:bundleNameEn')}</Label>
+                  <Input
+                    id="nameEn"
+                    value={formData.nameEn}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nameEn: e.target.value }))}
+                    placeholder={t('inventory:bundleNameEnPlaceholder')}
+                    data-testid="input-bundle-name-en"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nameVi">{t('inventory:bundleNameVi')}</Label>
+                  <Input
+                    id="nameVi"
+                    value={formData.nameVi}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nameVi: e.target.value }))}
+                    placeholder={t('inventory:bundleNameViPlaceholder')}
+                    data-testid="input-bundle-name-vi"
+                  />
+                </div>
               </div>
 
               <div>

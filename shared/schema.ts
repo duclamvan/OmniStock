@@ -779,6 +779,8 @@ export const productBundles = pgTable("product_bundles", {
     .default(sql`gen_random_uuid()`),
   bundleId: varchar("bundle_id").notNull().unique(),
   name: varchar("name").notNull(),
+  nameEn: varchar("name_en"),
+  nameVi: varchar("name_vi"),
   description: text("description"),
   sku: varchar("sku"),
   priceCzk: decimal("price_czk", { precision: 10, scale: 2 }),
