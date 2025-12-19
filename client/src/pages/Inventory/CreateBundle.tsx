@@ -529,7 +529,7 @@ export default function CreateBundle() {
 
   // Auto-generate SKU for bundles
   const generateSKU = () => {
-    const bundleName = formData.name.trim() || 'BUNDLE';
+    const bundleName = formData.nameVi.trim() || 'BUNDLE';
     
     // Extract meaningful part from bundle name (first 8 alphanumeric characters)
     const namePart = bundleName
@@ -595,9 +595,9 @@ export default function CreateBundle() {
         calculateTotalPrice().totalEur
       );
       
-      // Create the bundle
+      // Create the bundle - use nameVi as main name
       const bundleData = {
-        name: data.name,
+        name: data.nameVi,
         nameEn: data.nameEn || null,
         nameVi: data.nameVi || null,
         description: data.description || null,
@@ -672,8 +672,8 @@ export default function CreateBundle() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.name.trim()) {
-      newErrors.name = t('inventory:bundleNameRequired');
+    if (!formData.nameVi.trim()) {
+      newErrors.nameVi = t('inventory:bundleNameRequired');
     }
     
     if (formData.items.length === 0) {
@@ -976,7 +976,7 @@ export default function CreateBundle() {
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('inventory:bundleDetails')}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{t('inventory:bundleDetailsDescription')}</p>
               </div>
-              {errors.name && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
+              {errors.nameVi && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
@@ -1049,33 +1049,33 @@ export default function CreateBundle() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="name">
-                  {t('inventory:bundleName')} <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, name: e.target.value }));
-                    if (errors.name) {
-                      setErrors(prev => ({ ...prev, name: '' }));
-                    }
-                  }}
-                  onBlur={() => {
-                    if (formData.name.trim() && !formData.sku.trim()) {
-                      generateSKU();
-                    }
-                  }}
-                  placeholder={t('inventory:bundleNamePlaceholder')}
-                  className={errors.name ? 'border-destructive' : ''}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive mt-1">{errors.name}</p>
-                )}
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nameVi">
+                    {t('inventory:bundleNameVi')} <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="nameVi"
+                    value={formData.nameVi}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, nameVi: e.target.value }));
+                      if (errors.nameVi) {
+                        setErrors(prev => ({ ...prev, nameVi: '' }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (formData.nameVi.trim() && !formData.sku.trim()) {
+                        generateSKU();
+                      }
+                    }}
+                    placeholder={t('inventory:bundleNameViPlaceholder')}
+                    className={errors.nameVi ? 'border-destructive' : ''}
+                    data-testid="input-bundle-name-vi"
+                  />
+                  {errors.nameVi && (
+                    <p className="text-sm text-destructive mt-1">{errors.nameVi}</p>
+                  )}
+                </div>
                 <div>
                   <Label htmlFor="nameEn">{t('inventory:bundleNameEn')}</Label>
                   <Input
@@ -1084,16 +1084,6 @@ export default function CreateBundle() {
                     onChange={(e) => setFormData(prev => ({ ...prev, nameEn: e.target.value }))}
                     placeholder={t('inventory:bundleNameEnPlaceholder')}
                     data-testid="input-bundle-name-en"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="nameVi">{t('inventory:bundleNameVi')}</Label>
-                  <Input
-                    id="nameVi"
-                    value={formData.nameVi}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nameVi: e.target.value }))}
-                    placeholder={t('inventory:bundleNameViPlaceholder')}
-                    data-testid="input-bundle-name-vi"
                   />
                 </div>
               </div>
