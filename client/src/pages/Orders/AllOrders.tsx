@@ -264,13 +264,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   // Expanded items state for mobile view (track which orders have expanded item lists)
   const [expandedItemsOrders, setExpandedItemsOrders] = useState<Set<string>>(new Set());
 
-  // Sync expanded items with expandAll state when orders load
-  useEffect(() => {
-    if (expandAll && filteredOrders && filteredOrders.length > 0) {
-      setExpandedItemsOrders(new Set(filteredOrders.map((order: any) => order.id)));
-    }
-  }, [expandAll, filteredOrders]);
-
   // Toggle expanded items for an order
   const toggleExpandedItems = (orderId: string) => {
     setExpandedItemsOrders(prev => {
@@ -613,6 +606,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     
     return filtered;
   }, [orders, searchQuery, statusFilter]);
+
+  // Sync expanded items with expandAll state when orders load
+  useEffect(() => {
+    if (expandAll && filteredOrders && filteredOrders.length > 0) {
+      setExpandedItemsOrders(new Set(filteredOrders.map((order: any) => order.id)));
+    }
+  }, [expandAll, filteredOrders]);
 
   // Color Psychology: Green=success, Amber=warning/pending, Blue=in-progress, Red=error/urgent
   const getStatusBadge = (status: string) => {
