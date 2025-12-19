@@ -591,21 +591,23 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
               onOpenChange={() => toggleSection(section.name)}
             >
               <div className={cn(
-                sectionIdx > 0 && "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                sectionIdx > 0 && "mt-4 pt-4"
               )}>
                 <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-between px-4 py-1.5 mb-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
+                  <button
+                    className="w-full flex items-center justify-between px-3 py-2 group transition-all duration-150 hover:bg-muted/50 rounded-md"
                   >
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {section.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-0.5 h-3 bg-primary/40 rounded-full" />
+                      <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">
+                        {section.name}
+                      </h3>
+                    </div>
                     <ChevronDown className={cn(
-                      "h-3 w-3 transition-transform duration-200 text-gray-400",
+                      "h-3 w-3 transition-transform duration-200 text-muted-foreground/60",
                       isSectionOpen && "rotate-180"
                     )} />
-                  </Button>
+                  </button>
                 </CollapsibleTrigger>
               </div>
           
@@ -620,22 +622,15 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
             return (
               <DropdownMenu key={item.name}>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
+                  <button
                     className={cn(
-                      "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
-                      "hover:bg-gray-100 dark:hover:bg-gray-800",
-                      isActive && "bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-gray-700"
+                      "w-full flex items-center justify-center p-3 rounded-lg transition-all duration-150 relative",
+                      "hover:bg-muted/60",
+                      isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
                     )}
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-xs text-gray-300 dark:text-gray-400">{item.description}</span>
-                      </div>
-                    </div>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" className="w-56 p-2">
                   <div className="px-2 py-1.5 mb-1">
@@ -649,8 +644,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   {item.children.map((child) => (
                     <Link key={child.href} href={child.href}>
                       <DropdownMenuItem className={cn(
-                        "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
-                        isPathExactActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
+                        "rounded-md px-3 py-2 cursor-pointer transition-all duration-150 flex items-center justify-between",
+                        isPathExactActive(location, child.href) && "bg-muted/60"
                       )}>
                         <span className="text-sm">{child.name}</span>
                         {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
@@ -674,34 +669,33 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   itemRefs.current[item.name] = el;
                 }
               }}
-              className="mb-1"
+              className="mb-0.5"
             >
               <Collapsible
                 open={isOpen}
                 onOpenChange={() => toggleItem(item.name)}
               >
                 <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
+                  <button
                     className={cn(
-                      "w-full justify-start font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
-                      "hover:bg-gray-50 dark:hover:bg-gray-800",
-                      isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg touch-target transition-all duration-150 relative group",
+                      "hover:bg-muted/60 hover:translate-x-0.5",
+                      isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
                     )}
                   >
-                    <item.icon className={cn("mr-4 h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
+                    <item.icon className={cn("h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
                     <div className="flex flex-col items-start flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
+                      <span className="text-sm font-medium text-foreground">{item.name}</span>
+                      <span className="text-[10px] text-muted-foreground/70">{item.description}</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 transition-transform duration-200 text-gray-400 ml-auto flex-shrink-0",
+                      "h-4 w-4 transition-transform duration-200 text-muted-foreground/60 flex-shrink-0",
                       isOpen && "rotate-180"
                     )} />
-                  </Button>
+                  </button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="mt-1">
-                  <div className="ml-8 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-2">
+                <CollapsibleContent className="mt-0.5">
+                  <div className="ml-6 space-y-0.5 border-l-2 border-muted pl-3">
                     {item.children.map((child) => {
                       const isChildActive = isPathExactActive(location, child.href);
                       return (
@@ -714,13 +708,11 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                           }}
                         >
                           <Link href={child.href}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
                               className={cn(
-                                "w-full justify-start text-gray-900 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
-                                "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                                isChildActive && "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
+                                "w-full flex items-center justify-start px-3 py-2 rounded-md touch-target transition-all duration-150 text-sm relative",
+                                "text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:translate-x-0.5",
+                                isChildActive && "text-foreground font-medium bg-muted/60 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-4 before:bg-primary before:rounded-full"
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
@@ -759,7 +751,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                                   )}
                                 </div>
                               )}
-                            </Button>
+                            </button>
                           </Link>
                         </div>
                       );
@@ -775,25 +767,28 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         
         if (collapsed) {
           return (
-            <Link key={item.name} href={item.href}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-center p-3 rounded-lg relative group transition-all duration-200",
-                  "hover:bg-gray-100 dark:hover:bg-gray-800",
-                  isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-                )}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-xs text-gray-300">{item.description}</span>
-                  </div>
-                </div>
-              </Button>
-            </Link>
+            <TooltipProvider key={item.name} delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href={item.href}>
+                    <button
+                      className={cn(
+                        "w-full flex items-center justify-center p-3 rounded-lg transition-all duration-150 relative",
+                        "hover:bg-muted/60",
+                        isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
+                    </button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="flex flex-col gap-0.5">
+                  <span className="font-medium">{item.name}</span>
+                  <span className="text-xs text-muted-foreground">{item.description}</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
         
@@ -805,29 +800,28 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                 itemRefs.current[item.name] = el;
               }
             }}
-            className="mb-1"
+            className="mb-0.5"
           >
             <Link href={item.href}>
-              <Button
-                variant="ghost"
+              <button
                 className={cn(
-                  "w-full justify-start font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
-                  "hover:bg-gray-50 dark:hover:bg-gray-800",
-                  isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg touch-target transition-all duration-150 relative group",
+                  "hover:bg-muted/60 hover:translate-x-0.5",
+                  isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon className={cn("mr-4 h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
+                <item.icon className={cn("h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
                 <div className="flex flex-col items-start flex-1">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
+                  <span className="text-sm font-medium text-foreground">{item.name}</span>
+                  <span className="text-[10px] text-muted-foreground/70">{item.description}</span>
                 </div>
                 {item.name === "Tickets" && dueTicketsCount > 0 && (
                   <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
                     {dueTicketsCount}
                   </Badge>
                 )}
-              </Button>
+              </button>
             </Link>
           </div>
         );
@@ -844,22 +838,15 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           return (
             <DropdownMenu key={item.name}>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
+                <button
                   className={cn(
-                    "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
-                    "hover:bg-gray-100 dark:hover:bg-gray-800",
-                    isActive && "bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-gray-700"
+                    "w-full flex items-center justify-center p-3 rounded-lg transition-all duration-150 relative",
+                    "hover:bg-muted/60",
+                    isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
                   )}
                 >
                   <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-xs text-gray-300 dark:text-gray-400">{item.description}</span>
-                    </div>
-                  </div>
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start" className="w-56 p-2">
                 <div className="px-2 py-1.5 mb-1">
@@ -873,8 +860,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                 {item.children.map((child) => (
                   <Link key={child.href} href={child.href}>
                     <DropdownMenuItem className={cn(
-                      "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
-                      isPathExactActive(location, child.href) && "bg-gray-100 dark:bg-gray-800"
+                      "rounded-md px-3 py-2 cursor-pointer transition-all duration-150 flex items-center justify-between",
+                      isPathExactActive(location, child.href) && "bg-muted/60"
                     )}>
                       <span className="text-sm">{child.name}</span>
                       {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
@@ -893,25 +880,28 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         const isActive = isPathActive(location, item.href);
         
         return (
-          <Link key={item.name} href={item.href}>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-center p-3 rounded-lg relative group transition-all duration-200",
-                "hover:bg-gray-100 dark:hover:bg-gray-800",
-                isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-              )}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                <div className="flex flex-col">
-                  <span className="font-medium">{item.name}</span>
-                  <span className="text-xs text-gray-300">{item.description}</span>
-                </div>
-              </div>
-            </Button>
-          </Link>
+          <TooltipProvider key={item.name} delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href={item.href}>
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-center p-3 rounded-lg transition-all duration-150 relative",
+                      "hover:bg-muted/60",
+                      isActive && "bg-muted/80 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-primary before:rounded-full"
+                    )}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
+                  </button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="flex flex-col gap-0.5">
+                <span className="font-medium">{item.name}</span>
+                <span className="text-xs text-muted-foreground">{item.description}</span>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       })}
         </div>
