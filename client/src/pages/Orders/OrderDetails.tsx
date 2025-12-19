@@ -2955,6 +2955,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {item.image ? (
                           <img src={item.image} alt={item.productName} className="w-full h-full object-contain" />
+                        ) : item.serviceId ? (
+                          <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
                         ) : (
                           <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
                         )}
