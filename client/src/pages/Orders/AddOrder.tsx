@@ -5416,11 +5416,26 @@ export default function AddOrder() {
                                 )}
                               </div>
                             )}
-                            {/* Service/Bundle Icon - Smaller on mobile */}
-                            {(isService || isBundle) && (
+                            {/* Service Icon - Smaller on mobile */}
+                            {isService && (
                               <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-gray-700 flex items-center justify-center">
-                                {isService && <Wrench className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />}
-                                {isBundle && <Box className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />}
+                                <Wrench className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />
+                              </div>
+                            )}
+                            {/* Bundle Image - Show actual image or fallback icon */}
+                            {isBundle && (
+                              <div className="flex-shrink-0 relative">
+                                {product.imageUrl ? (
+                                  <img 
+                                    src={product.imageUrl} 
+                                    alt={product.name}
+                                    className="w-8 h-8 md:w-10 md:h-10 object-contain rounded border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/30"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 md:w-10 md:h-10 rounded border flex items-center justify-center bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700">
+                                    <Box className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
+                                  </div>
+                                )}
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
