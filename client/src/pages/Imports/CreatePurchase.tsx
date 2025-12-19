@@ -1789,7 +1789,7 @@ export default function CreatePurchase() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="purchase-currency" className="text-xs text-muted-foreground">{t('currency')} *</Label>
+                    <Label htmlFor="purchase-currency" className="text-xs text-muted-foreground">{t('purchaseCurrency')} *</Label>
                     <Select value={purchaseCurrency} onValueChange={(value) => {
                       if (value === "add-new") {
                         setAddingCurrency(true);

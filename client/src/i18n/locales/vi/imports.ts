@@ -1924,6 +1924,7 @@ const imports = {
   shippingCostPercent: 'Vận chuyển: {{percent}}%',
   
   // Purchase Order Edit/Add Page - Additional Translations
+  purchaseCurrency: 'Tiền mua hàng',
   paymentCurrency: 'Tiền thanh toán',
   purchaseDate: 'Ngày mua',
   processingTime: 'Thời gian xử lý',

@@ -1982,6 +1982,7 @@ const imports = {
   shippingCostPercent: 'Shipping: {{percent}}%',
   
   // Purchase Order Edit/Add Page - Additional Translations
+  purchaseCurrency: 'Purchase Currency',
   paymentCurrency: 'Payment Currency',
   purchaseDate: 'Purchase Date',
   processingTime: 'Processing Time',
