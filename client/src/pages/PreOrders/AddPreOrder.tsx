@@ -220,6 +220,16 @@ export default function AddPreOrder() {
     }
   }, [isEditMode, preOrder, customers, form]);
 
+  // Sync items state to form for validation
+  useEffect(() => {
+    form.setValue('items', items.map(item => ({
+      productId: item.productId,
+      itemName: item.itemName,
+      itemDescription: item.itemDescription || '',
+      quantity: item.quantity,
+    })));
+  }, [items, form]);
+
   const createCustomerMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest('POST', '/api/customers', {
