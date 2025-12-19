@@ -1,4 +1,5 @@
 import twilio from 'twilio';
+import nodemailer from 'nodemailer';
 import { db } from '../db';
 import { preOrders, preOrderReminders, customers } from '@shared/schema';
 import { eq, and, lte, isNull, inArray } from 'drizzle-orm';
@@ -8,6 +9,25 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
 
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
+
+// Email configuration
+const smtpHost = process.env.SMTP_HOST;
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const smtpFrom = process.env.SMTP_FROM || 'noreply@daviesupply.com';
+
+const emailTransporter = smtpHost && smtpUser && smtpPass 
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    })
+  : null;
 
 export interface ReminderResult {
   success: boolean;
@@ -70,11 +90,43 @@ export async function sendEmailReminder(
   subject: string,
   message: string
 ): Promise<ReminderResult> {
-  console.log(`📧 Email reminder would be sent to ${email}: ${subject}`);
-  return {
-    success: true,
-    messageId: `email-${Date.now()}`
-  };
+  if (!emailTransporter) {
+    console.warn('⚠️ Email transporter not configured (SMTP_HOST, SMTP_USER, SMTP_PASS required). Email reminder not sent.');
+    return {
+      success: false,
+      error: 'Email service not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.'
+    };
+  }
+
+  try {
+    const info = await emailTransporter.sendMail({
+      from: smtpFrom,
+      to: email,
+      subject: subject,
+      text: message,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; margin-bottom: 20px;">${subject}</h2>
+          <p style="color: #555; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #888; font-size: 12px;">Davie Supply - Warehouse Management System</p>
+        </div>
+      `
+    });
+
+    console.log(`📧 Email reminder sent to ${email}, MessageID: ${info.messageId}`);
+
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+  } catch (error: any) {
+    console.error('❌ Failed to send email reminder:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to send email'
+    };
+  }
 }
 
 export function generateReminderMessage(
