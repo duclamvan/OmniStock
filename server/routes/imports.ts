@@ -1403,7 +1403,7 @@ router.post("/custom-items", async (req, res) => {
 // Unpack custom item (for items that represent whole purchase orders)
 router.post("/custom-items/:id/unpack", async (req, res) => {
   try {
-    const itemId = parseInt(req.params.id);
+    const itemId = req.params.id; // UUID string
     
     // Get the custom item
     const [customItem] = await db
@@ -1462,7 +1462,7 @@ router.post("/custom-items/:id/unpack", async (req, res) => {
 // Update custom item
 router.patch("/custom-items/:id", async (req, res) => {
   try {
-    const itemId = parseInt(req.params.id);
+    const itemId = req.params.id; // UUID string
     
     const updateData: any = {};
     if (req.body.name !== undefined) updateData.name = req.body.name;
@@ -1502,7 +1502,7 @@ router.patch("/custom-items/:id", async (req, res) => {
 // Delete custom item
 router.delete("/custom-items/:id", async (req, res) => {
   try {
-    const itemId = parseInt(req.params.id);
+    const itemId = req.params.id; // UUID string
     
     const result = await db
       .delete(customItems)
