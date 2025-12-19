@@ -277,51 +277,24 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
         blob = await response.blob();
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        
-        const printWindow = window.open('', '_blank');
-        
-        if (printWindow) {
-          printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Print Receipt</title>
-              <style>
-                body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
-                iframe { width: 100%; height: 100%; border: none; }
-              </style>
-            </head>
-            <body>
-              <iframe id="pdfFrame" src="${dataUrl}"></iframe>
-              <script>
-                var iframe = document.getElementById('pdfFrame');
-                iframe.onload = function() {
-                  setTimeout(function() {
-                    try {
-                      iframe.contentWindow.focus();
-                      iframe.contentWindow.print();
-                    } catch(e) {
-                      window.print();
-                    }
-                  }, 100);
-                };
-              </script>
-            </body>
-            </html>
-          `);
-          printWindow.document.close();
-        } else {
-          toast({
-            title: t('financial:popupBlocked', 'Popup Blocked'),
-            description: t('financial:allowPopups', 'Please allow popups to print'),
-            variant: 'destructive'
-          });
-        }
-      };
-      reader.readAsDataURL(blob);
+      const url = window.URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      } else {
+        toast({
+          title: t('financial:popupBlocked', 'Popup Blocked'),
+          description: t('financial:allowPopups', 'Please allow popups to print'),
+          variant: 'destructive'
+        });
+        window.URL.revokeObjectURL(url);
+      }
       
       onPrint();
     } catch (error) {
