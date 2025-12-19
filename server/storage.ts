@@ -292,15 +292,15 @@ export interface IStorage {
 
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
-  getImportPurchase(id: number): Promise<ImportPurchase | undefined>;
+  getImportPurchase(id: string): Promise<ImportPurchase | undefined>;
   getImportPurchasesAtWarehouse(): Promise<any[]>;
   createImportPurchase(purchase: InsertImportPurchase): Promise<ImportPurchase>;
-  updateImportPurchase(id: number, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined>;
-  deleteImportPurchase(id: number): Promise<boolean>;
-  unpackPurchaseOrder(purchaseId: number): Promise<any>;
+  updateImportPurchase(id: string, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined>;
+  deleteImportPurchase(id: string): Promise<boolean>;
+  unpackPurchaseOrder(purchaseId: string): Promise<any>;
 
   // Purchase Items
-  getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
+  getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]>;
   createPurchaseItem(item: InsertPurchaseItem): Promise<PurchaseItem>;
   updatePurchaseItem(id: number, item: Partial<InsertPurchaseItem>): Promise<PurchaseItem | undefined>;
 
@@ -1035,7 +1035,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(importPurchases.createdAt));
   }
 
-  async getImportPurchase(id: number): Promise<ImportPurchase | undefined> {
+  async getImportPurchase(id: string): Promise<ImportPurchase | undefined> {
     const [purchase] = await db
       .select()
       .from(importPurchases)
@@ -1051,7 +1051,7 @@ export class DatabaseStorage implements IStorage {
     return newPurchase;
   }
 
-  async updateImportPurchase(id: number, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined> {
+  async updateImportPurchase(id: string, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined> {
     const [updated] = await db
       .update(importPurchases)
       .set({ ...purchase, updatedAt: new Date() })
@@ -1060,7 +1060,7 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteImportPurchase(id: number): Promise<boolean> {
+  async deleteImportPurchase(id: string): Promise<boolean> {
     const result = await db
       .delete(importPurchases)
       .where(eq(importPurchases.id, id));
@@ -1093,7 +1093,7 @@ export class DatabaseStorage implements IStorage {
     return purchasesWithItems;
   }
 
-  async unpackPurchaseOrder(purchaseId: number): Promise<any> {
+  async unpackPurchaseOrder(purchaseId: string): Promise<any> {
     // Get the purchase order with items
     const [purchase] = await db
       .select()
@@ -1149,7 +1149,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Purchase Items
-  async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
+  async getPurchaseItems(purchaseId: string): Promise<PurchaseItem[]> {
     return await db
       .select()
       .from(purchaseItems)

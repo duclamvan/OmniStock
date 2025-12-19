@@ -105,7 +105,7 @@ export default function CreatePurchase() {
   const { t } = useTranslation('imports');
   const [, navigate] = useLocation();
   const params = useParams();
-  const purchaseId = params.id ? parseInt(params.id) : null;
+  const purchaseId = params.id || null;
   const isEditMode = !!purchaseId;
   const { toast } = useToast();
   const queryClient = useQueryClient();
