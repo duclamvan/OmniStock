@@ -1291,7 +1291,7 @@ export default function POS() {
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="w-full lg:w-[420px] bg-white dark:bg-gray-800 border-t lg:border-t-0 lg:border-l flex flex-col shadow-xl lg:max-h-screen">
+      <div className="w-full lg:w-[480px] bg-white dark:bg-gray-800 border-t lg:border-t-0 lg:border-l flex flex-col shadow-xl lg:max-h-screen">
         {/* Cart Header */}
         <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-2 sm:p-4">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
@@ -1453,12 +1453,12 @@ export default function POS() {
                         </Button>
                       </div>
                       
-                      <div className="text-right shrink-0 w-[80px]">
+                      <div className="text-right shrink-0 w-[110px]">
                         <p className="text-sm font-bold text-primary tabular-nums">
-                          {(item.price * item.quantity).toFixed(2)} {currencySymbol}
+                          {(item.price * item.quantity).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
                         </p>
                         <p className="text-[10px] text-muted-foreground tabular-nums">
-                          {item.price.toFixed(2)} {currencySymbol}
+                          {item.price.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
                         </p>
                       </div>
                       
@@ -1510,17 +1510,17 @@ export default function POS() {
             <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
+                <span className="font-medium tabular-nums">{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span className="font-medium tabular-nums">-{discount.toFixed(2)} {currencySymbol}</span>
+                  <span className="font-medium tabular-nums">-{discount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg sm:text-xl font-bold pt-2 border-t">
                 <span>Total</span>
-                <span className="text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
+                <span className="text-primary tabular-nums">{total.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
               </div>
             </div>
 
@@ -1537,7 +1537,7 @@ export default function POS() {
               ) : (
                 <>
                   <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
-                  Pay {total.toFixed(2)} {currencySymbol}
+                  Pay {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
                 </>
               )}
             </Button>
