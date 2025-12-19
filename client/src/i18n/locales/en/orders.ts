@@ -945,7 +945,7 @@ const orders = {
   // PreOrders - Notifications
   reminderSettings: 'Reminder Settings',
   enableReminders: 'Enable Reminders',
-  enableRemindersDescription: 'Send SMS or Email reminders to the customer before the expected arrival date',
+  enableRemindersDescription: 'Send SMS or Email reminders to the customer when items are received in warehouse',
   reminderChannel: 'Notification Channel',
   sms: 'SMS',
   smsBothEmail: 'SMS & Email',

@@ -64,28 +64,6 @@ import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 import { getCountryFlag } from "@/lib/countries";
 
-// Common timezones for the selector
-const COMMON_TIMEZONES = [
-  'Europe/Prague',
-  'Europe/London',
-  'Europe/Berlin',
-  'Europe/Paris',
-  'Europe/Rome',
-  'Europe/Madrid',
-  'Europe/Amsterdam',
-  'Europe/Vienna',
-  'Europe/Warsaw',
-  'Europe/Budapest',
-  'America/New_York',
-  'America/Chicago',
-  'America/Los_Angeles',
-  'Asia/Ho_Chi_Minh',
-  'Asia/Tokyo',
-  'Asia/Shanghai',
-  'Australia/Sydney',
-  'UTC',
-];
-
 // Note: We'll use t() for error messages in the component, not in the schema
 // The schema uses English by default and we translate in the form errors display
 const formSchema = insertPreOrderSchema.extend({
@@ -101,8 +79,6 @@ const formSchema = insertPreOrderSchema.extend({
   reminderEnabled: z.boolean().default(false),
   reminderChannel: z.enum(['sms', 'email', 'both']).default('sms'),
   reminderDaysBefore: z.array(z.number()).default([1, 3]),
-  reminderTimeUtc: z.string().default('09:00'),
-  reminderTimezone: z.string().default('Europe/Prague'),
   reminderPhone: z.string().optional(),
   reminderEmail: z.string().email().optional().or(z.literal('')),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),
@@ -155,8 +131,6 @@ export default function AddPreOrder() {
       reminderEnabled: false,
       reminderChannel: 'sms',
       reminderDaysBefore: [1, 3],
-      reminderTimeUtc: '09:00',
-      reminderTimezone: 'Europe/Prague',
       reminderPhone: '',
       reminderEmail: '',
       priority: 'normal',
@@ -212,8 +186,6 @@ export default function AddPreOrder() {
       form.setValue('reminderEnabled', preOrder.reminderEnabled ?? false);
       form.setValue('reminderChannel', preOrder.reminderChannel || 'sms');
       form.setValue('reminderDaysBefore', preOrder.reminderDaysBefore || [1, 3]);
-      form.setValue('reminderTimeUtc', preOrder.reminderTimeUtc || '09:00');
-      form.setValue('reminderTimezone', preOrder.reminderTimezone || 'Europe/Prague');
       form.setValue('reminderPhone', preOrder.reminderPhone || '');
       form.setValue('reminderEmail', preOrder.reminderEmail || '');
       form.setValue('priority', preOrder.priority || 'normal');
@@ -292,8 +264,6 @@ export default function AddPreOrder() {
         reminderEnabled: data.reminderEnabled,
         reminderChannel: data.reminderChannel,
         reminderDaysBefore: data.reminderDaysBefore,
-        reminderTimeUtc: data.reminderTimeUtc,
-        reminderTimezone: data.reminderTimezone,
         reminderPhone: data.reminderPhone || null,
         reminderEmail: data.reminderEmail || null,
         priority: data.priority,
@@ -438,8 +408,6 @@ export default function AddPreOrder() {
         reminderEnabled: data.reminderEnabled,
         reminderChannel: data.reminderChannel,
         reminderDaysBefore: data.reminderDaysBefore,
-        reminderTimeUtc: data.reminderTimeUtc,
-        reminderTimezone: data.reminderTimezone,
         reminderPhone: data.reminderPhone || null,
         reminderEmail: data.reminderEmail || null,
         priority: data.priority,
@@ -804,43 +772,6 @@ export default function AddPreOrder() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-
-                {/* Reminder Time and Timezone */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="reminderTimeUtc" className="text-sm font-medium text-slate-700">
-                      {t('reminderTime')}
-                    </Label>
-                    <Input
-                      id="reminderTimeUtc"
-                      type="time"
-                      value={form.watch("reminderTimeUtc")}
-                      onChange={(e) => form.setValue("reminderTimeUtc", e.target.value)}
-                      className="mt-1.5"
-                      data-testid="input-reminder-time"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="reminderTimezone" className="text-sm font-medium text-slate-700">
-                      {t('reminderTimezone')}
-                    </Label>
-                    <Select
-                      value={form.watch("reminderTimezone")}
-                      onValueChange={(value) => form.setValue("reminderTimezone", value)}
-                    >
-                      <SelectTrigger className="mt-1.5" data-testid="select-reminder-timezone">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COMMON_TIMEZONES.map((tz) => (
-                          <SelectItem key={tz} value={tz} data-testid={`option-timezone-${tz}`}>
-                            {tz}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
 

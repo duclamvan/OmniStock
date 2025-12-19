@@ -949,7 +949,7 @@ const orders = {
   // PreOrders - Notifications
   reminderSettings: 'Cài đặt nhắc nhở',
   enableReminders: 'Bật nhắc nhở',
-  enableRemindersDescription: 'Gửi SMS hoặc Email nhắc nhở cho khách hàng trước ngày dự kiến về hàng',
+  enableRemindersDescription: 'Gửi SMS hoặc Email nhắc nhở cho khách hàng khi hàng về kho',
   reminderChannel: 'Kênh thông báo',
   sms: 'SMS',
   smsBothEmail: 'SMS & Email',
