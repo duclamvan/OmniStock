@@ -1540,25 +1540,40 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </span>
                 </div>
                 
-                {/* Row 2: Customer + Date */}
-                <div className="flex items-center justify-between gap-2 mb-1">
+                {/* Row 2: Customer + Date + Expand Arrow */}
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
                     {order.customer?.name || t('orders:walkInCustomer')}
                   </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    {formatDate(order.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {formatDate(order.createdAt)}
+                    </span>
+                    {/* Expand/Collapse arrow for items */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpandedItems(order.id);
+                      }}
+                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                      data-testid={`button-expand-items-${order.id}`}
+                    >
+                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedItemsOrders.has(order.id) ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
                 </div>
                   
-                {/* Order Items Summary - Compact */}
-                <OrderItemsLoader 
-                  orderId={order.id} 
-                  currency={order.currency}
-                  variant="mobile"
-                  maxItems={3}
-                  expanded={expandedItemsOrders.has(order.id)}
-                  onToggleExpand={() => toggleExpandedItems(order.id)}
-                />
+                {/* Order Items Summary - Only show when expanded */}
+                {expandedItemsOrders.has(order.id) && (
+                  <OrderItemsLoader 
+                    orderId={order.id} 
+                    currency={order.currency}
+                    variant="mobile"
+                    maxItems={3}
+                    expanded={true}
+                    onToggleExpand={() => toggleExpandedItems(order.id)}
+                  />
+                )}
               </div>
             ))}
           </div>
