@@ -229,8 +229,6 @@ const financial = {
   taxIncluded: 'Đã bao gồm thuế',
   vatBreakdown: 'Chi tiết thuế GTGT',
   netAmount: 'Giá trước thuế',
-  vatAmount: 'Thuế GTGT',
-  grossAmount: 'Tổng sau thuế',
   nonVatReceipt: 'Hóa đơn không thuế',
   pricesIncludeVat: 'Giá đã bao gồm thuế',
   euCompliantReceipt: 'Hóa đơn tuân thủ EU',

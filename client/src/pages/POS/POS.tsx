@@ -121,10 +121,72 @@ function QRCodeCZK({ amount, orderId, scanLabel }: { amount: number; orderId: st
   );
 }
 
+type ReceiptLanguage = 'en' | 'vi' | 'cz' | 'de';
+
+const receiptLocales: Record<ReceiptLanguage, { locale: string; dateFormat: Intl.DateTimeFormatOptions; timeFormat: Intl.DateTimeFormatOptions }> = {
+  en: { 
+    locale: 'en-GB', 
+    dateFormat: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    timeFormat: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
+  },
+  vi: { 
+    locale: 'vi-VN', 
+    dateFormat: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    timeFormat: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
+  },
+  cz: { 
+    locale: 'cs-CZ', 
+    dateFormat: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    timeFormat: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
+  },
+  de: { 
+    locale: 'de-DE', 
+    dateFormat: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    timeFormat: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }
+  },
+};
+
 function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose: () => void; onPrint: () => void }) {
   const { t } = useTranslation(['common', 'financial']);
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [receiptLang, setReceiptLang] = useState<ReceiptLanguage>(() => {
+    return (localStorage.getItem('pos_receipt_language') as ReceiptLanguage) || 'cz';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pos_receipt_language', receiptLang);
+  }, [receiptLang]);
+
+  const getLabel = (key: string): string => {
+    const prefix = `receipt${receiptLang.charAt(0).toUpperCase() + receiptLang.slice(1)}_`;
+    return t(`financial:${prefix}${key}`);
+  };
+
+  const formatDate = (date: Date): string => {
+    const { locale, dateFormat } = receiptLocales[receiptLang];
+    return date.toLocaleDateString(locale, dateFormat);
+  };
+
+  const formatTime = (date: Date): string => {
+    const { locale, timeFormat } = receiptLocales[receiptLang];
+    return date.toLocaleTimeString(locale, timeFormat);
+  };
+
+  const formatAmount = (amount: number): string => {
+    const { locale } = receiptLocales[receiptLang];
+    return amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const getPaymentLabel = (): string => {
+    const method = data.paymentMethod;
+    if (method === 'cash') return getLabel('cash');
+    if (method === 'card') return getLabel('card');
+    if (method === 'bank_transfer' || method === 'bank_transfer_private' || method === 'bank_transfer_invoice') return getLabel('bankTransfer');
+    if (method === 'qr_czk') return 'QR CZK';
+    if (method === 'pay_later') return t('financial:payLater');
+    return method;
+  };
   
   const handlePrint = () => {
     window.print();
@@ -187,14 +249,13 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
     }
   };
 
-  const paymentMethodLabels: Record<PaymentMethod, string> = {
-    cash: t('financial:cash'),
-    card: t('financial:creditCard'),
-    bank_transfer: t('financial:bankTransfer'),
-    bank_transfer_private: t('financial:bankTransferPrivate'),
-    bank_transfer_invoice: t('financial:bankTransferInvoice'),
-    pay_later: t('financial:payLater'),
-    qr_czk: t('financial:qrCodeCzk')
+  const currencySymbol = data.currency === 'EUR' ? '€' : (data.currency === 'CZK' ? 'Kč' : data.currency);
+
+  const languageFlags: Record<ReceiptLanguage, string> = {
+    en: '🇬🇧',
+    vi: '🇻🇳', 
+    cz: '🇨🇿',
+    de: '🇩🇪'
   };
 
   return (
@@ -283,77 +344,111 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
           }
         }
       `}</style>
+
+      {/* Language Selector - No print */}
+      <div className="no-print flex justify-center gap-2 mb-4">
+        {(Object.keys(languageFlags) as ReceiptLanguage[]).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setReceiptLang(lang)}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              receiptLang === lang
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+            }`}
+            data-testid={`button-receipt-lang-${lang}`}
+          >
+            {languageFlags[lang]} {lang.toUpperCase()}
+          </button>
+        ))}
+      </div>
       
       <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
+        {/* Header with Business Info - EU Compliant */}
         <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <h2 className="text-xl font-bold">DAVIE SUPPLY</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('financial:posReceipt')}</p>
+          <h2 className="text-xl font-bold">DAVIE SUPPLY s.r.o.</h2>
+          <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
+            Dlouhá 123, 110 00 Praha 1
+          </p>
+          <p className="text-[10px] text-gray-600 dark:text-gray-400">
+            {getLabel('companyId')}: 12345678 | {getLabel('vatId')}: CZ12345678
+          </p>
+          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">{getLabel('receipt')}</p>
         </div>
         
+        {/* Transaction Info */}
         <div className="space-y-1.5 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{t('financial:date')}:</span>
-            <span className="font-medium">{data.date.toLocaleDateString()}</span>
+            <span className="text-gray-600 dark:text-gray-400">{getLabel('date')}:</span>
+            <span className="font-medium">{formatDate(data.date)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{t('financial:time')}:</span>
-            <span className="font-medium">{data.date.toLocaleTimeString()}</span>
+            <span className="text-gray-600 dark:text-gray-400">{getLabel('time')}:</span>
+            <span className="font-medium">{formatTime(data.date)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{t('financial:orderNumber')}:</span>
+            <span className="text-gray-600 dark:text-gray-400">{getLabel('receiptNo')}:</span>
             <span className="font-medium">{data.orderId}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{t('common:customer')}:</span>
-            <span className="font-medium">{data.customerName}</span>
+            <span className="text-gray-600 dark:text-gray-400">{getLabel('customer')}:</span>
+            <span className="font-medium truncate max-w-[140px]">
+              {data.customerName === 'Walk-in Customer' ? getLabel('walkInCustomer') : data.customerName}
+            </span>
           </div>
         </div>
         
+        {/* Items */}
         <div className="border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <div className="font-bold mb-3 text-base">{t('financial:items')}:</div>
+          <div className="font-bold mb-3 text-base">{getLabel('items')}:</div>
           {data.items.map((item, idx) => (
             <div key={idx} className="flex justify-between text-sm mb-2">
               <span className="flex-1 pr-3">
                 {item.quantity}x {item.name}
               </span>
               <span className="font-medium whitespace-nowrap">
-                {data.currency} {(item.price * item.quantity).toFixed(2)}
+                {formatAmount(item.price * item.quantity)} {currencySymbol}
               </span>
             </div>
           ))}
         </div>
         
+        {/* Totals */}
         <div className="space-y-2 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
           <div className="flex justify-between">
-            <span>{t('financial:subtotal')}:</span>
-            <span>{data.currency} {data.subtotal.toFixed(2)}</span>
+            <span>{getLabel('subtotal')}:</span>
+            <span>{formatAmount(data.subtotal)} {currencySymbol}</span>
           </div>
           {data.discount > 0 && (
             <div className="flex justify-between text-green-600 dark:text-green-400">
-              <span>{t('financial:discount')}:</span>
-              <span>-{data.currency} {data.discount.toFixed(2)}</span>
+              <span>{getLabel('discount')}:</span>
+              <span>-{formatAmount(data.discount)} {currencySymbol}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg pt-2 border-t dark:border-slate-600">
-            <span>{t('financial:total')}:</span>
-            <span>{data.currency} {data.total.toFixed(2)}</span>
+            <span>{getLabel('total')}:</span>
+            <span>{formatAmount(data.total)} {currencySymbol}</span>
           </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-1">
+            {getLabel('vatIncluded')}
+          </p>
         </div>
         
+        {/* Payment Info */}
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{t('financial:paymentMethod')}:</span>
-            <span className="font-medium">{paymentMethodLabels[data.paymentMethod as PaymentMethod] || data.paymentMethod}</span>
+            <span className="text-gray-600 dark:text-gray-400">{getLabel('paymentMethod')}:</span>
+            <span className="font-medium">{getPaymentLabel()}</span>
           </div>
           {data.cashReceived && (
             <>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">{t('financial:cashReceived')}:</span>
-                <span className="font-medium">{data.currency} {data.cashReceived.toFixed(2)}</span>
+                <span className="text-gray-600 dark:text-gray-400">{getLabel('cashReceived')}:</span>
+                <span className="font-medium">{formatAmount(data.cashReceived)} {currencySymbol}</span>
               </div>
               <div className="flex justify-between text-green-600 dark:text-green-400 font-bold">
-                <span>{t('financial:change')}:</span>
-                <span>{data.currency} {(data.change || 0).toFixed(2)}</span>
+                <span>{getLabel('change')}:</span>
+                <span>{formatAmount(data.change || 0)} {currencySymbol}</span>
               </div>
             </>
           )}
@@ -365,9 +460,10 @@ function ThermalReceipt({ data, onClose, onPrint }: { data: ReceiptData; onClose
           )}
         </div>
         
+        {/* Footer */}
         <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('financial:thankYouForPurchase')}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('financial:poweredByPOS')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{getLabel('thankYou')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">www.davie.shop</p>
         </div>
       </div>
       

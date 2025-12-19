@@ -229,8 +229,6 @@ const financial = {
   taxIncluded: 'Tax Included',
   vatBreakdown: 'VAT Breakdown',
   netAmount: 'Net Amount',
-  vatAmount: 'VAT Amount',
-  grossAmount: 'Gross Amount',
   nonVatReceipt: 'Non-VAT Receipt',
   pricesIncludeVat: 'Prices include VAT',
   euCompliantReceipt: 'EU Compliant Receipt',
