@@ -111,6 +111,7 @@
     "react-resizable-panels": "^2.1.9",
     "react-window": "^1.8.11",
     "recharts": "^2.15.2",
+    "resend": "^6.6.0",
     "sharp": "^0.34.3",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
