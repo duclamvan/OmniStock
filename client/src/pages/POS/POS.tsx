@@ -630,6 +630,12 @@ export default function POS() {
   const [payLaterCustomerSearchQuery, setPayLaterCustomerSearchQuery] = useState('');
   const [showQRCodePreview, setShowQRCodePreview] = useState(false);
   
+  // Custom Item state
+  const [showCustomItemDialog, setShowCustomItemDialog] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [customItemCost, setCustomItemCost] = useState('');
+  
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastBarcodeTime = useRef<number>(0);
@@ -956,6 +962,52 @@ export default function POS() {
     setDiscount(0);
   };
 
+  const addCustomItem = () => {
+    const price = parseFloat(customItemPrice) || 0;
+    const cost = parseFloat(customItemCost) || 0;
+    const profit = price - cost;
+    
+    if (!customItemName.trim() || price <= 0) {
+      toast({
+        title: t('common:error'),
+        description: t('pos:customItemRequiresNameAndPrice', 'Custom item requires name and price'),
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const newCartId = `cart-custom-${cartIdCounter}`;
+    setCartIdCounter(prev => prev + 1);
+    setCart([...cart, {
+      id: `custom-${Date.now()}`,
+      cartId: newCartId,
+      productId: undefined,
+      variantId: undefined,
+      bundleId: undefined,
+      name: customItemName.trim(),
+      price,
+      quantity: 1,
+      type: 'custom' as any,
+      sku: undefined,
+      barcode: undefined,
+      imageUrl: undefined,
+      cost,
+      profit,
+    }]);
+    setFocusedCartItemId(newCartId);
+    
+    // Reset form
+    setCustomItemName('');
+    setCustomItemPrice('');
+    setCustomItemCost('');
+    setShowCustomItemDialog(false);
+    
+    toast({
+      title: t('pos:customItemAdded', 'Custom item added'),
+      description: `${customItemName.trim()} - ${price.toFixed(2)} ${currencySymbol}`,
+    });
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const total = Math.max(0, subtotal - discount);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -1272,8 +1324,20 @@ export default function POS() {
             </SelectContent>
           </Select>
           
+          {/* Custom Item Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 sm:h-14 px-3 sm:px-4 order-3 bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+            onClick={() => setShowCustomItemDialog(true)}
+            data-testid="button-custom-item"
+          >
+            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">{t('pos:customItem', 'Custom')}</span>
+          </Button>
+          
           {/* View Toggle */}
-          <div className="flex bg-muted rounded-xl p-1 order-3 shadow-inner">
+          <div className="flex bg-muted rounded-xl p-1 order-4 shadow-inner">
             <Button
               variant="ghost"
               size="icon"
@@ -1540,7 +1604,11 @@ export default function POS() {
                 <Card key={item.cartId} className="overflow-hidden" data-testid={`cart-item-${item.cartId}`}>
                   <CardContent className="p-2">
                     <div className="flex gap-2 items-center">
-                      {item.imageUrl ? (
+                      {item.type === 'custom' ? (
+                        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded flex items-center justify-center shrink-0 border border-amber-300 dark:border-amber-700">
+                          <Plus className="h-5 w-5 text-amber-600" />
+                        </div>
+                      ) : item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt={item.name}
@@ -1553,6 +1621,13 @@ export default function POS() {
                       )}
                       
                       <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {item.type === 'custom' && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                              Custom
+                            </Badge>
+                          )}
+                        </div>
                         <h4 className="font-medium text-xs leading-tight line-clamp-2">{item.name}</h4>
                       </div>
 
@@ -2401,6 +2476,110 @@ export default function POS() {
             <Button onClick={handleApplyDiscount} data-testid="button-apply-discount" disabled={!discountInput || parseFloat(discountInput) <= 0}>
               <Check className="h-4 w-4 mr-1" />
               Apply Discount
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Item Dialog */}
+      <Dialog open={showCustomItemDialog} onOpenChange={setShowCustomItemDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-amber-600" />
+              {t('pos:createCustomItem', 'Create Custom Item')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('pos:customItemDescription', 'Add a custom item with your own name, price, and profit tracking')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('pos:itemName', 'Item Name')} *</label>
+              <Input
+                placeholder={t('pos:enterItemName', 'Enter item name...')}
+                value={customItemName}
+                onChange={(e) => setCustomItemName(e.target.value)}
+                data-testid="input-custom-item-name"
+                autoFocus
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('pos:price', 'Price')} ({currencySymbol}) *</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={customItemPrice}
+                  onChange={(e) => setCustomItemPrice(e.target.value)}
+                  data-testid="input-custom-item-price"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('pos:cost', 'Cost')} ({currencySymbol})</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={customItemCost}
+                  onChange={(e) => setCustomItemCost(e.target.value)}
+                  data-testid="input-custom-item-cost"
+                />
+              </div>
+            </div>
+            
+            {/* Profit Preview */}
+            {customItemPrice && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{t('pos:estimatedProfit', 'Estimated Profit')}:</span>
+                  <span className={cn(
+                    "font-bold",
+                    (parseFloat(customItemPrice) - (parseFloat(customItemCost) || 0)) >= 0 
+                      ? "text-green-600" 
+                      : "text-red-600"
+                  )}>
+                    {((parseFloat(customItemPrice) || 0) - (parseFloat(customItemCost) || 0)).toFixed(2)} {currencySymbol}
+                  </span>
+                </div>
+                {customItemCost && parseFloat(customItemPrice) > 0 && (
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-muted-foreground">{t('pos:margin', 'Margin')}:</span>
+                    <span className="text-sm">
+                      {(((parseFloat(customItemPrice) - parseFloat(customItemCost)) / parseFloat(customItemPrice)) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setCustomItemName('');
+                setCustomItemPrice('');
+                setCustomItemCost('');
+                setShowCustomItemDialog(false);
+              }}
+            >
+              {t('common:cancel', 'Cancel')}
+            </Button>
+            <Button 
+              onClick={addCustomItem}
+              disabled={!customItemName.trim() || !customItemPrice || parseFloat(customItemPrice) <= 0}
+              className="bg-amber-600 hover:bg-amber-700"
+              data-testid="button-add-custom-item"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t('pos:addToCart', 'Add to Cart')}
             </Button>
           </DialogFooter>
         </DialogContent>
