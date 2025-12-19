@@ -945,6 +945,11 @@ const orders = {
   noPreOrdersYetClickAdd: 'Chưa có đơn đặt trước. Nhấn "Thêm đơn đặt trước" để tạo mới.',
   itemsOrdered: 'Sản phẩm đặt trước',
   notSet: 'Chưa đặt',
+  backToPreOrders: 'Quay lại đơn đặt trước',
+  remindersEnabled: 'Đã bật nhắc',
+  sendTo: 'Gửi tới',
+  estimatedArrival: 'Dự kiến về',
+  qty: 'SL',
   
   // PreOrders - Notifications
   reminderSettings: 'Cài đặt nhắc nhở',

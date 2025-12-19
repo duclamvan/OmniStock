@@ -15,7 +15,6 @@ import {
   Package,
   Clock,
   FileText,
-  MoreVertical,
   CheckCircle2,
   XCircle,
   Clock3,
@@ -24,11 +23,9 @@ import {
   Send,
   Mail,
   Phone,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare
+  MapPin
 } from "lucide-react";
-import { format, differenceInDays, subDays } from "date-fns";
+import { format } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,36 +45,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface PreOrderReminder {
-  id: number;
-  preOrderId: string;
-  channel: string;
-  scheduledFor: string;
-  sentAt: string | null;
-  status: string;
-  errorMessage: string | null;
-  recipientPhone: string | null;
-  recipientEmail: string | null;
-  messageContent: string | null;
-  createdAt: string;
-}
+import { Separator } from "@/components/ui/separator";
 
 const statusConfig = {
   pending: {
@@ -102,22 +77,11 @@ const statusConfig = {
   },
 };
 
-const reminderStatusConfig = {
-  pending: {
-    labelKey: "reminderStatusPending",
-    className: "bg-amber-100 text-amber-800 border-amber-200",
-    icon: Clock3,
-  },
-  sent: {
-    labelKey: "reminderStatusSent",
-    className: "bg-green-100 text-green-800 border-green-200",
-    icon: CheckCircle2,
-  },
-  failed: {
-    labelKey: "reminderStatusFailed",
-    className: "bg-red-100 text-red-800 border-red-200",
-    icon: XCircle,
-  },
+const priorityConfig = {
+  low: { className: "bg-slate-100 text-slate-700", label: "Low" },
+  normal: { className: "bg-blue-100 text-blue-700", label: "Normal" },
+  high: { className: "bg-orange-100 text-orange-700", label: "High" },
+  urgent: { className: "bg-red-100 text-red-700", label: "Urgent" },
 };
 
 export default function PreOrderDetails() {
@@ -129,15 +93,9 @@ export default function PreOrderDetails() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSendReminderDialog, setShowSendReminderDialog] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<'sms' | 'email' | 'both'>('sms');
-  const [expandedReminders, setExpandedReminders] = useState<Set<number>>(new Set());
 
   const { data: preOrder, isLoading, error } = useQuery<any>({
     queryKey: ['/api/pre-orders', id],
-    enabled: !!id,
-  });
-
-  const { data: reminders = [] } = useQuery<PreOrderReminder[]>({
-    queryKey: ['/api/pre-orders', id, 'reminders'],
     enabled: !!id,
   });
 
@@ -188,7 +146,6 @@ export default function PreOrderDetails() {
       return await apiRequest('POST', `/api/pre-orders/${id}/send-reminder`, { channel });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/pre-orders', id, 'reminders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders', id] });
       setShowSendReminderDialog(false);
       toast({
@@ -205,18 +162,6 @@ export default function PreOrderDetails() {
     },
   });
 
-  const toggleReminderExpand = (reminderId: number) => {
-    setExpandedReminders(prev => {
-      const next = new Set(prev);
-      if (next.has(reminderId)) {
-        next.delete(reminderId);
-      } else {
-        next.add(reminderId);
-      }
-      return next;
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64" data-testid="loading-state">
@@ -226,16 +171,20 @@ export default function PreOrderDetails() {
   }
 
   if (error || !preOrder) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-muted-foreground">{t('preOrderNotFound')}</p>
+        <Button onClick={() => navigate('/orders/pre-orders')} variant="outline">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t('backToPreOrders')}
+        </Button>
+      </div>
+    );
   }
 
   const config = statusConfig[preOrder.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = config.icon;
-
-  const calculateProgress = (item: any) => {
-    if (!item.quantity) return 0;
-    return Math.round((item.arrivedQuantity / item.quantity) * 100);
-  };
+  const priority = priorityConfig[preOrder.priority as keyof typeof priorityConfig] || priorityConfig.normal;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -246,544 +195,291 @@ export default function PreOrderDetails() {
     }
   };
 
-  const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return "—";
-    try {
-      return format(new Date(dateString), "PPP p");
-    } catch {
-      return "—";
-    }
-  };
-
-  const calculateNextReminderDate = () => {
-    if (!preOrder.expectedDate || !preOrder.reminderEnabled) return null;
-    const expectedDate = new Date(preOrder.expectedDate);
-    const daysBefore = preOrder.reminderDaysBefore || [1, 3];
-    const now = new Date();
-    
-    const upcomingDates = daysBefore
-      .map((days: number) => subDays(expectedDate, days))
-      .filter((date: Date) => date > now)
-      .sort((a: Date, b: Date) => a.getTime() - b.getTime());
-    
-    return upcomingDates.length > 0 ? upcomingDates[0] : null;
-  };
-
-  const calculateDaysUntilNextReminder = () => {
-    const nextDate = calculateNextReminderDate();
-    if (!nextDate) return null;
-    return differenceInDays(nextDate, new Date());
-  };
-
-  const nextReminderDate = calculateNextReminderDate();
-  const daysUntilNextReminder = calculateDaysUntilNextReminder();
-  const sentReminders = reminders.filter(r => r.status === 'sent');
-
-  const getChannelIcon = (channel: string) => {
-    switch (channel) {
-      case 'sms':
-        return <Phone className="h-3 w-3" />;
-      case 'email':
-        return <Mail className="h-3 w-3" />;
-      default:
-        return <MessageSquare className="h-3 w-3" />;
-    }
-  };
-
-  const getChannelLabel = (channel: string) => {
-    switch (channel) {
-      case 'sms':
-        return t('sms');
-      case 'email':
-        return t('email');
-      default:
-        return channel.toUpperCase();
-    }
-  };
+  const customer = preOrder.customer;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
+    <div className="max-w-4xl mx-auto space-y-4 p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/orders/pre-orders')}
             className="flex-shrink-0"
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate" data-testid="heading-pre-order-details">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate" data-testid="heading-pre-order-details">
               {t('preOrderDetails')}
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-              {preOrder.customer?.name || t('unknownCustomer')}
-            </p>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2">
           <Button
-            onClick={() => setShowSendReminderDialog(true)}
-            className="bg-primary w-full sm:w-auto"
-            data-testid="button-send-reminder"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/orders/pre-orders/edit/${id}`)}
+            data-testid="button-edit"
           >
-            <Send className="h-4 w-4 mr-2" />
-            {t('sendReminderNow')}
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{tCommon('edit')}</span>
           </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-actions">
-                <MoreVertical className="h-4 w-4 mr-2" />
-                {tCommon('actions')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onClick={() => navigate(`/orders/pre-orders/edit/${id}`)}
-                data-testid="action-edit"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {tCommon('edit')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            data-testid="button-delete"
+          >
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{tCommon('delete')}</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Status & Priority Bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge 
+          variant="outline" 
+          className={`${config.className} px-3 py-1.5`}
+          data-testid="badge-status"
+        >
+          <StatusIcon className="h-4 w-4 mr-1.5" />
+          {t(config.labelKey)}
+        </Badge>
+        <Badge 
+          variant="outline" 
+          className={`${priority.className} px-3 py-1.5`}
+          data-testid="badge-priority"
+        >
+          {t(`priority${preOrder.priority?.charAt(0).toUpperCase()}${preOrder.priority?.slice(1)}` || 'priorityNormal')}
+        </Badge>
+        {preOrder.reminderEnabled && (
+          <Badge 
+            variant="outline" 
+            className="bg-green-50 text-green-700 border-green-200 px-3 py-1.5"
+            data-testid="badge-reminder"
+          >
+            <Bell className="h-3.5 w-3.5 mr-1.5" />
+            {t('remindersEnabled')}
+          </Badge>
+        )}
+      </div>
+
+      {/* Main Content - Two Column on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column - Customer & Details */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Customer Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {t('customer')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="font-semibold text-lg" data-testid="text-customer-name">
+                  {customer?.name || t('unknownCustomer')}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                {customer?.billingEmail && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{customer.billingEmail}</span>
+                  </div>
+                )}
+                {customer?.billingTel && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4 flex-shrink-0" />
+                    <span>{customer.billingTel}</span>
+                  </div>
+                )}
+                {customer?.country && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                    <span>{customer.country}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Items Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {t('preOrderItems')} ({preOrder.items?.length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {preOrder.items && preOrder.items.length > 0 ? (
+                <div className="divide-y">
+                  {preOrder.items.map((item: any, index: number) => (
+                    <div
+                      key={item.id}
+                      className="py-3 first:pt-0 last:pb-0"
+                      data-testid={`item-${item.id}`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate" data-testid={`text-item-name-${item.id}`}>
+                            {item.itemName || item.name}
+                          </p>
+                          {item.itemDescription && (
+                            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                              {item.itemDescription}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="font-semibold text-lg" data-testid={`text-quantity-${item.id}`}>
+                            {item.quantity}
+                          </span>
+                          <span className="text-muted-foreground text-sm ml-1">{t('qty')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p>{t('noItemsInPreOrder')}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Notes Card */}
+          {preOrder.notes && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  {tCommon('notes')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap" data-testid="text-notes">
+                  {preOrder.notes}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column - Info & Actions */}
+        <div className="space-y-4">
+          {/* Key Details Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t('details')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">{t('estimatedArrival')}</p>
+                  <p className="font-medium" data-testid="text-expected-date">
+                    {formatDate(preOrder.expectedDate)}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">{t('createdDate')}</p>
+                  <p className="font-medium" data-testid="text-created-date">
+                    {formatDate(preOrder.createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              {preOrder.reminderEnabled && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">{t('reminderChannel')}</p>
+                      <p className="font-medium capitalize">
+                        {preOrder.reminderChannel === 'both' 
+                          ? t('smsBothEmail') 
+                          : preOrder.reminderChannel?.toUpperCase() || 'SMS'}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{tCommon('actions')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {preOrder.reminderEnabled && (
+                <Button
+                  className="w-full justify-start"
+                  onClick={() => setShowSendReminderDialog(true)}
+                  data-testid="button-send-reminder"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {t('sendReminderNow')}
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start"
                 onClick={() => updateStatusMutation.mutate('partially_arrived')}
-                disabled={updateStatusMutation.isPending || preOrder.status === 'partially_arrived'}
+                disabled={updateStatusMutation.isPending || preOrder.status === 'partially_arrived' || preOrder.status === 'fully_arrived'}
                 data-testid="action-mark-partially-arrived"
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 {t('markAsPartiallyArrived')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="w-full justify-start"
                 onClick={() => updateStatusMutation.mutate('fully_arrived')}
                 disabled={updateStatusMutation.isPending || preOrder.status === 'fully_arrived'}
                 data-testid="action-mark-fully-arrived"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {t('markAsFullyArrived')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => updateStatusMutation.mutate('cancelled')}
-                disabled={updateStatusMutation.isPending || preOrder.status === 'cancelled'}
-                className="text-red-600 focus:text-red-600"
-                data-testid="action-cancel-pre-order"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                {t('cancelPreOrder')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-red-600 focus:text-red-600"
-                data-testid="action-delete"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {tCommon('delete')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </Button>
+
+              {preOrder.status !== 'cancelled' && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => updateStatusMutation.mutate('cancelled')}
+                  disabled={updateStatusMutation.isPending}
+                  data-testid="action-cancel-pre-order"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  {t('cancelPreOrder')}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Header Card with Quick Stats */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-xl md:text-2xl">{t('preOrderInformation')}</CardTitle>
-            <Badge 
-              variant="outline" 
-              className={`${config.className} px-3 py-1 text-sm font-medium border`}
-              data-testid="badge-status"
-            >
-              <StatusIcon className="h-4 w-4 mr-2" />
-              {t(config.labelKey)}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="flex items-start gap-3">
-              <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('customer')}</p>
-                <p className="font-medium text-base" data-testid="text-customer-name">
-                  {preOrder.customer?.name || t('unknownCustomer')}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('expectedArrivalDate')}</p>
-                <p className="font-medium text-base" data-testid="text-expected-date">
-                  {formatDate(preOrder.expectedDate)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('createdDate')}</p>
-                <p className="font-medium text-base" data-testid="text-created-date">
-                  {formatDate(preOrder.createdAt)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('totalItems')}</p>
-                <p className="font-medium text-base" data-testid="text-total-items">
-                  {preOrder.items?.length || 0} {preOrder.items?.length === 1 ? t('item') : t('items')}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('reminderStatus')}</p>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="outline"
-                    className={preOrder.reminderEnabled 
-                      ? "bg-green-100 text-green-800 border-green-200" 
-                      : "bg-gray-100 text-gray-800 border-gray-200"
-                    }
-                    data-testid="badge-reminder-status"
-                  >
-                    {preOrder.reminderEnabled ? t('enabled') : t('disabled')}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Send className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">{t('remindersSent')}</p>
-                <p className="font-medium text-base" data-testid="text-reminders-sent">
-                  {sentReminders.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Reminder Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            {t('reminderSettings')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-              <p className="text-sm text-muted-foreground mb-1">{t('currentSettings')}</p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t('reminderChannel')}</span>
-                  <Badge variant="secondary" className="capitalize">
-                    {getChannelIcon(preOrder.reminderChannel || 'sms')}
-                    <span className="ml-1">{getChannelLabel(preOrder.reminderChannel || 'sms')}</span>
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">{t('reminderDaysBefore')}</span>
-                  <span className="text-sm font-medium">
-                    {(preOrder.reminderDaysBefore || [1, 3]).join(', ')} {t('days')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-              <p className="text-sm text-muted-foreground mb-1">{t('upcomingReminders')}</p>
-              {nextReminderDate ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{formatDate(nextReminderDate.toISOString())}</p>
-                  {daysUntilNextReminder !== null && (
-                    <p className="text-sm text-muted-foreground">
-                      {t('nextReminderIn', { days: daysUntilNextReminder })}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {preOrder.expectedDate ? t('reminderNotConfigured') : t('noExpectedDate')}
-                </p>
-              )}
-            </div>
-
-            <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-              <p className="text-sm text-muted-foreground mb-1">{t('lastReminderSent')}</p>
-              {preOrder.lastReminderSentAt ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{formatDateTime(preOrder.lastReminderSentAt)}</p>
-                  <Badge 
-                    variant="outline"
-                    className={reminderStatusConfig[preOrder.lastReminderStatus as keyof typeof reminderStatusConfig]?.className || "bg-gray-100 text-gray-800"}
-                  >
-                    {t(reminderStatusConfig[preOrder.lastReminderStatus as keyof typeof reminderStatusConfig]?.labelKey || 'reminderStatusPending')}
-                  </Badge>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t('neverSent')}</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Reminder Timeline Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            {t('reminderTimeline')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reminders.length > 0 ? (
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-              <div className="space-y-6">
-                {reminders.map((reminder, index) => {
-                  const statusConf = reminderStatusConfig[reminder.status as keyof typeof reminderStatusConfig] || reminderStatusConfig.pending;
-                  const ReminderIcon = statusConf.icon;
-                  const isExpanded = expandedReminders.has(reminder.id);
-
-                  return (
-                    <div key={reminder.id} className="relative pl-10" data-testid={`reminder-item-${reminder.id}`}>
-                      <div 
-                        className={`absolute left-2 w-5 h-5 rounded-full flex items-center justify-center ${
-                          reminder.status === 'sent' 
-                            ? 'bg-green-100 text-green-600' 
-                            : reminder.status === 'failed' 
-                            ? 'bg-red-100 text-red-600' 
-                            : 'bg-amber-100 text-amber-600'
-                        }`}
-                      >
-                        <ReminderIcon className="h-3 w-3" />
-                      </div>
-                      
-                      <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="capitalize">
-                              {getChannelIcon(reminder.channel)}
-                              <span className="ml-1">{getChannelLabel(reminder.channel)}</span>
-                            </Badge>
-                            <Badge 
-                              variant="outline"
-                              className={statusConf.className}
-                            >
-                              {t(statusConf.labelKey)}
-                            </Badge>
-                          </div>
-                          <span className="text-sm text-muted-foreground">
-                            {formatDateTime(reminder.sentAt || reminder.scheduledFor)}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">{t('recipient')}: </span>
-                            <span className="font-medium">
-                              {reminder.channel === 'email' 
-                                ? reminder.recipientEmail 
-                                : reminder.recipientPhone || '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t('sentDate')}: </span>
-                            <span className="font-medium">
-                              {reminder.sentAt ? formatDateTime(reminder.sentAt) : t('reminderStatusPending')}
-                            </span>
-                          </div>
-                        </div>
-
-                        {reminder.errorMessage && (
-                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-600 dark:text-red-400">
-                            {reminder.errorMessage}
-                          </div>
-                        )}
-
-                        {reminder.messageContent && (
-                          <Collapsible open={isExpanded} onOpenChange={() => toggleReminderExpand(reminder.id)}>
-                            <CollapsibleTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="mt-3 w-full justify-start text-muted-foreground"
-                                data-testid={`button-toggle-message-${reminder.id}`}
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp className="h-4 w-4 mr-2" />
-                                    {t('hideMessage')}
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="h-4 w-4 mr-2" />
-                                    {t('viewMessage')}
-                                  </>
-                                )}
-                              </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="mt-2 p-3 bg-white dark:bg-slate-800 border rounded text-sm">
-                                <p className="text-muted-foreground mb-1 text-xs uppercase">{t('messageContent')}</p>
-                                <p className="whitespace-pre-wrap">{reminder.messageContent}</p>
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Bell className="h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 text-center" data-testid="text-no-reminders">
-                {t('noRemindersYet')}
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setShowSendReminderDialog(true)}
-                data-testid="button-send-first-reminder"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {t('sendReminderNow')}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Items Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            {t('preOrderItems')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {preOrder.items && preOrder.items.length > 0 ? (
-            <div className="space-y-4">
-              {preOrder.items.map((item: any, index: number) => {
-                const progress = calculateProgress(item);
-                const isFullyArrived = item.arrivedQuantity >= item.quantity;
-                const isPartiallyArrived = item.arrivedQuantity > 0 && item.arrivedQuantity < item.quantity;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900 space-y-3"
-                    data-testid={`item-${item.id}`}
-                  >
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-base" data-testid={`text-item-name-${item.id}`}>
-                          {item.name || item.itemName}
-                        </h3>
-                        {(item.description || item.itemDescription) && (
-                          <p className="text-sm text-muted-foreground mt-1" data-testid={`text-item-description-${item.id}`}>
-                            {item.description || item.itemDescription}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={
-                            isFullyArrived
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : isPartiallyArrived
-                              ? "bg-blue-100 text-blue-800 border-blue-200"
-                              : "bg-gray-100 text-gray-800 border-gray-200"
-                          }
-                          data-testid={`badge-item-status-${item.id}`}
-                        >
-                          {item.arrivedQuantity} / {item.quantity} {t('arrived')}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{t('arrivalProgress')}</span>
-                        <span data-testid={`text-progress-${item.id}`}>{progress}%</span>
-                      </div>
-                      <Progress 
-                        value={progress} 
-                        className="h-2"
-                        data-testid={`progress-bar-${item.id}`}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t text-sm">
-                      <div>
-                        <p className="text-muted-foreground">{t('orderedQuantity')}</p>
-                        <p className="font-medium" data-testid={`text-quantity-${item.id}`}>
-                          {item.quantity}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">{t('arrivedQuantity')}</p>
-                        <p className="font-medium" data-testid={`text-arrived-quantity-${item.id}`}>
-                          {item.arrivedQuantity || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Package className="h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 text-center" data-testid="text-no-items">
-                {t('noItemsInPreOrder')}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Notes Card (only show if notes exist) */}
-      {preOrder.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {t('notes')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap" data-testid="text-notes">
-              {preOrder.notes}
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -819,53 +515,55 @@ export default function PreOrderDetails() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <label className="text-sm font-medium mb-2 block">{t('selectChannel')}</label>
-            <Select value={selectedChannel} onValueChange={(value: 'sms' | 'email' | 'both') => setSelectedChannel(value)}>
-              <SelectTrigger data-testid="select-channel">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sms">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {t('sms')}
-                  </div>
-                </SelectItem>
-                <SelectItem value="email">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    {t('email')}
-                  </div>
-                </SelectItem>
-                <SelectItem value="both">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    {t('bothChannels')}
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t('selectChannel')}</label>
+              <Select value={selectedChannel} onValueChange={(value: 'sms' | 'email' | 'both') => setSelectedChannel(value)}>
+                <SelectTrigger data-testid="select-channel">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sms">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      SMS
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="email">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="both">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4" />
+                      {t('smsBothEmail')}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {(selectedChannel === 'sms' || selectedChannel === 'both') && (
-              <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('reminderWillBeSentTo')}:</span>
+                  <span className="text-muted-foreground">{t('sendTo')}:</span>
                   <span className="font-medium">
-                    {preOrder.reminderPhone || preOrder.customer?.billingTel || '—'}
+                    {preOrder.reminderPhone || customer?.billingTel || '—'}
                   </span>
                 </div>
               </div>
             )}
 
             {(selectedChannel === 'email' || selectedChannel === 'both') && (
-              <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('reminderWillBeSentTo')}:</span>
+                  <span className="text-muted-foreground">{t('sendTo')}:</span>
                   <span className="font-medium">
-                    {preOrder.reminderEmail || preOrder.customer?.billingEmail || '—'}
+                    {preOrder.reminderEmail || customer?.billingEmail || '—'}
                   </span>
                 </div>
               </div>

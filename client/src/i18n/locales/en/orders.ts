@@ -941,6 +941,11 @@ const orders = {
   noPreOrdersYetClickAdd: 'No pre-orders yet. Click "Add Pre-Order" to create one.',
   itemsOrdered: 'Items Pre-Ordered',
   notSet: 'Not set',
+  backToPreOrders: 'Back to Pre-Orders',
+  remindersEnabled: 'Reminders On',
+  sendTo: 'Send to',
+  estimatedArrival: 'Estimated Arrival',
+  qty: 'qty',
   
   // PreOrders - Notifications
   reminderSettings: 'Reminder Settings',
