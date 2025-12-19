@@ -17992,54 +17992,50 @@ Important rules:
 
       const t = labels[language] || labels.en;
 
-      // 83mm = 235.28 points (1mm = 2.834645669 points)
-      const pageWidth = 235;
-      const contentWidth = 220; // 78mm content area
-      const margin = 7; // ~2.5mm margin on each side
+      // 80mm = 226.77 points (1mm = 2.834645669 points)
+      const pageWidth = 227;
+      const contentWidth = 210; // 74mm content area (tight fit)
+      const margin = 8; // ~3mm margin on each side
 
-      // Calculate content height dynamically with generous buffer
-      let estimatedHeight = margin + 8; // Top margin + padding
-      estimatedHeight += 18; // Company name
-      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 12;
-      if (companyInfo.phone || companyInfo.country) estimatedHeight += 12;
-      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 12;
-      estimatedHeight += 16; // Receipt title
-      estimatedHeight += 10; // Dashed line
-      estimatedHeight += 14 * 4; // Date, Time, Receipt No, Customer
-      estimatedHeight += 12; // Dashed line
-      estimatedHeight += 14; // Items header
+      // Calculate content height - tight fit, no excess whitespace
+      let estimatedHeight = margin;
+      estimatedHeight += 14; // Company name
+      if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += 10;
+      if (companyInfo.phone || companyInfo.country) estimatedHeight += 10;
+      if (companyInfo.ico || companyInfo.vatId) estimatedHeight += 10;
+      estimatedHeight += 14; // Receipt title
+      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 12 * 4; // Date, Time, Receipt No, Customer
+      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 12; // Items header
       
-      // Items with proper height estimation
+      // Items - tight height estimation
       for (const item of items) {
         const itemName = `${item.quantity || 1}x ${item.name || 'Item'}`;
-        const estimatedLines = Math.ceil(itemName.length / 26);
-        estimatedHeight += Math.max(14, estimatedLines * 12) + 4;
+        const estimatedLines = Math.ceil(itemName.length / 28);
+        estimatedHeight += Math.max(12, estimatedLines * 10) + 2;
       }
       
-      estimatedHeight += 8;
-      estimatedHeight += 12; // Dashed line
-      estimatedHeight += 14; // Subtotal
-      if (discount > 0) estimatedHeight += 14; // Discount
-      estimatedHeight += 18; // Total (larger font)
-      estimatedHeight += 12; // VAT text
-      estimatedHeight += 12; // Dashed line
-      estimatedHeight += 14; // Payment method
-      if (cashReceived !== undefined) estimatedHeight += 14; // Cash received
-      if (change !== undefined && change > 0) estimatedHeight += 14; // Change
+      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 12; // Subtotal
+      if (discount > 0) estimatedHeight += 12; // Discount
+      estimatedHeight += 14; // Total (larger font)
+      estimatedHeight += 10; // VAT text
+      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 12; // Payment method
+      if (cashReceived !== undefined) estimatedHeight += 12; // Cash received
+      if (change !== undefined && change > 0) estimatedHeight += 12; // Change
       
-      // Notes with proper multi-line estimation
+      // Notes - tight estimation
       if (notes && notes.length > 0) {
-        const notesLines = Math.ceil(notes.length / 35);
-        estimatedHeight += 10 + (notesLines * 10);
+        const notesLines = Math.ceil(notes.length / 38);
+        estimatedHeight += 8 + (notesLines * 9);
       }
       
-      estimatedHeight += 12; // Dashed line
-      estimatedHeight += 14; // Thank you
-      if (companyInfo.website) estimatedHeight += 12;
-      estimatedHeight += margin + 20; // Bottom margin with generous buffer
-      
-      // Minimum height to prevent underflow
-      estimatedHeight = Math.max(estimatedHeight, 200);
+      estimatedHeight += 6; // Dashed line spacing
+      estimatedHeight += 12; // Thank you
+      if (companyInfo.website) estimatedHeight += 10;
+      estimatedHeight += margin; // Bottom margin only
 
       // Register Unicode fonts for Vietnamese, Czech, German, English support
       const fontPath = path.join(process.cwd(), 'server', 'fonts', 'DejaVuSansMono.ttf');
@@ -18072,16 +18068,16 @@ Important rules:
         }
       };
 
-      let yPos = margin + 3;
+      let yPos = margin;
 
       // Company Header
-      doc.fontSize(12)
+      doc.fontSize(11)
          .font('Receipt-Bold')
          .fillColor('#000000')
          .text(companyInfo?.name || 'Company Name', margin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 16;
+      yPos += 14;
 
-      doc.fontSize(8).font('Receipt').fillColor('#333333');
+      doc.fontSize(7).font('Receipt').fillColor('#333333');
 
       if (companyInfo?.address || companyInfo?.city || companyInfo?.zip) {
         const addressLine = [companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ');
@@ -18105,12 +18101,12 @@ Important rules:
       }
 
       // Receipt Title
-      doc.fontSize(10).font('Receipt-Bold').fillColor('#000000')
+      doc.fontSize(8).font('Receipt-Bold').fillColor('#000000')
          .text(t.receipt, margin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 14;
+      yPos += 12;
 
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 6;
 
       // Transaction Details
       // Use the safe receiptDate already parsed at the top of this function
@@ -18121,31 +18117,31 @@ Important rules:
         hour: '2-digit', minute: '2-digit' 
       });
 
-      doc.fontSize(8).font('Receipt').fillColor('#000000');
-      doc.text(`${t.date}:`, margin, yPos).text(dateStr, margin + 70, yPos);
-      yPos += 12;
-      doc.text(`${t.time}:`, margin, yPos).text(timeStr, margin + 70, yPos);
-      yPos += 12;
+      doc.fontSize(7).font('Receipt').fillColor('#000000');
+      doc.text(`${t.date}:`, margin, yPos).text(dateStr, margin + 60, yPos);
+      yPos += 10;
+      doc.text(`${t.time}:`, margin, yPos).text(timeStr, margin + 60, yPos);
+      yPos += 10;
 
       if (orderId) {
-        doc.text(`${t.receiptNo}:`, margin, yPos).text(orderId, margin + 70, yPos);
-        yPos += 12;
+        doc.text(`${t.receiptNo}:`, margin, yPos).text(orderId, margin + 60, yPos);
+        yPos += 10;
       }
 
       const customerDisplay = customerName === 'Walk-in Customer' ? t.walkIn : (customerName || t.walkIn);
       doc.text(`${t.customer}:`, margin, yPos);
-      const custNameWidth = contentWidth - 75;
-      doc.text(customerDisplay.substring(0, 25), margin + 70, yPos, { width: custNameWidth });
-      yPos += 12;
+      const custNameWidth = contentWidth - 65;
+      doc.text(customerDisplay.substring(0, 28), margin + 60, yPos, { width: custNameWidth });
+      yPos += 10;
 
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 6;
 
       // Items
-      doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', margin, yPos);
-      yPos += 12;
+      doc.fontSize(8).font('Receipt-Bold').text(t.items + ':', margin, yPos);
+      yPos += 10;
 
-      doc.fontSize(8).font('Receipt');
+      doc.fontSize(7).font('Receipt');
       for (const item of items) {
         // Type guard: skip invalid items, normalize fields
         if (!item || typeof item !== 'object') continue;
@@ -18160,44 +18156,43 @@ Important rules:
         const itemText = `${qty}x ${name}`;
         const priceText = formatMoney(lineTotal);
         
-        const nameWidth = contentWidth - 55;
+        const nameWidth = contentWidth - 50;
         const nameHeight = doc.heightOfString(itemText, { width: nameWidth });
         
         doc.text(itemText, margin, yPos, { width: nameWidth });
-        doc.text(priceText, margin + nameWidth, yPos, { width: 55, align: 'right' });
-        yPos += Math.max(nameHeight, 10) + 3;
+        doc.text(priceText, margin + nameWidth, yPos, { width: 50, align: 'right' });
+        yPos += Math.max(nameHeight, 9) + 2;
       }
 
-      yPos += 3;
       drawDashedLine(yPos);
-      yPos += 8;
+      yPos += 6;
 
       // Totals
-      doc.fontSize(8).font('Receipt');
+      doc.fontSize(7).font('Receipt');
       doc.text(`${t.subtotal}:`, margin, yPos);
-      doc.text(formatMoney(subtotal), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-      yPos += 12;
+      doc.text(formatMoney(subtotal), margin + contentWidth - 60, yPos, { width: 60, align: 'right' });
+      yPos += 10;
 
       if (discount && discount > 0) {
         doc.text(`${t.discount}:`, margin, yPos);
-        doc.text(`-${formatMoney(discount)}`, margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(`-${formatMoney(discount)}`, margin + contentWidth - 60, yPos, { width: 60, align: 'right' });
+        yPos += 10;
       }
 
-      doc.fontSize(10).font('Receipt-Bold');
+      doc.fontSize(9).font('Receipt-Bold');
       doc.text(`${t.total}:`, margin, yPos);
-      doc.text(formatMoney(total), margin + contentWidth - 75, yPos, { width: 75, align: 'right' });
-      yPos += 14;
+      doc.text(formatMoney(total), margin + contentWidth - 65, yPos, { width: 65, align: 'right' });
+      yPos += 12;
 
-      doc.fontSize(7).font('Receipt').fillColor('#666666');
+      doc.fontSize(6).font('Receipt').fillColor('#666666');
       doc.text(t.vatIncluded, margin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 10;
-
-      drawDashedLine(yPos);
       yPos += 8;
 
+      drawDashedLine(yPos);
+      yPos += 6;
+
       // Payment
-      doc.fontSize(8).font('Receipt').fillColor('#000000');
+      doc.fontSize(7).font('Receipt').fillColor('#000000');
       const paymentLabels: Record<string, string> = {
         cash: t.cash,
         card: t.card,
@@ -18206,39 +18201,38 @@ Important rules:
         qr_czk: t.qrCode
       };
       doc.text(`${t.payment}:`, margin, yPos);
-      doc.text(paymentLabels[paymentMethod] || paymentMethod, margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-      yPos += 12;
+      doc.text(paymentLabels[paymentMethod] || paymentMethod, margin + contentWidth - 60, yPos, { width: 60, align: 'right' });
+      yPos += 10;
 
       if (cashReceived !== undefined && cashReceived !== null) {
         doc.text(`${t.cashReceived}:`, margin, yPos);
-        doc.text(formatMoney(cashReceived), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(formatMoney(cashReceived), margin + contentWidth - 60, yPos, { width: 60, align: 'right' });
+        yPos += 10;
       }
 
       if (change !== undefined && change !== null && change > 0) {
         doc.font('Receipt-Bold');
         doc.text(`${t.change}:`, margin, yPos);
-        doc.text(formatMoney(change), margin + contentWidth - 70, yPos, { width: 70, align: 'right' });
-        yPos += 12;
+        doc.text(formatMoney(change), margin + contentWidth - 60, yPos, { width: 60, align: 'right' });
+        yPos += 10;
       }
 
       if (notes) {
-        yPos += 4;
-        doc.fontSize(7).font('Receipt').fillColor('#333333');
+        doc.fontSize(6).font('Receipt').fillColor('#333333');
         doc.text(`${t.notes}: ${notes}`, margin, yPos, { width: contentWidth });
-        yPos += 16;
+        yPos += 10;
       }
 
       drawDashedLine(yPos);
-      yPos += 10;
+      yPos += 6;
 
       // Footer
-      doc.fontSize(9).font('Receipt').fillColor('#000000');
+      doc.fontSize(7).font('Receipt').fillColor('#000000');
       doc.text(t.thankYou, margin, yPos, { width: contentWidth, align: 'center' });
-      yPos += 12;
+      yPos += 10;
 
       if (companyInfo?.website) {
-        doc.fontSize(7).fillColor('#666666');
+        doc.fontSize(6).fillColor('#666666');
         doc.text(companyInfo.website, margin, yPos, { width: contentWidth, align: 'center' });
       }
 
