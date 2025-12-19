@@ -152,6 +152,7 @@ interface CompanyInfo {
   city?: string;
   zip?: string;
   country?: string;
+  phone?: string;
   ico?: string;
   vatId?: string;
   website?: string;
@@ -381,6 +382,11 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
           {(companyInfo.address || companyInfo.city || companyInfo.zip) && (
             <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
               {[companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ')}
+            </p>
+          )}
+          {(companyInfo.phone || companyInfo.country) && (
+            <p className="text-[10px] text-gray-600 dark:text-gray-400">
+              {[companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ')}
             </p>
           )}
           {(companyInfo.ico || companyInfo.vatId) && (
@@ -726,6 +732,7 @@ export default function POS() {
     city: generalSettings?.companyCity,
     zip: generalSettings?.companyZip,
     country: generalSettings?.companyCountry,
+    phone: generalSettings?.companyPhone,
     ico: generalSettings?.companyIco,
     vatId: generalSettings?.companyVatId,
     website: generalSettings?.companyWebsite,
