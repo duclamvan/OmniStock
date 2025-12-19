@@ -162,6 +162,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
   const { t } = useTranslation(['common', 'financial']);
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [receiptLang, setReceiptLang] = useState<ReceiptLanguage>(() => {
     return (localStorage.getItem('pos_receipt_language') as ReceiptLanguage) || 'cz';
   });
@@ -200,11 +201,98 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
     return method;
   };
   
-  const handlePrint = () => {
-    // Use window.print() with proper CSS - browser will handle print preview
-    // This approach keeps the exact same styling as the preview
-    window.print();
-    onPrint();
+  const getReceiptPayload = () => ({
+    items: data.items.map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price
+    })),
+    subtotal: data.subtotal,
+    discount: data.discount,
+    total: data.total,
+    paymentMethod: data.paymentMethod,
+    cashReceived: data.cashReceived,
+    change: data.change,
+    orderId: data.orderId,
+    customerName: data.customerName,
+    currency: data.currency,
+    notes: data.notes,
+    date: data.date?.toISOString(),
+    language: receiptLang === 'cz' ? 'cs' : receiptLang,
+    companyInfo: {
+      name: companyInfo.name,
+      address: companyInfo.address,
+      city: companyInfo.city,
+      zip: companyInfo.zip,
+      country: companyInfo.country,
+      phone: companyInfo.phone,
+      ico: companyInfo.ico,
+      vatId: companyInfo.vatId,
+      website: companyInfo.website
+    }
+  });
+
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    try {
+      const response = await fetch('/api/pos/receipt-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(getReceiptPayload())
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF for printing');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position: fixed; top: -10000px; left: -10000px; width: 1px; height: 1px;';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      
+      const cleanup = () => {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          window.URL.revokeObjectURL(url);
+        }, 2000);
+      };
+      
+      iframe.onload = () => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }
+        } catch (e) {
+          console.error('Print error:', e);
+        }
+        cleanup();
+      };
+      
+      iframe.onerror = () => {
+        cleanup();
+        throw new Error('Failed to load PDF for printing');
+      };
+      
+      onPrint();
+    } catch (error) {
+      console.error('Error printing PDF:', error);
+      toast({
+        title: t('common:error'),
+        description: t('financial:printFailed', 'Failed to print receipt'),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -216,36 +304,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          items: data.items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price
-          })),
-          subtotal: data.subtotal,
-          discount: data.discount,
-          total: data.total,
-          paymentMethod: data.paymentMethod,
-          cashReceived: data.cashReceived,
-          change: data.change,
-          orderId: data.orderId,
-          customerName: data.customerName,
-          currency: data.currency,
-          notes: data.notes,
-          date: data.date?.toISOString(),
-          language: receiptLang === 'cz' ? 'cs' : receiptLang,
-          companyInfo: {
-            name: companyInfo.name,
-            address: companyInfo.address,
-            city: companyInfo.city,
-            zip: companyInfo.zip,
-            country: companyInfo.country,
-            phone: companyInfo.phone,
-            ico: companyInfo.ico,
-            vatId: companyInfo.vatId,
-            website: companyInfo.website
-          }
-        })
+        body: JSON.stringify(getReceiptPayload())
       });
 
       if (!response.ok) {
@@ -562,8 +621,12 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       </div>
       
       <div className="no-print flex flex-wrap gap-3 justify-center mt-6">
-        <Button size="lg" onClick={handlePrint} className="px-6" data-testid="button-print-receipt">
-          <Printer className="h-5 w-5 mr-2" />
+        <Button size="lg" onClick={handlePrint} disabled={isPrinting} className="px-6" data-testid="button-print-receipt">
+          {isPrinting ? (
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+          ) : (
+            <Printer className="h-5 w-5 mr-2" />
+          )}
           {t('financial:printReceipt')}
         </Button>
         <Button 
