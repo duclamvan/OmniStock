@@ -404,6 +404,7 @@ const imports = {
   // Shipment Tracking
   shipmentTracking: 'Shipment Tracking',
   trackAllShipments: 'Track all import shipments in real-time',
+  monitorAllInternationalShipments: 'Monitor all international shipments',
   delayed: 'Delayed',
   searchByTracking: 'Search by tracking number or carrier...',
   from: 'From:',

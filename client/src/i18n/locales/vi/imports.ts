@@ -410,6 +410,7 @@ const imports = {
   // Shipment Tracking
   shipmentTracking: 'Theo dõi vận chuyển',
   trackAllShipments: 'Theo dõi tất cả lô hàng nhập theo thời gian thực',
+  monitorAllInternationalShipments: 'Giám sát tất cả lô hàng quốc tế',
   delayed: 'Trễ hạn',
   searchByTracking: 'Tìm theo mã vận đơn hoặc đơn vị vận chuyển...',
   from: 'Từ:',
