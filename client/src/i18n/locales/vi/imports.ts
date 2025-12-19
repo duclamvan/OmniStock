@@ -767,6 +767,8 @@ const imports = {
   clearSelection: 'Bỏ chọn',
   autoClassifyAll: 'Tự động phân loại tất cả',
   classifySelected: 'Phân loại đã chọn',
+  classifyAllItems: 'Phân loại tất cả ({{count}})',
+  noAvailableItemsToClassify: 'Không có sản phẩm để phân loại',
   dropItemsHere: 'Thả sản phẩm vào đây',
   releaseToAdd: 'Thả để thêm',
   noIncomingOrdersAtWarehouse: 'Không có đơn hàng đến tại kho',

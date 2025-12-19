@@ -2387,14 +2387,15 @@ export default function AtWarehouse() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      // When items are selected, classify those; otherwise classify ALL available items
                       const itemsToClassify = selectedItemsForAI.size > 0 
                         ? Array.from(selectedItemsForAI)
-                        : sortedAndFilteredItems.map(item => item.id);
+                        : allItems.map(item => item.id);
                       
                       if (itemsToClassify.length === 0) {
                         toast({
                           title: t('noItemsToClassify'),
-                          description: t('allItemsAlreadyClassified'),
+                          description: t('noAvailableItemsToClassify'),
                           variant: "destructive",
                         });
                         return;
@@ -2414,7 +2415,9 @@ export default function AtWarehouse() {
                     ) : (
                       <>
                         <Sparkles className="h-3 w-3 mr-1.5" />
-                        {selectedItemsForAI.size > 0 ? t('classifySelected') : t('autoClassify')}
+                        {selectedItemsForAI.size > 0 
+                          ? t('classifySelected') 
+                          : t('classifyAllItems', { count: allItems.length })}
                       </>
                     )}
                   </Button>
@@ -3721,14 +3724,15 @@ export default function AtWarehouse() {
                 size="lg"
                 className="h-14 px-4"
                 onClick={() => {
+                  // When items are selected, classify those; otherwise classify ALL available items
                   const itemsToClassify = selectedItemsForAI.size > 0 
                     ? Array.from(selectedItemsForAI)
-                    : sortedAndFilteredItems.map(item => item.id);
+                    : allItems.map(item => item.id);
                   
                   if (itemsToClassify.length === 0) {
                     toast({
                       title: t('noItemsToClassify'),
-                      description: t('allItemsAlreadyClassified'),
+                      description: t('noAvailableItemsToClassify'),
                       variant: "destructive",
                     });
                     return;

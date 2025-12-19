@@ -751,6 +751,8 @@ const imports = {
   clearSelection: 'Clear Selection',
   autoClassifyAll: 'Auto-Classify All',
   classifySelected: 'Classify Selected',
+  classifyAllItems: 'Classify All ({{count}})',
+  noAvailableItemsToClassify: 'No available items to classify',
   dropItemsHere: 'Drop items here',
   releaseToAdd: 'Release to add',
   noIncomingOrdersAtWarehouse: 'No incoming orders at warehouse',
