@@ -163,45 +163,21 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(true);
+  const cachedBlobRef = useRef<Blob | null>(null);
   const [receiptLang, setReceiptLang] = useState<ReceiptLanguage>(() => {
     return (localStorage.getItem('pos_receipt_language') as ReceiptLanguage) || 'cz';
   });
 
-  useEffect(() => {
-    localStorage.setItem('pos_receipt_language', receiptLang);
-  }, [receiptLang]);
-
-  const getLabel = (key: string): string => {
-    const prefix = `receipt${receiptLang.charAt(0).toUpperCase() + receiptLang.slice(1)}_`;
-    return t(`financial:${prefix}${key}`);
+  const languageFlags: Record<ReceiptLanguage, string> = {
+    en: '🇬🇧',
+    vi: '🇻🇳', 
+    cz: '🇨🇿',
+    de: '🇩🇪'
   };
 
-  const formatDate = (date: Date): string => {
-    const { locale, dateFormat } = receiptLocales[receiptLang];
-    return date.toLocaleDateString(locale, dateFormat);
-  };
-
-  const formatTime = (date: Date): string => {
-    const { locale, timeFormat } = receiptLocales[receiptLang];
-    return date.toLocaleTimeString(locale, timeFormat);
-  };
-
-  const formatAmount = (amount: number): string => {
-    const { locale } = receiptLocales[receiptLang];
-    return amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-
-  const getPaymentLabel = (): string => {
-    const method = data.paymentMethod;
-    if (method === 'cash') return getLabel('cash');
-    if (method === 'card') return getLabel('card');
-    if (method === 'bank_transfer' || method === 'bank_transfer_private' || method === 'bank_transfer_invoice') return getLabel('bankTransfer');
-    if (method === 'qr_czk') return 'QR CZK';
-    if (method === 'pay_later') return t('financial:payLater');
-    return method;
-  };
-  
-  const getReceiptPayload = () => ({
+  const getReceiptPayload = useCallback(() => ({
     items: data.items.map(item => ({
       name: item.name,
       quantity: item.quantity,
@@ -230,49 +206,119 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       vatId: companyInfo.vatId,
       website: companyInfo.website
     }
-  });
+  }), [data, receiptLang, companyInfo]);
 
-  const handlePrint = async () => {
-    setIsPrinting(true);
+  const fetchPdf = useCallback(async () => {
+    setIsLoadingPdf(true);
     try {
       const response = await fetch('/api/pos/receipt-pdf', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(getReceiptPayload())
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF for printing');
-      }
-
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      
       const blob = await response.blob();
+      cachedBlobRef.current = blob;
       const url = window.URL.createObjectURL(blob);
       
-      const printWindow = window.open(url, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 60000);
-      } else {
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.click();
-        toast({
-          title: t('financial:pdfOpened', 'PDF Opened'),
-          description: t('financial:useBrowserPrint', 'Use your browser\'s print function (Ctrl+P or Cmd+P)'),
+      setPdfUrl(prevUrl => {
+        if (prevUrl) {
+          window.URL.revokeObjectURL(prevUrl);
+        }
+        return url;
+      });
+    } catch (error) {
+      console.error('Error fetching PDF:', error);
+      toast({
+        title: t('common:error'),
+        description: t('financial:pdfGenerationFailed', 'Failed to generate PDF preview'),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingPdf(false);
+    }
+  }, [getReceiptPayload, t, toast]);
+
+  const payloadString = useMemo(() => JSON.stringify(getReceiptPayload()), [getReceiptPayload]);
+
+  useEffect(() => {
+    cachedBlobRef.current = null;
+    fetchPdf();
+  }, [payloadString]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('pos_receipt_language', receiptLang);
+  }, [receiptLang]);
+
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    try {
+      let blob = cachedBlobRef.current;
+      
+      if (!blob) {
+        const response = await fetch('/api/pos/receipt-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(getReceiptPayload())
         });
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 60000);
+        if (!response.ok) throw new Error('Failed to generate PDF');
+        blob = await response.blob();
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      
+      const printWindow = window.open('', '_blank');
+      
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Print Receipt</title>
+            <style>
+              body, html { margin: 0; padding: 0; width: 100%; height: 100%; }
+              iframe { width: 100%; height: 100%; border: none; }
+            </style>
+          </head>
+          <body>
+            <iframe id="pdfFrame" src="${url}"></iframe>
+            <script>
+              var iframe = document.getElementById('pdfFrame');
+              iframe.onload = function() {
+                setTimeout(function() {
+                  try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                  } catch(e) {
+                    window.print();
+                  }
+                }, 100);
+              };
+            </script>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => window.URL.revokeObjectURL(url), 120000);
+      } else {
+        toast({
+          title: t('financial:popupBlocked', 'Popup Blocked'),
+          description: t('financial:allowPopups', 'Please allow popups to print'),
+          variant: 'destructive'
+        });
+        window.URL.revokeObjectURL(url);
       }
       
       onPrint();
@@ -291,22 +337,19 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch('/api/pos/receipt-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(getReceiptPayload())
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('PDF generation failed:', response.status, errorData);
-        throw new Error(errorData.message || `Failed to generate PDF (${response.status})`);
+      let blob = cachedBlobRef.current;
+      
+      if (!blob) {
+        const response = await fetch('/api/pos/receipt-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(getReceiptPayload())
+        });
+        if (!response.ok) throw new Error('Failed to generate PDF');
+        blob = await response.blob();
       }
 
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -332,153 +375,9 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
     }
   };
 
-  const currencySymbol = data.currency === 'EUR' ? '€' : (data.currency === 'CZK' ? 'Kč' : data.currency);
-
-  const languageFlags: Record<ReceiptLanguage, string> = {
-    en: '🇬🇧',
-    vi: '🇻🇳', 
-    cz: '🇨🇿',
-    de: '🇩🇪'
-  };
-
   return (
     <div className="relative print-receipt-container">
-      <style>{`
-        @media print {
-          @page {
-            size: 80mm auto;
-            margin: 0 !important;
-          }
-          
-          html, body {
-            background: white !important;
-            width: 80mm !important;
-            height: auto !important;
-            min-height: auto !important;
-            overflow: visible !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          body > *:not([data-radix-portal]) {
-            display: none !important;
-          }
-          
-          [data-radix-portal] {
-            position: static !important;
-            display: block !important;
-          }
-          
-          [data-radix-dialog-overlay] {
-            display: none !important;
-          }
-          
-          [role="dialog"] {
-            position: static !important;
-            transform: none !important;
-            max-width: 80mm !important;
-            max-height: none !important;
-            width: 80mm !important;
-            height: auto !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            background: white !important;
-            left: 0 !important;
-            top: 0 !important;
-            inset: auto !important;
-          }
-          
-          [role="dialog"] > button,
-          [role="dialog"] > div:first-child,
-          .no-print {
-            display: none !important;
-          }
-          
-          .print-receipt-container {
-            position: static !important;
-            width: 80mm !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 2mm !important;
-          }
-          
-          .print-receipt-container .thermal-receipt {
-            visibility: visible !important;
-          }
-          
-          .print-receipt-container .thermal-receipt {
-            width: 100% !important;
-            max-width: 76mm !important;
-            padding: 4mm !important;
-            margin: 0 !important;
-            font-family: 'Courier New', Courier, monospace !important;
-            font-size: 11px !important;
-            line-height: 1.5 !important;
-            background: white !important;
-            color: black !important;
-            border: 1px dashed #333 !important;
-            border-radius: 4px !important;
-            box-shadow: none !important;
-          }
-          
-          .print-receipt-container .thermal-receipt h2 {
-            font-size: 16px !important;
-            font-weight: bold !important;
-            margin-bottom: 4px !important;
-          }
-          
-          .print-receipt-container .thermal-receipt .text-xl { font-size: 16px !important; }
-          .print-receipt-container .thermal-receipt .text-lg { font-size: 14px !important; }
-          .print-receipt-container .thermal-receipt .text-sm { font-size: 11px !important; }
-          .print-receipt-container .thermal-receipt .text-xs { font-size: 9px !important; }
-          .print-receipt-container .thermal-receipt .text-\\[10px\\] { font-size: 9px !important; }
-          
-          .print-receipt-container .thermal-receipt .text-center { text-align: center !important; }
-          .print-receipt-container .thermal-receipt .font-bold { font-weight: bold !important; }
-          
-          .print-receipt-container .thermal-receipt .flex { display: flex !important; }
-          .print-receipt-container .thermal-receipt .justify-between { justify-content: space-between !important; }
-          .print-receipt-container .thermal-receipt .items-start { align-items: flex-start !important; }
-          
-          .print-receipt-container .thermal-receipt .border-dashed { border-style: dashed !important; }
-          .print-receipt-container .thermal-receipt .border-b-2,
-          .print-receipt-container .thermal-receipt .border-t-2 { 
-            border-color: #333 !important;
-          }
-          
-          .print-receipt-container .thermal-receipt .space-y-1\\.5 > * + * { margin-top: 4px !important; }
-          .print-receipt-container .thermal-receipt .space-y-2 > * + * { margin-top: 6px !important; }
-          
-          .print-receipt-container .thermal-receipt .pb-4 { padding-bottom: 12px !important; }
-          .print-receipt-container .thermal-receipt .mb-4 { margin-bottom: 12px !important; }
-          .print-receipt-container .thermal-receipt .mb-3 { margin-bottom: 10px !important; }
-          .print-receipt-container .thermal-receipt .mb-2 { margin-bottom: 8px !important; }
-          .print-receipt-container .thermal-receipt .mt-6 { margin-top: 16px !important; }
-          .print-receipt-container .thermal-receipt .pt-4 { padding-top: 12px !important; }
-          .print-receipt-container .thermal-receipt .mt-1 { margin-top: 4px !important; }
-          .print-receipt-container .thermal-receipt .mt-2 { margin-top: 8px !important; }
-          .print-receipt-container .thermal-receipt .p-6 { padding: 4mm !important; }
-          
-          .print-receipt-container .thermal-receipt .text-gray-600,
-          .print-receipt-container .thermal-receipt .text-gray-500,
-          .print-receipt-container .thermal-receipt .text-gray-400 { 
-            color: #444 !important; 
-          }
-          
-          .no-print {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
-        }
-      `}</style>
-
-      {/* Language Selector - No print */}
+      {/* Language Selector */}
       <div className="no-print flex justify-center gap-2 mb-4">
         {(Object.keys(languageFlags) as ReceiptLanguage[]).map((lang) => (
           <button
@@ -496,125 +395,34 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
         ))}
       </div>
       
-      <div className="thermal-receipt bg-white dark:bg-slate-800 p-6 max-w-[320px] mx-auto font-mono text-sm border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg">
-        {/* Header with Business Info - EU Compliant */}
-        <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <h2 className="text-xl font-bold">{companyInfo.name || 'Company Name'}</h2>
-          {(companyInfo.address || companyInfo.city || companyInfo.zip) && (
-            <p className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
-              {[companyInfo.address, companyInfo.zip, companyInfo.city].filter(Boolean).join(', ')}
-            </p>
-          )}
-          {(companyInfo.phone || companyInfo.country) && (
-            <p className="text-[10px] text-gray-600 dark:text-gray-400">
-              {[companyInfo.phone, companyInfo.country].filter(Boolean).join(' | ')}
-            </p>
-          )}
-          {(companyInfo.ico || companyInfo.vatId) && (
-            <p className="text-[10px] text-gray-600 dark:text-gray-400">
-              {companyInfo.ico && <>{getLabel('companyId')}: {companyInfo.ico}</>}
-              {companyInfo.ico && companyInfo.vatId && ' | '}
-              {companyInfo.vatId && <>{getLabel('vatId')}: {companyInfo.vatId}</>}
-            </p>
-          )}
-          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-2">{getLabel('receipt')}</p>
-        </div>
-        
-        {/* Transaction Info */}
-        <div className="space-y-1.5 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{getLabel('date')}:</span>
-            <span className="font-medium">{formatDate(data.date)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{getLabel('time')}:</span>
-            <span className="font-medium">{formatTime(data.date)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{getLabel('receiptNo')}:</span>
-            <span className="font-medium">{data.orderId}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{getLabel('customer')}:</span>
-            <span className="font-medium truncate max-w-[140px]">
-              {data.customerName === 'Walk-in Customer' ? getLabel('walkInCustomer') : data.customerName}
-            </span>
-          </div>
-        </div>
-        
-        {/* Items */}
-        <div className="border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <div className="font-bold mb-3 text-base">{getLabel('items')}:</div>
-          {data.items.map((item, idx) => (
-            <div key={idx} className="flex justify-between text-sm mb-2">
-              <span className="flex-1 pr-3">
-                {item.quantity}x {item.name}
-              </span>
-              <span className="font-medium whitespace-nowrap">
-                {formatAmount(item.price * item.quantity)} {currencySymbol}
-              </span>
+      {/* PDF Preview - exact same as print */}
+      <div className="flex justify-center">
+        <div 
+          className="bg-white rounded-lg shadow-lg overflow-hidden"
+          style={{ width: '320px', minHeight: '500px' }}
+        >
+          {isLoadingPdf ? (
+            <div className="flex items-center justify-center h-[500px]">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ))}
-        </div>
-        
-        {/* Totals */}
-        <div className="space-y-2 text-sm border-b border-dashed border-gray-300 dark:border-slate-600 pb-4 mb-4">
-          <div className="flex justify-between">
-            <span>{getLabel('subtotal')}:</span>
-            <span>{formatAmount(data.subtotal)} {currencySymbol}</span>
-          </div>
-          {data.discount > 0 && (
-            <div className="flex justify-between text-green-600 dark:text-green-400">
-              <span>{getLabel('discount')}:</span>
-              <span>-{formatAmount(data.discount)} {currencySymbol}</span>
+          ) : pdfUrl ? (
+            <embed
+              src={pdfUrl}
+              type="application/pdf"
+              width="320"
+              height="600"
+              style={{ border: 'none' }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[500px] text-muted-foreground">
+              {t('common:error')}
             </div>
-          )}
-          <div className="flex justify-between font-bold text-lg pt-2 border-t dark:border-slate-600">
-            <span>{getLabel('total')}:</span>
-            <span>{formatAmount(data.total)} {currencySymbol}</span>
-          </div>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center mt-1">
-            {getLabel('vatIncluded')}
-          </p>
-        </div>
-        
-        {/* Payment Info */}
-        <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">{getLabel('paymentMethod')}:</span>
-            <span className="font-medium">{getPaymentLabel()}</span>
-          </div>
-          {data.cashReceived && (
-            <>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">{getLabel('cashReceived')}:</span>
-                <span className="font-medium">{formatAmount(data.cashReceived)} {currencySymbol}</span>
-              </div>
-              <div className="flex justify-between text-green-600 dark:text-green-400 font-bold">
-                <span>{getLabel('change')}:</span>
-                <span>{formatAmount(data.change || 0)} {currencySymbol}</span>
-              </div>
-            </>
-          )}
-          {data.notes && (
-            <div className="mt-3 pt-3 border-t dark:border-slate-600">
-              <span className="font-medium">{t('common:notes')}:</span>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{data.notes}</p>
-            </div>
-          )}
-        </div>
-        
-        {/* Footer */}
-        <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-gray-300 dark:border-slate-600">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{getLabel('thankYou')}</p>
-          {companyInfo.website && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{companyInfo.website}</p>
           )}
         </div>
       </div>
       
       <div className="no-print flex flex-wrap gap-3 justify-center mt-6">
-        <Button size="lg" onClick={handlePrint} disabled={isPrinting} className="px-6" data-testid="button-print-receipt">
+        <Button size="lg" onClick={handlePrint} disabled={isPrinting || isLoadingPdf} className="px-6" data-testid="button-print-receipt">
           {isPrinting ? (
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
           ) : (
@@ -626,7 +434,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
           size="lg" 
           variant="secondary" 
           onClick={handleDownloadPDF} 
-          disabled={isDownloading}
+          disabled={isDownloading || isLoadingPdf}
           className="px-6"
           data-testid="button-download-pdf"
         >
