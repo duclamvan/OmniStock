@@ -8991,6 +8991,7 @@ Important:
 
       // Fetch the complete order with items to return
       const completeOrder = await storage.getOrderById(order.id);
+      console.log('[POS] Returning order with orderId:', completeOrder?.orderId, 'id:', completeOrder?.id);
       res.json(completeOrder);
     } catch (error) {
       console.error("Error creating order:", error);
