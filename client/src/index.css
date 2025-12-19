@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent text cursor from appearing on non-editable elements */
+h1, h2, h3, h4, h5, h6, p, span, div, label {
+  caret-color: transparent;
+}
+
+/* Allow cursor in actual input elements */
+input, textarea, [contenteditable="true"] {
+  caret-color: auto;
+}
+
 /* Subtle scale animation for completed items */
 @keyframes subtle-pulse {
   0% {
