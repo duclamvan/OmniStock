@@ -401,13 +401,28 @@ export default function InternationalTransit() {
   const editShipmentMutation = useMutation({
     mutationFn: async ({ shipmentId, data }: { shipmentId: string; data: any }) => {
       const response = await apiRequest('PUT', `/api/imports/shipments/${shipmentId}`, data);
-      return { ...response.json(), shipmentId };
+      return { ...(await response.json()), shipmentId, hasTrackingNumbers: data.endTrackingNumbers?.length > 0 };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       setIsShipmentFormOpen(false);
       setSelectedShipment(null);
       toast({ title: t('success'), description: t('shipmentUpdated') });
+      
+      // Auto-sync tracking with 17TRACK if tracking numbers were provided
+      if (data.hasTrackingNumbers && data.shipmentId) {
+        // Wait a moment for DB update to complete, then sync
+        setTimeout(() => {
+          apiRequest('POST', `/api/imports/shipments/${data.shipmentId}/track17/register`)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+              toast({ title: t('success'), description: t('trackingSynced') });
+            })
+            .catch((err) => {
+              console.error('Auto-sync failed:', err);
+            });
+        }, 500);
+      }
       
       // Scroll to updated shipment after DOM updates
       setTimeout(() => {
