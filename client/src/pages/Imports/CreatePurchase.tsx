@@ -38,6 +38,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
+// Convert weight from any unit to kg for storage
+const convertWeightToKg = (weight: number, unit: 'mg' | 'g' | 'kg' | 'oz' | 'lb'): number => {
+  switch (unit) {
+    case 'mg': return weight / 1000000;
+    case 'g': return weight / 1000;
+    case 'kg': return weight;
+    case 'oz': return weight * 0.0283495;
+    case 'lb': return weight * 0.453592;
+    default: return weight;
+  }
+};
+
 interface PurchaseItem {
   id: string;
   name: string;
@@ -1150,6 +1162,7 @@ export default function CreatePurchase() {
           quantity: Number(item.quantity) || 1,
           unitPrice: parseFloat(item.unitCost || item.unitPrice) || 0,
           weight: parseFloat(item.weight) || 0,
+          weightUnit: 'kg' as const, // Database stores weight in kg
           dimensions: typeof item.dimensions === 'string' ? item.dimensions : (item.dimensions ? JSON.stringify(item.dimensions) : ""),
           notes: String(item.notes || ""),
           totalPrice: parseFloat(item.totalCost || item.totalPrice) || (Number(item.quantity) * parseFloat(item.unitPrice || 0)),
@@ -1168,6 +1181,46 @@ export default function CreatePurchase() {
           bulkUnitQty: item.bulkUnitQty || null
         }));
         setItems(loadedItems);
+        
+        // Fetch images from products for items without imageUrl (batch approach)
+        const itemsNeedingImages = loadedItems.filter((item: PurchaseItem) => !item.imageUrl && item.sku);
+        if (itemsNeedingImages.length > 0) {
+          const uniqueSkus = Array.from(new Set(itemsNeedingImages.map((item: PurchaseItem) => item.sku))) as string[];
+          // Batch fetch products for all unique SKUs (chunked to avoid overwhelming the server)
+          const chunkSize = 5;
+          const fetchProductImages = async () => {
+            const productMap = new Map<string, string>();
+            for (let i = 0; i < uniqueSkus.length; i += chunkSize) {
+              const chunk = uniqueSkus.slice(i, i + chunkSize);
+              const results = await Promise.all(chunk.map(async (sku: string) => {
+                try {
+                  const response = await fetch(`/api/products/search?q=${encodeURIComponent(sku)}`);
+                  if (response.ok) {
+                    const searchResults = await response.json();
+                    return searchResults.find((p: any) => p.sku === sku);
+                  }
+                } catch (e) {
+                  return null;
+                }
+                return null;
+              }));
+              results.filter(Boolean).forEach((product: any) => {
+                if (product?.sku && product?.imageUrl) {
+                  productMap.set(product.sku, product.imageUrl);
+                }
+              });
+            }
+            if (productMap.size > 0) {
+              setItems(prevItems => prevItems.map(prevItem => {
+                if (!prevItem.imageUrl && prevItem.sku && productMap.has(prevItem.sku)) {
+                  return { ...prevItem, imageUrl: productMap.get(prevItem.sku) };
+                }
+                return prevItem;
+              }));
+            }
+          };
+          fetchProductImages();
+        }
         
         // Set item currency display for all items
         const currencyDisplay: {[key: string]: string} = {};
@@ -1634,12 +1687,13 @@ export default function CreatePurchase() {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
-        weight: item.weight,
+        weight: convertWeightToKg(item.weight, item.weightUnit || 'kg'),
         dimensions: item.dimensions || null,
         notes: item.notes || null,
         processingTimeDays: item.processingTimeDays,
         unitType: item.unitType || 'selling',
-        quantityInSellingUnits: item.quantityInSellingUnits || item.quantity
+        quantityInSellingUnits: item.quantityInSellingUnits || item.quantity,
+        imageUrl: item.imageUrl || null
       }))
     };
 

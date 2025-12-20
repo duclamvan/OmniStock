@@ -712,6 +712,8 @@ router.post("/purchases", async (req, res) => {
       estimatedArrival: req.body.estimatedArrival ? new Date(req.body.estimatedArrival) : null,
       notes: req.body.notes || null,
       shippingCost: shippingCost.toString(),
+      shippingCurrency: req.body.shippingCurrency || "USD",
+      consolidation: req.body.consolidation || "No",
       totalCost: totalCost.toString(),
       // New currency fields
       paymentCurrency: req.body.paymentCurrency || "USD",
@@ -822,6 +824,8 @@ router.patch("/purchases/:id", async (req, res) => {
     if (req.body.purchaseTotal !== undefined) purchaseUpdate.purchaseTotal = req.body.purchaseTotal;
     if (req.body.exchangeRate !== undefined) purchaseUpdate.exchangeRate = req.body.exchangeRate;
     if (req.body.status !== undefined) purchaseUpdate.status = req.body.status;
+    if (req.body.consolidation !== undefined) purchaseUpdate.consolidation = req.body.consolidation;
+    if (req.body.shippingCurrency !== undefined) purchaseUpdate.shippingCurrency = req.body.shippingCurrency;
     
     // Handle purchaseDate if provided (should be stored in createdAt for existing records)
     // We don't update createdAt but can update estimatedArrival based on it
