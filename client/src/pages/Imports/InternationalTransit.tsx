@@ -1067,31 +1067,19 @@ export default function InternationalTransit() {
                         <SelectValue placeholder={t('selectEndCarrier')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="DPD|190013">
+                        <SelectItem value="DPD|100010">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-red-600" />
                             DPD
                           </div>
                         </SelectItem>
-                        <SelectItem value="DHL Express|190001">
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-yellow-600" />
-                            DHL Express
-                          </div>
-                        </SelectItem>
                         <SelectItem value="DHL Paket|7041">
                           <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-yellow-500" />
-                            DHL Paket (DE)
+                            <Truck className="h-4 w-4 text-yellow-600" />
+                            DHL Paket
                           </div>
                         </SelectItem>
-                        <SelectItem value="UPS|190003">
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-amber-700" />
-                            UPS
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="GLS|190046">
+                        <SelectItem value="GLS|100005">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-blue-600" />
                             GLS
@@ -1109,22 +1097,34 @@ export default function InternationalTransit() {
                             Česká pošta
                           </div>
                         </SelectItem>
-                        <SelectItem value="Zásilkovna|0">
+                        <SelectItem value="PostNL|14041">
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-green-600" />
-                            Zásilkovna
+                            <Truck className="h-4 w-4 text-orange-500" />
+                            PostNL
                           </div>
                         </SelectItem>
-                        <SelectItem value="FedEx|190002">
+                        <SelectItem value="Bpost|2061">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-red-500" />
+                            Bpost
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="FedEx|100003">
                           <div className="flex items-center gap-2">
                             <Plane className="h-4 w-4 text-purple-600" />
                             FedEx
                           </div>
                         </SelectItem>
-                        <SelectItem value="TNT|190010">
+                        <SelectItem value="Yodel|100017">
                           <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-orange-600" />
-                            TNT
+                            <Truck className="h-4 w-4 text-green-600" />
+                            Yodel
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Zásilkovna|0">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-green-600" />
+                            Zásilkovna
                           </div>
                         </SelectItem>
                         <SelectItem value="Other|0">
