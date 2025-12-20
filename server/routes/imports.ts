@@ -6984,55 +6984,71 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       return res.status(404).json({ message: "No receipt found for this shipment" });
     }
     
-    // Get receipt items with LEFT JOINs for purchase, custom, and consolidation items
-    // This single query replaces the N+1 problem!
-    // Debug: Check table references
-    console.log('[DEBUG] Table references:', {
-      receiptItems: typeof receiptItems,
-      purchaseItems: typeof purchaseItems,
-      customItems: typeof customItems,
-      consolidationItems: typeof consolidationItems
-    });
-    
-    const receiptItemsWithDetails = await db
-      .select({
-        receiptItem: receiptItems,
-        purchaseItem: purchaseItems,
-        customItem: customItems,
-        consolidationItem: consolidationItems
-      })
+    // Get receipt items first (simple query)
+    const receiptItemsList = await db
+      .select()
       .from(receiptItems)
-      .leftJoin(purchaseItems, and(
-        eq(receiptItems.itemType, 'purchase'),
-        eq(receiptItems.itemId, purchaseItems.id)
-      ))
-      .leftJoin(customItems, and(
-        eq(receiptItems.itemType, 'custom'),
-        eq(receiptItems.itemId, customItems.id)
-      ))
-      .leftJoin(consolidationItems, and(
-        eq(receiptItems.itemType, 'consolidation'),
-        eq(receiptItems.itemId, consolidationItems.id)
-      ))
       .where(eq(receiptItems.receiptId, receipt.id));
     
+    // Collect item IDs by type for batch fetching
+    const purchaseItemIds = receiptItemsList
+      .filter(ri => ri.itemType === 'purchase')
+      .map(ri => ri.itemId);
+    const customItemIds = receiptItemsList
+      .filter(ri => ri.itemType === 'custom')
+      .map(ri => ri.itemId);
+    const consolidationItemIds = receiptItemsList
+      .filter(ri => ri.itemType === 'consolidation')
+      .map(ri => ri.itemId);
+    
+    // Batch fetch related items
+    const [purchaseItemsList, customItemsList, consolidationItemsList] = await Promise.all([
+      purchaseItemIds.length > 0 
+        ? db.select().from(purchaseItems).where(inArray(purchaseItems.id, purchaseItemIds))
+        : Promise.resolve([]),
+      customItemIds.length > 0
+        ? db.select().from(customItems).where(inArray(customItems.id, customItemIds))
+        : Promise.resolve([]),
+      consolidationItemIds.length > 0
+        ? db.select().from(consolidationItems).where(inArray(consolidationItems.id, consolidationItemIds))
+        : Promise.resolve([])
+    ]);
+    
+    // Build lookup maps
+    const purchaseItemsMap: Record<string, any> = {};
+    purchaseItemsList.forEach(item => { purchaseItemsMap[item.id] = item; });
+    
+    const customItemsMap: Record<string, any> = {};
+    customItemsList.forEach(item => { customItemsMap[item.id] = item; });
+    
+    const consolidationItemsMap: Record<string, any> = {};
+    consolidationItemsList.forEach(item => { consolidationItemsMap[item.id] = item; });
+    
     // For consolidation items, we need to look up their underlying purchase items
-    const consolidationItemIds = receiptItemsWithDetails
-      .filter(row => row.consolidationItem && row.consolidationItem.itemType === 'purchase')
-      .map(row => row.consolidationItem!.itemId);
+    const consolidationPurchaseIds = consolidationItemsList
+      .filter(ci => ci.itemType === 'purchase')
+      .map(ci => ci.itemId);
     
     // Fetch underlying purchase items for consolidation items
     let consolidationPurchaseItemsMap: Record<string, any> = {};
-    if (consolidationItemIds.length > 0) {
+    if (consolidationPurchaseIds.length > 0) {
       const consolidationPurchaseItems = await db
         .select()
         .from(purchaseItems)
-        .where(inArray(purchaseItems.id, consolidationItemIds));
+        .where(inArray(purchaseItems.id, consolidationPurchaseIds));
       
       consolidationPurchaseItems.forEach(item => {
         consolidationPurchaseItemsMap[item.id] = item;
       });
     }
+    
+    // Transform to combined structure
+    const receiptItemsWithDetails = receiptItemsList.map(ri => ({
+      receiptItem: ri,
+      purchaseItem: ri.itemType === 'purchase' ? purchaseItemsMap[ri.itemId] || null : null,
+      customItem: ri.itemType === 'custom' ? customItemsMap[ri.itemId] || null : null,
+      consolidationItem: ri.itemType === 'consolidation' ? consolidationItemsMap[ri.itemId] || null : null
+    }));
     
     // Collect all product IDs from receipt items, purchase items, AND consolidation items' underlying purchase items
     const productIds: string[] = [];
