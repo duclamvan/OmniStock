@@ -1062,7 +1062,13 @@ export default function InternationalTransit() {
                   {/* End Carrier - Dropdown with 17TRACK codes */}
                   <div className="space-y-2">
                     <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
-                    <Select name="endCarrier" required defaultValue={selectedShipment?.endCarrier || ''}>
+                    <Select name="endCarrier" required defaultValue={
+                      selectedShipment?.endCarrier && selectedShipment?.track17CarrierCode
+                        ? `${selectedShipment.endCarrier}|${selectedShipment.track17CarrierCode}`
+                        : selectedShipment?.endCarrier 
+                          ? `${selectedShipment.endCarrier}|0`
+                          : ''
+                    }>
                       <SelectTrigger data-testid="select-end-carrier">
                         <SelectValue placeholder={t('selectEndCarrier')} />
                       </SelectTrigger>
