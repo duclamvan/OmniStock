@@ -167,30 +167,33 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalR
 
       const url = window.URL.createObjectURL(blob);
       
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      iframe.src = url;
-      document.body.appendChild(iframe);
+      // Open PDF in new window for printing (works with Chrome kiosk mode)
+      // Use minimal popup that auto-triggers print
+      const printWindow = window.open(url, '_blank', 'width=450,height=700,menubar=no,toolbar=no,location=no,status=no');
       
-      iframe.onload = () => {
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+        // Cleanup after delay
         setTimeout(() => {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          }
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-            window.URL.revokeObjectURL(url);
-          }, 5000);
-        }, 100);
-      };
+          window.URL.revokeObjectURL(url);
+        }, 60000);
+      } else {
+        // Popup blocked - download instead
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${data.orderId || Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        toast({
+          title: t('common:info', 'Info'),
+          description: t('financial:popupBlockedDownloading', 'Popup blocked - downloaded PDF instead'),
+        });
+      }
       
       onPrint?.();
     } catch (error) {
