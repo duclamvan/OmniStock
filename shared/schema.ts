@@ -139,6 +139,8 @@ export const purchaseItems = pgTable("purchase_items", {
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }),
   weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
+  weightUnit: text("weight_unit").default("kg"), // mg, g, kg, oz, lb
+  costWithShipping: decimal("cost_with_shipping", { precision: 10, scale: 4 }), // unit price + shipping portion
   dimensions: jsonb("dimensions"), // {length, width, height}
   status: text("status").notNull().default("ordered"),
   trackingNumber: text("tracking_number"),
