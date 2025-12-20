@@ -170,5 +170,14 @@ app.use((req, res, next) => {
     } catch (error) {
       console.error('Failed to start discount status sync:', error);
     }
+    
+    // Weekly shipment archiving scheduler - runs at Sunday 23:59
+    try {
+      const { startShipmentArchiveScheduler } = await import('./services/shipmentArchiveService');
+      startShipmentArchiveScheduler();
+      log('Shipment archive scheduler started');
+    } catch (error) {
+      console.error('Failed to start shipment archive scheduler:', error);
+    }
   });
 })();
