@@ -102,6 +102,14 @@ import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink,
 import { toPng } from "html-to-image";
 import logoPath from '@assets/logo_1754349267160.png';
 import { useSettings } from "@/contexts/SettingsContext";
+import { ThermalReceipt, useOrderReceiptData, type CompanyInfo } from "@/components/orders/ThermalReceipt";
+import { Receipt } from "lucide-react";
+
+function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
+  const receiptData = useOrderReceiptData(order, order?.currency || 'EUR');
+  if (!receiptData) return null;
+  return <ThermalReceipt data={receiptData} onClose={onClose} companyInfo={companyInfo} />;
+}
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -124,6 +132,7 @@ export default function OrderDetails() {
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
   const [showCapturePreview, setShowCapturePreview] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const capturePreviewRef = useRef<HTMLDivElement>(null);
   const [showBadges, setShowBadges] = useState(() => {
     const saved = localStorage.getItem('orderDetailsBadgesVisible');
@@ -136,8 +145,21 @@ export default function OrderDetails() {
   const [isShippingLabelsOpen, setIsShippingLabelsOpen] = useState(true);
 
   // Get shipping settings for tracking
-  const { shippingSettings } = useSettings();
+  const { shippingSettings, generalSettings } = useSettings();
   const enableTracking = shippingSettings?.enableTracking ?? true;
+
+  // Company info for receipt
+  const companyInfo: CompanyInfo = useMemo(() => ({
+    name: generalSettings?.companyName,
+    address: generalSettings?.companyAddress,
+    city: generalSettings?.companyCity,
+    zip: generalSettings?.companyZip,
+    country: generalSettings?.companyCountry,
+    phone: generalSettings?.companyPhone,
+    ico: generalSettings?.companyIco,
+    vatId: generalSettings?.companyVatId,
+    website: generalSettings?.companyWebsite,
+  }), [generalSettings]);
 
   // Toggle badges visibility
   const toggleBadges = () => {
@@ -1132,6 +1154,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   >
                     <Printer className="mr-1.5 h-3.5 w-3.5" />
                     {t('orders:printBill', 'Print Bill')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowReceiptDialog(true)}
+                    data-testid="button-print-receipt"
+                    className="h-8 text-xs"
+                  >
+                    <Receipt className="mr-1.5 h-3.5 w-3.5" />
+                    {t('financial:printReceipt', 'Print Receipt')}
                   </Button>
                 </div>
               </div>
@@ -3078,6 +3110,23 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               {t('orders:downloadImage')}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Receipt Dialog */}
+      <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-6 w-6 text-primary" />
+              {t('financial:printReceipt', 'Print Receipt')}
+            </DialogTitle>
+          </DialogHeader>
+          <OrderReceiptContent 
+            order={order} 
+            onClose={() => setShowReceiptDialog(false)} 
+            companyInfo={companyInfo}
+          />
         </DialogContent>
       </Dialog>
 
