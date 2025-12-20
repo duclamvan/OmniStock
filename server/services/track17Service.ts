@@ -138,6 +138,11 @@ export class Track17Service {
 
       if (result.data?.rejected?.length > 0) {
         const rejection = result.data.rejected[0];
+        // Error code -18019901 means "already registered" - treat this as success
+        if (rejection.error?.code === -18019901) {
+          console.log(`17track: Tracking number ${trackingNumber} already registered (treating as success)`);
+          return { success: true };
+        }
         console.error(`17track: Rejected tracking number ${trackingNumber}:`, rejection.error);
         return { success: false, error: rejection.error?.message || "Registration rejected" };
       }
