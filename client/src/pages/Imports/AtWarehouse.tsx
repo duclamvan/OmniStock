@@ -3606,53 +3606,33 @@ export default function AtWarehouse() {
                                         </div>
                                       </div>
                                     ) : (
-                                      <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                          <div className="text-sm font-medium">{consolidation.itemCount} {t('items')}</div>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 text-xs"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              toggleConsolidationExpanded(consolidation.id);
-                                            }}
-                                          >
-                                            {expandedConsolidations.has(consolidation.id) ? (
-                                              <ChevronDown className="h-3 w-3" />
-                                            ) : (
-                                              <ChevronRight className="h-3 w-3" />
-                                            )}
-                                          </Button>
-                                        </div>
-                                        
-                                        {/* Show items if expanded */}
-                                        {expandedConsolidations.has(consolidation.id) && consolidationItems[consolidation.id] && (
-                                          <div className="mt-2 space-y-1">
-                                            {consolidationItems[consolidation.id].map((item: any) => (
-                                              <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
-                                                <div className="flex-1">
-                                                  <div className="font-medium">{item.name}</div>
-                                                  <div className="text-muted-foreground">
-                                                    {t('qty')}: {item.quantity} • {item.source}
-                                                  </div>
-                                                </div>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="h-6 px-2"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    removeItemFromConsolidationMutation.mutate({
-                                                      consolidationId: consolidation.id,
-                                                      itemId: item.id
-                                                    });
-                                                  }}
-                                                >
-                                                  <X className="h-3 w-3" />
-                                                </Button>
+                                      <div className="space-y-1">
+                                        {consolidationItems[consolidation.id]?.map((item: any) => (
+                                          <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="font-medium truncate">{item.name}</div>
+                                              <div className="text-muted-foreground text-xs">
+                                                {t('qty')}: {item.quantity}
                                               </div>
-                                            ))}
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0 shrink-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeItemFromConsolidationMutation.mutate({
+                                                  consolidationId: consolidation.id,
+                                                  itemId: item.id
+                                                });
+                                              }}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )) || (
+                                          <div className="text-xs text-muted-foreground text-center py-2">
+                                            {consolidation.itemCount} {t('items')}
                                           </div>
                                         )}
                                       </div>
