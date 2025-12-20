@@ -7026,13 +7026,18 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       });
     }
     
-    // Collect all product IDs from purchase items AND consolidation items' underlying purchase items
+    // Collect all product IDs from receipt items, purchase items, AND consolidation items' underlying purchase items
     const productIds: string[] = [];
     receiptItemsWithDetails.forEach(row => {
+      // Priority 1: Receipt item's own productId
+      if (row.receiptItem.productId) {
+        productIds.push(row.receiptItem.productId as string);
+      }
+      // Priority 2: Purchase item's productId
       if (row.purchaseItem?.productId) {
         productIds.push(row.purchaseItem.productId as string);
       }
-      // For consolidation items, get productId from underlying purchase item
+      // Priority 3: For consolidation items, get productId from underlying purchase item
       if (row.consolidationItem?.itemType === 'purchase') {
         const underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
         if (underlyingPurchaseItem?.productId) {
@@ -7092,13 +7097,21 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     
     // Transform the results to match the expected format with product names and locations
     const itemsWithDetails = receiptItemsWithDetails.map(row => {
-      // Get productId - from direct purchase item OR from consolidation item's underlying purchase item
+      // Get productId - FIRST check receipt item's own productId field (authoritative), 
+      // then fallback to purchase item or consolidation item's underlying purchase item
       let productId: string | null = null;
       let underlyingPurchaseItem: any = null;
       
-      if (row.purchaseItem?.productId) {
+      // Priority 1: Receipt item's own productId (most authoritative)
+      if (row.receiptItem.productId) {
+        productId = row.receiptItem.productId as string;
+      }
+      // Priority 2: Direct purchase item's productId
+      else if (row.purchaseItem?.productId) {
         productId = row.purchaseItem.productId as string;
-      } else if (row.consolidationItem?.itemType === 'purchase') {
+      } 
+      // Priority 3: Consolidation item's underlying purchase item
+      else if (row.consolidationItem?.itemType === 'purchase') {
         underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
         if (underlyingPurchaseItem?.productId) {
           productId = underlyingPurchaseItem.productId as string;
