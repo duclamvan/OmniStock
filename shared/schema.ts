@@ -217,6 +217,19 @@ export const shipments = pgTable("shipments", {
   deliveredAt: timestamp("delivered_at"),
   currentLocation: text("current_location"),
   notes: text("notes"),
+  // 17Track integration fields
+  track17Registered: boolean("track17_registered").default(false),
+  track17CarrierCode: text("track17_carrier_code"), // Carrier code detected/used by 17track
+  track17Status: text("track17_status"), // Latest status from 17track (NotFound, InTransit, Expired, Delivered, etc.)
+  track17LastEvent: text("track17_last_event"), // Last tracking event description
+  track17LastEventTime: timestamp("track17_last_event_time"), // Time of last tracking event
+  track17Events: json("track17_events").$type<Array<{
+    time: string;
+    description: string;
+    location?: string;
+    status?: string;
+  }>>(), // Full tracking history from 17track
+  track17LastSync: timestamp("track17_last_sync"), // When we last fetched tracking info
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

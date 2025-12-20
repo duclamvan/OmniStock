@@ -32,6 +32,7 @@ import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 import { LandingCostService } from "../services/landingCostService";
 import { parseInvoiceImage } from "../services/invoiceParsingService";
+import { track17Service } from "../services/track17Service";
 
 // Configure multer for screenshot uploads
 const upload = multer({ 
@@ -2521,6 +2522,144 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
   } catch (error) {
     console.error("Error updating shipment tracking:", error);
     res.status(500).json({ message: "Failed to update shipment tracking" });
+  }
+});
+
+// ============================================================================
+// 17TRACK API INTEGRATION ROUTES
+// ============================================================================
+
+// Get available carriers from 17track
+router.get("/track17/carriers", async (req, res) => {
+  try {
+    const { getCarrierList } = await import("../services/track17Service");
+    const carriers = getCarrierList();
+    res.json(carriers);
+  } catch (error) {
+    console.error("Error fetching carriers:", error);
+    res.status(500).json({ message: "Failed to fetch carriers" });
+  }
+});
+
+// Register a shipment with 17track
+router.post("/shipments/:id/track17/register", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    const result = await track17Service.registerAndSyncShipment(shipmentId);
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error || "Failed to register tracking" });
+    }
+    
+    // Fetch the updated shipment
+    const [updatedShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    res.json({ 
+      success: true, 
+      message: "Tracking registered and synced successfully",
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error("Error registering with 17track:", error);
+    res.status(500).json({ message: "Failed to register with 17track" });
+  }
+});
+
+// Sync tracking info for a shipment from 17track
+router.post("/shipments/:id/track17/sync", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    const result = await track17Service.syncShipmentTracking(shipmentId);
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error || "Failed to sync tracking" });
+    }
+    
+    // Fetch the updated shipment
+    const [updatedShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    res.json({ 
+      success: true, 
+      message: "Tracking synced successfully",
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error("Error syncing 17track:", error);
+    res.status(500).json({ message: "Failed to sync with 17track" });
+  }
+});
+
+// Sync all active shipments with 17track
+router.post("/track17/sync-all", async (req, res) => {
+  try {
+    const result = await track17Service.syncAllActiveShipments();
+    res.json({ 
+      success: true,
+      message: `Synced ${result.synced} shipments, ${result.errors} errors`,
+      ...result
+    });
+  } catch (error) {
+    console.error("Error syncing all shipments:", error);
+    res.status(500).json({ message: "Failed to sync all shipments" });
+  }
+});
+
+// Get tracking info for a shipment (without syncing)
+router.get("/shipments/:id/track17/info", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    res.json({
+      trackingNumber: shipment.trackingNumber,
+      carrier: shipment.carrier,
+      track17Registered: shipment.track17Registered,
+      track17Status: shipment.track17Status,
+      track17LastEvent: shipment.track17LastEvent,
+      track17LastEventTime: shipment.track17LastEventTime,
+      track17Events: shipment.track17Events,
+      track17LastSync: shipment.track17LastSync,
+      track17CarrierCode: shipment.track17CarrierCode,
+    });
+  } catch (error) {
+    console.error("Error fetching tracking info:", error);
+    res.status(500).json({ message: "Failed to fetch tracking info" });
+  }
+});
+
+// Look up carrier code by name
+router.get("/track17/carrier-lookup", async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ message: "Carrier name is required" });
+    }
+    
+    const { findCarrierByName } = await import("../services/track17Service");
+    const carrier = findCarrierByName(name);
+    
+    if (!carrier) {
+      return res.json({ found: false, message: "Carrier not found" });
+    }
+    
+    res.json({ found: true, carrier });
+  } catch (error) {
+    console.error("Error looking up carrier:", error);
+    res.status(500).json({ message: "Failed to look up carrier" });
   }
 });
 
