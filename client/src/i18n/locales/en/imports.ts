@@ -817,6 +817,8 @@ const imports = {
   selectConsolidationToMove: 'Select an active consolidation to move "{{name}}". Shipped consolidations cannot accept new items.',
   selectConsolidationToMoveBulk: 'Select an active consolidation to move {{count}} items. Shipped consolidations cannot accept new items.',
   createNewConsolidation: 'Create New Consolidation',
+  createNewConsolidationWithItems: 'Create New Consolidation & Move Items',
+  consolidationCreatedWithItems: 'Created "{{name}}" and moved {{count}} item(s)',
   editConsolidation: 'Edit Consolidation',
   trackingNumbersCount: 'Tracking Numbers ({{count}} total)',
   poNumber: 'PO #{{number}}',

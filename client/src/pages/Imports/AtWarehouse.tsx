@@ -66,7 +66,7 @@ interface ImportPurchase {
 }
 
 interface CustomItem {
-  id: number;
+  id: string;
   name: string;
   source: string;
   orderNumber: string | null;
@@ -80,14 +80,15 @@ interface CustomItem {
   customerEmail: string | null;
   status: string;
   classification?: string;
-  purchaseOrderId?: number;
+  purchaseOrderId?: string;
   orderItems?: any[];
   imageUrl?: string | null;
+  isPackage?: boolean;
   createdAt: string;
 }
 
 interface Consolidation {
-  id: number;
+  id: string;
   name: string;
   location?: string;
   shippingMethod: string;
@@ -582,13 +583,14 @@ export default function AtWarehouse() {
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
-  const [moveToConsolidationItem, setMoveToConsolidationItem] = useState<{ id: number, name: string } | null>(null);
+  const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: string, currentStatus: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: string, name: string } | null>(null);
+  const [moveToConsolidationItem, setMoveToConsolidationItem] = useState<{ id: string, name: string } | null>(null);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
-  const [selectedConsolidationTracking, setSelectedConsolidationTracking] = useState<{id: number, name: string, trackingNumbers: string[]} | null>(null);
-  const [bulkMoveItems, setBulkMoveItems] = useState<Set<number>>(new Set());
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(() => {
+  const [selectedConsolidationTracking, setSelectedConsolidationTracking] = useState<{id: string, name: string, trackingNumbers: string[]} | null>(null);
+  const [bulkMoveItems, setBulkMoveItems] = useState<Set<string>>(new Set());
+  const [pendingItemsForNewConsolidation, setPendingItemsForNewConsolidation] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('atWarehouse_expandedItems');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
@@ -597,11 +599,11 @@ export default function AtWarehouse() {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [selectedItemsForAI, setSelectedItemsForAI] = useState<Set<number>>(new Set());
+  const [selectedItemsForAI, setSelectedItemsForAI] = useState<Set<string>>(new Set());
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [itemSortBy, setItemSortBy] = useState<string>("newest");
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
-  const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
+  const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<string>>(new Set());
   const [itemSourceFilter, setItemSourceFilter] = useState<string>("all");
   const [itemClassificationFilter, setItemClassificationFilter] = useState<string>("all");
   const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
@@ -846,7 +848,7 @@ export default function AtWarehouse() {
 
   // Update custom item status mutation
   const updateItemStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiRequest('PATCH', `/api/imports/custom-items/${id}`, { status });
     },
     onSuccess: () => {
@@ -870,7 +872,7 @@ export default function AtWarehouse() {
 
   // Update item classification mutation
   const updateItemClassificationMutation = useMutation({
-    mutationFn: async ({ id, classification }: { id: number, classification: string | null }) => {
+    mutationFn: async ({ id, classification }: { id: string, classification: string | null }) => {
       return apiRequest('PATCH', `/api/imports/custom-items/${id}`, { classification });
     },
     onSuccess: () => {
@@ -892,7 +894,7 @@ export default function AtWarehouse() {
 
   // Quick Ship mutation - Create shipment from consolidation
   const quickShipMutation = useMutation({
-    mutationFn: async (consolidationId: number) => {
+    mutationFn: async (consolidationId: string) => {
       // Get the consolidation details
       const consolidation = consolidations.find(c => c.id === consolidationId);
       if (!consolidation) throw new Error('Consolidation not found');
@@ -931,7 +933,7 @@ export default function AtWarehouse() {
 
   // AI auto-classification mutation using DeepSeek AI
   const aiClassifyMutation = useMutation({
-    mutationFn: async (itemIds: number[]) => {
+    mutationFn: async (itemIds: string[]) => {
       return apiRequest('POST', '/api/imports/items/auto-classify', { itemIds });
     },
     onSuccess: (data: any) => {
@@ -971,7 +973,7 @@ export default function AtWarehouse() {
 
   // Update custom item mutation
   const updateCustomItemMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
       return apiRequest('PATCH', `/api/imports/custom-items/${id}`, data);
     },
     onSuccess: () => {
@@ -988,7 +990,7 @@ export default function AtWarehouse() {
 
   // Delete custom item mutation
   const deleteCustomItemMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       return apiRequest('DELETE', `/api/imports/custom-items/${id}`);
     },
     onSuccess: () => {
@@ -1004,7 +1006,7 @@ export default function AtWarehouse() {
 
   // Unpack custom item mutation
   const unpackItemMutation = useMutation({
-    mutationFn: async (itemId: number) => {
+    mutationFn: async (itemId: string) => {
       const response = await apiRequest('POST', `/api/imports/custom-items/${itemId}/unpack`);
       return response;
     },
@@ -1189,15 +1191,45 @@ export default function AtWarehouse() {
   // Create consolidation mutation
   const createConsolidationMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('POST', '/api/imports/consolidations', data);
+      const response = await apiRequest('POST', '/api/imports/consolidations', data);
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (newConsolidation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       setIsCreateConsolidationOpen(false);
-      toast({ title: t('success'), description: t('consolidationCreated') });
+      
+      // If there are pending items to move, move them now
+      if (pendingItemsForNewConsolidation.length > 0 && newConsolidation?.id) {
+        try {
+          await apiRequest('POST', `/api/imports/consolidations/${newConsolidation.id}/items`, {
+            itemIds: pendingItemsForNewConsolidation
+          });
+          
+          // Refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+          
+          toast({ 
+            title: t('success'), 
+            description: t('consolidationCreatedWithItems', { count: pendingItemsForNewConsolidation.length, name: newConsolidation.name })
+          });
+          
+          // Clear pending items and bulk selection
+          setPendingItemsForNewConsolidation([]);
+          setBulkMoveItems(new Set());
+          setMoveToConsolidationItem(null);
+        } catch (err) {
+          toast({ title: t('success'), description: t('consolidationCreated') });
+          toast({ title: t('error'), description: t('itemAddFailed'), variant: "destructive" });
+        }
+      } else {
+        toast({ title: t('success'), description: t('consolidationCreated') });
+      }
     },
     onError: () => {
       toast({ title: t('error'), description: t('consolidationCreateFailed'), variant: "destructive" });
+      setPendingItemsForNewConsolidation([]);
     }
   });
 
@@ -1359,15 +1391,16 @@ export default function AtWarehouse() {
     setIsEditCustomItemOpen(true);
   };
 
-  const handleStatusChange = (type: 'order' | 'item', id: number, currentStatus: string) => {
-    setStatusTarget({ type, id, currentStatus });
+  const handleStatusChange = (type: 'order' | 'item', id: string | number, currentStatus: string) => {
+    setStatusTarget({ type, id: String(id), currentStatus });
     setShowStatusDialog(true);
   };
 
   const confirmStatusChange = (newStatus: string) => {
     if (statusTarget) {
       if (statusTarget.type === 'order') {
-        updateOrderStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
+        // Order IDs are numbers
+        updateOrderStatusMutation.mutate({ id: parseInt(statusTarget.id), status: newStatus });
       } else {
         updateItemStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
       }
@@ -1384,7 +1417,7 @@ export default function AtWarehouse() {
     }
   };
 
-  const toggleItemExpanded = (itemId: number) => {
+  const toggleItemExpanded = (itemId: string) => {
     const newExpanded = new Set(expandedItems);
     if (newExpanded.has(itemId)) {
       newExpanded.delete(itemId);
@@ -2207,7 +2240,7 @@ export default function AtWarehouse() {
                             {order.location === 'Vietnam' && '🇻🇳'}
                             {!order.location && '🌍'}
                           </span>
-                          <h3 className="text-lg font-semibold">PO #{order.id.substring(0, 8).toUpperCase()} - {order.supplier}</h3>
+                          <h3 className="text-lg font-semibold">PO #{String(order.id).substring(0, 8).toUpperCase()} - {order.supplier}</h3>
                           {getStatusBadge(order.status)}
                         </div>
                         
@@ -3938,7 +3971,7 @@ export default function AtWarehouse() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="font-medium">{selectedOrder.supplier}</div>
                 <div className="text-sm text-muted-foreground">
-                  PO #{selectedOrder.id.substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
+                  PO #{String(selectedOrder.id).substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
                 </div>
               </div>
 
@@ -3993,7 +4026,7 @@ export default function AtWarehouse() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="font-medium">{selectedOrder.supplier}</div>
                 <div className="text-sm text-muted-foreground">
-                  PO #{selectedOrder.id.substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
+                  PO #{String(selectedOrder.id).substring(0, 8).toUpperCase()} • {selectedOrder.items?.length || 0} items
                 </div>
               </div>
 
@@ -4096,23 +4129,30 @@ export default function AtWarehouse() {
           
           <ScrollArea className="h-[500px]">
             <div className="space-y-3">
+              {/* Create New Consolidation Button - always visible */}
+              <Button 
+                variant="default" 
+                className="w-full mb-4"
+                onClick={() => {
+                  // Store pending items before opening create dialog
+                  const itemIds = bulkMoveItems.size > 0 
+                    ? Array.from(bulkMoveItems)
+                    : moveToConsolidationItem ? [moveToConsolidationItem.id] : [];
+                  setPendingItemsForNewConsolidation(itemIds);
+                  setMoveToConsolidationItem(null);
+                  setBulkMoveItems(new Set());
+                  setIsCreateConsolidationOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('createNewConsolidationWithItems')}
+              </Button>
+              
               {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 ? (
-                <div className="text-center py-12">
+                <div className="text-center py-8">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">{t('noActiveConsolidations')}</p>
                   <p className="text-sm text-muted-foreground mt-1">{t('allConsolidationsShipped')}</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => {
-                      setMoveToConsolidationItem(null);
-                      setBulkMoveItems(new Set());
-                      setIsCreateConsolidationOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('createNewConsolidation')}
-                  </Button>
                 </div>
               ) : (
                 consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').map((consolidation) => (

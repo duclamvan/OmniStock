@@ -834,6 +834,8 @@ const imports = {
   selectConsolidationToMove: 'Chọn tổng hợp đang hoạt động để chuyển "{{name}}". Không thể thêm vào tổng hợp đã gửi.',
   selectConsolidationToMoveBulk: 'Chọn tổng hợp đang hoạt động để chuyển {{count}} sản phẩm. Không thể thêm vào tổng hợp đã gửi.',
   createNewConsolidation: 'Tạo tổng hợp mới',
+  createNewConsolidationWithItems: 'Tạo tổng hợp mới & Chuyển sản phẩm',
+  consolidationCreatedWithItems: 'Đã tạo "{{name}}" và chuyển {{count}} sản phẩm',
   editConsolidation: 'Sửa tổng hợp',
   trackingNumbersCount: 'Mã vận đơn ({{count}} tổng)',
   poNumber: 'ĐH #{{number}}',
