@@ -942,6 +942,7 @@ const imports = {
   failedToSyncAllShipments: 'Failed to sync all shipments',
   liveTrackingStatus: 'Live Status',
   lastSynced: 'Last synced',
+  showTrackingHistory: 'Show tracking history',
   trackingEvents: 'Tracking Events',
   unknown: 'Unknown',
   failedToCopy: 'Failed to copy',

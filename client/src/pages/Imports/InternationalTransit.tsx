@@ -1843,6 +1843,75 @@ export default function InternationalTransit() {
                         )}
                       </div>
 
+                      {/* 17TRACK Status & History */}
+                      {(shipment.track17Status || shipment.track17LastEvent) && (
+                        <div className="border-t pt-3 mb-3">
+                          <div className="flex items-start gap-2">
+                            <Globe className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              {shipment.track17Status && (
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-[10px] ${
+                                      shipment.track17Status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-200' :
+                                      shipment.track17Status === 'InTransit' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                      shipment.track17Status === 'PickUp' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                      shipment.track17Status === 'Alert' || shipment.track17Status === 'Undelivered' ? 'bg-red-50 text-red-700 border-red-200' :
+                                      'bg-gray-50 text-gray-700 border-gray-200'
+                                    }`}
+                                  >
+                                    {shipment.track17Status}
+                                  </Badge>
+                                  {shipment.endCarrier && (
+                                    <span className="text-[10px] text-muted-foreground">{shipment.endCarrier}</span>
+                                  )}
+                                </div>
+                              )}
+                              {shipment.track17LastEvent && (
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {shipment.track17LastEvent}
+                                </p>
+                              )}
+                              {shipment.track17LastEventTime && (
+                                <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                  {format(new Date(shipment.track17LastEventTime), 'MMM dd, HH:mm')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Tracking History Dropdown */}
+                          {shipment.track17Events && Array.isArray(shipment.track17Events) && shipment.track17Events.length > 0 && (
+                            <Collapsible className="mt-2">
+                              <CollapsibleTrigger 
+                                className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                                {t('showTrackingHistory')} ({shipment.track17Events.length})
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="mt-2">
+                                <div 
+                                  className="max-h-40 overflow-y-auto space-y-2 pl-2 border-l-2 border-blue-200"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {shipment.track17Events.map((event: any, idx: number) => (
+                                    <div key={idx} className="text-xs">
+                                      <p className="font-medium text-foreground">{event.description || event.z}</p>
+                                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                        {event.time && <span>{format(new Date(event.time), 'MMM dd, HH:mm')}</span>}
+                                        {event.location && <span>• {event.location}</span>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          )}
+                        </div>
+                      )}
+
                       {/* Package Contents - Clean List */}
                       {shipment.items && shipment.items.length > 0 && (
                         <div className="border-t pt-3">

@@ -959,6 +959,7 @@ const imports = {
   failedToSyncAllShipments: 'Không thể đồng bộ tất cả lô hàng',
   liveTrackingStatus: 'Trạng thái trực tiếp',
   lastSynced: 'Đồng bộ lần cuối',
+  showTrackingHistory: 'Xem lịch sử vận đơn',
   trackingEvents: 'Lịch sử vận đơn',
   unknown: 'Không xác định',
   failedToCopy: 'Không thể sao chép',
