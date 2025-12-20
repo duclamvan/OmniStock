@@ -2680,7 +2680,7 @@ router.get("/track17/carrier-lookup", async (req, res) => {
 // Update shipment (full update)
 router.put("/shipments/:id", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Generate AI name if not provided
     let shipmentName = req.body.shipmentName;
@@ -2746,7 +2746,7 @@ router.put("/shipments/:id", async (req, res) => {
     
     // Get items associated with the shipment's consolidation
     let items: Array<{
-      id: number;
+      id: string;
       name: string;
       quantity: number | null;
       weight: string | null;
