@@ -512,6 +512,9 @@ router.post("/purchases/receive", async (req, res) => {
     const shortPoId = purchaseId.substring(0, 8).toUpperCase();
     const packageName = `PO #${shortPoId} - ${purchase.supplier}`;
     
+    // Use first item's image as representative image for the package
+    const firstImageUrl = items.find(item => item.imageUrl)?.imageUrl || null;
+    
     // Create a single custom item representing the whole order
     const customItem = {
       name: packageName,
@@ -529,6 +532,7 @@ router.post("/purchases/receive", async (req, res) => {
       classification: null, // Default to no classification
       purchaseOrderId: purchaseId,
       orderItems: items, // Store items as JSON
+      imageUrl: firstImageUrl, // Use first item's image as package image
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -607,6 +611,7 @@ router.post("/purchases/unpack", async (req, res) => {
         status: 'available',
         classification: null,
         purchaseOrderId: purchase.id, // Link back to original purchase order for cost/supplier lookup
+        imageUrl: item.imageUrl || null, // Preserve item image
         orderItems: [{
           originalItemId: item.id,
           sku: item.sku,
