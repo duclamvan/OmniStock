@@ -2012,7 +2012,7 @@ function QuickStorageSheet({
   // Store location mutation
   const storeLocationMutation = useMutation({
     mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary }: {
-      productId: number;
+      productId: string;
       locationCode: string;
       locationType: string;
       quantity: number;
@@ -2519,7 +2519,7 @@ function QuickStorageSheet({
                                     
                                     try {
                                       await storeLocationMutation.mutateAsync({
-                                        productId: Number(item.productId),
+                                        productId: item.productId,
                                         locationCode: locationCode,
                                         locationType: 'bin',
                                         quantity: itemRemainingQty,
@@ -2752,7 +2752,7 @@ function QuickStorageSheet({
                                               if (item.productId && loc.quantity > 0) {
                                                 try {
                                                   await storeLocationMutation.mutateAsync({
-                                                    productId: Number(item.productId),
+                                                    productId: item.productId,
                                                     locationCode: loc.locationCode,
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,
