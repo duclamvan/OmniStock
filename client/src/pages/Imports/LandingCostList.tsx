@@ -28,8 +28,8 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/currencyUtils";
 
 interface Shipment {
-  id: number;
-  consolidationId: number | null;
+  id: string;
+  consolidationId: string | null;
   carrier: string;
   trackingNumber: string;
   shipmentName?: string;
@@ -91,7 +91,7 @@ export default function LandingCostList() {
   const shipmentsWithCosts = useMemo(() => {
     return shipments.map((shipment, index) => ({
       ...shipment,
-      landingCost: landingCostQueries[index]?.data
+      landingCost: landingCostQueries[index]?.data as LandingCostSummary | undefined
     }));
   }, [shipments, landingCostQueries]);
 

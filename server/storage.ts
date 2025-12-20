@@ -261,12 +261,12 @@ export interface IStorage {
 
   // Employees
   getEmployees(): Promise<Employee[]>;
-  getEmployee(id: number): Promise<Employee | undefined>;
+  getEmployee(id: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
-  updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
-  deleteEmployee(id: number): Promise<void>;
-  assignUserToEmployee(employeeId: number, userId: string | null): Promise<void>;
-  getEmployeeStats(employeeId: number): Promise<{
+  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: string): Promise<void>;
+  assignUserToEmployee(employeeId: string, userId: string | null): Promise<void>;
+  getEmployeeStats(employeeId: string): Promise<{
     totalOrders: number;
     totalTasks: number;
     tasksCompleted: number;
@@ -276,11 +276,11 @@ export interface IStorage {
   }>;
 
   // Employee Incidents
-  getEmployeeIncidents(employeeId: number): Promise<EmployeeIncident[]>;
-  getEmployeeIncident(id: number): Promise<EmployeeIncident | undefined>;
+  getEmployeeIncidents(employeeId: string): Promise<EmployeeIncident[]>;
+  getEmployeeIncident(id: string): Promise<EmployeeIncident | undefined>;
   createEmployeeIncident(incident: InsertEmployeeIncident): Promise<EmployeeIncident>;
-  updateEmployeeIncident(id: number, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined>;
-  deleteEmployeeIncident(id: number): Promise<void>;
+  updateEmployeeIncident(id: string, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined>;
+  deleteEmployeeIncident(id: string): Promise<void>;
 
   // Activity Logs
   getActivityLogs(options?: { userId?: string; limit?: number; offset?: number }): Promise<ActivityLog[]>;
@@ -307,20 +307,20 @@ export interface IStorage {
 
   // Consolidations
   getConsolidations(): Promise<Consolidation[]>;
-  getConsolidation(id: number): Promise<Consolidation | undefined>;
+  getConsolidation(id: string): Promise<Consolidation | undefined>;
   createConsolidation(consolidation: InsertConsolidation): Promise<Consolidation>;
-  updateConsolidation(id: number, consolidation: Partial<InsertConsolidation>): Promise<Consolidation | undefined>;
+  updateConsolidation(id: string, consolidation: Partial<InsertConsolidation>): Promise<Consolidation | undefined>;
 
   // Shipments
   getShipments(): Promise<Shipment[]>;
-  getShipment(id: number): Promise<Shipment | undefined>;
+  getShipment(id: string): Promise<Shipment | undefined>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
-  updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
+  updateShipment(id: string, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
 
   // Custom Items
   getCustomItems(): Promise<CustomItem[]>;
   createCustomItem(item: InsertCustomItem): Promise<CustomItem>;
-  updateCustomItem(id: number, item: Partial<InsertCustomItem>): Promise<CustomItem | undefined>;
+  updateCustomItem(id: string, item: Partial<InsertCustomItem>): Promise<CustomItem | undefined>;
 
   // Delivery History
   createDeliveryHistory(history: InsertDeliveryHistory): Promise<DeliveryHistory>;
@@ -375,7 +375,7 @@ export interface IStorage {
 
   // AI Location Suggestions
   getAiLocationSuggestionByProduct(productId: string): Promise<AiLocationSuggestion | undefined>;
-  getAiLocationSuggestionByCustomItem(customItemId: number): Promise<AiLocationSuggestion | undefined>;
+  getAiLocationSuggestionByCustomItem(customItemId: string): Promise<AiLocationSuggestion | undefined>;
   createAiLocationSuggestion(suggestion: InsertAiLocationSuggestion): Promise<AiLocationSuggestion>;
 
   // Product Locations
@@ -564,7 +564,7 @@ export interface IStorage {
   // Pre-Order Reminders
   getPreOrderReminders(preOrderId: string): Promise<PreOrderReminder[]>;
   createPreOrderReminder(reminder: InsertPreOrderReminder): Promise<PreOrderReminder>;
-  updatePreOrderReminderStatus(id: number, status: string, errorMessage?: string): Promise<PreOrderReminder | undefined>;
+  updatePreOrderReminderStatus(id: string, status: string, errorMessage?: string): Promise<PreOrderReminder | undefined>;
 
   // Purchases
   getPurchases(): Promise<Purchase[]>;
@@ -686,12 +686,12 @@ export interface IStorage {
 
   // Invoices
   getInvoices(): Promise<Invoice[]>;
-  getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoice(id: string): Promise<Invoice | undefined>;
   getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined>;
   getInvoicesByOrderId(orderId: string): Promise<Invoice[]>;
   createInvoice(data: InsertInvoice): Promise<Invoice>;
-  updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<Invoice>;
-  deleteInvoice(id: number): Promise<void>;
+  updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice>;
+  deleteInvoice(id: string): Promise<void>;
 
   // Analytics & Reports
   getDeadStockProducts(daysSinceLastSale: number): Promise<Product[]>;
@@ -700,10 +700,10 @@ export interface IStorage {
 
   // Warehouse Tasks
   getWarehouseTasks(filters?: { status?: string; assignedToUserId?: string; createdByUserId?: string }): Promise<WarehouseTask[]>;
-  getWarehouseTaskById(id: number): Promise<WarehouseTask | undefined>;
+  getWarehouseTaskById(id: string): Promise<WarehouseTask | undefined>;
   createWarehouseTask(task: InsertWarehouseTask): Promise<WarehouseTask>;
-  updateWarehouseTask(id: number, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined>;
-  deleteWarehouseTask(id: number): Promise<boolean>;
+  updateWarehouseTask(id: string, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined>;
+  deleteWarehouseTask(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -824,7 +824,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(employees.createdAt));
   }
 
-  async getEmployee(id: number): Promise<Employee | undefined> {
+  async getEmployee(id: string): Promise<Employee | undefined> {
     const [employee] = await db
       .select()
       .from(employees)
@@ -840,7 +840,7 @@ export class DatabaseStorage implements IStorage {
     return newEmployee;
   }
 
-  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
     const [updated] = await db
       .update(employees)
       .set({ ...employee, updatedAt: new Date() })
@@ -849,18 +849,18 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteEmployee(id: number): Promise<void> {
+  async deleteEmployee(id: string): Promise<void> {
     await db.delete(employees).where(eq(employees.id, id));
   }
 
-  async assignUserToEmployee(employeeId: number, userId: string | null): Promise<void> {
+  async assignUserToEmployee(employeeId: string, userId: string | null): Promise<void> {
     await db
       .update(employees)
       .set({ userId, updatedAt: new Date() })
       .where(eq(employees.id, employeeId));
   }
 
-  async getEmployeeStats(employeeId: number): Promise<{
+  async getEmployeeStats(employeeId: string): Promise<{
     totalOrders: number;
     totalTasks: number;
     tasksCompleted: number;
@@ -937,7 +937,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Employee Incidents
-  async getEmployeeIncidents(employeeId: number): Promise<EmployeeIncident[]> {
+  async getEmployeeIncidents(employeeId: string): Promise<EmployeeIncident[]> {
     return await db
       .select()
       .from(employeeIncidents)
@@ -945,7 +945,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(employeeIncidents.createdAt));
   }
 
-  async getEmployeeIncident(id: number): Promise<EmployeeIncident | undefined> {
+  async getEmployeeIncident(id: string): Promise<EmployeeIncident | undefined> {
     const [incident] = await db
       .select()
       .from(employeeIncidents)
@@ -961,7 +961,7 @@ export class DatabaseStorage implements IStorage {
     return newIncident;
   }
 
-  async updateEmployeeIncident(id: number, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined> {
+  async updateEmployeeIncident(id: string, incident: Partial<InsertEmployeeIncident>): Promise<EmployeeIncident | undefined> {
     const [updated] = await db
       .update(employeeIncidents)
       .set({ ...incident, updatedAt: new Date() })
@@ -970,7 +970,7 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteEmployeeIncident(id: number): Promise<void> {
+  async deleteEmployeeIncident(id: string): Promise<void> {
     await db.delete(employeeIncidents).where(eq(employeeIncidents.id, id));
   }
 
@@ -1189,7 +1189,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(consolidations.createdAt));
   }
 
-  async getConsolidation(id: number): Promise<Consolidation | undefined> {
+  async getConsolidation(id: string): Promise<Consolidation | undefined> {
     const [consolidation] = await db
       .select()
       .from(consolidations)
@@ -1205,7 +1205,7 @@ export class DatabaseStorage implements IStorage {
     return newConsolidation;
   }
 
-  async updateConsolidation(id: number, consolidation: Partial<InsertConsolidation>): Promise<Consolidation | undefined> {
+  async updateConsolidation(id: string, consolidation: Partial<InsertConsolidation>): Promise<Consolidation | undefined> {
     const [updated] = await db
       .update(consolidations)
       .set({ ...consolidation, updatedAt: new Date() })
@@ -1222,7 +1222,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(shipments.createdAt));
   }
 
-  async getShipment(id: number): Promise<Shipment | undefined> {
+  async getShipment(id: string): Promise<Shipment | undefined> {
     const [shipment] = await db
       .select()
       .from(shipments)
@@ -1238,7 +1238,7 @@ export class DatabaseStorage implements IStorage {
     return newShipment;
   }
 
-  async updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined> {
+  async updateShipment(id: string, shipment: Partial<InsertShipment>): Promise<Shipment | undefined> {
     const [updated] = await db
       .update(shipments)
       .set({ ...shipment, updatedAt: new Date() })
@@ -1263,7 +1263,7 @@ export class DatabaseStorage implements IStorage {
     return newItem;
   }
 
-  async updateCustomItem(id: number, item: Partial<InsertCustomItem>): Promise<CustomItem | undefined> {
+  async updateCustomItem(id: string, item: Partial<InsertCustomItem>): Promise<CustomItem | undefined> {
     const [updated] = await db
       .update(customItems)
       .set(item)
@@ -2469,7 +2469,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAiLocationSuggestionByCustomItem(customItemId: number): Promise<AiLocationSuggestion | undefined> {
+  async getAiLocationSuggestionByCustomItem(customItemId: string): Promise<AiLocationSuggestion | undefined> {
     try {
       const [suggestion] = await db
         .select()
@@ -4991,7 +4991,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePreOrderReminderStatus(
-    id: number, 
+    id: string, 
     status: string, 
     errorMessage?: string
   ): Promise<PreOrderReminder | undefined> {
@@ -6047,7 +6047,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getInvoice(id: number): Promise<Invoice | undefined> {
+  async getInvoice(id: string): Promise<Invoice | undefined> {
     try {
       const [invoice] = await db
         .select()
@@ -6099,7 +6099,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<Invoice> {
+  async updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice> {
     try {
       const [updated] = await db
         .update(invoices)
@@ -6118,7 +6118,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteInvoice(id: number): Promise<void> {
+  async deleteInvoice(id: string): Promise<void> {
     try {
       const result = await db
         .delete(invoices)
@@ -6287,7 +6287,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getWarehouseTaskById(id: number): Promise<WarehouseTask | undefined> {
+  async getWarehouseTaskById(id: string): Promise<WarehouseTask | undefined> {
     try {
       const [task] = await db
         .select()
@@ -6314,7 +6314,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateWarehouseTask(id: number, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined> {
+  async updateWarehouseTask(id: string, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined> {
     try {
       const [result] = await db
         .update(warehouseTasks)
@@ -6331,7 +6331,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteWarehouseTask(id: number): Promise<boolean> {
+  async deleteWarehouseTask(id: string): Promise<boolean> {
     try {
       await db.delete(warehouseTasks).where(eq(warehouseTasks.id, id));
       return true;
