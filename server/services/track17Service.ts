@@ -5,28 +5,69 @@ import { findCarrierByName, findCarrierByCode, getCarrierList, COMMON_CARRIERS, 
 
 const TRACK17_API_BASE = "https://api.17track.net/track/v2.2";
 
+// v2.2 API Response structures
 interface Track17Event {
-  a: string; // time
-  z: string; // description
+  time_iso?: string;
+  time_utc?: string;
+  time_raw?: string;
+  description?: string;
+  location?: string;
+  stage?: string;
+  // Legacy format fallback
+  a?: string; // time
+  z?: string; // description  
   c?: string; // location
   s?: string; // status code
 }
 
+interface Track17TrackingProvider {
+  provider: {
+    key: number;
+    name: string;
+    alias?: string;
+    homepage?: string;
+    country?: string;
+  };
+  events: Track17Event[];
+  latest_sync_status?: string;
+  latest_sync_time?: string;
+}
+
 interface Track17TrackInfo {
-  e: number; // error code (0 = success)
+  number: string;
+  carrier: number;
+  track_info?: {
+    latest_status?: {
+      status: string;
+      sub_status?: string;
+      sub_status_descr?: string;
+    };
+    latest_event?: {
+      time_iso?: string;
+      time_utc?: string;
+      description?: string;
+      location?: string;
+    } | null;
+    tracking?: {
+      providers?: Track17TrackingProvider[];
+    };
+    time_metrics?: {
+      estimated_delivery_date?: {
+        from?: string;
+        to?: string;
+      };
+    };
+  };
+  // Legacy format fallback
+  e?: number;
   w1?: {
     e: number;
-    z: string; // tracking status name
-    a: string; // last event time
-    z1: string; // last event description
-    z2: string; // detected carrier name
-    c: number; // carrier code
-    track?: Track17Event[];
-    est_delivery?: string;
-    last_info?: {
-      a?: string;
-      z?: string;
-    };
+    z: string;
+    a: string;
+    z1: string;
+    z2: string;
+    c: number;
+    track?: Array<{ a: string; z: string; c?: string; s?: string }>;
   };
 }
 
@@ -45,16 +86,6 @@ interface Track17TrackResponse {
     rejected: Array<{ number: string; error: { code: number; message: string } }>;
   };
 }
-
-const STATUS_MAP: Record<number, string> = {
-  0: "NotFound",
-  10: "InTransit",
-  20: "Expired",
-  30: "PickUp",
-  35: "Undelivered",
-  40: "Delivered",
-  50: "Alert",
-};
 
 export class Track17Service {
   private apiKey: string;
@@ -155,7 +186,50 @@ export class Track17Service {
       if (result.data?.accepted?.length > 0) {
         const trackInfo = result.data.accepted[0];
         
-        if (trackInfo.e !== 0) {
+        // Handle v2.2 API format
+        if (trackInfo.track_info) {
+          const ti = trackInfo.track_info;
+          const status = ti.latest_status?.status || "NotFound";
+          
+          // Collect all events from all providers
+          let allEvents: Array<{ time: string; description: string; location?: string; status?: string }> = [];
+          let carrierCode: string | undefined;
+          
+          if (ti.tracking?.providers) {
+            for (const provider of ti.tracking.providers) {
+              if (!carrierCode && provider.provider?.key) {
+                carrierCode = provider.provider.key.toString();
+              }
+              
+              for (const event of provider.events || []) {
+                allEvents.push({
+                  time: event.time_iso || event.time_utc || event.time_raw || event.a || '',
+                  description: event.description || event.z || '',
+                  location: event.location || event.c,
+                  status: event.stage || event.s,
+                });
+              }
+            }
+          }
+          
+          // Get latest event info
+          const latestEvent = ti.latest_event;
+          const lastEventTime = latestEvent?.time_iso || latestEvent?.time_utc;
+          
+          console.log(`17track: Parsed v2.2 response for ${trackingNumber}, status: ${status}, events: ${allEvents.length}`);
+          
+          return {
+            success: true,
+            status,
+            lastEvent: latestEvent?.description,
+            lastEventTime: lastEventTime ? new Date(lastEventTime) : undefined,
+            events: allEvents,
+            carrierCode: carrierCode || trackInfo.carrier?.toString(),
+          };
+        }
+        
+        // Legacy v1 format fallback
+        if (trackInfo.e !== undefined && trackInfo.e !== 0) {
           console.log(`17track: Track error code ${trackInfo.e} for ${trackingNumber}`);
           return { success: false, error: `Track error code: ${trackInfo.e}` };
         }
@@ -166,6 +240,15 @@ export class Track17Service {
         }
 
         const statusCode = w1.e || 0;
+        const STATUS_MAP: Record<number, string> = {
+          0: "NotFound",
+          10: "InTransit",
+          20: "Expired",
+          30: "PickUp",
+          35: "Undelivered",
+          40: "Delivered",
+          50: "Alert",
+        };
         const status = STATUS_MAP[statusCode] || "Unknown";
         
         const events = (w1.track || []).map((event) => ({
@@ -178,7 +261,7 @@ export class Track17Service {
         return {
           success: true,
           status,
-          lastEvent: w1.z1 || w1.last_info?.z,
+          lastEvent: w1.z1,
           lastEventTime: w1.a ? new Date(w1.a) : undefined,
           events,
           carrierCode: w1.c?.toString(),

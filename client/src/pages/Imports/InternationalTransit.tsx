@@ -1096,7 +1096,7 @@ export default function InternationalTransit() {
                             FedEx
                           </div>
                         </SelectItem>
-                        <SelectItem value="UPS|100127">
+                        <SelectItem value="UPS|100001">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-amber-700" />
                             UPS
