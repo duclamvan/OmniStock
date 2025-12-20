@@ -1034,30 +1034,6 @@ export default function InternationalTransit() {
                     </div>
                   </div>
 
-                  {/* Internal Tracking Number & Carrier */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="trackingNumber">{t('trackingNumber')}</Label>
-                      <Input 
-                        id="trackingNumber" 
-                        name="trackingNumber" 
-                        defaultValue={selectedShipment?.trackingNumber || ''}
-                        data-testid="input-tracking-number"
-                        placeholder={t('enterTrackingNumber')}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="carrier">{t('carrier')}</Label>
-                      <Input 
-                        id="carrier" 
-                        name="carrier" 
-                        defaultValue={selectedShipment?.carrier || ''}
-                        data-testid="input-carrier"
-                        placeholder={t('enterCarrier')}
-                      />
-                    </div>
-                  </div>
-
                   {/* End Carrier - Dropdown with 17TRACK codes */}
                   <div className="space-y-2">
                     <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
@@ -1180,8 +1156,34 @@ export default function InternationalTransit() {
                     </Badge>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-3 pb-3 space-y-4">
-                    {/* Route Info - Autofilled */}
+                    {/* Internal Tracking Number & Carrier (for different tracking tool) */}
                     <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="trackingNumber" className="text-xs text-muted-foreground">{t('internalTrackingNumber')}</Label>
+                        <Input 
+                          id="trackingNumber" 
+                          name="trackingNumber" 
+                          defaultValue={selectedShipment?.trackingNumber || ''}
+                          data-testid="input-tracking-number"
+                          placeholder={t('enterInternalTracking')}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="carrier" className="text-xs text-muted-foreground">{t('internalCarrier')}</Label>
+                        <Input 
+                          id="carrier" 
+                          name="carrier" 
+                          defaultValue={selectedShipment?.carrier || ''}
+                          data-testid="input-carrier"
+                          placeholder={t('enterInternalCarrier')}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Route Info - Autofilled */}
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">{t('origin')}</Label>
                         <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 text-sm">
