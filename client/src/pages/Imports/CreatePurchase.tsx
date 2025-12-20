@@ -1817,6 +1817,11 @@ export default function CreatePurchase() {
                         setAddingCurrency(true);
                       } else {
                         setPurchaseCurrency(value);
+                        // Auto-sync other currency fields unless manually set
+                        if (!paymentCurrencyManuallySet) {
+                          setPaymentCurrency(value);
+                        }
+                        setShippingCurrency(value);
                       }
                     }}>
                       <SelectTrigger data-testid="select-purchase-currency">
