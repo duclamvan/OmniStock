@@ -1027,7 +1027,18 @@ export default function InternationalTransit() {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">{t('destination')}</Label>
-                        <Select name="destination" defaultValue={selectedShipment?.destination || selectedPendingShipment?.destination || selectedPendingShipment?.location || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
+                        <Select name="destination" defaultValue={
+                          selectedShipment?.destination || 
+                          selectedPendingShipment?.destination || 
+                          // Find matching warehouse by partial name match from location
+                          (selectedPendingShipment?.location && warehouses.length > 0 
+                            ? warehouses.find((w: any) => 
+                                w.name?.toLowerCase().includes(selectedPendingShipment.location?.toLowerCase()) ||
+                                selectedPendingShipment.location?.toLowerCase().includes(w.name?.toLowerCase()) ||
+                                w.address?.toLowerCase().includes(selectedPendingShipment.location?.toLowerCase())
+                              )?.name || warehouses[0]?.name
+                            : warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")
+                        }>
                           <SelectTrigger className="h-9 text-sm">
                             <SelectValue />
                           </SelectTrigger>
