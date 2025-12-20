@@ -313,7 +313,7 @@ const ItemCard = memo(({
                     {item.customerName && (
                       <span>• {item.customerName}</span>
                     )}
-                    {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                    {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                       <>
                         <span>•</span>
                         <Button
@@ -333,7 +333,7 @@ const ItemCard = memo(({
                     )}
                   </div>
                   
-                  {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
+                  {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
                     <div className="mt-2 ml-4 border-l-2 border-muted pl-3 space-y-1">
                       {item.orderItems.map((orderItem: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between text-xs">
@@ -397,7 +397,7 @@ const ItemCard = memo(({
                     <Edit className="h-4 w-4 mr-2" />
                     {t('edit')}
                   </DropdownMenuItem>
-                  {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                  {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                     <DropdownMenuItem
                       onClick={(e) => { e.stopPropagation(); unpackItemMutation.mutate(item.id); }}
                       className="text-primary"
@@ -420,7 +420,7 @@ const ItemCard = memo(({
             
             {/* Desktop: Multiple action buttons */}
             <div className="hidden lg:flex gap-1 items-start">
-              {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+              {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -1411,7 +1411,7 @@ export default function AtWarehouse() {
   // Expand/Collapse all functions
   const expandAllItems = () => {
     const itemsWithSubItems = allItems.filter(item => 
-      item.purchaseOrderId && item.orderItems && item.orderItems.length > 0
+      item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0
     );
     const allIds = new Set(itemsWithSubItems.map(item => item.id));
     setExpandedItems(allIds);
@@ -2834,7 +2834,7 @@ export default function AtWarehouse() {
                               }
                             })()}
                           </Button>
-                          {allItems.some(item => item.purchaseOrderId && item.orderItems && item.orderItems.length > 0) && (
+                          {allItems.some(item => item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0) && (
                             <>
                               <Button
                                 variant="outline"
@@ -3113,8 +3113,8 @@ export default function AtWarehouse() {
                                             {item.customerName && (
                                               <span className="hidden lg:inline">• {item.customerName}</span>
                                             )}
-                                            {/* Inline items toggle for purchase orders */}
-                                            {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                            {/* Inline items toggle for purchase orders - only show for packages, not individual unpacked items */}
+                                            {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                                               <>
                                                 <span>•</span>
                                                 <Button
@@ -3134,8 +3134,8 @@ export default function AtWarehouse() {
                                             )}
                                           </div>
                                           
-                                          {/* Show order items inline if expanded */}
-                                          {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
+                                          {/* Show order items inline if expanded - only for packages */}
+                                          {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
                                             <div className="mt-2 ml-4 border-l-2 border-muted pl-3 space-y-1">
                                               {item.orderItems.map((orderItem: any, idx: number) => (
                                                 <div key={idx} className="flex items-center justify-between text-xs">
@@ -3200,7 +3200,7 @@ export default function AtWarehouse() {
                                             <Edit className="h-4 w-4 mr-2" />
                                             {t('edit')}
                                           </DropdownMenuItem>
-                                          {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                          {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                                             <DropdownMenuItem
                                               onClick={(e) => { e.stopPropagation(); unpackItemMutation.mutate(item.id); }}
                                               className="text-primary"
@@ -3223,8 +3223,8 @@ export default function AtWarehouse() {
                                     
                                     {/* Desktop: Multiple action buttons */}
                                     <div className="hidden lg:flex gap-1 items-start">
-                                      {/* Three dots menu for purchase orders */}
-                                      {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                      {/* Three dots menu for purchase orders - only show for packages */}
+                                      {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
                                             <Button

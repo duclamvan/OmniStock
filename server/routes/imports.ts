@@ -544,6 +544,7 @@ router.post("/purchases/receive", async (req, res) => {
       classification: null, // Default to no classification
       purchaseOrderId: purchaseId,
       orderItems: items, // Store items as JSON
+      isPackage: true, // This is a bundled package containing multiple items
       imageUrl: firstImageUrl, // Use first item's image as package image
       createdAt: new Date(),
       updatedAt: new Date()
@@ -624,6 +625,7 @@ router.post("/purchases/unpack", async (req, res) => {
         classification: null,
         purchaseOrderId: purchase.id, // Link back to original purchase order for cost/supplier lookup
         imageUrl: item.imageUrl || null, // Preserve item image
+        isPackage: false, // Individual unpacked item, not a package
         orderItems: [{
           originalItemId: item.id,
           sku: item.sku,
@@ -1513,6 +1515,7 @@ router.post("/custom-items/:id/unpack", async (req, res) => {
         classification: customItem.classification,
         purchaseOrderId: customItem.purchaseOrderId, // Preserve link to original PO
         imageUrl: orderItem.imageUrl || null, // Preserve item image
+        isPackage: false, // Individual unpacked item, not a package
         orderItems: [{
           originalItemId: orderItem.originalItemId || orderItem.id,
           sku: orderItem.sku,

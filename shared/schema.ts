@@ -255,6 +255,7 @@ export const customItems = pgTable("custom_items", {
   classification: text("classification").default("general"), // general, sensitive
   purchaseOrderId: varchar("purchase_order_id"), // Reference to original PO for full packages
   orderItems: json("order_items"), // Store items when this is a full package
+  isPackage: boolean("is_package").default(false), // True if this is a bundled package, false for unpacked individual items
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
