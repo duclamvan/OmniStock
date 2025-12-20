@@ -595,6 +595,7 @@ const imports = {
   consolidated: 'Đã tổng hợp',
   
   // AtWarehouse - Operations
+  unpack: 'Mở kiện',
   unpackAll: 'Mở tất cả',
   receiveAsPackage: 'Nhận dạng kiện',
   startProcessing: 'Bắt đầu xử lý',

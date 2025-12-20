@@ -573,11 +573,11 @@ router.post("/purchases/unpack", async (req, res) => {
       return res.status(400).json({ message: "Purchase order already unpacked" });
     }
     
-    // Check if items from this purchase order already exist
+    // Check if items from this purchase order already exist (using purchaseOrderId for reliable check)
     const existingItems = await db
       .select()
       .from(customItems)
-      .where(eq(customItems.orderNumber, `PO-${purchase.id}`));
+      .where(eq(customItems.purchaseOrderId, purchase.id));
     
     if (existingItems.length > 0) {
       return res.status(400).json({ message: "Items from this purchase order have already been unpacked" });
@@ -588,23 +588,38 @@ router.post("/purchases/unpack", async (req, res) => {
       .from(purchaseItems)
       .where(eq(purchaseItems.purchaseId, purchaseId));
 
-    // Create custom items from purchase items
+    // Create custom items from purchase items, preserving all purchase order data
     const customItemsCreated = [];
     for (const item of items) {
       const customItem = {
         name: item.name,
-        source: `Supplier: ${purchase.supplier}`,
-        orderNumber: `PO-${purchase.id}`, // Fixed to match frontend pattern
+        source: purchase.supplier || 'Unknown', // Use supplier name as source
+        orderNumber: `PO-${purchase.id.substring(0, 8).toUpperCase()}`, // Short PO ID for display
         quantity: item.quantity,
         unitPrice: item.unitPrice || '0',
         weight: item.weight || '0',
         dimensions: item.dimensions ? JSON.stringify(item.dimensions) : null,
         trackingNumber: item.trackingNumber || purchase.trackingNumber,
-        notes: `From Purchase Order #${purchase.id} - ${purchase.supplier}\n${item.notes || ''}`,
+        notes: item.notes || null,
         customerName: null,
         customerEmail: null,
         status: 'available',
-        createdAt: new Date()
+        classification: null,
+        purchaseOrderId: purchase.id, // Link back to original purchase order for cost/supplier lookup
+        orderItems: [{
+          originalItemId: item.id,
+          sku: item.sku,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          weight: item.weight,
+          hsCode: item.hsCode,
+          landingCostUnitBase: item.landingCostUnitBase,
+          imageUrl: item.imageUrl,
+        }], // Store original item data for reference
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const [created] = await db.insert(customItems).values(customItem).returning();

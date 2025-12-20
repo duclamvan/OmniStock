@@ -588,6 +588,7 @@ const imports = {
   consolidated: 'Consolidated',
   
   // AtWarehouse - Operations
+  unpack: 'Unpack',
   unpackAll: 'Unpack All',
   receiveAsPackage: 'Receive as Package',
   startProcessing: 'Start Processing',
