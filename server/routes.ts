@@ -17076,7 +17076,7 @@ Important rules:
         .filter(ri => ri.itemType === 'purchase')
         .map(ri => ri.itemId);
       
-      let purchaseItemCosts = new Map<number, { unitPrice: number; landingCostUnitBase: number }>();
+      let purchaseItemCosts = new Map<string, { unitPrice: number; landingCostUnitBase: number }>();
       
       if (purchaseItemIds.length > 0) {
         const purchaseItemsData = await db
@@ -17105,7 +17105,7 @@ Important rules:
       // Shipping cost must be allocated ONLY across items that will receive cost updates
       interface ItemWithPricing {
         productId: string;
-        itemId: number;
+        itemId: string;
         quantity: number; // received + damaged
         unitCost: number;
       }
@@ -17328,13 +17328,12 @@ Important rules:
   app.post('/api/imports/shipments/:id/revert-to-receiving', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const shipmentId = parseInt(id);
       
       // Get the shipment and verify it's in completed status
       const [shipment] = await db
         .select()
         .from(shipments)
-        .where(eq(shipments.id, shipmentId));
+        .where(eq(shipments.id, id));
       
       if (!shipment) {
         return res.status(404).json({ message: 'Shipment not found' });
@@ -17357,7 +17356,7 @@ Important rules:
       const shipmentReceipts = await db
         .select({ id: receipts.id })
         .from(receipts)
-        .where(eq(receipts.shipmentId, shipmentId));
+        .where(eq(receipts.shipmentId, id));
       
       const receiptIds = shipmentReceipts.map(r => r.id);
       
@@ -17563,7 +17562,7 @@ Important rules:
           completedAt: null,
           updatedAt: new Date()
         })
-        .where(eq(shipments.id, shipmentId))
+        .where(eq(shipments.id, id))
         .returning();
       
       // Step 7: Update receipt status if exists
@@ -17577,7 +17576,7 @@ Important rules:
           .where(inArray(receipts.id, receiptIds));
       }
       
-      console.log(`Shipment ${shipmentId} reverted to receiving:`, revertResults);
+      console.log(`Shipment ${id} reverted to receiving:`, revertResults);
       
       res.json({
         success: true,
@@ -17595,13 +17594,12 @@ Important rules:
   app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const shipmentId = parseInt(id);
       
       // Get shipment details
       const [shipment] = await db
         .select()
         .from(shipments)
-        .where(eq(shipments.id, shipmentId));
+        .where(eq(shipments.id, id));
       
       if (!shipment) {
         return res.status(404).json({ message: 'Shipment not found' });
@@ -17611,7 +17609,7 @@ Important rules:
       const [receipt] = await db
         .select()
         .from(receipts)
-        .where(eq(receipts.shipmentId, shipmentId));
+        .where(eq(receipts.shipmentId, id));
       
       // Get receipt items with product details
       let items: any[] = [];
