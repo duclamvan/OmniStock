@@ -3025,7 +3025,7 @@ export default function AtWarehouse() {
                             // Regular rendering for smaller lists
                             sortedAndFilteredItems.map((item, index) => (
                             <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
-                              {(provided) => (
+                              {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
@@ -3034,7 +3034,14 @@ export default function AtWarehouse() {
                                     selectedItemsForAI.has(item.id) 
                                       ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-400' 
                                       : 'border-border hover:border-purple-200'
-                                  }`}
+                                  } ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary' : ''}`}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    ...(snapshot.isDragging ? { 
+                                      width: '400px',
+                                      maxWidth: '400px',
+                                    } : {})
+                                  }}
                                   onClick={(e) => {
                                     // Only toggle selection if not clicking on buttons or drag handle
                                     const target = e.target as HTMLElement;
