@@ -6986,6 +6986,14 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     
     // Get receipt items with LEFT JOINs for purchase, custom, and consolidation items
     // This single query replaces the N+1 problem!
+    // Debug: Check table references
+    console.log('[DEBUG] Table references:', {
+      receiptItems: typeof receiptItems,
+      purchaseItems: typeof purchaseItems,
+      customItems: typeof customItems,
+      consolidationItems: typeof consolidationItems
+    });
+    
     const receiptItemsWithDetails = await db
       .select({
         receiptItem: receiptItems,
