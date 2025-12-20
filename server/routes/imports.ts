@@ -2430,13 +2430,27 @@ router.post("/shipments", async (req, res) => {
       endTrackingNumbers = [req.body.endTrackingNumber];
     }
     
+    // Parse endCarrier format "CarrierName|17TrackCode" to extract carrier name and code
+    let endCarrierName = req.body.endCarrier || null;
+    let track17CarrierCode: string | null = null;
+    if (endCarrierName && endCarrierName.includes('|')) {
+      const parts = endCarrierName.split('|');
+      endCarrierName = parts[0];
+      const code = parts[1];
+      // Only set code if it's not 0 (Other/Zásilkovna don't have 17TRACK codes)
+      if (code && code !== '0') {
+        track17CarrierCode = code;
+      }
+    }
+    
     const shipmentData = {
       consolidationId: req.body.consolidationId,
       carrier: req.body.carrier || 'Standard Carrier',
       trackingNumber: trackingNumber,
-      endCarrier: req.body.endCarrier || null,
+      endCarrier: endCarrierName,
       endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
       endTrackingNumbers: endTrackingNumbers || null,
+      track17CarrierCode: track17CarrierCode,
       shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod || null,
       origin: req.body.origin,
@@ -2686,12 +2700,26 @@ router.put("/shipments/:id", async (req, res) => {
       endTrackingNumbers = [req.body.endTrackingNumber];
     }
     
+    // Parse endCarrier format "CarrierName|17TrackCode" to extract carrier name and code
+    let endCarrierName = req.body.endCarrier || null;
+    let track17CarrierCode: string | null = null;
+    if (endCarrierName && endCarrierName.includes('|')) {
+      const parts = endCarrierName.split('|');
+      endCarrierName = parts[0];
+      const code = parts[1];
+      // Only set code if it's not 0 (Other/Zásilkovna don't have 17TRACK codes)
+      if (code && code !== '0') {
+        track17CarrierCode = code;
+      }
+    }
+    
     const updateData = {
       carrier: req.body.carrier || 'Standard Carrier',
       trackingNumber: req.body.trackingNumber,
-      endCarrier: req.body.endCarrier || null,
+      endCarrier: endCarrierName,
       endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
       endTrackingNumbers: endTrackingNumbers || null,
+      track17CarrierCode: track17CarrierCode,
       shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod,
       origin: req.body.origin,

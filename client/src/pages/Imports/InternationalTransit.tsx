@@ -1059,7 +1059,7 @@ export default function InternationalTransit() {
                     </div>
                   </div>
 
-                  {/* End Carrier - Dropdown */}
+                  {/* End Carrier - Dropdown with 17TRACK codes */}
                   <div className="space-y-2">
                     <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
                     <Select name="endCarrier" required defaultValue={selectedShipment?.endCarrier || ''}>
@@ -1067,43 +1067,67 @@ export default function InternationalTransit() {
                         <SelectValue placeholder={t('selectEndCarrier')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="DPD">
+                        <SelectItem value="DPD|190013">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-red-600" />
                             DPD
                           </div>
                         </SelectItem>
-                        <SelectItem value="DHL">
+                        <SelectItem value="DHL Express|190001">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-yellow-600" />
-                            DHL
+                            DHL Express
                           </div>
                         </SelectItem>
-                        <SelectItem value="UPS">
+                        <SelectItem value="DHL Paket|7041">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-yellow-500" />
+                            DHL Paket (DE)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="UPS|190003">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-amber-700" />
                             UPS
                           </div>
                         </SelectItem>
-                        <SelectItem value="GLS">
+                        <SelectItem value="GLS|190046">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-blue-600" />
                             GLS
                           </div>
                         </SelectItem>
-                        <SelectItem value="PPL">
+                        <SelectItem value="PPL CZ|100140">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-blue-800" />
                             PPL
                           </div>
                         </SelectItem>
-                        <SelectItem value="Zásilkovna">
+                        <SelectItem value="Czech Post|3221">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-blue-700" />
+                            Česká pošta
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Zásilkovna|0">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-green-600" />
                             Zásilkovna
                           </div>
                         </SelectItem>
-                        <SelectItem value="Other">
+                        <SelectItem value="FedEx|190002">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4 text-purple-600" />
+                            FedEx
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="TNT|190010">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-orange-600" />
+                            TNT
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Other|0">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-gray-600" />
                             {t('other')}
