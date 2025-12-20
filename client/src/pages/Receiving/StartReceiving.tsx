@@ -185,8 +185,8 @@ export default function StartReceiving() {
   // Form state - Auto-populate "Received By" with current user's first name
   const [receivedBy, setReceivedBy] = useState(() => {
     if (user) {
-      // Extract first name from full name (split by space and take first part)
-      const firstName = user.name?.split(' ')[0] || user.email?.split('@')[0] || t('employeeDefault');
+      // Use firstName from user profile, fallback to username or email
+      const firstName = user.firstName || user.username || user.email?.split('@')[0] || t('employeeDefault');
       return firstName;
     }
     return t('employeeDefault');
@@ -305,7 +305,7 @@ export default function StartReceiving() {
         notes: receiptData.notes
       });
       // Always use current user's first name if available, otherwise use saved value
-      const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0];
+      const firstName = user?.firstName || user?.username || user?.email?.split('@')[0];
       setReceivedBy(firstName || receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
