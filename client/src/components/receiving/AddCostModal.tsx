@@ -62,7 +62,7 @@ const VOLUMETRIC_DIVISORS = {
 
 interface ShipmentCost {
   id: number;
-  shipmentId: number;
+  shipmentId: string;
   type: 'FREIGHT' | 'BROKERAGE' | 'INSURANCE' | 'PACKAGING' | 'OTHER';
   mode?: 'AIR' | 'SEA' | 'COURIER';
   volumetricDivisor?: number;
@@ -74,7 +74,7 @@ interface ShipmentCost {
 }
 
 interface AddCostModalProps {
-  shipmentId: number;
+  shipmentId: string;
   cost?: ShipmentCost | null;
   onClose: () => void;
   onSave: () => void;

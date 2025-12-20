@@ -47,7 +47,7 @@ import {
 
 interface ShipmentCost {
   id: number;
-  shipmentId: number;
+  shipmentId: string;
   type: 'FREIGHT' | 'BROKERAGE' | 'INSURANCE' | 'PACKAGING' | 'OTHER';
   mode?: 'AIR' | 'SEA' | 'COURIER';
   volumetricDivisor?: number;
@@ -69,8 +69,8 @@ interface LandingCostSummary {
 }
 
 interface CostsPanelProps {
-  shipmentId?: number;
-  receiptId?: number;
+  shipmentId?: string;
+  receiptId?: string;
   onUpdate?: () => void;
 }
 

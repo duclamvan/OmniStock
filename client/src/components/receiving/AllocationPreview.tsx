@@ -89,7 +89,7 @@ interface AllocationMethod {
 }
 
 interface AllocationSummary {
-  shipmentId: number;
+  shipmentId: string;
   totalItems: number;
   totalUnits: number;
   totalActualWeight: number;
@@ -114,7 +114,7 @@ interface AllocationSummary {
 }
 
 interface AllocationPreviewProps {
-  shipmentId: number;
+  shipmentId: string;
 }
 
 // Define available allocation methods

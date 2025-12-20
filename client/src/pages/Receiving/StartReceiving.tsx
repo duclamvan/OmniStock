@@ -220,7 +220,7 @@ export default function StartReceiving() {
   const [showAllItems, setShowAllItems] = useState(true);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [completedShipmentId, setCompletedShipmentId] = useState<number | null>(null);
+  const [completedShipmentId, setCompletedShipmentId] = useState<string | null>(null);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
@@ -1350,7 +1350,7 @@ export default function StartReceiving() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
       
       // Store shipment ID and show success dialog
-      const shipmentId = receipt?.receipt?.shipmentId || receipt?.shipmentId || parseInt(id || '0');
+      const shipmentId = receipt?.receipt?.shipmentId || receipt?.shipmentId || id || '';
       setCompletedShipmentId(shipmentId);
       setShowSuccessDialog(true);
     },

@@ -23,7 +23,7 @@ interface ShipmentSummary {
 }
 
 interface CartonDimensionsProps {
-  shipmentId: number;
+  shipmentId: string;
 }
 
 const CartonDimensions = ({ shipmentId }: CartonDimensionsProps) => {

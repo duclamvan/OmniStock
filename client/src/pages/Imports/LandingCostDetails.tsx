@@ -1023,7 +1023,7 @@ export default function LandingCostDetails() {
 
       {/* Landing Costs Panel - Reused from Receiving */}
       <CostsPanel 
-        shipmentId={parseInt(id || '0')} 
+        shipmentId={id} 
         onUpdate={() => {
           refetchPreview();
         }}
