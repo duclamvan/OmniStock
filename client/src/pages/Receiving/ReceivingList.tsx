@@ -2521,7 +2521,7 @@ function QuickStorageSheet({
                                       await storeLocationMutation.mutateAsync({
                                         productId: item.productId,
                                         locationCode: locationCode,
-                                        locationType: 'bin',
+                                        locationType: 'warehouse',
                                         quantity: itemRemainingQty,
                                         isPrimary: isPrimary
                                       });
