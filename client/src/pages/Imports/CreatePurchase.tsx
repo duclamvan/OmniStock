@@ -624,7 +624,7 @@ export default function CreatePurchase() {
 
   // Calculated values
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const totalWeight = items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
+  const totalWeight = items.reduce((sum, item) => sum + (convertWeightToKg(item.weight, item.weightUnit || 'kg') * item.quantity), 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   
   // Currency symbol
@@ -3333,7 +3333,7 @@ export default function CreatePurchase() {
                                 </div>
                                 
                                 {/* Weight */}
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 flex-wrap">
                                   <span className="text-sm text-muted-foreground">{t('weight')}:</span>
                                   <div className="flex items-center gap-1">
                                     <Input
@@ -3350,13 +3350,32 @@ export default function CreatePurchase() {
                                       step="0.01"
                                       min="0"
                                     />
-                                    <span className="text-xs text-muted-foreground">kg</span>
-                                    {item.weight > 0 && item.quantity > 1 && (
-                                      <span className="text-xs text-muted-foreground ml-1">
-                                        (= {(item.weight * item.quantity).toFixed(2)} kg total)
-                                      </span>
-                                    )}
+                                    <Select
+                                      value={item.weightUnit || 'kg'}
+                                      onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => {
+                                        const updatedItems = items.map(i => 
+                                          i.id === item.id ? {...i, weightUnit: value} : i
+                                        );
+                                        setItems(updatedItems);
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-7 w-16 text-xs border bg-background px-2">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="mg">mg</SelectItem>
+                                        <SelectItem value="g">g</SelectItem>
+                                        <SelectItem value="kg">kg</SelectItem>
+                                        <SelectItem value="oz">oz</SelectItem>
+                                        <SelectItem value="lb">lb</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
+                                  {item.weight > 0 && item.quantity > 1 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      (= {(item.weight * item.quantity).toFixed(2)} {item.weightUnit || 'kg'} total)
+                                    </span>
+                                  )}
                                 </div>
                             
                                 {/* Dimensions */}
@@ -3420,7 +3439,7 @@ export default function CreatePurchase() {
                         <TableHead className="w-[48px]">{t('image')}</TableHead>
                         <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
                         <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
-                        <TableHead className="w-[100px] text-center">{t('weightColumn')}</TableHead>
+                        <TableHead className="w-[130px] text-center">{t('weight')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('total')}</TableHead>
                         <TableHead className="w-[140px] text-right">{t('costWithShipping')}</TableHead>
@@ -3540,7 +3559,7 @@ export default function CreatePurchase() {
                           {/* Weight */}
                           <TableCell className="text-center">
                             <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5">
                                 <Input
                                   type="number"
                                   value={item.weight}
@@ -3551,16 +3570,35 @@ export default function CreatePurchase() {
                                     setItems(updatedItems);
                                   }}
                                   onFocus={(e) => e.target.select()}
-                                  className="h-7 w-14 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="h-7 w-16 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   step="0.01"
                                   min="0"
                                   data-testid={`input-weight-${item.id}`}
                                 />
-                                <span className="text-xs text-muted-foreground">kg</span>
+                                <Select
+                                  value={item.weightUnit || 'kg'}
+                                  onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => {
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id ? {...i, weightUnit: value} : i
+                                    );
+                                    setItems(updatedItems);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 w-14 text-xs border-0 bg-transparent hover:bg-muted focus:ring-0 px-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="mg">mg</SelectItem>
+                                    <SelectItem value="g">g</SelectItem>
+                                    <SelectItem value="kg">kg</SelectItem>
+                                    <SelectItem value="oz">oz</SelectItem>
+                                    <SelectItem value="lb">lb</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                               {item.weight > 0 && item.quantity > 1 && (
                                 <span className="text-[10px] text-muted-foreground mt-0.5">
-                                  = {(item.weight * item.quantity).toFixed(2)} kg
+                                  = {(item.weight * item.quantity).toFixed(2)} {item.weightUnit || 'kg'}
                                 </span>
                               )}
                             </div>
