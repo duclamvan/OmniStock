@@ -682,10 +682,10 @@ export default function InternationalTransit() {
       const moreItems = items.length > 2 ? ` +${items.length - 2} more` : '';
       
       // Create descriptive name
-      const methodType = method.includes('express') ? 'Express' : 
-                        method.includes('air') ? 'Air' : 
-                        method.includes('sea') ? 'Sea' : 
-                        method.includes('railway') ? 'Rail' : 'Standard';
+      const methodType = method.includes('express') ? t('express') : 
+                        method.includes('air') ? t('air') : 
+                        method.includes('sea') ? t('sea') : 
+                        method.includes('railway') ? t('rail') : t('standard');
       
       return `${methodType} - ${itemNames}${moreItems} (${itemCount} ${t('items')})`;
     };
@@ -698,8 +698,8 @@ export default function InternationalTransit() {
       .filter(num => num.length > 0);
     
     // Get default origin/destination from pending shipment or warehouses
-    const defaultOrigin = selectedPendingShipment?.warehouse || selectedPendingShipment?.location || 'China, Guangzhou';
-    const defaultDestination = warehouses.length > 0 ? warehouses[0].name : 'Czech Republic, Prague';
+    const defaultOrigin = selectedPendingShipment?.warehouse || selectedPendingShipment?.location || t('defaultOrigin');
+    const defaultDestination = warehouses.length > 0 ? warehouses[0].name : t('defaultDestination');
     
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') as string) || null,
@@ -741,8 +741,28 @@ export default function InternationalTransit() {
   };
 
   const calculateProgress = (shipment: Shipment) => {
-    if (shipment.status === 'delivered') return 100;
+    // Check both internal status and EasyPost status for delivered state
+    const isDelivered = shipment.status === 'delivered' || 
+                        (shipment as any).easypostStatus === 'Delivered';
+    if (isDelivered) return 100;
     
+    // For multi-tracking shipments, calculate progress based on delivered count
+    const trackingCount = (shipment as any).trackingCount || 1;
+    const deliveredCount = (shipment as any).trackingDeliveredCount || 0;
+    if (trackingCount > 1 && deliveredCount > 0) {
+      // Some packages delivered - calculate weighted progress
+      const deliveryProgress = (deliveredCount / trackingCount) * 100;
+      if (deliveredCount === trackingCount) return 100;
+      // Blend delivery progress with time-based progress
+      const timeProgress = calculateTimeProgress(shipment);
+      return Math.round(Math.max(deliveryProgress, timeProgress));
+    }
+    
+    return calculateTimeProgress(shipment);
+  };
+  
+  // Helper function to calculate time-based progress
+  const calculateTimeProgress = (shipment: Shipment) => {
     const dispatchDate = new Date(shipment.createdAt);
     const estimatedDelivery = shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery) : null;
     const currentDate = new Date();
@@ -751,6 +771,8 @@ export default function InternationalTransit() {
     
     const totalDays = differenceInDays(estimatedDelivery, dispatchDate);
     const daysPassed = differenceInDays(currentDate, dispatchDate);
+    
+    if (totalDays <= 0) return 25; // Avoid division by zero
     
     const progress = Math.min(Math.max((daysPassed / totalDays) * 100, 0), 95);
     return Math.round(progress);
@@ -830,7 +852,10 @@ export default function InternationalTransit() {
   };
 
   const getTimeRemaining = (shipment: Shipment) => {
-    if (shipment.status === 'delivered') return t('delivered');
+    // Check both internal status and EasyPost status for delivered state
+    const isDelivered = shipment.status === 'delivered' || 
+                        (shipment as any).easypostStatus === 'Delivered';
+    if (isDelivered) return t('delivered');
     
     const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
     if (!estimatedDelivery) return t('calculating');
@@ -860,7 +885,10 @@ export default function InternationalTransit() {
     const currentDate = new Date();
     const daysRemaining = differenceInDays(deliveryDate, currentDate);
     
-    if (shipment.status === 'delivered') return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+    // Check both internal status and EasyPost status for delivered state
+    const isDelivered = shipment.status === 'delivered' || 
+                        (shipment as any).easypostStatus === 'Delivered';
+    if (isDelivered) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
     if (daysRemaining < 0) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
     if (daysRemaining === 0) return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
     if (daysRemaining <= 3) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
@@ -875,7 +903,10 @@ export default function InternationalTransit() {
     const currentDate = new Date();
     const daysRemaining = differenceInDays(deliveryDate, currentDate);
     
-    if (shipment.status === 'delivered') return "text-green-600 dark:text-green-400";
+    // Check both internal status and EasyPost status for delivered state
+    const isDelivered = shipment.status === 'delivered' || 
+                        (shipment as any).easypostStatus === 'Delivered';
+    if (isDelivered) return "text-green-600 dark:text-green-400";
     if (daysRemaining < 0) return "text-red-600 dark:text-red-400";
     if (daysRemaining === 0) return "text-orange-600 dark:text-orange-400";
     if (daysRemaining <= 3) return "text-yellow-600 dark:text-yellow-400";
@@ -1350,9 +1381,9 @@ export default function InternationalTransit() {
                         <Label className="text-xs text-muted-foreground">{t('origin')}</Label>
                         <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 text-sm">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'}
+                          {selectedShipment?.origin || selectedPendingShipment?.warehouse || t('defaultOrigin')}
                         </div>
-                        <input type="hidden" name="origin" value={selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
+                        <input type="hidden" name="origin" value={selectedShipment?.origin || selectedPendingShipment?.warehouse || t('defaultOrigin')} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">{t('destination')}</Label>
@@ -1366,7 +1397,7 @@ export default function InternationalTransit() {
                                 selectedPendingShipment.location?.toLowerCase().includes(w.name?.toLowerCase()) ||
                                 w.address?.toLowerCase().includes(selectedPendingShipment.location?.toLowerCase())
                               )?.name || warehouses[0]?.name
-                            : warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")
+                            : warehouses.length > 0 ? warehouses[0].name : t('defaultDestination'))
                         }>
                           <SelectTrigger className="h-9 text-sm">
                             <SelectValue />
@@ -1668,12 +1699,12 @@ export default function InternationalTransit() {
                             const itemNames = items.slice(0, 2).map((item: any) => item.name).join(', ');
                             const moreItems = items.length > 2 ? ` +${items.length - 2} more` : '';
                             
-                            const methodType = method.includes('express') ? 'Express' : 
-                                              method.includes('air') ? 'Air' : 
-                                              method.includes('sea') ? 'Sea' : 
-                                              method.includes('railway') ? 'Rail' : 'Standard';
+                            const methodType = method.includes('express') ? t('express') : 
+                                              method.includes('air') ? t('air') : 
+                                              method.includes('sea') ? t('sea') : 
+                                              method.includes('railway') ? t('rail') : t('standard');
                             
-                            return `${methodType} - ${itemNames}${moreItems} (${itemCount} items)`;
+                            return `${methodType} - ${itemNames}${moreItems} (${itemCount} ${t('items')})`;
                           };
                           
                           const quickShipData = {
@@ -1684,8 +1715,8 @@ export default function InternationalTransit() {
                             endTrackingNumber: null,
                             shipmentName: generateShipmentName(),
                             shipmentType: pending.shippingMethod,
-                            origin: pending.warehouse || 'China, Guangzhou',
-                            destination: warehouses.length > 0 ? warehouses[0].name : 'Czech Republic, Prague',
+                            origin: pending.warehouse || t('defaultOrigin'),
+                            destination: warehouses.length > 0 ? warehouses[0].name : t('defaultDestination'),
                             shippingCost: 0,
                             shippingCostCurrency: 'USD',
                             shippingMethod: pending.shippingMethod,

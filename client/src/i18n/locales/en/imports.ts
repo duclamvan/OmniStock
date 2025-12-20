@@ -913,12 +913,17 @@ const imports = {
   // InternationalTransit - Shipment Types & Methods
   express: 'Express',
   airDDP: 'Air DDP',
+  air: 'Air',
   railway: 'Railway',
+  rail: 'Rail',
   sea: 'Sea',
+  standard: 'Standard',
   fastest: 'Fastest',
   fast: 'Fast',
   moderate: 'Moderate',
   economical: 'Economical',
+  defaultOrigin: 'China, Guangzhou',
+  defaultDestination: 'Czech Republic, Prague',
   
   // InternationalTransit - Status
   pickedUp: 'Picked Up',

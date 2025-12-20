@@ -930,12 +930,17 @@ const imports = {
   // InternationalTransit - Shipment Types & Methods
   express: 'Chuyển phát nhanh',
   airDDP: 'Đường hàng không DDP',
+  air: 'Đường hàng không',
   railway: 'Đường sắt',
+  rail: 'Đường sắt',
   sea: 'Đường biển',
+  standard: 'Tiêu chuẩn',
   fastest: 'Nhanh nhất',
   fast: 'Nhanh',
   moderate: 'Trung bình',
   economical: 'Tiết kiệm',
+  defaultOrigin: 'Trung Quốc, Quảng Châu',
+  defaultDestination: 'Cộng hòa Séc, Praha',
   
   // InternationalTransit - Status
   pickedUp: 'Đã lấy hàng',
