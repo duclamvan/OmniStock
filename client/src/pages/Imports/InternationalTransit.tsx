@@ -61,6 +61,11 @@ interface Shipment {
   track17Events?: Track17Event[];
   track17LastSync?: string;
   track17CarrierCode?: string;
+  // Aggregated ETA from 17TRACK polling
+  estimatedDaysMin?: number;
+  estimatedDaysMax?: number;
+  trackingCount?: number;
+  trackingDeliveredCount?: number;
 }
 
 interface DeliveryPrediction {
