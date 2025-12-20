@@ -1219,6 +1219,7 @@ export default function AtWarehouse() {
           setPendingItemsForNewConsolidation([]);
           setBulkMoveItems(new Set());
           setMoveToConsolidationItem(null);
+          setSelectedItemsForAI(new Set());
         } catch (err) {
           toast({ title: t('success'), description: t('consolidationCreated') });
           toast({ title: t('error'), description: t('itemAddFailed'), variant: "destructive" });
@@ -2834,10 +2835,14 @@ export default function AtWarehouse() {
                               {/* Quick Add to Consolidation - Prominent Select */}
                               <Select
                                 value=""
-                                onValueChange={(consolidationId) => {
-                                  if (consolidationId) {
+                                onValueChange={(value) => {
+                                  if (value === '__create_new__') {
+                                    // Store selected items and open create dialog
+                                    setPendingItemsForNewConsolidation(Array.from(selectedItemsForAI) as string[]);
+                                    setIsCreateConsolidationOpen(true);
+                                  } else if (value) {
                                     addItemsToConsolidationMutation.mutate({
-                                      consolidationId,
+                                      consolidationId: value,
                                       itemIds: Array.from(selectedItemsForAI) as string[]
                                     });
                                     setSelectedItemsForAI(new Set());
@@ -2849,6 +2854,13 @@ export default function AtWarehouse() {
                                   <SelectValue placeholder={t('addToConsolidation')} />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  {/* Create New Option */}
+                                  <SelectItem value="__create_new__" className="text-primary font-medium border-b mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <Plus className="h-4 w-4" />
+                                      <span>{t('createNewConsolidation')}</span>
+                                    </div>
+                                  </SelectItem>
                                   {consolidations
                                     .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
                                     .map((consolidation) => (
