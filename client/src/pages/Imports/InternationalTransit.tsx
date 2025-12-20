@@ -497,6 +497,10 @@ export default function InternationalTransit() {
       .map(num => num.trim())
       .filter(num => num.length > 0);
     
+    // Get default origin/destination from pending shipment or warehouses
+    const defaultOrigin = selectedPendingShipment?.warehouse || selectedPendingShipment?.location || 'China, Guangzhou';
+    const defaultDestination = warehouses.length > 0 ? warehouses[0].name : 'Czech Republic, Prague';
+    
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') as string) || null,
       carrier: formData.get('carrier') as string || t('standardCarrier'),
@@ -505,8 +509,8 @@ export default function InternationalTransit() {
       endTrackingNumbers: endTrackingNumbers.length > 0 ? endTrackingNumbers : null,
       shipmentName: formData.get('shipmentName') as string || '',  // Let backend generate if empty
       shipmentType: formData.get('shipmentType') as string || selectedPendingShipment?.shippingMethod,
-      origin: formData.get('origin') as string,
-      destination: formData.get('destination') as string,
+      origin: formData.get('origin') as string || defaultOrigin,
+      destination: formData.get('destination') as string || defaultDestination,
       shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
       shippingCostCurrency: formData.get('shippingCostCurrency') as string || 'USD',
       shippingMethod: formData.get('shipmentType') as string || selectedPendingShipment?.shippingMethod,
