@@ -850,7 +850,7 @@ export default function ItemsToStore() {
     // Validate location code format (supports new shelf, pallet, and legacy formats)
     if (!validateLocationCode(trimmedValue)) {
       await soundEffects.playErrorBeep();
-      setScanFeedback({ type: 'error', message: 'Invalid location format' });
+      setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       toast({
         title: t('invalidLocation'),

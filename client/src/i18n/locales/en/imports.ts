@@ -1723,17 +1723,12 @@ const imports = {
   // StartReceiving - Additional UI labels
   quickReceiving: 'Quick Receiving',
   back: 'Back',
-  parcels: 'parcels',
-  pallets: 'pallets',
   parcelCheck: 'Parcel Check',
   itemChecklist: 'Item Checklist',
   verification: 'Verification',
   receivedParcels: 'Received Parcels',
   receivedPallets: 'Received Pallets',
-  scanParcels: 'Scan Parcels',
   scanPallets: 'Scan Pallets',
-  progress: 'Progress',
-  saving: 'Saving...',
   saved: 'Saved',
   viewReceipt: 'View Receipt',
   inProgress: 'In Progress',
@@ -2122,6 +2117,15 @@ const imports = {
   filterSensitive: 'Sensitive',
   filterGeneral: 'General',
   filterUnclassified: 'Unclassified',
+  
+  // Receiving hardcoded strings
+  trackingNumbersLoadedFromBulkScan: '{{count}} tracking number(s) loaded from bulk scan',
+  alreadyScannedValue: 'Already scanned: {{value}}',
+  unitsStoredAtLocation: '{{quantity}} units stored at {{location}}',
+  failedToSaveStorageLocation: 'Failed to save storage location',
+  itemsStoredProgress: '{{completed}}/{{total}} items stored',
+  addedProduct: 'Added {{name}}',
+  barcodeNotFoundInDatabase: '{{barcode}} not found in database',
   
 } as const;
 

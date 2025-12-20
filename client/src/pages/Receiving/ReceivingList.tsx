@@ -2032,14 +2032,14 @@ function QuickStorageSheet({
       
       toast({
         title: t('storedSuccessfully'),
-        description: `${variables.quantity} units stored at ${variables.locationCode}`,
+        description: t('unitsStoredAtLocation', { quantity: variables.quantity, location: variables.locationCode }),
         duration: 2000
       });
     },
     onError: (error) => {
       toast({
         title: t('common:error'),
-        description: error instanceof Error ? error.message : 'Failed to save storage location',
+        description: error instanceof Error ? error.message : t('failedToSaveStorageLocation'),
         variant: "destructive",
       });
     }
@@ -2068,7 +2068,7 @@ function QuickStorageSheet({
     onError: (error) => {
       toast({
         title: t('common:error'),
-        description: error instanceof Error ? error.message : 'Failed to complete receiving',
+        description: error instanceof Error ? error.message : t('failedToCompleteReceiving'),
         variant: "destructive",
       });
     }
@@ -2284,7 +2284,7 @@ function QuickStorageSheet({
   const handleComplete = () => {
     toast({
       title: t('storageComplete'),
-      description: `${completedItems}/${totalItems} items stored`,
+      description: t('itemsStoredProgress', { completed: completedItems, total: totalItems }),
     });
     onOpenChange(false);
   };
@@ -4377,7 +4377,7 @@ export default function ReceivingList() {
         
         toast({
           title: t('itemScanned'),
-          description: `Added ${product.name}`,
+          description: t('addedProduct', { name: product.name }),
         });
 
         // Add to scanned items via context
@@ -4391,7 +4391,7 @@ export default function ReceivingList() {
         
         toast({
           title: t('itemNotFound'),
-          description: `${barcode} not found in database`,
+          description: t('barcodeNotFoundInDatabase', { barcode }),
           variant: "destructive",
         });
       }

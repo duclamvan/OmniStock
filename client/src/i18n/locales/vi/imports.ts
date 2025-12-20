@@ -1670,17 +1670,12 @@ const imports = {
   // StartReceiving - Additional UI labels
   quickReceiving: 'Nhận Hàng Nhanh',
   back: 'Quay lại',
-  parcels: 'kiện',
-  pallets: 'pallet',
   parcelCheck: 'Kiểm tra kiện hàng',
   itemChecklist: 'Danh sách sản phẩm',
   verification: 'Xác minh',
   receivedParcels: 'Kiện đã nhận',
   receivedPallets: 'Pallet đã nhận',
-  scanParcels: 'Quét kiện hàng',
   scanPallets: 'Quét pallet',
-  progress: 'Tiến độ',
-  saving: 'Đang lưu...',
   saved: 'Đã lưu',
   viewReceipt: 'Xem phiếu nhận',
   inProgress: 'Đang xử lý',
@@ -2062,6 +2057,15 @@ const imports = {
   filterSensitive: 'Nhạy cảm',
   filterGeneral: 'Thông thường',
   filterUnclassified: 'Chưa phân loại',
+  
+  // Receiving hardcoded strings
+  trackingNumbersLoadedFromBulkScan: 'Đã tải {{count}} mã vận đơn từ quét hàng loạt',
+  alreadyScannedValue: 'Đã quét: {{value}}',
+  unitsStoredAtLocation: '{{quantity}} đơn vị đã lưu tại {{location}}',
+  failedToSaveStorageLocation: 'Lưu vị trí kho thất bại',
+  itemsStoredProgress: '{{completed}}/{{total}} sản phẩm đã lưu kho',
+  addedProduct: 'Đã thêm {{name}}',
+  barcodeNotFoundInDatabase: 'Không tìm thấy {{barcode}} trong cơ sở dữ liệu',
   
 } as const;
 

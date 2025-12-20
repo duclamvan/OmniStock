@@ -827,7 +827,7 @@ export default function StartReceiving() {
           // Show success feedback
           setScanFeedback({ 
             type: 'success', 
-            message: `${newNumbers.length} tracking number${newNumbers.length > 1 ? 's' : ''} loaded from bulk scan` 
+            message: t('trackingNumbersLoadedFromBulkScan', { count: newNumbers.length }) 
           });
           setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
         } else if (prefilledTrackingNumbers.length > 0) {
@@ -944,7 +944,7 @@ export default function StartReceiving() {
       // Check if tracking number already scanned
       if (scannedTrackingNumbers.includes(value)) {
         await soundEffects.playDuplicateBeep();
-        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${value}` });
+        setScanFeedback({ type: 'duplicate', message: t('alreadyScannedValue', { value }) });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
           title: t('alreadyScanned'),
