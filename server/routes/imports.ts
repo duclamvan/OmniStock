@@ -2682,14 +2682,24 @@ router.put("/shipments/:id", async (req, res) => {
   try {
     const shipmentId = req.params.id; // UUID string, don't parseInt
     
+    // First fetch the existing shipment to preserve non-null fields
+    const [existingShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!existingShipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
     // Generate AI name if not provided
     let shipmentName = req.body.shipmentName;
     if (!shipmentName || shipmentName.trim() === '') {
       shipmentName = await generateAIShipmentName(
-        req.body.consolidationId,
+        req.body.consolidationId || existingShipment.consolidationId,
         req.body.items,
-        req.body.origin,
-        req.body.shipmentType || req.body.shippingMethod
+        req.body.origin || existingShipment.origin,
+        req.body.shipmentType || req.body.shippingMethod || existingShipment.shipmentType
       );
     }
     
@@ -2701,36 +2711,38 @@ router.put("/shipments/:id", async (req, res) => {
     }
     
     // Parse endCarrier format "CarrierName|17TrackCode" to extract carrier name and code
-    let endCarrierName = req.body.endCarrier || null;
-    let track17CarrierCode: string | null = null;
-    if (endCarrierName && endCarrierName.includes('|')) {
-      const parts = endCarrierName.split('|');
+    let endCarrierName = req.body.endCarrier || existingShipment.endCarrier;
+    let track17CarrierCode: string | null = existingShipment.track17CarrierCode;
+    if (req.body.endCarrier && req.body.endCarrier.includes('|')) {
+      const parts = req.body.endCarrier.split('|');
       endCarrierName = parts[0];
       const code = parts[1];
       // Only set code if it's not 0 (Other/Zásilkovna don't have 17TRACK codes)
       if (code && code !== '0') {
         track17CarrierCode = code;
+      } else {
+        track17CarrierCode = null;
       }
     }
     
     const updateData = {
-      carrier: req.body.carrier || 'Standard Carrier',
-      trackingNumber: req.body.trackingNumber,
+      carrier: req.body.carrier || existingShipment.carrier || 'Standard Carrier',
+      trackingNumber: req.body.trackingNumber !== undefined ? req.body.trackingNumber : existingShipment.trackingNumber,
       endCarrier: endCarrierName,
-      endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
-      endTrackingNumbers: endTrackingNumbers || null,
+      endTrackingNumber: req.body.endTrackingNumber !== undefined ? req.body.endTrackingNumber : existingShipment.endTrackingNumber,
+      endTrackingNumbers: endTrackingNumbers || existingShipment.endTrackingNumbers,
       track17CarrierCode: track17CarrierCode,
-      shipmentName: shipmentName,
-      shipmentType: req.body.shipmentType || req.body.shippingMethod,
-      origin: req.body.origin,
-      destination: req.body.destination,
-      shippingCost: req.body.shippingCost?.toString() || '0',
-      shippingCostCurrency: req.body.shippingCostCurrency || 'USD',
-      shippingMethod: req.body.shippingMethod || req.body.shipmentType,
-      notes: req.body.notes || null,
-      totalWeight: req.body.totalWeight?.toString() || null,
-      totalUnits: req.body.totalUnits || null,
-      unitType: req.body.unitType || null,
+      shipmentName: shipmentName || existingShipment.shipmentName,
+      shipmentType: req.body.shipmentType || req.body.shippingMethod || existingShipment.shipmentType,
+      origin: req.body.origin || existingShipment.origin,
+      destination: req.body.destination || existingShipment.destination,
+      shippingCost: req.body.shippingCost?.toString() || existingShipment.shippingCost || '0',
+      shippingCostCurrency: req.body.shippingCostCurrency || existingShipment.shippingCostCurrency || 'USD',
+      shippingMethod: req.body.shippingMethod || req.body.shipmentType || existingShipment.shippingMethod,
+      notes: req.body.notes !== undefined ? req.body.notes : existingShipment.notes,
+      totalWeight: req.body.totalWeight?.toString() || existingShipment.totalWeight,
+      totalUnits: req.body.totalUnits !== undefined ? req.body.totalUnits : existingShipment.totalUnits,
+      unitType: req.body.unitType || existingShipment.unitType,
       updatedAt: new Date()
     };
     
