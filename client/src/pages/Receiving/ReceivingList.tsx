@@ -2468,443 +2468,338 @@ function QuickStorageSheet({
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
+                              className="border-t-2 border-amber-500 dark:border-amber-600 bg-white dark:bg-gray-950"
                             >
-                              <div className="p-4 space-y-3">
-                                {/* Scan feedback */}
+                              {/* SIMPLIFIED LAYOUT FOR 40-50 YO EMPLOYEES */}
+                              <div className="p-5 space-y-5">
+                                
+                                {/* Scan feedback - Large and prominent */}
                                 {scanFeedback.type && (
-                                  <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+                                  <div className="py-3">
+                                    <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+                                  </div>
                                 )}
 
-                                {/* Suggested Locations Display */}
+                                {/* STEP 1: Big Progress Indicator */}
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl p-5 border-2 border-amber-200 dark:border-amber-800">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-16 h-16 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                                        <Package className="h-8 w-8 text-amber-700 dark:text-amber-400" />
+                                      </div>
+                                      <div>
+                                        <p className="text-base text-muted-foreground font-medium">{t('remaining')}</p>
+                                        <p className="text-4xl font-bold text-amber-700 dark:text-amber-400">{itemRemainingQty}</p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-base text-muted-foreground">{t('received')}</p>
+                                      <p className="text-2xl font-bold">{item.receivedQuantity}</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* STEP 2: One-Tap Location Selection */}
                                 {(() => {
                                   const suggestions = buildLocationSuggestions(item, aiSuggestions);
-                                  const hasExistingLocations = item.existingLocations && item.existingLocations.length > 0;
+                                  
+                                  // Quick action: Tap to assign ALL remaining to suggested location
+                                  const handleQuickAssign = async (locationCode: string, isPrimary: boolean = false) => {
+                                    if (itemRemainingQty <= 0) return;
+                                    
+                                    // Add location and immediately save
+                                    if (item.productId) {
+                                      try {
+                                        await storeLocationMutation.mutateAsync({
+                                          productId: Number(item.productId),
+                                          locationCode: locationCode,
+                                          locationType: 'bin',
+                                          quantity: itemRemainingQty,
+                                          isPrimary: isPrimary
+                                        });
+                                        
+                                        // Update local state
+                                        const updatedItems = [...items];
+                                        updatedItems[index].assignedQuantity += itemRemainingQty;
+                                        setItems(updatedItems);
+                                        
+                                        // Auto-advance to next item
+                                        if (index < items.length - 1) {
+                                          setSelectedItemIndex(index + 1);
+                                        }
+                                        await soundEffects.playCompletionSound();
+                                      } catch (error) {
+                                        console.error('Failed to save location:', error);
+                                      }
+                                    }
+                                  };
                                   
                                   return (
-                                    <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-                                          {hasExistingLocations ? t('warehouse:suggestedLocations') : t('warehouse:aiSuggestion')}
-                                        </span>
-                                        {hasExistingLocations && (
-                                          <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
-                                            {t('warehouse:restockProduct')}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      
-                                      {/* Primary/First Suggestion - Large Display */}
-                                      {suggestions.length > 0 && (
-                                        <div 
-                                          className="flex items-center gap-2 flex-wrap cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 -mx-2 px-2 py-1 rounded transition-colors"
+                                    <div className="space-y-4">
+                                      {/* Primary Suggestion - BIG TAP TARGET */}
+                                      {suggestions.length > 0 && itemRemainingQty > 0 && (
+                                        <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            setLocationInput(suggestions[0].locationCode);
+                                            handleQuickAssign(suggestions[0].locationCode, suggestions[0].isPrimary);
                                           }}
+                                          disabled={storeLocationMutation.isPending}
+                                          className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-400 text-white rounded-2xl p-5 flex items-center gap-4 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+                                          data-testid="button-quick-assign"
                                         >
-                                          <MapPin className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-                                          <span className="text-2xl font-mono font-bold text-amber-700 dark:text-amber-400">
-                                            {suggestions[0].locationCode}
-                                          </span>
-                                          {suggestions[0].isPrimary && (
-                                            <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white text-xs">
-                                              <Star className="h-3 w-3 mr-1" fill="currentColor" />
-                                              {t('primary')}
-                                            </Badge>
-                                          )}
-                                          {suggestions[0].source === 'existing' && (
-                                            <Badge variant="outline" className="text-xs border-green-500 text-green-600 dark:text-green-400">
-                                              {suggestions[0].currentQuantity} {t('common:inStock')}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Additional Suggested Locations */}
-                                      {suggestions.length > 1 && (
-                                        <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-700 space-y-1">
-                                          <span className="text-xs text-amber-600 dark:text-amber-500">
-                                            {t('warehouse:otherLocations')}:
-                                          </span>
-                                          <div className="flex flex-wrap gap-1">
-                                            {suggestions.slice(1).map((sugg, idx) => (
-                                              <Badge 
-                                                key={idx}
-                                                variant="secondary" 
-                                                className="text-xs font-mono cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setLocationInput(sugg.locationCode);
-                                                }}
-                                              >
-                                                <MapPin className="h-3 w-3 mr-1" />
-                                                {sugg.locationCode}
-                                                {sugg.currentQuantity > 0 && (
-                                                  <span className="ml-1 text-green-600 dark:text-green-400">
-                                                    ({sugg.currentQuantity})
-                                                  </span>
-                                                )}
-                                              </Badge>
-                                            ))}
+                                          <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                                            <MapPin className="h-7 w-7" />
                                           </div>
-                                        </div>
+                                          <div className="flex-1 text-left">
+                                            <p className="text-lg font-medium opacity-90">{t('tapToAssign')}</p>
+                                            <p className="text-2xl font-bold font-mono">{suggestions[0].locationCode}</p>
+                                          </div>
+                                          <div className="text-right">
+                                            <p className="text-base opacity-80">{itemRemainingQty}</p>
+                                            <p className="text-lg font-bold">{t('units')}</p>
+                                          </div>
+                                          {storeLocationMutation.isPending && (
+                                            <Loader2 className="h-7 w-7 animate-spin" />
+                                          )}
+                                        </button>
                                       )}
                                       
-                                      {/* AI Reasoning */}
-                                      {suggestions[0]?.reasoning && (
-                                        <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
-                                          <span className="font-semibold">AI:</span> {suggestions[0].reasoning}
-                                        </div>
-                                      )}
-                                      {!suggestions[0]?.reasoning && getAIReasoning(item, aiSuggestions) && (
-                                        <div className="mt-2 text-xs text-amber-700 dark:text-amber-400 italic">
-                                          <span className="font-semibold">AI:</span> {getAIReasoning(item, aiSuggestions)}
+                                      {/* Other Location Options - Medium buttons */}
+                                      {suggestions.length > 1 && itemRemainingQty > 0 && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                          {suggestions.slice(1, 3).map((sugg, idx) => (
+                                            <button
+                                              key={idx}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleQuickAssign(sugg.locationCode, sugg.isPrimary);
+                                              }}
+                                              disabled={storeLocationMutation.isPending}
+                                              className="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 rounded-xl p-4 flex items-center gap-3 transition-all"
+                                              data-testid={`button-alt-location-${idx}`}
+                                            >
+                                              <MapPin className="h-6 w-6 text-amber-700 dark:text-amber-400" />
+                                              <span className="font-mono text-lg font-bold text-amber-800 dark:text-amber-300 truncate">
+                                                {sugg.locationCode}
+                                              </span>
+                                            </button>
+                                          ))}
                                         </div>
                                       )}
                                     </div>
                                   );
                                 })()}
 
-                                {/* Quick Stats */}
-                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-2 sm:p-3 border dark:border-gray-800">
-                                    <p className="text-xs text-muted-foreground">{t('received')}</p>
-                                    <p className="text-base sm:text-lg font-bold">{item.receivedQuantity}</p>
+                                {/* STEP 3: Manual Entry - Large Input */}
+                                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-5 space-y-4">
+                                  <p className="text-lg font-semibold text-center">{t('orEnterManually')}</p>
+                                  
+                                  <div className="flex gap-3">
+                                    <Input
+                                      ref={locationInputRef}
+                                      value={locationInput}
+                                      onChange={(e) => setLocationInput(e.target.value.toUpperCase())}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleLocationScan();
+                                        }
+                                      }}
+                                      placeholder="WH1-A01-R02-L03"
+                                      className="flex-1 h-14 text-xl font-mono font-bold text-center border-2 rounded-xl"
+                                      data-testid="input-location-manual"
+                                    />
+                                    <Button
+                                      onClick={handleLocationScan}
+                                      disabled={!locationInput}
+                                      className="h-14 px-6 rounded-xl text-lg"
+                                      size="lg"
+                                    >
+                                      <Plus className="h-6 w-6" />
+                                    </Button>
                                   </div>
-                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-2 sm:p-3 border dark:border-gray-800">
-                                    <p className="text-xs text-muted-foreground">{t('remaining')}</p>
-                                    <p className="text-base sm:text-lg font-bold text-amber-700 dark:text-amber-400">{itemRemainingQty}</p>
-                                  </div>
-                                </div>
-
-                                {/* Existing Locations */}
-                                {item.existingLocations && item.existingLocations.length > 0 && (
-                                  <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">{t('currentLocations')}</p>
-                                    {item.existingLocations.map(loc => (
-                                      <div key={loc.id} className="flex items-center gap-2 py-1">
-                                        <MapPin className="h-3 w-3 text-gray-400 dark:text-gray-300" />
-                                        <span className="text-sm font-mono">{loc.locationCode}</span>
-                                        {loc.isPrimary && (
-                                          <Star className="h-3 w-3 text-yellow-500" fill="currentColor" />
-                                        )}
-                                        <Badge variant="secondary" className="text-xs ml-auto">
-                                          {loc.quantity}
+                                  
+                                  {/* Camera Scanner Toggle */}
+                                  {barcodeScanner.scanningEnabled && (
+                                    <Button
+                                      variant={barcodeScanner.isActive ? "destructive" : "outline"}
+                                      onClick={() => {
+                                        if (barcodeScanner.isActive) {
+                                          barcodeScanner.stopScanning();
+                                        } else {
+                                          barcodeScanner.startScanning();
+                                        }
+                                      }}
+                                      className="w-full h-14 text-lg rounded-xl"
+                                      disabled={itemRemainingQty === 0}
+                                    >
+                                      {barcodeScanner.isActive ? (
+                                        <>
+                                          <CameraOff className="h-6 w-6 mr-3" />
+                                          {t('stopCamera')}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Camera className="h-6 w-6 mr-3" />
+                                          {t('scanBarcode')}
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
+                                  
+                                  {/* Camera Preview */}
+                                  {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
+                                    <div className="relative rounded-xl overflow-hidden bg-black">
+                                      <video
+                                        ref={barcodeScanner.videoRef}
+                                        className="w-full h-48 object-cover"
+                                        playsInline
+                                        muted
+                                      />
+                                      <div className="absolute top-3 right-3">
+                                        <Badge className="bg-green-500 text-white text-base px-3 py-1">
+                                          <Camera className="h-4 w-4 mr-2" />
+                                          {t('scanning')}
                                         </Badge>
                                       </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* New Locations */}
-                                {item.locations.length > 0 && (
-                                  <div className="space-y-2">
-                                    <p className="text-xs font-medium text-muted-foreground">{t('newLocations')}</p>
-                                    {item.locations.map((loc, locIndex) => (
-                                      <div key={loc.id} className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800 flex items-center gap-2">
-                                        <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                        <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
-                                        {loc.quantity === 0 ? (
-                                          <>
-                                            <Input
-                                              ref={locIndex === item.locations.length - 1 ? quantityInputRef : undefined}
-                                              type="number"
-                                              value={quantityInput}
-                                              onChange={(e) => setQuantityInput(e.target.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleQuantityAssign(locIndex);
-                                                }
-                                              }}
-                                              placeholder="Qty"
-                                              className="w-16 px-2 py-1 text-sm border rounded ml-auto h-8"
-                                              min="0"
-                                              max={itemRemainingQty}
-                                            />
-                                            <Button
-                                              size="sm"
-                                              onClick={() => handleQuantityAssign(locIndex)}
-                                              disabled={!quantityInput || parseInt(quantityInput) <= 0}
-                                              className="h-8"
-                                            >
-                                              <Save className="h-4 w-4" />
-                                            </Button>
-                                          </>
-                                        ) : (
-                                          <Badge variant="secondary" className="ml-auto">{loc.quantity}</Badge>
-                                        )}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveLocation(locIndex);
-                                          }}
-                                          className="p-1 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowScanner(!showScanner);
-                                    }}
-                                    className={`flex-1 rounded-lg py-3 flex items-center justify-center gap-2 transition-colors ${
-                                      showScanner 
-                                        ? 'bg-amber-700 text-white' 
-                                        : 'bg-amber-600 hover:bg-amber-700 text-white'
-                                    }`}
-                                    data-testid="button-scan-location"
-                                  >
-                                    <QrCode className="h-5 w-5" />
-                                    <span className="font-medium">{showScanner ? t('hideScanner') : t('scanLocation')}</span>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowProductDetails(true);
-                                    }}
-                                    className="p-3 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg"
-                                    data-testid="button-item-details"
-                                  >
-                                    <Eye className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                                  </button>
+                                    </div>
+                                  )}
                                 </div>
 
-                                {/* Inline Scanner Section - Shows below buttons when expanded */}
-                                {showScanner && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="space-y-3 pt-3 border-t dark:border-gray-700"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {/* Camera scanner */}
-                                    {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
-                                      <div className="relative rounded-lg overflow-hidden bg-black">
-                                        <video
-                                          ref={barcodeScanner.videoRef}
-                                          className="w-full h-40 object-cover"
-                                          playsInline
-                                          muted
-                                        />
-                                        <div className="absolute top-2 right-2">
-                                          <Badge className="bg-green-500 text-white">
-                                            <Camera className="h-3 w-3 mr-1" />
-                                            {t('scanning')}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {barcodeScanner.scanningEnabled && (
-                                      <Button
-                                        variant={barcodeScanner.isActive ? "destructive" : "secondary"}
-                                        size="sm"
-                                        onClick={() => {
-                                          if (barcodeScanner.isActive) {
-                                            barcodeScanner.stopScanning();
-                                          } else {
-                                            barcodeScanner.startScanning();
-                                          }
-                                        }}
-                                        className="w-full"
-                                        disabled={itemRemainingQty === 0}
-                                      >
-                                        {barcodeScanner.isActive ? (
-                                          <>
-                                            <CameraOff className="h-4 w-4 mr-2" />
-                                            {t('stopCamera')}
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Camera className="h-4 w-4 mr-2" />
-                                            {t('startCamera')}
-                                          </>
-                                        )}
-                                      </Button>
-                                    )}
-                                    
-                                    {/* Add Location - Scan or Manual Entry */}
-                                    <div className="space-y-2">
-                                      <Label htmlFor={`inline-location-input-${index}`} className="text-xs font-medium flex items-center gap-2">
-                                        <Plus className="h-3 w-3" />
-                                        {t('addLocationManually')}
-                                      </Label>
-                                      <div className="flex gap-2">
-                                        <Input
-                                          id={`inline-location-input-${index}`}
-                                          ref={locationInputRef}
-                                          value={locationInput}
-                                          onChange={(e) => setLocationInput(e.target.value.toUpperCase())}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              handleLocationScan();
-                                            }
-                                          }}
-                                          placeholder="WH1-A01-R02-L03"
-                                          className="flex-1 h-10 text-sm font-mono"
-                                          autoFocus
-                                          data-testid="input-location-scan-inline"
-                                        />
-                                        <Button
-                                          size="sm"
-                                          onClick={handleLocationScan}
-                                          disabled={!locationInput}
-                                          className="h-10 px-4"
-                                        >
-                                          <Plus className="h-4 w-4" />
-                                        </Button>
-                                      </div>
+                                {/* Pending Locations - Only show if there are any */}
+                                {item.locations.length > 0 && (
+                                  <div className="bg-amber-50 dark:bg-amber-950/20 rounded-2xl p-5 space-y-4 border-2 border-amber-200 dark:border-amber-800">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-lg font-semibold text-amber-800 dark:text-amber-300">
+                                        {t('pendingLocations')} ({item.locations.length})
+                                      </p>
                                     </div>
                                     
-                                    {/* Pending Locations - Compact inline view */}
-                                    {item.locations.length > 0 && (
-                                      <div className="space-y-2">
-                                        <Label className="text-xs font-medium flex items-center gap-2">
-                                          <MapPin className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                                          {t('pendingLocations')} ({item.locations.length})
-                                        </Label>
-                                        <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                                          {item.locations.map((loc, locIndex) => (
-                                            <div 
-                                              key={loc.id} 
-                                              className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg"
-                                            >
-                                              <MapPin className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                                              <span className="font-mono text-xs font-medium flex-1">{loc.locationCode}</span>
-                                              
-                                              <Input
-                                                type="number"
-                                                value={loc.quantity || ''}
-                                                onChange={(e) => {
-                                                  const newQty = parseInt(e.target.value) || 0;
-                                                  const updatedItems = [...items];
-                                                  const maxAllowed = itemRemainingQty + (loc.quantity || 0);
-                                                  updatedItems[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
-                                                  setItems(updatedItems);
-                                                }}
-                                                className="w-16 h-7 text-center text-xs font-medium"
-                                                min="0"
-                                                placeholder="0"
-                                                data-testid={`input-inline-quantity-${locIndex}`}
-                                              />
-                                              
-                                              <Button
-                                                variant={loc.isPrimary ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => {
-                                                  const updatedItems = [...items];
-                                                  updatedItems[index].locations.forEach(l => l.isPrimary = false);
-                                                  updatedItems[index].locations[locIndex].isPrimary = true;
-                                                  setItems(updatedItems);
-                                                }}
-                                                className="h-7 w-7 p-0"
-                                                title={t('primary')}
-                                              >
-                                                <Star className={`h-3 w-3 ${loc.isPrimary ? 'fill-current' : ''}`} />
-                                              </Button>
-                                              
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleRemoveLocation(locIndex)}
-                                                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                              >
-                                                <X className="h-3 w-3" />
-                                              </Button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                        
-                                        {/* Quick Action: Assign All Remaining */}
-                                        {itemRemainingQty > 0 && item.locations.length > 0 && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                              const lastIndex = item.locations.length - 1;
+                                    <div className="space-y-3">
+                                      {item.locations.map((loc, locIndex) => (
+                                        <div 
+                                          key={loc.id} 
+                                          className="bg-white dark:bg-gray-950 rounded-xl p-4 flex items-center gap-4 border dark:border-gray-800"
+                                        >
+                                          <MapPin className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                          <span className="font-mono text-lg font-bold flex-1">{loc.locationCode}</span>
+                                          
+                                          <Input
+                                            type="number"
+                                            value={loc.quantity || ''}
+                                            onChange={(e) => {
+                                              const newQty = parseInt(e.target.value) || 0;
                                               const updatedItems = [...items];
-                                              updatedItems[index].locations[lastIndex].quantity = 
-                                                (updatedItems[index].locations[lastIndex].quantity || 0) + itemRemainingQty;
+                                              const maxAllowed = itemRemainingQty + (loc.quantity || 0);
+                                              updatedItems[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
                                               setItems(updatedItems);
                                             }}
-                                            className="w-full h-8 text-xs"
-                                          >
-                                            <Plus className="h-3 w-3 mr-1" />
-                                            {t('assignAllToLast')} ({itemRemainingQty})
-                                          </Button>
-                                        )}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Save Button */}
-                                    {item.locations.some(loc => (loc.quantity || 0) > 0) && (
-                                      <Button
-                                        size="sm"
-                                        className="w-full h-10 bg-green-600 hover:bg-green-700"
-                                        onClick={async () => {
-                                          const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
-                                          if (locationsToSave.length === 0) return;
+                                            className="w-24 h-12 text-center text-xl font-bold"
+                                            min="0"
+                                            placeholder="0"
+                                            data-testid={`input-qty-${locIndex}`}
+                                          />
                                           
-                                          for (const loc of locationsToSave) {
-                                            if (item.productId && loc.quantity > 0) {
-                                              try {
-                                                await storeLocationMutation.mutateAsync({
-                                                  productId: Number(item.productId),
-                                                  locationCode: loc.locationCode,
-                                                  locationType: loc.locationType,
-                                                  quantity: loc.quantity,
-                                                  isPrimary: loc.isPrimary
-                                                });
-                                              } catch (error) {
-                                                console.error('Failed to save location:', error);
+                                          <Button
+                                            variant="ghost"
+                                            size="lg"
+                                            onClick={() => handleRemoveLocation(locIndex)}
+                                            className="h-12 w-12 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl"
+                                          >
+                                            <X className="h-6 w-6" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    
+                                    {/* Quick Fill All & Save */}
+                                    <div className="flex gap-3">
+                                      {itemRemainingQty > 0 && (
+                                        <Button
+                                          variant="outline"
+                                          onClick={() => {
+                                            const lastIndex = item.locations.length - 1;
+                                            const updatedItems = [...items];
+                                            updatedItems[index].locations[lastIndex].quantity = 
+                                              (updatedItems[index].locations[lastIndex].quantity || 0) + itemRemainingQty;
+                                            setItems(updatedItems);
+                                          }}
+                                          className="flex-1 h-14 text-lg rounded-xl"
+                                        >
+                                          <Plus className="h-5 w-5 mr-2" />
+                                          {t('fillAll')} ({itemRemainingQty})
+                                        </Button>
+                                      )}
+                                      
+                                      {item.locations.some(loc => (loc.quantity || 0) > 0) && (
+                                        <Button
+                                          className="flex-1 h-14 text-lg bg-green-600 hover:bg-green-700 rounded-xl"
+                                          onClick={async () => {
+                                            const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
+                                            if (locationsToSave.length === 0) return;
+                                            
+                                            for (const loc of locationsToSave) {
+                                              if (item.productId && loc.quantity > 0) {
+                                                try {
+                                                  await storeLocationMutation.mutateAsync({
+                                                    productId: Number(item.productId),
+                                                    locationCode: loc.locationCode,
+                                                    locationType: loc.locationType,
+                                                    quantity: loc.quantity,
+                                                    isPrimary: loc.isPrimary
+                                                  });
+                                                } catch (error) {
+                                                  console.error('Failed to save location:', error);
+                                                }
                                               }
                                             }
-                                          }
-                                          
-                                          const newlyAssignedTotal = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                                          const updatedItems = [...items];
-                                          updatedItems[index].assignedQuantity += newlyAssignedTotal;
-                                          updatedItems[index].locations = updatedItems[index].locations.filter(
-                                            loc => !locationsToSave.includes(loc)
-                                          );
-                                          setItems(updatedItems);
-                                          
-                                          const finalAssignedQuantity = updatedItems[index].assignedQuantity;
-                                          const receivedQuantity = updatedItems[index].receivedQuantity;
-                                          const isFullyAssigned = finalAssignedQuantity >= receivedQuantity;
-                                          
-                                          if (isFullyAssigned) {
-                                            setShowScanner(false);
-                                            if (index < items.length - 1) {
-                                              setSelectedItemIndex(index + 1);
+                                            
+                                            const newlyAssignedTotal = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                                            const updatedItems = [...items];
+                                            updatedItems[index].assignedQuantity += newlyAssignedTotal;
+                                            updatedItems[index].locations = updatedItems[index].locations.filter(
+                                              loc => !locationsToSave.includes(loc)
+                                            );
+                                            setItems(updatedItems);
+                                            
+                                            const finalAssignedQuantity = updatedItems[index].assignedQuantity;
+                                            const receivedQuantity = updatedItems[index].receivedQuantity;
+                                            const isFullyAssigned = finalAssignedQuantity >= receivedQuantity;
+                                            
+                                            if (isFullyAssigned) {
+                                              if (index < items.length - 1) {
+                                                setSelectedItemIndex(index + 1);
+                                              }
+                                              await soundEffects.playCompletionSound();
+                                            } else {
+                                              await soundEffects.playSuccessBeep();
                                             }
-                                            await soundEffects.playCompletionSound();
-                                          } else {
-                                            await soundEffects.playSuccessBeep();
-                                          }
-                                        }}
-                                        disabled={storeLocationMutation.isPending}
-                                      >
-                                        {storeLocationMutation.isPending ? (
-                                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        ) : (
-                                          <Check className="h-4 w-4 mr-2" />
-                                        )}
-                                        {t('saveLocations')}
-                                      </Button>
-                                    )}
-                                  </motion.div>
+                                          }}
+                                          disabled={storeLocationMutation.isPending}
+                                        >
+                                          {storeLocationMutation.isPending ? (
+                                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                          ) : (
+                                            <Check className="h-6 w-6 mr-2" />
+                                          )}
+                                          {t('saveLocations')}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                                 )}
+
+                                {/* Product Details Button - Less prominent */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowProductDetails(true);
+                                  }}
+                                  className="w-full py-3 text-base text-muted-foreground hover:text-foreground flex items-center justify-center gap-2"
+                                  data-testid="button-item-details"
+                                >
+                                  <Eye className="h-5 w-5" />
+                                  {t('common:productDetails')}
+                                </button>
                               </div>
                             </motion.div>
                           )}
