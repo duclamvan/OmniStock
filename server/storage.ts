@@ -1721,6 +1721,9 @@ export class DatabaseStorage implements IStorage {
       // First delete order items
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
 
+      // Nullify orderId in related services (services should persist but not link to deleted order)
+      await db.update(services).set({ orderId: null }).where(eq(services.orderId, id));
+
       // Then delete the order
       const result = await db.delete(orders).where(eq(orders.id, id));
       return (result.rowCount ?? 0) > 0;
