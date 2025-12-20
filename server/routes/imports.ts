@@ -467,9 +467,21 @@ router.get("/unpacked-items", async (req: any, res) => {
       ))
       .orderBy(desc(customItems.createdAt));
     
+    // Enhance items with imageUrl from orderItems if not directly available
+    const enhancedResult = unpackedItems.map(item => {
+      if (item.imageUrl) return item;
+      if (item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
+        const firstItemWithImage = (item.orderItems as any[]).find(oi => oi.imageUrl);
+        if (firstItemWithImage?.imageUrl) {
+          return { ...item, imageUrl: firstItemWithImage.imageUrl };
+        }
+      }
+      return item;
+    });
+    
     // Filter financial data based on user role
     const userRole = req.user?.role || 'warehouse_operator';
-    const filtered = filterFinancialData(unpackedItems, userRole);
+    const filtered = filterFinancialData(enhancedResult, userRole);
     res.json(filtered);
   } catch (error) {
     console.error("Error fetching unpacked items:", error);
@@ -1264,6 +1276,8 @@ router.get("/consolidations/:id/items", async (req, res) => {
         customerName: customItems.customerName,
         orderNumber: customItems.orderNumber,
         trackingNumber: customItems.trackingNumber, // Include tracking number
+        imageUrl: customItems.imageUrl, // Include image URL
+        orderItems: customItems.orderItems, // Include for image fallback
         addedAt: consolidationItems.createdAt,
       })
       .from(consolidationItems)
@@ -1271,9 +1285,21 @@ router.get("/consolidations/:id/items", async (req, res) => {
       .where(eq(consolidationItems.consolidationId, consolidationId))
       .orderBy(consolidationItems.createdAt);
     
+    // Enhance items with imageUrl from orderItems if not directly available
+    const enhancedItems = items.map(item => {
+      if (item.imageUrl) return item;
+      if (item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
+        const firstItemWithImage = (item.orderItems as any[]).find(oi => oi.imageUrl);
+        if (firstItemWithImage?.imageUrl) {
+          return { ...item, imageUrl: firstItemWithImage.imageUrl };
+        }
+      }
+      return item;
+    });
+    
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
-    const filtered = filterFinancialData(items, userRole);
+    const filtered = filterFinancialData(enhancedItems, userRole);
     res.json(filtered);
   } catch (error) {
     console.error("Error fetching consolidation items:", error);
@@ -1384,9 +1410,26 @@ router.get("/custom-items", async (req: any, res) => {
       .from(customItems)
       .where(eq(customItems.status, 'available'))
       .orderBy(desc(customItems.createdAt));
+    
+    // Enhance items with imageUrl from orderItems if not directly available
+    const enhancedResult = result.map(item => {
+      // If imageUrl is already set, use it
+      if (item.imageUrl) return item;
+      
+      // Try to get imageUrl from orderItems array (for items from purchase orders)
+      if (item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
+        const firstItemWithImage = (item.orderItems as any[]).find(oi => oi.imageUrl);
+        if (firstItemWithImage?.imageUrl) {
+          return { ...item, imageUrl: firstItemWithImage.imageUrl };
+        }
+      }
+      
+      return item;
+    });
+    
     // Filter financial data based on user role
     const userRole = req.user?.role || 'warehouse_operator';
-    const filtered = filterFinancialData(result, userRole);
+    const filtered = filterFinancialData(enhancedResult, userRole);
     res.json(filtered);
   } catch (error) {
     console.error("Error fetching custom items:", error);
