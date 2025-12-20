@@ -5716,7 +5716,7 @@ export default function AddOrder() {
                                     )}
                                   </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : `SKU: ${item.sku}`}
+                                  {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : (item.sku ? `SKU: ${item.sku}` : '')}
                                 </span>
                                 {item.serviceId && (
                                   <Input
@@ -6112,9 +6112,11 @@ export default function AddOrder() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            {item.serviceId ? t('orders:service') : item.sku}
-                          </p>
+                          {(item.serviceId || item.sku) && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              {item.serviceId ? t('orders:service') : item.sku}
+                            </p>
+                          )}
                         </div>
                         
                         <Button

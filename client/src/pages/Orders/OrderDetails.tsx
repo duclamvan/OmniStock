@@ -1221,7 +1221,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
                                   pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-blue-600 hover:text-blue-800"
                                 )}>
-                                  {item.productName}
+                                  {item.productName || t('orders:product')}
                                 </p>
                               </Link>
                             ) : item.serviceId ? (
@@ -1230,7 +1230,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
                                   pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-purple-600 hover:text-purple-800"
                                 )}>
-                                  {item.productName}
+                                  {item.productName || t('orders:service')}
                                 </p>
                               </Link>
                             ) : item.bundleId ? (
@@ -1239,7 +1239,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   "font-semibold text-sm mb-0.5 cursor-pointer hover:underline",
                                   pickedItems.has(item.id) ? "line-through text-slate-400 hover:text-slate-500" : "text-green-600 hover:text-green-800"
                                 )}>
-                                  {item.productName}
+                                  {item.productName || t('orders:bundle')}
                                 </p>
                               </Link>
                             ) : (
@@ -1247,11 +1247,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 "font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5",
                                 pickedItems.has(item.id) && "line-through text-slate-400 dark:text-slate-500"
                               )}>
-                                {item.productName}
+                                {item.productName || t('orders:item')}
                               </p>
                             )}
                             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                              <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders:skuColon')} {item.sku}</p>
+                              {item.sku && <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders:skuColon')} {item.sku}</p>}
                               {/* Carton Badge - shown when quantity >= bulkUnitQty */}
                               {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
                                 <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
