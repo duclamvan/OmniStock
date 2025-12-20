@@ -122,8 +122,7 @@ interface PendingShipment {
 
 export default function InternationalTransit() {
   const { t } = useTranslation('imports');
-  const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
-  const [isEditShipmentOpen, setIsEditShipmentOpen] = useState(false);
+  const [isShipmentFormOpen, setIsShipmentFormOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedPendingShipment, setSelectedPendingShipment] = useState<PendingShipment | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
@@ -205,7 +204,7 @@ export default function InternationalTransit() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
       
-      setIsCreateShipmentOpen(false);
+      setIsShipmentFormOpen(false);
       setSelectedPendingShipment(null);
       
       // Different messages for Quick Ship vs regular creation
@@ -306,7 +305,7 @@ export default function InternationalTransit() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
-      setIsEditShipmentOpen(false);
+      setIsShipmentFormOpen(false);
       setSelectedShipment(null);
       toast({ title: t('success'), description: t('shipmentUpdated') });
       
@@ -886,11 +885,11 @@ export default function InternationalTransit() {
             {t('syncTracking')}
           </Button>
           <Dialog 
-            open={isCreateShipmentOpen || isEditShipmentOpen} 
+            open={isShipmentFormOpen} 
             onOpenChange={(open) => {
               if (!open) {
-                setIsCreateShipmentOpen(false);
-                setIsEditShipmentOpen(false);
+                setIsShipmentFormOpen(false);
+                setSelectedShipment(null);
                 setSelectedPendingShipment(null);
                 setSelectedShipment(null);
               }
@@ -900,7 +899,7 @@ export default function InternationalTransit() {
               <Button 
                 data-testid="button-create-shipment"
                 onClick={() => {
-                  setIsCreateShipmentOpen(true);
+                  setIsShipmentFormOpen(true);
                   setSelectedPendingShipment(null);
                   setSelectedShipment(null);
                 }}
@@ -1290,10 +1289,9 @@ export default function InternationalTransit() {
               </div>
               <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => {
-                  setIsCreateShipmentOpen(false);
-                  setIsEditShipmentOpen(false);
-                  setSelectedPendingShipment(null);
+                  setIsShipmentFormOpen(false);
                   setSelectedShipment(null);
+                  setSelectedPendingShipment(null);
                 }}>
                   {t('cancel')}
                 </Button>
@@ -1529,7 +1527,7 @@ export default function InternationalTransit() {
                         className="text-xs px-2"
                         onClick={() => {
                           setSelectedPendingShipment(pending);
-                          setIsCreateShipmentOpen(true);
+                          setIsShipmentFormOpen(true);
                         }}
                         data-testid={`button-add-tracking-${pending.id}`}
                       >
@@ -1717,7 +1715,7 @@ export default function InternationalTransit() {
                   {t('clearSearch')}
                 </Button>
               ) : (
-                <Button onClick={() => setIsCreateShipmentOpen(true)} data-testid="button-create-first-shipment">
+                <Button onClick={() => setIsShipmentFormOpen(true)} data-testid="button-create-first-shipment">
                   <Plus className="h-4 w-4 mr-2" />
                   {t('createShipment')}
                 </Button>
@@ -1792,7 +1790,7 @@ export default function InternationalTransit() {
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedShipment(shipment);
-                                setIsEditShipmentOpen(true);
+                                setIsShipmentFormOpen(true);
                               }}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 {t('editShipment')}
