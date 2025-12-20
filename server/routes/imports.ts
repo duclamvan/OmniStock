@@ -2913,6 +2913,13 @@ router.put("/shipments/:id", async (req, res) => {
       }
     }
     
+    // Check if tracking numbers have changed - if so, reset 17TRACK status
+    const oldTrackingNumbers = existingShipment.endTrackingNumbers || [];
+    const newTrackingNumbers = endTrackingNumbers || [];
+    const trackingNumbersChanged = JSON.stringify(oldTrackingNumbers.sort()) !== JSON.stringify(newTrackingNumbers.sort());
+    const carrierCodeChanged = track17CarrierCode !== existingShipment.track17CarrierCode;
+    const shouldResetTracking = trackingNumbersChanged || carrierCodeChanged;
+    
     // Handle trackingNumber - preserve existing value if new value is null/undefined/empty
     // because the database has a NOT NULL constraint on this column
     let trackingNumber = existingShipment.trackingNumber;
@@ -2924,7 +2931,7 @@ router.put("/shipments/:id", async (req, res) => {
       trackingNumber = `QS-${Date.now()}`;
     }
     
-    const updateData = {
+    const updateData: Record<string, any> = {
       carrier: req.body.carrier || existingShipment.carrier || 'Standard Carrier',
       trackingNumber: trackingNumber,
       endCarrier: endCarrierName,
@@ -2945,6 +2952,17 @@ router.put("/shipments/:id", async (req, res) => {
       updatedAt: new Date()
     };
     
+    // Reset 17TRACK status if tracking numbers changed - will be re-synced automatically
+    if (shouldResetTracking && newTrackingNumbers.length > 0) {
+      updateData.track17Registered = false;
+      updateData.track17Status = null;
+      updateData.track17LastEvent = null;
+      updateData.track17LastEventTime = null;
+      updateData.track17Events = null;
+      updateData.track17LastSync = null;
+      console.log(`Tracking numbers changed for shipment ${shipmentId}, resetting 17TRACK status`);
+    }
+    
     const [updated] = await db
       .update(shipments)
       .set(updateData)
@@ -2953,6 +2971,18 @@ router.put("/shipments/:id", async (req, res) => {
     
     if (!updated) {
       return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Automatically sync with 17TRACK if tracking numbers changed and new ones exist
+    if (shouldResetTracking && newTrackingNumbers.length > 0 && track17CarrierCode) {
+      try {
+        console.log(`Auto-syncing 17TRACK for shipment ${shipmentId} after tracking number change`);
+        track17Service.registerAndSyncShipment(shipmentId).catch(err => {
+          console.error(`Background 17TRACK sync failed for ${shipmentId}:`, err);
+        });
+      } catch (error) {
+        console.error(`Failed to initiate 17TRACK sync for ${shipmentId}:`, error);
+      }
     }
     
     // Get items associated with the shipment's consolidation
