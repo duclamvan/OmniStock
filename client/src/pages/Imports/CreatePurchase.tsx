@@ -893,7 +893,7 @@ export default function CreatePurchase() {
       }
       
       setProductImageFile(file);
-      setSelectedProduct(null);
+      // Don't clear selectedProduct - allow custom image with existing product info
       
       // Create preview
       const reader = new FileReader();
@@ -1264,6 +1264,7 @@ export default function CreatePurchase() {
       quantity: currentItem.quantity || 1,
       unitPrice: currentItem.unitPrice || 0,
       weight: currentItem.weight || 0,
+      weightUnit: currentItem.weightUnit || 'kg',
       dimensions: currentItem.dimensions || "",
       notes: currentItem.notes || "",
       totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
@@ -1296,6 +1297,7 @@ export default function CreatePurchase() {
       quantity: 1,
       unitPrice: 0,
       weight: 0,
+      weightUnit: 'kg',
       dimensions: "",
       notes: "",
       binLocation: "TBA",
