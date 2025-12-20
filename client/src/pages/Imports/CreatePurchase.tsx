@@ -1672,8 +1672,8 @@ export default function CreatePurchase() {
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6 overflow-x-hidden">
       {/* Mobile-First Sticky Header */}
       <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
-        <div className="flex items-center justify-between p-2 sm:p-4 md:p-0">
-          <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center justify-between p-3 sm:p-4 md:px-4 md:py-5">
+          <div className="flex items-center gap-3 md:gap-4">
             <Button 
               variant="ghost" 
               size="icon"
