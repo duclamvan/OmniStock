@@ -192,6 +192,7 @@ const imports = {
   newItem: 'Sản phẩm mới',
   itemDetails: 'Chi tiết sản phẩm',
   clickToChangeImage: 'Nhấn để thay đổi hình ảnh',
+  lastPurchasePrice: 'Giá mua gần nhất',
   saveItem: 'Lưu sản phẩm',
   cancelItem: 'Hủy',
 

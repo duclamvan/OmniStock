@@ -2607,6 +2607,22 @@ export default function CreatePurchase() {
                       className="h-9"
                       data-testid="input-unit-price"
                     />
+                    {selectedProduct && ((selectedProduct as any).importCostUSD || (selectedProduct as any).importCostEUR) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t('lastPurchasePrice')}: {(() => {
+                          const prod = selectedProduct as any;
+                          const cost = purchaseCurrency === 'USD' 
+                            ? prod.importCostUSD
+                            : purchaseCurrency === 'EUR'
+                            ? prod.importCostEUR
+                            : purchaseCurrency === 'CZK'
+                            ? prod.importCostCZK
+                            : prod.importCostUSD || prod.importCostEUR;
+                          const date = prod.updatedAt ? new Date(prod.updatedAt) : null;
+                          return cost ? `${parseFloat(cost).toFixed(2)} ${purchaseCurrency}${date ? ` (${date.toLocaleDateString()})` : ''}` : '-';
+                        })()}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="cartons" className="text-xs">{t('cartonsOptional')}</Label>

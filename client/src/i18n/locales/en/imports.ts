@@ -181,6 +181,7 @@ const imports = {
   newItem: 'New Item',
   itemDetails: 'Item Details',
   clickToChangeImage: 'Click to change image',
+  lastPurchasePrice: 'Last purchase price',
   saveItem: 'Save Item',
   cancelItem: 'Cancel',
 
