@@ -2096,7 +2096,7 @@ export default function InternationalTransit() {
                                   className="max-h-40 overflow-y-auto space-y-2 pl-2 border-l-2 border-blue-200"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {shipment.easypostEvents.map((event: any, idx: number) => (
+                                  {[...shipment.easypostEvents].reverse().map((event: any, idx: number) => (
                                     <div key={idx} className="text-xs">
                                       <p className="font-medium text-foreground">{event.description || event.z}</p>
                                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
