@@ -16892,7 +16892,7 @@ Important rules:
   });
 
   // Helper function to reconcile purchase order delivery status based on received items
-  async function reconcilePurchaseDeliveryForShipment(shipmentId: number): Promise<string[]> {
+  async function reconcilePurchaseDeliveryForShipment(shipmentId: string): Promise<string[]> {
     const updatedPurchases: string[] = [];
     
     try {
@@ -17026,7 +17026,7 @@ Important rules:
   }
 
   // Helper function to calculate and update average landed cost for products when receiving is completed
-  async function calculateAndUpdateLandedCosts(shipmentId: number): Promise<string[]> {
+  async function calculateAndUpdateLandedCosts(shipmentId: string): Promise<string[]> {
     const updatedProducts: string[] = [];
     
     try {
@@ -17286,7 +17286,7 @@ Important rules:
         });
       }
       
-      // Update the shipment
+      // Update the shipment (id is UUID string, not integer)
       const [updated] = await db
         .update(shipments)
         .set({ 
@@ -17295,7 +17295,7 @@ Important rules:
           ...(receivingStatus === 'completed' ? { completedAt: new Date() } : {}),
           ...(receivingStatus === 'archived' ? { archivedAt: new Date() } : {})
         })
-        .where(eq(shipments.id, parseInt(id)))
+        .where(eq(shipments.id, id))
         .returning();
       
       if (!updated) {
@@ -17306,11 +17306,11 @@ Important rules:
       let updatedPurchases: string[] = [];
       let updatedProductCosts: string[] = [];
       if (receivingStatus === 'completed') {
-        // Calculate and update average landed costs for products
-        updatedProductCosts = await calculateAndUpdateLandedCosts(parseInt(id));
+        // Calculate and update average landed costs for products (id is UUID string)
+        updatedProductCosts = await calculateAndUpdateLandedCosts(id);
         
         // Reconcile purchase order delivery statuses
-        updatedPurchases = await reconcilePurchaseDeliveryForShipment(parseInt(id));
+        updatedPurchases = await reconcilePurchaseDeliveryForShipment(id);
       }
       
       res.json({
