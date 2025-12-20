@@ -86,13 +86,15 @@ const carrierIcons: Record<string, any> = {
 };
 
 interface PendingShipment {
-  id: number;
+  id: string;
   name: string;
   location: string;
   shippingMethod: string;
   warehouse: string;
   notes: string | null;
   targetWeight: string | null;
+  maxItems: number | null;
+  status: string;
   items: any[];
   itemCount: number;
   existingShipment: any;
@@ -1107,7 +1109,7 @@ export default function InternationalTransit() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="destination">{t('destinationWarehouse')} *</Label>
-                      <Select name="destination" required defaultValue={selectedShipment?.destination || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
+                      <Select name="destination" required defaultValue={selectedShipment?.destination || selectedPendingShipment?.destination || selectedPendingShipment?.location || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
                         <SelectTrigger data-testid="select-destination">
                           <SelectValue placeholder={t('selectWarehouseDestination')} />
                         </SelectTrigger>
@@ -1180,7 +1182,7 @@ export default function InternationalTransit() {
                       id="notes" 
                       name="notes" 
                       data-testid="textarea-notes"
-                      defaultValue={selectedShipment?.notes || ''}
+                      defaultValue={selectedShipment?.notes || selectedPendingShipment?.notes || ''}
                       placeholder={t('additionalShippingNotes')}
                     />
                   </div>
