@@ -7084,7 +7084,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           name: products.name,
           sku: products.sku,
           imageUrl: products.imageUrl,
-          category: products.category
+          categoryId: products.categoryId
         })
         .from(products)
         .where(inArray(products.id, uniqueProductIds)),
