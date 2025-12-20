@@ -1314,6 +1314,7 @@ const imports = {
   storage: 'Storage',
   quickStorage: 'Quick Storage',
   scanLocation: 'Scan storage location',
+  hideScanner: 'Hide scanner',
   assignQuantity: 'Assign quantity',
   remainingUnits: 'Remaining units',
   notStored: 'Not stored',

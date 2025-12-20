@@ -1331,6 +1331,7 @@ const imports = {
   storage: 'Lưu kho',
   quickStorage: 'Lưu kho nhanh',
   scanLocation: 'Quét vị trí lưu kho',
+  hideScanner: 'Ẩn máy quét',
   assignQuantity: 'Gán số lượng',
   remainingUnits: 'Đơn vị còn lại',
   notStored: 'Chưa lưu kho',
