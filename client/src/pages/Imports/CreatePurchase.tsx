@@ -1194,7 +1194,7 @@ export default function CreatePurchase() {
       totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
       costWithShipping: 0,
       productId: selectedProduct?.id,
-      imageUrl: selectedProduct?.imageUrl,
+      imageUrl: productImagePreview || selectedProduct?.imageUrl,
       imageFile: productImageFile,
       binLocation: currentItem.binLocation || "TBA",
       unitType: unitType,
@@ -1456,7 +1456,7 @@ export default function CreatePurchase() {
       notes: currentItem.notes || "",
       // Include product image for variants
       productId: selectedProduct?.id,
-      imageUrl: selectedProduct?.imageUrl,
+      imageUrl: productImagePreview || selectedProduct?.imageUrl,
       imageFile: productImageFile,
       totalPrice: variant.quantity * variant.unitPrice,
       costWithShipping: 0,
