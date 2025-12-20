@@ -150,11 +150,13 @@ export class Track17Service {
       }
 
       const result: Track17TrackResponse = await response.json();
+      console.log(`17track gettrackinfo response for ${trackingNumber}:`, JSON.stringify(result, null, 2));
 
       if (result.data?.accepted?.length > 0) {
         const trackInfo = result.data.accepted[0];
         
         if (trackInfo.e !== 0) {
+          console.log(`17track: Track error code ${trackInfo.e} for ${trackingNumber}`);
           return { success: false, error: `Track error code: ${trackInfo.e}` };
         }
 
@@ -185,9 +187,11 @@ export class Track17Service {
 
       if (result.data?.rejected?.length > 0) {
         const rejection = result.data.rejected[0];
+        console.log(`17track: Query rejected for ${trackingNumber}:`, rejection.error);
         return { success: false, error: rejection.error?.message || "Query rejected" };
       }
 
+      console.log(`17track: Unknown response format for ${trackingNumber}:`, result);
       return { success: false, error: "Unknown response from 17track" };
     } catch (error) {
       console.error("17track gettrackinfo exception:", error);
