@@ -282,9 +282,7 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       
       if (printWindow) {
         printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
+          printWindow.print();
         };
         setTimeout(() => window.URL.revokeObjectURL(url), 60000);
       } else {
