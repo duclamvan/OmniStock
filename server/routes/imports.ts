@@ -507,9 +507,10 @@ router.post("/purchases/receive", async (req, res) => {
       return res.status(400).json({ message: "No items found in purchase order" });
     }
     
-    // Calculate total weight and create a package name
+    // Calculate total weight and create a package name with short PO ID
     const totalWeight = items.reduce((sum, item) => sum + (item.weight ? parseFloat(item.weight) : 0), 0);
-    const packageName = `PO #${purchaseId} - ${purchase.supplier}`;
+    const shortPoId = purchaseId.substring(0, 8).toUpperCase();
+    const packageName = `PO #${shortPoId} - ${purchase.supplier}`;
     
     // Create a single custom item representing the whole order
     const customItem = {
@@ -872,7 +873,7 @@ router.patch("/purchases/:id", async (req, res) => {
           totalUnits: totalUnits,
           estimatedDelivery: currentPurchase.estimatedArrival,
           deliveredAt: new Date(),
-          notes: `Auto-created from Purchase Order PO #${purchaseId} - ${currentPurchase.supplier}`,
+          notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -946,7 +947,7 @@ router.patch("/purchases/:id/status", async (req, res) => {
           totalUnits: totalUnits,
           estimatedDelivery: currentPurchase.estimatedArrival,
           deliveredAt: new Date(),
-          notes: `Auto-created from Purchase Order PO #${purchaseId} - ${currentPurchase.supplier}`,
+          notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
           createdAt: new Date(),
           updatedAt: new Date()
         });
