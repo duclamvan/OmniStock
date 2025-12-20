@@ -1287,9 +1287,8 @@ router.get("/consolidations/:id/items", async (req, res) => {
         unitPrice: customItems.unitPrice,
         customerName: customItems.customerName,
         orderNumber: customItems.orderNumber,
-        trackingNumber: customItems.trackingNumber, // Include tracking number
-        imageUrl: customItems.imageUrl, // Include image URL
-        orderItems: customItems.orderItems, // Include for image fallback
+        trackingNumber: customItems.trackingNumber,
+        orderItems: customItems.orderItems,
         addedAt: consolidationItems.createdAt,
       })
       .from(consolidationItems)
@@ -1297,16 +1296,16 @@ router.get("/consolidations/:id/items", async (req, res) => {
       .where(eq(consolidationItems.consolidationId, consolidationId))
       .orderBy(consolidationItems.createdAt);
     
-    // Enhance items with imageUrl from orderItems if not directly available
+    // Enhance items with imageUrl from orderItems if available
     const enhancedItems = items.map(item => {
-      if (item.imageUrl) return item;
+      let imageUrl = null;
       if (item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
         const firstItemWithImage = (item.orderItems as any[]).find(oi => oi.imageUrl);
         if (firstItemWithImage?.imageUrl) {
-          return { ...item, imageUrl: firstItemWithImage.imageUrl };
+          imageUrl = firstItemWithImage.imageUrl;
         }
       }
-      return item;
+      return { ...item, imageUrl };
     });
     
     // Filter financial data based on user role
