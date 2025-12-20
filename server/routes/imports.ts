@@ -87,6 +87,75 @@ function filterFinancialData(data: any, userRole: string): any {
 }
 
 // ============================================================================
+// PURCHASE ORDER STATUS PROPAGATION HELPER
+// ============================================================================
+// This helper updates purchase order status when items move through the workflow:
+// - When consolidation is shipped → purchase orders become "shipped" (in transit)
+// - When shipment is received/delivered → purchase orders become "delivered"
+
+/**
+ * Update purchase order status based on consolidation items.
+ * Finds all purchase items in a consolidation and updates their parent purchase orders.
+ * 
+ * @param tx - Database transaction
+ * @param consolidationId - The consolidation ID to get items from
+ * @param targetStatus - The target status for purchase orders
+ */
+async function updatePurchaseOrderStatusFromConsolidation(
+  tx: any,
+  consolidationId: string,
+  targetStatus: string
+): Promise<void> {
+  try {
+    // Get all consolidation items that are purchase items (not custom items)
+    const consolidationItemsList = await tx
+      .select({
+        itemId: consolidationItems.itemId,
+        itemType: consolidationItems.itemType,
+      })
+      .from(consolidationItems)
+      .where(eq(consolidationItems.consolidationId, consolidationId));
+    
+    // Filter for purchase items only
+    const purchaseItemIds = consolidationItemsList
+      .filter((item: any) => item.itemType === 'purchase')
+      .map((item: any) => item.itemId);
+    
+    if (purchaseItemIds.length === 0) {
+      return; // No purchase items to update
+    }
+    
+    // Get the unique purchase IDs from the purchase items
+    const purchaseItemsData = await tx
+      .select({
+        purchaseId: purchaseItems.purchaseId,
+      })
+      .from(purchaseItems)
+      .where(inArray(purchaseItems.id, purchaseItemIds));
+    
+    const uniquePurchaseIds = [...new Set(purchaseItemsData.map((item: any) => item.purchaseId))];
+    
+    if (uniquePurchaseIds.length === 0) {
+      return;
+    }
+    
+    // Update all affected purchase orders to the target status
+    await tx
+      .update(importPurchases)
+      .set({ 
+        status: targetStatus,
+        updatedAt: new Date()
+      })
+      .where(inArray(importPurchases.id, uniquePurchaseIds));
+    
+    console.log(`Updated ${uniquePurchaseIds.length} purchase order(s) to status: ${targetStatus}`);
+  } catch (error) {
+    console.error('Error updating purchase order status:', error);
+    // Don't throw - this is a secondary operation and shouldn't fail the main transaction
+  }
+}
+
+// ============================================================================
 // LANDED COST CALCULATION HELPER
 // ============================================================================
 // This helper function calculates the proper weighted average landed cost
@@ -2354,6 +2423,9 @@ router.post("/shipments", async (req, res) => {
           .update(consolidations)
           .set({ status: "shipped", updatedAt: new Date() })
           .where(eq(consolidations.id, req.body.consolidationId));
+        
+        // Update purchase order status to "shipped" (in transit)
+        await updatePurchaseOrderStatusFromConsolidation(tx, req.body.consolidationId, 'shipped');
       }
       
       return shipment;
