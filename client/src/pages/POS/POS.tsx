@@ -278,21 +278,29 @@ function ThermalReceipt({ data, onClose, onPrint, companyInfo }: { data: Receipt
       }
 
       const url = window.URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank');
       
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
-      } else {
-        toast({
-          title: t('financial:popupBlocked', 'Popup Blocked'),
-          description: t('financial:allowPopups', 'Please allow popups to print'),
-          variant: 'destructive'
-        });
-        window.URL.revokeObjectURL(url);
-      }
+      // Use hidden iframe for seamless kiosk printing (no popup)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.print();
+        } catch {
+          // Fallback to window.open if iframe printing fails
+          const printWindow = window.open(url, '_blank');
+          if (printWindow) {
+            printWindow.onload = () => printWindow.print();
+          }
+        }
+        // Clean up after a delay
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }, 5000);
+      };
       
       onPrint();
     } catch (error) {
