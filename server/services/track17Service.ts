@@ -476,18 +476,27 @@ export class Track17Service {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
 
+      // Even if no tracking info is available yet, still update the sync time
+      // This shows we tried to sync and prevents repeated unnecessary attempts
+      const updateData: Record<string, any> = {
+        track17LastSync: new Date(),
+        updatedAt: new Date(),
+      };
+      
       if (successCount === 0) {
-        return { success: false, error: "Failed to get tracking info for any tracking numbers" };
+        // No tracking info available yet - update sync time and set status to indicate waiting
+        updateData.track17Status = "NotFound";
+        updateData.track17LastEvent = "Awaiting tracking information from carrier";
+        await db.update(shipments).set(updateData).where(eq(shipments.id, shipmentId));
+        console.log(`17track: No tracking info available yet for shipment ${shipmentId}, marked as NotFound`);
+        return { success: true }; // Return success since we handled it properly
       }
 
       // Sort all events by time (newest first)
       allEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
-      const updateData: Record<string, any> = {
-        track17Status: latestStatus,
-        track17LastSync: new Date(),
-        updatedAt: new Date(),
-      };
+      // Add status to update data
+      updateData.track17Status = latestStatus;
 
       if (latestEvent) {
         updateData.track17LastEvent = latestEvent;
