@@ -206,20 +206,36 @@ export class Track17Service {
         return { success: false, error: "Shipment not found" };
       }
 
-      if (!shipment.trackingNumber) {
-        return { success: false, error: "No tracking number for shipment" };
+      // Use endTrackingNumbers (from End Carrier tracking) instead of internal trackingNumber
+      const trackingNumbers = shipment.endTrackingNumbers || 
+        (shipment.endTrackingNumber ? [shipment.endTrackingNumber] : null);
+      
+      if (!trackingNumbers || trackingNumbers.length === 0) {
+        return { success: false, error: "No end tracking numbers for shipment" };
       }
 
+      // Use track17CarrierCode which is parsed from endCarrier dropdown
+      const carrierCode = shipment.track17CarrierCode ? parseInt(shipment.track17CarrierCode) : undefined;
+
       if (!shipment.track17Registered) {
-        const registerResult = await this.registerTracking(shipment.trackingNumber);
-        if (!registerResult.success) {
-          return registerResult;
+        // Register all tracking numbers
+        let allRegistered = true;
+        for (const trackingNumber of trackingNumbers) {
+          const registerResult = await this.registerTracking(trackingNumber, carrierCode);
+          if (!registerResult.success) {
+            console.warn(`Failed to register tracking ${trackingNumber}: ${registerResult.error}`);
+            allRegistered = false;
+          }
+          // Small delay between registrations to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-        await db
-          .update(shipments)
-          .set({ track17Registered: true, updatedAt: new Date() })
-          .where(eq(shipments.id, shipmentId));
+        if (allRegistered) {
+          await db
+            .update(shipments)
+            .set({ track17Registered: true, updatedAt: new Date() })
+            .where(eq(shipments.id, shipmentId));
+        }
       }
 
       return await this.syncShipmentTracking(shipmentId);
@@ -240,49 +256,108 @@ export class Track17Service {
         return { success: false, error: "Shipment not found" };
       }
 
-      if (!shipment.trackingNumber) {
-        return { success: false, error: "No tracking number for shipment" };
+      // Use endTrackingNumbers (from End Carrier tracking) instead of internal trackingNumber
+      const trackingNumbers = shipment.endTrackingNumbers || 
+        (shipment.endTrackingNumber ? [shipment.endTrackingNumber] : null);
+      
+      if (!trackingNumbers || trackingNumbers.length === 0) {
+        return { success: false, error: "No end tracking numbers for shipment" };
       }
 
-      const trackResult = await this.getTrackingInfo(shipment.trackingNumber);
+      // Get tracking info for all tracking numbers and aggregate results
+      let latestStatus = "NotFound";
+      let latestEvent: string | undefined;
+      let latestEventTime: Date | undefined;
+      let allEvents: Array<{ time: string; description: string; location?: string; status?: string; trackingNumber?: string }> = [];
+      let detectedCarrierCode: string | undefined;
+      let successCount = 0;
 
-      if (!trackResult.success) {
-        return trackResult;
+      for (const trackingNumber of trackingNumbers) {
+        const trackResult = await this.getTrackingInfo(trackingNumber);
+        
+        if (trackResult.success) {
+          successCount++;
+          
+          // Use the most advanced status across all tracking numbers
+          const statusPriority: Record<string, number> = {
+            "Delivered": 100,
+            "InTransit": 80,
+            "PickUp": 60,
+            "Alert": 50,
+            "Undelivered": 40,
+            "Expired": 20,
+            "NotFound": 0,
+          };
+          
+          if ((statusPriority[trackResult.status || "NotFound"] || 0) > (statusPriority[latestStatus] || 0)) {
+            latestStatus = trackResult.status || "NotFound";
+          }
+          
+          // Use the most recent event time
+          if (trackResult.lastEventTime && (!latestEventTime || trackResult.lastEventTime > latestEventTime)) {
+            latestEventTime = trackResult.lastEventTime;
+            latestEvent = trackResult.lastEvent;
+          }
+          
+          // Aggregate all events with tracking number label
+          if (trackResult.events) {
+            const labeledEvents = trackResult.events.map(e => ({
+              ...e,
+              trackingNumber: trackingNumbers.length > 1 ? trackingNumber : undefined,
+            }));
+            allEvents = [...allEvents, ...labeledEvents];
+          }
+          
+          if (trackResult.carrierCode) {
+            detectedCarrierCode = trackResult.carrierCode;
+          }
+        }
+        
+        // Small delay between API calls
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
+
+      if (successCount === 0) {
+        return { success: false, error: "Failed to get tracking info for any tracking numbers" };
+      }
+
+      // Sort all events by time (newest first)
+      allEvents.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
       const updateData: Record<string, any> = {
-        track17Status: trackResult.status,
+        track17Status: latestStatus,
         track17LastSync: new Date(),
         updatedAt: new Date(),
       };
 
-      if (trackResult.lastEvent) {
-        updateData.track17LastEvent = trackResult.lastEvent;
-        updateData.currentLocation = trackResult.lastEvent;
+      if (latestEvent) {
+        updateData.track17LastEvent = latestEvent;
+        updateData.currentLocation = latestEvent;
       }
 
-      if (trackResult.lastEventTime) {
-        updateData.track17LastEventTime = trackResult.lastEventTime;
+      if (latestEventTime) {
+        updateData.track17LastEventTime = latestEventTime;
       }
 
-      if (trackResult.events) {
-        updateData.track17Events = trackResult.events;
+      if (allEvents.length > 0) {
+        updateData.track17Events = allEvents;
       }
 
-      if (trackResult.carrierCode) {
-        updateData.track17CarrierCode = trackResult.carrierCode;
+      if (detectedCarrierCode && !shipment.track17CarrierCode) {
+        updateData.track17CarrierCode = detectedCarrierCode;
       }
 
-      if (trackResult.status === "Delivered" && shipment.status !== "delivered") {
+      // Auto-update shipment status based on tracking
+      if (latestStatus === "Delivered" && shipment.status !== "delivered") {
         updateData.status = "delivered";
-        updateData.deliveredAt = trackResult.lastEventTime || new Date();
-      } else if (trackResult.status === "InTransit" && shipment.status === "pending") {
+        updateData.deliveredAt = latestEventTime || new Date();
+      } else if (latestStatus === "InTransit" && shipment.status === "pending") {
         updateData.status = "in transit";
       }
 
       await db.update(shipments).set(updateData).where(eq(shipments.id, shipmentId));
 
-      console.log(`17track: Synced tracking for shipment ${shipmentId}, status: ${trackResult.status}`);
+      console.log(`17track: Synced ${successCount}/${trackingNumbers.length} tracking numbers for shipment ${shipmentId}, status: ${latestStatus}`);
       return { success: true };
     } catch (error) {
       console.error("Error in syncShipmentTracking:", error);
