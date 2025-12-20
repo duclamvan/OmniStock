@@ -142,10 +142,10 @@ export default function InternationalTransit() {
   // Move back to warehouse mutation
   const moveBackToWarehouseMutation = useMutation({
     mutationFn: async (consolidationId: number) => {
-      const response = await apiRequest('/api/imports/consolidations/' + consolidationId + '/status', 'PATCH', {
+      const response = await apiRequest('PATCH', '/api/imports/consolidations/' + consolidationId + '/status', {
         status: 'active'
       });
-      return response;
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
@@ -160,7 +160,7 @@ export default function InternationalTransit() {
   // Create shipment mutation with optimistic updates for speed
   const createShipmentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/shipments', 'POST', data);
+      const response = await apiRequest('POST', '/api/imports/shipments', data);
       return response.json();
     },
     onMutate: async (newShipment) => {
