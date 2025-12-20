@@ -230,6 +230,23 @@ export const shipments = pgTable("shipments", {
     status?: string;
   }>>(), // Full tracking history from 17track
   track17LastSync: timestamp("track17_last_sync"), // When we last fetched tracking info
+  // EasyPost integration fields (replaces 17track)
+  easypostTrackerId: text("easypost_tracker_id"), // EasyPost tracker ID
+  easypostRegistered: boolean("easypost_registered").default(false),
+  easypostCarrier: text("easypost_carrier"), // Carrier detected by EasyPost
+  easypostStatus: text("easypost_status"), // pre_transit, in_transit, out_for_delivery, delivered, etc.
+  easypostStatusDetail: text("easypost_status_detail"), // Additional status detail
+  easypostLastEvent: text("easypost_last_event"), // Last tracking event description
+  easypostLastEventTime: timestamp("easypost_last_event_time"), // Time of last tracking event
+  easypostEvents: json("easypost_events").$type<Array<{
+    time: string;
+    description: string;
+    location?: string;
+    status?: string;
+  }>>(), // Full tracking history from EasyPost
+  easypostLastSync: timestamp("easypost_last_sync"), // When we last fetched tracking info
+  easypostEstDelivery: timestamp("easypost_est_delivery"), // Estimated delivery date from EasyPost
+  easypostPublicUrl: text("easypost_public_url"), // Public tracking URL from EasyPost
   // Aggregated ETA fields (computed from all tracking numbers)
   estimatedDaysMin: integer("estimated_days_min"), // Earliest delivery estimate (days remaining)
   estimatedDaysMax: integer("estimated_days_max"), // Latest delivery estimate (days remaining)
