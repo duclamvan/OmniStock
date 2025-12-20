@@ -2000,6 +2000,12 @@ export default function InternationalTransit() {
                         {shipment.track17LastSync && (
                           <p className="text-[10px] text-muted-foreground mt-1 text-right">
                             {t('lastSynced')}: {format(new Date(shipment.track17LastSync), 'MMM dd, HH:mm')}
+                            {/* Show tracking progress for multi-tracking shipments */}
+                            {shipment.trackingCount && shipment.trackingCount > 1 && (
+                              <span className="ml-2">
+                                ({shipment.trackingDeliveredCount || 0}/{shipment.trackingCount} {t('delivered')})
+                              </span>
+                            )}
                           </p>
                         )}
                       </div>
@@ -2026,6 +2032,23 @@ export default function InternationalTransit() {
                                   </Badge>
                                   {shipment.endCarrier && (
                                     <span className="text-[10px] text-muted-foreground">{shipment.endCarrier}</span>
+                                  )}
+                                  {/* Estimated days from 17TRACK polling */}
+                                  {shipment.estimatedDaysMin !== undefined && shipment.estimatedDaysMin !== null && (
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-[10px] ml-auto ${
+                                        shipment.estimatedDaysMin <= 1 ? 'bg-green-50 text-green-700 border-green-200' :
+                                        shipment.estimatedDaysMin <= 3 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        shipment.estimatedDaysMin <= 7 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                      }`}
+                                    >
+                                      {shipment.estimatedDaysMin === shipment.estimatedDaysMax 
+                                        ? `${shipment.estimatedDaysMin}d`
+                                        : `${shipment.estimatedDaysMin}-${shipment.estimatedDaysMax}d`
+                                      }
+                                    </Badge>
                                   )}
                                 </div>
                               )}
