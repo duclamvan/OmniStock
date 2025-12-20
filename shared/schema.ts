@@ -230,6 +230,9 @@ export const shipments = pgTable("shipments", {
     status?: string;
   }>>(), // Full tracking history from 17track
   track17LastSync: timestamp("track17_last_sync"), // When we last fetched tracking info
+  // Archive fields for weekly archiving
+  archivedAt: timestamp("archived_at"), // When the shipment was archived (null = active)
+  archiveWeek: text("archive_week"), // Week identifier for grouping (e.g., "2025-W51")
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

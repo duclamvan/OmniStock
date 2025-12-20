@@ -2045,10 +2045,149 @@ const backfillTrackingNumbers = (shipment: any) => {
 
 // NOTE: Specific routes like /shipments/receivable MUST come before parameterized /shipments/:id route
 
-// Get all shipments with details
+// Get all archived shipments grouped by week
+router.get("/shipments/archived", async (req, res) => {
+  try {
+    const archivedShipmentList = await db.select().from(shipments)
+      .where(sql`${shipments.archivedAt} IS NOT NULL`)
+      .orderBy(desc(shipments.archivedAt), desc(shipments.createdAt));
+    
+    // Get items for each shipment from consolidation
+    const shipmentsWithDetails = await Promise.all(
+      archivedShipmentList.map(async (shipment) => {
+        let items: any[] = [];
+        let itemCount = 0;
+        
+        if (shipment.consolidationId) {
+          const consolidationItemList = await db
+            .select({
+              id: customItems.id,
+              name: customItems.name,
+              quantity: customItems.quantity,
+              weight: customItems.weight,
+              trackingNumber: customItems.trackingNumber,
+              unitPrice: customItems.unitPrice
+            })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+          
+          items = consolidationItemList;
+          itemCount = consolidationItemList.length;
+        }
+        
+        const backfilledShipment = backfillTrackingNumbers(shipment);
+        
+        return {
+          ...backfilledShipment,
+          items,
+          itemCount
+        };
+      })
+    );
+    
+    // Group by archiveWeek
+    const groupedByWeek: Record<string, any[]> = {};
+    shipmentsWithDetails.forEach(shipment => {
+      const week = shipment.archiveWeek || 'Unknown';
+      if (!groupedByWeek[week]) {
+        groupedByWeek[week] = [];
+      }
+      groupedByWeek[week].push(shipment);
+    });
+    
+    // Convert to array sorted by week (newest first)
+    const weeks = Object.keys(groupedByWeek).sort().reverse().map(week => ({
+      week,
+      shipments: groupedByWeek[week],
+      count: groupedByWeek[week].length,
+      totalWeight: groupedByWeek[week].reduce((sum, s) => sum + parseFloat(s.totalWeight || '0'), 0),
+      archivedAt: groupedByWeek[week][0]?.archivedAt
+    }));
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    res.json(weeks);
+  } catch (error) {
+    console.error("Error fetching archived shipments:", error);
+    res.status(500).json({ message: "Failed to fetch archived shipments" });
+  }
+});
+
+// Archive all current (non-archived) shipments - used for weekly archiving
+router.post("/shipments/archive-week", async (req, res) => {
+  try {
+    // Get current week in ISO format (e.g., "2025-W51")
+    const now = new Date();
+    const year = now.getFullYear();
+    const weekNum = getISOWeekNumber(now);
+    const archiveWeekLabel = `${year}-W${weekNum.toString().padStart(2, '0')}`;
+    
+    // Archive all non-archived shipments
+    const result = await db
+      .update(shipments)
+      .set({
+        archivedAt: now,
+        archiveWeek: archiveWeekLabel,
+        updatedAt: now
+      })
+      .where(isNull(shipments.archivedAt))
+      .returning({ id: shipments.id });
+    
+    res.json({
+      success: true,
+      archivedCount: result.length,
+      archiveWeek: archiveWeekLabel,
+      archivedAt: now
+    });
+  } catch (error) {
+    console.error("Error archiving shipments:", error);
+    res.status(500).json({ message: "Failed to archive shipments" });
+  }
+});
+
+// Helper function to get ISO week number
+function getISOWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+// Unarchive a specific shipment (move back to active)
+router.post("/shipments/:id/unarchive", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [updated] = await db
+      .update(shipments)
+      .set({
+        archivedAt: null,
+        archiveWeek: null,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, id))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    res.json({ success: true, shipment: updated });
+  } catch (error) {
+    console.error("Error unarchiving shipment:", error);
+    res.status(500).json({ message: "Failed to unarchive shipment" });
+  }
+});
+
+// Get all active (non-archived) shipments with details
 router.get("/shipments", async (req, res) => {
   try {
-    const shipmentList = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
+    // Only get non-archived shipments (archivedAt is null)
+    const shipmentList = await db.select().from(shipments)
+      .where(isNull(shipments.archivedAt))
+      .orderBy(desc(shipments.createdAt));
     
     // Get items for each shipment from consolidation
     const shipmentsWithDetails = await Promise.all(
