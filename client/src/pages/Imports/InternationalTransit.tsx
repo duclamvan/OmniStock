@@ -1125,6 +1125,15 @@ export default function InternationalTransit() {
                             <SelectItem value="boxes">{t('boxes')}</SelectItem>
                             <SelectItem value="pallets">{t('pallets')}</SelectItem>
                             <SelectItem value="bags">{t('bags')}</SelectItem>
+                            <SelectItem value="crates">{t('crates')}</SelectItem>
+                            <SelectItem value="pieces">{t('pieces')}</SelectItem>
+                            <SelectItem value="cbm">{t('cbm')}</SelectItem>
+                            <SelectItem value="drums">{t('drums')}</SelectItem>
+                            <SelectItem value="20gp_container">{t('container20GP')}</SelectItem>
+                            <SelectItem value="40gp_container">{t('container40GP')}</SelectItem>
+                            <SelectItem value="40hq_container">{t('container40HQ')}</SelectItem>
+                            <SelectItem value="45hq_container">{t('container45HQ')}</SelectItem>
+                            <SelectItem value="lcl">{t('lclShipment')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
