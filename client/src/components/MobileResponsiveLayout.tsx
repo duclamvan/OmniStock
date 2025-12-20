@@ -1262,7 +1262,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
 
         <div className={cn(
           "mx-auto",
-          !(noPadding || location === '/pos' || location.startsWith('/purchase-orders/')) && "px-mobile py-mobile",
+          !(noPadding || location === '/pos' || location.startsWith('/purchase-orders/') || location.includes('/imports/at-warehouse')) && "px-mobile py-mobile",
           layoutWidth === 'full' || 
           location === '/pos' || 
           location === '/inventory' || location.startsWith('/inventory/') ||
@@ -1276,7 +1276,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           location === '/services' || location.startsWith('/services/') ||
           location === '/tickets' || location.startsWith('/tickets/') ||
           location === '/receiving' || location.startsWith('/receiving/') ||
-          location === '/purchase-orders' || location.startsWith('/purchase-orders/')
+          location === '/purchase-orders' || location.startsWith('/purchase-orders/') ||
+          location.includes('/imports/at-warehouse')
             ? 'max-w-full' : 'max-w-7xl'
         )}>
           {children}
