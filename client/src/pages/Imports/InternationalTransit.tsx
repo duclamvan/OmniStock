@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
@@ -177,8 +178,59 @@ export default function InternationalTransit() {
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
   const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('AUTO');
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
+  const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Interface for archived weeks
+  interface ArchivedWeek {
+    week: string;
+    shipments: Shipment[];
+    count: number;
+    totalWeight: number;
+    archivedAt: string;
+  }
+
+  // Fetch archived shipments grouped by week
+  const { data: archivedWeeks = [], isLoading: isLoadingArchived } = useQuery<ArchivedWeek[]>({
+    queryKey: ['/api/imports/shipments/archived'],
+    enabled: viewTab === 'archived'
+  });
+
+  // Archive current week mutation
+  const archiveWeekMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/imports/shipments/archive-week', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      toast({ 
+        title: t('success'), 
+        description: t('archivedShipmentsCount', { count: data.archivedCount, week: data.archiveWeek })
+      });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToArchive'), variant: "destructive" });
+    }
+  });
+
+  // Unarchive shipment mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: async (shipmentId: string) => {
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/unarchive`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      toast({ title: t('success'), description: t('shipmentUnarchived') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToUnarchive'), variant: "destructive" });
+    }
+  });
 
   // Fetch pending shipments
   const { data: pendingShipments = [] } = useQuery<PendingShipment[]>({
@@ -927,6 +979,16 @@ export default function InternationalTransit() {
             <RefreshCw className={`h-4 w-4 mr-2 ${syncAll17TrackMutation.isPending ? 'animate-spin' : ''}`} />
             {t('syncTracking')}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => archiveWeekMutation.mutate()}
+            disabled={archiveWeekMutation.isPending || shipments.length === 0}
+            data-testid="button-archive-week"
+          >
+            <Archive className={`h-4 w-4 mr-2`} />
+            {archiveWeekMutation.isPending ? t('archiving') : t('archiveWeek')}
+          </Button>
           <Dialog 
             open={isShipmentFormOpen} 
             onOpenChange={(open) => {
@@ -1449,8 +1511,22 @@ export default function InternationalTransit() {
         </Card>
       </details>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      {/* View Tabs */}
+      <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'active' | 'archived')} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <Plane className="h-4 w-4" />
+            {t('activeShipments')} ({shipments.length})
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="flex items-center gap-2">
+            <Archive className="h-4 w-4" />
+            {t('archivedShipments')} ({archivedWeeks.reduce((sum, w) => sum + w.count, 0)})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="mt-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium">{t('active')}</CardTitle>
@@ -2028,6 +2104,85 @@ export default function InternationalTransit() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Archived Shipments Tab */}
+        <TabsContent value="archived" className="mt-4">
+          {isLoadingArchived ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : archivedWeeks.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Archive className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">{t('noArchivedShipments')}</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  {t('noArchivedShipmentsDescription')}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {archivedWeeks.map((week) => (
+                <Card key={week.week}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5 text-muted-foreground" />
+                          {t('weekLabel')} {week.week}
+                        </CardTitle>
+                        <CardDescription>
+                          {t('archivedOn')} {week.archivedAt ? format(new Date(week.archivedAt), 'MMM dd, yyyy HH:mm') : '—'}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary" className="text-sm">
+                        {week.count} {week.count === 1 ? t('shipment') : t('shipmentsPlural')}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {week.shipments.map((shipment) => (
+                        <div 
+                          key={shipment.id} 
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {getShipmentTypeIcon(shipment.shipmentType || '', 'h-5 w-5')}
+                            <div>
+                              <p className="font-medium">{shipment.shipmentName || shipment.trackingNumber}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {shipment.origin} → {shipment.destination}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className={shipment.status === 'delivered' ? 'bg-green-100 text-green-800' : shipment.status === 'in transit' ? 'bg-cyan-100 text-cyan-800' : 'bg-amber-100 text-amber-800'}>
+                              {shipment.status}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => unarchiveMutation.mutate(shipment.id)}
+                              disabled={unarchiveMutation.isPending}
+                              data-testid={`button-unarchive-${shipment.id}`}
+                            >
+                              <ArchiveRestore className="h-4 w-4 mr-1" />
+                              {t('restore')}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Shipment Details Dialog */}
       <Dialog open={!!viewShipmentDetails} onOpenChange={() => setViewShipmentDetails(null)}>
