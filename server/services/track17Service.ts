@@ -149,6 +149,58 @@ export class Track17Service {
     }
   }
 
+  async changeCarrier(trackingNumber: string, oldCarrierCode: number, newCarrierCode: number): Promise<{ success: boolean; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: "17track API key not configured" };
+    }
+
+    try {
+      const requestBody = [
+        {
+          number: trackingNumber,
+          carrier_old: oldCarrierCode,
+          carrier_new: newCarrierCode,
+        },
+      ];
+
+      console.log(`17track: Changing carrier for ${trackingNumber} from ${oldCarrierCode} to ${newCarrierCode}`);
+
+      const response = await fetch(`${TRACK17_API_BASE}/changecarrier`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "17token": this.apiKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("17track changecarrier error:", response.status, errorText);
+        return { success: false, error: `API error: ${response.status}` };
+      }
+
+      const result = await response.json();
+      console.log(`17track changecarrier response:`, JSON.stringify(result, null, 2));
+
+      if (result.data?.accepted?.length > 0) {
+        console.log(`17track: Changed carrier for ${trackingNumber} to ${newCarrierCode}`);
+        return { success: true };
+      }
+
+      if (result.data?.rejected?.length > 0) {
+        const rejection = result.data.rejected[0];
+        console.error(`17track: Failed to change carrier for ${trackingNumber}:`, rejection.error);
+        return { success: false, error: rejection.error?.message || "Carrier change failed" };
+      }
+
+      return { success: false, error: "Unknown response from 17track" };
+    } catch (error) {
+      console.error("17track changecarrier exception:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  }
+
   async getTrackingInfo(trackingNumber: string): Promise<{
     success: boolean;
     status?: string;
@@ -302,13 +354,33 @@ export class Track17Service {
       }
 
       // Use track17CarrierCode which is parsed from endCarrier dropdown
-      const carrierCode = shipment.track17CarrierCode ? parseInt(shipment.track17CarrierCode) : undefined;
+      const expectedCarrierCode = shipment.track17CarrierCode ? parseInt(shipment.track17CarrierCode) : undefined;
+
+      // First check if already registered with wrong carrier - if so, change carrier
+      if (shipment.track17Registered && expectedCarrierCode) {
+        for (const trackingNumber of trackingNumbers) {
+          const checkResult = await this.getTrackingInfo(trackingNumber);
+          if (checkResult.success && checkResult.carrierCode) {
+            const currentCarrierCode = parseInt(checkResult.carrierCode);
+            if (currentCarrierCode !== expectedCarrierCode) {
+              console.log(`17track: Carrier mismatch detected for ${trackingNumber}. Current: ${currentCarrierCode}, Expected: ${expectedCarrierCode}`);
+              const changeResult = await this.changeCarrier(trackingNumber, currentCarrierCode, expectedCarrierCode);
+              if (changeResult.success) {
+                console.log(`17track: Successfully changed carrier for ${trackingNumber}`);
+              } else {
+                console.warn(`17track: Failed to change carrier for ${trackingNumber}: ${changeResult.error}`);
+              }
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+          }
+        }
+      }
 
       if (!shipment.track17Registered) {
         // Register all tracking numbers
         let allRegistered = true;
         for (const trackingNumber of trackingNumbers) {
-          const registerResult = await this.registerTracking(trackingNumber, carrierCode);
+          const registerResult = await this.registerTracking(trackingNumber, expectedCarrierCode);
           if (!registerResult.success) {
             console.warn(`Failed to register tracking ${trackingNumber}: ${registerResult.error}`);
             allRegistered = false;
