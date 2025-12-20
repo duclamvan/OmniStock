@@ -1708,7 +1708,7 @@ export default function CreatePurchase() {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
-        weight: convertWeightToKg(item.weight, item.weightUnit || 'kg'),
+        weight: item.weight, // Keep original weight value (unit is stored separately)
         weightUnit: item.weightUnit || 'kg',
         costWithShipping: item.costWithShipping || 0,
         dimensions: item.dimensions || null,
@@ -3760,7 +3760,7 @@ export default function CreatePurchase() {
                         <TableCell colSpan={4} className="font-bold">{t('totals')}</TableCell>
                         <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
                         <TableCell className="text-center font-bold">
-                          {items.reduce((sum, item) => sum + (item.weight * item.quantity), 0).toFixed(2)} kg
+                          {totalWeight.toFixed(2)} kg
                         </TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold">
