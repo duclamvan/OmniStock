@@ -1511,6 +1511,20 @@ router.post("/custom-items/:id/unpack", async (req, res) => {
         customerEmail: customItem.customerEmail,
         status: 'available',
         classification: customItem.classification,
+        purchaseOrderId: customItem.purchaseOrderId, // Preserve link to original PO
+        imageUrl: orderItem.imageUrl || null, // Preserve item image
+        orderItems: [{
+          originalItemId: orderItem.originalItemId || orderItem.id,
+          sku: orderItem.sku,
+          name: orderItem.name,
+          quantity: orderItem.quantity,
+          unitPrice: orderItem.unitPrice,
+          totalPrice: orderItem.totalPrice,
+          weight: orderItem.weight,
+          hsCode: orderItem.hsCode,
+          landingCostUnitBase: orderItem.landingCostUnitBase,
+          imageUrl: orderItem.imageUrl,
+        }], // Store original item data for reference
         createdAt: new Date(),
         updatedAt: new Date()
       };
