@@ -2725,9 +2725,20 @@ router.put("/shipments/:id", async (req, res) => {
       }
     }
     
+    // Handle trackingNumber - preserve existing value if new value is null/undefined/empty
+    // because the database has a NOT NULL constraint on this column
+    let trackingNumber = existingShipment.trackingNumber;
+    if (req.body.trackingNumber !== undefined && req.body.trackingNumber !== null && req.body.trackingNumber !== '') {
+      trackingNumber = req.body.trackingNumber;
+    }
+    // Generate a placeholder if still empty (should not happen, but safety net)
+    if (!trackingNumber) {
+      trackingNumber = `QS-${Date.now()}`;
+    }
+    
     const updateData = {
       carrier: req.body.carrier || existingShipment.carrier || 'Standard Carrier',
-      trackingNumber: req.body.trackingNumber !== undefined ? req.body.trackingNumber : existingShipment.trackingNumber,
+      trackingNumber: trackingNumber,
       endCarrier: endCarrierName,
       endTrackingNumber: req.body.endTrackingNumber !== undefined ? req.body.endTrackingNumber : existingShipment.endTrackingNumber,
       endTrackingNumbers: endTrackingNumbers || existingShipment.endTrackingNumbers,
