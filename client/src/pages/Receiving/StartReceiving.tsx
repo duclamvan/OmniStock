@@ -1566,7 +1566,7 @@ export default function StartReceiving() {
         photos: uploadedPhotos,
         scannedParcels,
         items: receivingItems.map(item => ({
-          itemId: parseInt(item.id) || item.id,
+          itemId: item.id,
           expectedQuantity: item.expectedQty,
           receivedQuantity: item.receivedQty,
           status: item.status,

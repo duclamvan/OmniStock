@@ -61,12 +61,7 @@ export default function LandingCostList() {
   const { t } = useTranslation('imports');
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [expandedShipments, setExpandedShipments] = useState<number[]>([]);
-  
-  // Helper to ensure ID is always a number (defensive type coercion)
-  const ensureNumber = (id: number | string): number => {
-    return typeof id === 'string' ? parseInt(id, 10) : id;
-  };
+  const [expandedShipments, setExpandedShipments] = useState<string[]>([]);
 
   // Fetch all shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
@@ -76,7 +71,7 @@ export default function LandingCostList() {
   // Initialize expandedShipments with all shipment IDs by default
   useEffect(() => {
     if (shipments.length > 0 && expandedShipments.length === 0) {
-      const allShipmentIds = shipments.map(s => ensureNumber(s.id));
+      const allShipmentIds = shipments.map(s => String(s.id));
       setExpandedShipments(allShipmentIds);
     }
   }, [shipments]);
@@ -361,16 +356,16 @@ export default function LandingCostList() {
                     {/* Items List - Collapsible */}
                     {shipment.items && shipment.items.length > 0 && (
                       <Collapsible
-                        open={expandedShipments.includes(ensureNumber(shipment.id))}
+                        open={expandedShipments.includes(String(shipment.id))}
                         onOpenChange={(isOpen) => {
-                          const shipmentIdNum = ensureNumber(shipment.id);
+                          const shipmentIdStr = String(shipment.id);
                           setExpandedShipments(prev => {
                             if (isOpen) {
                               // Expand: add the ID only if not already present
-                              return prev.includes(shipmentIdNum) ? prev : [...prev, shipmentIdNum];
+                              return prev.includes(shipmentIdStr) ? prev : [...prev, shipmentIdStr];
                             } else {
                               // Collapse: remove the ID
-                              return prev.filter(id => id !== shipmentIdNum);
+                              return prev.filter(id => id !== shipmentIdStr);
                             }
                           });
                         }}
@@ -386,10 +381,10 @@ export default function LandingCostList() {
                             <span className="flex items-center gap-2">
                               <Box className="h-4 w-4" />
                               <span className="font-medium">
-                                {expandedShipments.includes(shipment.id) ? t('hide') : t('show')} {t('items')} ({shipment.items.length})
+                                {expandedShipments.includes(String(shipment.id)) ? t('hide') : t('show')} {t('items')} ({shipment.items.length})
                               </span>
                             </span>
-                            {expandedShipments.includes(shipment.id) ? (
+                            {expandedShipments.includes(String(shipment.id)) ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />

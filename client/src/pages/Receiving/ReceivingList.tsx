@@ -2233,7 +2233,7 @@ function QuickStorageSheet({
     if (currentItem.productId) {
       try {
         await storeLocationMutation.mutateAsync({
-          productId: Number(currentItem.productId),
+          productId: String(currentItem.productId),
           locationCode: location.locationCode,
           locationType: location.locationType,
           quantity: assignedQty,
@@ -2520,7 +2520,7 @@ function QuickStorageSheet({
                                     
                                     try {
                                       await storeLocationMutation.mutateAsync({
-                                        productId: item.productId,
+                                        productId: String(item.productId),
                                         locationCode: locationCode,
                                         locationType: 'warehouse',
                                         quantity: itemRemainingQty,
@@ -2754,7 +2754,7 @@ function QuickStorageSheet({
                                               if (item.productId && loc.quantity > 0) {
                                                 try {
                                                   await storeLocationMutation.mutateAsync({
-                                                    productId: item.productId,
+                                                    productId: String(item.productId),
                                                     locationCode: loc.locationCode,
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,

@@ -3688,7 +3688,7 @@ router.get("/shipments/by-status/:status", async (req, res) => {
     }
     
     // Batch-fetch items for non-consolidated purchase orders
-    let itemsByShipment: Record<number, any[]> = {};
+    let itemsByShipment: Record<string, any[]> = {};
     
     // Find shipments without consolidation that have purchase orders
     const purchaseOrderShipments = shipmentsWithStatus
@@ -3700,13 +3700,13 @@ router.get("/shipments/by-status/:status", async (req, res) => {
     
     if (purchaseOrderShipments.length > 0) {
       // Extract purchase IDs and batch-fetch their items
-      const purchaseIds: number[] = [];
-      const shipmentToPurchaseMap: Record<number, number> = {};
+      const purchaseIds: string[] = [];
+      const shipmentToPurchaseMap: Record<string, string> = {};
       
       for (const { shipmentId, notes } of purchaseOrderShipments) {
-        const match = notes!.match(/PO #(\d+)/);
+        const match = notes!.match(/PO #([a-zA-Z0-9-]+)/);
         if (match) {
-          const purchaseId = parseInt(match[1]);
+          const purchaseId = match[1];
           purchaseIds.push(purchaseId);
           shipmentToPurchaseMap[shipmentId] = purchaseId;
         }
@@ -3721,15 +3721,14 @@ router.get("/shipments/by-status/:status", async (req, res) => {
         // Group items by shipment ID
         for (const item of allPurchaseItems) {
           const shipmentId = Object.keys(shipmentToPurchaseMap).find(
-            sid => shipmentToPurchaseMap[parseInt(sid)] === item.purchaseId
+            sid => shipmentToPurchaseMap[sid] === item.purchaseId
           );
           
           if (shipmentId) {
-            const sid = parseInt(shipmentId);
-            if (!itemsByShipment[sid]) {
-              itemsByShipment[sid] = [];
+            if (!itemsByShipment[shipmentId]) {
+              itemsByShipment[shipmentId] = [];
             }
-            itemsByShipment[sid].push({
+            itemsByShipment[shipmentId].push({
               ...item,
               itemType: 'purchase',
               category: (item as any).category || 'General'
@@ -3740,7 +3739,7 @@ router.get("/shipments/by-status/:status", async (req, res) => {
     }
     
     // If fetching completed shipments, also include receipt IDs
-    let receiptMap: Record<number, number> = {};
+    let receiptMap: Record<string, string> = {};
     if (status === 'completed') {
       const shipmentIds = shipmentsWithStatus.map(s => s.shipment.id);
       if (shipmentIds.length > 0) {
@@ -3752,7 +3751,7 @@ router.get("/shipments/by-status/:status", async (req, res) => {
         receiptMap = receiptsList.reduce((acc, receipt) => {
           acc[receipt.shipmentId] = receipt.id;
           return acc;
-        }, {} as Record<number, number>);
+        }, {} as Record<string, string>);
       }
     }
     
@@ -5476,7 +5475,7 @@ router.put("/receipts/:id", async (req, res) => {
       // Insert updated receipt items
       const itemsToInsert = items.map((item: any) => ({
         receiptId,
-        itemId: parseInt(item.itemId) || item.itemId,
+        itemId: item.itemId,
         itemType: 'purchase',
         expectedQuantity: item.expectedQuantity || 1,
         receivedQuantity: item.receivedQuantity || 0,
@@ -7371,8 +7370,9 @@ router.post("/receipts/auto-save", async (req, res) => {
         .where(eq(receiptItems.receiptId, receipt.id));
       
       // Create maps for quick lookup - preserve both itemType AND expectedQuantity
-      const itemTypeMap = new Map();
-      const expectedQuantityMap = new Map();
+      // Keys are string IDs (UUIDs)
+      const itemTypeMap = new Map<string, string>();
+      const expectedQuantityMap = new Map<string, number>();
       existingItems.forEach(item => {
         itemTypeMap.set(item.itemId, item.itemType);
         expectedQuantityMap.set(item.itemId, item.expectedQuantity);
@@ -7385,18 +7385,15 @@ router.post("/receipts/auto-save", async (req, res) => {
       
       // Insert updated receipt items
       const itemsToInsert = items.map((item: any) => {
-        // Handle both integer and string itemIds
-        const itemId = typeof (item.itemId || item.id) === 'string' 
-          ? parseInt((item.itemId || item.id).toString()) 
-          : (item.itemId || item.id);
+        // Use itemId as string (UUIDs)
+        const itemId = item.itemId || item.id;
         
         // Preserve the original itemType from the database, or default to 'custom'
         const itemType = itemTypeMap.get(itemId) || 'custom';
         
         // CRITICAL FIX: Preserve expectedQuantity from database if not provided
-        // Ensure itemId is converted to number for map lookup
         // Priority: provided value → existing DB value → default to 1
-        const existingExpectedQty = expectedQuantityMap.get(Number(itemId));
+        const existingExpectedQty = expectedQuantityMap.get(itemId);
         const expectedQty = item.expectedQuantity || item.expectedQty || existingExpectedQty || 1;
         
         return {
@@ -9137,8 +9134,8 @@ router.post("/shipments/:id/costs", async (req, res) => {
 // 3. PUT /api/imports/shipments/:id/costs/:costId - Edit a cost line
 router.put("/shipments/:id/costs/:costId", async (req, res) => {
   try {
-    const shipmentId = req.params.id; // UUID string, don't parseInt
-    const costId = parseInt(req.params.costId);
+    const shipmentId = req.params.id; // UUID string
+    const costId = req.params.costId; // UUID string
     
     // Validate request body
     const validationResult = updateCostSchema.safeParse(req.body);
@@ -9238,8 +9235,8 @@ router.put("/shipments/:id/costs/:costId", async (req, res) => {
 // 4. DELETE /api/imports/shipments/:id/costs/:costId - Remove a cost line
 router.delete("/shipments/:id/costs/:costId", async (req, res) => {
   try {
-    const shipmentId = req.params.id; // UUID string, don't parseInt
-    const costId = parseInt(req.params.costId);
+    const shipmentId = req.params.id; // UUID string
+    const costId = req.params.costId; // UUID string
     
     // Verify cost exists and belongs to shipment
     const [existingCost] = await db

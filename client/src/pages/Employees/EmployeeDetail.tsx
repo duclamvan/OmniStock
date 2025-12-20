@@ -142,7 +142,7 @@ export default function EmployeeDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<EmployeeIncident | null>(null);
 
-  const employeeId = id ? parseInt(id, 10) : null;
+  const employeeId = id || null;
 
   const { data: employee, isLoading: employeeLoading, error: employeeError } = useQuery<Employee>({
     queryKey: ["/api/employees", employeeId],

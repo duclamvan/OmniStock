@@ -824,7 +824,7 @@ export default function AtWarehouse() {
 
   // Update purchase order status mutation
   const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiRequest('PATCH', `/api/imports/purchases/${id}`, { status });
     },
     onSuccess: () => {
@@ -1400,8 +1400,7 @@ export default function AtWarehouse() {
   const confirmStatusChange = (newStatus: string) => {
     if (statusTarget) {
       if (statusTarget.type === 'order') {
-        // Order IDs are numbers
-        updateOrderStatusMutation.mutate({ id: parseInt(statusTarget.id), status: newStatus });
+        updateOrderStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
       } else {
         updateItemStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
       }

@@ -754,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/roles/:id - Get a specific role with permissions (admin-only)
   app.get('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const roleId = parseInt(req.params.id);
+      const roleId = req.params.id;
       const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
       
       if (!role) {
@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/roles/:id - Update a role (admin-only)
   app.patch('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const roleId = parseInt(req.params.id);
+      const roleId = req.params.id;
       const { permissionIds, ...roleData } = req.body;
       
       // Check if role exists
@@ -892,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DELETE /api/roles/:id - Delete a role (admin-only)
   app.delete('/api/roles/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const roleId = parseInt(req.params.id);
+      const roleId = req.params.id;
       
       // Check if role exists
       const [existingRole] = await db.select().from(roles).where(eq(roles.id, roleId));
@@ -1004,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/employees/:id - Get single employee (admin-only)
   app.get('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const employee = await storage.getEmployee(employeeId);
       
       if (!employee) {
@@ -1067,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/employees/:id - Update employee (admin-only)
   app.patch('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const employee = await storage.updateEmployee(employeeId, req.body);
       
       if (!employee) {
@@ -1084,7 +1084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DELETE /api/employees/:id - Delete employee (admin-only)
   app.delete('/api/employees/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       await storage.deleteEmployee(employeeId);
       res.json({ message: 'Employee deleted successfully' });
     } catch (error) {
@@ -1096,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/employees/:id/assign-user - Assign user account to employee (admin-only)
   app.patch('/api/employees/:id/assign-user', requireRole(['administrator']), async (req: any, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const { userId } = req.body;
       const adminUser = req.user;
 
@@ -1158,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/employees/:id/stats - Get employee performance stats (admin-only)
   app.get('/api/employees/:id/stats', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const stats = await storage.getEmployeeStats(employeeId);
       res.json(stats);
     } catch (error) {
@@ -1170,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/employees/:id/incidents - Get employee incidents (admin-only)
   app.get('/api/employees/:id/incidents', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const incidents = await storage.getEmployeeIncidents(employeeId);
       res.json(incidents);
     } catch (error) {
@@ -1182,7 +1182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/employees/:id/incidents - Create new incident (admin-only)
   app.post('/api/employees/:id/incidents', requireRole(['administrator']), async (req: any, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const user = req.user;
       
       // Validate request body
@@ -1208,7 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/employees/:employeeId/incidents/:id - Update incident (admin-only)
   app.patch('/api/employees/:employeeId/incidents/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
-      const incidentId = parseInt(req.params.id);
+      const incidentId = req.params.id;
       const user = req.user;
       
       // Validate request body (partial update, all fields optional)
@@ -1242,7 +1242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DELETE /api/employees/:employeeId/incidents/:id - Delete incident (admin-only)
   app.delete('/api/employees/:employeeId/incidents/:id', requireRole(['administrator']), async (req, res) => {
     try {
-      const incidentId = parseInt(req.params.id);
+      const incidentId = req.params.id;
       await storage.deleteEmployeeIncident(incidentId);
       res.json({ message: 'Incident deleted successfully' });
     } catch (error) {
@@ -1254,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/employees/:id/tasks - Get employee assigned tasks (admin-only)
   app.get('/api/employees/:id/tasks', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const employee = await storage.getEmployee(employeeId);
       
       if (!employee?.userId) {
@@ -1272,7 +1272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/employees/:id/activity - Get employee activity log with fulfillment logs (admin-only)
   app.get('/api/employees/:id/activity', requireRole(['administrator']), async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const employee = await storage.getEmployee(employeeId);
       
       if (!employee?.userId) {
@@ -10389,7 +10389,7 @@ Important:
     try {
       const userId = req.verifiedUser.id;
       const userRole = req.verifiedUser.role;
-      const notificationId = parseInt(req.params.id);
+      const notificationId = req.params.id;
       const isAdmin = userRole === 'administrator';
 
       // SECURITY: Enforce ownership at database level using WHERE clause
@@ -10595,7 +10595,7 @@ Important:
         return res.status(401).json({ message: 'User not authenticated' });
       }
 
-      const subId = parseInt(req.params.id);
+      const subId = req.params.id;
       const { notificationTypes } = req.body;
 
       if (!Array.isArray(notificationTypes)) {
@@ -10848,7 +10848,7 @@ Important:
   // PATCH /api/warehouse-tasks/:id - Update task
   app.patch('/api/warehouse-tasks/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const taskId = parseInt(req.params.id);
+      const taskId = req.params.id;
       const userId = req.user?.id;
       const userRole = req.user?.role;
 
@@ -10901,7 +10901,7 @@ Important:
   // DELETE /api/warehouse-tasks/:id - Delete task (admin only)
   app.delete('/api/warehouse-tasks/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
-      const taskId = parseInt(req.params.id);
+      const taskId = req.params.id;
 
       // Check if task exists
       const existingTask = await storage.getWarehouseTaskById(taskId);
@@ -16081,7 +16081,7 @@ Important rules:
   // Get specific backup
   app.get('/api/backups/:id', isAuthenticated, requireRole(['administrator']), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const { id } = req.params;
       const backup = await getBackupById(id);
       
       if (!backup) {
@@ -16098,7 +16098,7 @@ Important rules:
   // Download backup file
   app.get('/api/backups/:id/download', isAuthenticated, requireRole(['administrator']), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const { id } = req.params;
       const backup = await getBackupById(id);
       
       if (!backup) {
@@ -16126,7 +16126,7 @@ Important rules:
   // Delete backup
   app.delete('/api/backups/:id', isAuthenticated, requireRole(['administrator']), async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const { id } = req.params;
       const deleted = await deleteBackup(id);
       
       if (!deleted) {
@@ -16471,7 +16471,7 @@ Important rules:
   // Get invoice by ID
   app.get('/api/invoices/:id', isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const { id } = req.params;
       const invoice = await storage.getInvoice(id);
 
       if (!invoice) {
