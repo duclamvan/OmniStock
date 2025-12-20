@@ -27,10 +27,9 @@ async function pollAllActiveShipments(): Promise<{ synced: number; errors: numbe
       );
 
     const shipmentsWithTracking = activeShipments.filter(s => {
-      const trackingNumbers = s.trackingNumbers || 
-        (s.endTrackingNumbers?.length ? s.endTrackingNumbers : 
-          (s.endTrackingNumber ? [s.endTrackingNumber] : []));
-      return trackingNumbers.length > 0;
+      return s.trackingNumber ||
+        s.endTrackingNumber ||
+        (s.endTrackingNumbers?.length);
     });
 
     console.log(`[EasyPost Polling] Found ${shipmentsWithTracking.length} shipments with tracking numbers`);

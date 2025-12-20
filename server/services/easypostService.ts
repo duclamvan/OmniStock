@@ -264,7 +264,20 @@ export class EasyPostService {
         return { success: false, error: "Shipment not found" };
       }
 
-      const trackingNumbers = shipment.trackingNumbers || [];
+      const trackingNumbers: string[] = [];
+      if (shipment.trackingNumber) {
+        trackingNumbers.push(shipment.trackingNumber);
+      }
+      if (shipment.endTrackingNumber && !trackingNumbers.includes(shipment.endTrackingNumber)) {
+        trackingNumbers.push(shipment.endTrackingNumber);
+      }
+      if (shipment.endTrackingNumbers?.length) {
+        for (const tn of shipment.endTrackingNumbers) {
+          if (tn && !trackingNumbers.includes(tn)) {
+            trackingNumbers.push(tn);
+          }
+        }
+      }
       if (trackingNumbers.length === 0) {
         return { success: false, error: "No tracking numbers on shipment" };
       }
@@ -386,8 +399,10 @@ export class EasyPostService {
       let errors = 0;
 
       for (const shipment of activeShipments) {
-        const trackingNumbers = shipment.trackingNumbers || [];
-        if (trackingNumbers.length === 0) continue;
+        const hasTracking = shipment.trackingNumber ||
+          shipment.endTrackingNumber ||
+          (shipment.endTrackingNumbers?.length);
+        if (!hasTracking) continue;
 
         const result = await this.syncShipmentTracking(shipment.id);
         if (result.success) {
