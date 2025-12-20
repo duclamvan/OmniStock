@@ -1244,7 +1244,7 @@ export default function InternationalTransit() {
                       <Textarea 
                         name="notes" 
                         rows={2}
-                        defaultValue={selectedShipment?.notes || selectedPendingShipment?.notes || ''}
+                        defaultValue={selectedShipment?.notes || ''}
                         className="text-sm"
                         placeholder={t('additionalShippingNotes')}
                       />
@@ -1466,18 +1466,18 @@ export default function InternationalTransit() {
                           
                           const quickShipData = {
                             consolidationId: pending.id,
-                            carrier: pending.shippingMethod || 'standard',
-                            trackingNumber: '', // Will be provided later
+                            carrier: '',
+                            trackingNumber: '',
                             endCarrier: null,
                             endTrackingNumber: null,
                             shipmentName: generateShipmentName(),
                             shipmentType: pending.shippingMethod,
                             origin: pending.warehouse || 'China, Guangzhou',
                             destination: warehouses.length > 0 ? warehouses[0].name : 'Czech Republic, Prague',
-                            shippingCost: 0, // Will be provided later
+                            shippingCost: 0,
                             shippingCostCurrency: 'USD',
                             shippingMethod: pending.shippingMethod,
-                            notes: 'Quick shipped - tracking to be added',
+                            notes: '',
                           };
                           
                           createShipmentMutation.mutate(quickShipData);
