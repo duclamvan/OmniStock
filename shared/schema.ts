@@ -361,6 +361,7 @@ export const receiptItems = pgTable("receipt_items", {
   status: text("status").default("ok"), // ok, damaged, partial
   expectedQuantity: integer("expected_quantity").notNull(),
   receivedQuantity: integer("received_quantity").notNull(),
+  assignedQuantity: integer("assigned_quantity").default(0), // Quantity assigned to warehouse locations
   damagedQuantity: integer("damaged_quantity").default(0),
   missingQuantity: integer("missing_quantity").default(0),
   barcode: text("barcode"),

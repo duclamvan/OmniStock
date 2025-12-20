@@ -2011,14 +2011,15 @@ function QuickStorageSheet({
   
   // Store location mutation
   const storeLocationMutation = useMutation({
-    mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary }: {
+    mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary, receiptItemId }: {
       productId: string;
       locationCode: string;
       locationType: string;
       quantity: number;
       isPrimary: boolean;
+      receiptItemId?: number | string;
     }) => {
-      return apiRequest('POST', `/api/products/${productId}/locations`, { locationCode, locationType, quantity, isPrimary });
+      return apiRequest('POST', `/api/products/${productId}/locations`, { locationCode, locationType, quantity, isPrimary, receiptItemId });
     },
     onSuccess: (data, variables) => {
       // Force immediate refetch to sync cache and UI
@@ -2523,7 +2524,8 @@ function QuickStorageSheet({
                                         locationCode: locationCode,
                                         locationType: 'warehouse',
                                         quantity: itemRemainingQty,
-                                        isPrimary: isPrimary
+                                        isPrimary: isPrimary,
+                                        receiptItemId: item.receiptItemId
                                       });
                                       
                                       // Update local state

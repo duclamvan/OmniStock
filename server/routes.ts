@@ -5901,6 +5901,22 @@ Important:
         });
       }
 
+      // Update receipt item's assignedQuantity if receiptItemId is provided
+      const receiptItemId = req.body.receiptItemId;
+      if (receiptItemId && quantityToAdd > 0) {
+        try {
+          const [receiptItem] = await db.select().from(receiptItems).where(eq(receiptItems.id, receiptItemId));
+          if (receiptItem) {
+            const currentAssigned = receiptItem.assignedQuantity || 0;
+            const newAssigned = Math.min(currentAssigned + quantityToAdd, receiptItem.receivedQuantity);
+            await db.update(receiptItems).set({ assignedQuantity: newAssigned }).where(eq(receiptItems.id, receiptItemId));
+          }
+        } catch (error) {
+          console.error('Failed to update receipt item assignedQuantity:', error);
+          // Don't fail the request - location was created successfully
+        }
+      }
+
       res.status(201).json(location);
     } catch (error: any) {
       console.error("Error creating product location:", error);
