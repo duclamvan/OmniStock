@@ -1318,8 +1318,8 @@ export default function AtWarehouse() {
   });
 
   const handleUnpack = (order: ImportPurchase) => {
-    setSelectedOrder(order);
-    setShowUnpackDialog(true);
+    // Directly unpack without confirmation dialog
+    unpackMutation.mutate(order.id);
   };
   
   // Handle ship consolidation
