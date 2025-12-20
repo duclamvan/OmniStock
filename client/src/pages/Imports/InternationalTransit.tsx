@@ -429,6 +429,33 @@ export default function InternationalTransit() {
     });
   }, [shipmentsKey]); // Use memoized key instead of shipments array
 
+  // Automatic 6-hour tracking sync for all active shipments
+  useEffect(() => {
+    const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+    
+    const syncStaleShipments = () => {
+      const now = new Date();
+      shipments.forEach(shipment => {
+        if (shipment.status !== 'delivered' && shipment.trackingNumber) {
+          const lastSync = shipment.track17LastSync ? new Date(shipment.track17LastSync) : null;
+          const needsSync = !lastSync || (now.getTime() - lastSync.getTime() > SIX_HOURS_MS);
+          
+          if (needsSync) {
+            sync17TrackMutation.mutate(shipment.id);
+          }
+        }
+      });
+    };
+
+    // Check on mount and set interval
+    if (shipments.length > 0) {
+      syncStaleShipments();
+    }
+
+    const interval = setInterval(syncStaleShipments, SIX_HOURS_MS);
+    return () => clearInterval(interval);
+  }, [shipmentsKey]);
+
   // Handle edit shipment form submission
   const handleEditShipment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1670,81 +1697,40 @@ export default function InternationalTransit() {
                   <Card 
                     key={shipment.id} 
                     id={`shipment-${shipment.id}`}
-                    className="hover:shadow-md transition-all duration-300 cursor-pointer border"
+                    className="group hover:shadow-md transition-all duration-200 border border-border/50 hover:border-border"
                     onClick={() => setViewShipmentDetails(shipment)}
                   >
-                    <CardContent className="p-3 sm:p-4">
-                      {/* Compact Header Row */}
-                      <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-3">
-                        {/* Left: Type Icon + Name + Metadata */}
-                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                          <div className="shrink-0 mt-0.5">
-                            {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '', 'h-5 w-5 sm:h-6 sm:w-6')}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            {/* Title + Type Badge */}
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h3 className="font-bold text-base sm:text-lg truncate" data-testid={`shipment-tracking-${shipment.id}`}>
-                                {shipment.shipmentName || shipment.trackingNumber || `${t('shipment')} #${shipment.id}`}
-                              </h3>
-                              {shipment.shipmentType && (() => {
-                                const typeInfo = formatShipmentType(shipment.shipmentType);
-                                return typeInfo.badge && (
-                                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300 shrink-0">
-                                    {typeInfo.badge}
-                                  </Badge>
-                                );
-                              })()}
-                            </div>
-                            
-                            {/* Compact Metadata Row */}
-                            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-muted-foreground flex-wrap">
-                              {shipment.shipmentType && (() => {
-                                const typeInfo = formatShipmentType(shipment.shipmentType);
-                                return <span className="font-semibold">{typeInfo.label}</span>;
-                              })()}
-                              {shipment.totalUnits && shipment.unitType && (
-                                <>
-                                  <span>•</span>
-                                  <span>{shipment.totalUnits} {shipment.unitType}</span>
-                                </>
-                              )}
-                              {shipment.totalWeight && (
-                                <>
-                                  <span>•</span>
-                                  <span>{shipment.totalWeight}kg</span>
-                                </>
-                              )}
-                              {shipment.shippingCost && (
-                                <>
-                                  <span>•</span>
-                                  <span className="font-semibold">{shipment.shippingCostCurrency || 'USD'} {shipment.shippingCost}</span>
-                                </>
-                              )}
-                              <span>•</span>
-                              <span>{shipment.endCarrier || shipment.carrier || t('standardCarrier')}</span>
-                            </div>
-                          </div>
+                    <CardContent className="p-4">
+                      {/* Header: Title + Status Dropdown */}
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base truncate" data-testid={`shipment-tracking-${shipment.id}`}>
+                            {shipment.shipmentName || shipment.trackingNumber || `${t('shipment')} #${shipment.id.slice(0, 8)}`}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {shipment.origin} → {shipment.destination}
+                          </p>
                         </div>
                         
-                        {/* Right: ETA Badge + Status + Actions */}
-                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
-                          <Badge className={`text-[10px] sm:text-xs whitespace-nowrap h-6 sm:h-7 px-2 ${getETAColor(shipment)}`}>
-                            <CalendarDays className="h-3 w-3 mr-1" />
-                            {getTimeRemaining(shipment)}
-                          </Badge>
+                        <div className="flex items-center gap-2 shrink-0">
                           <Select
                             value={shipment.status}
                             onValueChange={(status) => 
                               updateTrackingMutation.mutate({ 
                                 shipmentId: shipment.id, 
-                                data: { status }
+                                data: { status, ...(status === 'delivered' ? { deliveredAt: new Date().toISOString() } : {}) }
                               })
                             }
                           >
                             <SelectTrigger 
                               onClick={(e) => e.stopPropagation()}
-                              className={`w-28 sm:w-32 h-7 sm:h-8 text-xs ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}
+                              className={`h-8 text-xs font-medium min-w-[100px] ${
+                                shipment.status === 'delivered' 
+                                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/50 dark:border-green-800 dark:text-green-300' 
+                                  : shipment.status === 'in transit' 
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300' 
+                                    : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-300'
+                              }`}
                             >
                               <SelectValue />
                             </SelectTrigger>
@@ -1755,16 +1741,15 @@ export default function InternationalTransit() {
                             </SelectContent>
                           </Select>
                           
-                          {/* Three-dot menu for edit */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
                                 variant="ghost" 
-                                size="sm" 
-                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -1776,372 +1761,92 @@ export default function InternationalTransit() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 {t('editShipment')}
                               </DropdownMenuItem>
-                              {shipment.status === "pending" && (
-                                <DropdownMenuItem onClick={() => {
-                                  const shipmentId = shipment.id;
-                                  editShipmentMutation.mutate({
-                                    shipmentId,
-                                    data: { status: "in transit" }
-                                  }, {
-                                    onSuccess: () => {
-                                      // Additional scrolling for Quick Ship
-                                      setTimeout(() => {
-                                        const card = document.getElementById(`shipment-${shipmentId}`);
-                                        if (card) {
-                                          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                          card.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
-                                          setTimeout(() => {
-                                            card.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-                                          }, 2000);
-                                        }
-                                      }, 600);
-                                    }
-                                  });
-                                }}>
-                                  <Plane className="h-4 w-4 mr-2 text-blue-600" />
-                                  {t('quickShipMarkInTransit')}
-                                </DropdownMenuItem>
-                              )}
-                              {shipment.status === "in transit" && (
-                                <DropdownMenuItem onClick={() => {
-                                  const shipmentId = shipment.id;
-                                  editShipmentMutation.mutate({
-                                    shipmentId,
-                                    data: { status: "delivered", deliveredAt: new Date().toISOString() }
-                                  }, {
-                                    onSuccess: () => {
-                                      // Additional scrolling for Quick Ship
-                                      setTimeout(() => {
-                                        const card = document.getElementById(`shipment-${shipmentId}`);
-                                        if (card) {
-                                          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                          card.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
-                                          setTimeout(() => {
-                                            card.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2');
-                                          }, 2000);
-                                        }
-                                      }, 600);
-                                    }
-                                  });
-                                }}>
-                                  <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                                  {t('quickShipMarkDelivered')}
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                sync17TrackMutation.mutate(shipment.id);
+                              }}>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                {t('syncTracking')}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
                       </div>
 
-                      {/* Route Section */}
-                      <div className="flex items-center gap-3 mb-4 text-sm bg-slate-50 dark:bg-slate-900/30 rounded-lg px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-blue-600" />
-                          <span className="font-medium">{shipment.origin}</span>
+                      {/* Progress Bar */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-1.5 text-xs">
+                          <span className="text-muted-foreground">
+                            {format(new Date(shipment.createdAt), 'MMM dd')}
+                          </span>
+                          <span className={`font-medium ${
+                            shipment.status === 'delivered' ? 'text-green-600' :
+                            (() => {
+                              const eta = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+                              if (!eta) return 'text-muted-foreground';
+                              const days = differenceInDays(new Date(eta), new Date());
+                              if (days < 0) return 'text-red-600';
+                              if (days <= 2) return 'text-amber-600';
+                              return 'text-blue-600';
+                            })()
+                          }`}>
+                            {getTimeRemaining(shipment)}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
+                              ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
+                              : '—'}
+                          </span>
                         </div>
-                        <div className="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
-                        <div className="flex items-center gap-2">
-                          <Target className="h-3.5 w-3.5 text-green-600" />
-                          <span className="font-medium">{shipment.destination}</span>
-                        </div>
+                        <Progress 
+                          value={progress} 
+                          className={`h-2 ${
+                            shipment.status === 'delivered' ? '[&>div]:bg-green-500' :
+                            (() => {
+                              const eta = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+                              if (!eta) return '[&>div]:bg-slate-400';
+                              const days = differenceInDays(new Date(eta), new Date());
+                              if (days < 0) return '[&>div]:bg-red-500';
+                              if (days <= 2) return '[&>div]:bg-amber-500';
+                              return '[&>div]:bg-blue-500';
+                            })()
+                          }`}
+                        />
+                        {shipment.track17LastSync && (
+                          <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                            {t('lastSynced')}: {format(new Date(shipment.track17LastSync), 'MMM dd, HH:mm')}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Shipping Progress & Status - Always Visible */}
-                      <div className="mb-3 space-y-2">
-                        {/* Shipping Duration and Delay Info */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 text-xs">
-                            <Clock className="h-3 w-3 text-cyan-600" />
-                            <span className="text-muted-foreground">
-                              {shipment.status === 'delivered' ? 'Delivered in' : 'In transit'}
-                            </span>
-                            <Badge variant="outline" className="text-xs h-5 bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-700">
-                              {getDaysInTransit(shipment)} {getDaysInTransit(shipment) === 1 ? 'day' : 'days'}
-                            </Badge>
-                          </div>
-                          
-                          {(() => {
-                            const daysDelayed = getDelayInfo(shipment);
-                            if (daysDelayed) {
-                              return (
-                                <div className="flex items-center gap-1.5">
-                                  <AlertCircle className="h-3 w-3 text-red-600" />
-                                  <Badge variant="outline" className="text-xs h-5 bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-700">
-                                    Delayed {daysDelayed} {daysDelayed === 1 ? 'day' : 'days'}
-                                  </Badge>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-
-                        {/* Progress Bar with Dates */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs text-muted-foreground font-medium">
-                              {format(new Date(shipment.createdAt), 'MMM dd')}
-                            </span>
-                            <span className={`text-sm font-semibold ${getProgressTextColor(shipment)}`}>
-                              {getTimeRemaining(shipment)}
-                            </span>
-                            <span className="text-xs text-muted-foreground font-medium">
-                              {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
-                                ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
-                                : 'TBD'}
-                            </span>
-                          </div>
-                          <Progress 
-                            value={progress} 
-                            className={`h-2.5 ${(() => {
-                              const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
-                              if (!estimatedDelivery) return '[&>div]:bg-gray-500';
-                              
-                              const deliveryDate = new Date(estimatedDelivery);
-                              const currentDate = new Date();
-                              const daysRemaining = differenceInDays(deliveryDate, currentDate);
-                              
-                              if (shipment.status === 'delivered') return '[&>div]:bg-green-500';
-                              if (daysRemaining < 0) return '[&>div]:bg-red-500';
-                              if (daysRemaining === 0) return '[&>div]:bg-orange-500';
-                              if (daysRemaining <= 3) return '[&>div]:bg-yellow-500';
-                              return '[&>div]:bg-cyan-500';
-                            })()}`}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Tracking Numbers - Compact Expandable */}
-                      {(shipment.trackingNumber || shipment.endTrackingNumber) && (
-                        <div className="mb-3">
-                          <div 
-                            className="flex items-center justify-between cursor-pointer bg-slate-50 dark:bg-slate-900/30 rounded-md px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }));
-                            }}
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Package className="h-3.5 w-3.5 text-cyan-600" />
-                              <span className="text-xs font-medium">{t('trackingNumbers')}</span>
-                              {shipment.endTrackingNumber && (
-                                <Badge variant="outline" className="text-[10px] h-4 px-1">{t('twoCarriers')}</Badge>
-                              )}
-                            </div>
-                            {expandedTracking[shipment.id] ? (
-                              <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
-                          </div>
-                          
-                          {expandedTracking[shipment.id] && (
-                            <div className="mt-2 space-y-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md p-3">
-                              {/* Primary Carrier */}
-                              {shipment.trackingNumber && (
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('primaryCarrier')}</p>
-                                      <p className="text-xs font-medium mt-0.5">{shipment.carrier || t('standardCarrier')}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          copyToClipboard(shipment.trackingNumber);
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          window.open(getCarrierTrackingUrl(shipment.carrier, shipment.trackingNumber), '_blank');
-                                        }}
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  <div className="bg-slate-50 dark:bg-slate-900 rounded px-2 py-1.5">
-                                    <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">{shipment.trackingNumber}</p>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* End Carrier */}
-                              {shipment.endTrackingNumber && (
-                                <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('endCarrier')}</p>
-                                      <p className="text-xs font-medium mt-0.5">{shipment.endCarrier || t('localCourier')}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (shipment.endTrackingNumber) {
-                                            copyToClipboard(shipment.endTrackingNumber);
-                                          }
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (shipment.endTrackingNumber) {
-                                            window.open(getCarrierTrackingUrl(shipment.endCarrier || t('localCourier'), shipment.endTrackingNumber), '_blank');
-                                          }
-                                        }}
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  <div className="bg-slate-50 dark:bg-slate-900 rounded px-2 py-1.5">
-                                    <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">{shipment.endTrackingNumber}</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Shipment Items - Always Show */}
+                      {/* Package Contents - Clean List */}
                       {shipment.items && shipment.items.length > 0 && (
-                        <div className="border rounded-lg p-3 bg-muted/30 mb-3">
-                          <div className="text-sm font-medium mb-2">{t('packageContents')} ({shipment.totalUnits || shipment.itemCount} {shipment.unitType || t('items')}):</div>
-                          <div className="space-y-2">
-                            {shipment.items.map((item: any, index: number) => (
-                              <div key={index} className="text-sm flex items-center gap-2">
+                        <div className="border-t pt-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
+                            {t('packageContents')} ({shipment.totalUnits || shipment.itemCount})
+                          </p>
+                          <div className="space-y-1.5">
+                            {shipment.items.slice(0, 3).map((item: any, index: number) => (
+                              <div key={index} className="flex items-center gap-2 text-sm">
                                 {item.imageUrl ? (
-                                  <img src={item.imageUrl} alt="" className="w-8 h-8 object-cover rounded border flex-shrink-0" />
+                                  <img src={item.imageUrl} alt="" className="w-6 h-6 object-cover rounded flex-shrink-0" />
                                 ) : (
-                                  <div className="w-8 h-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
-                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  <div className="w-6 h-6 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                    <Package className="h-3 w-3 text-muted-foreground" />
                                   </div>
                                 )}
-                                <span className="text-muted-foreground flex-1 truncate">
-                                  {item.name || `Item ${index + 1}`} {item.trackingNumber && `(${item.trackingNumber})`}
-                                </span>
-                                <span className="font-medium">{t('qty')}: {item.quantity || 1}</span>
+                                <span className="flex-1 truncate">{item.name || `Item ${index + 1}`}</span>
+                                <span className="text-muted-foreground text-xs">×{item.quantity || 1}</span>
                               </div>
                             ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Notes Section */}
-                      {shipment.notes && (
-                        <div className="border rounded-lg p-3 bg-muted/30 mb-3">
-                          <div className="text-sm font-medium mb-2">{t('notes')}:</div>
-                          <p className="text-sm text-muted-foreground">{shipment.notes}</p>
-                        </div>
-                      )}
-
-                      {/* Compact AI Prediction Section */}
-                      {prediction && (
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-md p-3 mb-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <TrendingUp className="h-3 w-3 text-blue-600" />
-                              <span className="text-xs font-semibold text-blue-800 dark:text-blue-200">{t('aiPrediction')}</span>
-                            </div>
-                            <Badge variant="secondary" className={`text-xs ${getConfidenceColor(prediction.confidence)}`}>
-                              {prediction.confidence}%
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-3 text-xs">
-                            <div>
-                              <p className="text-muted-foreground">{t('estimatedDeliveryShort')}</p>
-                              <p className="font-semibold">
-                                {format(new Date(prediction.estimatedDelivery), 'MMM dd')}
+                            {shipment.items.length > 3 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{shipment.items.length - 3} {t('moreItems')}
                               </p>
-                            </div>
-                            
-                            <div>
-                              <p className="text-muted-foreground">{t('averageTime')}</p>
-                              <p className="font-semibold">
-                                {prediction.historicalAverage}d
-                              </p>
-                            </div>
-                            
-                            <div>
-                              <p className="text-muted-foreground">{t('factors')}</p>
-                              <div className="flex gap-1">
-                                {prediction.factors.customsDelay && (
-                                  <span className="text-yellow-600">+{prediction.factors.customsDays}d</span>
-                                )}
-                                {prediction.factors.fastRoute && (
-                                  <span className="text-green-600">Fast</span>
-                                )}
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                       )}
-
-                      {/* Compact Action Bar */}
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex items-center space-x-2">
-                          {!prediction && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                predictDelivery(shipment);
-                              }}
-                              disabled={isPredicting}
-                              data-testid={`button-predict-${shipment.id}`}
-                            >
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              {isPredicting ? 'Predicting...' : 'AI Predict'}
-                            </Button>
-                          )}
-                          
-                          {shipment.status !== 'delivered' && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateTrackingMutation.mutate({
-                                  shipmentId: shipment.id,
-                                  data: { status: 'delivered' }
-                                });
-                              }}
-                              data-testid={`button-mark-delivered-${shipment.id}`}
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              {t('markDelivered')}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 );
