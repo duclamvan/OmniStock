@@ -2634,7 +2634,7 @@ router.post("/shipments", async (req, res) => {
 // Update shipment tracking
 router.patch("/shipments/:id/tracking", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const updateData: any = {
       updatedAt: new Date()
     };
@@ -3025,7 +3025,7 @@ router.post("/shipments/generate-name", async (req, res) => {
 // Regenerate shipment name endpoint
 router.post("/shipments/:id/regenerate-name", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Get the shipment's data including origin and shipmentType
     const [shipment] = await db
@@ -3203,7 +3203,7 @@ router.post("/shipments/predict-delivery", async (req, res) => {
 // Record actual delivery for AI learning
 router.post("/shipments/:id/delivered", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const deliveredAt = new Date();
     
     // Get shipment details
@@ -3330,7 +3330,7 @@ router.post("/parse-invoice", upload.single('invoice'), async (req, res) => {
 // Start receiving a shipment (move to receiving status)
 router.post("/shipments/:id/start-receiving", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Update the shipment's receiving status
     const [updated] = await db
@@ -3359,7 +3359,7 @@ router.post("/shipments/:id/start-receiving", async (req, res) => {
 // Move shipment back to receivable status
 router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const { preserveData = false } = req.body; // Extract preserveData option
     
     // Check if shipment exists and is currently in receiving status
@@ -4567,8 +4567,8 @@ router.get("/shipments/archived", async (req, res) => {
 router.get("/shipments/:id", async (req, res) => {
   try {
     console.log(`Fetching shipment with ID: ${req.params.id}`);
-    const shipmentId = parseInt(req.params.id);
-    if (isNaN(shipmentId)) {
+    const shipmentId = req.params.id; // UUID string, don't parseInt
+    if (!shipmentId) {
       console.log("Invalid shipment ID");
       return res.status(400).json({ message: "Invalid shipment ID" });
     }
@@ -6751,7 +6751,7 @@ router.get("/receipts", async (req, res) => {
 // Get receipt by shipment ID
 router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.shipmentId);
+    const shipmentId = req.params.shipmentId; // UUID string, don't parseInt
     
     // Get the shipment details
     const [shipmentData] = await db
@@ -8229,7 +8229,7 @@ router.get('/receipts/:id/report', async (req, res) => {
 // Get comprehensive report by SHIPMENT ID (not receipt ID)
 router.get('/shipments/:id/report', async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Get shipment details
     const [shipment] = await db
@@ -8696,7 +8696,7 @@ const cartonSchema = z.object({
 // 1. GET /api/imports/shipments/:id/costs - Get all costs for a shipment
 router.get("/shipments/:id/costs", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Verify shipment exists
     const [shipment] = await db
@@ -8769,7 +8769,7 @@ router.get("/shipments/:id/costs", async (req, res) => {
 // 2. POST /api/imports/shipments/:id/costs - Add a cost line to a shipment
 router.post("/shipments/:id/costs", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Validate request body
     const validationResult = addCostSchema.safeParse(req.body);
@@ -8860,7 +8860,7 @@ router.post("/shipments/:id/costs", async (req, res) => {
 // 3. PUT /api/imports/shipments/:id/costs/:costId - Edit a cost line
 router.put("/shipments/:id/costs/:costId", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const costId = parseInt(req.params.costId);
     
     // Validate request body
@@ -8961,7 +8961,7 @@ router.put("/shipments/:id/costs/:costId", async (req, res) => {
 // 4. DELETE /api/imports/shipments/:id/costs/:costId - Remove a cost line
 router.delete("/shipments/:id/costs/:costId", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const costId = parseInt(req.params.costId);
     
     // Verify cost exists and belongs to shipment
@@ -8998,7 +8998,7 @@ router.delete("/shipments/:id/costs/:costId", async (req, res) => {
 // 5. POST /api/imports/shipments/:id/cartons - Add/update carton dimensions
 router.post("/shipments/:id/cartons", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Validate request body - should be an array of cartons
     const cartonsSchema = z.array(cartonSchema);
@@ -9062,7 +9062,7 @@ router.post("/shipments/:id/cartons", async (req, res) => {
 // 6. GET /api/imports/shipments/:id/cartons - Get carton details
 router.get("/shipments/:id/cartons", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Verify shipment exists
     const [shipment] = await db
@@ -9153,7 +9153,7 @@ router.get("/shipments/:id/cartons", async (req, res) => {
 // 7. POST /api/imports/shipments/:id/calculate-landing-costs - Trigger calculation
 router.post("/shipments/:id/calculate-landing-costs", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Verify shipment exists
     const [shipment] = await db
@@ -9184,7 +9184,7 @@ router.post("/shipments/:id/calculate-landing-costs", async (req, res) => {
 // 8. GET /api/imports/shipments/:id/landing-cost-preview - Preview allocations
 router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Verify shipment exists
     const [shipment] = await db
@@ -9256,7 +9256,7 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
 // Method-specific landing cost preview route
 router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const method = req.params.method.toUpperCase();
     
     // Validate allocation method
@@ -9340,10 +9340,10 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
 // 9.5. PATCH /api/imports/shipments/:id/allocation-method - Save allocation method selection
 router.patch("/shipments/:id/allocation-method", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     const { allocationMethod } = req.body;
     
-    if (isNaN(shipmentId)) {
+    if (!shipmentId) {
       return res.status(400).json({ message: "Invalid shipment ID" });
     }
     
@@ -9803,7 +9803,7 @@ async function getItemAllocationBreakdownWithMethod(
 // 9. GET /api/imports/shipments/:id/landing-cost-summary - Get summary
 router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Verify shipment exists
     const [shipment] = await db
@@ -9962,7 +9962,7 @@ router.get("/exchange-rates", async (req, res) => {
 // Archive shipment (move from completed to archived status)
 router.patch("/shipments/:id/archive", async (req, res) => {
   try {
-    const shipmentId = parseInt(req.params.id);
+    const shipmentId = req.params.id; // UUID string, don't parseInt
     
     // Check if shipment exists and is completed
     const [shipment] = await db
