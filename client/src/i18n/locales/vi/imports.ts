@@ -738,6 +738,7 @@ const imports = {
   generalGoods: 'Hàng thông thường',
   consolidations: 'Tổng hợp',
   addCustomItem: 'Thêm sản phẩm tùy chỉnh',
+  contents: 'Nội dung',
   newestFirst: 'Mới nhất trước',
   oldestFirst: 'Cũ nhất trước',
   sensitiveFirst: 'Nhạy cảm trước',

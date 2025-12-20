@@ -19,6 +19,7 @@ const imports = {
 
   // Actions
   addOrder: 'Add Order',
+  addCustomItem: 'Add Custom Item',
   newImport: 'New Import',
   createImport: 'Create Import',
   editImport: 'Edit Import',
@@ -1572,6 +1573,7 @@ const imports = {
   // InternationalTransit - Actions
   updateAction: 'Update',
   trackingAction: 'Tracking',
+  contents: 'Contents',
   contentsLabel: 'Contents',
   
   // InternationalTransit - Table and Detail Labels (unique keys only)
