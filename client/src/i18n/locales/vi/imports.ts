@@ -978,6 +978,7 @@ const imports = {
   alerts: 'Cảnh báo',
   createShipment: 'Tạo lô hàng',
   updateShipment: 'Cập nhật lô hàng',
+  editShipment: 'Chỉnh sửa lô hàng',
   enterTrackingNumber: 'Nhập mã vận đơn',
   enterCarrier: 'VD: China Post, SF Express',
   enterEndCarrier: 'VD: DPD, DHL, GLS',

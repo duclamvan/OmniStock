@@ -961,6 +961,7 @@ const imports = {
   alerts: 'Alerts',
   createShipment: 'Create Shipment',
   updateShipment: 'Update Shipment',
+  editShipment: 'Edit Shipment',
   enterTrackingNumber: 'Enter tracking number',
   enterCarrier: 'e.g., China Post, SF Express',
   enterEndCarrier: 'e.g., DPD, DHL, GLS',
