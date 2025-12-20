@@ -75,7 +75,7 @@ interface LocationAssignment {
 }
 
 interface StorageItem {
-  receiptItemId: number;
+  receiptItemId: string;
   productId?: string;
   productName: string;
   sku?: string;
@@ -84,14 +84,14 @@ interface StorageItem {
   assignedQuantity: number;
   existingLocations: LocationAssignment[];
   newLocations: LocationAssignment[];
-  receiptId?: number;
+  receiptId?: string;
   shipmentTrackingNumber?: string;
   receivedAt?: string;
   imageUrl?: string;
   description?: string;
   landingCostUnitBase?: string;
   hasCompleteLandingCost?: boolean;
-  purchaseItemId?: number;
+  purchaseItemId?: string;
 }
 
 interface ReceiptWithItems {
@@ -381,7 +381,7 @@ export default function ItemsToStore() {
   const [locationCode, setLocationCode] = useState(""); // Current location code from WarehouseLocationSelector
   const [quantityScan, setQuantityScan] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedReceipt, setSelectedReceipt] = useState<number | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
@@ -391,7 +391,7 @@ export default function ItemsToStore() {
   const [sessionsLocations, setSessionsLocations] = useState<{code: string; isPrimary: boolean; quantity: number}[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
   const [showPricingSheet, setShowPricingSheet] = useState(false);
-  const [pricingReceiptId, setPricingReceiptId] = useState<number | null>(null);
+  const [pricingReceiptId, setPricingReceiptId] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'WEIGHT' | 'VALUE' | 'UNITS' | 'HYBRID'>('AUTO');
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
@@ -516,14 +516,13 @@ export default function ItemsToStore() {
     // Priority 1: Auto-select receipt based on sessionStorage (from Complete Receiving flow)
     const autoSelectShipmentId = sessionStorage.getItem('autoSelectShipmentId');
     if (autoSelectShipmentId) {
-      const targetShipmentId = parseInt(autoSelectShipmentId);
       const matchingReceipt = receiptsWithItems.find((r: ReceiptWithItems) => 
-        r.shipment?.id === targetShipmentId
+        r.shipment?.id === autoSelectShipmentId
       );
       if (matchingReceipt) {
         setSelectedReceipt(matchingReceipt.receipt.id);
         // Save to localStorage for persistence
-        localStorage.setItem('itemsToStore_selectedReceipt', matchingReceipt.receipt.id.toString());
+        localStorage.setItem('itemsToStore_selectedReceipt', matchingReceipt.receipt.id);
         // Clear sessionStorage after successful selection
         sessionStorage.removeItem('autoSelectShipmentId');
         return;
@@ -533,9 +532,8 @@ export default function ItemsToStore() {
     // Priority 2: Restore from localStorage
     const savedReceipt = localStorage.getItem('itemsToStore_selectedReceipt');
     if (savedReceipt) {
-      const receiptId = parseInt(savedReceipt);
-      if (receiptsWithItems.some((r: ReceiptWithItems) => r.receipt.id === receiptId)) {
-        setSelectedReceipt(receiptId);
+      if (receiptsWithItems.some((r: ReceiptWithItems) => r.receipt.id === savedReceipt)) {
+        setSelectedReceipt(savedReceipt);
         return;
       }
     }
