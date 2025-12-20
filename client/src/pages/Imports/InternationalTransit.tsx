@@ -59,7 +59,7 @@ interface Shipment {
   track17LastEventTime?: string;
   track17Events?: Track17Event[];
   track17LastSync?: string;
-  track17CarrierCode?: number;
+  track17CarrierCode?: string;
 }
 
 interface DeliveryPrediction {
