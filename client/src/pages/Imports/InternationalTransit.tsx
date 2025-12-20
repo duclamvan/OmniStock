@@ -1165,13 +1165,26 @@ export default function InternationalTransit() {
                   <div className="space-y-2">
                     <Label htmlFor="endCarrier">{t('endCarrier')} * {detectedEndCarrier && <span className="text-xs text-green-600 font-normal ml-1">({t('autoDetected')})</span>}</Label>
                     <Select name="endCarrier" required 
-                      value={detectedEndCarrier || (
-                        selectedShipment?.endCarrier && selectedShipment?.easypostCarrier
-                          ? `${selectedShipment.endCarrier}|${selectedShipment.easypostCarrier}`
-                          : selectedShipment?.endCarrier 
-                            ? `${selectedShipment.endCarrier}|0`
-                            : ''
-                      )}
+                      value={detectedEndCarrier || (() => {
+                        if (!selectedShipment?.endCarrier) return '';
+                        const carrierMap: Record<string, string> = {
+                          'DHL Express': 'DHL Express|100001',
+                          'DPD': 'DPD|100010',
+                          'DHL Paket': 'DHL Paket|7041',
+                          'GLS': 'GLS|100005',
+                          'PPL CZ': 'PPL CZ|100140',
+                          'PPL': 'PPL CZ|100140',
+                          'Czech Post': 'Czech Post|3221',
+                          'PostNL': 'PostNL|14041',
+                          'Bpost': 'Bpost|2061',
+                          'FedEx': 'FedEx|100003',
+                          'UPS': 'UPS|100002',
+                          'Yodel': 'Yodel|100017',
+                          'Zásilkovna': 'Zásilkovna|0',
+                          'Zasilkovna': 'Zásilkovna|0',
+                        };
+                        return carrierMap[selectedShipment.endCarrier] || `${selectedShipment.endCarrier}|0`;
+                      })()}
                       onValueChange={(value) => setDetectedEndCarrier(value)}
                     >
                       <SelectTrigger data-testid="select-end-carrier">
