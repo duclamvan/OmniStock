@@ -2518,10 +2518,10 @@ export default function CreatePurchase() {
                         <span className="text-xs text-muted-foreground block">{t('currentStock')}</span>
                         <span className={cn(
                           "font-medium",
-                          (selectedProduct.stock || 0) > 10 ? "text-green-600" :
-                          (selectedProduct.stock || 0) > 0 ? "text-yellow-600" : "text-red-600"
+                          ((selectedProduct as any).quantity || 0) > 10 ? "text-green-600" :
+                          ((selectedProduct as any).quantity || 0) > 0 ? "text-yellow-600" : "text-red-600"
                         )}>
-                          {selectedProduct.stock ?? 0} {selectedProduct.sellingUnitName || 'pcs'}
+                          {(selectedProduct as any).quantity ?? 0} {selectedProduct.sellingUnitName || 'pcs'}
                         </span>
                       </div>
                       {selectedProduct.bulkUnitName && selectedProduct.bulkUnitQty && (
