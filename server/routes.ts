@@ -5856,24 +5856,50 @@ Important:
         productId
       });
 
-      const location = await storage.createProductLocation(locationData);
+      // Check if location already exists for this product
+      const existingLocations = await storage.getProductLocations(productId);
+      const existingLocation = existingLocations.find(
+        loc => loc.locationCode === locationData.locationCode
+      );
 
-      // Update the product's main stock quantity (add the new location quantity)
-      const quantityToAdd = locationData.quantity || 0;
+      let location;
+      let quantityToAdd = locationData.quantity || 0;
+
+      if (existingLocation) {
+        // Update existing location - add quantity
+        const newQuantity = (existingLocation.quantity || 0) + quantityToAdd;
+        location = await storage.updateProductLocation(existingLocation.id, {
+          quantity: newQuantity,
+          isPrimary: locationData.isPrimary ?? existingLocation.isPrimary
+        });
+        
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'updated',
+          entityType: 'product_location',
+          entityId: existingLocation.id,
+          description: `Updated location ${locationData.locationCode} for product, added ${quantityToAdd} units (now ${newQuantity} total)`,
+        });
+      } else {
+        // Create new location
+        location = await storage.createProductLocation(locationData);
+
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'created',
+          entityType: 'product_location',
+          entityId: location.id,
+          description: `Added location ${location.locationCode} for product with ${quantityToAdd} units`,
+        });
+      }
+
+      // Update the product's main stock quantity (add the new quantity)
       if (quantityToAdd > 0) {
         const currentStock = product.quantity || 0;
         await storage.updateProduct(productId, { 
           quantity: currentStock + quantityToAdd 
         });
       }
-
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'created',
-        entityType: 'product_location',
-        entityId: location.id,
-        description: `Added location ${location.locationCode} for product with ${quantityToAdd} units`,
-      });
 
       res.status(201).json(location);
     } catch (error: any) {
