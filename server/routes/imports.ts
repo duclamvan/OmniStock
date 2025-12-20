@@ -93,9 +93,22 @@ function filterFinancialData(data: any, userRole: string): any {
 // - When consolidation is shipped → purchase orders become "shipped" (in transit)
 // - When shipment is received/delivered → purchase orders become "delivered"
 
+// Status priority order - higher number = more advanced status (monotonic flow)
+// Terminal statuses have high priority (999) to prevent any updates
+const PURCHASE_ORDER_STATUS_PRIORITY: Record<string, number> = {
+  'pending': 1,
+  'at_warehouse': 2,
+  'shipped': 3,
+  'delivered': 4,
+  'cancelled': 999, // Terminal status - cannot be overwritten
+  'received': 3,    // Legacy status - treat as shipped
+  'unpacked': 4,    // Legacy status - treat as delivered
+};
+
 /**
  * Update purchase order status based on consolidation items.
  * Finds all purchase items in a consolidation and updates their parent purchase orders.
+ * Only advances status forward - never regresses from a more advanced status.
  * 
  * @param tx - Database transaction
  * @param consolidationId - The consolidation ID to get items from
@@ -139,19 +152,44 @@ async function updatePurchaseOrderStatusFromConsolidation(
       return;
     }
     
-    // Update all affected purchase orders to the target status
+    // Get current status of all affected purchase orders
+    const currentPurchases = await tx
+      .select({
+        id: importPurchases.id,
+        status: importPurchases.status,
+      })
+      .from(importPurchases)
+      .where(inArray(importPurchases.id, uniquePurchaseIds));
+    
+    const targetPriority = PURCHASE_ORDER_STATUS_PRIORITY[targetStatus] || 0;
+    
+    // Filter to only update orders with lower priority status (forward-only progression)
+    const purchaseIdsToUpdate = currentPurchases
+      .filter((po: any) => {
+        const currentPriority = PURCHASE_ORDER_STATUS_PRIORITY[po.status] || 0;
+        // Only update if target status is more advanced than current
+        return targetPriority > currentPriority;
+      })
+      .map((po: any) => po.id);
+    
+    if (purchaseIdsToUpdate.length === 0) {
+      console.log(`No purchase orders need status update - all already at or beyond ${targetStatus}`);
+      return;
+    }
+    
+    // Update only purchase orders that need status advancement
     await tx
       .update(importPurchases)
       .set({ 
         status: targetStatus,
         updatedAt: new Date()
       })
-      .where(inArray(importPurchases.id, uniquePurchaseIds));
+      .where(inArray(importPurchases.id, purchaseIdsToUpdate));
     
-    console.log(`Updated ${uniquePurchaseIds.length} purchase order(s) to status: ${targetStatus}`);
+    console.log(`Updated ${purchaseIdsToUpdate.length} purchase order(s) to status: ${targetStatus}`);
   } catch (error) {
     console.error('Error updating purchase order status:', error);
-    // Don't throw - this is a secondary operation and shouldn't fail the main transaction
+    throw error; // Re-throw to allow transaction to be rolled back
   }
 }
 
@@ -5565,6 +5603,9 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               updatedAt: new Date()
             })
             .where(eq(consolidations.id, shipment.consolidationId));
+          
+          // Update all related purchase orders to 'delivered' status
+          await updatePurchaseOrderStatusFromConsolidation(tx, shipment.consolidationId, 'delivered');
         }
       }
 
@@ -5990,6 +6031,9 @@ router.post("/receipts/approve/:id", async (req, res) => {
               updatedAt: new Date()
             })
             .where(eq(consolidations.id, shipment.consolidationId));
+          
+          // Update all related purchase orders to 'delivered' status
+          await updatePurchaseOrderStatusFromConsolidation(tx, shipment.consolidationId, 'delivered');
         }
       }
       
@@ -8197,6 +8241,26 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             updatedAt: new Date()
           })
           .where(eq(shipments.id, receipt.shipmentId));
+        
+        // Get the shipment to find consolidation and update purchase orders
+        const [shipment] = await tx
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, receipt.shipmentId));
+        
+        if (shipment?.consolidationId) {
+          // Update consolidation status to completed
+          await tx
+            .update(consolidations)
+            .set({
+              status: 'completed',
+              updatedAt: new Date()
+            })
+            .where(eq(consolidations.id, shipment.consolidationId));
+          
+          // Update all related purchase orders to 'delivered' status
+          await updatePurchaseOrderStatusFromConsolidation(tx, shipment.consolidationId, 'delivered');
+        }
       }
       
       return processedLocations;
