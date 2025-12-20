@@ -12,6 +12,7 @@ import {
   customItems,
   shipments,
   shipmentItems,
+  shipmentTrackingMetadata,
   deliveryHistory,
   receipts,
   receiptItems,
@@ -2813,6 +2814,54 @@ router.get("/track17/carrier-lookup", async (req, res) => {
   } catch (error) {
     console.error("Error looking up carrier:", error);
     res.status(500).json({ message: "Failed to look up carrier" });
+  }
+});
+
+// Get tracking metadata for a shipment (per-tracking-number ETA data)
+router.get("/shipments/:id/tracking-metadata", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    const metadata = await db
+      .select()
+      .from(shipmentTrackingMetadata)
+      .where(eq(shipmentTrackingMetadata.shipmentId, shipmentId));
+    
+    // Also get shipment aggregated ETA data
+    const [shipment] = await db
+      .select({
+        estimatedDaysMin: shipments.estimatedDaysMin,
+        estimatedDaysMax: shipments.estimatedDaysMax,
+        trackingCount: shipments.trackingCount,
+        trackingDeliveredCount: shipments.trackingDeliveredCount,
+        estimatedDelivery: shipments.estimatedDelivery,
+      })
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    res.json({
+      metadata,
+      aggregated: shipment || null,
+    });
+  } catch (error) {
+    console.error("Error fetching tracking metadata:", error);
+    res.status(500).json({ message: "Failed to fetch tracking metadata" });
+  }
+});
+
+// Manual trigger for 17TRACK polling (admin use)
+router.post("/track17/poll-all", async (req, res) => {
+  try {
+    const { manualPollAllShipments } = await import("../services/track17PollingService");
+    const result = await manualPollAllShipments();
+    res.json({
+      success: true,
+      message: `Polled ${result.processed} tracking numbers, updated ${result.updated}, errors: ${result.errors}`,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Error during manual poll:", error);
+    res.status(500).json({ message: "Failed to poll tracking numbers" });
   }
 });
 
