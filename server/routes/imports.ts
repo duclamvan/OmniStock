@@ -721,7 +721,7 @@ router.post("/purchases", async (req, res) => {
       purchaseCurrency: req.body.purchaseCurrency || "USD",
       purchaseTotal: req.body.purchaseTotal?.toString() || totalCost.toString(),
       exchangeRate: req.body.exchangeRate?.toString() || "1",
-      status: "pending",
+      status: req.body.status || "pending",
       createdAt: new Date(),
       updatedAt: new Date()
     };
