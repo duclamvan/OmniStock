@@ -1042,7 +1042,7 @@ export default function InternationalTransit() {
                       <Input 
                         id="trackingNumber" 
                         name="trackingNumber" 
-                        defaultValue={selectedShipment?.trackingNumber || selectedPendingShipment?.trackingNumber || ''}
+                        defaultValue={selectedShipment?.trackingNumber || ''}
                         data-testid="input-tracking-number"
                         placeholder={t('enterTrackingNumber')}
                       />
@@ -1052,7 +1052,7 @@ export default function InternationalTransit() {
                       <Input 
                         id="carrier" 
                         name="carrier" 
-                        defaultValue={selectedShipment?.carrier || selectedPendingShipment?.carrier || ''}
+                        defaultValue={selectedShipment?.carrier || ''}
                         data-testid="input-carrier"
                         placeholder={t('enterCarrier')}
                       />
