@@ -306,7 +306,7 @@ export class EasyPostService {
       }
 
       const events = this.formatTrackingEvents(lastTracker.tracking_details || []);
-      const latestEvent = events[0];
+      const latestEvent = events.length > 0 ? events[events.length - 1] : undefined;
 
       await db
         .update(shipments)
@@ -360,7 +360,7 @@ export class EasyPostService {
 
       const tracker = result.tracker;
       const events = this.formatTrackingEvents(tracker.tracking_details || []);
-      const latestEvent = events[0];
+      const latestEvent = events.length > 0 ? events[events.length - 1] : undefined;
 
       await db
         .update(shipments)
