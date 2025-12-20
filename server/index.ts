@@ -179,5 +179,14 @@ app.use((req, res, next) => {
     } catch (error) {
       console.error('Failed to start shipment archive scheduler:', error);
     }
+    
+    // 17TRACK polling scheduler - runs every 6 hours to check ETA for all tracking numbers
+    try {
+      const { startTrack17PollingScheduler } = await import('./services/track17PollingService');
+      startTrack17PollingScheduler();
+      log('17TRACK polling scheduler started');
+    } catch (error) {
+      console.error('Failed to start 17TRACK polling scheduler:', error);
+    }
   });
 })();
