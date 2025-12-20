@@ -181,18 +181,10 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalR
           window.URL.revokeObjectURL(url);
         }, 60000);
       } else {
-        // Popup blocked - download instead
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `receipt-${data.orderId || Date.now()}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-        toast({
-          title: t('common:info', 'Info'),
-          description: t('financial:popupBlockedDownloading', 'Popup blocked - downloaded PDF instead'),
-        });
+        // Popup blocked - use native window.print() on current page
+        // The .no-print class hides buttons during printing
+        window.URL.revokeObjectURL(url);
+        window.print();
       }
       
       onPrint?.();
