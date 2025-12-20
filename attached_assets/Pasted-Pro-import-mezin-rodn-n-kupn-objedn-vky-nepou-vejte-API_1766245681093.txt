@@ -1,0 +1,68 @@
+Pro import (mezinárodní nákupní objednávky) **nepoužívejte API jednotlivých dopravců** (jako jen UPS nebo DHL). Proč? Protože vaši dodavatelé budou používat pokaždé někoho jiného – jednou DHL, podruhé FedEx, potřetí kontejnerovou loď (Maersk) nebo čínskou poštu. Udržovat 50 různých API by bylo šílené.
+
+Pro mezinárodní importy je nejlepším řešením **Tracking Aggregator API**.
+
+Doporučuji vám použít **17TRACK API**.
+
+### Proč zrovna 17TRACK?
+
+1.  **Pokryje všechno:** Podporuje přes 2 000 dopravců. Ať už balík letí s DHL, jede vlakem přes Čínu, nebo pluje na lodi, 17TRACK to obvykle umí sledovat.
+2.  **Specialista na "předání":** U mezinárodních zásilek se často mění dopravce (např. v Číně to vezme *Yanwen*, v Evropě to převezme *DPD*). 17TRACK umí tyto změny "překládat" a sledovat zásilku celou cestu.
+3.  **Cena:** Mají velmi rozumný "Pay-as-you-go" model nebo free tier, který pro začátek stačí.
+4.  **Jednoduchost:** Pošlete jim číslo a oni vám přes Webhook posílají změny stavů.
+
+-----
+
+### Jak to implementovat do Davie Supply
+
+Jelikož máte TypeScript backend a Drizzle ORM, integrace bude vypadat takto:
+
+#### 1\. Databáze (Úprava schématu)
+
+Do tabulky `purchase_orders` (nebo do samostatné tabulky `shipments`, pokud jich může být víc k jedné objednávce) přidejte pole pro tracking.
+
+```typescript
+// server/db/schema.ts
+export const purchaseOrders = pgTable("purchase_orders", {
+  // ... existující pole ...
+  trackingNumber: varchar("tracking_number"),
+  carrierKey: varchar("carrier_key"), // Např. "ups", "dhl", "auto"
+  trackingStatus: varchar("tracking_status").default("pending"), // 'InTransit', 'Delivered', 'Exception'
+  lastTrackingUpdate: timestamp("last_tracking_update"),
+});
+```
+
+#### 2\. Logika (Webhooky)
+
+Nesnažte se API "ptát" každých 5 minut (polling). Je to neefektivní. Nastavte si u 17TRACK **Webhook**.
+
+1.  Když zadáte tracking number do systému, váš backend pošle požadavek na 17TRACK: *"Sleduj toto číslo"*.
+2.  Kdykoliv se zásilka pohne, 17TRACK zavolá váš backend (`POST /api/webhooks/tracking`) s novým info.
+
+#### Příklad registrace zásilky (Backend Service):
+
+```typescript
+// Jednoduchá funkce pro registraci čísla u 17TRACK
+async function registerTracking(number: string, carrier?: string) {
+  const response = await fetch('https://api.17track.net/track/v2.2/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      '17token': process.env.TRACK17_TOKEN // Váš API klíč
+    },
+    body: JSON.stringify([
+      {
+        number: number,
+        carrier: carrier // Pokud nevíte, nechte prázdné, zkusí to detekovat sami
+      }
+    ])
+  });
+  return response.json();
+}
+```
+
+### Alternativa: AfterShip
+
+Pokud chcete něco více "premium" (hezčí e-mailové notifikace pro vás, hotové widgety), podívejte se na **AfterShip**. Je to lídr na trhu, ale je výrazně dražší než 17TRACK. Pro interní sledování nákupů (kde nepotřebujete posílat hezké e-maily zákazníkům, ale jen vědět, kde je zboží) je 17TRACK ekonomičtější volba.
+
+**Doporučení:** Začněte s **17TRACK**. Pro importy z Asie/USA do ČR je nejpřesnější.
