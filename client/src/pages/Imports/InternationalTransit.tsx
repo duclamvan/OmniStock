@@ -905,6 +905,37 @@ export default function InternationalTransit() {
                     </Select>
                   </div>
 
+                  {/* Shipping Cost - Required */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingCost">{t('shippingCost')} *</Label>
+                      <Input 
+                        id="shippingCost"
+                        name="shippingCost" 
+                        type="number" 
+                        step="0.01"
+                        required
+                        defaultValue={selectedShipment?.shippingCost || ''}
+                        placeholder="0.00"
+                        data-testid="input-shipping-cost"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingCostCurrency">{t('currency')} *</Label>
+                      <Select name="shippingCostCurrency" required defaultValue={selectedShipment?.shippingCostCurrency || 'USD'}>
+                        <SelectTrigger data-testid="select-currency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="CZK">CZK</SelectItem>
+                          <SelectItem value="CNY">CNY</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   {/* Internal Tracking Number & Carrier */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -1094,35 +1125,6 @@ export default function InternationalTransit() {
                             <SelectItem value="boxes">{t('boxes')}</SelectItem>
                             <SelectItem value="pallets">{t('pallets')}</SelectItem>
                             <SelectItem value="bags">{t('bags')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Shipping Cost */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
-                        <Input 
-                          name="shippingCost" 
-                          type="number" 
-                          step="0.01" 
-                          defaultValue={selectedShipment?.shippingCost || ''}
-                          className="h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">{t('currency')}</Label>
-                        <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || 'USD'}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="USD">USD</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                            <SelectItem value="CZK">CZK</SelectItem>
-                            <SelectItem value="CNY">CNY</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
