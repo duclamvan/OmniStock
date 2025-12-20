@@ -434,6 +434,8 @@ const imports = {
   
   // CreatePurchase - Fields & Placeholders
   totalPaid: 'Tổng đã trả',
+  autoReset: 'Tự động',
+  resetToAutoCalculated: 'Đặt lại về giá trị tự động tính',
   typeToSearchSuppliers: 'Nhập để tìm nhà cung cấp...',
   optionalTracking: 'Mã vận đơn (không bắt buộc)',
   additionalNotes: 'Ghi chú thêm về đơn mua này...',

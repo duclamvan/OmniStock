@@ -428,6 +428,8 @@ const imports = {
   
   // CreatePurchase - Fields & Placeholders
   totalPaid: 'Total Paid',
+  autoReset: 'Auto',
+  resetToAutoCalculated: 'Reset to auto-calculated value',
   typeToSearchSuppliers: 'Type to search suppliers...',
   optionalTracking: 'Optional tracking number',
   additionalNotes: 'Additional notes about this purchase...',

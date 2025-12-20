@@ -130,6 +130,7 @@ export default function CreatePurchase() {
   const [paymentCurrency, setPaymentCurrency] = useState("USD");
   const [paymentCurrencyManuallySet, setPaymentCurrencyManuallySet] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
+  const [totalPaidManuallySet, setTotalPaidManuallySet] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState("USD");
   const [customCurrencies, setCustomCurrencies] = useState<string[]>([]);
   const [newCurrencyCode, setNewCurrencyCode] = useState("");
@@ -672,6 +673,12 @@ export default function CreatePurchase() {
   const grandTotalInPaymentCurrency = convertFromUSD(grandTotalUSD, paymentCurrency);
   const remainingBalance = Math.max(0, grandTotalInPaymentCurrency - totalPaid);
 
+  // Auto-update totalPaid when grand total changes (unless manually set)
+  useEffect(() => {
+    if (!totalPaidManuallySet && grandTotalInPaymentCurrency > 0) {
+      setTotalPaid(parseFloat(grandTotalInPaymentCurrency.toFixed(2)));
+    }
+  }, [grandTotalInPaymentCurrency, totalPaidManuallySet]);
 
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
@@ -1933,16 +1940,37 @@ export default function CreatePurchase() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="total-paid" className="text-xs text-muted-foreground">{t('totalPaid')}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="total-paid" className="text-xs text-muted-foreground">{t('totalPaid')}</Label>
+                      {totalPaidManuallySet && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 text-xs text-muted-foreground hover:text-foreground px-1"
+                          onClick={() => {
+                            setTotalPaidManuallySet(false);
+                            setTotalPaid(parseFloat(grandTotalInPaymentCurrency.toFixed(2)));
+                          }}
+                          title={t('resetToAutoCalculated')}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          {t('autoReset')}
+                        </Button>
+                      )}
+                    </div>
                     <div className="relative">
                       <Input
                         id="total-paid"
                         type="number"
                         value={totalPaid}
-                        onChange={(e) => setTotalPaid(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => {
+                          setTotalPaid(parseFloat(e.target.value) || 0);
+                          setTotalPaidManuallySet(true);
+                        }}
                         onFocus={(e) => e.target.select()}
                         placeholder="0.00"
-                        className="pl-8"
+                        className={cn("pl-8", totalPaidManuallySet && "border-amber-400")}
                         step="0.01"
                         min="0"
                         data-testid="input-total-paid"
