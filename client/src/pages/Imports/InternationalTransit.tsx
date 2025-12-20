@@ -845,57 +845,57 @@ export default function InternationalTransit() {
                     />
                   </div>
 
-                  {/* Shipment Type - Auto-selected from consolidation */}
+                  {/* Shipment Type - Auto-selected from consolidation shipping method */}
                   <div className="space-y-2">
                     <Label htmlFor="shipmentType">{t('shipmentType')} *</Label>
-                    <Select name="shipmentType" required defaultValue={selectedShipment?.shipmentType || selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
+                    <Select name="shipmentType" required defaultValue={selectedShipment?.shipmentType || selectedPendingShipment?.shippingMethod || 'general_air_ddp'}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="air_ddp_general">
+                        <SelectItem value="general_air_ddp">
                           <div className="flex items-center gap-2">
                             <Plane className="h-4 w-4 text-blue-500" />
-                            {t('airDDPGeneral')}
+                            {t('generalAirDDP')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="air_ddp_sensitive">
+                        <SelectItem value="sensitive_air_ddp">
                           <div className="flex items-center gap-2">
                             <Plane className="h-4 w-4 text-orange-500" />
-                            {t('airDDPSensitive')}
+                            {t('sensitiveAirDDP')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="express_general">
+                        <SelectItem value="general_express">
                           <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-purple-500" />
-                            {t('expressGeneral')}
+                            <Zap className="h-4 w-4 text-red-500" />
+                            {t('generalExpress')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="express_sensitive">
+                        <SelectItem value="sensitive_express">
                           <div className="flex items-center gap-2">
                             <Zap className="h-4 w-4 text-orange-500" />
-                            {t('expressSensitive')}
+                            {t('sensitiveExpress')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="railway_general">
+                        <SelectItem value="general_railway">
                           <div className="flex items-center gap-2">
                             <Train className="h-4 w-4 text-green-500" />
                             {t('generalRailway')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="railway_sensitive">
+                        <SelectItem value="sensitive_railway">
                           <div className="flex items-center gap-2">
                             <Train className="h-4 w-4 text-orange-500" />
                             {t('sensitiveRailway')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="sea_general">
+                        <SelectItem value="general_sea">
                           <div className="flex items-center gap-2">
                             <Ship className="h-4 w-4 text-cyan-500" />
                             {t('generalSea')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="sea_sensitive">
+                        <SelectItem value="sensitive_sea">
                           <div className="flex items-center gap-2">
                             <Ship className="h-4 w-4 text-orange-500" />
                             {t('sensitiveSea')}
