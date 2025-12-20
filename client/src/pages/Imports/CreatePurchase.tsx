@@ -1159,34 +1159,46 @@ export default function CreatePurchase() {
       
       // Load items with proper currency display and all fields
       if (purchase?.items && purchase.items.length > 0) {
-        const loadedItems = purchase.items.map((item: any) => ({
-          id: String(item.id),
-          name: String(item.productName || item.name || ""),
-          sku: String(item.sku || ""),
-          category: String(item.category || ""),
-          categoryId: item.categoryId,
-          barcode: String(item.barcode || ""),
-          quantity: Number(item.quantity) || 1,
-          unitPrice: parseFloat(item.unitCost || item.unitPrice) || 0,
-          weight: parseFloat(item.weight) || 0,
-          weightUnit: 'kg' as const, // Database stores weight in kg
-          dimensions: typeof item.dimensions === 'string' ? item.dimensions : (item.dimensions ? JSON.stringify(item.dimensions) : ""),
-          notes: String(item.notes || ""),
-          totalPrice: parseFloat(item.totalCost || item.totalPrice) || (Number(item.quantity) * parseFloat(item.unitPrice || 0)),
-          costWithShipping: parseFloat(item.costWithShipping) || 0,
-          isVariant: item.isVariant || false,
-          variantName: item.variantName || "",
-          productId: item.productId,
-          imageUrl: item.imageUrl,
-          binLocation: String(item.warehouseLocation || item.binLocation || "TBA"),
-          processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined,
-          unitType: item.unitType || 'selling',
-          quantityInSellingUnits: item.quantityInSellingUnits || Number(item.quantity),
-          cartons: item.cartons,
-          sellingUnitName: item.sellingUnitName || 'piece',
-          bulkUnitName: item.bulkUnitName || null,
-          bulkUnitQty: item.bulkUnitQty || null
-        }));
+        const loadedShippingCost = Number(purchase?.shippingCost) || 0;
+        const totalQty = purchase.items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 1), 0);
+        const perItemShipping = totalQty > 0 ? loadedShippingCost / totalQty : 0;
+        
+        const loadedItems = purchase.items.map((item: any) => {
+          const unitPrice = parseFloat(item.unitCost || item.unitPrice) || 0;
+          const quantity = Number(item.quantity) || 1;
+          // Calculate costWithShipping: unitPrice + (shipping portion per unit)
+          const savedCostWithShipping = parseFloat(item.costWithShipping) || 0;
+          const calculatedCostWithShipping = unitPrice + (perItemShipping / quantity);
+          
+          return {
+            id: String(item.id),
+            name: String(item.productName || item.name || ""),
+            sku: String(item.sku || ""),
+            category: String(item.category || ""),
+            categoryId: item.categoryId,
+            barcode: String(item.barcode || ""),
+            quantity,
+            unitPrice,
+            weight: parseFloat(item.weight) || 0,
+            weightUnit: (item.weightUnit as 'mg' | 'g' | 'kg' | 'oz' | 'lb') || 'kg',
+            dimensions: typeof item.dimensions === 'string' ? item.dimensions : (item.dimensions ? JSON.stringify(item.dimensions) : ""),
+            notes: String(item.notes || ""),
+            totalPrice: parseFloat(item.totalCost || item.totalPrice) || (quantity * unitPrice),
+            costWithShipping: savedCostWithShipping > 0 ? savedCostWithShipping : calculatedCostWithShipping,
+            isVariant: item.isVariant || false,
+            variantName: item.variantName || "",
+            productId: item.productId,
+            imageUrl: item.imageUrl,
+            binLocation: String(item.warehouseLocation || item.binLocation || "TBA"),
+            processingTimeDays: item.processingTimeDays ? Number(item.processingTimeDays) : undefined,
+            unitType: item.unitType || 'selling',
+            quantityInSellingUnits: item.quantityInSellingUnits || quantity,
+            cartons: item.cartons,
+            sellingUnitName: item.sellingUnitName || 'piece',
+            bulkUnitName: item.bulkUnitName || null,
+            bulkUnitQty: item.bulkUnitQty || null
+          };
+        });
         setItems(loadedItems);
         
         // Fetch images from products for items without imageUrl (batch approach)
@@ -1697,6 +1709,8 @@ export default function CreatePurchase() {
         unitPrice: item.unitPrice,
         unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
         weight: convertWeightToKg(item.weight, item.weightUnit || 'kg'),
+        weightUnit: item.weightUnit || 'kg',
+        costWithShipping: item.costWithShipping || 0,
         dimensions: item.dimensions || null,
         notes: item.notes || null,
         processingTimeDays: item.processingTimeDays,
