@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -809,7 +810,7 @@ export default function InternationalTransit() {
                 {t('createShipment')}
               </Button>
             </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {selectedShipment 
@@ -827,149 +828,85 @@ export default function InternationalTransit() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={selectedShipment ? handleEditShipment : handleCreateShipment} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-1 space-y-6">
+              <div className="flex-1 overflow-y-auto px-1 space-y-4">
                 
-                {/* Basic Information Section */}
+                {/* Essential Fields - Always Visible */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('basicInformation')}</h3>
+                  {/* Shipment Name - Autofilled from consolidation */}
+                  <div className="space-y-2">
+                    <Label htmlFor="shipmentName">{t('shipmentName')} *</Label>
+                    <Input 
+                      id="shipmentName" 
+                      name="shipmentName" 
+                      required
+                      defaultValue={selectedShipment?.shipmentName || selectedPendingShipment?.name || ''}
+                      data-testid="input-shipment-name"
+                      placeholder={t('aiWillGenerateName')}
+                    />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shipmentName">{t('shipmentName')} *</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          id="shipmentName" 
-                          name="shipmentName" 
-                          required
-                          defaultValue={selectedShipment?.shipmentName || ''}
-                          data-testid="input-shipment-name"
-                          placeholder={t('aiWillGenerateName')}
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={async () => {
-                            if (selectedShipment) {
-                              // For edit mode, regenerate based on existing shipment
-                              regenerateNameMutation.mutate(selectedShipment.id);
-                            } else if (selectedPendingShipment) {
-                              // For add tracking mode, use backend to generate structured name
-                              const input = document.getElementById('shipmentName') as HTMLInputElement;
-                              const shipmentTypeSelect = document.querySelector('[name="shipmentType"]') as HTMLSelectElement;
-                              
-                              if (input) {
-                                input.value = 'Generating...';
-                                
-                                // Get origin and shipmentType from form or defaults
-                                const origin = selectedPendingShipment.warehouse || 'China, Guangzhou';
-                                const shipmentType = shipmentTypeSelect?.value || 'air_ddp_general';
-                                
-                                // Create a temporary shipment request to get AI-generated name
-                                fetch('/api/imports/shipments/generate-name', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ 
-                                    consolidationId: selectedPendingShipment.id,
-                                    origin,
-                                    shipmentType
-                                  })
-                                })
-                                  .then(res => res.json())
-                                  .then(data => {
-                                    if (data.name && input) {
-                                      input.value = data.name;
-                                    }
-                                  })
-                                  .catch(() => {
-                                    // Fallback to generic name if API fails
-                                    if (input) input.value = 'XX-GEN-MixedGoods-2025';
-                                  });
-                              }
-                            } else {
-                              // For create mode without items, use fallback
-                              const input = document.getElementById('shipmentName') as HTMLInputElement;
-                              if (input) input.value = 'XX-GEN-MixedGoods-2025';
-                            }
-                          }}
-                          disabled={regenerateNameMutation.isPending}
-                          title={selectedShipment ? t('regenerateNameBasedOnContents') : t('generateNameFromItems')}
-                        >
-                          <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shipmentType">{t('shipmentType')} *</Label>
-                      <Select name="shipmentType" required defaultValue={selectedShipment?.shipmentType || selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="air_ddp_general">
-                            <div className="flex items-center gap-2">
-                              <Plane className="h-4 w-4 text-blue-500" />
-                              {t('airDDPGeneral')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="air_ddp_sensitive">
-                            <div className="flex items-center gap-2">
-                              <Plane className="h-4 w-4 text-orange-500" />
-                              {t('airDDPSensitive')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="express_general">
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-4 w-4 text-purple-500" />
-                              {t('expressGeneral')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="express_sensitive">
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-4 w-4 text-orange-500" />
-                              {t('expressSensitive')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="railway_general">
-                            <div className="flex items-center gap-2">
-                              <Train className="h-4 w-4 text-green-500" />
-                              {t('generalRailway')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="railway_sensitive">
-                            <div className="flex items-center gap-2">
-                              <Train className="h-4 w-4 text-orange-500" />
-                              {t('sensitiveRailway')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="sea_general">
-                            <div className="flex items-center gap-2">
-                              <Ship className="h-4 w-4 text-cyan-500" />
-                              {t('generalSea')}
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="sea_sensitive">
-                            <div className="flex items-center gap-2">
-                              <Ship className="h-4 w-4 text-orange-500" />
-                              {t('sensitiveSea')}
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Primary Tracking Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('primaryCarrierChinaEurope')}</h3>
+                  {/* Shipment Type - Auto-selected from consolidation */}
+                  <div className="space-y-2">
+                    <Label htmlFor="shipmentType">{t('shipmentType')} *</Label>
+                    <Select name="shipmentType" required defaultValue={selectedShipment?.shipmentType || selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="air_ddp_general">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4 text-blue-500" />
+                            {t('airDDPGeneral')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="air_ddp_sensitive">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4 text-orange-500" />
+                            {t('airDDPSensitive')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="express_general">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-purple-500" />
+                            {t('expressGeneral')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="express_sensitive">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-orange-500" />
+                            {t('expressSensitive')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="railway_general">
+                          <div className="flex items-center gap-2">
+                            <Train className="h-4 w-4 text-green-500" />
+                            {t('generalRailway')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="railway_sensitive">
+                          <div className="flex items-center gap-2">
+                            <Train className="h-4 w-4 text-orange-500" />
+                            {t('sensitiveRailway')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sea_general">
+                          <div className="flex items-center gap-2">
+                            <Ship className="h-4 w-4 text-cyan-500" />
+                            {t('generalSea')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sea_sensitive">
+                          <div className="flex items-center gap-2">
+                            <Ship className="h-4 w-4 text-orange-500" />
+                            {t('sensitiveSea')}
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  {/* Internal Tracking Number & Carrier */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label htmlFor="trackingNumber">{t('trackingNumber')}</Label>
                       <Input 
@@ -981,7 +918,7 @@ export default function InternationalTransit() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="carrier">{t('transitCarrier')}</Label>
+                      <Label htmlFor="carrier">{t('carrier')}</Label>
                       <Input 
                         id="carrier" 
                         name="carrier" 
@@ -991,202 +928,208 @@ export default function InternationalTransit() {
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* End Carrier Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('endCarrierEuropeanCourier')}</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
-                      <Input 
-                        id="endCarrier" 
-                        name="endCarrier" 
-                        required
-                        defaultValue={selectedShipment?.endCarrier || ''}
-                        data-testid="input-end-carrier"
-                        placeholder={t('enterEndCarrier')}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endTrackingNumbers">{t('endTrackingNumbers')} * <span className="text-xs text-muted-foreground font-normal">({t('onePerLine')})</span></Label>
-                      <Textarea 
-                        id="endTrackingNumbers" 
-                        name="endTrackingNumbers" 
-                        required
-                        rows={4}
-                        defaultValue={
-                          selectedShipment?.endTrackingNumbers?.length 
-                            ? selectedShipment.endTrackingNumbers.join('\n')
-                            : (selectedShipment?.endTrackingNumber || '') // Legacy fallback
-                        }
-                        data-testid="textarea-end-tracking-numbers"
-                        placeholder={t('pasteTrackingNumbers')}
-                        className="font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('trackingNumbersVerifyDuringReceiving')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Package Information Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('packageInformation')}</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="totalWeight">{t('totalWeight')} (kg) *</Label>
-                      <Input 
-                        id="totalWeight" 
-                        name="totalWeight" 
-                        type="number"
-                        step="0.01"
-                        required 
-                        defaultValue={selectedShipment?.totalWeight || selectedPendingShipment?.targetWeight || ''}
-                        data-testid="input-total-weight"
-                        placeholder="35.000"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="totalUnits">{t('totalUnits')} *</Label>
-                      <Input 
-                        id="totalUnits" 
-                        name="totalUnits" 
-                        type="number"
-                        min="1"
-                        required
-                        defaultValue={selectedShipment?.totalUnits || selectedPendingShipment?.itemCount || '1'}
-                        data-testid="input-total-units"
-                        placeholder="1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="unitType">{t('unitType')}</Label>
-                      <Select name="unitType" defaultValue={selectedShipment?.unitType || selectedPendingShipment?.unitType || 'cartons'}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cartons">{t('cartons')}</SelectItem>
-                          <SelectItem value="boxes">{t('boxes')}</SelectItem>
-                          <SelectItem value="pallets">{t('pallets')}</SelectItem>
-                          <SelectItem value="bags">{t('bags')}</SelectItem>
-                          <SelectItem value="crates">{t('crates')}</SelectItem>
-                          <SelectItem value="20GP Container">{t('container20GP')}</SelectItem>
-                          <SelectItem value="40GP Container">{t('container40GP')}</SelectItem>
-                          <SelectItem value="40HQ Container">{t('container40HQ')}</SelectItem>
-                          <SelectItem value="45HQ Container">{t('container45HQ')}</SelectItem>
-                          <SelectItem value="LCL Shipment">{t('lclShipment')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Shipping Details Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('shippingDetails')}</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="origin">{t('origin')}</Label>
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'}
-                        </span>
-                      </div>
-                      <input type="hidden" name="origin" value={selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="destination">{t('destinationWarehouse')} *</Label>
-                      <Select name="destination" required defaultValue={selectedShipment?.destination || selectedPendingShipment?.destination || selectedPendingShipment?.location || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
-                        <SelectTrigger data-testid="select-destination">
-                          <SelectValue placeholder={t('selectWarehouseDestination')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {warehouses.length > 0 ? (
-                            warehouses.map((warehouse: any) => (
-                              <SelectItem key={warehouse.id} value={warehouse.name}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{warehouse.name}</span>
-                                  {(warehouse.address || warehouse.city || warehouse.country) && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {[warehouse.address, warehouse.city, warehouse.country].filter(Boolean).join(', ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <>
-                              <SelectItem value="Czech Republic, Prague">{t('czechRepublicPrague')}</SelectItem>
-                              <SelectItem value="USA, California">{t('usaCalifornia')}</SelectItem>
-                              <SelectItem value="USA, New York">{t('usaNewYork')}</SelectItem>
-                              <SelectItem value="UK, London">{t('ukLondon')}</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shippingCost">{t('shippingCost')}</Label>
-                      <Input 
-                        id="shippingCost" 
-                        name="shippingCost" 
-                        type="number" 
-                        step="0.01" 
-                        data-testid="input-shipping-cost"
-                        defaultValue={selectedShipment?.shippingCost || selectedPendingShipment?.shippingCost || ''}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shippingCostCurrency">{t('currency')}</Label>
-                      <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || selectedPendingShipment?.shippingCostCurrency || 'USD'}>
-                        <SelectTrigger data-testid="select-currency">
-                          <SelectValue placeholder={t('currency')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="CZK">CZK</SelectItem>
-                          <SelectItem value="CNY">CNY</SelectItem>
-                          <SelectItem value="VND">VND</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Notes Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">{t('additionalNotes')}</h3>
-                  </div>
+                  {/* End Carrier - Dropdown */}
                   <div className="space-y-2">
-                    <Label htmlFor="notes">{t('notes')}</Label>
+                    <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
+                    <Select name="endCarrier" required defaultValue={selectedShipment?.endCarrier || ''}>
+                      <SelectTrigger data-testid="select-end-carrier">
+                        <SelectValue placeholder={t('selectEndCarrier')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DPD">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-red-600" />
+                            DPD
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="DHL">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-yellow-600" />
+                            DHL
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="UPS">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-amber-700" />
+                            UPS
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="GLS">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-blue-600" />
+                            GLS
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="PPL">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4 text-blue-800" />
+                            PPL
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Zásilkovna">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-green-600" />
+                            Zásilkovna
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Other">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-gray-600" />
+                            {t('other')}
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* End Tracking Numbers */}
+                  <div className="space-y-2">
+                    <Label htmlFor="endTrackingNumbers">{t('endTrackingNumbers')} * <span className="text-xs text-muted-foreground font-normal">({t('onePerLine')})</span></Label>
                     <Textarea 
-                      id="notes" 
-                      name="notes" 
-                      data-testid="textarea-notes"
-                      defaultValue={selectedShipment?.notes || selectedPendingShipment?.notes || ''}
-                      placeholder={t('additionalShippingNotes')}
+                      id="endTrackingNumbers" 
+                      name="endTrackingNumbers" 
+                      required
+                      rows={3}
+                      defaultValue={
+                        selectedShipment?.endTrackingNumbers?.length 
+                          ? selectedShipment.endTrackingNumbers.join('\n')
+                          : (selectedShipment?.endTrackingNumber || '')
+                      }
+                      data-testid="textarea-end-tracking-numbers"
+                      placeholder={t('pasteTrackingNumbers')}
+                      className="font-mono text-sm"
                     />
                   </div>
                 </div>
+
+                {/* Additional Details - Collapsible */}
+                <Collapsible className="border rounded-lg">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                      <span className="text-sm font-medium">{t('additionalDetails')}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {t('optional')}
+                    </Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-3 pb-3 space-y-4">
+                    {/* Route Info - Autofilled */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('origin')}</Label>
+                        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 text-sm">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          {selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'}
+                        </div>
+                        <input type="hidden" name="origin" value={selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('destination')}</Label>
+                        <Select name="destination" defaultValue={selectedShipment?.destination || selectedPendingShipment?.destination || selectedPendingShipment?.location || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {warehouses.length > 0 ? (
+                              warehouses.map((warehouse: any) => (
+                                <SelectItem key={warehouse.id} value={warehouse.name}>
+                                  {warehouse.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <>
+                                <SelectItem value="Czech Republic, Prague">{t('czechRepublicPrague')}</SelectItem>
+                                <SelectItem value="USA, California">{t('usaCalifornia')}</SelectItem>
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Package Details - Autofilled */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('totalWeight')} (kg)</Label>
+                        <Input 
+                          name="totalWeight" 
+                          type="number"
+                          step="0.01"
+                          defaultValue={selectedShipment?.totalWeight || selectedPendingShipment?.targetWeight || ''}
+                          className="h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('totalUnits')}</Label>
+                        <Input 
+                          name="totalUnits" 
+                          type="number"
+                          min="1"
+                          defaultValue={selectedShipment?.totalUnits || selectedPendingShipment?.itemCount || '1'}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('unitType')}</Label>
+                        <Select name="unitType" defaultValue={selectedShipment?.unitType || 'cartons'}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cartons">{t('cartons')}</SelectItem>
+                            <SelectItem value="boxes">{t('boxes')}</SelectItem>
+                            <SelectItem value="pallets">{t('pallets')}</SelectItem>
+                            <SelectItem value="bags">{t('bags')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Shipping Cost */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
+                        <Input 
+                          name="shippingCost" 
+                          type="number" 
+                          step="0.01" 
+                          defaultValue={selectedShipment?.shippingCost || ''}
+                          className="h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">{t('currency')}</Label>
+                        <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || 'USD'}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="CZK">CZK</SelectItem>
+                            <SelectItem value="CNY">CNY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">{t('notes')}</Label>
+                      <Textarea 
+                        name="notes" 
+                        rows={2}
+                        defaultValue={selectedShipment?.notes || selectedPendingShipment?.notes || ''}
+                        className="text-sm"
+                        placeholder={t('additionalShippingNotes')}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => {

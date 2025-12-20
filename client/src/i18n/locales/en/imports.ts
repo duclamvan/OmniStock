@@ -872,6 +872,7 @@ const imports = {
   confidence: 'Confidence',
   transitCarrier: 'Transit Carrier',
   endCarrier: 'End Carrier',
+  selectEndCarrier: 'Select end carrier',
   endTrackingNumbers: 'End Tracking Numbers',
   packageInformation: 'Package Information',
   totalUnits: 'Total Units',

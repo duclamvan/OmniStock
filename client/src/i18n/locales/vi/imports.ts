@@ -890,6 +890,7 @@ const imports = {
   confidence: 'Độ tin cậy',
   transitCarrier: 'Đơn vị vận chuyển quá cảnh',
   endCarrier: 'Đơn vị vận chuyển cuối',
+  selectEndCarrier: 'Chọn đơn vị vận chuyển cuối',
   endTrackingNumbers: 'Mã vận đơn cuối',
   packageInformation: 'Thông tin kiện hàng',
   unitType: 'Loại đơn vị',
