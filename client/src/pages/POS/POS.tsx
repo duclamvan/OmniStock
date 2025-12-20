@@ -932,6 +932,9 @@ export default function POS() {
           bundleId: item.bundleId,
           quantity: item.quantity,
           price: item.price.toFixed(2),
+          productName: item.name, // Include product name for proper display
+          sku: item.sku || '', // Include SKU
+          image: item.imageUrl || null, // Include image
         })),
         subtotal: subtotal.toFixed(2),
         discount: discount.toFixed(2),
