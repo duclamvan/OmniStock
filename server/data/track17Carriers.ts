@@ -30,6 +30,7 @@ export const COMMON_CARRIERS: Track17Carrier[] = [
   { key: 2061, name: "Bpost", country: "BE", aliases: ["bpost", "belgium post"] },
   { key: 100017, name: "Yodel", country: "GB", aliases: ["yodel"] },
   { key: 100140, name: "PPL CZ", country: "CZ", aliases: ["ppl", "ppl cz", "ppl czech"] },
+  { key: 100127, name: "UPS", country: "INT", aliases: ["ups", "united parcel service"] },
   { key: 1151, name: "Australia Post", country: "AU", aliases: ["australia post", "auspost"] },
   { key: 3041, name: "Canada Post", country: "CA", aliases: ["canada post"] },
   { key: 21011, name: "Royal Mail", country: "GB", aliases: ["royal mail", "uk post"] },
