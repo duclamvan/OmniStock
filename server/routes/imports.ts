@@ -33,7 +33,9 @@ import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 import { LandingCostService } from "../services/landingCostService";
 import { parseInvoiceImage } from "../services/invoiceParsingService";
-import { track17Service } from "../services/track17Service";
+import { easypostService } from "../services/easypostService";
+// Legacy 17TRACK import (commented out - replaced by EasyPost)
+// import { track17Service } from "../services/track17Service";
 
 // Configure multer for screenshot uploads
 const upload = multer({ 
@@ -2680,9 +2682,134 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
 });
 
 // ============================================================================
-// 17TRACK API INTEGRATION ROUTES
+// EASYPOST API INTEGRATION ROUTES
 // ============================================================================
 
+// Register a shipment with EasyPost
+router.post("/shipments/:id/easypost/register", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    const result = await easypostService.registerAndSyncShipment(shipmentId);
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error || "Failed to register tracking" });
+    }
+    
+    // Fetch the updated shipment
+    const [updatedShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    res.json({ 
+      success: true, 
+      message: "Tracking registered and synced successfully",
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error("Error registering with EasyPost:", error);
+    res.status(500).json({ message: "Failed to register with EasyPost" });
+  }
+});
+
+// Sync tracking info for a shipment from EasyPost
+router.post("/shipments/:id/easypost/sync", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    const result = await easypostService.syncShipmentTracking(shipmentId);
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error || "Failed to sync tracking" });
+    }
+    
+    // Fetch the updated shipment
+    const [updatedShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    res.json({ 
+      success: true, 
+      message: "Tracking synced successfully",
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error("Error syncing EasyPost:", error);
+    res.status(500).json({ message: "Failed to sync with EasyPost" });
+  }
+});
+
+// Sync all active shipments with EasyPost
+router.post("/easypost/sync-all", async (req, res) => {
+  try {
+    const result = await easypostService.syncAllShipments();
+    res.json({ 
+      success: true,
+      message: `Synced ${result.synced} shipments, ${result.errors} errors`,
+      ...result
+    });
+  } catch (error) {
+    console.error("Error syncing all shipments:", error);
+    res.status(500).json({ message: "Failed to sync all shipments" });
+  }
+});
+
+// Get EasyPost tracking info for a shipment (without syncing)
+router.get("/shipments/:id/easypost/info", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    res.json({
+      trackingNumber: shipment.trackingNumber,
+      carrier: shipment.carrier,
+      endCarrier: shipment.endCarrier,
+      endTrackingNumbers: shipment.endTrackingNumbers,
+      easypostTrackerId: shipment.easypostTrackerId,
+      easypostRegistered: shipment.easypostRegistered,
+      easypostStatus: shipment.easypostStatus,
+      easypostStatusDetail: shipment.easypostStatusDetail,
+      easypostLastEvent: shipment.easypostLastEvent,
+      easypostLastEventTime: shipment.easypostLastEventTime,
+      easypostEvents: shipment.easypostEvents,
+      easypostLastSync: shipment.easypostLastSync,
+      easypostEstDelivery: shipment.easypostEstDelivery,
+      easypostPublicUrl: shipment.easypostPublicUrl,
+      easypostCarrier: shipment.easypostCarrier,
+    });
+  } catch (error) {
+    console.error("Error fetching tracking info:", error);
+    res.status(500).json({ message: "Failed to fetch tracking info" });
+  }
+});
+
+// Manual trigger for EasyPost sync (admin use) - replaces track17/poll-all
+router.post("/easypost/poll-all", async (req, res) => {
+  try {
+    const result = await easypostService.syncAllShipments();
+    res.json({
+      success: true,
+      message: `Synced ${result.synced} shipments, ${result.errors} errors`,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Error during EasyPost sync:", error);
+    res.status(500).json({ message: "Failed to sync tracking numbers" });
+  }
+});
+
+// ============================================================================
+// LEGACY 17TRACK ROUTES (COMMENTED OUT - REPLACED BY EASYPOST)
+// ============================================================================
+/*
 // Get available carriers from 17track
 router.get("/track17/carriers", async (req, res) => {
   try {
@@ -2816,6 +2943,7 @@ router.get("/track17/carrier-lookup", async (req, res) => {
     res.status(500).json({ message: "Failed to look up carrier" });
   }
 });
+*/
 
 // Get tracking metadata for a shipment (per-tracking-number ETA data)
 router.get("/shipments/:id/tracking-metadata", async (req, res) => {
@@ -2849,7 +2977,8 @@ router.get("/shipments/:id/tracking-metadata", async (req, res) => {
   }
 });
 
-// Manual trigger for 17TRACK polling (admin use)
+// Legacy 17TRACK poll-all (commented out - replaced by /easypost/poll-all)
+/*
 router.post("/track17/poll-all", async (req, res) => {
   try {
     const { manualPollAllShipments } = await import("../services/track17PollingService");
@@ -2864,6 +2993,7 @@ router.post("/track17/poll-all", async (req, res) => {
     res.status(500).json({ message: "Failed to poll tracking numbers" });
   }
 });
+*/
 
 // Update shipment (full update)
 router.put("/shipments/:id", async (req, res) => {
