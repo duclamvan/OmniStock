@@ -880,6 +880,7 @@ const imports = {
   autoDetected: 'Auto Detected',
   carrierDetected: 'Carrier Detected',
   autoSelectedBasedOnTracking: 'auto-selected based on tracking number format',
+  endTrackingNumber: 'End Tracking Number',
   endTrackingNumbers: 'End Tracking Numbers',
   packageInformation: 'Package Information',
   totalUnits: 'Total Units',

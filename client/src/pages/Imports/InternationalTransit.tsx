@@ -2652,18 +2652,14 @@ export default function InternationalTransit() {
                         </Button>
                       </div>
                       <div className="space-y-2 p-3 border rounded-lg text-xs">
-                        {viewShipmentDetails.trackingNumber && (
-                          <div>
-                            <p className="text-muted-foreground">{viewShipmentDetails.carrier}</p>
-                            <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.trackingNumber}</p>
-                          </div>
-                        )}
-                        {viewShipmentDetails.endTrackingNumber && (
-                          <div className="pt-2 border-t">
-                            <p className="text-muted-foreground">{viewShipmentDetails.endCarrier || t('local')}</p>
-                            <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.endTrackingNumber}</p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-muted-foreground">{t('endCarrier')}</p>
+                          <p className="font-medium">{viewShipmentDetails.endCarrier || '—'}</p>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-muted-foreground">{t('endTrackingNumber')}</p>
+                          <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.endTrackingNumber || viewShipmentDetails.endTrackingNumbers?.join(', ') || '—'}</p>
+                        </div>
                         
                         {/* 17track Status */}
                         {viewShipmentDetails.track17Registered && (

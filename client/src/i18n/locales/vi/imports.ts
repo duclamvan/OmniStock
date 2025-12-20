@@ -898,6 +898,7 @@ const imports = {
   autoDetected: 'Tự động phát hiện',
   carrierDetected: 'Đã phát hiện đơn vị vận chuyển',
   autoSelectedBasedOnTracking: 'tự động chọn dựa trên định dạng mã vận đơn',
+  endTrackingNumber: 'Mã vận đơn cuối',
   endTrackingNumbers: 'Mã vận đơn cuối',
   packageInformation: 'Thông tin kiện hàng',
   unitType: 'Loại đơn vị',
