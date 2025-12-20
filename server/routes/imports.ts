@@ -2914,11 +2914,16 @@ router.put("/shipments/:id", async (req, res) => {
     }
     
     // Check if tracking numbers have changed - if so, reset 17TRACK status
-    const oldTrackingNumbers = existingShipment.endTrackingNumbers || [];
-    const newTrackingNumbers = endTrackingNumbers || [];
-    const trackingNumbersChanged = JSON.stringify(oldTrackingNumbers.sort()) !== JSON.stringify(newTrackingNumbers.sort());
+    // Use slice() to avoid mutating original arrays with sort()
+    const oldTrackingNumbers = [...(existingShipment.endTrackingNumbers || [])];
+    const newTrackingNumbers = [...(endTrackingNumbers || [])];
+    const oldSorted = JSON.stringify(oldTrackingNumbers.slice().sort());
+    const newSorted = JSON.stringify(newTrackingNumbers.slice().sort());
+    const trackingNumbersChanged = oldSorted !== newSorted;
     const carrierCodeChanged = track17CarrierCode !== existingShipment.track17CarrierCode;
     const shouldResetTracking = trackingNumbersChanged || carrierCodeChanged;
+    
+    console.log(`Shipment ${shipmentId} update check: old=${oldSorted}, new=${newSorted}, changed=${trackingNumbersChanged}, carrierChanged=${carrierCodeChanged}`);
     
     // Handle trackingNumber - preserve existing value if new value is null/undefined/empty
     // because the database has a NOT NULL constraint on this column
