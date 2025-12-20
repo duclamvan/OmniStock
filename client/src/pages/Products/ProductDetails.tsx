@@ -1096,7 +1096,7 @@ export default function ProductDetails() {
               >
                 <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('products:tieredPricing')}
+                  {t('products:tieredPricing.title')}
                 </h2>
                 
                 <div className="rounded-lg sm:rounded-xl border bg-card overflow-x-auto">
