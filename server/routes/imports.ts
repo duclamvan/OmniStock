@@ -7008,16 +7008,47 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       ))
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // Collect all product IDs from purchase items to get product details
-    const productIds = receiptItemsWithDetails
-      .filter(row => row.purchaseItem?.productId)
-      .map(row => row.purchaseItem!.productId as string);
+    // For consolidation items, we need to look up their underlying purchase items
+    const consolidationItemIds = receiptItemsWithDetails
+      .filter(row => row.consolidationItem && row.consolidationItem.itemType === 'purchase')
+      .map(row => row.consolidationItem!.itemId);
+    
+    // Fetch underlying purchase items for consolidation items
+    let consolidationPurchaseItemsMap: Record<string, any> = {};
+    if (consolidationItemIds.length > 0) {
+      const consolidationPurchaseItems = await db
+        .select()
+        .from(purchaseItems)
+        .where(inArray(purchaseItems.id, consolidationItemIds));
+      
+      consolidationPurchaseItems.forEach(item => {
+        consolidationPurchaseItemsMap[item.id] = item;
+      });
+    }
+    
+    // Collect all product IDs from purchase items AND consolidation items' underlying purchase items
+    const productIds: string[] = [];
+    receiptItemsWithDetails.forEach(row => {
+      if (row.purchaseItem?.productId) {
+        productIds.push(row.purchaseItem.productId as string);
+      }
+      // For consolidation items, get productId from underlying purchase item
+      if (row.consolidationItem?.itemType === 'purchase') {
+        const underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
+        if (underlyingPurchaseItem?.productId) {
+          productIds.push(underlyingPurchaseItem.productId as string);
+        }
+      }
+    });
+    
+    // Remove duplicates
+    const uniqueProductIds = [...new Set(productIds)];
     
     // Fetch product details and locations in parallel if we have product IDs
     let productsMap: Record<string, any> = {};
     let locationsMap: Record<string, any[]> = {};
     
-    if (productIds.length > 0) {
+    if (uniqueProductIds.length > 0) {
       const [productsData, locationsData] = await Promise.all([
         db.select({
           id: products.id,
@@ -7027,7 +7058,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           category: products.category
         })
         .from(products)
-        .where(inArray(products.id, productIds)),
+        .where(inArray(products.id, uniqueProductIds)),
         
         db.select({
           id: productLocations.id,
@@ -7039,7 +7070,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           notes: productLocations.notes
         })
         .from(productLocations)
-        .where(inArray(productLocations.productId, productIds))
+        .where(inArray(productLocations.productId, uniqueProductIds))
       ]);
       
       // Build lookup maps
@@ -7061,13 +7092,25 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     
     // Transform the results to match the expected format with product names and locations
     const itemsWithDetails = receiptItemsWithDetails.map(row => {
-      const productId = row.purchaseItem?.productId;
+      // Get productId - from direct purchase item OR from consolidation item's underlying purchase item
+      let productId: string | null = null;
+      let underlyingPurchaseItem: any = null;
+      
+      if (row.purchaseItem?.productId) {
+        productId = row.purchaseItem.productId as string;
+      } else if (row.consolidationItem?.itemType === 'purchase') {
+        underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
+        if (underlyingPurchaseItem?.productId) {
+          productId = underlyingPurchaseItem.productId as string;
+        }
+      }
+      
       const product = productId ? productsMap[productId] : null;
       
       // Prefer product name from products table, fallback to purchase/custom/consolidation item name
-      const productName = product?.name || row.purchaseItem?.name || row.customItem?.name || row.consolidationItem?.name || 'Unknown Item';
-      const sku = product?.sku || row.purchaseItem?.sku || row.customItem?.sku || null;
-      const imageUrl = product?.imageUrl || row.purchaseItem?.imageUrl || null;
+      const productName = product?.name || underlyingPurchaseItem?.name || row.purchaseItem?.name || row.customItem?.name || 'Unknown Item';
+      const sku = product?.sku || underlyingPurchaseItem?.sku || row.purchaseItem?.sku || row.customItem?.sku || null;
+      const imageUrl = product?.imageUrl || underlyingPurchaseItem?.imageUrl || row.purchaseItem?.imageUrl || null;
       const existingLocations = productId ? (locationsMap[productId] || []) : [];
       
       return {
@@ -7078,7 +7121,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         sku,
         imageUrl,
         existingLocations,
-        purchaseItem: row.purchaseItem,
+        purchaseItem: row.purchaseItem || underlyingPurchaseItem,
         customItem: row.customItem,
         consolidationItem: row.consolidationItem
       };
