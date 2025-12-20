@@ -230,9 +230,36 @@ export const shipments = pgTable("shipments", {
     status?: string;
   }>>(), // Full tracking history from 17track
   track17LastSync: timestamp("track17_last_sync"), // When we last fetched tracking info
+  // Aggregated ETA fields (computed from all tracking numbers)
+  estimatedDaysMin: integer("estimated_days_min"), // Earliest delivery estimate (days remaining)
+  estimatedDaysMax: integer("estimated_days_max"), // Latest delivery estimate (days remaining)
+  trackingCount: integer("tracking_count"), // Total number of tracking numbers
+  trackingDeliveredCount: integer("tracking_delivered_count"), // Number of tracking numbers marked delivered
   // Archive fields for weekly archiving
   archivedAt: timestamp("archived_at"), // When the shipment was archived (null = active)
   archiveWeek: text("archive_week"), // Week identifier for grouping (e.g., "2025-W51")
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Per-tracking number metadata for multi-tracking shipments
+export const shipmentTrackingMetadata = pgTable("shipment_tracking_metadata", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shipmentId: varchar("shipment_id").notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  trackingNumber: text("tracking_number").notNull(),
+  carrierCode: text("carrier_code"), // 17TRACK carrier code
+  carrierName: text("carrier_name"), // Human-readable carrier name
+  status: text("status"), // NotFound, InTransit, Delivered, etc.
+  lastEvent: text("last_event"), // Latest tracking event description
+  lastEventTime: timestamp("last_event_time"), // Time of last tracking event
+  lastEventLocation: text("last_event_location"), // Location of last event
+  estimatedDeliveryFrom: timestamp("estimated_delivery_from"), // ETA range start
+  estimatedDeliveryTo: timestamp("estimated_delivery_to"), // ETA range end
+  estimatedDaysRemaining: integer("estimated_days_remaining"), // Calculated days until delivery
+  isRegistered: boolean("is_registered").default(false), // Whether registered with 17TRACK
+  lastSyncedAt: timestamp("last_synced_at"), // When we last synced this tracking number
+  syncError: text("sync_error"), // Last error if sync failed
+  rawPayload: json("raw_payload"), // Full 17TRACK response for debugging
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1769,6 +1796,11 @@ export const insertShipmentSchema = createInsertSchema(shipments).omit({
   createdAt: true,
   updatedAt: true,
 });
+export const insertShipmentTrackingMetadataSchema = createInsertSchema(shipmentTrackingMetadata).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertCustomItemSchema = createInsertSchema(customItems).omit({
   id: true,
   createdAt: true,
@@ -2196,6 +2228,8 @@ export type Consolidation = typeof consolidations.$inferSelect;
 export type InsertConsolidation = z.infer<typeof insertConsolidationSchema>;
 export type Shipment = typeof shipments.$inferSelect;
 export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+export type ShipmentTrackingMetadata = typeof shipmentTrackingMetadata.$inferSelect;
+export type InsertShipmentTrackingMetadata = z.infer<typeof insertShipmentTrackingMetadataSchema>;
 export type CustomItem = typeof customItems.$inferSelect;
 export type InsertCustomItem = z.infer<typeof insertCustomItemSchema>;
 export type DeliveryHistory = typeof deliveryHistory.$inferSelect;
