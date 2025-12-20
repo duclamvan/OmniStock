@@ -191,6 +191,7 @@ const imports = {
   removeItem: 'Xóa sản phẩm',
   newItem: 'Sản phẩm mới',
   itemDetails: 'Chi tiết sản phẩm',
+  clickToChangeImage: 'Nhấn để thay đổi hình ảnh',
   saveItem: 'Lưu sản phẩm',
   cancelItem: 'Hủy',
 

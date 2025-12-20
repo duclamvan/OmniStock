@@ -303,6 +303,28 @@ export default function CreatePurchase() {
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   
+  // Item image editing state
+  const [editingItemImageId, setEditingItemImageId] = useState<string | null>(null);
+  const itemImageInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle item image change
+  const handleItemImageChange = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const updatedItems = items.map(i => 
+          i.id === itemId ? {...i, imageUrl: reader.result as string} : i
+        );
+        setItems(updatedItems);
+      };
+      reader.readAsDataURL(file);
+    }
+    setEditingItemImageId(null);
+    // Reset the input so the same file can be selected again
+    e.target.value = '';
+  };
+  
   // Category dropdown state
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   
@@ -3052,9 +3074,31 @@ export default function CreatePurchase() {
                               />
                             </div>
                             
-                            {/* Product Image */}
+                            {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
-                              <div className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                              <div 
+                                className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary hover:bg-muted/80 transition-all group relative"
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'image/*';
+                                  input.onchange = (e) => {
+                                    const file = (e.target as HTMLInputElement).files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        const updatedItems = items.map(i => 
+                                          i.id === item.id ? {...i, imageUrl: reader.result as string} : i
+                                        );
+                                        setItems(updatedItems);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                title={t('clickToChangeImage')}
+                              >
                                 {item.imageUrl ? (
                                   <img 
                                     src={item.imageUrl} 
@@ -3064,6 +3108,9 @@ export default function CreatePurchase() {
                                 ) : (
                                   <Package className="h-6 w-6 text-muted-foreground" />
                                 )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ImageIcon className="h-4 w-4 text-white" />
+                                </div>
                               </div>
                             </div>
                             
@@ -3297,7 +3344,6 @@ export default function CreatePurchase() {
                         </TableHead>
                         <TableHead className="w-[48px]">{t('image')}</TableHead>
                         <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
-                        <TableHead className="w-[160px]">{t('category')}</TableHead>
                         <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
                         <TableHead className="w-[100px] text-center">{t('weightColumn')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
@@ -3326,9 +3372,33 @@ export default function CreatePurchase() {
                             />
                           </TableCell>
                           
-                          {/* Image Column */}
+                          {/* Image Column - Clickable */}
                           <TableCell className="p-2">
-                            <div className="w-12 h-12 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
+                            <div 
+                              className="w-12 h-12 rounded-md border bg-muted flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary hover:bg-muted/80 transition-all group relative"
+                              onClick={() => {
+                                setEditingItemImageId(item.id);
+                                // Create a temporary input for this specific item
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      const updatedItems = items.map(i => 
+                                        i.id === item.id ? {...i, imageUrl: reader.result as string} : i
+                                      );
+                                      setItems(updatedItems);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                };
+                                input.click();
+                              }}
+                              title={t('clickToChangeImage')}
+                            >
                               {item.imageUrl ? (
                                 <img 
                                   src={item.imageUrl} 
@@ -3338,6 +3408,9 @@ export default function CreatePurchase() {
                               ) : (
                                 <Package className="h-5 w-5 text-muted-foreground" />
                               )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <ImageIcon className="h-4 w-4 text-white" />
+                              </div>
                             </div>
                           </TableCell>
                           
@@ -3370,44 +3443,6 @@ export default function CreatePurchase() {
                                 <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
                               )}
                             </div>
-                          </TableCell>
-                          
-                          {/* Category */}
-                          <TableCell>
-                            <Select
-                              value={item.categoryId?.toString() || ""}
-                              onValueChange={(value) => {
-                                if (value === "add-new") {
-                                  setNewCategoryDialogOpen(true);
-                                } else {
-                                  const categoryId = parseInt(value);
-                                  const category = categories.find(c => c.id === categoryId);
-                                  const updatedItems = items.map(i => 
-                                    i.id === item.id 
-                                      ? {...i, categoryId, category: category?.name || category?.name_en || ""} 
-                                      : i
-                                  );
-                                  setItems(updatedItems);
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-7 border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input">
-                                <SelectValue placeholder={t('selectCategory')} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((category) => (
-                                  <SelectItem key={category.id} value={category.id.toString()}>
-                                    {category.name || category.name_en}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="add-new" className="text-primary">
-                                  <div className="flex items-center">
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    {t('addNewCategory')}
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
                           </TableCell>
                           
                           {/* Quantity */}

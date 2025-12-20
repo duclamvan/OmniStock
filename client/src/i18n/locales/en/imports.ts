@@ -180,6 +180,7 @@ const imports = {
   removeItem: 'Remove Item',
   newItem: 'New Item',
   itemDetails: 'Item Details',
+  clickToChangeImage: 'Click to change image',
   saveItem: 'Save Item',
   cancelItem: 'Cancel',
 
