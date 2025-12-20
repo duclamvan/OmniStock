@@ -2572,17 +2572,16 @@ router.post("/shipments", async (req, res) => {
       endTrackingNumbers = [req.body.endTrackingNumber];
     }
     
-    // Parse endCarrier format "CarrierName|17TrackCode" to extract carrier name and code
+    // Parse endCarrier format "CarrierName|CarrierCode" to extract carrier name
     let endCarrierName = req.body.endCarrier || null;
-    let track17CarrierCode: string | null = null;
+    let easypostCarrier: string | null = null;
     if (endCarrierName && endCarrierName.includes('|')) {
       const parts = endCarrierName.split('|');
       endCarrierName = parts[0];
-      const code = parts[1];
-      // Only set code if it's not 0 (Other/Zásilkovna don't have 17TRACK codes)
-      if (code && code !== '0') {
-        track17CarrierCode = code;
-      }
+      // Store the carrier name for EasyPost
+      easypostCarrier = parts[0];
+    } else if (endCarrierName) {
+      easypostCarrier = endCarrierName;
     }
     
     const shipmentData = {
@@ -2592,7 +2591,7 @@ router.post("/shipments", async (req, res) => {
       endCarrier: endCarrierName,
       endTrackingNumber: req.body.endTrackingNumber || null, // Keep legacy field for compatibility
       endTrackingNumbers: endTrackingNumbers || null,
-      track17CarrierCode: track17CarrierCode,
+      easypostCarrier: easypostCarrier,
       shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod || null,
       origin: req.body.origin,
@@ -2684,6 +2683,39 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
 // ============================================================================
 // EASYPOST API INTEGRATION ROUTES
 // ============================================================================
+
+// Common carriers supported by EasyPost
+const EASYPOST_COMMON_CARRIERS = [
+  { code: 'UPS', name: 'UPS' },
+  { code: 'USPS', name: 'USPS' },
+  { code: 'FedEx', name: 'FedEx' },
+  { code: 'DHL', name: 'DHL Express' },
+  { code: 'DHLExpress', name: 'DHL Express' },
+  { code: 'DPD', name: 'DPD' },
+  { code: 'GLS', name: 'GLS' },
+  { code: 'TNT', name: 'TNT' },
+  { code: 'CanadaPost', name: 'Canada Post' },
+  { code: 'RoyalMail', name: 'Royal Mail' },
+  { code: 'AustraliaPost', name: 'Australia Post' },
+  { code: 'ChinaPost', name: 'China Post' },
+  { code: 'JapanPost', name: 'Japan Post' },
+  { code: 'DeutschePost', name: 'Deutsche Post' },
+  { code: 'LaPoste', name: 'La Poste' },
+  { code: 'PostNL', name: 'PostNL' },
+  { code: 'PPL', name: 'PPL' },
+  { code: 'Zasilkovna', name: 'Zásilkovna' },
+  { code: 'Other', name: 'Other' },
+];
+
+// Get available carriers for EasyPost tracking
+router.get("/easypost/carriers", async (req, res) => {
+  try {
+    res.json(EASYPOST_COMMON_CARRIERS);
+  } catch (error) {
+    console.error("Error fetching carriers:", error);
+    res.status(500).json({ message: "Failed to fetch carriers" });
+  }
+});
 
 // Register a shipment with EasyPost
 router.post("/shipments/:id/easypost/register", async (req, res) => {
@@ -3028,32 +3060,28 @@ router.put("/shipments/:id", async (req, res) => {
       endTrackingNumbers = [req.body.endTrackingNumber];
     }
     
-    // Parse endCarrier format "CarrierName|17TrackCode" to extract carrier name and code
+    // Parse endCarrier format "CarrierName|CarrierCode" to extract carrier name
     let endCarrierName = req.body.endCarrier || existingShipment.endCarrier;
-    let track17CarrierCode: string | null = existingShipment.track17CarrierCode;
+    let easypostCarrier: string | null = existingShipment.easypostCarrier;
     if (req.body.endCarrier && req.body.endCarrier.includes('|')) {
       const parts = req.body.endCarrier.split('|');
       endCarrierName = parts[0];
-      const code = parts[1];
-      // Only set code if it's not 0 (Other/Zásilkovna don't have 17TRACK codes)
-      if (code && code !== '0') {
-        track17CarrierCode = code;
-      } else {
-        track17CarrierCode = null;
-      }
+      easypostCarrier = parts[0]; // Store carrier name for EasyPost
+    } else if (req.body.endCarrier) {
+      easypostCarrier = req.body.endCarrier;
     }
     
-    // Check if tracking numbers have changed - if so, reset 17TRACK status
+    // Check if tracking numbers have changed - if so, reset EasyPost tracking status
     // Use slice() to avoid mutating original arrays with sort()
     const oldTrackingNumbers = [...(existingShipment.endTrackingNumbers || [])];
     const newTrackingNumbers = [...(endTrackingNumbers || [])];
     const oldSorted = JSON.stringify(oldTrackingNumbers.slice().sort());
     const newSorted = JSON.stringify(newTrackingNumbers.slice().sort());
     const trackingNumbersChanged = oldSorted !== newSorted;
-    const carrierCodeChanged = track17CarrierCode !== existingShipment.track17CarrierCode;
-    const shouldResetTracking = trackingNumbersChanged || carrierCodeChanged;
+    const carrierChanged = easypostCarrier !== existingShipment.easypostCarrier;
+    const shouldResetTracking = trackingNumbersChanged || carrierChanged;
     
-    console.log(`Shipment ${shipmentId} update check: old=${oldSorted}, new=${newSorted}, changed=${trackingNumbersChanged}, carrierChanged=${carrierCodeChanged}`);
+    console.log(`Shipment ${shipmentId} update check: old=${oldSorted}, new=${newSorted}, changed=${trackingNumbersChanged}, carrierChanged=${carrierChanged}`);
     
     // Handle trackingNumber - preserve existing value if new value is null/undefined/empty
     // because the database has a NOT NULL constraint on this column
@@ -3072,7 +3100,7 @@ router.put("/shipments/:id", async (req, res) => {
       endCarrier: endCarrierName,
       endTrackingNumber: req.body.endTrackingNumber !== undefined ? req.body.endTrackingNumber : existingShipment.endTrackingNumber,
       endTrackingNumbers: endTrackingNumbers || existingShipment.endTrackingNumbers,
-      track17CarrierCode: track17CarrierCode,
+      easypostCarrier: easypostCarrier,
       shipmentName: shipmentName || existingShipment.shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod || existingShipment.shipmentType,
       origin: req.body.origin || existingShipment.origin,
@@ -3087,15 +3115,19 @@ router.put("/shipments/:id", async (req, res) => {
       updatedAt: new Date()
     };
     
-    // Reset 17TRACK status if tracking numbers changed - will be re-synced automatically
+    // Reset EasyPost tracking status if tracking numbers changed - will be re-synced automatically
     if (shouldResetTracking && newTrackingNumbers.length > 0) {
-      updateData.track17Registered = false;
-      updateData.track17Status = null;
-      updateData.track17LastEvent = null;
-      updateData.track17LastEventTime = null;
-      updateData.track17Events = null;
-      updateData.track17LastSync = null;
-      console.log(`Tracking numbers changed for shipment ${shipmentId}, resetting 17TRACK status`);
+      updateData.easypostRegistered = false;
+      updateData.easypostTrackerId = null;
+      updateData.easypostStatus = null;
+      updateData.easypostStatusDetail = null;
+      updateData.easypostLastEvent = null;
+      updateData.easypostLastEventTime = null;
+      updateData.easypostEvents = null;
+      updateData.easypostLastSync = null;
+      updateData.easypostEstDelivery = null;
+      updateData.easypostPublicUrl = null;
+      console.log(`Tracking numbers changed for shipment ${shipmentId}, resetting EasyPost tracking status`);
     }
     
     const [updated] = await db
@@ -3108,15 +3140,15 @@ router.put("/shipments/:id", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Automatically sync with 17TRACK if tracking numbers changed and new ones exist
-    if (shouldResetTracking && newTrackingNumbers.length > 0 && track17CarrierCode) {
+    // Automatically sync with EasyPost if tracking numbers changed and new ones exist
+    if (shouldResetTracking && newTrackingNumbers.length > 0) {
       try {
-        console.log(`Auto-syncing 17TRACK for shipment ${shipmentId} after tracking number change`);
-        track17Service.registerAndSyncShipment(shipmentId).catch(err => {
-          console.error(`Background 17TRACK sync failed for ${shipmentId}:`, err);
+        console.log(`Auto-syncing EasyPost for shipment ${shipmentId} after tracking number change`);
+        easypostService.registerAndSyncShipment(shipmentId).catch(err => {
+          console.error(`Background EasyPost sync failed for ${shipmentId}:`, err);
         });
       } catch (error) {
-        console.error(`Failed to initiate 17TRACK sync for ${shipmentId}:`, error);
+        console.error(`Failed to initiate EasyPost sync for ${shipmentId}:`, error);
       }
     }
     

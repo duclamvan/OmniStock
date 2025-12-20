@@ -20,10 +20,11 @@ import { useToast } from "@/hooks/use-toast";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
 
-interface Track17Event {
+interface EasyPostEvent {
   time: string;
   description: string;
   location?: string;
+  status?: string;
 }
 
 interface Shipment {
@@ -54,14 +55,14 @@ interface Shipment {
   totalUnits?: number;
   unitType?: string;
   endTrackingNumbers?: string[];
-  track17Registered?: boolean;
-  track17Status?: string;
-  track17LastEvent?: string;
-  track17LastEventTime?: string;
-  track17Events?: Track17Event[];
-  track17LastSync?: string;
-  track17CarrierCode?: string;
-  // Aggregated ETA from 17TRACK polling
+  easypostRegistered?: boolean;
+  easypostStatus?: string;
+  easypostLastEvent?: string;
+  easypostLastEventTime?: string;
+  easypostEvents?: EasyPostEvent[];
+  easypostLastSync?: string;
+  easypostCarrier?: string;
+  // Aggregated ETA from EasyPost polling
   estimatedDaysMin?: number;
   estimatedDaysMax?: number;
   trackingCount?: number;
@@ -409,11 +410,11 @@ export default function InternationalTransit() {
       setSelectedShipment(null);
       toast({ title: t('success'), description: t('shipmentUpdated') });
       
-      // Auto-sync tracking with 17TRACK if tracking numbers were provided
+      // Auto-sync tracking with EasyPost if tracking numbers were provided
       if (data.hasTrackingNumbers && data.shipmentId) {
         // Wait a moment for DB update to complete, then sync
         setTimeout(() => {
-          apiRequest('POST', `/api/imports/shipments/${data.shipmentId}/track17/register`)
+          apiRequest('POST', `/api/imports/shipments/${data.shipmentId}/easypost/register`)
             .then(() => {
               queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
               toast({ title: t('success'), description: t('trackingSynced') });
@@ -449,10 +450,10 @@ export default function InternationalTransit() {
     }
   });
 
-  // Sync 17track tracking mutation
-  const sync17TrackMutation = useMutation({
+  // Sync EasyPost tracking mutation
+  const syncEasyPostMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
-      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/track17/register`);
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/easypost/register`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -471,10 +472,10 @@ export default function InternationalTransit() {
     }
   });
 
-  // Sync all shipments with 17track
-  const syncAll17TrackMutation = useMutation({
+  // Sync all shipments with EasyPost
+  const syncAllEasyPostMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/imports/track17/sync-all');
+      const response = await apiRequest('POST', '/api/imports/easypost/sync-all');
       return response.json();
     },
     onSuccess: (data) => {
@@ -551,11 +552,11 @@ export default function InternationalTransit() {
       const now = new Date();
       shipments.forEach(shipment => {
         if (shipment.status !== 'delivered' && shipment.trackingNumber) {
-          const lastSync = shipment.track17LastSync ? new Date(shipment.track17LastSync) : null;
+          const lastSync = shipment.easypostLastSync ? new Date(shipment.easypostLastSync) : null;
           const needsSync = !lastSync || (now.getTime() - lastSync.getTime() > SIX_HOURS_MS);
           
           if (needsSync) {
-            sync17TrackMutation.mutate(shipment.id);
+            syncEasyPostMutation.mutate(shipment.id);
           }
         }
       });
@@ -992,11 +993,11 @@ export default function InternationalTransit() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => syncAll17TrackMutation.mutate()}
-            disabled={syncAll17TrackMutation.isPending}
+            onClick={() => syncAllEasyPostMutation.mutate()}
+            disabled={syncAllEasyPostMutation.isPending}
             data-testid="button-sync-all-tracking"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${syncAll17TrackMutation.isPending ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncAllEasyPostMutation.isPending ? 'animate-spin' : ''}`} />
             {t('syncTracking')}
           </Button>
           <Button
@@ -1160,13 +1161,13 @@ export default function InternationalTransit() {
                     </div>
                   </div>
 
-                  {/* End Carrier - Dropdown with 17TRACK codes */}
+                  {/* End Carrier - Dropdown with EasyPost carrier codes */}
                   <div className="space-y-2">
                     <Label htmlFor="endCarrier">{t('endCarrier')} * {detectedEndCarrier && <span className="text-xs text-green-600 font-normal ml-1">({t('autoDetected')})</span>}</Label>
                     <Select name="endCarrier" required 
                       value={detectedEndCarrier || (
-                        selectedShipment?.endCarrier && selectedShipment?.track17CarrierCode
-                          ? `${selectedShipment.endCarrier}|${selectedShipment.track17CarrierCode}`
+                        selectedShipment?.endCarrier && selectedShipment?.easypostCarrier
+                          ? `${selectedShipment.endCarrier}|${selectedShipment.easypostCarrier}`
                           : selectedShipment?.endCarrier 
                             ? `${selectedShipment.endCarrier}|0`
                             : ''
@@ -1963,7 +1964,7 @@ export default function InternationalTransit() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
-                                sync17TrackMutation.mutate(shipment.id);
+                                syncEasyPostMutation.mutate(shipment.id);
                               }}>
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 {t('syncTracking')}
@@ -2012,9 +2013,9 @@ export default function InternationalTransit() {
                             })()
                           }`}
                         />
-                        {shipment.track17LastSync && (
+                        {shipment.easypostLastSync && (
                           <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                            {t('lastSynced')}: {format(new Date(shipment.track17LastSync), 'MMM dd, HH:mm')}
+                            {t('lastSynced')}: {format(new Date(shipment.easypostLastSync), 'MMM dd, HH:mm')}
                             {/* Show tracking progress for multi-tracking shipments */}
                             {shipment.trackingCount && shipment.trackingCount > 1 && (
                               <span className="ml-2">
@@ -2025,30 +2026,30 @@ export default function InternationalTransit() {
                         )}
                       </div>
 
-                      {/* 17TRACK Status & History */}
-                      {(shipment.track17Status || shipment.track17LastEvent) && (
+                      {/* EasyPost Status & History */}
+                      {(shipment.easypostStatus || shipment.easypostLastEvent) && (
                         <div className="border-t pt-3 mb-3">
                           <div className="flex items-start gap-2">
                             <Globe className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
-                              {shipment.track17Status && (
+                              {shipment.easypostStatus && (
                                 <div className="flex items-center gap-2 mb-1">
                                   <Badge 
                                     variant="outline" 
                                     className={`text-[10px] ${
-                                      shipment.track17Status === 'Delivered' ? 'bg-green-50 text-green-700 border-green-200' :
-                                      shipment.track17Status === 'InTransit' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                      shipment.track17Status === 'PickUp' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                      shipment.track17Status === 'Alert' || shipment.track17Status === 'Undelivered' ? 'bg-red-50 text-red-700 border-red-200' :
+                                      shipment.easypostStatus === 'Delivered' ? 'bg-green-50 text-green-700 border-green-200' :
+                                      shipment.easypostStatus === 'InTransit' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                      shipment.easypostStatus === 'AvailableForPickup' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                      shipment.easypostStatus === 'Exception' ? 'bg-red-50 text-red-700 border-red-200' :
                                       'bg-gray-50 text-gray-700 border-gray-200'
                                     }`}
                                   >
-                                    {shipment.track17Status}
+                                    {shipment.easypostStatus}
                                   </Badge>
                                   {shipment.endCarrier && (
                                     <span className="text-[10px] text-muted-foreground">{shipment.endCarrier}</span>
                                   )}
-                                  {/* Estimated days from 17TRACK polling */}
+                                  {/* Estimated days from EasyPost polling */}
                                   {shipment.estimatedDaysMin !== undefined && shipment.estimatedDaysMin !== null && (
                                     <Badge 
                                       variant="outline" 
@@ -2067,35 +2068,35 @@ export default function InternationalTransit() {
                                   )}
                                 </div>
                               )}
-                              {shipment.track17LastEvent && (
+                              {shipment.easypostLastEvent && (
                                 <p className="text-xs text-muted-foreground line-clamp-2">
-                                  {shipment.track17LastEvent}
+                                  {shipment.easypostLastEvent}
                                 </p>
                               )}
-                              {shipment.track17LastEventTime && (
+                              {shipment.easypostLastEventTime && (
                                 <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                  {format(new Date(shipment.track17LastEventTime), 'MMM dd, HH:mm')}
+                                  {format(new Date(shipment.easypostLastEventTime), 'MMM dd, HH:mm')}
                                 </p>
                               )}
                             </div>
                           </div>
                           
                           {/* Tracking History Dropdown */}
-                          {shipment.track17Events && Array.isArray(shipment.track17Events) && shipment.track17Events.length > 0 && (
+                          {shipment.easypostEvents && Array.isArray(shipment.easypostEvents) && shipment.easypostEvents.length > 0 && (
                             <Collapsible className="mt-2">
                               <CollapsibleTrigger 
                                 className="flex items-center gap-1 text-[10px] text-primary hover:underline"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <ChevronDown className="h-3 w-3" />
-                                {t('showTrackingHistory')} ({shipment.track17Events.length})
+                                {t('showTrackingHistory')} ({shipment.easypostEvents.length})
                               </CollapsibleTrigger>
                               <CollapsibleContent className="mt-2">
                                 <div 
                                   className="max-h-40 overflow-y-auto space-y-2 pl-2 border-l-2 border-blue-200"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {shipment.track17Events.map((event: any, idx: number) => (
+                                  {shipment.easypostEvents.map((event: any, idx: number) => (
                                     <div key={idx} className="text-xs">
                                       <p className="font-medium text-foreground">{event.description || event.z}</p>
                                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -2658,11 +2659,11 @@ export default function InternationalTransit() {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs"
-                          onClick={() => sync17TrackMutation.mutate(viewShipmentDetails.id)}
-                          disabled={sync17TrackMutation.isPending}
+                          onClick={() => syncEasyPostMutation.mutate(viewShipmentDetails.id)}
+                          disabled={syncEasyPostMutation.isPending}
                           data-testid={`button-sync-tracking-${viewShipmentDetails.id}`}
                         >
-                          <RefreshCw className={`h-3 w-3 mr-1 ${sync17TrackMutation.isPending ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`h-3 w-3 mr-1 ${syncEasyPostMutation.isPending ? 'animate-spin' : ''}`} />
                           {t('syncTracking')}
                         </Button>
                       </div>
@@ -2676,39 +2677,39 @@ export default function InternationalTransit() {
                           <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.endTrackingNumber || viewShipmentDetails.endTrackingNumbers?.join(', ') || '—'}</p>
                         </div>
                         
-                        {/* 17track Status */}
-                        {viewShipmentDetails.track17Registered && (
+                        {/* EasyPost Status */}
+                        {viewShipmentDetails.easypostRegistered && (
                           <div className="pt-2 border-t space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-muted-foreground">{t('liveTrackingStatus')}</span>
-                              <Badge variant={viewShipmentDetails.track17Status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
-                                {viewShipmentDetails.track17Status || t('unknown')}
+                              <Badge variant={viewShipmentDetails.easypostStatus === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
+                                {viewShipmentDetails.easypostStatus || t('unknown')}
                               </Badge>
                             </div>
-                            {viewShipmentDetails.track17LastEvent && (
+                            {viewShipmentDetails.easypostLastEvent && (
                               <p className="text-muted-foreground">
-                                {viewShipmentDetails.track17LastEvent}
-                                {viewShipmentDetails.track17LastEventTime && (
+                                {viewShipmentDetails.easypostLastEvent}
+                                {viewShipmentDetails.easypostLastEventTime && (
                                   <span className="ml-1 text-xs opacity-70">
-                                    ({format(new Date(viewShipmentDetails.track17LastEventTime), 'MMM dd, HH:mm')})
+                                    ({format(new Date(viewShipmentDetails.easypostLastEventTime), 'MMM dd, HH:mm')})
                                   </span>
                                 )}
                               </p>
                             )}
-                            {viewShipmentDetails.track17LastSync && (
+                            {viewShipmentDetails.easypostLastSync && (
                               <p className="text-xs text-muted-foreground/70">
-                                {t('lastSynced')}: {format(new Date(viewShipmentDetails.track17LastSync), 'MMM dd, HH:mm')}
+                                {t('lastSynced')}: {format(new Date(viewShipmentDetails.easypostLastSync), 'MMM dd, HH:mm')}
                               </p>
                             )}
                           </div>
                         )}
                         
-                        {/* 17track Events Timeline */}
-                        {viewShipmentDetails.track17Events && viewShipmentDetails.track17Events.length > 0 && (
+                        {/* EasyPost Events Timeline */}
+                        {viewShipmentDetails.easypostEvents && viewShipmentDetails.easypostEvents.length > 0 && (
                           <div className="pt-2 border-t space-y-2">
                             <p className="text-muted-foreground font-medium">{t('trackingEvents')}</p>
                             <div className="space-y-1 max-h-40 overflow-y-auto">
-                              {viewShipmentDetails.track17Events.slice(0, 10).map((event, idx) => (
+                              {viewShipmentDetails.easypostEvents.slice(0, 10).map((event, idx) => (
                                 <div key={idx} className="flex gap-2 text-xs">
                                   <div className="w-2 h-2 mt-1 rounded-full bg-blue-500 flex-shrink-0" />
                                   <div className="flex-1">
