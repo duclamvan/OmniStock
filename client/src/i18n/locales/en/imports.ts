@@ -449,6 +449,13 @@ const imports = {
   productPreview: 'Product preview',
   addNewCategory: 'Add New Category',
   
+  // CreatePurchase - Item Actions
+  showCostInCurrency: 'Show cost in currency',
+  resetToOriginal: 'Reset to original',
+  deleteItem: 'Delete item',
+  autoSelectedNoForEUR: 'Auto-selected "No" for EUR purchases (direct shipping)',
+  reviewManageItems: 'Review and manage purchase items',
+
   // CreatePurchase - Variant Operations
   addVariantSeries: 'Add Variant Series',
   formatExample: 'Use format like \'Size <1-10>\' to create series',

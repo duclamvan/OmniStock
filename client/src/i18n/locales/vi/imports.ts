@@ -455,6 +455,13 @@ const imports = {
   productPreview: 'Xem trước sản phẩm',
   addNewCategory: 'Thêm danh mục mới',
   
+  // CreatePurchase - Item Actions
+  showCostInCurrency: 'Hiển thị giá theo tiền tệ',
+  resetToOriginal: 'Đặt lại về ban đầu',
+  deleteItem: 'Xóa sản phẩm',
+  autoSelectedNoForEUR: 'Tự động chọn "Không" cho đơn mua EUR (giao trực tiếp)',
+  reviewManageItems: 'Xem và quản lý sản phẩm trong đơn mua',
+
   // CreatePurchase - Variant Operations
   addVariantSeries: 'Thêm chuỗi biến thể',
   formatExample: 'Dùng định dạng như \'Size <1-10>\' để tạo chuỗi',
