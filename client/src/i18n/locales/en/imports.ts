@@ -933,6 +933,17 @@ const imports = {
   failedToRegenerateName: 'Failed to regenerate shipment name',
   shipmentMovedBackToPending: 'Shipment moved back to pending with tracking information preserved',
   trackingNumberCopied: 'Tracking number copied to clipboard',
+  
+  // 17track Integration
+  syncTracking: 'Sync Tracking',
+  trackingSynced: 'Tracking synced successfully',
+  failedToSyncTracking: 'Failed to sync tracking',
+  allShipmentsSynced: 'All shipments synced successfully',
+  failedToSyncAllShipments: 'Failed to sync all shipments',
+  liveTrackingStatus: 'Live Status',
+  lastSynced: 'Last synced',
+  trackingEvents: 'Tracking Events',
+  unknown: 'Unknown',
   failedToCopy: 'Failed to copy',
   aiPredictionFailed: 'Could not generate delivery prediction',
   

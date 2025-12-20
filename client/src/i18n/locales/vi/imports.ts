@@ -950,6 +950,17 @@ const imports = {
   failedToRegenerateName: 'Không thể tạo lại tên lô hàng',
   shipmentMovedBackToPending: 'Đã chuyển lô hàng về chờ xử lý và giữ thông tin vận đơn',
   trackingNumberCopied: 'Đã sao chép mã vận đơn',
+  
+  // 17track Integration
+  syncTracking: 'Đồng bộ vận đơn',
+  trackingSynced: 'Đã đồng bộ vận đơn thành công',
+  failedToSyncTracking: 'Không thể đồng bộ vận đơn',
+  allShipmentsSynced: 'Đã đồng bộ tất cả lô hàng thành công',
+  failedToSyncAllShipments: 'Không thể đồng bộ tất cả lô hàng',
+  liveTrackingStatus: 'Trạng thái trực tiếp',
+  lastSynced: 'Đồng bộ lần cuối',
+  trackingEvents: 'Lịch sử vận đơn',
+  unknown: 'Không xác định',
   failedToCopy: 'Không thể sao chép',
   aiPredictionFailed: 'Không thể tạo dự đoán giao hàng',
   

@@ -19,9 +19,15 @@ import { useToast } from "@/hooks/use-toast";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
 
+interface Track17Event {
+  time: string;
+  description: string;
+  location?: string;
+}
+
 interface Shipment {
-  id: number;
-  consolidationId: number | null;
+  id: string;
+  consolidationId: string | null;
   carrier: string;
   trackingNumber: string;
   endCarrier?: string;
@@ -46,6 +52,14 @@ interface Shipment {
   totalWeight?: number;
   totalUnits?: number;
   unitType?: string;
+  endTrackingNumbers?: string[];
+  track17Registered?: boolean;
+  track17Status?: string;
+  track17LastEvent?: string;
+  track17LastEventTime?: string;
+  track17Events?: Track17Event[];
+  track17LastSync?: string;
+  track17CarrierCode?: number;
 }
 
 interface DeliveryPrediction {
@@ -113,9 +127,9 @@ export default function InternationalTransit() {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedPendingShipment, setSelectedPendingShipment] = useState<PendingShipment | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
-  const [predictions, setPredictions] = useState<Record<number, DeliveryPrediction>>({});
+  const [predictions, setPredictions] = useState<Record<string, DeliveryPrediction>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedTracking, setExpandedTracking] = useState<Record<number, boolean>>({});
+  const [expandedTracking, setExpandedTracking] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status'>('delivery');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -141,7 +155,7 @@ export default function InternationalTransit() {
 
   // Move back to warehouse mutation
   const moveBackToWarehouseMutation = useMutation({
-    mutationFn: async (consolidationId: number) => {
+    mutationFn: async (consolidationId: string) => {
       const response = await apiRequest('PATCH', '/api/imports/consolidations/' + consolidationId + '/status', {
         status: 'active'
       });
@@ -261,7 +275,7 @@ export default function InternationalTransit() {
 
   // Update tracking mutation
   const updateTrackingMutation = useMutation({
-    mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
+    mutationFn: async ({ shipmentId, data }: { shipmentId: string; data: any }) => {
       const response = await apiRequest('PATCH', `/api/imports/shipments/${shipmentId}/tracking`, data);
       return response.json();
     },
@@ -286,7 +300,7 @@ export default function InternationalTransit() {
 
   // Edit shipment mutation
   const editShipmentMutation = useMutation({
-    mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
+    mutationFn: async ({ shipmentId, data }: { shipmentId: string; data: any }) => {
       const response = await apiRequest('PUT', `/api/imports/shipments/${shipmentId}`, data);
       return { ...response.json(), shipmentId };
     },
@@ -318,6 +332,50 @@ export default function InternationalTransit() {
     },
     onError: () => {
       toast({ title: t('error'), description: t('failedToUpdateShipment'), variant: "destructive" });
+    }
+  });
+
+  // Sync 17track tracking mutation
+  const sync17TrackMutation = useMutation({
+    mutationFn: async (shipmentId: string) => {
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/track17/register`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      toast({ 
+        title: t('success'), 
+        description: data.message || t('trackingSynced')
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t('error'), 
+        description: error?.message || t('failedToSyncTracking'), 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Sync all shipments with 17track
+  const syncAll17TrackMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/imports/track17/sync-all');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      toast({ 
+        title: t('success'), 
+        description: data.message || t('allShipmentsSynced')
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t('error'), 
+        description: error?.message || t('failedToSyncAllShipments'), 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -790,6 +848,16 @@ export default function InternationalTransit() {
               data-testid="input-search-shipments"
             />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => syncAll17TrackMutation.mutate()}
+            disabled={syncAll17TrackMutation.isPending}
+            data-testid="button-sync-all-tracking"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncAll17TrackMutation.isPending ? 'animate-spin' : ''}`} />
+            {t('syncTracking')}
+          </Button>
           <Dialog 
             open={isCreateShipmentOpen || isEditShipmentOpen} 
             onOpenChange={(open) => {
@@ -2505,10 +2573,23 @@ export default function InternationalTransit() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(viewShipmentDetails.trackingNumber || viewShipmentDetails.endTrackingNumber) && (
                     <div className="space-y-2">
-                      <h3 className="font-semibold text-sm flex items-center gap-2">
-                        <Package className="h-4 w-4 text-primary" />
-                        {t('trackingAction')}
-                      </h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-sm flex items-center gap-2">
+                          <Package className="h-4 w-4 text-primary" />
+                          {t('trackingAction')}
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => sync17TrackMutation.mutate(viewShipmentDetails.id)}
+                          disabled={sync17TrackMutation.isPending}
+                          data-testid={`button-sync-tracking-${viewShipmentDetails.id}`}
+                        >
+                          <RefreshCw className={`h-3 w-3 mr-1 ${sync17TrackMutation.isPending ? 'animate-spin' : ''}`} />
+                          {t('syncTracking')}
+                        </Button>
+                      </div>
                       <div className="space-y-2 p-3 border rounded-lg text-xs">
                         {viewShipmentDetails.trackingNumber && (
                           <div>
@@ -2520,6 +2601,54 @@ export default function InternationalTransit() {
                           <div className="pt-2 border-t">
                             <p className="text-muted-foreground">{viewShipmentDetails.endCarrier || t('local')}</p>
                             <p className="font-mono text-blue-600 font-medium">{viewShipmentDetails.endTrackingNumber}</p>
+                          </div>
+                        )}
+                        
+                        {/* 17track Status */}
+                        {viewShipmentDetails.track17Registered && (
+                          <div className="pt-2 border-t space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">{t('liveTrackingStatus')}</span>
+                              <Badge variant={viewShipmentDetails.track17Status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
+                                {viewShipmentDetails.track17Status || t('unknown')}
+                              </Badge>
+                            </div>
+                            {viewShipmentDetails.track17LastEvent && (
+                              <p className="text-muted-foreground">
+                                {viewShipmentDetails.track17LastEvent}
+                                {viewShipmentDetails.track17LastEventTime && (
+                                  <span className="ml-1 text-xs opacity-70">
+                                    ({format(new Date(viewShipmentDetails.track17LastEventTime), 'MMM dd, HH:mm')})
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            {viewShipmentDetails.track17LastSync && (
+                              <p className="text-xs text-muted-foreground/70">
+                                {t('lastSynced')}: {format(new Date(viewShipmentDetails.track17LastSync), 'MMM dd, HH:mm')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* 17track Events Timeline */}
+                        {viewShipmentDetails.track17Events && viewShipmentDetails.track17Events.length > 0 && (
+                          <div className="pt-2 border-t space-y-2">
+                            <p className="text-muted-foreground font-medium">{t('trackingEvents')}</p>
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {viewShipmentDetails.track17Events.slice(0, 10).map((event, idx) => (
+                                <div key={idx} className="flex gap-2 text-xs">
+                                  <div className="w-2 h-2 mt-1 rounded-full bg-blue-500 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="text-foreground">{event.description}</p>
+                                    <p className="text-muted-foreground/70">
+                                      {event.time && format(new Date(event.time), 'MMM dd, HH:mm')}
+                                      {event.location && ` • ${event.location}`}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
