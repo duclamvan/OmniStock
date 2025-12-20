@@ -100,6 +100,48 @@ const carrierIcons: Record<string, any> = {
   "SF Express": Star
 };
 
+// Auto-detect carrier from tracking number format
+const detectCarrierFromTrackingNumber = (trackingNumber: string): { carrier: string; code: string } | null => {
+  const num = trackingNumber.trim().toUpperCase();
+  
+  // UPS: Starts with 1Z, 18 characters (e.g., 1Z999AA10123456784)
+  if (num.startsWith('1Z') && num.length === 18) {
+    return { carrier: 'UPS', code: '100002' };
+  }
+  
+  // FedEx: 12, 15, 20, or 22 digits
+  if (/^\d{12}$/.test(num) || /^\d{15}$/.test(num) || /^\d{20}$/.test(num) || /^\d{22}$/.test(num)) {
+    return { carrier: 'FedEx', code: '100003' };
+  }
+  
+  // DHL Express: 10 digits starting with specific patterns
+  if (/^\d{10}$/.test(num) && (num.startsWith('1') || num.startsWith('2') || num.startsWith('3') || num.startsWith('4') || num.startsWith('5'))) {
+    return { carrier: 'DHL Express', code: '100001' };
+  }
+  
+  // DPD: 14 digits or starts with specific prefixes
+  if (/^\d{14}$/.test(num)) {
+    return { carrier: 'DPD', code: '100010' };
+  }
+  
+  // GLS: 11-12 digits
+  if (/^\d{11,12}$/.test(num)) {
+    return { carrier: 'GLS', code: '100005' };
+  }
+  
+  // PPL: Starts with specific letters + digits (Czech)
+  if (/^[A-Z]{2}\d{11}$/.test(num)) {
+    return { carrier: 'PPL', code: '100140' };
+  }
+  
+  // PostNL: 3S followed by 13 characters
+  if (num.startsWith('3S') && num.length === 15) {
+    return { carrier: 'PostNL', code: '14041' };
+  }
+  
+  return null;
+};
+
 interface PendingShipment {
   id: string;
   name: string;
@@ -134,6 +176,7 @@ export default function InternationalTransit() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
   const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('AUTO');
+  const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -891,7 +934,7 @@ export default function InternationalTransit() {
                 setIsShipmentFormOpen(false);
                 setSelectedShipment(null);
                 setSelectedPendingShipment(null);
-                setSelectedShipment(null);
+                setDetectedEndCarrier('');
               }
             }}
           >
@@ -902,6 +945,7 @@ export default function InternationalTransit() {
                   setIsShipmentFormOpen(true);
                   setSelectedPendingShipment(null);
                   setSelectedShipment(null);
+                  setDetectedEndCarrier('');
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -1036,18 +1080,27 @@ export default function InternationalTransit() {
 
                   {/* End Carrier - Dropdown with 17TRACK codes */}
                   <div className="space-y-2">
-                    <Label htmlFor="endCarrier">{t('endCarrier')} *</Label>
-                    <Select name="endCarrier" required defaultValue={
-                      selectedShipment?.endCarrier && selectedShipment?.track17CarrierCode
-                        ? `${selectedShipment.endCarrier}|${selectedShipment.track17CarrierCode}`
-                        : selectedShipment?.endCarrier 
-                          ? `${selectedShipment.endCarrier}|0`
-                          : ''
-                    }>
+                    <Label htmlFor="endCarrier">{t('endCarrier')} * {detectedEndCarrier && <span className="text-xs text-green-600 font-normal ml-1">({t('autoDetected')})</span>}</Label>
+                    <Select name="endCarrier" required 
+                      value={detectedEndCarrier || (
+                        selectedShipment?.endCarrier && selectedShipment?.track17CarrierCode
+                          ? `${selectedShipment.endCarrier}|${selectedShipment.track17CarrierCode}`
+                          : selectedShipment?.endCarrier 
+                            ? `${selectedShipment.endCarrier}|0`
+                            : ''
+                      )}
+                      onValueChange={(value) => setDetectedEndCarrier(value)}
+                    >
                       <SelectTrigger data-testid="select-end-carrier">
                         <SelectValue placeholder={t('selectEndCarrier')} />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="DHL Express|100001">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-yellow-600" />
+                            DHL Express
+                          </div>
+                        </SelectItem>
                         <SelectItem value="DPD|100010">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-red-600" />
@@ -1096,7 +1149,7 @@ export default function InternationalTransit() {
                             FedEx
                           </div>
                         </SelectItem>
-                        <SelectItem value="UPS|100001">
+                        <SelectItem value="UPS|100002">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-amber-700" />
                             UPS
@@ -1140,6 +1193,19 @@ export default function InternationalTransit() {
                       data-testid="textarea-end-tracking-numbers"
                       placeholder={t('pasteTrackingNumbers')}
                       className="font-mono text-sm"
+                      onBlur={(e) => {
+                        const lines = e.target.value.split('\n').filter(line => line.trim());
+                        if (lines.length > 0) {
+                          const detected = detectCarrierFromTrackingNumber(lines[0]);
+                          if (detected && !detectedEndCarrier) {
+                            setDetectedEndCarrier(`${detected.carrier}|${detected.code}`);
+                            toast({
+                              title: t('carrierDetected'),
+                              description: `${detected.carrier} ${t('autoSelectedBasedOnTracking')}`,
+                            });
+                          }
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -1529,6 +1595,7 @@ export default function InternationalTransit() {
                         className="text-xs px-2"
                         onClick={() => {
                           setSelectedPendingShipment(pending);
+                          setDetectedEndCarrier('');
                           setIsShipmentFormOpen(true);
                         }}
                         data-testid={`button-add-tracking-${pending.id}`}
@@ -1717,7 +1784,7 @@ export default function InternationalTransit() {
                   {t('clearSearch')}
                 </Button>
               ) : (
-                <Button onClick={() => setIsShipmentFormOpen(true)} data-testid="button-create-first-shipment">
+                <Button onClick={() => { setDetectedEndCarrier(''); setIsShipmentFormOpen(true); }} data-testid="button-create-first-shipment">
                   <Plus className="h-4 w-4 mr-2" />
                   {t('createShipment')}
                 </Button>
@@ -1792,6 +1859,7 @@ export default function InternationalTransit() {
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedShipment(shipment);
+                                setDetectedEndCarrier('');
                                 setIsShipmentFormOpen(true);
                               }}>
                                 <Edit className="h-4 w-4 mr-2" />
