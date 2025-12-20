@@ -783,6 +783,8 @@ const imports = {
   noAvailableItemsToClassify: 'Không có sản phẩm để phân loại',
   dropItemsHere: 'Thả sản phẩm vào đây',
   releaseToAdd: 'Thả để thêm',
+  loadingItems: 'Đang tải sản phẩm',
+  removeFromConsolidation: 'Xóa khỏi tổng hợp',
   noIncomingOrdersAtWarehouse: 'Không có đơn hàng đến tại kho',
   updateItemDetails: 'Cập nhật chi tiết và trạng thái sản phẩm',
   sourcePlatform: 'Nền tảng nguồn',

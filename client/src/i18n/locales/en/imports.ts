@@ -767,6 +767,8 @@ const imports = {
   noAvailableItemsToClassify: 'No available items to classify',
   dropItemsHere: 'Drop items here',
   releaseToAdd: 'Release to add',
+  loadingItems: 'Loading items',
+  removeFromConsolidation: 'Remove from consolidation',
   noIncomingOrdersAtWarehouse: 'No incoming orders at warehouse',
   updateItemDetails: 'Update item details and status',
   sourcePlatform: 'Source Platform',

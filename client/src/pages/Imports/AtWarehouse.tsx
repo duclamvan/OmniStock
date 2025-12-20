@@ -1057,6 +1057,13 @@ export default function AtWarehouse() {
       c.status !== 'shipped' && c.status !== 'delivered'
     );
     
+    // Always fetch items for consolidations that have items but aren't loaded yet
+    activeConsolidations.forEach(consolidation => {
+      if (consolidation.itemCount > 0 && !consolidationItems[consolidation.id]) {
+        fetchConsolidationItems(consolidation.id);
+      }
+    });
+    
     // Only update if there are active consolidations and they're not already expanded
     if (activeConsolidations.length > 0) {
       const newExpandedIds = activeConsolidations.map(c => c.id);
@@ -1064,13 +1071,6 @@ export default function AtWarehouse() {
         const currentIds = Array.from(prev);
         const needsUpdate = newExpandedIds.some(id => !currentIds.includes(id));
         if (needsUpdate) {
-          // Fetch items for newly expanded consolidations
-          newExpandedIds.forEach(id => {
-            const consolidation = consolidations.find(c => c.id === id);
-            if (consolidation && consolidation.itemCount > 0 && !consolidationItems[id]) {
-              fetchConsolidationItems(id);
-            }
-          });
           return new Set(newExpandedIds);
         }
         return prev;
@@ -3592,32 +3592,36 @@ export default function AtWarehouse() {
                                       </div>
                                     ) : (
                                       <div className="space-y-1">
-                                        {consolidationItems[consolidation.id]?.map((item: any) => (
-                                          <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
-                                            <div className="flex-1 min-w-0">
-                                              <div className="font-medium truncate">{item.name}</div>
-                                              <div className="text-muted-foreground text-xs">
-                                                {t('qty')}: {item.quantity}
+                                        {consolidationItems[consolidation.id]?.length > 0 ? (
+                                          consolidationItems[consolidation.id].map((item: any) => (
+                                            <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="font-medium truncate">{item.name}</div>
+                                                <div className="text-muted-foreground text-xs">
+                                                  {t('qty')}: {item.quantity}
+                                                </div>
                                               </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  removeItemFromConsolidationMutation.mutate({
+                                                    consolidationId: consolidation.id,
+                                                    itemId: item.id
+                                                  });
+                                                }}
+                                                title={t('removeFromConsolidation')}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
                                             </div>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-6 w-6 p-0 shrink-0"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                removeItemFromConsolidationMutation.mutate({
-                                                  consolidationId: consolidation.id,
-                                                  itemId: item.id
-                                                });
-                                              }}
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        )) || (
+                                          ))
+                                        ) : (
                                           <div className="text-xs text-muted-foreground text-center py-2">
-                                            {consolidation.itemCount} {t('items')}
+                                            <RefreshCw className="h-3 w-3 animate-spin inline mr-1" />
+                                            {t('loadingItems')}...
                                           </div>
                                         )}
                                       </div>
