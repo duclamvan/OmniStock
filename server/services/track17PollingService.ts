@@ -215,8 +215,9 @@ async function updateShipmentAggregatedETA(shipmentId: string): Promise<void> {
     const estimatedDaysMax = daysValues.length > 0 ? Math.max(...daysValues) : null;
 
     // Get earliest estimated delivery date for the shipment's estimatedDelivery field
+    // Use estimatedDeliveryFrom if available, fall back to estimatedDeliveryTo
     const deliveryDates = metadata
-      .map(m => m.estimatedDeliveryFrom)
+      .map(m => m.estimatedDeliveryFrom || m.estimatedDeliveryTo)
       .filter((d): d is Date => d !== null && d !== undefined);
     const earliestDelivery = deliveryDates.length > 0 
       ? new Date(Math.min(...deliveryDates.map(d => d.getTime())))
