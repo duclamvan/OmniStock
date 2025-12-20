@@ -2298,37 +2298,42 @@ export default function CreatePurchase() {
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <div className="relative group">
-                      {selectedProduct?.imageUrl ? (
-                        <div className="relative">
-                          <img
-                            src={selectedProduct.imageUrl}
-                            alt={selectedProduct.name}
-                            className="w-20 h-20 object-contain rounded-lg border-2 border-primary/30 bg-slate-50"
+                      {(selectedProduct?.imageUrl || productImagePreview) ? (
+                        <label className="cursor-pointer block">
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            data-testid="input-product-image-change"
                           />
-                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ImageIcon className="h-5 w-5 text-white" />
+                          <div className="relative">
+                            <img
+                              src={productImagePreview || selectedProduct?.imageUrl}
+                              alt={selectedProduct?.name || t('productPreview')}
+                              className="w-20 h-20 object-contain rounded-lg border-2 border-primary/30 bg-slate-50"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Upload className="h-5 w-5 text-white" />
+                            </div>
                           </div>
-                        </div>
-                      ) : productImagePreview ? (
-                        <div className="relative">
-                          <img
-                            src={productImagePreview}
-                            alt={t('productPreview')}
-                            className="w-20 h-20 object-contain rounded-lg border-2 border-primary bg-slate-50"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
-                            onClick={() => {
-                              setProductImageFile(null);
-                              setProductImagePreview(null);
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
+                          {productImagePreview && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 z-10"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setProductImageFile(null);
+                                setProductImagePreview(null);
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </label>
                       ) : (
                         <label className="cursor-pointer">
                           <input

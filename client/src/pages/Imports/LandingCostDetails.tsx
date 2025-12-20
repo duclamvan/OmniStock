@@ -76,6 +76,7 @@ interface LandingCostItem {
   insuranceAllocated: number;
   packagingAllocated: number;
   otherAllocated: number;
+  imageUrl?: string;
 }
 
 interface LandingCostPreview {
@@ -784,6 +785,13 @@ export default function LandingCostDetails() {
                           data-testid={`checkbox-item-${item.sku}`}
                           className="mt-1"
                         />
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt="" className="w-12 h-12 object-cover rounded border flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-12 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">{item.name}</h4>
                           <div className="flex flex-wrap items-center gap-2 mt-1">

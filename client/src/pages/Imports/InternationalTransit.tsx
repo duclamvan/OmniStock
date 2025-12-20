@@ -1458,10 +1458,17 @@ export default function InternationalTransit() {
                   {pending.items && pending.items.length > 0 && (
                     <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded-md">
                       <p className="text-xs font-medium text-muted-foreground mb-1">{t('contents')}:</p>
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         {pending.items.map((item: any, index: number) => (
-                          <div key={index} className="flex items-center gap-1 text-xs">
-                            <span className="truncate">{item.name}</span>
+                          <div key={index} className="flex items-center gap-2 text-xs">
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} alt="" className="w-6 h-6 object-cover rounded border flex-shrink-0" />
+                            ) : (
+                              <div className="w-6 h-6 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                <Package className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="truncate flex-1">{item.name}</span>
                             <Badge variant="secondary" className="text-xs px-1 py-0 h-5 min-w-[30px] flex items-center justify-center">
                               x{item.quantity || 1}
                             </Badge>
@@ -1985,10 +1992,17 @@ export default function InternationalTransit() {
                       {shipment.items && shipment.items.length > 0 && (
                         <div className="border rounded-lg p-3 bg-muted/30 mb-3">
                           <div className="text-sm font-medium mb-2">{t('packageContents')} ({shipment.totalUnits || shipment.itemCount} {shipment.unitType || t('items')}):</div>
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {shipment.items.map((item: any, index: number) => (
-                              <div key={index} className="text-sm flex justify-between">
-                                <span className="text-muted-foreground">
+                              <div key={index} className="text-sm flex items-center gap-2">
+                                {item.imageUrl ? (
+                                  <img src={item.imageUrl} alt="" className="w-8 h-8 object-cover rounded border flex-shrink-0" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-muted-foreground flex-1 truncate">
                                   {item.name || `Item ${index + 1}`} {item.trackingNumber && `(${item.trackingNumber})`}
                                 </span>
                                 <span className="font-medium">{t('qty')}: {item.quantity || 1}</span>
@@ -2298,9 +2312,18 @@ export default function InternationalTransit() {
                         
                         return (
                           <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
-                            <div className="flex justify-between items-start">
-                              <p className="font-medium text-sm">{item.name || `Item ${index + 1}`}</p>
-                              <Badge variant="outline" className="text-xs">{t('qty')}: {qty}</Badge>
+                            <div className="flex items-start gap-3">
+                              {item.imageUrl ? (
+                                <img src={item.imageUrl} alt="" className="w-12 h-12 object-cover rounded border flex-shrink-0" />
+                              ) : (
+                                <div className="w-12 h-12 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1 flex justify-between items-start">
+                                <p className="font-medium text-sm">{item.name || `Item ${index + 1}`}</p>
+                                <Badge variant="outline" className="text-xs">{t('qty')}: {qty}</Badge>
+                              </div>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-2 text-xs">

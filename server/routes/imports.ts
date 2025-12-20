@@ -9047,10 +9047,59 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       const unitPrice = parseFloat(item.unitPrice || '0');
       const totalValue = unitPrice * item.quantity;
 
+      // Get imageUrl from orderItems if available (for purchase order items)
+      let imageUrl = null;
+      let sku = null;
+      
+      // Parse orderItems if stored as JSON string
+      let orderItemsArray: any[] = [];
+      if (item.orderItems) {
+        if (typeof item.orderItems === 'string') {
+          try {
+            const parsed = JSON.parse(item.orderItems);
+            if (Array.isArray(parsed)) {
+              orderItemsArray = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+              // Handle single object case
+              orderItemsArray = [parsed];
+            }
+          } catch (e) {
+            console.warn('Failed to parse orderItems JSON:', e);
+            orderItemsArray = [];
+          }
+        } else if (Array.isArray(item.orderItems)) {
+          orderItemsArray = item.orderItems;
+        } else if (item.orderItems && typeof item.orderItems === 'object') {
+          // Handle single object case
+          orderItemsArray = [item.orderItems];
+        }
+      }
+      
+      if (orderItemsArray.length > 0) {
+        const firstItemWithImage = orderItemsArray.find(oi => oi.imageUrl);
+        if (firstItemWithImage?.imageUrl) {
+          imageUrl = firstItemWithImage.imageUrl;
+        }
+        const firstItemWithSku = orderItemsArray.find(oi => oi.sku);
+        if (firstItemWithSku?.sku) {
+          sku = firstItemWithSku.sku;
+        }
+      }
+      
+      // Fallback to item-level fields if available
+      if (!imageUrl && (item as any).imageUrl) {
+        imageUrl = (item as any).imageUrl;
+      }
+      if (!sku && (item as any).sku) {
+        sku = (item as any).sku;
+      }
+
       items.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
         name: item.name,
+        sku,
+        imageUrl,
         quantity: item.quantity,
         unitPrice,  // Add unit price for purchase price column
         totalValue,
@@ -9227,10 +9276,59 @@ async function getItemAllocationBreakdownWithMethod(
       const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
 
+      // Get imageUrl from orderItems if available (for purchase order items)
+      let imageUrl = null;
+      let sku = null;
+      
+      // Parse orderItems if stored as JSON string
+      let orderItemsArray: any[] = [];
+      if (item.orderItems) {
+        if (typeof item.orderItems === 'string') {
+          try {
+            const parsed = JSON.parse(item.orderItems);
+            if (Array.isArray(parsed)) {
+              orderItemsArray = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+              // Handle single object case
+              orderItemsArray = [parsed];
+            }
+          } catch (e) {
+            console.warn('Failed to parse orderItems JSON:', e);
+            orderItemsArray = [];
+          }
+        } else if (Array.isArray(item.orderItems)) {
+          orderItemsArray = item.orderItems;
+        } else if (item.orderItems && typeof item.orderItems === 'object') {
+          // Handle single object case
+          orderItemsArray = [item.orderItems];
+        }
+      }
+      
+      if (orderItemsArray.length > 0) {
+        const firstItemWithImage = orderItemsArray.find(oi => oi.imageUrl);
+        if (firstItemWithImage?.imageUrl) {
+          imageUrl = firstItemWithImage.imageUrl;
+        }
+        const firstItemWithSku = orderItemsArray.find(oi => oi.sku);
+        if (firstItemWithSku?.sku) {
+          sku = firstItemWithSku.sku;
+        }
+      }
+      
+      // Fallback to item-level fields if available
+      if (!imageUrl && (item as any).imageUrl) {
+        imageUrl = (item as any).imageUrl;
+      }
+      if (!sku && (item as any).sku) {
+        sku = (item as any).sku;
+      }
+
       results.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
         name: item.name,
+        sku,
+        imageUrl,
         quantity: item.quantity,
         unitPrice: itemAllocation.unitPrice,  // Changed from unitValue to unitPrice for consistency
         totalValue: itemAllocation.totalValue,
