@@ -1914,466 +1914,327 @@ export default function StartReceiving() {
   }
 
   return (
-    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-4xl relative overflow-x-hidden">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-4xl relative overflow-x-hidden">
       {/* Visual Feedback Components */}
       <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
       <ScanLineAnimation isActive={scanMode} />
       <SuccessCheckmark show={showSuccessCheckmark} />
+      
       {/* Save Status Indicator */}
       <div className="fixed top-4 right-4 z-50">
         {saveStatus === 'saving' && (
-          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Saving...</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('saving')}</span>
           </div>
         )}
         {saveStatus === 'saved' && (
-          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-4 py-2 border border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-3 py-2 border border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-top-1 duration-200">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-700 dark:text-green-400">Saved</span>
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">{t('saved')}</span>
           </div>
         )}
       </div>
       
-      {/* Header - Redesigned for mobile */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-start gap-3">
-          <Button 
-            variant="ghost" 
-            size="default" 
-            onClick={handleBackNavigation}
-            className="h-11 px-3 flex-shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            <span className="font-medium">Back</span>
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">Quick Receiving</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              {shipment.shipmentName || `Shipment #${shipment.id}`} • {shipment.trackingNumber}
+      {/* Header - Compact and Clean */}
+      <div className="mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleBackNavigation}
+          className="mb-3 -ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1.5" />
+          {t('back')}
+        </Button>
+        
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('quickReceiving')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">
+              {shipment.shipmentName || `#${shipment.id.slice(0,8)}`}
             </p>
           </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Badge className={`${getStatusColor(shipment.status)} text-xs px-2 py-0.5`}>
+              {shipment.status?.replace('_', ' ').toUpperCase()}
+            </Badge>
+            {receipt && receipt.receipt && (
+              <Link href={`/receiving/receipt/${receipt.receipt.id}`}>
+                <Button variant="outline" size="sm" className="h-8">
+                  <FileText className="h-3.5 w-3.5 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{t('viewReceipt')}</span>
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge className={`${getStatusColor(shipment.status)} text-sm px-3 py-1`}>
-            {shipment.status?.replace('_', ' ').toUpperCase()}
-          </Badge>
-          {receipt && receipt.receipt && (
-            <Link href={`/receiving/receipt/${receipt.receipt.id}`}>
-              <Button variant="outline" size="default" className="h-10">
-                <FileText className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">View Receipt</span>
-                <span className="sm:hidden">Receipt</span>
-              </Button>
-            </Link>
+      </div>
+
+      {/* Progress Summary - Compact Cards */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="bg-card border rounded-lg p-2.5 text-center">
+          <div className="text-lg sm:text-xl font-bold text-foreground">{Math.round(progress)}%</div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground">{t('progress')}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-2.5 text-center">
+          <div className="text-lg sm:text-xl font-bold text-foreground">{scannedParcels}/{parcelCount}</div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground">{isPalletShipment ? t('pallets') : t('parcels')}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-2.5 text-center">
+          <div className="text-lg sm:text-xl font-bold text-foreground">{totalReceivedQty}/{totalExpectedQty}</div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground">{t('items')}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-2.5 text-center">
+          <div className="text-lg sm:text-xl font-bold text-foreground">{checkedItemsCount}/{totalItems}</div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground">{t('verified')}</div>
+        </div>
+      </div>
+      
+      {/* Progress Bar */}
+      <div className="mb-4">
+        <Progress value={progress} className="h-2" />
+      </div>
+
+      {/* Step Navigation - Clean Tabs */}
+      <div className="flex border-b mb-4">
+        <button
+          onClick={() => setCurrentStep(1)}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+            currentStep === 1 
+              ? 'border-primary text-primary' 
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+          }`}
+          data-testid="tab-parcel-check"
+        >
+          <Package className="h-4 w-4" />
+          <span>{t('parcelCheck')}</span>
+          {scannedParcels === parcelCount && parcelCount > 0 && (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
           )}
-        </div>
+        </button>
+        <button
+          onClick={() => setCurrentStep(2)}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+            currentStep === 2 
+              ? 'border-primary text-primary' 
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+          }`}
+          data-testid="tab-item-checklist"
+        >
+          <CheckSquare className="h-4 w-4" />
+          <span>{t('itemChecklist')}</span>
+          {completedItems === totalItems && totalItems > 0 && (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          )}
+        </button>
       </div>
 
-      {/* Progress Bar - Redesigned */}
-      <div className="mb-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('overallProgress')}</span>
-          <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            {Math.round(progress)}%
-          </span>
-        </div>
-        <div className="relative">
-          <Progress 
-            value={progress} 
-            className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full" 
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-1 sm:gap-3 mt-4 text-xs sm:text-sm">
-          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{scannedParcels}/{parcelCount}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">{unitLabel}</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{totalReceivedQty}/{totalExpectedQty}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">{t('items')}</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100">{checkedItemsCount}/{totalItems}</div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground">{t('verified')}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Step Navigation - Mobile Optimized Segmented Control */}
-      <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6">
-        <div className="flex gap-1">
-          <button
-            onClick={() => setCurrentStep(1)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-              currentStep === 1 
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm' 
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-            data-testid="tab-parcel-check"
-          >
-            <Package className={`h-4 w-4 flex-shrink-0 ${currentStep === 1 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-            <span className="truncate">{t('parcelCheck')}</span>
-            {scannedParcels === parcelCount && parcelCount > 0 && (
-              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-            )}
-          </button>
-          <button
-            onClick={() => setCurrentStep(2)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-              currentStep === 2 
-                ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm' 
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-            data-testid="tab-item-checklist"
-          >
-            <CheckSquare className={`h-4 w-4 flex-shrink-0 ${currentStep === 2 ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-            <span className="truncate">{t('itemChecklist')}</span>
-            {completedItems === totalItems && totalItems > 0 && (
-              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Step 1: Parcel Verification - Redesigned */}
+      {/* Step 1: Parcel Verification */}
       {currentStep === 1 && (
-        <div className="space-y-5">
-          <Card className={`
-            transition-all duration-500 rounded-lg shadow-sm border bg-white dark:bg-gray-900
-            ${scannedParcels === parcelCount && parcelCount > 0 
-              ? 'border-green-400 shadow-green-100 dark:shadow-green-900/20' 
-              : scannedParcels > 0 
-                ? 'border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
-                : 'border-gray-200 dark:border-gray-700'
-            }
-          `}>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg">
-                {scannedParcels === parcelCount && parcelCount > 0 ? (
-                  <CheckCircle2 className="h-6 w-6 text-green-600" />
-                ) : scannedParcels > 0 ? (
-                  <Clock className="h-6 w-6 text-amber-600" />
-                ) : (
-                  isPalletShipment ? <Layers className="h-6 w-6" /> : <Package className="h-6 w-6" />
-                )}
-                <span className="font-semibold">{unitLabel} {t('verification')}</span>
-                {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <Badge className="ml-auto bg-green-600 text-white shadow-sm px-3 py-1">{t('complete')}</Badge>
-                )}
-                {scannedParcels > 0 && scannedParcels < parcelCount && (
-                  <Badge className="ml-auto bg-amber-600 text-white shadow-sm px-3 py-1">{t('inProgress')}</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Show skeleton loading when data is loading */}
-              {(receiptLoading || isLoading) ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Skeleton className="h-4 w-20 mb-2" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-4 w-16 mb-2" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Skeleton className="h-4 w-24 mb-2" />
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-10 w-10" />
-                        <Skeleton className="h-10 flex-1" />
-                        <Skeleton className="h-10 w-10" />
-                      </div>
-                    </div>
-                    <div>
-                      <Skeleton className="h-4 w-28 mb-2" />
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-10 w-10" />
-                        <Skeleton className="h-10 flex-1" />
-                        <Skeleton className="h-10 w-10" />
-                      </div>
-                    </div>
-                  </div>
+        <div className="space-y-4">
+          {/* Show skeleton loading when data is loading */}
+          {(receiptLoading || isLoading) ? (
+            <Card className="border">
+              <CardContent className="pt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Skeleton className="h-4 w-20 mb-2" />
-                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-10 w-full" />
                   </div>
                   <div>
                     <Skeleton className="h-4 w-16 mb-2" />
-                    <div className="grid grid-cols-3 gap-2">
-                      <Skeleton className="h-24 w-full rounded-lg" />
-                      <Skeleton className="h-24 w-full rounded-lg" />
-                      <Skeleton className="h-24 w-full rounded-lg" />
-                    </div>
+                    <Skeleton className="h-10 w-full" />
                   </div>
                 </div>
-              ) : (
-                <>
-                  {/* Basic Info & Parcel Count - Combined Section */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">{t('receivedBy')} *</Label>
-                      <Input
-                        value={receivedBy}
-                        onChange={(e) => handleReceivedByChange(e.target.value)}
-                        onBlur={handleReceivedByBlur}
-                        placeholder={t('yourName')}
-                        required
-                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">{t('carrier')} *</Label>
-                      <Input
-                        value={carrier}
-                        onChange={(e) => handleCarrierChange(e.target.value)}
-                        onBlur={handleCarrierBlur}
-                        placeholder={t('carrierPlaceholder')}
-                        required
-                        className="h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium mb-2 block">{t('received')} {unitLabel}</Label>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
-                          disabled={scannedParcels === 0 || updateMetaMutation.isPending}
-                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
-                        >
-                          <Minus className="h-5 w-5" />
-                        </Button>
-                        <div className="flex-1 h-11 px-4 flex items-center justify-center gap-2 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-2 border-blue-200 dark:border-blue-800 rounded-md">
-                          <Input
-                            type="number"
-                            value={scannedParcels}
-                            onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
-                            onBlur={() => handleScannedParcelsChange(scannedParcels, true)}
-                            className="w-20 text-center h-8 text-2xl font-bold bg-transparent border-0 focus:ring-0 focus:outline-none p-0 text-blue-700 dark:text-blue-300 caret-blue-700 dark:caret-blue-300 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            min="0"
-                            max={parcelCount}
-                          />
-                          <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                            / {parcelCount}
-                          </span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
-                          disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
-                          className={`h-11 w-11 p-0 ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-              {/* Auto-Receive All Button - Redesigned */}
-              <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="default"
-                  onClick={() => {
-                    handleScannedParcelsChange(parcelCount, true);
-                    toast({
-                      title: t('autoReceiveComplete'),
-                      description: t('allUnitsAutoReceived', { count: parcelCount, units: unitLabel.toLowerCase() })
-                    });
-                  }}
-                  disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
-                  className={`w-full h-11 font-medium shadow-sm ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  {t('receiveAll')} ({parcelCount})
-                </Button>
-              </div>
-
-              {/* Progress Bar and Tracking Numbers */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="relative mb-3">
-                  <Progress 
-                    value={(scannedParcels / parcelCount) * 100} 
-                    className="h-3 bg-gray-200 dark:bg-gray-700 shadow-inner rounded-full"
+                <div>
+                  <Skeleton className="h-4 w-28 mb-2" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Basic Info Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">{t('receivedBy')} *</Label>
+                  <Input
+                    value={receivedBy}
+                    onChange={(e) => handleReceivedByChange(e.target.value)}
+                    onBlur={handleReceivedByBlur}
+                    placeholder={t('yourName')}
+                    required
+                    className="h-10"
                   />
                 </div>
-                {scannedParcels === parcelCount && parcelCount > 0 && (
-                  <div className="flex items-center gap-2 mb-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">{t('allUnitsVerified', { units: unitLabel.toLowerCase() })}</span>
-                  </div>
-                )}
-                
-                {/* Tracking Numbers Display */}
-                {scannedTrackingNumbers.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('scannedTrackingNumbers')}:</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          // Clear local state
-                          setScannedTrackingNumbers([]);
-                          setScannedParcels(0);
-                          // Update server state to clear scanned parcels
-                          updateMetaMutation.mutate({ field: 'scannedParcels', value: 0 });
-                          // Remove all tracking numbers
-                          scannedTrackingNumbers.forEach(tn => {
-                            updateTrackingMutation.mutate({ action: 'remove', trackingNumber: tn });
-                          });
-                          toast({
-                            title: t('cleared'),
-                            description: t('allTrackingNumbersCleared')
-                          });
-                        }}
-                        className="text-xs"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        {t('clearAll')}
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {scannedTrackingNumbers.map((trackingNumber, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="secondary" 
-                          className="text-xs py-1 px-2"
-                        >
-                          {index + 1}. {trackingNumber}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Scan Parcels - Redesigned */}
-              <div className="col-span-full">
-                <Label className="text-base font-semibold mb-3 block text-gray-900 dark:text-gray-100">{t('scan')} {unitLabel}</Label>
-                <div className="w-full">
-                  <ScanInputPulse isScanning={scanMode}>
-                    <div className={`relative w-full rounded-xl border transition-all duration-300 overflow-hidden shadow-sm ${
-                      scanMode 
-                        ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 shadow-md ring-2 ring-blue-200 dark:ring-blue-800' 
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600'
-                    }`}>
-                      <div className="flex items-center">
-                        <div className="flex-1 relative">
-                          <Input
-                            ref={barcodeRef}
-                            value={barcodeScan}
-                            onChange={(e) => setBarcodeScan(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && barcodeScan.trim()) {
-                                e.preventDefault();
-                                handleBarcodeScan(barcodeScan.trim());
-                              }
-                            }}
-                            onBlur={(e) => {
-                              // Handle Bluetooth scanner input that doesn't trigger Enter
-                              if (e.target.value.trim() && e.target.value !== barcodeScan) {
-                                setTimeout(() => {
-                                  if (barcodeRef.current?.value.trim()) {
-                                    handleBarcodeScan(barcodeRef.current.value.trim());
-                                  }
-                                }, 100);
-                              }
-                            }}
-                            placeholder={t('scanOrTypeTracking', { unit: isPalletShipment ? t('pallet').toLowerCase() : t('parcel').toLowerCase() })}
-                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-5 pr-14 placeholder:text-gray-400 dark:placeholder:text-gray-500 font-mono"
-                            autoComplete="off"
-                            spellCheck={false}
-                          />
-                          <ScanLine className={`absolute right-5 top-1/2 transform -translate-y-1/2 h-6 w-6 transition-all duration-200 ${
-                            scanMode ? 'text-blue-600 animate-pulse' : 'text-gray-400'
-                          }`} />
-                        </div>
-                        <div className="flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="lg"
-                            onClick={() => {
-                              setScanMode(!scanMode);
-                              if (!scanMode) {
-                                setTimeout(() => barcodeRef.current?.focus(), 100);
-                              }
-                            }}
-                            className={`h-14 px-6 rounded-none hover:bg-transparent transition-all duration-200 ${
-                              scanMode 
-                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' 
-                                : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                            }`}
-                          >
-                            <Camera className={`h-6 w-6 transition-transform duration-200 ${
-                              scanMode ? 'scale-110' : ''
-                            }`} />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </ScanInputPulse>
-                  
-                  {/* Scan Mode Indicator */}
-                  {scanMode && (
-                    <div className="mt-3 text-center">
-                      <span className="inline-flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 font-semibold bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
-                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse"></div>
-                        {t('scannerActive')}
-                      </span>
-                    </div>
-                  )}
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">{t('carrier')} *</Label>
+                  <Input
+                    value={carrier}
+                    onChange={(e) => handleCarrierChange(e.target.value)}
+                    onBlur={handleCarrierBlur}
+                    placeholder={t('carrierPlaceholder')}
+                    required
+                    className="h-10"
+                  />
                 </div>
               </div>
 
-                  {/* Quick Notes - Redesigned */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">{t('initialNotes')}</Label>
-                    <Textarea
-                      value={notes}
-                      onChange={(e) => handleNotesChange(e.target.value)}
-                      onBlur={handleNotesBlur}
-                      placeholder={t('initialNotesPlaceholder')}
-                      rows={3}
-                      className="resize-none border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
-                    />
-                  </div>
-
-                  {/* Continue Button - Redesigned */}
+              {/* Parcel Counter */}
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">
+                  {isPalletShipment ? t('receivedPallets') : t('receivedParcels')}
+                </Label>
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => setCurrentStep(2)}
-                    disabled={!receivedBy || !carrier}
-                    className="w-full h-12 text-base font-semibold shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                    size="lg"
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
+                    disabled={scannedParcels === 0 || updateMetaMutation.isPending}
+                    className="h-10 w-10 flex-shrink-0"
                   >
-                    {scannedParcels > 0 ? (
-                      <>
-                        {t('continueToItemChecklist')}
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
-                    ) : (
-                      <>
-                        {t('continueToItemChecklist')}
-                        <CheckSquare className="h-5 w-5 ml-2" />
-                      </>
-                    )}
+                    <Minus className="h-4 w-4" />
                   </Button>
-                </>
+                  <div className="flex-1 h-10 flex items-center justify-center bg-muted rounded-md border">
+                    <span className="text-xl font-bold">{scannedParcels}</span>
+                    <span className="text-xl text-muted-foreground mx-1">/</span>
+                    <span className="text-xl font-bold">{parcelCount}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
+                    disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                    className="h-10 w-10 flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      handleScannedParcelsChange(parcelCount, true);
+                      toast({
+                        title: t('autoReceiveComplete'),
+                        description: t('allUnitsAutoReceived', { count: parcelCount, units: unitLabel.toLowerCase() })
+                      });
+                    }}
+                    disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                    className="h-10 px-3 flex-shrink-0"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                    {t('receiveAll')} ({parcelCount})
+                  </Button>
+                </div>
+              </div>
+
+              {/* Scan Parcels */}
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">
+                  {isPalletShipment ? t('scanPallets') : t('scanParcels')}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={barcodeRef}
+                    value={barcodeScan}
+                    onChange={(e) => setBarcodeScan(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && barcodeScan.trim()) {
+                        e.preventDefault();
+                        handleBarcodeScan(barcodeScan.trim());
+                      }
+                    }}
+                    placeholder={t('scanOrTypeTracking', { unit: isPalletShipment ? t('pallet').toLowerCase() : t('parcel').toLowerCase() })}
+                    className="h-10 font-mono"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <Button
+                    type="button"
+                    variant={scanMode ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => {
+                      setScanMode(!scanMode);
+                      if (!scanMode) {
+                        setTimeout(() => barcodeRef.current?.focus(), 100);
+                      }
+                    }}
+                    className="h-10 w-10 flex-shrink-0"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </div>
+                {scanMode && (
+                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    {t('scannerActive')}
+                  </p>
+                )}
+              </div>
+
+              {/* Scanned Tracking Numbers */}
+              {scannedTrackingNumbers.length > 0 && (
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">{t('scannedTrackingNumbers')}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setScannedTrackingNumbers([]);
+                        setScannedParcels(0);
+                        updateMetaMutation.mutate({ field: 'scannedParcels', value: 0 });
+                        scannedTrackingNumbers.forEach(tn => {
+                          updateTrackingMutation.mutate({ action: 'remove', trackingNumber: tn });
+                        });
+                        toast({ title: t('cleared'), description: t('allTrackingNumbersCleared') });
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      {t('clearAll')}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {scannedTrackingNumbers.map((trackingNumber, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {trackingNumber}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               )}
-            </CardContent>
-          </Card>
+
+              {/* Notes */}
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">{t('initialNotes')}</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  onBlur={handleNotesBlur}
+                  placeholder={t('initialNotesPlaceholder')}
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+
+              {/* Continue Button */}
+              <Button
+                onClick={() => setCurrentStep(2)}
+                disabled={!receivedBy || !carrier}
+                className="w-full h-11"
+                size="lg"
+              >
+                {t('continueToItemChecklist')}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </>
+          )}
         </div>
       )}
 
