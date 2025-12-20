@@ -5313,7 +5313,7 @@ router.get("/receipts/recent", async (req, res) => {
 // Get receipt with items
 router.get("/receipts/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
 
     const [receipt] = await db
       .select()
@@ -5440,7 +5440,7 @@ router.get("/receipts/:id", async (req, res) => {
 // Update receipt
 router.put("/receipts/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const {
       receivedBy,
       carrier,
@@ -5515,7 +5515,7 @@ router.put("/receipts/:id", async (req, res) => {
 // Complete verification and send for approval
 router.post("/receipts/:id/verify", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { verifiedBy, damageNotes, photos } = req.body;
 
     if (!verifiedBy) {
@@ -5549,7 +5549,7 @@ router.post("/receipts/:id/verify", async (req, res) => {
 // Calculate and save landed costs
 router.post("/receipts/:id/landed-costs", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const {
       calculationMethod,
       baseCost,
@@ -5695,11 +5695,11 @@ router.post("/receipts/:receiptId/set-prices", async (req, res) => {
 // Combined endpoint: Set prices and approve receipt in one atomic operation
 router.post("/receipts/approve-with-prices/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { items: priceItems, approvedBy, notes } = req.body;
 
     // Validate receipt ID
-    if (isNaN(receiptId)) {
+    if (!receiptId) {
       return res.status(400).json({ message: "Invalid receipt ID" });
     }
 
@@ -6213,11 +6213,11 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
 // Approve receipt and integrate with inventory
 router.post("/receipts/approve/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { notes } = req.body;
 
     // Validate receipt ID
-    if (isNaN(receiptId)) {
+    if (!receiptId) {
       return res.status(400).json({ message: "Invalid receipt ID" });
     }
 
@@ -6629,11 +6629,11 @@ router.post("/receipts/approve/:id", async (req, res) => {
 // Reject receipt and return to receiving status
 router.post("/receipts/reject/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { reason } = req.body;
 
     // Validate receipt ID
-    if (isNaN(receiptId)) {
+    if (!receiptId) {
       return res.status(400).json({ message: "Invalid receipt ID" });
     }
 
@@ -6703,11 +6703,11 @@ router.post("/receipts/reject/:id", async (req, res) => {
 // Undo approval - revert inventory changes and set receipt back to pending_approval
 router.post("/receipts/undo-approve/:id", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { reason } = req.body;
 
     // Validate receipt ID
-    if (isNaN(receiptId)) {
+    if (!receiptId) {
       return res.status(400).json({ message: "Invalid receipt ID" });
     }
 
@@ -7356,7 +7356,7 @@ router.post("/receipts/auto-save", async (req, res) => {
 // PATCH endpoint for updating receipt meta fields only (receivedBy, carrier, parcelCount, notes)
 router.patch("/receipts/:id/meta", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { receivedBy, carrier, parcelCount, notes, scannedParcels } = req.body;
     
     // Build update object with only provided fields
@@ -7407,8 +7407,8 @@ router.patch("/receipts/:id/meta", async (req, res) => {
 // PATCH endpoint for updating a single receipt item
 router.patch("/receipts/:id/items/:itemId", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
-    const shipmentItemId = parseInt(req.params.itemId); // This is the shipment/purchase item ID
+    const receiptId = req.params.id;
+    const shipmentItemId = req.params.itemId; // This is the shipment/purchase item ID
     const { 
       receivedQuantity, 
       damagedQuantity, 
@@ -7517,8 +7517,8 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
 // PATCH endpoint for atomic increment/decrement of item quantity
 router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
-    const shipmentItemId = parseInt(req.params.itemId); // This is the shipment/purchase item ID
+    const receiptId = req.params.id;
+    const shipmentItemId = req.params.itemId; // This is the shipment/purchase item ID
     const { delta } = req.body; // delta can be positive or negative
     
     if (delta === undefined || delta === 0) {
@@ -7585,7 +7585,7 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
 // PATCH endpoint for tracking numbers
 router.patch("/receipts/:id/tracking", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { action, trackingNumber } = req.body;
     
     if (!action || !trackingNumber) {
@@ -7689,7 +7689,7 @@ router.patch("/receipts/:id/tracking", async (req, res) => {
 // PATCH endpoint for photos (optimized)
 router.patch("/receipts/:id/photos", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { photos } = req.body;
     
     if (!Array.isArray(photos)) {
@@ -7723,7 +7723,7 @@ router.patch("/receipts/:id/photos", async (req, res) => {
 // PATCH endpoint for status changes (restricted to specific transitions for safety)
 router.patch("/receipts/:id/status", async (req: any, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     let { status } = req.body;
     
     if (!status) {
@@ -7795,10 +7795,10 @@ router.patch("/receipts/:id/status", async (req: any, res) => {
 // DELETE endpoint for single photo removal (ID-based for concurrent safety)
 router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.receiptId);
+    const receiptId = req.params.receiptId;
     const photoId = req.params.photoId;
     
-    if (isNaN(receiptId) || !photoId) {
+    if (!receiptId || !photoId) {
       return res.status(400).json({ success: false, message: "Invalid receipt ID or photo ID" });
     }
     
@@ -7872,7 +7872,7 @@ router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
 // Complete receiving process for a shipment
 router.post("/receipts/complete/:receiptId", async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.receiptId);
+    const receiptId = req.params.receiptId;
     
     // Fetch the receipt with validation
     const [receipt] = await db
@@ -8040,7 +8040,7 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
 // Get storage items for a receipt (items ready to be placed in warehouse)
 router.get('/receipts/:id/storage-items', async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     
     // Get receipt with shipment and items
     const [receipt] = await db
@@ -8188,7 +8188,7 @@ router.get('/receipts/:id/storage-items', async (req, res) => {
 // Get comprehensive shipment report with product prices and locations
 router.get('/receipts/:id/report', async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     
     // Get receipt with all details
     const [receipt] = await db
@@ -8668,7 +8668,7 @@ router.get('/shipments/:id/report', async (req, res) => {
 // Store items in warehouse locations
 router.post('/receipts/:id/store-items', async (req, res) => {
   try {
-    const receiptId = parseInt(req.params.id);
+    const receiptId = req.params.id;
     const { locations } = req.body;
     
     if (!locations || !Array.isArray(locations)) {
