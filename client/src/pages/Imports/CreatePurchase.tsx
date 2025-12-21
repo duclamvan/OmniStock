@@ -2549,10 +2549,50 @@ export default function CreatePurchase() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const productName = encodeURIComponent(currentItem.name || '');
+                                  // Build URL with all available item details for pre-filling the product form
+                                  const params = new URLSearchParams();
+                                  
+                                  // Basic info
+                                  if (currentItem.name) params.set('name', currentItem.name);
+                                  if (currentItem.sku) params.set('sku', currentItem.sku);
+                                  if (currentItem.barcode) params.set('barcode', currentItem.barcode);
+                                  if (currentItem.categoryId) params.set('categoryId', String(currentItem.categoryId));
+                                  
+                                  // Supplier info from purchase order
+                                  if (supplierId) params.set('supplierId', supplierId);
+                                  
+                                  // Pricing - convert to appropriate currency fields
+                                  if (currentItem.unitPrice) {
+                                    // Pass the import cost in the purchase currency
+                                    if (purchaseCurrency === 'USD') {
+                                      params.set('importCostUsd', currentItem.unitPrice.toString());
+                                    } else if (purchaseCurrency === 'EUR') {
+                                      params.set('importCostEur', currentItem.unitPrice.toString());
+                                    } else if (purchaseCurrency === 'CZK') {
+                                      params.set('importCostCzk', currentItem.unitPrice.toString());
+                                    } else if (purchaseCurrency === 'VND') {
+                                      params.set('importCostVnd', currentItem.unitPrice.toString());
+                                    } else if (purchaseCurrency === 'CNY') {
+                                      params.set('importCostCny', currentItem.unitPrice.toString());
+                                    }
+                                    // Also pass the raw value and currency for reference
+                                    params.set('importCost', currentItem.unitPrice.toString());
+                                    params.set('importCostCurrency', purchaseCurrency);
+                                  }
+                                  
+                                  // Physical properties
+                                  if (currentItem.weight) params.set('weight', currentItem.weight.toString());
+                                  if (currentItem.weightUnit) params.set('weightUnit', currentItem.weightUnit);
+                                  if (currentItem.dimensions) params.set('dimensions', currentItem.dimensions);
+                                  
+                                  // Image if available
+                                  if (productImagePreview) params.set('imageUrl', productImagePreview);
+                                  
+                                  // Return URL for navigation back
                                   const currentPath = window.location.pathname + window.location.search;
-                                  const returnUrl = encodeURIComponent(currentPath);
-                                  navigate(`/inventory/add?name=${productName}&returnUrl=${returnUrl}`);
+                                  params.set('returnUrl', currentPath);
+                                  
+                                  navigate(`/inventory/add?${params.toString()}`);
                                 }}
                                 className="w-full"
                                 data-testid="button-add-new-product"

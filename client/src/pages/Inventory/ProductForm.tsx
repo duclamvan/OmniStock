@@ -335,11 +335,22 @@ export default function ProductForm() {
   const wholesalePriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
   const tierPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
 
-  // Get query parameters from URL (for add mode)
+  // Get query parameters from URL (for add mode - pre-fill from purchase order)
   const searchParams = new URLSearchParams(window.location.search);
   const categoryIdFromUrl = searchParams.get('categoryId');
   const nameFromUrl = searchParams.get('name');
   const returnUrl = searchParams.get('returnUrl');
+  const skuFromUrl = searchParams.get('sku');
+  const barcodeFromUrl = searchParams.get('barcode');
+  const supplierIdFromUrl = searchParams.get('supplierId');
+  const importCostUsdFromUrl = searchParams.get('importCostUsd');
+  const importCostEurFromUrl = searchParams.get('importCostEur');
+  const importCostCzkFromUrl = searchParams.get('importCostCzk');
+  const importCostVndFromUrl = searchParams.get('importCostVnd');
+  const importCostCnyFromUrl = searchParams.get('importCostCny');
+  const weightFromUrl = searchParams.get('weight');
+  const dimensionsFromUrl = searchParams.get('dimensions');
+  const imageUrlFromUrl = searchParams.get('imageUrl');
 
   // Fetch product data if in edit mode
   const { data: product, isLoading: productLoading, isSuccess: productLoaded } = useQuery<any>({
@@ -390,7 +401,7 @@ export default function ProductForm() {
 
   // Helper function to build default values for the form
   const buildDefaultValues = useCallback(() => {
-    return {
+    const defaults: any = {
       quantity: 0,
       lowStockAlert: lowStockThreshold || 45,
       lowStockAlertType: 'percentage' as const,
@@ -399,7 +410,25 @@ export default function ProductForm() {
       warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
       name: isEditMode ? undefined : (nameFromUrl || undefined),
     };
-  }, [lowStockThreshold, categoryIdFromUrl, defaultWarehouse, isEditMode, nameFromUrl]);
+    
+    // Pre-fill from URL params (from purchase order creation flow)
+    if (!isEditMode) {
+      if (skuFromUrl) defaults.sku = skuFromUrl;
+      if (barcodeFromUrl) defaults.barcode = barcodeFromUrl;
+      if (supplierIdFromUrl) defaults.supplierId = supplierIdFromUrl;
+      if (importCostUsdFromUrl) defaults.importCostUsd = parseFloat(importCostUsdFromUrl);
+      if (importCostEurFromUrl) defaults.importCostEur = parseFloat(importCostEurFromUrl);
+      if (importCostCzkFromUrl) defaults.importCostCzk = parseFloat(importCostCzkFromUrl);
+      if (importCostVndFromUrl) defaults.importCostVnd = parseFloat(importCostVndFromUrl);
+      if (importCostCnyFromUrl) defaults.importCostCny = parseFloat(importCostCnyFromUrl);
+      if (weightFromUrl) defaults.weight = parseFloat(weightFromUrl);
+      // Note: dimensions from URL is a string like "10x20x30", we'd need to parse this if needed
+    }
+    
+    return defaults;
+  }, [lowStockThreshold, categoryIdFromUrl, defaultWarehouse, isEditMode, nameFromUrl, 
+      skuFromUrl, barcodeFromUrl, supplierIdFromUrl, importCostUsdFromUrl, importCostEurFromUrl,
+      importCostCzkFromUrl, importCostVndFromUrl, importCostCnyFromUrl, weightFromUrl]);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
