@@ -2254,11 +2254,12 @@ function QuickStorageSheet({
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
     
-    // Calculate remaining quantity for auto-fill - always auto-fill with remaining
-    const isFirstLocation = currentItem?.locations.length === 0;
+    // Calculate remaining quantity for auto-fill - include BOTH existing and pending locations
+    const isFirstLocation = (currentItem?.locations.length === 0) && (currentItem?.existingLocations?.length === 0);
+    const existingQty = currentItem?.existingLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
+    const pendingQty = currentItem?.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0) || 0;
     const currentRemaining = currentItem ? 
-      currentItem.receivedQuantity - currentItem.assignedQuantity - 
-      currentItem.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0) : 0;
+      Math.max(0, currentItem.receivedQuantity - existingQty - pendingQty) : 0;
     
     // Add new location to current item - auto-fill quantity with remaining (for ALL locations)
     const newLocation: LocationAssignment = {
