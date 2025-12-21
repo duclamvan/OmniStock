@@ -3010,10 +3010,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
   // Mutation to move shipment back to "To Receive" status
   const moveToReceiveMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(`/api/imports/shipments/${shipment.id}/move-to-receive`, {
-        method: 'POST',
-      });
-      return response;
+      return apiRequest('POST', `/api/imports/shipments/${shipment.id}/move-to-receive`);
     },
     onSuccess: () => {
       toast({
