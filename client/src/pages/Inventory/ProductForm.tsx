@@ -96,6 +96,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -2622,15 +2627,20 @@ export default function ProductForm() {
                     </div>
                   )}
                   
-                  {/* Edit mode: Cost History Chart */}
+                  {/* Edit mode: Cost History Chart - Collapsible */}
                   {canAccessFinancialData && isEditMode && costHistory && costHistory.length > 0 && (
-                    <div className="pt-2">
-                      <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-amber-600" />
-                        {t('products:costHistory')}
-                      </Label>
-                      <CostHistoryChart data={costHistory} />
-                    </div>
+                    <Collapsible className="pt-2">
+                      <CollapsibleTrigger className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm font-medium">{t('products:costHistory')}</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-3">
+                        <CostHistoryChart data={costHistory} />
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                   
                   {/* Tiered Pricing */}
