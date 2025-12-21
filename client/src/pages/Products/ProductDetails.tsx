@@ -292,9 +292,9 @@ export default function ProductDetails() {
 
   const displayImage = productImages[selectedImageIndex]?.url || productImages[0]?.url || product.imageUrl;
 
-  // Calculate margins
-  const landingCostEur = parseFloat(product.latestLandingCost) || parseFloat(product.importCostEur) || 0;
-  const landingCostCzk = parseFloat(product.importCostCzk) || 0;
+  // Calculate margins - latestLandingCost is in CZK base currency
+  const landingCostCzk = parseFloat(product.latestLandingCost) || parseFloat(product.importCostCzk) || 0;
+  const landingCostEur = parseFloat(product.importCostEur) || 0;
   const priceEur = parseFloat(product.priceEur) || 0;
   const priceCzk = parseFloat(product.priceCzk) || 0;
   const marginEur = priceEur && landingCostEur ? ((priceEur - landingCostEur) / priceEur * 100).toFixed(1) : null;
