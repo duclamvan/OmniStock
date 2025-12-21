@@ -14139,6 +14139,7 @@ Important:
       });
 
       // Save shipment label to shipment_labels table
+      const cartonIds = cartons.map(c => c.id);
       const savedLabel = await storage.createShipmentLabel({
         orderId,
         carrier: 'PPL',
@@ -14146,9 +14147,10 @@ Important:
         batchId,
         labelBase64: label.labelContent,
         labelData: {
-          pplShipment,
-          // cartonNumber: nextCartonNumber, // This is for single carton creation
-          referenceId: order.orderId, // Use original order ID for general reference
+          shipments, // The array of shipments built above
+          referenceId: order.orderId,
+          cartonNumber: 1, // For matching in UI
+          cartonIds,
           hasCOD
         },
         shipmentCount: shipmentNumbers.length,
