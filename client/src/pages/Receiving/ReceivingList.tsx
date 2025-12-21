@@ -2581,7 +2581,11 @@ function QuickStorageSheet({
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="border-t-2 border-amber-500 dark:border-amber-600 bg-gray-50 dark:bg-gray-900"
+                              className={`border-t-2 bg-gray-50 dark:bg-gray-900 ${
+                                isFullyStored 
+                                  ? 'border-green-500 dark:border-green-600' 
+                                  : 'border-amber-500 dark:border-amber-600'
+                              }`}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* SIMPLIFIED LAYOUT - Easy for warehouse workers */}
