@@ -5132,6 +5132,157 @@ router.post("/receipts", async (req, res) => {
   }
 });
 
+// Sync receipt items with consolidation items - ensures receiving stays in sync with international transit
+router.post("/receipts/:receiptId/sync-items", async (req, res) => {
+  try {
+    const receiptId = req.params.receiptId;
+    
+    // Get the receipt and its shipment
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    
+    // Get the shipment to find its consolidation
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+    
+    if (!shipment || !shipment.consolidationId) {
+      return res.json({ 
+        synced: false, 
+        message: "No consolidation found for this shipment",
+        added: 0,
+        updated: 0
+      });
+    }
+    
+    // Get all consolidation items
+    const consolidationItemList = await db
+      .select()
+      .from(consolidationItems)
+      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+    
+    // Get existing receipt items
+    const existingReceiptItems = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+    
+    // Create a set of existing item IDs for quick lookup
+    const existingItemIds = new Set(existingReceiptItems.map(ri => ri.itemId));
+    
+    // Find items that need to be added
+    const itemsToAdd = [];
+    for (const ci of consolidationItemList) {
+      if (!existingItemIds.has(ci.itemId)) {
+        // This consolidation item is not in receipt items - add it
+        if (ci.itemType === 'purchase') {
+          const [item] = await db
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, ci.itemId));
+          if (item) {
+            itemsToAdd.push({
+              receiptId,
+              itemId: item.id,
+              itemType: 'purchase',
+              productId: (item as any).productId || null,
+              sku: item.sku || null,
+              expectedQuantity: item.quantity || 1,
+              receivedQuantity: 0,
+              damagedQuantity: 0,
+              missingQuantity: 0,
+              warehouseLocation: item.warehouseLocation || null,
+              condition: 'pending',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+        } else if (ci.itemType === 'custom') {
+          const [item] = await db
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, ci.itemId));
+          if (item) {
+            itemsToAdd.push({
+              receiptId,
+              itemId: item.id,
+              itemType: 'custom',
+              productId: null,
+              sku: null,
+              expectedQuantity: item.quantity || 1,
+              receivedQuantity: 0,
+              damagedQuantity: 0,
+              missingQuantity: 0,
+              warehouseLocation: null,
+              condition: 'pending',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+        }
+      }
+    }
+    
+    // Insert missing items
+    if (itemsToAdd.length > 0) {
+      await db.insert(receiptItems).values(itemsToAdd);
+    }
+    
+    // Update existing items with latest quantity info from consolidation
+    let updatedCount = 0;
+    for (const ci of consolidationItemList) {
+      const existingItem = existingReceiptItems.find(ri => ri.itemId === ci.itemId);
+      if (existingItem) {
+        // Get the source item to check quantity
+        let sourceQuantity = 1;
+        if (ci.itemType === 'purchase') {
+          const [item] = await db
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, ci.itemId));
+          if (item) sourceQuantity = item.quantity || 1;
+        } else if (ci.itemType === 'custom') {
+          const [item] = await db
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, ci.itemId));
+          if (item) sourceQuantity = item.quantity || 1;
+        }
+        
+        // Update expected quantity if it changed
+        if (existingItem.expectedQuantity !== sourceQuantity) {
+          await db
+            .update(receiptItems)
+            .set({ 
+              expectedQuantity: sourceQuantity,
+              updatedAt: new Date()
+            })
+            .where(eq(receiptItems.id, existingItem.id));
+          updatedCount++;
+        }
+      }
+    }
+    
+    res.json({
+      synced: true,
+      added: itemsToAdd.length,
+      updated: updatedCount,
+      total: consolidationItemList.length,
+      message: `Synced ${itemsToAdd.length} new items, updated ${updatedCount} existing items`
+    });
+  } catch (error) {
+    console.error("Error syncing receipt items:", error);
+    res.status(500).json({ message: "Failed to sync receipt items" });
+  }
+});
+
 // Get all items pending storage from all receipts - MUST BE BEFORE /:id ROUTE
 router.get("/receipts/storage", async (req, res) => {
   try {

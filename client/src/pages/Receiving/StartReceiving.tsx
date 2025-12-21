@@ -270,6 +270,41 @@ export default function StartReceiving() {
       staleTime: 60 * 1000 // Receipts list fresh for 60 seconds
     });
   }, []);
+  
+  // Track if sync has been attempted
+  const syncAttemptedRef = useRef<string>('');
+  
+  // Sync items from consolidation to receipt when receipt loads
+  // This ensures receiving items mirror international transit items
+  useEffect(() => {
+    const syncItems = async () => {
+      if (!receipt?.receipt?.id) return;
+      
+      // Only sync once per receipt
+      if (syncAttemptedRef.current === receipt.receipt.id) return;
+      syncAttemptedRef.current = receipt.receipt.id;
+      
+      try {
+        const response = await fetch(`/api/imports/receipts/${receipt.receipt.id}/sync-items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.added > 0 || result.updated > 0) {
+            console.log('Items synced:', result);
+            // Refresh receipt data if items were synced
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync items:', error);
+      }
+    };
+    
+    syncItems();
+  }, [receipt?.receipt?.id, id]);
 
 
   // Determine if this is a pallet shipment
