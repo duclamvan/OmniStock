@@ -51,13 +51,13 @@ export interface ReportData {
     itemsReceived: number;
   };
   topProducts: Array<{
-    id: number;
+    id: string;
     name: string;
     quantitySold: number;
     revenue: number;
   }>;
   topCustomers: Array<{
-    id: number;
+    id: string;
     name: string;
     orderCount: number;
     totalSpent: number;
