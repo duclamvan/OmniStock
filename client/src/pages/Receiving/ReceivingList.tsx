@@ -2563,9 +2563,22 @@ function QuickStorageSheet({
                                 {/* ADD LOCATION - Simple input with big button */}
                                 {itemRemainingQty > 0 && (
                                   <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
-                                    <p className="text-base font-semibold text-blue-800 dark:text-blue-300 mb-3 text-center">
+                                    <p className="text-base font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
                                       {t('addLocation')}
                                     </p>
+                                    
+                                    {/* Format guide - shows structure before typing */}
+                                    <div className="flex justify-center gap-1 mb-3">
+                                      <div className="flex items-center gap-1 text-xs">
+                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">WH1</span>
+                                        <span className="text-blue-400">-</span>
+                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">A01</span>
+                                        <span className="text-blue-400">-</span>
+                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">R02</span>
+                                        <span className="text-blue-400">-</span>
+                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">L03</span>
+                                      </div>
+                                    </div>
                                     
                                     <div className="flex gap-3">
                                       <Input
@@ -2580,7 +2593,7 @@ function QuickStorageSheet({
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        placeholder="WH1-A01-R02-L03"
+                                        placeholder="wh1a01r02l03"
                                         className="flex-1 h-14 text-lg font-mono font-bold text-center border-2 rounded-xl"
                                         data-testid="input-location-manual"
                                       />
