@@ -13717,8 +13717,35 @@ Important:
         });
       }
 
-      // Use placeholder tracking numbers if not provided
+      // PPL API is asynchronous - poll batch status to get tracking numbers
+      if (shipmentNumbers.length === 0) {
+        console.log('📡 Polling PPL batch status for tracking numbers...');
+        // Retry a few times with delay - PPL may need time to process
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 1s, 2s, 3s delays
+            const batchStatus = await getPPLBatchStatus(batchId);
+            console.log(`📡 Batch status attempt ${attempt}:`, JSON.stringify(batchStatus, null, 2));
+            
+            if (batchStatus.items && batchStatus.items.length > 0) {
+              shipmentNumbers = batchStatus.items
+                .filter(item => item.shipmentNumber)
+                .map(item => item.shipmentNumber!);
+              
+              if (shipmentNumbers.length > 0) {
+                console.log('✅ Extracted shipment numbers from batch status:', shipmentNumbers);
+                break;
+              }
+            }
+          } catch (pollError) {
+            console.warn(`⚠️ Batch status polling attempt ${attempt} failed:`, pollError);
+          }
+        }
+      }
+
+      // Use placeholder tracking numbers if still not provided after polling
       if (shipmentNumbers.length === 0 && cartons.length > 0) {
+        console.warn('⚠️ Could not retrieve tracking numbers from PPL API - using placeholders');
         shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
       }
 
