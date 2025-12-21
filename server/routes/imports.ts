@@ -379,6 +379,81 @@ async function getLandedCostForItem(
 }
 
 /**
+ * Derive missing historical import costs from any available currency value.
+ * Falls back through all currencies to find the best source for derivation.
+ * This preserves historical valuation for legacy data with incomplete currency coverage.
+ */
+function deriveHistoricalImportCosts(
+  oldCostUsd: number,
+  oldCostEur: number,
+  oldCostCzk: number,
+  oldCostVnd: number,
+  oldCostCny: number,
+  eurToUsd: number,
+  usdToEur: number,
+  eurToCzk: number,
+  eurToVnd: number,
+  eurToCny: number,
+  usdToCzk: number,
+  usdToVnd: number,
+  usdToCny: number
+): {
+  derivedUsd: number;
+  derivedEur: number;
+  derivedCzk: number;
+  derivedVnd: number;
+  derivedCny: number;
+} {
+  const hasUsd = oldCostUsd > 0;
+  const hasEur = oldCostEur > 0;
+  const hasCzk = oldCostCzk > 0;
+  const hasVnd = oldCostVnd > 0;
+  const hasCny = oldCostCny > 0;
+  
+  // Derive USD: prefer USD > EUR > CZK > VND > CNY
+  const derivedUsd = hasUsd ? oldCostUsd 
+    : hasEur ? oldCostEur * eurToUsd 
+    : hasCzk ? oldCostCzk / eurToCzk * eurToUsd 
+    : hasVnd ? oldCostVnd / eurToVnd * eurToUsd 
+    : hasCny ? oldCostCny / eurToCny * eurToUsd 
+    : 0;
+  
+  // Derive EUR: prefer EUR > USD > CZK > VND > CNY
+  const derivedEur = hasEur ? oldCostEur 
+    : hasUsd ? oldCostUsd * usdToEur 
+    : hasCzk ? oldCostCzk / eurToCzk 
+    : hasVnd ? oldCostVnd / eurToVnd 
+    : hasCny ? oldCostCny / eurToCny 
+    : 0;
+  
+  // Derive CZK: prefer CZK > EUR > USD > VND > CNY
+  const derivedCzk = hasCzk ? oldCostCzk 
+    : hasEur ? oldCostEur * eurToCzk 
+    : hasUsd ? oldCostUsd * usdToCzk 
+    : hasVnd ? oldCostVnd / eurToVnd * eurToCzk 
+    : hasCny ? oldCostCny / eurToCny * eurToCzk 
+    : 0;
+  
+  // Derive VND: prefer VND > EUR > USD > CZK > CNY
+  const derivedVnd = hasVnd ? oldCostVnd 
+    : hasEur ? oldCostEur * eurToVnd 
+    : hasUsd ? oldCostUsd * usdToVnd 
+    : hasCzk ? oldCostCzk / eurToCzk * eurToVnd 
+    : hasCny ? oldCostCny / eurToCny * eurToVnd 
+    : 0;
+  
+  // Derive CNY: prefer CNY > EUR > USD > CZK > VND
+  const derivedCny = hasCny ? oldCostCny 
+    : hasEur ? oldCostEur * eurToCny 
+    : hasUsd ? oldCostUsd * usdToCny 
+    : hasCzk ? oldCostCzk / eurToCzk * eurToCny 
+    : hasVnd ? oldCostVnd / eurToVnd * eurToCny 
+    : 0;
+  
+  return { derivedUsd, derivedEur, derivedCzk, derivedVnd, derivedCny };
+}
+
+/**
  * Calculate weighted average landed cost when receiving inventory.
  * Uses the formula: (oldQty * oldCost + newQty * newCost) / totalQty
  */
@@ -6334,15 +6409,30 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             const newQuantity = item.receivedQuantity;
             const totalQuantity = oldQuantity + newQuantity;
             
-            // Calculate weighted average for import costs
+            // Calculate weighted average for import costs for ALL currencies (USD, CZK, EUR, VND, CNY)
             const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
             const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
             const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
+            const oldCostVnd = parseFloat(existingProduct.importCostVnd || '0');
+            const oldCostCny = parseFloat(existingProduct.importCostCny || '0');
             
             // Determine currency from purchase order if available
+            // Convert to all currencies for proper weighted average calculations
             let newCostUsd = unitCost;
             let newCostCzk = 0;
             let newCostEur = 0;
+            let newCostVnd = 0;
+            let newCostCny = 0;
+            
+            // Get exchange rates for conversion
+            const eurToUsd = 1.1;
+            const eurToCzk = 25;
+            const eurToVnd = 27000;
+            const eurToCny = 7.5;
+            const usdToEur = 1 / eurToUsd;
+            const usdToCzk = eurToCzk / eurToUsd;
+            const usdToVnd = eurToVnd / eurToUsd;
+            const usdToCny = eurToCny / eurToUsd;
             
             // Get purchase order for currency info
             if (item.itemType === 'purchase' && originalItem.purchaseId) {
@@ -6356,28 +6446,72 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
                 
                 if (currency === 'CZK') {
                   newCostCzk = unitCost;
-                  newCostUsd = unitCost / 25; // Use standard rate
+                  newCostUsd = unitCost / eurToCzk * eurToUsd;
+                  newCostEur = unitCost / eurToCzk;
+                  newCostVnd = unitCost / eurToCzk * eurToVnd;
+                  newCostCny = unitCost / eurToCzk * eurToCny;
                 } else if (currency === 'EUR') {
                   newCostEur = unitCost;
-                  newCostUsd = unitCost * 1.1;
+                  newCostUsd = unitCost * eurToUsd;
+                  newCostCzk = unitCost * eurToCzk;
+                  newCostVnd = unitCost * eurToVnd;
+                  newCostCny = unitCost * eurToCny;
+                } else if (currency === 'VND') {
+                  newCostVnd = unitCost;
+                  newCostUsd = unitCost / eurToVnd * eurToUsd;
+                  newCostEur = unitCost / eurToVnd;
+                  newCostCzk = unitCost / eurToVnd * eurToCzk;
+                  newCostCny = unitCost / eurToVnd * eurToCny;
+                } else if (currency === 'CNY') {
+                  newCostCny = unitCost;
+                  newCostUsd = unitCost / eurToCny * eurToUsd;
+                  newCostEur = unitCost / eurToCny;
+                  newCostCzk = unitCost / eurToCny * eurToCzk;
+                  newCostVnd = unitCost / eurToCny * eurToVnd;
                 } else {
+                  // Default: USD
                   newCostUsd = unitCost;
+                  newCostEur = unitCost * usdToEur;
+                  newCostCzk = unitCost * usdToCzk;
+                  newCostVnd = unitCost * usdToVnd;
+                  newCostCny = unitCost * usdToCny;
                 }
               }
+            } else {
+              // Default conversion from USD for non-purchase items
+              newCostUsd = unitCost;
+              newCostEur = unitCost * usdToEur;
+              newCostCzk = unitCost * usdToCzk;
+              newCostVnd = unitCost * usdToVnd;
+              newCostCny = unitCost * usdToCny;
             }
             
-            // Calculate weighted averages for import costs
+            // Derive missing historical costs from ANY available currency value
+            const derivedOldCosts = deriveHistoricalImportCosts(
+              oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
+              eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+            );
+            
+            // Calculate weighted averages for ALL import costs using derived historical values
             const avgCostUsd = totalQuantity > 0 
-              ? ((oldQuantity * oldCostUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+              ? ((oldQuantity * derivedOldCosts.derivedUsd) + (newQuantity * newCostUsd)) / totalQuantity 
               : newCostUsd;
             
-            const avgCostCzk = (oldCostCzk > 0 || newCostCzk > 0) && totalQuantity > 0
-              ? ((oldQuantity * oldCostCzk) + (newQuantity * newCostCzk)) / totalQuantity
-              : newCostCzk || oldCostCzk;
+            const avgCostCzk = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedCzk) + (newQuantity * newCostCzk)) / totalQuantity
+              : newCostCzk;
             
-            const avgCostEur = (oldCostEur > 0 || newCostEur > 0) && totalQuantity > 0
-              ? ((oldQuantity * oldCostEur) + (newQuantity * newCostEur)) / totalQuantity
-              : newCostEur || oldCostEur;
+            const avgCostEur = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedEur) + (newQuantity * newCostEur)) / totalQuantity
+              : newCostEur;
+            
+            const avgCostVnd = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedVnd) + (newQuantity * newCostVnd)) / totalQuantity
+              : newCostVnd;
+            
+            const avgCostCny = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
+              : newCostCny;
             
             // ================================================================
             // LANDED COST INTEGRATION: Calculate weighted average landed costs
@@ -6388,12 +6522,14 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               landedCostData
             );
             
-            // Update product with new quantities, costs, and prices
+            // Update product with new quantities, costs, and prices for ALL currencies
             const updateData: any = {
               quantity: totalQuantity,
               importCostUsd: avgCostUsd.toFixed(2),
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
               importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+              importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
               // Weighted average landed costs in all currencies
               latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
               landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
@@ -6441,7 +6577,24 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             });
             
           } else {
-            // Product doesn't exist - create new
+            // Product doesn't exist - create new with ALL currency import costs
+            // Get exchange rates for conversion
+            const eurToUsd = 1.1;
+            const eurToCzk = 25;
+            const eurToVnd = 27000;
+            const eurToCny = 7.5;
+            const usdToEur = 1 / eurToUsd;
+            const usdToCzk = eurToCzk / eurToUsd;
+            const usdToVnd = eurToVnd / eurToUsd;
+            const usdToCny = eurToCny / eurToUsd;
+            
+            // Default to USD-based costs (will be overridden if different currency)
+            let importCostUsd = unitCost;
+            let importCostCzk = unitCost * usdToCzk;
+            let importCostEur = unitCost * usdToEur;
+            let importCostVnd = unitCost * usdToVnd;
+            let importCostCny = unitCost * usdToCny;
+            
             const newProduct: any = {
               id: crypto.randomUUID(),
               sku: sku,
@@ -6451,9 +6604,11 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               warehouseLocation: item.warehouseLocation,
               barcode: item.barcode,
               weight: originalItem.weight,
-              importCostUsd: unitCost.toFixed(2),
-              importCostCzk: null,
-              importCostEur: null,
+              importCostUsd: importCostUsd.toFixed(2),
+              importCostCzk: importCostCzk.toFixed(2),
+              importCostEur: importCostEur.toFixed(2),
+              importCostVnd: importCostVnd.toFixed(0),
+              importCostCny: importCostCny.toFixed(2),
               // Set all landed cost fields for new products
               latestLandingCost: landedCostData.landingCostPerUnit > 0 ? landedCostData.landingCostPerUnit.toFixed(4) : null,
               landingCostEur: landedCostData.landingCostEur > 0 ? landedCostData.landingCostEur.toFixed(4) : null,
@@ -6481,12 +6636,37 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
                 const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
                 
                 if (currency === 'CZK') {
-                  newProduct.importCostCzk = unitCost.toFixed(2);
-                  newProduct.importCostUsd = (unitCost / 25).toFixed(2);
+                  importCostCzk = unitCost;
+                  importCostUsd = unitCost / eurToCzk * eurToUsd;
+                  importCostEur = unitCost / eurToCzk;
+                  importCostVnd = unitCost / eurToCzk * eurToVnd;
+                  importCostCny = unitCost / eurToCzk * eurToCny;
                 } else if (currency === 'EUR') {
-                  newProduct.importCostEur = unitCost.toFixed(2);
-                  newProduct.importCostUsd = (unitCost * 1.1).toFixed(2);
+                  importCostEur = unitCost;
+                  importCostUsd = unitCost * eurToUsd;
+                  importCostCzk = unitCost * eurToCzk;
+                  importCostVnd = unitCost * eurToVnd;
+                  importCostCny = unitCost * eurToCny;
+                } else if (currency === 'VND') {
+                  importCostVnd = unitCost;
+                  importCostUsd = unitCost / eurToVnd * eurToUsd;
+                  importCostEur = unitCost / eurToVnd;
+                  importCostCzk = unitCost / eurToVnd * eurToCzk;
+                  importCostCny = unitCost / eurToVnd * eurToCny;
+                } else if (currency === 'CNY') {
+                  importCostCny = unitCost;
+                  importCostUsd = unitCost / eurToCny * eurToUsd;
+                  importCostEur = unitCost / eurToCny;
+                  importCostCzk = unitCost / eurToCny * eurToCzk;
+                  importCostVnd = unitCost / eurToCny * eurToVnd;
                 }
+                
+                // Update the product with recalculated costs
+                newProduct.importCostUsd = importCostUsd.toFixed(2);
+                newProduct.importCostCzk = importCostCzk.toFixed(2);
+                newProduct.importCostEur = importCostEur.toFixed(2);
+                newProduct.importCostVnd = importCostVnd.toFixed(0);
+                newProduct.importCostCny = importCostCny.toFixed(2);
                 
                 // Set supplier if available
                 if (purchase.supplier) {
@@ -6782,15 +6962,30 @@ router.post("/receipts/approve/:id", async (req, res) => {
           const newQuantity = item.receivedQuantity;
           const totalQuantity = oldQuantity + newQuantity;
           
-          // Calculate weighted average for import costs
+          // Calculate weighted average for import costs for ALL currencies (USD, CZK, EUR, VND, CNY)
           const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
           const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
           const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
+          const oldCostVnd = parseFloat(existingProduct.importCostVnd || '0');
+          const oldCostCny = parseFloat(existingProduct.importCostCny || '0');
           
           // Determine currency from purchase order if available
+          // Convert to all currencies for proper weighted average calculations
           let newCostUsd = unitCost;
           let newCostCzk = 0;
           let newCostEur = 0;
+          let newCostVnd = 0;
+          let newCostCny = 0;
+          
+          // Get exchange rates for conversion
+          const eurToUsd = 1.1;
+          const eurToCzk = 25;
+          const eurToVnd = 27000;
+          const eurToCny = 7.5;
+          const usdToEur = 1 / eurToUsd;
+          const usdToCzk = eurToCzk / eurToUsd;
+          const usdToVnd = eurToVnd / eurToUsd;
+          const usdToCny = eurToCny / eurToUsd;
           
           // Get purchase order for currency info
           if (item.itemType === 'purchase' && originalItem.purchaseId) {
@@ -6802,32 +6997,74 @@ router.post("/receipts/approve/:id", async (req, res) => {
             if (purchase) {
               const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
               
-              // Convert to USD base for calculations
               if (currency === 'CZK') {
                 newCostCzk = unitCost;
-                newCostUsd = unitCost / 23; // Approximate CZK to USD rate
+                newCostUsd = unitCost / eurToCzk * eurToUsd;
+                newCostEur = unitCost / eurToCzk;
+                newCostVnd = unitCost / eurToCzk * eurToVnd;
+                newCostCny = unitCost / eurToCzk * eurToCny;
               } else if (currency === 'EUR') {
                 newCostEur = unitCost;
-                newCostUsd = unitCost * 1.1; // Approximate EUR to USD rate
+                newCostUsd = unitCost * eurToUsd;
+                newCostCzk = unitCost * eurToCzk;
+                newCostVnd = unitCost * eurToVnd;
+                newCostCny = unitCost * eurToCny;
+              } else if (currency === 'VND') {
+                newCostVnd = unitCost;
+                newCostUsd = unitCost / eurToVnd * eurToUsd;
+                newCostEur = unitCost / eurToVnd;
+                newCostCzk = unitCost / eurToVnd * eurToCzk;
+                newCostCny = unitCost / eurToVnd * eurToCny;
+              } else if (currency === 'CNY') {
+                newCostCny = unitCost;
+                newCostUsd = unitCost / eurToCny * eurToUsd;
+                newCostEur = unitCost / eurToCny;
+                newCostCzk = unitCost / eurToCny * eurToCzk;
+                newCostVnd = unitCost / eurToCny * eurToVnd;
               } else {
-                // Default to USD
+                // Default: USD
                 newCostUsd = unitCost;
+                newCostEur = unitCost * usdToEur;
+                newCostCzk = unitCost * usdToCzk;
+                newCostVnd = unitCost * usdToVnd;
+                newCostCny = unitCost * usdToCny;
               }
             }
+          } else {
+            // Default conversion from USD for non-purchase items
+            newCostUsd = unitCost;
+            newCostEur = unitCost * usdToEur;
+            newCostCzk = unitCost * usdToCzk;
+            newCostVnd = unitCost * usdToVnd;
+            newCostCny = unitCost * usdToCny;
           }
           
-          // Calculate weighted averages for import costs
+          // Derive missing historical costs from ANY available currency value
+          const derivedOldCosts = deriveHistoricalImportCosts(
+            oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
+            eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+          );
+          
+          // Calculate weighted averages for ALL import costs using derived historical values
           const avgCostUsd = totalQuantity > 0 
-            ? ((oldQuantity * oldCostUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+            ? ((oldQuantity * derivedOldCosts.derivedUsd) + (newQuantity * newCostUsd)) / totalQuantity 
             : newCostUsd;
           
-          const avgCostCzk = (oldCostCzk > 0 || newCostCzk > 0) && totalQuantity > 0
-            ? ((oldQuantity * oldCostCzk) + (newQuantity * newCostCzk)) / totalQuantity
-            : newCostCzk || oldCostCzk;
+          const avgCostCzk = totalQuantity > 0
+            ? ((oldQuantity * derivedOldCosts.derivedCzk) + (newQuantity * newCostCzk)) / totalQuantity
+            : newCostCzk;
           
-          const avgCostEur = (oldCostEur > 0 || newCostEur > 0) && totalQuantity > 0
-            ? ((oldQuantity * oldCostEur) + (newQuantity * newCostEur)) / totalQuantity
-            : newCostEur || oldCostEur;
+          const avgCostEur = totalQuantity > 0
+            ? ((oldQuantity * derivedOldCosts.derivedEur) + (newQuantity * newCostEur)) / totalQuantity
+            : newCostEur;
+          
+          const avgCostVnd = totalQuantity > 0
+            ? ((oldQuantity * derivedOldCosts.derivedVnd) + (newQuantity * newCostVnd)) / totalQuantity
+            : newCostVnd;
+          
+          const avgCostCny = totalQuantity > 0
+            ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
+            : newCostCny;
           
           // ================================================================
           // LANDED COST INTEGRATION: Calculate weighted average landed costs
@@ -6838,7 +7075,7 @@ router.post("/receipts/approve/:id", async (req, res) => {
             landedCostData
           );
           
-          // Update product with new quantities, costs, and landed costs
+          // Update product with new quantities, costs, and landed costs for ALL currencies
           const [updatedProduct] = await tx
             .update(products)
             .set({
@@ -6846,6 +7083,8 @@ router.post("/receipts/approve/:id", async (req, res) => {
               importCostUsd: avgCostUsd.toFixed(2),
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
               importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+              importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
               // Weighted average landed costs in all currencies
               latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
               landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
@@ -6880,7 +7119,24 @@ router.post("/receipts/approve/:id", async (req, res) => {
           });
           
         } else {
-          // Product doesn't exist - create new
+          // Product doesn't exist - create new with ALL currency import costs
+          // Get exchange rates for conversion
+          const eurToUsd = 1.1;
+          const eurToCzk = 25;
+          const eurToVnd = 27000;
+          const eurToCny = 7.5;
+          const usdToEur = 1 / eurToUsd;
+          const usdToCzk = eurToCzk / eurToUsd;
+          const usdToVnd = eurToVnd / eurToUsd;
+          const usdToCny = eurToCny / eurToUsd;
+          
+          // Default to USD-based costs (will be overridden if different currency)
+          let importCostUsd = unitCost;
+          let importCostCzk = unitCost * usdToCzk;
+          let importCostEur = unitCost * usdToEur;
+          let importCostVnd = unitCost * usdToVnd;
+          let importCostCny = unitCost * usdToCny;
+          
           const newProduct: any = {
             id: crypto.randomUUID(),
             sku: sku,
@@ -6890,9 +7146,11 @@ router.post("/receipts/approve/:id", async (req, res) => {
             warehouseLocation: item.warehouseLocation,
             barcode: item.barcode,
             weight: originalItem.weight,
-            importCostUsd: unitCost.toFixed(2),
-            importCostCzk: null,
-            importCostEur: null,
+            importCostUsd: importCostUsd.toFixed(2),
+            importCostCzk: importCostCzk.toFixed(2),
+            importCostEur: importCostEur.toFixed(2),
+            importCostVnd: importCostVnd.toFixed(0),
+            importCostCny: importCostCny.toFixed(2),
             // Set all landed cost fields for new products
             latestLandingCost: landedCostData.landingCostPerUnit > 0 ? landedCostData.landingCostPerUnit.toFixed(4) : null,
             landingCostEur: landedCostData.landingCostEur > 0 ? landedCostData.landingCostEur.toFixed(4) : null,
@@ -6921,12 +7179,37 @@ router.post("/receipts/approve/:id", async (req, res) => {
               const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
               
               if (currency === 'CZK') {
-                newProduct.importCostCzk = unitCost.toFixed(2);
-                newProduct.importCostUsd = (unitCost / 23).toFixed(2); // Approximate conversion
+                importCostCzk = unitCost;
+                importCostUsd = unitCost / eurToCzk * eurToUsd;
+                importCostEur = unitCost / eurToCzk;
+                importCostVnd = unitCost / eurToCzk * eurToVnd;
+                importCostCny = unitCost / eurToCzk * eurToCny;
               } else if (currency === 'EUR') {
-                newProduct.importCostEur = unitCost.toFixed(2);
-                newProduct.importCostUsd = (unitCost * 1.1).toFixed(2); // Approximate conversion
+                importCostEur = unitCost;
+                importCostUsd = unitCost * eurToUsd;
+                importCostCzk = unitCost * eurToCzk;
+                importCostVnd = unitCost * eurToVnd;
+                importCostCny = unitCost * eurToCny;
+              } else if (currency === 'VND') {
+                importCostVnd = unitCost;
+                importCostUsd = unitCost / eurToVnd * eurToUsd;
+                importCostEur = unitCost / eurToVnd;
+                importCostCzk = unitCost / eurToVnd * eurToCzk;
+                importCostCny = unitCost / eurToVnd * eurToCny;
+              } else if (currency === 'CNY') {
+                importCostCny = unitCost;
+                importCostUsd = unitCost / eurToCny * eurToUsd;
+                importCostEur = unitCost / eurToCny;
+                importCostCzk = unitCost / eurToCny * eurToCzk;
+                importCostVnd = unitCost / eurToCny * eurToVnd;
               }
+              
+              // Update the product with recalculated costs
+              newProduct.importCostUsd = importCostUsd.toFixed(2);
+              newProduct.importCostCzk = importCostCzk.toFixed(2);
+              newProduct.importCostEur = importCostEur.toFixed(2);
+              newProduct.importCostVnd = importCostVnd.toFixed(0);
+              newProduct.importCostCny = importCostCny.toFixed(2);
               
               // Set supplier if available
               if (purchase.supplier) {
@@ -9741,7 +10024,7 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               landedCostData
             );
             
-            // Calculate weighted average import costs
+            // Calculate weighted average import costs for ALL currencies (USD, CZK, EUR, VND, CNY)
             const oldQuantity = existingProduct.quantity || 0;
             const newQuantity = data.quantity;
             const totalQuantity = oldQuantity + newQuantity;
@@ -9749,11 +10032,26 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
             const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
             const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
+            const oldCostVnd = parseFloat(existingProduct.importCostVnd || '0');
+            const oldCostCny = parseFloat(existingProduct.importCostCny || '0');
             
             // Determine new costs based on purchase currency if available
+            // Convert to all currencies for proper weighted average calculations
             let newCostUsd = unitCost;
             let newCostCzk = 0;
             let newCostEur = 0;
+            let newCostVnd = 0;
+            let newCostCny = 0;
+            
+            // Get exchange rates for conversion (approximate rates, ideally from exchange rate service)
+            const eurToUsd = 1.1;
+            const eurToCzk = 25;
+            const eurToVnd = 27000;
+            const eurToCny = 7.5;
+            const usdToEur = 1 / eurToUsd;
+            const usdToCzk = eurToCzk / eurToUsd;
+            const usdToVnd = eurToVnd / eurToUsd;
+            const usdToCny = eurToCny / eurToUsd;
             
             if (firstItem.itemType === 'purchase' && originalItem?.purchaseId) {
               const [purchase] = await tx
@@ -9766,30 +10064,74 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 
                 if (currency === 'CZK') {
                   newCostCzk = unitCost;
-                  newCostUsd = unitCost / 25;
+                  newCostUsd = unitCost / eurToCzk * eurToUsd;
+                  newCostEur = unitCost / eurToCzk;
+                  newCostVnd = unitCost / eurToCzk * eurToVnd;
+                  newCostCny = unitCost / eurToCzk * eurToCny;
                 } else if (currency === 'EUR') {
                   newCostEur = unitCost;
-                  newCostUsd = unitCost * 1.1;
+                  newCostUsd = unitCost * eurToUsd;
+                  newCostCzk = unitCost * eurToCzk;
+                  newCostVnd = unitCost * eurToVnd;
+                  newCostCny = unitCost * eurToCny;
+                } else if (currency === 'VND') {
+                  newCostVnd = unitCost;
+                  newCostUsd = unitCost / eurToVnd * eurToUsd;
+                  newCostEur = unitCost / eurToVnd;
+                  newCostCzk = unitCost / eurToVnd * eurToCzk;
+                  newCostCny = unitCost / eurToVnd * eurToCny;
+                } else if (currency === 'CNY') {
+                  newCostCny = unitCost;
+                  newCostUsd = unitCost / eurToCny * eurToUsd;
+                  newCostEur = unitCost / eurToCny;
+                  newCostCzk = unitCost / eurToCny * eurToCzk;
+                  newCostVnd = unitCost / eurToCny * eurToVnd;
                 } else {
+                  // Default: USD
                   newCostUsd = unitCost;
+                  newCostEur = unitCost * usdToEur;
+                  newCostCzk = unitCost * usdToCzk;
+                  newCostVnd = unitCost * usdToVnd;
+                  newCostCny = unitCost * usdToCny;
                 }
               }
+            } else {
+              // Default conversion from USD for non-purchase items
+              newCostUsd = unitCost;
+              newCostEur = unitCost * usdToEur;
+              newCostCzk = unitCost * usdToCzk;
+              newCostVnd = unitCost * usdToVnd;
+              newCostCny = unitCost * usdToCny;
             }
             
-            // Calculate weighted averages for import costs
+            // Derive missing historical costs from ANY available currency value
+            const derivedOldCosts = deriveHistoricalImportCosts(
+              oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
+              eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+            );
+            
+            // Calculate weighted averages for ALL import costs using derived historical values
             const avgCostUsd = totalQuantity > 0 
-              ? ((oldQuantity * oldCostUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+              ? ((oldQuantity * derivedOldCosts.derivedUsd) + (newQuantity * newCostUsd)) / totalQuantity 
               : newCostUsd;
             
-            const avgCostCzk = (oldCostCzk > 0 || newCostCzk > 0) && totalQuantity > 0
-              ? ((oldQuantity * oldCostCzk) + (newQuantity * newCostCzk)) / totalQuantity
-              : newCostCzk || oldCostCzk;
+            const avgCostCzk = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedCzk) + (newQuantity * newCostCzk)) / totalQuantity
+              : newCostCzk;
             
-            const avgCostEur = (oldCostEur > 0 || newCostEur > 0) && totalQuantity > 0
-              ? ((oldQuantity * oldCostEur) + (newQuantity * newCostEur)) / totalQuantity
-              : newCostEur || oldCostEur;
+            const avgCostEur = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedEur) + (newQuantity * newCostEur)) / totalQuantity
+              : newCostEur;
             
-            // Update product with new quantity and costs
+            const avgCostVnd = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedVnd) + (newQuantity * newCostVnd)) / totalQuantity
+              : newCostVnd;
+            
+            const avgCostCny = totalQuantity > 0
+              ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
+              : newCostCny;
+            
+            // Update product with new quantity and costs for ALL currencies
             await tx
               .update(products)
               .set({
@@ -9797,6 +10139,8 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 importCostUsd: avgCostUsd.toFixed(2),
                 importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
                 importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+                importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+                importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
                 latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
                 landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
                 landingCostUsd: avgLandedCosts.avgLandingCostUsd > 0 ? avgLandedCosts.avgLandingCostUsd.toFixed(4) : null,
