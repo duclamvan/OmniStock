@@ -2446,8 +2446,8 @@ function QuickStorageSheet({
                       // Calculate from actual location quantities for accuracy
                       const existingLocationQty = (item.existingLocations || []).reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
                       const pendingLocationQty = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                      const itemRemainingQty = item.receivedQuantity - existingLocationQty - pendingLocationQty;
-                      const isFullyStored = itemRemainingQty <= 0;
+                      const itemRemainingQty = Math.max(0, item.receivedQuantity - existingLocationQty - pendingLocationQty);
+                      const isFullyStored = existingLocationQty + pendingLocationQty >= item.receivedQuantity;
 
                       return (
                         <motion.div
@@ -2925,20 +2925,26 @@ function QuickStorageSheet({
                                             }
                                           }
                                           
-                                          const newlyAssignedTotal = savedLocationsWithDbId.reduce((sum, { loc }) => sum + (loc.quantity || 0), 0);
                                           const updatedItems = [...items];
-                                          updatedItems[index].assignedQuantity += newlyAssignedTotal;
                                           
                                           // Move saved locations to existingLocations with real database ID
+                                          // Consolidate with existing entries (backend adds to existing locations)
                                           const newExisting = [...(updatedItems[index].existingLocations || [])];
                                           savedLocationsWithDbId.forEach(({ loc, dbId }) => {
-                                            newExisting.push({
-                                              id: dbId,
-                                              locationCode: loc.locationCode,
-                                              locationType: loc.locationType,
-                                              quantity: loc.quantity,
-                                              isPrimary: loc.isPrimary
-                                            });
+                                            const existingIdx = newExisting.findIndex(e => e.locationCode === loc.locationCode);
+                                            if (existingIdx >= 0) {
+                                              // Update existing entry - backend added to it
+                                              newExisting[existingIdx].quantity = (newExisting[existingIdx].quantity || 0) + (loc.quantity || 0);
+                                            } else {
+                                              // New location code
+                                              newExisting.push({
+                                                id: dbId,
+                                                locationCode: loc.locationCode,
+                                                locationType: loc.locationType,
+                                                quantity: loc.quantity,
+                                                isPrimary: loc.isPrimary
+                                              });
+                                            }
                                           });
                                           updatedItems[index].existingLocations = newExisting;
                                           
