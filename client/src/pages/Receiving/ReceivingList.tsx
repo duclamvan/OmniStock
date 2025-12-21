@@ -68,7 +68,8 @@ import {
   XCircle,
   Image as ImageIcon,
   ClipboardList,
-  Barcode
+  Barcode,
+  RotateCcw
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -1535,6 +1536,7 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
 
 function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   
@@ -1543,6 +1545,30 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
   const receivedQuantity = items.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0);
   const progress = totalQuantity > 0 ? Math.round((receivedQuantity / totalQuantity) * 100) : 0;
+  
+  // Mutation to move shipment back to "To Receive" status
+  const moveToReceiveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', `/api/imports/shipments/${shipment.id}/move-to-receive`);
+    },
+    onSuccess: () => {
+      toast({
+        title: t('movedToReceive'),
+        description: t('shipmentMovedToReceiveDesc'),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipment.id}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToMoveShipment'),
+        variant: 'destructive',
+      });
+    },
+  });
 
   return (
     <Card className="overflow-hidden border-cyan-200 dark:border-cyan-800" data-testid={`card-shipment-${shipment.id}`}>
@@ -1571,9 +1597,35 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Badge className={getStatusColor('receiving')}>
-              {t('inProgress')}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge className={getStatusColor('receiving')}>
+                {t('inProgress')}
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveToReceiveMutation.mutate();
+                    }}
+                    disabled={moveToReceiveMutation.isPending}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {t('moveBackToReceive')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (

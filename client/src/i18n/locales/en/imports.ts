@@ -1314,6 +1314,7 @@ const imports = {
   storage: 'Storage',
   quickStorage: 'Quick Storage',
   moveToReceive: 'Move to Receive',
+  moveBackToReceive: 'Move Back to To Receive',
   movedToReceive: 'Moved to Receive',
   shipmentMovedToReceiveDesc: 'Shipment has been moved back to the "To Receive" tab',
   failedToMoveShipment: 'Failed to move shipment',

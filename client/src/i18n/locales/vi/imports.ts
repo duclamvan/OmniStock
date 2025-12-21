@@ -1331,6 +1331,7 @@ const imports = {
   storage: 'Lưu kho',
   quickStorage: 'Lưu kho nhanh',
   moveToReceive: 'Chuyển về Cần nhận',
+  moveBackToReceive: 'Chuyển về Cần nhận',
   movedToReceive: 'Đã chuyển về Cần nhận',
   shipmentMovedToReceiveDesc: 'Lô hàng đã được chuyển về tab "Cần nhận"',
   failedToMoveShipment: 'Không thể chuyển lô hàng',
