@@ -7373,21 +7373,73 @@ router.post("/receipts/auto-save", async (req, res) => {
           }
         }
 
-        // Create receipt items for the new receipt
-        const receiptItemsData = itemsToReceive.map(item => ({
-          receiptId: receipt.id,
-          itemId: item.id,
-          itemType: item.itemType || 'purchase',
-          expectedQuantity: item.quantity || 1,
-          receivedQuantity: 0, // Will be updated during verification
-          damagedQuantity: 0,
-          missingQuantity: 0,
-          warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
-          condition: 'pending',
-          status: 'pending',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }));
+        // Collect all SKUs from items to batch lookup products
+        const skusToLookup: string[] = [];
+        for (const item of itemsToReceive) {
+          if (item.itemType === 'custom' && item.orderItems) {
+            try {
+              const orderItems = typeof item.orderItems === 'string' 
+                ? JSON.parse(item.orderItems) 
+                : item.orderItems;
+              if (Array.isArray(orderItems) && orderItems[0]?.sku) {
+                skusToLookup.push(orderItems[0].sku);
+              }
+            } catch (e) { /* ignore parse errors */ }
+          } else if (item.sku) {
+            skusToLookup.push(item.sku);
+          }
+        }
+        
+        // Batch lookup products by SKU
+        let productsBySkuMap: Record<string, string> = {};
+        if (skusToLookup.length > 0) {
+          const productsLookup = await db
+            .select({ id: products.id, sku: products.sku })
+            .from(products)
+            .where(inArray(products.sku, skusToLookup));
+          productsLookup.forEach(p => {
+            if (p.sku) productsBySkuMap[p.sku] = p.id;
+          });
+        }
+        
+        // Create receipt items for the new receipt with productId lookup
+        const receiptItemsData = itemsToReceive.map(item => {
+          // Try to find productId by SKU
+          let productId: string | null = null;
+          let itemSku: string | null = null;
+          
+          if (item.itemType === 'custom' && item.orderItems) {
+            try {
+              const orderItems = typeof item.orderItems === 'string' 
+                ? JSON.parse(item.orderItems) 
+                : item.orderItems;
+              if (Array.isArray(orderItems) && orderItems[0]?.sku) {
+                itemSku = orderItems[0].sku;
+                productId = productsBySkuMap[itemSku] || null;
+              }
+            } catch (e) { /* ignore parse errors */ }
+          } else if (item.sku) {
+            itemSku = item.sku;
+            productId = productsBySkuMap[item.sku] || null;
+          }
+          
+          return {
+            receiptId: receipt.id,
+            itemId: item.id,
+            itemType: item.itemType || 'purchase',
+            productId: productId,
+            sku: itemSku,
+            expectedQuantity: item.quantity || 1,
+            receivedQuantity: 0, // Will be updated during verification
+            damagedQuantity: 0,
+            missingQuantity: 0,
+            warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
+            condition: 'pending',
+            status: 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        });
 
         if (receiptItemsData.length > 0) {
           await db.insert(receiptItems).values(receiptItemsData);
