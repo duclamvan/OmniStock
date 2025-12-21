@@ -95,7 +95,7 @@ export default function FinancialReports() {
 
   const generateReportMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/business-reports/generate', { method: 'POST' });
+      return apiRequest('POST', '/api/business-reports/generate');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/business-reports'] });
@@ -338,7 +338,7 @@ export default function FinancialReports() {
         { key: 'margin', header: t('profitMargin') },
         { key: 'orders', header: tCommon('orders') },
       ];
-      exportToPDF(exportData, columns, `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`, t('financialReport'));
+      exportToPDF(t('financialReport'), exportData, columns, `Financial_Report_${format(new Date(), 'yyyy-MM-dd')}`);
       toast({ title: t('exportSuccessful'), description: t('financialReportExportedPdf') });
     } catch (error) {
       toast({ title: t('exportFailed'), description: t('failedToExportFinancialReportPdf'), variant: "destructive" });
@@ -590,7 +590,7 @@ export default function FinancialReports() {
 
           <BarChartCard
             title={t('monthlyRevenueCostsComparison')}
-            data={monthlyData}
+            data={monthlyData.map(m => ({ ...m, name: m.month }))}
             bars={[
               { dataKey: 'revenue', name: t('revenue'), color: '#3b82f6' },
               { dataKey: 'costs', name: t('costs'), color: '#ef4444' },
