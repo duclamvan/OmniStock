@@ -13470,6 +13470,207 @@ Important:
 
   // PPL Shipping Label API endpoints
 
+  // Create PPL label for a single carton (used by PickPack Generate button)
+  app.post('/api/shipping/create-label-for-carton', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, cartonId, cartonNumber } = req.body;
+      
+      if (!orderId || !cartonId) {
+        return res.status(400).json({ error: 'orderId and cartonId are required' });
+      }
+
+      // Redirect to the existing PPL label creation endpoint
+      // This creates labels for all cartons in the order
+      const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
+
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Check if order already has PPL labels
+      if (order.pplLabelData && order.pplStatus === 'created') {
+        return res.json({
+          success: true,
+          message: 'Labels already exist for this order',
+          batchId: order.pplBatchId,
+          trackingNumbers: order.pplShipmentNumbers,
+          trackingNumber: order.pplShipmentNumbers?.[0]
+        });
+      }
+
+      // Load shipping settings
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderAddress = shippingSettings.pplDefaultSenderAddress;
+
+      if (!senderAddress) {
+        return res.status(400).json({ 
+          error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
+        });
+      }
+
+      // Get cartons for the order
+      const cartons = await storage.getOrderCartons(orderId);
+      if (cartons.length === 0) {
+        return res.status(400).json({ error: 'No cartons found for this order' });
+      }
+
+      // Get order shipping address
+      let shippingAddress;
+      if (order.shippingAddressId) {
+        const addresses = await db
+          .select()
+          .from(customerShippingAddresses)
+          .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+          .limit(1);
+        shippingAddress = addresses[0];
+      }
+
+      if (!shippingAddress) {
+        return res.status(400).json({ error: 'No shipping address found for order' });
+      }
+
+      // Get customer details
+      let customer;
+      if (order.customerId) {
+        const customerResult = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = customerResult[0];
+      }
+
+      // Build recipient info
+      const recipientName = shippingAddress.company || 
+        `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() ||
+        customer?.name || 'Customer';
+      const contactName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+        customer?.name || recipientName;
+
+      // Country code mapping
+      const getCountryCode = (country: string): string => {
+        const countryUpper = country.toUpperCase();
+        if (countryUpper === 'CZECH REPUBLIC' || countryUpper === 'CZECHIA' || countryUpper === 'CZ') return 'CZ';
+        if (countryUpper === 'SLOVAKIA' || countryUpper === 'SK') return 'SK';
+        if (countryUpper === 'GERMANY' || countryUpper === 'DE') return 'DE';
+        if (countryUpper === 'AUSTRIA' || countryUpper === 'AT') return 'AT';
+        if (countryUpper === 'POLAND' || countryUpper === 'PL') return 'PL';
+        if (countryUpper === 'HUNGARY' || countryUpper === 'HU') return 'HU';
+        return country.slice(0, 2).toUpperCase();
+      };
+
+      // Determine if COD
+      const hasCOD = order.paymentMethod === 'COD' || order.paymentMethod === 'cod' || 
+                     order.paymentMethod === 'Cash on Delivery' || order.paymentMethod === 'Dobírka';
+      const codAmount = hasCOD ? (parseFloat(String(order.codAmount || order.totalAmount || 0))) : 0;
+
+      // Build PPL shipment
+      const pplShipment = {
+        referenceId: order.orderId,
+        productType: hasCOD ? 'PPL_PARCEL_CZ_BUSINESS_COD' : 'PPL_PARCEL_CZ_PRIVATE',
+        sender: {
+          name: senderAddress.name,
+          street: senderAddress.street,
+          city: senderAddress.city,
+          zipCode: senderAddress.zipCode,
+          country: getCountryCode(senderAddress.country),
+          email: senderAddress.email || '',
+          phone: senderAddress.phone || ''
+        },
+        recipient: {
+          name: recipientName,
+          street: shippingAddress.streetNumber 
+            ? `${shippingAddress.street} ${shippingAddress.streetNumber}`
+            : shippingAddress.street,
+          city: shippingAddress.city,
+          zipCode: shippingAddress.zipCode,
+          country: getCountryCode(shippingAddress.country),
+          email: shippingAddress.email || customer?.email || '',
+          phone: shippingAddress.tel || customer?.phone || '',
+          contact: contactName
+        },
+        packages: cartons.map((c, i) => ({
+          packageNumber: i + 1,
+          weight: parseFloat(String(c.weight || 1)),
+          note: `${order.orderId} - Carton ${i + 1}`
+        })),
+        codAmount: hasCOD ? codAmount : undefined,
+        codCurrency: hasCOD ? 'CZK' : undefined,
+        codReference: hasCOD ? order.orderId : undefined
+      };
+
+      // Create PPL shipment
+      console.log('📦 Creating PPL shipment for single carton order...');
+      const batchResult = await createPPLShipment(pplShipment);
+      const batchId = batchResult.batchId;
+      let shipmentNumbers = batchResult.shipmentNumbers || [];
+
+      // Get label PDF
+      let label;
+      try {
+        console.log('📄 Retrieving PPL label...');
+        label = await getPPLLabel(batchId, 'pdf');
+      } catch (labelError: any) {
+        console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        return res.status(500).json({ 
+          error: 'PPL shipment created but label retrieval failed',
+          batchId
+        });
+      }
+
+      // Use placeholder tracking numbers if not provided
+      if (shipmentNumbers.length === 0 && cartons.length > 0) {
+        shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
+      }
+
+      // Update order with PPL data
+      await storage.updateOrder(orderId, {
+        pplBatchId: batchId,
+        pplShipmentNumbers: shipmentNumbers as any,
+        pplLabelData: {
+          batchId,
+          shipmentNumbers,
+          labelBase64: label.labelContent,
+          format: label.format,
+          createdAt: new Date().toISOString()
+        } as any,
+        pplStatus: 'created'
+      });
+
+      // Save to shipment_labels table
+      await storage.createShipmentLabel({
+        orderId,
+        carrier: 'PPL',
+        trackingNumbers: shipmentNumbers,
+        batchId,
+        labelBase64: label.labelContent,
+        labelData: {
+          pplShipment,
+          referenceId: order.orderId,
+          hasCOD
+        },
+        shipmentCount: shipmentNumbers.length,
+        status: 'active'
+      });
+
+      console.log('✅ PPL label created successfully');
+      res.json({
+        success: true,
+        batchId,
+        shipmentNumbers,
+        trackingNumber: shipmentNumbers[0],
+        labelPdf: label.labelContent
+      });
+    } catch (error) {
+      console.error('Failed to create PPL label for carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create PPL label' 
+      });
+    }
+  });
+
   // Create PPL shipping labels for an order
   app.post('/api/orders/:orderId/ppl/create-labels', isAuthenticated, async (req, res) => {
     try {
