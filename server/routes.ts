@@ -5893,13 +5893,10 @@ Important:
         });
       }
 
-      // Update the product's main stock quantity (add the new quantity)
-      if (quantityToAdd > 0) {
-        const currentStock = product.quantity || 0;
-        await storage.updateProduct(productId, { 
-          quantity: currentStock + quantityToAdd 
-        });
-      }
+      // NOTE: Product's main stock quantity is now updated ONLY on receiving completion,
+      // not during storage assignment. This ensures inventory is added atomically
+      // when the receiving process is finalized, preventing double-counting issues.
+      // Storage assignment only updates productLocations for location-based tracking.
 
       // Update receipt item's assignedQuantity if receiptItemId is provided
       const receiptItemId = req.body.receiptItemId;
@@ -17272,6 +17269,93 @@ Important rules:
     }
   }
 
+  // Helper function to add inventory quantities when receiving is completed
+  // Adds ALL receivedQuantity to product.quantity (storage assignment only updates productLocations now)
+  async function addInventoryOnCompletion(shipmentId: string): Promise<string[]> {
+    const inventoryUpdates: string[] = [];
+    
+    try {
+      // Step 1: Find all receipts for this shipment
+      const shipmentReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(eq(receipts.shipmentId, shipmentId));
+      
+      if (shipmentReceipts.length === 0) {
+        console.log(`[addInventoryOnCompletion] No receipts found for shipment ${shipmentId}`);
+        return inventoryUpdates;
+      }
+      
+      const receiptIds = shipmentReceipts.map(r => r.id);
+      
+      // Step 2: Get all receipt items with productId and receivedQuantity
+      const allReceiptItems = await db
+        .select({
+          id: receiptItems.id,
+          productId: receiptItems.productId,
+          receivedQuantity: receiptItems.receivedQuantity
+        })
+        .from(receiptItems)
+        .where(inArray(receiptItems.receiptId, receiptIds));
+      
+      if (allReceiptItems.length === 0) {
+        console.log(`[addInventoryOnCompletion] No receipt items found for shipment ${shipmentId}`);
+        return inventoryUpdates;
+      }
+      
+      // Step 3: For each receipt item, add ALL receivedQuantity to product inventory
+      for (const item of allReceiptItems) {
+        if (!item.productId) {
+          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - no productId`);
+          continue;
+        }
+        
+        const quantityToAdd = item.receivedQuantity || 0;
+        
+        if (quantityToAdd <= 0) {
+          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - no quantity to add`);
+          continue;
+        }
+        
+        try {
+          // Get current product quantity
+          const [product] = await db
+            .select({ id: products.id, quantity: products.quantity, sku: products.sku })
+            .from(products)
+            .where(eq(products.id, item.productId));
+          
+          if (!product) {
+            console.log(`[addInventoryOnCompletion] Product ${item.productId} not found`);
+            continue;
+          }
+          
+          // Add ALL receivedQuantity to product's main stock quantity
+          const currentStock = product.quantity || 0;
+          const newStock = currentStock + quantityToAdd;
+          
+          await db
+            .update(products)
+            .set({ 
+              quantity: newStock,
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, item.productId));
+          
+          inventoryUpdates.push(`Product ${product.sku || item.productId}: +${quantityToAdd} units (${currentStock} → ${newStock})`);
+          console.log(`[addInventoryOnCompletion] Product ${item.productId}: added ${quantityToAdd} units (${currentStock} → ${newStock})`);
+          
+        } catch (itemError) {
+          console.error(`[addInventoryOnCompletion] Error updating inventory for product ${item.productId}:`, itemError);
+        }
+      }
+      
+      return inventoryUpdates;
+    } catch (error) {
+      console.error('[addInventoryOnCompletion] Error:', error);
+      return inventoryUpdates;
+    }
+  }
+
   // Update shipment receiving status
   app.patch('/api/imports/shipments/:id/receiving-status', isAuthenticated, async (req, res) => {
     try {
@@ -17302,10 +17386,14 @@ Important rules:
         return res.status(404).json({ message: 'Shipment not found' });
       }
       
-      // When receiving is completed, calculate landed costs and reconcile purchase order statuses
+      // When receiving is completed, add inventory, calculate landed costs, and reconcile purchase order statuses
       let updatedPurchases: string[] = [];
       let updatedProductCosts: string[] = [];
+      let inventoryUpdates: string[] = [];
       if (receivingStatus === 'completed') {
+        // Add received quantities to product inventory
+        inventoryUpdates = await addInventoryOnCompletion(id);
+        
         // Calculate and update average landed costs for products (id is UUID string)
         updatedProductCosts = await calculateAndUpdateLandedCosts(id);
         
@@ -17316,7 +17404,8 @@ Important rules:
       res.json({
         ...updated,
         updatedPurchases,
-        updatedProductCosts
+        updatedProductCosts,
+        inventoryUpdates
       });
     } catch (error) {
       console.error('Error updating shipment receiving status:', error);
@@ -17374,7 +17463,40 @@ Important rules:
           .from(receiptItems)
           .where(inArray(receiptItems.receiptId, receiptIds));
         
-        // Step 3: Revert inventory for each product that was stored
+        // Step 3a: Subtract receivedQuantity from product.quantity for ALL items
+        // (completion adds ALL receivedQuantity, so revert must subtract ALL)
+        for (const item of allReceiptItems) {
+          if (!item.productId) continue;
+          
+          const quantityToSubtract = item.receivedQuantity || 0;
+          if (quantityToSubtract <= 0) continue;
+          
+          try {
+            const [product] = await db
+              .select({ id: products.id, quantity: products.quantity, sku: products.sku })
+              .from(products)
+              .where(eq(products.id, item.productId));
+            
+            if (product) {
+              const currentStock = product.quantity || 0;
+              const newStockQuantity = Math.max(0, currentStock - quantityToSubtract);
+              await db
+                .update(products)
+                .set({ 
+                  quantity: newStockQuantity,
+                  updatedAt: new Date()
+                })
+                .where(eq(products.id, item.productId));
+              
+              revertResults.inventoryReverted.push(`Product ${product.sku || item.productId}: -${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
+              console.log(`[revert-to-receiving] Product ${item.productId}: subtracted ${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
+            }
+          } catch (stockError) {
+            console.error(`Error subtracting stock for product ${item.productId}:`, stockError);
+          }
+        }
+        
+        // Step 3b: Clean up productLocations for items that had stored locations
         for (const item of allReceiptItems) {
           if (!item.productId || !item.storedLocations) continue;
           
@@ -17386,7 +17508,7 @@ Important rules:
             
             if (!Array.isArray(locations) || locations.length === 0) continue;
             
-            // For each stored location, reduce quantity
+            // For each stored location, reduce quantity in productLocations table
             for (const loc of locations) {
               const locationCode = loc.locationCode || loc.location;
               const quantity = parseInt(loc.quantity) || 0;
@@ -17410,7 +17532,7 @@ Important rules:
                   await db
                     .delete(productLocations)
                     .where(eq(productLocations.id, productLocation.id));
-                  revertResults.inventoryReverted.push(`Removed location ${locationCode} for product ${item.productId}`);
+                  console.log(`[revert-to-receiving] Removed location ${locationCode} for product ${item.productId}`);
                 } else {
                   // Update the quantity
                   await db
@@ -17420,36 +17542,22 @@ Important rules:
                       updatedAt: new Date()
                     })
                     .where(eq(productLocations.id, productLocation.id));
-                  revertResults.inventoryReverted.push(`Reduced ${locationCode} by ${quantity} units for product ${item.productId}`);
-                }
-                
-                // Update product's main stock quantity
-                const [product] = await db
-                  .select({ id: products.id, quantity: products.quantity })
-                  .from(products)
-                  .where(eq(products.id, item.productId));
-                
-                if (product) {
-                  const newStockQuantity = Math.max(0, (product.quantity || 0) - quantity);
-                  await db
-                    .update(products)
-                    .set({ 
-                      quantity: newStockQuantity,
-                      updatedAt: new Date()
-                    })
-                    .where(eq(products.id, item.productId));
+                  console.log(`[revert-to-receiving] Reduced ${locationCode} by ${quantity} units for product ${item.productId}`);
                 }
               }
             }
             
-            // Clear the stored locations from receipt item
+            // Clear the stored locations and reset assignedQuantity from receipt item
             await db
               .update(receiptItems)
-              .set({ storedLocations: null })
+              .set({ 
+                storedLocations: null,
+                assignedQuantity: 0 // Reset so completion can re-add inventory
+              })
               .where(eq(receiptItems.id, item.id));
             
           } catch (locError) {
-            console.error(`Error reverting inventory for receipt item ${item.id}:`, locError);
+            console.error(`Error reverting locations for receipt item ${item.id}:`, locError);
           }
         }
         
