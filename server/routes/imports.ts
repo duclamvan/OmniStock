@@ -3643,6 +3643,24 @@ router.post("/shipments/:id/move-to-receive", async (req, res) => {
       });
     }
     
+    // Find and delete the associated receipt and its items
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (existingReceipt) {
+      // Delete receipt items first (foreign key constraint)
+      await db
+        .delete(receiptItems)
+        .where(eq(receiptItems.receiptId, existingReceipt.id));
+      
+      // Delete the receipt
+      await db
+        .delete(receipts)
+        .where(eq(receipts.id, existingReceipt.id));
+    }
+    
     // Update the shipment's receiving status back to null (receivable)
     const [updated] = await db
       .update(shipments)
