@@ -8,12 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Trash2, Box, Loader2, Check, AlertCircle, Link2 } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Plus, Trash2, Box, Loader2, Check, AlertCircle, Copy, Link2, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CartonEntry {
@@ -106,6 +104,23 @@ export default function BulkAddCartons() {
     setCartons(prev => prev.length > 1 ? prev.filter(c => c.id !== id) : prev);
   }, []);
 
+  const duplicateRow = useCallback((id: string) => {
+    setCartons(prev => {
+      const carton = prev.find(c => c.id === id);
+      if (!carton) return prev;
+      const duplicated = { ...carton, id: nanoid() };
+      const index = prev.findIndex(c => c.id === id);
+      const newCartons = [...prev];
+      newCartons.splice(index + 1, 0, duplicated);
+      return newCartons;
+    });
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setCartons([createEmptyCarton()]);
+    setResult(null);
+  }, []);
+
   const addPresetCarton = useCallback((preset: typeof CARTON_PRESETS[0]) => {
     const newCarton: CartonEntry = {
       id: nanoid(),
@@ -186,34 +201,44 @@ export default function BulkAddCartons() {
   const validCartonCount = cartons.filter(c => c.length && c.width && c.height && c.code).length;
 
   return (
-    <div className="container mx-auto py-3 md:py-6 px-2 md:px-4 max-w-5xl pb-24 md:pb-6 overflow-x-hidden">
-      <div className="mb-4 md:mb-6">
-        <Button variant="ghost" size="sm" data-testid="button-back" onClick={() => window.history.back()}>
+    <div className="container mx-auto py-4 md:py-6 px-3 md:px-6 max-w-4xl pb-28 md:pb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/packing-materials')}
+          data-testid="button-back"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">{t('backToPackingMaterials')}</span>
-          <span className="sm:hidden">{t('cancel')}</span>
+          <span className="sm:hidden">{t('back')}</span>
         </Button>
       </div>
 
-      <Card className="border-0 md:border shadow-none md:shadow-sm">
-        <CardHeader className="px-3 md:px-6 py-3 md:py-6">
-          <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
-            <Box className="h-6 w-6" />
-            {t('bulkAddCartons')}
-          </CardTitle>
-          <CardDescription className="text-sm">
-            {t('addMultipleCartonsAtOnce')}
-          </CardDescription>
+      {/* Main Card */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">{t('bulkAddCartons')}</CardTitle>
+              <CardDescription>{t('addMultipleCartonsAtOnce')}</CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="px-3 md:px-6 space-y-6">
-          
+
+        <CardContent className="space-y-6">
+          {/* Success Alert */}
           {result && result.createdCount > 0 && (
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800">
               <Check className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800 dark:text-green-200">
                 {t('cartonsCreatedSuccess', { count: result.createdCount })}
                 {result.errors && result.errors.length > 0 && (
-                  <span className="ml-2 text-amber-600">
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">
                     ({t('someCartonsFailed', { failed: result.errors.length })})
                   </span>
                 )}
@@ -221,81 +246,105 @@ export default function BulkAddCartons() {
             </Alert>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-base md:text-lg font-semibold mb-3">{t('supplierForAllCartons')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm">{t('supplierUrl')}</Label>
-                  <div className="relative mt-1">
-                    <Input
-                      className="h-11 pr-10"
-                      placeholder={t('supplierUrlPlaceholder')}
-                      value={supplierUrl}
-                      onChange={(e) => setSupplierUrl(e.target.value)}
-                      data-testid="input-supplier-url"
-                    />
-                    {supplierUrl && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {supplierUrlValid ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm">{t('currency')}</Label>
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="h-11 mt-1" data-testid="select-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base md:text-lg font-semibold">{t('presetSizes')}</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {CARTON_PRESETS.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 text-xs md:text-sm"
-                    onClick={() => addPresetCarton(preset)}
-                    data-testid={`preset-${preset.id}`}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {t(preset.label)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base md:text-lg font-semibold">
-                  {t('cartonEntries')}
-                  {validCartonCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">{validCartonCount}</Badge>
+          {/* Supplier & Currency Section */}
+          <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {t('supplierForAllCartons')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Link2 className="h-3.5 w-3.5" />
+                  {t('supplierUrl')}
+                </Label>
+                <div className="relative">
+                  <Input
+                    className="h-11 pr-10"
+                    placeholder={t('supplierUrlPlaceholder')}
+                    value={supplierUrl}
+                    onChange={(e) => setSupplierUrl(e.target.value)}
+                    data-testid="input-supplier-url"
+                  />
+                  {supplierUrl && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {supplierUrlValid ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      )}
+                    </div>
                   )}
-                </h3>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('supplierUrlDescription')}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('costCurrency')}</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="h-11" data-testid="select-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                    <SelectItem value="VND">VND (₫)</SelectItem>
+                    <SelectItem value="CNY">CNY (¥)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Add Presets */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">{t('presetSizes')}</h3>
+                <p className="text-xs text-muted-foreground">{t('presetSizesDescription')}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {CARTON_PRESETS.map((preset) => (
+                <Button
+                  key={preset.id}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => addPresetCarton(preset)}
+                  data-testid={`preset-${preset.id}`}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  {t(preset.label)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Carton Entries */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold">{t('cartonEntries')}</h3>
+                {validCartonCount > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {validCartonCount} {t('validCartons')}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {cartons.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={clearAll}
+                    data-testid="button-clear-all"
+                  >
+                    {t('clearAll')}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -304,49 +353,77 @@ export default function BulkAddCartons() {
                   data-testid="button-add-row"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {t('addRow')}
+                  {t('addEmptyRow')}
                 </Button>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                {cartons.map((carton, index) => (
-                  <Card key={carton.id} className="p-3 md:p-4 bg-muted/30">
-                    <div className="flex items-start gap-2 mb-3">
-                      <Badge variant="outline" className="text-xs">#{index + 1}</Badge>
-                      {carton.code && (
-                        <Badge variant="secondary" className="text-xs font-mono">{carton.code}</Badge>
-                      )}
-                      <div className="flex-1" />
-                      {cartons.length > 1 && (
+            {/* Carton Cards */}
+            <div className="space-y-3">
+              {cartons.map((carton, index) => {
+                const isValid = carton.length && carton.width && carton.height;
+                return (
+                  <Card 
+                    key={carton.id} 
+                    className={`p-4 transition-colors ${isValid ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/20' : 'bg-muted/20'}`}
+                  >
+                    {/* Card Header Row */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-mono">#{index + 1}</Badge>
+                        {carton.code && (
+                          <Badge variant="secondary" className="text-xs font-mono">{carton.code}</Badge>
+                        )}
+                        {isValid && (
+                          <Check className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => removeRow(carton.id)}
-                          data-testid={`button-remove-row-${index}`}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => duplicateRow(carton.id)}
+                          title={t('duplicateRow')}
+                          data-testid={`button-duplicate-row-${index}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Copy className="h-4 w-4" />
                         </Button>
-                      )}
+                        {cartons.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeRow(carton.id)}
+                            data-testid={`button-remove-row-${index}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                      <div className="col-span-2 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground">{t('materialNameLabel')}</Label>
+                    {/* Dimensions Row - Mobile Optimized */}
+                    <div className="grid grid-cols-12 gap-2 md:gap-3">
+                      {/* Name - Full width on mobile, 3 cols on desktop */}
+                      <div className="col-span-12 md:col-span-3">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('materialNameLabel')}</Label>
                         <Input
-                          className="h-10 mt-1"
+                          className="h-10"
                           placeholder={t('cartonNamePlaceholder')}
                           value={carton.name}
                           onChange={(e) => updateCarton(carton.id, 'name', e.target.value)}
                           data-testid={`input-name-${index}`}
                         />
                       </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('length')}</Label>
+
+                      {/* Dimensions - 3 inputs in a row */}
+                      <div className="col-span-4 md:col-span-2">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('length')}</Label>
                         <Input
-                          className="h-10 mt-1 text-center"
+                          className="h-10 text-center font-mono"
                           placeholder="0"
                           inputMode="decimal"
                           value={carton.length}
@@ -354,11 +431,10 @@ export default function BulkAddCartons() {
                           data-testid={`input-length-${index}`}
                         />
                       </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('width')}</Label>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('width')}</Label>
                         <Input
-                          className="h-10 mt-1 text-center"
+                          className="h-10 text-center font-mono"
                           placeholder="0"
                           inputMode="decimal"
                           value={carton.width}
@@ -366,11 +442,10 @@ export default function BulkAddCartons() {
                           data-testid={`input-width-${index}`}
                         />
                       </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('height')}</Label>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('height')}</Label>
                         <Input
-                          className="h-10 mt-1 text-center"
+                          className="h-10 text-center font-mono"
                           placeholder="0"
                           inputMode="decimal"
                           value={carton.height}
@@ -378,14 +453,15 @@ export default function BulkAddCartons() {
                           data-testid={`input-height-${index}`}
                         />
                       </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('unit')}</Label>
+
+                      {/* Unit Select */}
+                      <div className="col-span-4 md:col-span-1">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('unit')}</Label>
                         <Select 
                           value={carton.dimensionUnit} 
                           onValueChange={(value) => updateCarton(carton.id, 'dimensionUnit', value)}
                         >
-                          <SelectTrigger className="h-10 mt-1" data-testid={`select-unit-${index}`}>
+                          <SelectTrigger className="h-10" data-testid={`select-unit-${index}`}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -396,10 +472,11 @@ export default function BulkAddCartons() {
                         </Select>
                       </div>
 
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('stockQty')}</Label>
+                      {/* Stock Quantity */}
+                      <div className="col-span-4 md:col-span-1">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('stockQty')}</Label>
                         <Input
-                          className="h-10 mt-1 text-center"
+                          className="h-10 text-center"
                           type="number"
                           min="0"
                           value={carton.stockQuantity}
@@ -408,10 +485,11 @@ export default function BulkAddCartons() {
                         />
                       </div>
 
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('unitCost')}</Label>
+                      {/* Unit Cost */}
+                      <div className="col-span-4 md:col-span-1">
+                        <Label className="text-xs text-muted-foreground mb-1 block">{t('unitCost')}</Label>
                         <Input
-                          className="h-10 mt-1"
+                          className="h-10 text-right"
                           placeholder="0.00"
                           inputMode="decimal"
                           value={carton.cost}
@@ -421,40 +499,43 @@ export default function BulkAddCartons() {
                       </div>
                     </div>
                   </Card>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="order-2 md:order-1"
-              onClick={() => navigate('/packing-materials')}
-              data-testid="button-cancel"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              type="button"
-              className="order-1 md:order-2 flex-1 md:flex-none"
-              onClick={handleSubmit}
-              disabled={bulkCreateMutation.isPending || validCartonCount === 0}
-              data-testid="button-create-all"
-            >
-              {bulkCreateMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t('creatingCartons')}
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  {t('createAllCartons')} ({validCartonCount})
-                </>
-              )}
-            </Button>
+          {/* Action Buttons - Fixed at bottom on mobile */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t md:relative md:border-t-0 md:p-0 md:pt-4 z-50">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-4xl mx-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="sm:flex-none"
+                onClick={() => navigate('/packing-materials')}
+                data-testid="button-cancel"
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 sm:flex-none h-12 sm:h-10 text-base sm:text-sm"
+                onClick={handleSubmit}
+                disabled={bulkCreateMutation.isPending || validCartonCount === 0}
+                data-testid="button-create-all"
+              >
+                {bulkCreateMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('creatingCartons')}
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    {t('createAllCartons')} ({validCartonCount})
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
