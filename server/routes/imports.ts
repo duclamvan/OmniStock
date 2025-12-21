@@ -3620,6 +3620,48 @@ router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
   }
 });
 
+// Move shipment from storage back to receivable status (To Receive)
+router.post("/shipments/:id/move-to-receive", async (req, res) => {
+  try {
+    const shipmentId = req.params.id; // UUID string
+    
+    // Check if shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Only allow moving from storage status
+    if (shipment.receivingStatus !== 'storage') {
+      return res.status(400).json({ 
+        message: `Cannot move shipment - current status is '${shipment.receivingStatus}', expected 'storage'` 
+      });
+    }
+    
+    // Update the shipment's receiving status back to null (receivable)
+    const [updated] = await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: null,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json({ 
+      message: "Shipment moved to receivable status successfully",
+      shipment: updated
+    });
+  } catch (error) {
+    console.error("Error moving shipment to receive:", error);
+    res.status(500).json({ message: "Failed to move shipment to receivable status" });
+  }
+});
+
 // Get shipments by receiving status
 router.get("/shipments/by-status/:status", async (req, res) => {
   try {

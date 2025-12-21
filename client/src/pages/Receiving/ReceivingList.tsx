@@ -3003,8 +3003,37 @@ function QuickStorageSheet({
 function StorageShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showQuickStorage, setShowQuickStorage] = useState(false);
+  
+  // Mutation to move shipment back to "To Receive" status
+  const moveToReceiveMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(`/api/imports/shipments/${shipment.id}/move-to-receive`, {
+        method: 'POST',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: t('movedToReceive'),
+        description: t('shipmentMovedToReceiveDesc'),
+      });
+      // Invalidate all receiving-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipment.id}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToMoveShipment'),
+        variant: 'destructive',
+      });
+    },
+  });
   
   const itemCount = shipment.items?.length || 0;
   const isPartiallyReceived = shipment.isPartiallyReceived || shipment.receivingStatus === 'receiving';
@@ -3091,15 +3120,42 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
               </div>
             )}
             
-            <Button
-              size="lg"
-              className="w-full h-12 text-base bg-amber-600 hover:bg-amber-700"
-              onClick={() => setShowQuickStorage(true)}
-              data-testid={`button-go-to-storage-${shipment.id}`}
-            >
-              <Warehouse className="h-5 w-5 mr-2" />
-              {t('quickStorage')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base bg-amber-600 hover:bg-amber-700"
+                onClick={() => setShowQuickStorage(true)}
+                data-testid={`button-go-to-storage-${shipment.id}`}
+              >
+                <Warehouse className="h-5 w-5 mr-2" />
+                {t('quickStorage')}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 px-3"
+                    data-testid={`button-more-options-${shipment.id}`}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveToReceiveMutation.mutate();
+                    }}
+                    disabled={moveToReceiveMutation.isPending}
+                    data-testid={`button-move-to-receive-${shipment.id}`}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    {moveToReceiveMutation.isPending ? t('common:loading') : t('moveToReceive')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       )}
