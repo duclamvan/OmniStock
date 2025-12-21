@@ -233,6 +233,7 @@ export interface ShippingSettings {
   insuranceByDefault?: boolean;
   defaultInsuranceValue?: number;
   pplDefaultShippingPrice?: number;
+  pplDefaultShippingPriceWithDobirka?: number;
   glsDefaultShippingPrice?: number;
   dhlDefaultShippingPrice?: number;
 }

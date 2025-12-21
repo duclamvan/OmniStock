@@ -222,6 +222,7 @@ export default function ShippingSettings() {
         send_tracking_email_to_customer: shippingSettings.sendTrackingEmailToCustomer,
         include_estimated_delivery: shippingSettings.includeEstimatedDelivery,
         ppl_default_shipping_price: shippingSettings.pplDefaultShippingPrice ?? 0,
+        ppl_default_shipping_price_with_dobirka: shippingSettings.pplDefaultShippingPriceWithDobirka ?? 150,
         gls_default_shipping_price: shippingSettings.glsDefaultShippingPrice ?? 0,
         dhl_default_shipping_price: shippingSettings.dhlDefaultShippingPrice ?? 0,
       };
@@ -659,32 +660,60 @@ export default function ShippingSettings() {
                 <CardDescription className="text-sm">{t('settings:pplDefaultShippingPriceDescription', 'Default shipping price for PPL CZ orders')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                <FormField
-                  control={form.control}
-                  name="ppl_default_shipping_price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('settings:defaultShippingPriceCzk', 'Default Shipping Price (CZK)')}</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            markPendingChange('ppl_default_shipping_price');
-                          }}
-                          onBlur={handleTextBlur('ppl_default_shipping_price')}
-                          type="number"
-                          min="0"
-                          step="1"
-                          placeholder="0"
-                          data-testid="input-ppl_default_shipping_price"
-                        />
-                      </FormControl>
-                      <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription', 'This price will be automatically applied to new orders')}</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="ppl_default_shipping_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:defaultShippingPriceCzk', 'Default Shipping Price (CZK)')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('ppl_default_shipping_price');
+                            }}
+                            onBlur={handleTextBlur('ppl_default_shipping_price')}
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            data-testid="input-ppl_default_shipping_price"
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:defaultShippingPriceAutoApplyDescription', 'This price will be automatically applied to new orders')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ppl_default_shipping_price_with_dobirka"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('settings:defaultShippingPriceWithDobirkaCzk', 'Default Price with Dobírka (CZK)')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              markPendingChange('ppl_default_shipping_price_with_dobirka');
+                            }}
+                            onBlur={handleTextBlur('ppl_default_shipping_price_with_dobirka')}
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="150"
+                            data-testid="input-ppl_default_shipping_price_with_dobirka"
+                          />
+                        </FormControl>
+                        <FormDescription>{t('settings:defaultShippingPriceWithDobirkaDescription', 'Applied when payment is Cash on Delivery (COD)')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

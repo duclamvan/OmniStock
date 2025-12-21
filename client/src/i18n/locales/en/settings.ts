@@ -1602,6 +1602,8 @@ const settings = {
   // Default Shipping Prices per Carrier
   pplDefaultShippingPrice: 'Default Shipping Price',
   pplDefaultShippingPriceDescription: 'Set a default shipping price that auto-applies when PPL CZ is selected as the carrier',
+  defaultShippingPriceWithDobirkaCzk: 'Default Price with Dobírka (CZK)',
+  defaultShippingPriceWithDobirkaDescription: 'Applied when payment is Cash on Delivery (COD)',
   glsDefaultShippingPrice: 'Default Shipping Price',
   glsDefaultShippingPriceDescription: 'Set a default shipping price that auto-applies when GLS DE is selected as the carrier',
   dhlDefaultShippingPrice: 'Default Shipping Price',

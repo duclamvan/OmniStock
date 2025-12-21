@@ -1624,6 +1624,8 @@ const settings = {
   // Default Shipping Prices per Carrier
   pplDefaultShippingPrice: 'Giá vận chuyển mặc định',
   pplDefaultShippingPriceDescription: 'Đặt giá vận chuyển mặc định tự động áp dụng khi chọn PPL CZ làm đơn vị vận chuyển',
+  defaultShippingPriceWithDobirkaCzk: 'Giá với Dobírka (CZK)',
+  defaultShippingPriceWithDobirkaDescription: 'Áp dụng khi thanh toán bằng Tiền mặt khi nhận hàng (COD)',
   glsDefaultShippingPrice: 'Giá vận chuyển mặc định',
   glsDefaultShippingPriceDescription: 'Đặt giá vận chuyển mặc định tự động áp dụng khi chọn GLS DE làm đơn vị vận chuyển',
   dhlDefaultShippingPrice: 'Giá vận chuyển mặc định',
