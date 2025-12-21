@@ -476,9 +476,13 @@ export default function StartReceiving() {
       // This prevents resetting data if receipt momentarily becomes null
       console.log('No receipt found, checking if we need to initialize from shipment');
       
-      // Only set defaults if the current values are empty/default
+      // Always auto-fill carrier from shipment data if carrier is empty
+      if (!carrier) {
+        setCarrier(shipment.endCarrier || shipment.easypostCarrier || shipment.carrier || "");
+      }
+      
+      // Only set other defaults if the current values are empty/default
       if (!receivedBy || receivedBy === "Employee #1") {
-        setCarrier(shipment.endCarrier || shipment.carrier || "");
         setParcelCount(shipment.totalUnits || 1);
         setScannedParcels(0); // No parcels scanned yet for new receiving
         setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
