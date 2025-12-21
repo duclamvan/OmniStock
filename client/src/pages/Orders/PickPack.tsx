@@ -3234,18 +3234,41 @@ export default function PickPack() {
   // PPL Label mutations
   const createPPLLabelsMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      // First, check if cartons exist - if not, create one
+      const cartonsResponse = await fetch(`/api/orders/${orderId}/cartons`);
+      const existingCartons = await cartonsResponse.json();
+      
+      if (!existingCartons || existingCartons.length === 0) {
+        console.log('📦 No cartons exist, creating one first...');
+        const createCartonResponse = await apiRequest('POST', `/api/orders/${orderId}/cartons`, {
+          cartonNumber: 1,
+          isCompanyCarton: false
+        });
+        if (!createCartonResponse.ok) {
+          const error = await createCartonResponse.json();
+          throw new Error(error.error || 'Failed to create carton');
+        }
+        console.log('✅ Carton created');
+      }
+      
+      // Now generate the PPL label
       const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/create-labels`, {});
       return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data, orderId) => {
       toast({
         title: t('pplLabelsCreated'),
         description: `Created ${data.shipmentNumbers?.length || 'shipping'} label(s)`,
       });
 
-      // Refetch order to get updated PPL data
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      // Refetch order and cartons to get updated PPL data
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders', orderId, 'cartons'] });
+      
+      // Wait a moment for database to commit, then fetch labels to update UI immediately
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await fetchShipmentLabels();
     },
     onError: (error: any) => {
       console.error('Error creating PPL labels:', error);
@@ -10032,7 +10055,8 @@ export default function PickPack() {
                     ? (shippingAddr.street || shippingAddr.city || shippingAddr.zipCode)
                     : (typeof shippingAddr === 'string' && shippingAddr.trim() !== ''));
                 
-                const isButtonDisabled = createPPLLabelsMutation.isPending || cartons.length === 0 || !hasShippingAddress;
+                // Button only disabled if pending or no shipping address - carton is auto-created if needed
+                const isButtonDisabled = createPPLLabelsMutation.isPending || !hasShippingAddress;
                 
                 return (
                 <>
