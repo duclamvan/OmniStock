@@ -2201,18 +2201,18 @@ function QuickStorageSheet({
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
     
-    // Calculate remaining quantity for auto-fill
+    // Calculate remaining quantity for auto-fill - always auto-fill with remaining
     const isFirstLocation = currentItem?.locations.length === 0;
     const currentRemaining = currentItem ? 
       currentItem.receivedQuantity - currentItem.assignedQuantity - 
       currentItem.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0) : 0;
     
-    // Add new location to current item - auto-fill quantity for first location
+    // Add new location to current item - auto-fill quantity with remaining (for ALL locations)
     const newLocation: LocationAssignment = {
       id: `new-${Date.now()}`,
       locationCode: trimmedValue,
       locationType,
-      quantity: isFirstLocation ? currentRemaining : 0,
+      quantity: currentRemaining > 0 ? currentRemaining : 0,
       isPrimary: isFirstLocation
     };
     
@@ -2222,7 +2222,7 @@ function QuickStorageSheet({
     
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
-    const feedbackMsg = isFirstLocation && currentRemaining > 0
+    const feedbackMsg = currentRemaining > 0
       ? `Location scanned: ${trimmedValue} (${currentRemaining} units assigned)`
       : `Location scanned: ${trimmedValue}`;
     setScanFeedback({ type: 'success', message: feedbackMsg });
@@ -2230,11 +2230,6 @@ function QuickStorageSheet({
     
     // Keep the input value so user can quickly modify and add another similar location
     // setLocationInput(""); - Removed to allow faster multi-location entry
-    
-    // Auto-focus on quantity input only if not auto-filled
-    if (!isFirstLocation) {
-      setTimeout(() => quantityInputRef.current?.focus(), 100);
-    }
   };
   
   // Handle quantity assignment
