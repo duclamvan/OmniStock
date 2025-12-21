@@ -2903,7 +2903,7 @@ function QuickStorageSheet({
                                           const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                           if (locationsToSave.length === 0) return;
                                           
-                                          const savedLocationsWithDbId: Array<{loc: LocationAssignment, dbId: string}> = [];
+                                          const savedLocationsWithDbId: Array<{loc: LocationAssignment, dbId: string, serverQty: number}> = [];
                                           
                                           for (const loc of locationsToSave) {
                                             if (item.productId && loc.quantity > 0) {
@@ -2916,9 +2916,11 @@ function QuickStorageSheet({
                                                   isPrimary: loc.isPrimary,
                                                   receiptItemId: item.receiptItemId
                                                 });
-                                                // Capture database ID from response
+                                                // Capture database ID and server's total quantity from response
                                                 const dbId = (response as any)?.id || loc.id;
-                                                savedLocationsWithDbId.push({ loc, dbId });
+                                                // Server returns the NEW TOTAL after adding, use it to avoid double-count
+                                                const serverQty = (response as any)?.quantity ?? loc.quantity;
+                                                savedLocationsWithDbId.push({ loc, dbId, serverQty });
                                               } catch (error) {
                                                 console.error('Failed to save location:', error);
                                               }
@@ -2927,21 +2929,22 @@ function QuickStorageSheet({
                                           
                                           const updatedItems = [...items];
                                           
-                                          // Move saved locations to existingLocations with real database ID
-                                          // Consolidate with existing entries (backend adds to existing locations)
+                                          // Update existingLocations with server-returned quantities
+                                          // The API returns the NEW TOTAL (after adding), not just what we sent
                                           const newExisting = [...(updatedItems[index].existingLocations || [])];
-                                          savedLocationsWithDbId.forEach(({ loc, dbId }) => {
+                                          savedLocationsWithDbId.forEach(({ loc, dbId, serverQty }) => {
                                             const existingIdx = newExisting.findIndex(e => e.locationCode === loc.locationCode);
                                             if (existingIdx >= 0) {
-                                              // Update existing entry - backend added to it
-                                              newExisting[existingIdx].quantity = (newExisting[existingIdx].quantity || 0) + (loc.quantity || 0);
+                                              // Update existing entry with server's total (not adding again!)
+                                              newExisting[existingIdx].quantity = serverQty;
+                                              newExisting[existingIdx].id = dbId;
                                             } else {
-                                              // New location code
+                                              // New location code - use server quantity
                                               newExisting.push({
                                                 id: dbId,
                                                 locationCode: loc.locationCode,
                                                 locationType: loc.locationType,
-                                                quantity: loc.quantity,
+                                                quantity: serverQty,
                                                 isPrimary: loc.isPrimary
                                               });
                                             }
