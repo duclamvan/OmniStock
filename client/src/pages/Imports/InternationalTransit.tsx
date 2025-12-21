@@ -304,6 +304,8 @@ export default function InternationalTransit() {
       // Force immediate refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      // Sync with receiving workflow caches
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
       
       setIsShipmentFormOpen(false);
       setSelectedPendingShipment(null);
@@ -382,6 +384,8 @@ export default function InternationalTransit() {
     onSuccess: (updatedShipment, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      // Sync with receiving workflow caches
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
       
       // If status is changed to pending, show success message
       if (variables.data.status === 'pending') {
@@ -406,6 +410,11 @@ export default function InternationalTransit() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      // Sync with receiving workflow caches when shipment is edited
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
+      if (data.shipmentId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${data.shipmentId}`] });
+      }
       setIsShipmentFormOpen(false);
       setSelectedShipment(null);
       toast({ title: t('success'), description: t('shipmentUpdated') });
