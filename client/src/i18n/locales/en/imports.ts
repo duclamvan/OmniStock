@@ -295,6 +295,7 @@ const imports = {
   customsDuty: 'Customs Duty',
   taxes: 'Taxes',
   loadingOrderDetails: 'Loading order details...',
+  remaining: 'Remaining',
   
   // Kanban View
   consolidation: 'Consolidation',

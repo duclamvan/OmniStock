@@ -1827,6 +1827,13 @@ function generateSuggestedLocationWithAI(
   return `WH1-${aisle}-${rack}-${level}-${bin}`;
 }
 
+// Format location code with automatic dashing (e.g., wh1a01 → WH1-A01)
+function formatLocationCode(input: string): string {
+  const cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const segments = cleaned.match(/[A-Z]+\d*/g) || [];
+  return segments.join('-');
+}
+
 // Get AI reasoning for suggested location
 function getAIReasoning(
   item: StorageItem, 
@@ -2655,7 +2662,7 @@ function QuickStorageSheet({
                                     <Input
                                       ref={locationInputRef}
                                       value={locationInput}
-                                      onChange={(e) => setLocationInput(e.target.value.toUpperCase())}
+                                      onChange={(e) => setLocationInput(formatLocationCode(e.target.value))}
                                       onKeyDown={(e) => {
                                         e.stopPropagation();
                                         if (e.key === 'Enter') {

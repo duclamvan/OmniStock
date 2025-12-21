@@ -304,6 +304,7 @@ const imports = {
   costBreakdown: 'Chi tiết chi phí',
   customsDuty: 'Thuế hải quan',
   taxes: 'Thuế',
+  remaining: 'Còn lại',
   
   // Kanban View
   consolidation: 'Tổng hợp',
