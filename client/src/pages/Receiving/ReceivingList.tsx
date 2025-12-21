@@ -3875,7 +3875,8 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({

@@ -3663,6 +3663,104 @@ router.post("/shipments/:id/move-to-receive", async (req, res) => {
   }
 });
 
+// Revert completed shipment back to receiving status (undo completion)
+router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    // Check if shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Only allow reverting from 'completed' status
+    if (shipment.receivingStatus !== 'completed') {
+      return res.status(400).json({ 
+        message: `Cannot revert shipment - current status is '${shipment.receivingStatus}', expected 'completed'` 
+      });
+    }
+    
+    // Find associated receipt
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (existingReceipt) {
+      // Revert inventory changes and receipt status
+      const allReceiptItems = await db
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, existingReceipt.id));
+      
+      // Subtract received quantities from products
+      for (const item of allReceiptItems) {
+        if (item.productId && item.receivedQuantity > 0) {
+          const [existingProduct] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId));
+          
+          if (existingProduct) {
+            const newQuantity = Math.max(0, (existingProduct.quantity || 0) - item.receivedQuantity);
+            
+            await db
+              .update(products)
+              .set({
+                quantity: newQuantity,
+                updatedAt: new Date()
+              })
+              .where(eq(products.id, item.productId));
+          }
+        }
+        
+        // Clear warehouse location so item can be stored again
+        await db
+          .update(receiptItems)
+          .set({
+            warehouseLocation: null,
+            updatedAt: new Date()
+          })
+          .where(eq(receiptItems.id, item.id));
+      }
+      
+      // Update receipt status back to 'verified' (ready for storage)
+      await db
+        .update(receipts)
+        .set({
+          status: 'verified',
+          approvedAt: null,
+          approvedBy: null,
+          updatedAt: new Date()
+        })
+        .where(eq(receipts.id, existingReceipt.id));
+    }
+    
+    // Update the shipment's receiving status back to 'storage'
+    const [updated] = await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: 'storage',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json({ 
+      message: "Shipment reverted to receiving status successfully",
+      shipment: updated
+    });
+  } catch (error) {
+    console.error("Error reverting shipment to receiving:", error);
+    res.status(500).json({ message: "Failed to revert shipment to receiving status" });
+  }
+});
+
 // Get shipments by receiving status
 router.get("/shipments/by-status/:status", async (req, res) => {
   try {
