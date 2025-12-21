@@ -939,6 +939,41 @@ router.post("/purchases", async (req, res) => {
       }));
       
       await db.insert(purchaseItems).values(purchaseItemsData);
+      
+      // Auto-assign supplier to products matching the purchase items by SKU
+      // Only update products that don't already have a supplier assigned
+      const supplierId = req.body.supplierId;
+      if (supplierId) {
+        // Validate that the supplier exists
+        const [supplierExists] = await db
+          .select({ id: suppliers.id })
+          .from(suppliers)
+          .where(eq(suppliers.id, supplierId))
+          .limit(1);
+        
+        if (supplierExists) {
+          const skusToUpdate = items
+            .filter((item: any) => item.sku)
+            .map((item: any) => item.sku);
+          
+          if (skusToUpdate.length > 0) {
+            // Only update products that don't have a supplier assigned yet
+            const updatedProducts = await db
+              .update(products)
+              .set({ supplierId, updatedAt: new Date() })
+              .where(and(
+                inArray(products.sku, skusToUpdate),
+                or(isNull(products.supplierId), eq(products.supplierId, ''))
+              ))
+              .returning({ id: products.id, sku: products.sku });
+            
+            if (updatedProducts.length > 0) {
+              console.log(`[Purchase Create] Auto-assigned supplier ${supplierId} to ${updatedProducts.length} products:`, 
+                updatedProducts.map(p => p.sku).join(', '));
+            }
+          }
+        }
+      }
     }
     
     // Return purchase with items
@@ -971,6 +1006,60 @@ router.post("/purchases/:id/items", async (req, res) => {
     };
     
     const [item] = await db.insert(purchaseItems).values(itemData).returning();
+    
+    // Auto-assign supplier to matching product
+    // Use provided supplierId, or fallback to purchase's supplier
+    const sku = req.body.sku;
+    if (sku) {
+      let supplierId = req.body.supplierId;
+      
+      // If supplierId not provided, try to get it from the parent purchase's supplier name
+      if (!supplierId) {
+        const [purchase] = await db
+          .select({ supplier: importPurchases.supplier })
+          .from(importPurchases)
+          .where(eq(importPurchases.id, purchaseId))
+          .limit(1);
+        
+        if (purchase?.supplier) {
+          // Look up supplier ID by name
+          const [foundSupplier] = await db
+            .select({ id: suppliers.id })
+            .from(suppliers)
+            .where(eq(suppliers.name, purchase.supplier))
+            .limit(1);
+          
+          if (foundSupplier) {
+            supplierId = foundSupplier.id;
+          }
+        }
+      }
+      
+      if (supplierId) {
+        // Validate supplier exists and only update products without an existing supplier
+        const [supplierExists] = await db
+          .select({ id: suppliers.id })
+          .from(suppliers)
+          .where(eq(suppliers.id, supplierId))
+          .limit(1);
+        
+        if (supplierExists) {
+          const updatedProducts = await db
+            .update(products)
+            .set({ supplierId, updatedAt: new Date() })
+            .where(and(
+              eq(products.sku, sku),
+              or(isNull(products.supplierId), eq(products.supplierId, ''))
+            ))
+            .returning({ id: products.id, sku: products.sku });
+          
+          if (updatedProducts.length > 0) {
+            console.log(`[Add Item] Auto-assigned supplier ${supplierId} to product:`, sku);
+          }
+        }
+      }
+    }
+    
     res.json(item);
   } catch (error) {
     console.error("Error adding item:", error);
@@ -1052,6 +1141,55 @@ router.patch("/purchases/:id", async (req, res) => {
         }));
         
         await db.insert(purchaseItems).values(itemsToInsert);
+        
+        // Auto-assign supplier to products matching the updated items by SKU
+        // Only update products that don't already have a supplier assigned
+        let supplierId = req.body.supplierId;
+        
+        // If supplierId not provided, try to get it from the purchase's supplier name
+        if (!supplierId && currentPurchase.supplier) {
+          const [foundSupplier] = await db
+            .select({ id: suppliers.id })
+            .from(suppliers)
+            .where(eq(suppliers.name, currentPurchase.supplier))
+            .limit(1);
+          
+          if (foundSupplier) {
+            supplierId = foundSupplier.id;
+          }
+        }
+        
+        if (supplierId) {
+          // Validate that the supplier exists
+          const [supplierExists] = await db
+            .select({ id: suppliers.id })
+            .from(suppliers)
+            .where(eq(suppliers.id, supplierId))
+            .limit(1);
+          
+          if (supplierExists) {
+            const skusToUpdate = req.body.items
+              .filter((item: any) => item.sku)
+              .map((item: any) => item.sku);
+            
+            if (skusToUpdate.length > 0) {
+              // Only update products that don't have a supplier assigned yet
+              const updatedProducts = await db
+                .update(products)
+                .set({ supplierId, updatedAt: new Date() })
+                .where(and(
+                  inArray(products.sku, skusToUpdate),
+                  or(isNull(products.supplierId), eq(products.supplierId, ''))
+                ))
+                .returning({ id: products.id, sku: products.sku });
+              
+              if (updatedProducts.length > 0) {
+                console.log(`[Purchase Update] Auto-assigned supplier ${supplierId} to ${updatedProducts.length} products:`, 
+                  updatedProducts.map(p => p.sku).join(', '));
+              }
+            }
+          }
+        }
       }
     }
     
