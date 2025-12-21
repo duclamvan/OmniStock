@@ -13013,11 +13013,58 @@ Important:
     }
   });
 
-  // Get shipment labels by order ID
+  // Get shipment labels by order ID (auto-migrates legacy pplLabelData if needed)
   app.get('/api/shipment-labels/order/:orderId', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
-      const labels = await storage.getShipmentLabelsByOrderId(orderId);
+      let labels = await storage.getShipmentLabelsByOrderId(orderId);
+      
+      // Check if we need to migrate legacy pplLabelData
+      const activeLabels = labels.filter((l: any) => l.status === 'active');
+      if (activeLabels.length === 0) {
+        // Check if order has pplLabelData that needs migration
+        const order = await storage.getOrderById(orderId);
+        if (order && order.pplLabelData && order.pplStatus === 'created') {
+          console.log('📦 Auto-migrating pplLabelData to shipment_labels for order:', orderId);
+          const pplData = order.pplLabelData as any;
+          const cartons = await storage.getOrderCartons(orderId);
+          const cartonIds = cartons.map(c => c.id);
+          
+          // Create the shipment_labels record
+          await storage.createShipmentLabel({
+            orderId,
+            carrier: 'PPL',
+            trackingNumbers: order.pplShipmentNumbers || [],
+            batchId: order.pplBatchId || pplData.batchId,
+            labelBase64: pplData.labelBase64,
+            labelData: {
+              referenceId: order.orderId,
+              cartonNumber: 1,
+              cartonIds,
+              hasCOD: order.paymentMethod === 'COD' || order.paymentMethod === 'Dobírka'
+            },
+            shipmentCount: cartons.length || 1,
+            status: 'active'
+          });
+          
+          // Update cartons with tracking info
+          for (let i = 0; i < cartons.length; i++) {
+            const carton = cartons[i];
+            const trackingNumber = order.pplShipmentNumbers?.[i] || order.pplShipmentNumbers?.[0];
+            if (trackingNumber) {
+              await storage.updateOrderCarton(carton.id, {
+                labelPrinted: true,
+                trackingNumber
+              });
+            }
+          }
+          
+          console.log('✅ Auto-migration complete');
+          // Refetch labels after migration
+          labels = await storage.getShipmentLabelsByOrderId(orderId);
+        }
+      }
+      
       res.json(labels);
     } catch (error) {
       console.error('Error fetching shipment labels by order ID:', error);
