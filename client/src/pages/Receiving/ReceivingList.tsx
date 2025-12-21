@@ -3019,6 +3019,7 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
       });
       // Invalidate all receiving-related queries
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipment.id}`] });
