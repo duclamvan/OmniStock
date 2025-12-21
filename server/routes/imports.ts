@@ -3961,7 +3961,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
             }
           }
           
-          // Fallback: Also clean up by warehouseLocation if no tags found (legacy data)
+          // Fallback 1: Clean up by warehouseLocation if no tags found (legacy data with warehouseLocation)
           if (taggedLocations.length === 0 && item.warehouseLocation) {
             const [existingLocation] = await db
               .select()
@@ -3990,6 +3990,53 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                   })
                   .where(eq(productLocations.id, existingLocation.id));
                 locationsReverted++;
+              }
+            }
+          }
+          
+          // Fallback 2: AGGRESSIVE cleanup for data with no tags AND no warehouseLocation
+          // This handles edge cases where storage was assigned without proper tracking
+          // Find any location for this product with quantity matching receivedQuantity or empty notes
+          if (taggedLocations.length === 0 && !item.warehouseLocation && item.receivedQuantity > 0) {
+            console.log(`[Revert] Fallback 2: Looking for locations without tags for product ${item.productId}, received qty: ${item.receivedQuantity}`);
+            
+            // Get all locations for this product that have no receipt item tags (empty or null notes)
+            const untaggedLocations = await db
+              .select()
+              .from(productLocations)
+              .where(
+                and(
+                  eq(productLocations.productId, item.productId),
+                  or(
+                    isNull(productLocations.notes),
+                    eq(productLocations.notes, '')
+                  )
+                )
+              );
+            
+            for (const loc of untaggedLocations) {
+              // Subtract the receivedQuantity from locations with matching or higher quantity
+              if (loc.quantity >= item.receivedQuantity) {
+                const newLocationQty = loc.quantity - item.receivedQuantity;
+                
+                if (newLocationQty === 0) {
+                  await db
+                    .delete(productLocations)
+                    .where(eq(productLocations.id, loc.id));
+                  console.log(`[Revert] Fallback 2: Deleted location ${loc.locationCode} (qty was ${loc.quantity})`);
+                  locationsReverted++;
+                } else {
+                  await db
+                    .update(productLocations)
+                    .set({
+                      quantity: newLocationQty,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(productLocations.id, loc.id));
+                  console.log(`[Revert] Fallback 2: Reduced location ${loc.locationCode} from ${loc.quantity} to ${newLocationQty}`);
+                  locationsReverted++;
+                }
+                break; // Only subtract from one location per receipt item
               }
             }
           }
