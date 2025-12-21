@@ -3620,7 +3620,7 @@ router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
   }
 });
 
-// Move shipment from storage back to receivable status (To Receive)
+// Move shipment from storage/pending_approval back to receivable status (To Receive)
 router.post("/shipments/:id/move-to-receive", async (req, res) => {
   try {
     const shipmentId = req.params.id; // UUID string
@@ -3635,10 +3635,11 @@ router.post("/shipments/:id/move-to-receive", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Only allow moving from storage status
-    if (shipment.receivingStatus !== 'storage') {
+    // Allow moving from storage or pending_approval status
+    const allowedStatuses = ['storage', 'pending_approval'];
+    if (!allowedStatuses.includes(shipment.receivingStatus || '')) {
       return res.status(400).json({ 
-        message: `Cannot move shipment - current status is '${shipment.receivingStatus}', expected 'storage'` 
+        message: `Cannot move shipment - current status is '${shipment.receivingStatus}', expected 'storage' or 'pending_approval'` 
       });
     }
     
