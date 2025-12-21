@@ -17275,6 +17275,31 @@ Important rules:
   async function addInventoryOnCompletion(shipmentId: string): Promise<string[]> {
     const inventoryUpdates: string[] = [];
     
+    // Fetch exchange rates ONCE at the start (shared across all products)
+    let eurToUsd = 1.1, eurToCzk = 25, eurToVnd = 27000, eurToCny = 7.5; // Fallback rates
+    let ratesSource = 'fallback';
+    try {
+      // Use ExchangeRate-API (no key required) which supports VND
+      const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
+      if (rateResponse.ok) {
+        const rateData = await rateResponse.json();
+        if (rateData.rates) {
+          eurToUsd = rateData.rates.USD || eurToUsd;
+          eurToCzk = rateData.rates.CZK || eurToCzk;
+          eurToCny = rateData.rates.CNY || eurToCny;
+          eurToVnd = rateData.rates.VND || eurToVnd;
+          ratesSource = 'exchangerate-api';
+          console.log(`[addInventoryOnCompletion] Using live ExchangeRate-API rates: EUR→USD=${eurToUsd.toFixed(4)}, EUR→CZK=${eurToCzk.toFixed(2)}, EUR→CNY=${eurToCny.toFixed(4)}, EUR→VND=${eurToVnd.toFixed(0)}`);
+        }
+      }
+    } catch (rateError) {
+      console.warn(`[addInventoryOnCompletion] Failed to fetch exchange rates, using fallback:`, rateError);
+    }
+    const usdToEur = 1 / eurToUsd;
+    const usdToCzk = eurToCzk / eurToUsd;
+    const usdToVnd = eurToVnd / eurToUsd;
+    const usdToCny = eurToCny / eurToUsd;
+    
     try {
       // Step 1: Find all receipts for this shipment
       const shipmentReceipts = await db
@@ -17499,16 +17524,7 @@ Important rules:
           const oldCostVnd = parseFloat(product.importCostVnd || '0');
           const oldCostCny = parseFloat(product.importCostCny || '0');
           
-          // Exchange rates for conversion (approximate rates)
-          const eurToUsd = 1.1;
-          const eurToCzk = 25;
-          const eurToVnd = 27000;
-          const eurToCny = 7.5;
-          const usdToEur = 1 / eurToUsd;
-          const usdToCzk = eurToCzk / eurToUsd;
-          const usdToVnd = eurToVnd / eurToUsd;
-          const usdToCny = eurToCny / eurToUsd;
-          
+          // Exchange rates were fetched once at function start - reuse them
           // Convert new unit cost to all currencies based on purchase currency
           let newCostUsd = 0, newCostCzk = 0, newCostEur = 0, newCostVnd = 0, newCostCny = 0;
           
