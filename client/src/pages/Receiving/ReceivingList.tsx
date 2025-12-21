@@ -3638,146 +3638,109 @@ function ShipmentReportDialog({
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : reportData ? (
-            <div className="px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
-              {/* Summary Stats - Compact for mobile */}
-              <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
-                <Card className="p-2 sm:p-4 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
-                    <span className="text-[9px] sm:text-xs font-medium text-green-700 dark:text-green-300 truncate">{t('received')}</span>
+            <div className="px-4 sm:px-6 py-4 space-y-4">
+              {/* Summary Stats - Clean horizontal bar */}
+              <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3 border">
+                <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('received')}</div>
+                    </div>
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{reportData.summary.totalReceived}</div>
-                </Card>
-                <Card className="p-2 sm:p-4 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                    <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
-                    <span className="text-[9px] sm:text-xs font-medium text-red-700 dark:text-red-300 truncate">{t('damaged')}</span>
-                  </div>
-                  <div className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
-                </Card>
-                <Card className="p-2 sm:p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
-                    <span className="text-[9px] sm:text-xs font-medium text-orange-700 dark:text-orange-300 truncate">{t('missing')}</span>
-                  </div>
-                  <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
-                </Card>
-                <Card className="p-2 sm:p-4 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-[9px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 truncate">{t('totalItems')}</span>
-                  </div>
-                  <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{reportData.summary.totalItems}</div>
-                </Card>
+                  {reportData.summary.totalDamaged > 0 && (
+                    <div className="flex items-center gap-2 border-l pl-4 sm:pl-6">
+                      <div className="text-lg font-bold text-red-600 dark:text-red-400">{reportData.summary.totalDamaged}</div>
+                      <div className="text-[10px] text-red-600 dark:text-red-400 uppercase">{t('damaged')}</div>
+                    </div>
+                  )}
+                  {reportData.summary.totalMissing > 0 && (
+                    <div className="flex items-center gap-2 border-l pl-4 sm:pl-6">
+                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{reportData.summary.totalMissing}</div>
+                      <div className="text-[10px] text-orange-600 dark:text-orange-400 uppercase">{t('missing')}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{reportData.summary.totalItems}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('totalItems')}</div>
+                </div>
               </div>
               
-              {/* Items Section - Main content */}
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    {t('items')} ({reportData.items.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-y divide-border">
-                    {reportData.items.map((item) => (
-                      <div key={item.receiptItemId} className="p-3 sm:p-4 hover:bg-muted/30 transition-colors">
-                        <div className="flex gap-3">
-                          {/* Product Image */}
-                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-contain" />
-                            ) : (
-                              <Package className="h-6 w-6 sm:h-7 sm:w-7 text-gray-400" />
+              {/* Items Section - Clean table-like layout */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-3 py-2 border-b flex items-center justify-between">
+                  <span className="text-sm font-medium">{t('items')} ({reportData.items.length})</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {reportData.items.map((item) => (
+                    <div key={item.receiptItemId} className="p-3 hover:bg-muted/20 transition-colors">
+                      <div className="flex items-start gap-3">
+                        {/* Product Image - Smaller */}
+                        <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-contain" />
+                          ) : (
+                            <Package className="h-5 w-5 text-gray-400" />
+                          )}
+                        </div>
+                        
+                        {/* Product Info - Streamlined */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-sm text-foreground line-clamp-1">
+                                {item.productName || t('unknownProduct')}
+                              </h4>
+                              <p className="text-xs text-muted-foreground font-mono">{item.sku || '-'}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {getStatusBadge(item.status)}
+                            </div>
+                          </div>
+                          
+                          {/* Compact info row */}
+                          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+                            <span className="text-muted-foreground">
+                              {t('expected')}: <span className="font-medium text-foreground">{item.expectedQuantity}</span>
+                            </span>
+                            <span className="text-green-600 dark:text-green-400">
+                              {t('received')}: <span className="font-semibold">{item.receivedQuantity}</span>
+                            </span>
+                            {item.prices?.priceCzk && (
+                              <span className="text-muted-foreground font-medium">
+                                {formatPrice(item.prices.priceCzk, 'CZK')}
+                              </span>
+                            )}
+                            {item.prices?.priceEur && (
+                              <span className="text-muted-foreground font-medium">
+                                {formatPrice(item.prices.priceEur, 'EUR')}
+                              </span>
                             )}
                           </div>
                           
-                          {/* Product Info */}
-                          <div className="flex-1 min-w-0">
-                            {/* Top Row: Name + Status */}
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <div className="min-w-0">
-                                <h4 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2">
-                                  {item.productName || t('unknownProduct')}
-                                </h4>
-                                {item.sku && (
-                                  <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
-                                )}
-                              </div>
-                              {getStatusBadge(item.status)}
+                          {/* Locations - Inline compact */}
+                          {item.locations.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {item.locations.map((loc, idx) => (
+                                <span 
+                                  key={idx} 
+                                  className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
+                                >
+                                  {loc.locationCode}×{loc.quantity}
+                                </span>
+                              ))}
                             </div>
-                            
-                            {/* Quantities Row */}
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm">
-                              <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 rounded">
-                                <span className="text-muted-foreground">{t('expected')}:</span>
-                                <span className="font-semibold">{item.expectedQuantity}</span>
-                              </div>
-                              <div className="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
-                                <span className="text-green-700 dark:text-green-400">{t('received')}:</span>
-                                <span className="font-semibold text-green-700 dark:text-green-400">{item.receivedQuantity}</span>
-                              </div>
-                              {item.damagedQuantity > 0 && (
-                                <div className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">
-                                  <span className="text-red-700 dark:text-red-400">{t('damaged')}:</span>
-                                  <span className="font-semibold text-red-700 dark:text-red-400">{item.damagedQuantity}</span>
-                                </div>
-                              )}
-                              {item.missingQuantity > 0 && (
-                                <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded">
-                                  <span className="text-orange-700 dark:text-orange-400">{t('missing')}:</span>
-                                  <span className="font-semibold text-orange-700 dark:text-orange-400">{item.missingQuantity}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Prices Row */}
-                            {item.prices && (item.prices.priceCzk || item.prices.priceEur) && (
-                              <div className="flex items-center gap-3 mt-1.5 text-xs sm:text-sm">
-                                {item.prices.priceCzk && (
-                                  <span className="font-medium text-muted-foreground">
-                                    {formatPrice(item.prices.priceCzk, 'CZK')}
-                                  </span>
-                                )}
-                                {item.prices.priceEur && (
-                                  <span className="font-medium text-muted-foreground">
-                                    {formatPrice(item.prices.priceEur, 'EUR')}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Locations Row */}
-                            {item.locations.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {item.locations.map((loc, idx) => (
-                                  <Badge 
-                                    key={idx} 
-                                    variant={loc.isPrimary ? "default" : "outline"}
-                                    className="text-xs font-mono"
-                                  >
-                                    <MapPin className="h-3 w-3 mr-1" />
-                                    {loc.locationCode}
-                                    <span className="ml-1 opacity-60">×{loc.quantity}</span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            
-                            {/* Notes - Only show if meaningful */}
-                            {shouldShowNote(item.notes) && (
-                              <p className="text-xs text-muted-foreground mt-2 italic border-l-2 border-muted pl-2">
-                                {item.notes}
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
               
               {/* Photos Section */}
               {reportData.receipt.photos && reportData.receipt.photos.length > 0 && (
@@ -3800,204 +3763,164 @@ function ShipmentReportDialog({
                 </Card>
               )}
               
-              {/* Receipt Details Section */}
-              <Card>
-                <CardHeader className="pb-2 sm:pb-3">
-                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    {t('receiptDetails')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('receiptNumber')}</span>
-                      <span className="font-medium text-xs sm:text-sm">{reportData.receipt.receiptNumber || '-'}</span>
+              {/* Receipt Details Section - Compact grid */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-3 py-2 border-b">
+                  <span className="text-sm font-medium">{t('receiptDetails')}</span>
+                </div>
+                <div className="p-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('receiptNumber')}</span>
+                      <div className="font-medium">{reportData.receipt.receiptNumber || '-'}</div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('status')}</span>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs">
-                        {t('completeStatus')}
-                      </Badge>
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('status')}</span>
+                      <div>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs mt-0.5">
+                          {t('completeStatus')}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('receivedBy')}</span>
-                      <span className="font-medium text-xs sm:text-sm">{reportData.receipt.receivedBy || '-'}</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('receivedBy')}</span>
+                      <div className="font-medium">{reportData.receipt.receivedBy || '-'}</div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('receivedAt')}</span>
-                      <span className="font-medium text-xs sm:text-sm">{reportData.receipt.receivedAt ? format(new Date(reportData.receipt.receivedAt), 'dd MMM yyyy HH:mm') : '-'}</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('receivedAt')}</span>
+                      <div className="font-medium">{reportData.receipt.receivedAt ? format(new Date(reportData.receipt.receivedAt), 'dd MMM yyyy HH:mm') : '-'}</div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('carrier')}</span>
-                      <span className="font-medium text-xs sm:text-sm">{reportData.receipt.carrier || '-'}</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('carrier')}</span>
+                      <div className="font-medium">{reportData.receipt.carrier || '-'}</div>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground text-xs sm:text-sm">{t('parcels')}</span>
-                      <span className="font-medium text-xs sm:text-sm">{reportData.receipt.parcelCount || 0}</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">{t('parcels')}</span>
+                      <div className="font-medium">{reportData.receipt.parcelCount || 0}</div>
                     </div>
                   </div>
                   {reportData.receipt.notes && shouldShowNote(reportData.receipt.notes) && (
-                    <div className="mt-3 p-3 rounded bg-muted/50">
-                      <div className="text-xs text-muted-foreground mb-1">{t('notes')}</div>
-                      <p className="text-sm">{reportData.receipt.notes}</p>
+                    <div className="mt-3 pt-3 border-t text-sm">
+                      <span className="text-xs text-muted-foreground">{t('notes')}</span>
+                      <p className="mt-0.5">{reportData.receipt.notes}</p>
                     </div>
                   )}
                   {reportData.receipt.damageNotes && (
-                    <div className="mt-3 p-3 rounded bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
-                      <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">{t('damageNotes')}</div>
-                      <p className="text-sm text-red-700 dark:text-red-300">{reportData.receipt.damageNotes}</p>
+                    <div className="mt-3 p-2 rounded bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 text-sm">
+                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">{t('damageNotes')}</span>
+                      <p className="text-red-700 dark:text-red-300 mt-0.5">{reportData.receipt.damageNotes}</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
               
-              {/* Scanned Parcels Section */}
+              {/* Scanned Parcels Section - Compact inline */}
               {reportData.receipt.scannedParcels && reportData.receipt.scannedParcels.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2 sm:pb-3">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                      <Barcode className="h-4 w-4" />
-                      {t('scannedParcels')} ({reportData.receipt.scannedParcels.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {reportData.receipt.scannedParcels.map((parcel, idx) => (
-                        <Badge key={idx} variant="secondary" className="font-mono text-xs">
-                          {parcel}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted/50 px-3 py-2 border-b flex items-center gap-2">
+                    <Barcode className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{t('scannedParcels')} ({reportData.receipt.scannedParcels.length})</span>
+                  </div>
+                  <div className="p-3 flex flex-wrap gap-1.5">
+                    {reportData.receipt.scannedParcels.map((parcel, idx) => (
+                      <Badge key={idx} variant="secondary" className="font-mono text-xs">
+                        {parcel}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               )}
               
-              {/* Labels Section - Collapsible */}
+              {/* Labels Section - Collapsible with cleaner design */}
               {reportData.items.filter(i => i.locations.length > 0).length > 0 && (
-                <Card>
-                  <CardHeader 
-                    className="pb-2 sm:pb-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                <div className="border rounded-lg overflow-hidden">
+                  <div 
+                    className="bg-muted/50 px-3 py-2 border-b flex items-center justify-between cursor-pointer hover:bg-muted/70 transition-colors"
                     onClick={() => setShowLabelsSection(!showLabelsSection)}
                   >
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                        <Tag className="h-4 w-4" />
-                        {t('warehouseLabels')}
-                      </CardTitle>
-                      {showLabelsSection ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      )}
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{t('warehouseLabels')}</span>
                     </div>
-                  </CardHeader>
+                    {showLabelsSection ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                   {showLabelsSection && (
-                    <CardContent className="space-y-3">
-                      {/* Actions */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="p-3 space-y-3">
+                      {/* Actions - Inline */}
+                      <div className="flex items-center justify-between gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={selectAllForLabels}
+                          className="h-8 text-xs"
+                        >
+                          <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                          {t('selectAll')}
+                        </Button>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={selectAllForLabels}
-                          >
-                            <CheckSquare className="h-4 w-4 mr-1.5" />
-                            {t('selectAll')}
-                          </Button>
-                          <span className="text-xs sm:text-sm text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             {selectedItemsForLabels.size} {t('selected')}
                           </span>
+                          <Button 
+                            size="sm"
+                            onClick={printLabels}
+                            disabled={selectedItemsForLabels.size === 0}
+                            className="h-8"
+                          >
+                            <Printer className="h-3.5 w-3.5 mr-1" />
+                            {t('printLabels')}
+                          </Button>
                         </div>
-                        <Button 
-                          size="sm"
-                          onClick={printLabels}
-                          disabled={selectedItemsForLabels.size === 0}
-                        >
-                          <Printer className="h-4 w-4 mr-1.5" />
-                          {t('printLabels')}
-                        </Button>
                       </div>
                       
-                      {/* Items with locations for label selection */}
-                      <div className="space-y-1.5">
+                      {/* Items list - Compact */}
+                      <div className="space-y-1">
                         {reportData.items
                           .filter(item => item.locations.length > 0)
                           .map((item) => (
                             <div 
                               key={item.receiptItemId} 
-                              className={`p-2.5 rounded-lg cursor-pointer transition-all border ${
+                              className={`p-2 rounded cursor-pointer transition-all flex items-center gap-2 ${
                                 selectedItemsForLabels.has(String(item.receiptItemId))
-                                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                  : 'border-border hover:bg-muted/50'
+                                  ? 'bg-green-50 dark:bg-green-900/20 ring-1 ring-green-500'
+                                  : 'hover:bg-muted/50'
                               }`}
                               onClick={() => toggleItemForLabel(String(item.receiptItemId))}
                             >
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
-                                  selectedItemsForLabels.has(String(item.receiptItemId))
-                                    ? 'bg-green-500 border-green-500'
-                                    : 'border-gray-300 dark:border-gray-600'
-                                }`}>
-                                  {selectedItemsForLabels.has(String(item.receiptItemId)) && (
-                                    <Check className="h-3 w-3 text-white" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm truncate">{item.productName}</div>
-                                  <div className="text-xs text-muted-foreground font-mono">{item.sku || '-'}</div>
-                                </div>
-                                <div className="text-right shrink-0 hidden sm:block">
-                                  <div className="font-bold text-sm">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
-                                  <div className="text-xs text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
-                                </div>
-                                <div className="flex flex-wrap gap-1 shrink-0 max-w-24 sm:max-w-32">
-                                  {item.locations.slice(0, 2).map((loc, idx) => (
-                                    <Badge key={idx} variant="outline" className="text-[10px] sm:text-xs font-mono">
-                                      {loc.locationCode}
-                                    </Badge>
-                                  ))}
-                                  {item.locations.length > 2 && (
-                                    <Badge variant="secondary" className="text-[10px] sm:text-xs">+{item.locations.length - 2}</Badge>
-                                  )}
-                                </div>
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                selectedItemsForLabels.has(String(item.receiptItemId))
+                                  ? 'bg-green-500 border-green-500'
+                                  : 'border-gray-300 dark:border-gray-600'
+                              }`}>
+                                {selectedItemsForLabels.has(String(item.receiptItemId)) && (
+                                  <Check className="h-2.5 w-2.5 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm truncate block">{item.productName}</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">{item.sku || '-'}</span>
+                              </div>
+                              <div className="text-right shrink-0 text-xs">
+                                <div className="font-semibold">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
+                                <div className="text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
+                              </div>
+                              <div className="flex flex-wrap gap-0.5 shrink-0 max-w-28">
+                                {item.locations.map((loc, idx) => (
+                                  <span key={idx} className="text-[10px] font-mono bg-muted px-1 py-0.5 rounded">
+                                    {loc.locationCode}
+                                  </span>
+                                ))}
                               </div>
                             </div>
                           ))}
                       </div>
-                      
-                      {/* Label Preview */}
-                      {selectedItemsForLabels.size > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs text-muted-foreground mb-2">{t('labelPreview')}:</p>
-                          <div ref={printRef} className="flex flex-wrap gap-2">
-                            {reportData.items
-                              .filter(item => selectedItemsForLabels.has(String(item.receiptItemId)))
-                              .slice(0, 2)
-                              .map((item) => 
-                                item.locations.slice(0, 1).map((loc, idx) => (
-                                  <div key={`${item.receiptItemId}-${idx}`} className="w-36 sm:w-44 p-2.5 border-2 border-dashed rounded-lg">
-                                    <div className="text-center font-bold text-base sm:text-lg">{loc.locationCode}</div>
-                                    <div className="text-center text-[10px] sm:text-xs truncate mt-0.5">{item.productName}</div>
-                                    <div className="text-center text-[10px] text-muted-foreground font-mono">{item.sku || '-'}</div>
-                                    <div className="flex justify-between mt-1.5 text-xs sm:text-sm font-bold">
-                                      <span>{item.prices?.priceCzk ? parseFloat(item.prices.priceCzk).toFixed(0) : '-'} CZK</span>
-                                      <span>{item.prices?.priceEur ? parseFloat(item.prices.priceEur).toFixed(2) : '-'} €</span>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                          </div>
-                          {selectedItemsForLabels.size > 2 && (
-                            <p className="text-xs text-muted-foreground text-center mt-2">
-                              +{selectedItemsForLabels.size - 2} {t('moreLabels')}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
+                    </div>
                   )}
-                </Card>
+                </div>
               )}
             </div>
           ) : (
