@@ -1556,9 +1556,11 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
         title: t('movedToReceive'),
         description: t('shipmentMovedToReceiveDesc'),
       });
+      // Invalidate all receiving-related queries
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipment.id}`] });
     },
     onError: (error: any) => {
@@ -3069,8 +3071,10 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
         title: t('movedToReceive'),
         description: t('shipmentMovedToReceiveDesc'),
       });
-      // Invalidate all receiving-related queries
+      // Invalidate all receiving-related queries including to-receive
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
@@ -3874,8 +3878,10 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate all relevant queries for UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
