@@ -2533,7 +2533,7 @@ function QuickStorageSheet({
                               className="border-t-2 border-amber-500 dark:border-amber-600 bg-gray-50 dark:bg-gray-900"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {/* STREAMLINED LAYOUT - Optimized for speed */}
+                              {/* SIMPLIFIED LAYOUT - Easy for warehouse workers */}
                               <div className="p-4 space-y-4">
                                 
                                 {/* Scan feedback */}
@@ -2541,332 +2541,300 @@ function QuickStorageSheet({
                                   <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
                                 )}
 
-                                {/* Progress Bar - Compact */}
-                                <div className="flex items-center gap-4 bg-white dark:bg-gray-950 rounded-xl p-3 border dark:border-gray-800">
-                                  <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-sm text-muted-foreground">{t('remaining')}</span>
-                                      <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{itemRemainingQty}</span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                      <div 
-                                        className="bg-green-500 h-2 rounded-full transition-all"
-                                        style={{ width: `${((item.receivedQuantity - itemRemainingQty) / item.receivedQuantity) * 100}%` }}
-                                      />
-                                    </div>
+                                {/* Progress + Remaining - Large and clear */}
+                                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 border-2 dark:border-gray-800">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-lg font-medium">{t('remaining')}</span>
+                                    <span className={`text-3xl font-bold ${itemRemainingQty === 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                      {itemRemainingQty}
+                                    </span>
                                   </div>
-                                  <div className="text-right text-sm text-muted-foreground">
-                                    <span className="font-medium">{item.assignedQuantity}</span>/{item.receivedQuantity}
-                                  </div>
-                                </div>
-
-                                {/* Quick Assign Buttons */}
-                                {(() => {
-                                  const suggestions = buildLocationSuggestions(item, aiSuggestions);
-                                  
-                                  // Quick action: Tap to assign ALL remaining to suggested location
-                                  const handleQuickAssign = async (e: React.MouseEvent, locationCode: string, isPrimary: boolean = false) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    
-                                    if (itemRemainingQty <= 0) {
-                                      toast({ title: t('common:error'), description: 'No items remaining', variant: 'destructive' });
-                                      return;
-                                    }
-                                    
-                                    if (!item.productId) {
-                                      toast({ title: t('common:error'), description: 'Product ID missing', variant: 'destructive' });
-                                      return;
-                                    }
-                                    
-                                    try {
-                                      await storeLocationMutation.mutateAsync({
-                                        productId: String(item.productId),
-                                        locationCode: locationCode,
-                                        locationType: 'warehouse',
-                                        quantity: itemRemainingQty,
-                                        isPrimary: isPrimary,
-                                        receiptItemId: item.receiptItemId
-                                      });
-                                      
-                                      // Update local state
-                                      const updatedItems = [...items];
-                                      updatedItems[index].assignedQuantity += itemRemainingQty;
-                                      setItems(updatedItems);
-                                      
-                                      toast({
-                                        title: t('storedSuccessfully'),
-                                        description: `${itemRemainingQty} ${t('units')} → ${locationCode}`,
-                                      });
-                                      
-                                      // Auto-advance to next item
-                                      if (index < items.length - 1) {
-                                        setSelectedItemIndex(index + 1);
-                                      }
-                                      await soundEffects.playCompletionSound();
-                                    } catch (error) {
-                                      console.error('Failed to save location:', error);
-                                      toast({
-                                        title: t('common:error'),
-                                        description: t('failedToSaveLocation'),
-                                        variant: 'destructive'
-                                      });
-                                    }
-                                  };
-                                  
-                                  return (
-                                    <div className="space-y-3">
-                                      {/* Primary Suggestion - Main action button */}
-                                      {suggestions.length > 0 && itemRemainingQty > 0 && (
-                                        <Button
-                                          onClick={(e) => handleQuickAssign(e, suggestions[0].locationCode, suggestions[0].isPrimary)}
-                                          disabled={storeLocationMutation.isPending}
-                                          className="w-full h-14 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-xl shadow-md"
-                                          size="lg"
-                                        >
-                                          <MapPin className="h-5 w-5 mr-2" />
-                                          <span className="font-mono font-bold mr-2">{suggestions[0].locationCode}</span>
-                                          <span className="opacity-80">({itemRemainingQty} {t('units')})</span>
-                                          {storeLocationMutation.isPending && (
-                                            <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                                          )}
-                                        </Button>
-                                      )}
-                                      
-                                      {/* Alternative Locations */}
-                                      {suggestions.length > 1 && itemRemainingQty > 0 && (
-                                        <div className="flex gap-2">
-                                          {suggestions.slice(1, 3).map((sugg, idx) => (
-                                            <Button
-                                              key={idx}
-                                              variant="outline"
-                                              onClick={(e) => handleQuickAssign(e, sugg.locationCode, sugg.isPrimary)}
-                                              disabled={storeLocationMutation.isPending}
-                                              className="flex-1 h-11 rounded-lg font-mono text-sm"
-                                            >
-                                              <MapPin className="h-4 w-4 mr-1" />
-                                              {sugg.locationCode}
-                                            </Button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-
-                                {/* Manual Entry */}
-                                <div className="bg-white dark:bg-gray-950 rounded-xl p-3 border dark:border-gray-800 space-y-3">
-                                  <p className="text-sm font-medium text-center text-muted-foreground">{t('orEnterManually')}</p>
-                                  
-                                  <div className="flex gap-2">
-                                    <Input
-                                      ref={locationInputRef}
-                                      value={locationInput}
-                                      onChange={(e) => setLocationInput(formatLocationCode(e.target.value))}
-                                      onKeyDown={(e) => {
-                                        e.stopPropagation();
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          handleLocationScan();
-                                        }
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      placeholder="WH1-A01-R02-L03"
-                                      className="flex-1 h-12 text-base font-mono font-bold text-center border-2 rounded-lg"
-                                      data-testid="input-location-manual"
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                    <div 
+                                      className="bg-green-500 h-3 rounded-full transition-all"
+                                      style={{ width: `${((item.receivedQuantity - itemRemainingQty) / item.receivedQuantity) * 100}%` }}
                                     />
-                                    <Button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleLocationScan();
-                                      }}
-                                      disabled={!locationInput}
-                                      className="h-12 px-5 rounded-lg"
-                                      size="lg"
-                                    >
-                                      <Plus className="h-5 w-5" />
-                                    </Button>
                                   </div>
-                                  
-                                  {/* Camera Scanner Toggle */}
-                                  {barcodeScanner.scanningEnabled && (
-                                    <Button
-                                      variant={barcodeScanner.isActive ? "destructive" : "secondary"}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (barcodeScanner.isActive) {
-                                          barcodeScanner.stopScanning();
-                                        } else {
-                                          barcodeScanner.startScanning();
-                                        }
-                                      }}
-                                      className="w-full h-11 rounded-lg"
-                                      disabled={itemRemainingQty === 0}
-                                    >
-                                      {barcodeScanner.isActive ? (
-                                        <>
-                                          <CameraOff className="h-5 w-5 mr-2" />
-                                          {t('stopCamera')}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Camera className="h-5 w-5 mr-2" />
-                                          {t('scanBarcode')}
-                                        </>
-                                      )}
-                                    </Button>
-                                  )}
-                                  
-                                  {/* Camera Preview */}
-                                  {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
-                                    <div className="relative rounded-lg overflow-hidden bg-black">
-                                      <video
-                                        ref={barcodeScanner.videoRef}
-                                        className="w-full h-40 object-cover"
-                                        playsInline
-                                        muted
-                                      />
-                                      <Badge className="absolute top-2 right-2 bg-green-500 text-white">
-                                        <Camera className="h-3 w-3 mr-1" />
-                                        {t('scanning')}
-                                      </Badge>
-                                    </div>
-                                  )}
+                                  <p className="text-sm text-muted-foreground mt-2 text-center">
+                                    {item.assignedQuantity} / {item.receivedQuantity} {t('stored')}
+                                  </p>
                                 </div>
 
-                                {/* Pending Locations */}
-                                {item.locations.length > 0 && (
-                                  <div className="bg-amber-50 dark:bg-amber-950/20 rounded-xl p-3 space-y-3 border border-amber-200 dark:border-amber-800">
-                                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                                      {t('pendingLocations')} ({item.locations.length})
+                                {/* ADD LOCATION - Simple input with big button */}
+                                {itemRemainingQty > 0 && (
+                                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
+                                    <p className="text-base font-semibold text-blue-800 dark:text-blue-300 mb-3 text-center">
+                                      {t('addLocation')}
                                     </p>
                                     
-                                    <div className="space-y-2">
-                                      {item.locations.map((loc, locIndex) => (
-                                        <div 
-                                          key={loc.id} 
-                                          className="bg-white dark:bg-gray-950 rounded-lg p-3 flex items-center gap-3 border dark:border-gray-800"
-                                        >
-                                          <MapPin className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                                          <span className="font-mono text-sm font-bold flex-1">{loc.locationCode}</span>
-                                          
-                                          <Input
-                                            type="number"
-                                            value={loc.quantity || ''}
-                                            onChange={(e) => {
-                                              e.stopPropagation();
-                                              const newQty = parseInt(e.target.value) || 0;
-                                              const updatedItems = [...items];
-                                              const maxAllowed = itemRemainingQty + (loc.quantity || 0);
-                                              updatedItems[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
-                                              setItems(updatedItems);
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="w-20 h-10 text-center text-lg font-bold"
-                                            min="0"
-                                            placeholder="0"
-                                            data-testid={`input-qty-${locIndex}`}
-                                          />
-                                          
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleRemoveLocation(locIndex);
-                                            }}
-                                            className="h-10 w-10 p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg"
-                                          >
-                                            <X className="h-5 w-5" />
-                                          </Button>
-                                        </div>
-                                      ))}
+                                    <div className="flex gap-3">
+                                      <Input
+                                        ref={locationInputRef}
+                                        value={locationInput}
+                                        onChange={(e) => setLocationInput(formatLocationCode(e.target.value))}
+                                        onKeyDown={(e) => {
+                                          e.stopPropagation();
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleLocationScan();
+                                          }
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        placeholder="WH1-A01-R02-L03"
+                                        className="flex-1 h-14 text-lg font-mono font-bold text-center border-2 rounded-xl"
+                                        data-testid="input-location-manual"
+                                      />
+                                      <Button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleLocationScan();
+                                        }}
+                                        disabled={!locationInput}
+                                        className="h-14 px-6 rounded-xl text-lg"
+                                        size="lg"
+                                      >
+                                        <Plus className="h-6 w-6" />
+                                      </Button>
                                     </div>
                                     
-                                    {/* Fill & Save Actions */}
-                                    <div className="flex gap-2">
-                                      {itemRemainingQty > 0 && (
-                                        <Button
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const lastIndex = item.locations.length - 1;
-                                            const updatedItems = [...items];
-                                            updatedItems[index].locations[lastIndex].quantity = 
-                                              (updatedItems[index].locations[lastIndex].quantity || 0) + itemRemainingQty;
-                                            setItems(updatedItems);
-                                          }}
-                                          className="flex-1 h-11 rounded-lg"
-                                        >
-                                          <Plus className="h-4 w-4 mr-1" />
-                                          {t('fillAll')} ({itemRemainingQty})
-                                        </Button>
-                                      )}
-                                      
-                                      {item.locations.some(loc => (loc.quantity || 0) > 0) && (
-                                        <Button
-                                          className="flex-1 h-11 bg-green-600 hover:bg-green-700 rounded-lg"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
-                                            if (locationsToSave.length === 0) return;
-                                            
-                                            for (const loc of locationsToSave) {
-                                              if (item.productId && loc.quantity > 0) {
-                                                try {
-                                                  await storeLocationMutation.mutateAsync({
-                                                    productId: String(item.productId),
-                                                    locationCode: loc.locationCode,
-                                                    locationType: loc.locationType,
-                                                    quantity: loc.quantity,
-                                                    isPrimary: loc.isPrimary
-                                                  });
-                                                } catch (error) {
-                                                  console.error('Failed to save location:', error);
-                                                }
-                                              }
-                                            }
-                                            
-                                            const newlyAssignedTotal = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                                            const updatedItems = [...items];
-                                            updatedItems[index].assignedQuantity += newlyAssignedTotal;
-                                            updatedItems[index].locations = updatedItems[index].locations.filter(
-                                              loc => !locationsToSave.includes(loc)
-                                            );
-                                            setItems(updatedItems);
-                                            
-                                            const isFullyAssigned = updatedItems[index].assignedQuantity >= updatedItems[index].receivedQuantity;
-                                            
-                                            if (isFullyAssigned) {
-                                              if (index < items.length - 1) {
-                                                setSelectedItemIndex(index + 1);
-                                              }
-                                              await soundEffects.playCompletionSound();
-                                            } else {
-                                              await soundEffects.playSuccessBeep();
-                                            }
-                                          }}
-                                          disabled={storeLocationMutation.isPending}
-                                        >
-                                          {storeLocationMutation.isPending ? (
-                                            <Loader2 className="h-5 w-5 animate-spin mr-1" />
-                                          ) : (
-                                            <Check className="h-5 w-5 mr-1" />
-                                          )}
-                                          {t('saveLocations')}
-                                        </Button>
-                                      )}
-                                    </div>
+                                    {/* Camera Scanner - Only if available */}
+                                    {barcodeScanner.scanningEnabled && (
+                                      <Button
+                                        variant={barcodeScanner.isActive ? "destructive" : "outline"}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (barcodeScanner.isActive) {
+                                            barcodeScanner.stopScanning();
+                                          } else {
+                                            barcodeScanner.startScanning();
+                                          }
+                                        }}
+                                        className="w-full h-12 rounded-xl mt-3"
+                                      >
+                                        {barcodeScanner.isActive ? (
+                                          <>
+                                            <CameraOff className="h-5 w-5 mr-2" />
+                                            {t('stopCamera')}
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Camera className="h-5 w-5 mr-2" />
+                                            {t('scanBarcode')}
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
+                                    
+                                    {/* Camera Preview */}
+                                    {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
+                                      <div className="relative rounded-xl overflow-hidden bg-black mt-3">
+                                        <video
+                                          ref={barcodeScanner.videoRef}
+                                          className="w-full h-40 object-cover"
+                                          playsInline
+                                          muted
+                                        />
+                                        <Badge className="absolute top-2 right-2 bg-green-500 text-white">
+                                          <Camera className="h-3 w-3 mr-1" />
+                                          {t('scanning')}
+                                        </Badge>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
-                                {/* Product Details - Subtle link */}
+                                {/* ALL LOCATIONS LIST - Persistent display of saved + pending */}
+                                <div className="rounded-xl border-2 dark:border-gray-800 overflow-hidden">
+                                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 border-b dark:border-gray-700">
+                                    <p className="font-semibold text-base flex items-center gap-2">
+                                      <MapPin className="h-5 w-5" />
+                                      {t('allLocations')} ({(item.existingLocations?.length || 0) + item.locations.length})
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="divide-y dark:divide-gray-800 max-h-64 overflow-y-auto">
+                                    {/* SAVED LOCATIONS - Green, locked */}
+                                    {item.existingLocations?.map((loc: any, locIdx: number) => (
+                                      <div 
+                                        key={`saved-${locIdx}`}
+                                        className="p-4 flex items-center gap-4 bg-green-50 dark:bg-green-950/20"
+                                      >
+                                        <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+                                          <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-mono font-bold text-base truncate">{loc.locationCode}</p>
+                                          <p className="text-sm text-green-700 dark:text-green-400">{t('saved')}</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="text-xl font-bold text-green-700 dark:text-green-300">{loc.quantity}</span>
+                                          <span className="text-sm text-muted-foreground ml-1">{t('units')}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    
+                                    {/* PENDING LOCATIONS - Amber, editable */}
+                                    {item.locations.map((loc, locIndex) => (
+                                      <div 
+                                        key={loc.id}
+                                        className="p-4 flex items-center gap-4 bg-amber-50 dark:bg-amber-950/20"
+                                      >
+                                        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+                                          <MapPin className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-mono font-bold text-base truncate">{loc.locationCode}</p>
+                                          <p className="text-sm text-amber-700 dark:text-amber-400">{t('pending')}</p>
+                                        </div>
+                                        
+                                        <Input
+                                          type="number"
+                                          value={loc.quantity || ''}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const newQty = parseInt(e.target.value) || 0;
+                                            const updatedItems = [...items];
+                                            const maxAllowed = itemRemainingQty + (loc.quantity || 0);
+                                            updatedItems[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
+                                            setItems(updatedItems);
+                                          }}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-24 h-12 text-center text-xl font-bold rounded-xl"
+                                          min="0"
+                                          placeholder="0"
+                                          data-testid={`input-qty-${locIndex}`}
+                                        />
+                                        
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveLocation(locIndex);
+                                          }}
+                                          className="h-12 w-12 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl"
+                                        >
+                                          <X className="h-6 w-6" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                    
+                                    {/* Empty state */}
+                                    {(!item.existingLocations || item.existingLocations.length === 0) && item.locations.length === 0 && (
+                                      <div className="p-6 text-center text-muted-foreground">
+                                        <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                                        <p>{t('noLocationsYet')}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* ACTION BUTTONS - Large, clear */}
+                                {item.locations.length > 0 && (
+                                  <div className="flex gap-3">
+                                    {itemRemainingQty > 0 && (
+                                      <Button
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const lastIndex = item.locations.length - 1;
+                                          const updatedItems = [...items];
+                                          updatedItems[index].locations[lastIndex].quantity = 
+                                            (updatedItems[index].locations[lastIndex].quantity || 0) + itemRemainingQty;
+                                          setItems(updatedItems);
+                                        }}
+                                        className="flex-1 h-14 rounded-xl text-base"
+                                      >
+                                        <Plus className="h-5 w-5 mr-2" />
+                                        {t('fillAll')} ({itemRemainingQty})
+                                      </Button>
+                                    )}
+                                    
+                                    {item.locations.some(loc => (loc.quantity || 0) > 0) && (
+                                      <Button
+                                        className="flex-1 h-14 bg-green-600 hover:bg-green-700 rounded-xl text-base"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
+                                          if (locationsToSave.length === 0) return;
+                                          
+                                          const savedLocations: LocationAssignment[] = [];
+                                          
+                                          for (const loc of locationsToSave) {
+                                            if (item.productId && loc.quantity > 0) {
+                                              try {
+                                                await storeLocationMutation.mutateAsync({
+                                                  productId: String(item.productId),
+                                                  locationCode: loc.locationCode,
+                                                  locationType: loc.locationType,
+                                                  quantity: loc.quantity,
+                                                  isPrimary: loc.isPrimary,
+                                                  receiptItemId: item.receiptItemId
+                                                });
+                                                savedLocations.push(loc);
+                                              } catch (error) {
+                                                console.error('Failed to save location:', error);
+                                              }
+                                            }
+                                          }
+                                          
+                                          const newlyAssignedTotal = savedLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                                          const updatedItems = [...items];
+                                          updatedItems[index].assignedQuantity += newlyAssignedTotal;
+                                          
+                                          // Move saved locations to existingLocations for persistent display
+                                          const newExisting = [...(updatedItems[index].existingLocations || [])];
+                                          savedLocations.forEach(loc => {
+                                            newExisting.push({
+                                              id: loc.id,
+                                              locationCode: loc.locationCode,
+                                              locationType: loc.locationType,
+                                              quantity: loc.quantity,
+                                              isPrimary: loc.isPrimary
+                                            });
+                                          });
+                                          updatedItems[index].existingLocations = newExisting;
+                                          
+                                          // Remove saved locations from pending
+                                          updatedItems[index].locations = updatedItems[index].locations.filter(
+                                            loc => !savedLocations.includes(loc)
+                                          );
+                                          setItems(updatedItems);
+                                          
+                                          // Auto-focus input for next location
+                                          setTimeout(() => locationInputRef.current?.focus(), 100);
+                                          
+                                          const isFullyAssigned = updatedItems[index].assignedQuantity >= updatedItems[index].receivedQuantity;
+                                          
+                                          if (isFullyAssigned) {
+                                            if (index < items.length - 1) {
+                                              setSelectedItemIndex(index + 1);
+                                            }
+                                            await soundEffects.playCompletionSound();
+                                          } else {
+                                            await soundEffects.playSuccessBeep();
+                                          }
+                                        }}
+                                        disabled={storeLocationMutation.isPending}
+                                      >
+                                        {storeLocationMutation.isPending ? (
+                                          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                        ) : (
+                                          <Check className="h-6 w-6 mr-2" />
+                                        )}
+                                        {t('saveLocations')}
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Product Details - Compact link */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setShowProductDetails(true);
                                   }}
-                                  className="w-full py-2 text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-2"
+                                  className="w-full py-3 text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                   data-testid="button-item-details"
                                 >
                                   <Eye className="h-4 w-4" />

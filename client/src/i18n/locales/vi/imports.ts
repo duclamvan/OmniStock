@@ -1548,6 +1548,8 @@ const imports = {
   addLocation: 'Thêm vị trí',
   startCamera: 'Bật Camera',
   stopCamera: 'Tắt Camera',
+  stored: 'đã lưu',
+  noLocationsYet: 'Chưa có vị trí nào',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'TRỌNG LƯỢNG',

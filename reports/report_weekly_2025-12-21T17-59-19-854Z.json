@@ -1,0 +1,41 @@
+{
+  "period": "weekly",
+  "startDate": "2025-12-14T00:00:00.000Z",
+  "endDate": "2025-12-21T23:59:59.999Z",
+  "generatedAt": "2025-12-21T17:59:19.854Z",
+  "summary": {
+    "totalOrders": 8,
+    "completedOrders": 0,
+    "pendingOrders": 0,
+    "cancelledOrders": 0,
+    "totalRevenue": 53961,
+    "totalItemsSold": 25,
+    "averageOrderValue": 6745.13,
+    "newCustomers": 1
+  },
+  "inventory": {
+    "totalProducts": 1,
+    "lowStockProducts": 0,
+    "outOfStockProducts": 1,
+    "stockAdjustments": 0,
+    "itemsReceived": 60
+  },
+  "topProducts": [
+    {
+      "id": "bcabfea8-4cae-4f08-84bf-6b623afc9a29",
+      "name": "Acrylic Powder 660g - Natural Pink",
+      "quantity": 21,
+      "revenue": 6728,
+      "quantitySold": 21
+    }
+  ],
+  "topCustomers": [],
+  "financials": {
+    "totalExpenses": 248000,
+    "grossProfit": -194039,
+    "expensesByCategory": {
+      "Rent": 200000,
+      "Salary": 48000
+    }
+  }
+}

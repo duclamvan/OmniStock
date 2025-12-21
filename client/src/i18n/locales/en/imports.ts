@@ -1530,6 +1530,8 @@ const imports = {
   addLocation: 'Add Location',
   startCamera: 'Start Camera',
   stopCamera: 'Stop Camera',
+  stored: 'stored',
+  noLocationsYet: 'No locations added yet',
   
   // ItemsToStore & StoreItems - Allocation Methods
   weightLabel: 'WEIGHT',
