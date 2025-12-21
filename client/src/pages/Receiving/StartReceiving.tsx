@@ -3089,7 +3089,8 @@ export default function StartReceiving() {
                 if (completedShipmentId) {
                   sessionStorage.setItem('autoSelectShipmentId', completedShipmentId.toString());
                 }
-                navigate('/storage', { replace: true });
+                // Navigate to receiving page with storage tab
+                navigate('/receiving?tab=storage', { replace: true });
               }}
               className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700"
               data-testid="button-go-to-storage"

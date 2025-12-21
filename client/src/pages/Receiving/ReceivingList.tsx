@@ -4196,15 +4196,33 @@ function EmptyState({ icon: Icon, title, description, action }: {
 
 export default function ReceivingList() {
   const { t } = useTranslation(['imports']);
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("to-receive");
+  
+  // Parse URL parameters for tab selection
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabFromUrl = urlParams.get('tab');
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    // Check for tab parameter in URL
+    if (tabFromUrl && ['to-receive', 'receiving', 'storage', 'completed', 'archived'].includes(tabFromUrl)) {
+      return tabFromUrl;
+    }
+    return "to-receive";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
   const [unmatchedBarcode, setUnmatchedBarcode] = useState("");
   const [filter, setFilter] = useState("all");
+  
+  // Update tab when URL parameter changes
+  useEffect(() => {
+    if (tabFromUrl && ['to-receive', 'receiving', 'storage', 'completed', 'archived'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
   
   // Ref for tabs container to enable auto-centering
   const tabsListRef = useRef<HTMLDivElement>(null);
