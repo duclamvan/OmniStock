@@ -8029,7 +8029,7 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
     }
     
     // Get all receipt items to validate they are processed
-    const receiptItemsList = await db
+    let receiptItemsList = await db
       .select()
       .from(receiptItems)
       .where(eq(receiptItems.receiptId, receiptId));
@@ -8066,16 +8066,28 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
       return 'pending';
     };
     
-    // Check if all items have been processed (not pending)
+    // Auto-complete any pending items by setting receivedQuantity = expectedQuantity
     const pendingItems = receiptItemsList.filter(item => 
       getItemStatus(item) === 'pending'
     );
     
     if (pendingItems.length > 0) {
-      return res.status(400).json({ 
-        message: `Cannot complete receiving: ${pendingItems.length} items are still pending`,
-        pendingCount: pendingItems.length
-      });
+      // Auto-mark pending items as fully received
+      for (const item of pendingItems) {
+        await db
+          .update(receiptItems)
+          .set({
+            receivedQuantity: item.expectedQuantity || 0,
+            status: 'ok',
+            updatedAt: new Date()
+          })
+          .where(eq(receiptItems.id, item.id));
+      }
+      // Refresh the items list after auto-completing
+      receiptItemsList = await db
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, receiptId));
     }
     
     // Calculate statistics for the receipt

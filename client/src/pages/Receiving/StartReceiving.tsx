@@ -2884,7 +2884,6 @@ export default function StartReceiving() {
               onClick={handleSubmit}
               disabled={
                 completeReceivingMutation.isPending || 
-                receivingItems.some(item => item.status === 'pending') ||
                 receivingItems.length === 0
               }
               className="w-full sm:flex-1 h-12"
