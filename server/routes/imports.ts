@@ -8021,11 +8021,15 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Check if shipment is in receiving status
+    // If shipment is not in receiving status, set it now (auto-start receiving)
     if (shipment.receivingStatus !== 'receiving') {
-      return res.status(400).json({ 
-        message: "Shipment is not in receiving status" 
-      });
+      await db
+        .update(shipments)
+        .set({ 
+          receivingStatus: 'receiving',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, shipment.id));
     }
     
     // Get all receipt items to validate they are processed

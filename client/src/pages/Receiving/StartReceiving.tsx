@@ -1534,33 +1534,11 @@ export default function StartReceiving() {
       return;
     }
     
-    // Check if shipment is in receiving status
-    if (shipment?.receivingStatus !== 'receiving') {
-      toast({
-        title: t('cannotComplete'),
-        description: t('shipmentNotInReceivingStatus', { status: shipment?.receivingStatus || 'none' }),
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if all items have been processed
-    const pendingItems = receivingItems.filter(item => item.status === 'pending');
-    
-    if (pendingItems.length > 0) {
-      toast({
-        title: t('incompleteItems'),
-        description: t('pleaseProcessAllItemsBeforeCompleting', { count: pendingItems.length }),
-        variant: "destructive"
-      });
-      return;
-    }
-    
     // Ensure receipt exists before completing
     const receiptId = receipt?.receipt?.id || receipt?.id;
     if (!receiptId) {
       // Create receipt first with current data
-      const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
+      await apiRequest('POST', '/api/imports/receipts/auto-save', {
         shipmentId: shipment?.id,
         consolidationId: shipment?.consolidationId,
         receivedBy,
@@ -1577,11 +1555,11 @@ export default function StartReceiving() {
           notes: item.notes
         }))
       });
-      // Refetch receipt data
+      // Refetch receipt data to get the new receipt ID
       await queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     }
     
-    // Show confirmation dialog
+    // Show confirmation dialog - backend will auto-complete any pending items
     setShowCompleteDialog(true);
   };
   
