@@ -2717,7 +2717,7 @@ export default function StartReceiving() {
                   className="hidden"
                 />
                 <span className="text-sm text-muted-foreground">
-                  Upload photos of the shipment, damage, or any issues
+                  Take a photo of each product in hand with good lighting
                 </span>
               </div>
 
@@ -2840,11 +2840,11 @@ export default function StartReceiving() {
               {uploadedPhotos.length === 0 && !photosLoading && (
                 <div className="flex flex-col items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
                   <Camera className="h-12 w-12 text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">
                     No photos uploaded yet
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-1">
-                    Click "Add Photos" to upload images of the shipment
+                    Take a photo of each product in hand with good lighting
                   </p>
                 </div>
               )}
