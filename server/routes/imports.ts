@@ -9858,23 +9858,16 @@ router.post('/receipts/:id/store-items', async (req, res) => {
           }
         }
         
+        // Calculate total assigned quantity across all locations for this item
+        const totalAssignedForItem = (itemLocations || []).reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+        const allLocationCodes = (itemLocations || []).map((loc: any) => loc.locationCode).join(',');
+        
         // Process each location for this item
         for (const loc of (itemLocations || [])) {
           const { locationCode, locationType, quantity, isPrimary, notes } = loc;
           
           // Create the receipt item tracking tag with quantity
           const receiptItemTag = `RI:${receiptItemId}:Q${quantity}`;
-          
-          // Update receipt item with warehouse location AND track assigned quantity
-          await tx
-            .update(receiptItems)
-            .set({
-              warehouseLocation: locationCode,
-              assignedQuantity: quantity,
-              storageInstructions: notes,
-              updatedAt: new Date()
-            })
-            .where(eq(receiptItems.id, receiptItemId));
           
           // If product exists, update or create product location
           if (productId) {
@@ -9953,6 +9946,19 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               .where(eq(products.id, productId));
           }
         }
+        
+        // Update receipt item with TOTAL assigned quantity and all location codes
+        // This ensures assignedQuantity reflects sum of all locations, not just the last one
+        if (totalAssignedForItem > 0) {
+          await tx
+            .update(receiptItems)
+            .set({
+              warehouseLocation: allLocationCodes,
+              assignedQuantity: totalAssignedForItem,
+              updatedAt: new Date()
+            })
+            .where(eq(receiptItems.id, receiptItemId));
+        }
       }
       
       // Update receipt status to stored if all items have been stored
@@ -10018,11 +10024,15 @@ router.post('/receipts/:id/store-items', async (req, res) => {
           .where(eq(receiptItems.receiptId, receiptId));
         
         // Aggregate quantities by productId to handle duplicates
+        // IMPORTANT: Use assignedQuantity (what was stored in locations) instead of receivedQuantity
+        // This ensures products.quantity matches sum(productLocations.quantity)
         const productQuantities = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
         
         for (const item of allReceiptItems) {
-          // Skip items with no received quantity
-          if (!item.receivedQuantity || item.receivedQuantity <= 0) continue;
+          // Skip items with no assigned quantity (not stored in any location)
+          // Use assignedQuantity first, fall back to receivedQuantity for backwards compatibility
+          const quantityToAdd = item.assignedQuantity || item.receivedQuantity || 0;
+          if (quantityToAdd <= 0) continue;
           
           // Resolve productId from receipt item or via SKU lookup
           let productId = item.productId;
@@ -10073,11 +10083,11 @@ router.post('/receipts/:id/store-items', async (req, res) => {
           
           const existing = productQuantities.get(productId);
           if (existing) {
-            existing.quantity += item.receivedQuantity;
+            existing.quantity += quantityToAdd;
             existing.items.push(item);
           } else {
             productQuantities.set(productId, {
-              quantity: item.receivedQuantity,
+              quantity: quantityToAdd,
               items: [item]
             });
           }
