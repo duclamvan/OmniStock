@@ -4241,7 +4241,7 @@ router.get("/shipments/receivable", async (req, res) => {
       existingReceipts = await db
         .select()
         .from(receipts)
-        .where(sql`${receipts.shipmentId} = ANY(ARRAY[${sql.raw(shipmentIds.join(','))}]::int[])`);
+        .where(sql`${receipts.shipmentId} = ANY(ARRAY[${sql.raw(shipmentIds.map(id => `'${id}'`).join(','))}]::text[])`);
     }
 
     // Map receipts by shipment ID

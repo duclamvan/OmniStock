@@ -134,7 +134,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   let allOrderItems: any[] = [];
   if (orderIds.length > 0) {
     allOrderItems = await db.select().from(orderItems)
-      .where(sql`${orderItems.orderId} = ANY(ARRAY[${sql.raw(orderIds.join(','))}]::int[])`);
+      .where(sql`${orderItems.orderId} = ANY(ARRAY[${sql.raw(orderIds.map(id => `'${id}'`).join(','))}]::text[])`);
   }
   
   const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
@@ -183,7 +183,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   if (periodReceipts.length > 0) {
     const receiptIds = periodReceipts.map(r => r.id);
     const receivedItems = await db.select().from(receiptItems)
-      .where(sql`${receiptItems.receiptId} = ANY(ARRAY[${sql.raw(receiptIds.join(','))}]::int[])`);
+      .where(sql`${receiptItems.receiptId} = ANY(ARRAY[${sql.raw(receiptIds.map(id => `'${id}'`).join(','))}]::text[])`);
     itemsReceived = receivedItems.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0);
   }
   
