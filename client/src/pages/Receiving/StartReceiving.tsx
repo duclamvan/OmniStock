@@ -2910,7 +2910,7 @@ export default function StartReceiving() {
             <AlertDialogTitle>Complete Receiving Process?</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <div>
-                This action will complete the receiving process and move the shipment to pending approval.
+                This action will complete the receiving process and move the shipment to storage.
               </div>
               
               {(() => {
@@ -3031,7 +3031,7 @@ export default function StartReceiving() {
               })()}
               
               <div className="text-sm text-muted-foreground">
-                Once completed, this shipment will require approval before the items can be processed further.
+                Once completed, you can proceed to assign storage locations for the items.
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

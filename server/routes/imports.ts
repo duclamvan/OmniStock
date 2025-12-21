@@ -8092,12 +8092,13 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
     const partialItems = receiptItemsList.filter(item => getItemStatus(item) === 'partial').length;
     
     // Begin transaction to update both receipt and shipment
+    // Skip approval step - go directly to storage status
     await db.transaction(async (tx) => {
-      // Update receipt status to pending_approval and set completedAt
+      // Update receipt status directly to 'verified' (skip pending_approval)
       await tx
         .update(receipts)
         .set({
-          status: 'pending_approval',
+          status: 'verified',
           // Store completion timestamp in trackingNumbers JSON field
           trackingNumbers: {
             ...(receipt.trackingNumbers as any || {}),
@@ -8114,11 +8115,11 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
         })
         .where(eq(receipts.id, receiptId));
       
-      // Update shipment receiving status to pending_approval
+      // Update shipment receiving status directly to 'storage' (skip pending_approval)
       await tx
         .update(shipments)
         .set({
-          receivingStatus: 'pending_approval',
+          receivingStatus: 'storage',
           updatedAt: new Date()
         })
         .where(eq(shipments.id, receipt.shipmentId));
