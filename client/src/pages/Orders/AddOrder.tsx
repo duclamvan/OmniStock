@@ -416,6 +416,8 @@ export default function AddOrder() {
   
   // Track previous carrier for smart carrier switching
   const previousCarrierRef = useRef<string | null>(null);
+  // Track if user manually edited shipping cost - prevents auto-recalculation
+  const shippingCostManuallyEditedRef = useRef<boolean>(false);
   const [barcodeScanMode, setBarcodeScanMode] = useState(false);
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
@@ -1451,6 +1453,21 @@ export default function AddOrder() {
   useEffect(() => {
     if (!watchedShippingMethod) return;
 
+    // If user manually edited shipping cost, don't auto-recalculate
+    // Only reset the flag when carrier changes (user might want new carrier's default)
+    const previousCarrier = previousCarrierRef.current;
+    const carrierChanged = previousCarrier !== watchedShippingMethod;
+    
+    // Reset manual edit flag when carrier changes so new default can be applied
+    if (carrierChanged) {
+      shippingCostManuallyEditedRef.current = false;
+    }
+    
+    // If manually edited and carrier didn't change, skip auto-calculation
+    if (shippingCostManuallyEditedRef.current && !carrierChanged) {
+      return;
+    }
+
     // Helper function to get default price for a carrier
     const getDefaultPriceForCarrier = (carrier: string): number => {
       if ((carrier === 'PPL' || carrier === 'PPL CZ') && shippingSettings?.pplDefaultShippingPrice && shippingSettings.pplDefaultShippingPrice > 0) {
@@ -1465,7 +1482,6 @@ export default function AddOrder() {
 
     const currentShippingCost = form.getValues('shippingCost') || 0;
     const newCarrierDefaultPrice = getDefaultPriceForCarrier(watchedShippingMethod);
-    const previousCarrier = previousCarrierRef.current;
 
     // Build a map of all carrier defaults to check if current price was auto-applied for any carrier
     const allCarrierDefaults: Record<string, number> = {
@@ -1505,7 +1521,7 @@ export default function AddOrder() {
     }
 
     // Update previous carrier ref even if we didn't apply a default
-    if (previousCarrier !== watchedShippingMethod) {
+    if (carrierChanged) {
       previousCarrierRef.current = watchedShippingMethod;
     }
 
@@ -2197,8 +2213,11 @@ export default function AddOrder() {
     }
   };
 
-  // Auto-fill shipping costs when packing plan updates (only when AI is enabled)
+  // Auto-fill shipping costs when packing plan updates (only when AI is enabled and not manually edited)
   useEffect(() => {
+    // Skip if user manually edited shipping cost
+    if (shippingCostManuallyEditedRef.current) return;
+    
     if (aiCartonPackingEnabled && packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
       form.setValue('shippingCost', packingPlan.estimatedShippingCost);
       form.setValue('actualShippingCost', packingPlan.estimatedShippingCost);
@@ -4181,148 +4200,146 @@ export default function AddOrder() {
                 )}
               </div>
 
-              {/* Real-time dropdown for customers */}
+              {/* Real-time dropdown for customers - Improved layout */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg bg-white dark:bg-slate-800 max-h-[350px] sm:max-h-[450px] overflow-y-auto z-50">
-                  <div className="p-1.5 sm:p-2 bg-slate-50 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-700 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 sticky top-0 z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl bg-white dark:bg-slate-800 max-h-[400px] sm:max-h-[500px] overflow-y-auto z-50">
+                  <div className="px-3 py-2 bg-slate-100 dark:bg-slate-700 border-b border-gray-200 dark:border-gray-600 text-xs text-slate-600 dark:text-slate-300 sticky top-0 z-10 font-medium">
                     {t('orders:customersFound', { count: filteredCustomers.length })}
                   </div>
                   {filteredCustomers.map((customer: any) => (
                     <div
                       key={customer.id}
-                      className="p-2 sm:p-3 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
+                      className="p-3 hover:bg-blue-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
                         setShowCustomerDropdown(false);
-                        // Set customerId in form
                         form.setValue('customerId', customer.id);
-                        // Auto-set payment status to Pay Later if customer has Pay Later badge
                         if (customer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
-                        // Auto-set currency based on customer preference or country
                         const customerCurrency = customer.preferredCurrency || 
                           (customer.country ? getCurrencyByCountry(customer.country) : null);
                         if (customerCurrency) {
                           form.setValue('currency', customerCurrency);
                         }
-                        // Auto-focus product search for fast keyboard navigation
                         setTimeout(() => {
                           productSearchRef.current?.focus();
                         }, 100);
                       }}
                     >
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs sm:text-sm font-semibold">
+                      <div className="flex items-start gap-3">
+                        {/* Avatar with country flag overlay */}
+                        <div className="relative flex-shrink-0">
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                             {customer.profilePictureUrl ? (
                               <img 
                                 src={customer.profilePictureUrl} 
                                 alt={customer.name}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                                className="w-11 h-11 rounded-full object-cover"
                               />
                             ) : (
                               customer.name?.charAt(0)?.toUpperCase() || '?'
                             )}
                           </div>
+                          {customer.country && (
+                            <span className="absolute -bottom-0.5 -right-0.5 text-sm bg-white dark:bg-slate-800 rounded-full p-0.5 shadow-sm">
+                              {getCountryFlag(customer.country)}
+                            </span>
+                          )}
                         </div>
                         
-                        {/* Main info */}
+                        {/* Customer Info - Clean 3-row layout */}
                         <div className="flex-1 min-w-0">
-                          {/* Name, flag, and badges */}
-                          <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5 sm:gap-2 flex-wrap mb-0.5 sm:mb-1">
-                            <span className="flex items-center gap-1 sm:gap-1.5">
-                              {customer.country && (
-                                <span className="text-sm sm:text-base">{getCountryFlag(customer.country)}</span>
-                              )}
-                              <span className="truncate font-semibold text-sm sm:text-base">{customer.name}</span>
+                          {/* Row 1: Name + Badges */}
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-semibold text-sm text-slate-900 dark:text-white truncate max-w-[180px]">
+                              {customer.name}
                             </span>
                             {customer.hasPayLaterBadge && (
-                              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-yellow-50 border-yellow-300 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-400">
+                              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-0">
                                 Pay Later
                               </Badge>
                             )}
                             {customer.type && customer.type !== 'regular' && (
-                              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 capitalize">
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 capitalize">
                                 {customer.type}
+                              </Badge>
+                            )}
+                            {customer.preferredCurrency && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-mono">
+                                {customer.preferredCurrency}
                               </Badge>
                             )}
                           </div>
                           
-                          {/* Two-column details - stack on mobile */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0 sm:gap-y-0.5 text-[10px] sm:text-xs">
-                            {/* Left column */}
-                            <div className="space-y-0.5">
-                              {/* Company */}
-                              {customer.company && (
-                                <div className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                                  <Building className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">{customer.company}</span>
-                                </div>
-                              )}
-                              
-                              {/* Location */}
-                              {(customer.city || customer.country) && (
-                                <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                  <MapPin className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">
-                                    {[customer.city, customer.country].filter(Boolean).join(', ')}
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {/* Phone */}
-                              {customer.phone && (
-                                <div className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                                  <Phone className="h-3 w-3 shrink-0" />
-                                  <span>{customer.phone}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Right column */}
-                            <div className="space-y-0.5">
-                              {/* Email */}
-                              {customer.email && (
-                                <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                  <Mail className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">{customer.email}</span>
-                                </div>
-                              )}
-                              
-                              {/* Facebook */}
-                              {(customer.facebookName || customer.facebookUrl) && (
-                                <div className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                  <svg className="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                  </svg>
-                                  <span className="truncate">{customer.facebookName || 'Facebook'}</span>
-                                </div>
-                              )}
-                              
-                              {/* Order stats */}
-                              {customer.totalOrders > 0 && (
-                                <div className="text-green-600 dark:text-green-400 flex items-center gap-1 font-medium">
-                                  <Package className="h-3 w-3 shrink-0" />
-                                  <span>{customer.totalOrders} orders</span>
-                                  {customer.totalSpent && parseFloat(customer.totalSpent) > 0 && (
-                                    <span className="text-slate-400 dark:text-slate-500">•</span>
-                                  )}
-                                  {customer.totalSpent && parseFloat(customer.totalSpent) > 0 && (
-                                    <span>{formatCurrency(parseFloat(customer.totalSpent), customer.preferredCurrency || 'EUR')}</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                          {/* Row 2: Company & Location */}
+                          <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 mb-1">
+                            {customer.company && (
+                              <span className="flex items-center gap-1">
+                                <Building className="h-3 w-3 text-slate-400" />
+                                <span className="truncate max-w-[120px]">{customer.company}</span>
+                              </span>
+                            )}
+                            {(customer.city || customer.country) && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-slate-400" />
+                                <span className="truncate max-w-[150px]">
+                                  {[customer.city, customer.country].filter(Boolean).join(', ')}
+                                </span>
+                              </span>
+                            )}
                           </div>
                           
-                          {/* Last order date */}
-                          {customer.lastOrderDate && (
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
-                              <Clock className="h-2.5 w-2.5" />
-                              Last order: {new Date(customer.lastOrderDate).toLocaleDateString('cs-CZ')}
+                          {/* Row 3: Contact info */}
+                          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                            {customer.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {customer.phone}
+                              </span>
+                            )}
+                            {customer.email && (
+                              <span className="flex items-center gap-1 truncate max-w-[160px]">
+                                <Mail className="h-3 w-3" />
+                                {customer.email}
+                              </span>
+                            )}
+                            {(customer.facebookName || customer.facebookUrl) && (
+                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                </svg>
+                                <span className="truncate max-w-[100px]">{customer.facebookName || 'Facebook'}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Right side: Order Stats */}
+                        <div className="flex-shrink-0 text-right min-w-[70px]">
+                          {customer.totalOrders > 0 ? (
+                            <div className="space-y-0.5">
+                              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                {customer.totalOrders}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                orders
+                              </div>
+                              {customer.totalSpent && parseFloat(customer.totalSpent) > 0 && (
+                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                  {formatCurrency(parseFloat(customer.totalSpent), customer.preferredCurrency || 'EUR')}
+                                </div>
+                              )}
+                              {customer.lastOrderDate && (
+                                <div className="text-[10px] text-slate-400">
+                                  {new Date(customer.lastOrderDate).toLocaleDateString('cs-CZ')}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 dark:text-slate-500 italic">
+                              New
                             </div>
                           )}
                         </div>
@@ -6533,6 +6550,12 @@ export default function AddOrder() {
                   type="number"
                   step="0.01"
                   {...form.register('shippingCost', { valueAsNumber: true })}
+                  onChange={(e) => {
+                    // Mark as manually edited to prevent auto-recalculation
+                    shippingCostManuallyEditedRef.current = true;
+                    // Trigger form update
+                    form.setValue('shippingCost', parseFloat(e.target.value) || 0);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === 'Tab') {
                       e.preventDefault();
@@ -6553,7 +6576,10 @@ export default function AddOrder() {
                         variant="outline"
                         size="sm"
                         className="h-7 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs min-w-[44px]"
-                        onClick={() => form.setValue('shippingCost', amount)}
+                        onClick={() => {
+                          shippingCostManuallyEditedRef.current = true;
+                          form.setValue('shippingCost', amount);
+                        }}
                       >
                         {amount} CZK
                       </Button>
@@ -6565,7 +6591,10 @@ export default function AddOrder() {
                         variant="outline"
                         size="sm"
                         className="h-7 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs min-w-[44px]"
-                        onClick={() => form.setValue('shippingCost', amount)}
+                        onClick={() => {
+                          shippingCostManuallyEditedRef.current = true;
+                          form.setValue('shippingCost', amount);
+                        }}
                       >
                         {amount} EUR
                       </Button>
