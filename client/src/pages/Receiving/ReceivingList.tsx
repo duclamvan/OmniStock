@@ -68,8 +68,7 @@ import {
   XCircle,
   Image as ImageIcon,
   ClipboardList,
-  Barcode,
-  RotateCcw
+  Barcode
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -1620,7 +1619,6 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
                     }}
                     disabled={moveToReceiveMutation.isPending}
                   >
-                    <RotateCcw className="h-4 w-4 mr-2" />
                     {t('moveBackToReceive')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
