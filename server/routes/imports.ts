@@ -7422,33 +7422,70 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       consolidationItem: ri.itemType === 'consolidation' ? consolidationItemsMap[ri.itemId] || null : null
     }));
     
-    // Collect all product IDs from receipt items, purchase items, AND consolidation items' underlying purchase items
+    // Collect all product IDs from receipt items AND all SKUs for fallback lookup
     const productIds: string[] = [];
+    const skusToLookup: string[] = [];
+    
     receiptItemsWithDetails.forEach(row => {
-      // Priority 1: Receipt item's own productId
+      // Collect product IDs where available
       if (row.receiptItem.productId) {
         productIds.push(row.receiptItem.productId as string);
       }
-      // Priority 2: Purchase item's productId
-      if (row.purchaseItem?.productId) {
-        productIds.push(row.purchaseItem.productId as string);
+      
+      // Also collect SKUs from receipt items and purchase items for fallback lookup
+      // (purchase_items table doesn't have productId column, only SKU)
+      if (row.receiptItem.sku) {
+        skusToLookup.push(row.receiptItem.sku);
       }
-      // Priority 3: For consolidation items, get productId from underlying purchase item
+      if (row.purchaseItem?.sku) {
+        skusToLookup.push(row.purchaseItem.sku);
+      }
+      // For consolidation items, get SKU from underlying purchase item
       if (row.consolidationItem?.itemType === 'purchase') {
         const underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
-        if (underlyingPurchaseItem?.productId) {
-          productIds.push(underlyingPurchaseItem.productId as string);
+        if (underlyingPurchaseItem?.sku) {
+          skusToLookup.push(underlyingPurchaseItem.sku);
         }
       }
     });
     
     // Remove duplicates
     const uniqueProductIds = [...new Set(productIds)];
+    const uniqueSkus = [...new Set(skusToLookup.filter(s => s))];
     
     // Fetch product details and locations in parallel if we have product IDs
     let productsMap: Record<string, any> = {};
+    let productsBySkuMap: Record<string, any> = {};
     let locationsMap: Record<string, any[]> = {};
     
+    // First, look up products by SKU to get product IDs for items without direct productId
+    if (uniqueSkus.length > 0) {
+      const productsBySku = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          sku: products.sku,
+          imageUrl: products.imageUrl,
+          categoryId: products.categoryId
+        })
+        .from(products)
+        .where(inArray(products.sku, uniqueSkus));
+      
+      // Build SKU-to-product map and add to productsMap
+      productsBySku.forEach(p => { 
+        if (p.sku) {
+          productsBySkuMap[p.sku] = p;
+          // Also add to productsMap by ID for later lookup
+          productsMap[p.id] = p;
+          // Add to productIds for location lookup
+          if (!uniqueProductIds.includes(p.id)) {
+            uniqueProductIds.push(p.id);
+          }
+        }
+      });
+    }
+    
+    // Now fetch products by ID and locations
     if (uniqueProductIds.length > 0) {
       const [productsData, locationsData] = await Promise.all([
         db.select({
@@ -7474,7 +7511,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         .where(inArray(productLocations.productId, uniqueProductIds))
       ]);
       
-      // Build lookup maps
+      // Build lookup maps (merge with existing from SKU lookup)
       productsData.forEach(p => { productsMap[p.id] = p; });
       locationsData.forEach(loc => {
         if (!locationsMap[loc.productId]) {
@@ -7493,28 +7530,52 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     
     // Transform the results to match the expected format with product names and locations
     const itemsWithDetails = receiptItemsWithDetails.map(row => {
-      // Get productId - FIRST check receipt item's own productId field (authoritative), 
-      // then fallback to purchase item or consolidation item's underlying purchase item
+      // Get productId using multiple fallback strategies:
+      // 1. Receipt item's own productId (most authoritative)
+      // 2. Look up by receipt item's SKU
+      // 3. Look up by purchase item's SKU
+      // 4. Look up by consolidation item's underlying purchase item's SKU
       let productId: string | null = null;
       let underlyingPurchaseItem: any = null;
+      let product: any = null;
       
       // Priority 1: Receipt item's own productId (most authoritative)
       if (row.receiptItem.productId) {
         productId = row.receiptItem.productId as string;
+        product = productsMap[productId] || null;
       }
-      // Priority 2: Direct purchase item's productId
-      else if (row.purchaseItem?.productId) {
-        productId = row.purchaseItem.productId as string;
-      } 
-      // Priority 3: Consolidation item's underlying purchase item
-      else if (row.consolidationItem?.itemType === 'purchase') {
-        underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
-        if (underlyingPurchaseItem?.productId) {
-          productId = underlyingPurchaseItem.productId as string;
+      
+      // Priority 2: Look up by receipt item's SKU
+      if (!productId && row.receiptItem.sku) {
+        product = productsBySkuMap[row.receiptItem.sku];
+        if (product) {
+          productId = product.id;
         }
       }
       
-      const product = productId ? productsMap[productId] : null;
+      // Priority 3: Look up by purchase item's SKU
+      if (!productId && row.purchaseItem?.sku) {
+        product = productsBySkuMap[row.purchaseItem.sku];
+        if (product) {
+          productId = product.id;
+        }
+      }
+      
+      // Priority 4: Consolidation item's underlying purchase item's SKU
+      if (!productId && row.consolidationItem?.itemType === 'purchase') {
+        underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
+        if (underlyingPurchaseItem?.sku) {
+          product = productsBySkuMap[underlyingPurchaseItem.sku];
+          if (product) {
+            productId = product.id;
+          }
+        }
+      }
+      
+      // Final fallback - get product from map if we have productId but no product yet
+      if (productId && !product) {
+        product = productsMap[productId] || null;
+      }
       
       // Prefer product name from products table, fallback to purchase/custom/consolidation item name
       const productName = product?.name || underlyingPurchaseItem?.name || row.purchaseItem?.name || row.customItem?.name || 'Unknown Item';
