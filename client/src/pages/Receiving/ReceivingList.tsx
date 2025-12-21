@@ -2916,10 +2916,12 @@ function QuickStorageSheet({
                                                   isPrimary: loc.isPrimary,
                                                   receiptItemId: item.receiptItemId
                                                 });
+                                                // Parse JSON from response (apiRequest returns raw Response)
+                                                const data = await (response as Response).json();
                                                 // Capture database ID and server's total quantity from response
-                                                const dbId = (response as any)?.id || loc.id;
+                                                const dbId = data?.id || loc.id;
                                                 // Server returns the NEW TOTAL after adding, use it to avoid double-count
-                                                const serverQty = (response as any)?.quantity ?? loc.quantity;
+                                                const serverQty = data?.quantity ?? loc.quantity;
                                                 savedLocationsWithDbId.push({ loc, dbId, serverQty });
                                               } catch (error) {
                                                 console.error('Failed to save location:', error);
