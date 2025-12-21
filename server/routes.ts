@@ -17289,12 +17289,16 @@ Important rules:
       
       const receiptIds = shipmentReceipts.map(r => r.id);
       
-      // Step 2: Get all receipt items with productId and receivedQuantity
+      // Step 2: Get all receipt items with productId, receivedQuantity, AND itemId/itemType/sku for fallback lookups
       const allReceiptItems = await db
         .select({
           id: receiptItems.id,
           productId: receiptItems.productId,
-          receivedQuantity: receiptItems.receivedQuantity
+          receivedQuantity: receiptItems.receivedQuantity,
+          assignedQuantity: receiptItems.assignedQuantity,
+          itemId: receiptItems.itemId,
+          itemType: receiptItems.itemType,
+          sku: receiptItems.sku
         })
         .from(receiptItems)
         .where(inArray(receiptItems.receiptId, receiptIds));
@@ -17305,27 +17309,103 @@ Important rules:
       }
       
       // Step 3: AGGREGATE quantities by productId to avoid duplicate updates
-      const productQuantityMap = new Map<string, number>();
+      // IMPORTANT: Try to resolve productId from linked purchase/custom items if NULL
+      const productQuantityMap = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
+      
       for (const item of allReceiptItems) {
-        if (!item.productId) {
-          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - no productId`);
+        // Use assignedQuantity first (what was stored in locations), fall back to receivedQuantity
+        const qty = item.assignedQuantity || item.receivedQuantity || 0;
+        if (qty <= 0) continue;
+        
+        // Try to resolve productId from receipt item or via SKU lookup
+        let resolvedProductId = item.productId;
+        
+        // If productId is NULL, try to resolve via sku field
+        if (!resolvedProductId && item.sku) {
+          const [productBySku] = await db
+            .select({ id: products.id })
+            .from(products)
+            .where(eq(products.sku, item.sku));
+          if (productBySku) {
+            resolvedProductId = productBySku.id;
+            console.log(`[addInventoryOnCompletion] Resolved productId ${resolvedProductId} from receipt item SKU ${item.sku}`);
+          }
+        }
+        
+        // If still no productId, try to find via original purchase/custom item's SKU
+        if (!resolvedProductId && item.itemId) {
+          let originalItemSku: string | null = null;
+          let originalItemPurchaseId: string | null = null;
+          
+          if (item.itemType === 'purchase') {
+            const [purchaseItem] = await db
+              .select({ sku: purchaseItems.sku, purchaseId: purchaseItems.purchaseId })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, item.itemId));
+            if (purchaseItem) {
+              originalItemSku = purchaseItem.sku;
+              originalItemPurchaseId = purchaseItem.purchaseId;
+            }
+          } else if (item.itemType === 'custom') {
+            const [customItem] = await db
+              .select({ orderItems: customItems.orderItems })
+              .from(customItems)
+              .where(eq(customItems.id, item.itemId));
+            if (customItem?.orderItems) {
+              try {
+                const orderItems = typeof customItem.orderItems === 'string' 
+                  ? JSON.parse(customItem.orderItems) 
+                  : customItem.orderItems;
+                if (Array.isArray(orderItems) && orderItems[0]?.sku) {
+                  originalItemSku = orderItems[0].sku;
+                }
+              } catch (e) { /* ignore parse errors */ }
+            }
+          }
+          
+          if (originalItemSku) {
+            const [productBySku] = await db
+              .select({ id: products.id })
+              .from(products)
+              .where(eq(products.sku, originalItemSku));
+            if (productBySku) {
+              resolvedProductId = productBySku.id;
+              console.log(`[addInventoryOnCompletion] Resolved productId ${resolvedProductId} from original item SKU ${originalItemSku}`);
+              
+              // Also update the receipt item with the resolved productId and sku for future lookups
+              await db
+                .update(receiptItems)
+                .set({ productId: resolvedProductId, sku: originalItemSku, updatedAt: new Date() })
+                .where(eq(receiptItems.id, item.id));
+            }
+          }
+        }
+        
+        if (!resolvedProductId) {
+          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - could not resolve productId`);
           continue;
         }
-        const qty = item.receivedQuantity || 0;
-        if (qty > 0) {
-          const existingQty = productQuantityMap.get(item.productId) || 0;
-          productQuantityMap.set(item.productId, existingQty + qty);
+        
+        const existing = productQuantityMap.get(resolvedProductId);
+        if (existing) {
+          existing.quantity += qty;
+          existing.items.push(item);
+        } else {
+          productQuantityMap.set(resolvedProductId, { quantity: qty, items: [item] });
         }
       }
       
       console.log(`[addInventoryOnCompletion] Aggregated ${productQuantityMap.size} unique products from ${allReceiptItems.length} receipt items`);
       
-      // Step 4: Update each product's inventory ONCE with aggregated quantity
-      for (const [productId, quantityToAdd] of productQuantityMap.entries()) {
+      // Step 4: Update each product's inventory AND import costs with aggregated data
+      for (const [productId, data] of productQuantityMap.entries()) {
         try {
-          // Get current product quantity
+          const quantityToAdd = data.quantity;
+          const firstItem = data.items[0];
+          
+          // Get current product with all cost fields
           const [product] = await db
-            .select({ id: products.id, quantity: products.quantity, sku: products.sku })
+            .select()
             .from(products)
             .where(eq(products.id, productId));
           
@@ -17334,20 +17414,189 @@ Important rules:
             continue;
           }
           
-          // Add aggregated receivedQuantity to product's main stock quantity
+          // Add aggregated quantity to product's main stock quantity
           const currentStock = product.quantity || 0;
           const newStock = currentStock + quantityToAdd;
           
+          // Get unit cost from original purchase/custom item for import cost calculation
+          let unitCost = 0;
+          let purchaseCurrency = 'USD';
+          
+          if (firstItem.itemId && firstItem.itemType === 'purchase') {
+            const [purchaseItem] = await db
+              .select({ unitPrice: purchaseItems.unitPrice, purchaseId: purchaseItems.purchaseId })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, firstItem.itemId));
+            
+            if (purchaseItem) {
+              unitCost = parseFloat(purchaseItem.unitPrice || '0');
+              
+              // Get purchase currency
+              if (purchaseItem.purchaseId) {
+                const [purchase] = await db
+                  .select({ purchaseCurrency: importPurchases.purchaseCurrency, paymentCurrency: importPurchases.paymentCurrency })
+                  .from(importPurchases)
+                  .where(eq(importPurchases.id, purchaseItem.purchaseId));
+                if (purchase) {
+                  purchaseCurrency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+                }
+              }
+            }
+          } else if (firstItem.itemId && firstItem.itemType === 'custom') {
+            // Get custom item cost from orderItems JSON
+            // Note: orderItems may use snake_case (unit_price) or camelCase (unitPrice)
+            const [customItem] = await db
+              .select({ orderItems: customItems.orderItems })
+              .from(customItems)
+              .where(eq(customItems.id, firstItem.itemId));
+            
+            if (customItem?.orderItems) {
+              try {
+                const orderItems = typeof customItem.orderItems === 'string' 
+                  ? JSON.parse(customItem.orderItems) 
+                  : customItem.orderItems;
+                if (Array.isArray(orderItems) && orderItems.length > 0) {
+                  const firstOrderItem = orderItems[0];
+                  // Support both snake_case and camelCase keys
+                  const itemPrice = firstOrderItem.unit_price || firstOrderItem.unitPrice || firstOrderItem.price || '0';
+                  unitCost = parseFloat(String(itemPrice));
+                  // Get currency from item if available, default to CZK
+                  purchaseCurrency = firstOrderItem.currency || firstOrderItem.price_currency || 'CZK';
+                }
+              } catch (e) { 
+                console.error(`[addInventoryOnCompletion] Error parsing custom item orderItems:`, e);
+              }
+            }
+          }
+          
+          // If no unit cost could be determined, still add quantity but log warning for finance review
+          if (unitCost <= 0) {
+            console.warn(`[addInventoryOnCompletion] WARNING: No unit cost found for product ${productId} (${product.sku}), item: ${firstItem.itemId}, type: ${firstItem.itemType}. Adding quantity without cost update - FINANCE REVIEW REQUIRED.`);
+            
+            // Add quantity but preserve existing costs (don't wipe them)
+            await db
+              .update(products)
+              .set({ 
+                quantity: newStock,
+                updatedAt: new Date()
+              })
+              .where(eq(products.id, productId));
+            
+            inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock}) [NO COST DATA - REVIEW REQUIRED]`);
+            console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock}), existing costs preserved due to missing pricing data`);
+            continue;
+          }
+          
+          // Calculate weighted average import costs for all currencies
+          const oldQuantity = currentStock;
+          const newQuantity = quantityToAdd;
+          const totalQuantity = oldQuantity + newQuantity;
+          
+          // Current product import costs
+          const oldCostUsd = parseFloat(product.importCostUsd || '0');
+          const oldCostCzk = parseFloat(product.importCostCzk || '0');
+          const oldCostEur = parseFloat(product.importCostEur || '0');
+          const oldCostVnd = parseFloat(product.importCostVnd || '0');
+          const oldCostCny = parseFloat(product.importCostCny || '0');
+          
+          // Exchange rates for conversion (approximate rates)
+          const eurToUsd = 1.1;
+          const eurToCzk = 25;
+          const eurToVnd = 27000;
+          const eurToCny = 7.5;
+          const usdToEur = 1 / eurToUsd;
+          const usdToCzk = eurToCzk / eurToUsd;
+          const usdToVnd = eurToVnd / eurToUsd;
+          const usdToCny = eurToCny / eurToUsd;
+          
+          // Convert new unit cost to all currencies based on purchase currency
+          let newCostUsd = 0, newCostCzk = 0, newCostEur = 0, newCostVnd = 0, newCostCny = 0;
+          
+          if (purchaseCurrency === 'CZK') {
+            newCostCzk = unitCost;
+            newCostUsd = unitCost / eurToCzk * eurToUsd;
+            newCostEur = unitCost / eurToCzk;
+            newCostVnd = unitCost / eurToCzk * eurToVnd;
+            newCostCny = unitCost / eurToCzk * eurToCny;
+          } else if (purchaseCurrency === 'EUR') {
+            newCostEur = unitCost;
+            newCostUsd = unitCost * eurToUsd;
+            newCostCzk = unitCost * eurToCzk;
+            newCostVnd = unitCost * eurToVnd;
+            newCostCny = unitCost * eurToCny;
+          } else if (purchaseCurrency === 'VND') {
+            newCostVnd = unitCost;
+            newCostUsd = unitCost / eurToVnd * eurToUsd;
+            newCostEur = unitCost / eurToVnd;
+            newCostCzk = unitCost / eurToVnd * eurToCzk;
+            newCostCny = unitCost / eurToVnd * eurToCny;
+          } else if (purchaseCurrency === 'CNY') {
+            newCostCny = unitCost;
+            newCostUsd = unitCost / eurToCny * eurToUsd;
+            newCostEur = unitCost / eurToCny;
+            newCostCzk = unitCost / eurToCny * eurToCzk;
+            newCostVnd = unitCost / eurToCny * eurToVnd;
+          } else {
+            // Default: USD
+            newCostUsd = unitCost;
+            newCostEur = unitCost * usdToEur;
+            newCostCzk = unitCost * usdToCzk;
+            newCostVnd = unitCost * usdToVnd;
+            newCostCny = unitCost * usdToCny;
+          }
+          
+          // Derive old costs from any available currency if some are missing
+          let derivedOldUsd = oldCostUsd, derivedOldCzk = oldCostCzk, derivedOldEur = oldCostEur;
+          let derivedOldVnd = oldCostVnd, derivedOldCny = oldCostCny;
+          
+          if (oldCostUsd > 0 && oldCostCzk === 0) derivedOldCzk = oldCostUsd * usdToCzk;
+          if (oldCostUsd > 0 && oldCostEur === 0) derivedOldEur = oldCostUsd * usdToEur;
+          if (oldCostUsd > 0 && oldCostVnd === 0) derivedOldVnd = oldCostUsd * usdToVnd;
+          if (oldCostUsd > 0 && oldCostCny === 0) derivedOldCny = oldCostUsd * usdToCny;
+          if (oldCostEur > 0 && oldCostUsd === 0) derivedOldUsd = oldCostEur * eurToUsd;
+          if (oldCostCzk > 0 && oldCostUsd === 0) derivedOldUsd = oldCostCzk / eurToCzk * eurToUsd;
+          
+          // Calculate weighted averages for all currencies
+          const avgCostUsd = totalQuantity > 0 
+            ? ((oldQuantity * derivedOldUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+            : newCostUsd;
+          const avgCostCzk = totalQuantity > 0 
+            ? ((oldQuantity * derivedOldCzk) + (newQuantity * newCostCzk)) / totalQuantity 
+            : newCostCzk;
+          const avgCostEur = totalQuantity > 0 
+            ? ((oldQuantity * derivedOldEur) + (newQuantity * newCostEur)) / totalQuantity 
+            : newCostEur;
+          const avgCostVnd = totalQuantity > 0 
+            ? ((oldQuantity * derivedOldVnd) + (newQuantity * newCostVnd)) / totalQuantity 
+            : newCostVnd;
+          const avgCostCny = totalQuantity > 0 
+            ? ((oldQuantity * derivedOldCny) + (newQuantity * newCostCny)) / totalQuantity 
+            : newCostCny;
+          
+          // Update product with new quantity AND import costs
           await db
             .update(products)
             .set({ 
               quantity: newStock,
+              importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+              importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+              importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+              importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
               updatedAt: new Date()
             })
             .where(eq(products.id, productId));
           
-          inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock})`);
-          console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock})`);
+          // Record cost history
+          await db.insert(productCostHistory).values({
+            productId: productId,
+            landingCostUnitBase: avgCostUsd > 0 ? avgCostUsd.toFixed(4) : '0',
+            method: 'weighted_average',
+            computedAt: new Date()
+          });
+          
+          inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock}), costs updated`);
+          console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock}), import costs: USD=${avgCostUsd.toFixed(2)} CZK=${avgCostCzk.toFixed(2)} EUR=${avgCostEur.toFixed(2)}`);
           
         } catch (itemError) {
           console.error(`[addInventoryOnCompletion] Error updating inventory for product ${productId}:`, itemError);
