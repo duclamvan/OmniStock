@@ -200,7 +200,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   }
   
   const topProducts = Object.entries(productSales)
-    .map(([id, data]) => ({ id: parseInt(id) || 0, ...data, quantitySold: data.quantity }))
+    .map(([id, data]) => ({ id, ...data, quantitySold: data.quantity }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
   
@@ -223,7 +223,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   }
   
   const topCustomers = Object.entries(customerOrders)
-    .map(([id, data]) => ({ id: parseInt(id) || 0, ...data }))
+    .map(([id, data]) => ({ id, ...data }))
     .sort((a, b) => b.totalSpent - a.totalSpent)
     .slice(0, 10);
   

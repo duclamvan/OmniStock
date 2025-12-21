@@ -132,7 +132,7 @@ export default function EditWarehouse() {
         notes: data.notes,
         contact: data.contact,
         rented_from_date: data.rentedFromDate || null,
-        expense_id: data.expenseId ? parseInt(data.expenseId) : null,
+        expense_id: data.expenseId || null,
       };
       const response = await apiRequest('PATCH', `/api/warehouses/${id}`, transformedData);
       const warehouse = await response.json();

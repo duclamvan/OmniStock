@@ -3293,9 +3293,9 @@ Important:
         floorArea: body.floorArea !== undefined && body.floorArea !== null && body.floorArea !== '' 
           ? String(body.floorArea) 
           : undefined,
-        // Convert expenseId from string to number if provided
+        // expenseId is varchar UUID, keep as string
         expenseId: body.expenseId && body.expenseId !== '' 
-          ? parseInt(body.expenseId, 10) 
+          ? body.expenseId 
           : undefined,
         // Ensure capacity is number or undefined
         capacity: body.capacity !== undefined && body.capacity !== null && body.capacity !== ''
