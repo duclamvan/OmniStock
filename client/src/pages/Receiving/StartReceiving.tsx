@@ -354,87 +354,73 @@ export default function StartReceiving() {
       setScannedTrackingNumbers(savedTrackingNumbers);
       setNotes(receiptData.notes || "");
       
-      // Initialize items from receipt - build complete item list from shipment items first
-      if (shipment.items && shipment.items.length > 0) {
-        const items = shipment.items.map((shipmentItem: any, index: number) => {
-          const itemId = shipmentItem.id ? shipmentItem.id.toString() : `item-${index}`;
+      // Initialize items - use receipt.items directly (more reliable than shipment.items)
+      // The receipt.items array contains all the item details from the API
+      const sourceItems = receipt.items && receipt.items.length > 0 
+        ? receipt.items 
+        : shipment.items || [];
+      
+      console.log('Items source check:', { 
+        receiptItemsLength: receipt.items?.length || 0,
+        shipmentItemsLength: shipment.items?.length || 0,
+        usingSource: receipt.items?.length > 0 ? 'receipt.items' : 'shipment.items',
+        shipmentId: shipment.id
+      });
+      
+      if (sourceItems.length > 0) {
+        const items = sourceItems.map((item: any, index: number) => {
+          // Determine if this is from receipt.items (has expectedQuantity) or shipment.items (has quantity)
+          const isReceiptItem = 'expectedQuantity' in item;
+          const itemId = item.itemId?.toString() || item.id?.toString() || `item-${index}`;
           
-          // Find corresponding receipt item data if it exists
-          const receiptItem = receipt.items?.find((ri: any) => 
-            ri.itemId?.toString() === shipmentItem.id?.toString() ||
-            ri.itemId === shipmentItem.id
-          );
+          const expectedQty = item.expectedQuantity || item.quantity || 1;
+          const receivedQty = item.receivedQuantity || 0;
           
-          if (receiptItem) {
-            // Use saved receipt item data
-            const expectedQty = receiptItem.expectedQuantity || shipmentItem.quantity || 1;
-            const receivedQty = receiptItem.receivedQuantity || 0;
-            
-            // Calculate status based on quantities, but preserve special statuses
-            let calculatedStatus = receiptItem.status || 'pending';
-            
-            // Only recalculate if it's a basic status (pending, partial, complete)
-            // Preserve special statuses (damaged, missing, partial_damaged, partial_missing)
-            if (!['damaged', 'missing', 'partial_damaged', 'partial_missing'].includes(calculatedStatus)) {
-              if (receivedQty >= expectedQty) {
-                calculatedStatus = 'complete';
-              } else if (receivedQty > 0 && receivedQty < expectedQty) {
-                calculatedStatus = 'partial';
+          // Calculate status based on quantities, but preserve special statuses
+          let calculatedStatus = item.status || 'pending';
+          
+          // Only recalculate if it's a basic status (pending, partial, complete)
+          // Preserve special statuses (damaged, missing, partial_damaged, partial_missing)
+          if (!['damaged', 'missing', 'partial_damaged', 'partial_missing'].includes(calculatedStatus)) {
+            if (receivedQty >= expectedQty) {
+              calculatedStatus = 'complete';
+            } else if (receivedQty > 0 && receivedQty < expectedQty) {
+              calculatedStatus = 'partial';
+            } else if (receivedQty === 0) {
+              calculatedStatus = 'pending';
+            }
+          } else {
+            // For special statuses, ensure they're consistent with quantities
+            if (calculatedStatus === 'damaged' || calculatedStatus === 'partial_damaged') {
+              if (receivedQty > 0 && receivedQty < expectedQty) {
+                calculatedStatus = 'partial_damaged';
               } else if (receivedQty === 0) {
-                calculatedStatus = 'pending';
+                calculatedStatus = 'damaged';
               }
-            } else {
-              // For special statuses, ensure they're consistent with quantities
-              if (calculatedStatus === 'damaged' || calculatedStatus === 'partial_damaged') {
-                // If marked as damaged but has partial quantity, ensure it's partial_damaged
-                if (receivedQty > 0 && receivedQty < expectedQty) {
-                  calculatedStatus = 'partial_damaged';
-                } else if (receivedQty === 0) {
-                  calculatedStatus = 'damaged';
-                }
-              } else if (calculatedStatus === 'missing' || calculatedStatus === 'partial_missing') {
-                // If marked as missing but has partial quantity, ensure it's partial_missing
-                if (receivedQty > 0 && receivedQty < expectedQty) {
-                  calculatedStatus = 'partial_missing';
-                } else if (receivedQty === 0) {
-                  calculatedStatus = 'missing';
-                }
+            } else if (calculatedStatus === 'missing' || calculatedStatus === 'partial_missing') {
+              if (receivedQty > 0 && receivedQty < expectedQty) {
+                calculatedStatus = 'partial_missing';
+              } else if (receivedQty === 0) {
+                calculatedStatus = 'missing';
               }
             }
-            
-            return {
-              id: itemId,
-              itemId: shipmentItem.id, // Add itemId field for API calls
-              productId: shipmentItem.productId?.toString() || shipmentItem.id?.toString(),
-              name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
-              sku: shipmentItem.sku || '',
-              expectedQty,
-              receivedQty,
-              status: calculatedStatus,
-              notes: receiptItem.notes || '',
-              checked: receivedQty > 0,
-              imageUrl: shipmentItem.imageUrl || '',
-              warehouseLocations: [] as string[], // Will be populated after initialization
-              isNewProduct: false // Will be determined when fetching locations
-            };
-          } else {
-            // No receipt data yet, use shipment defaults
-            return {
-              id: itemId,
-              itemId: shipmentItem.id, // Add itemId field for API calls
-              productId: shipmentItem.productId?.toString() || shipmentItem.id?.toString(),
-              name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
-              sku: shipmentItem.sku || '',
-              expectedQty: shipmentItem.quantity || 1,
-              receivedQty: 0,
-              status: 'pending' as const,
-              notes: '',
-              checked: false,
-              imageUrl: shipmentItem.imageUrl || '',
-              warehouseLocations: [] as string[], // Will be populated after initialization
-              isNewProduct: false // Will be determined when fetching locations
-            };
           }
+          
+          return {
+            id: itemId,
+            itemId: item.itemId || item.id,
+            productId: item.productId?.toString() || item.id?.toString(),
+            name: item.name || item.productName || `Item ${index + 1}`,
+            sku: item.sku || '',
+            expectedQty,
+            receivedQty,
+            status: calculatedStatus,
+            notes: item.notes || '',
+            checked: receivedQty > 0,
+            imageUrl: item.imageUrl || '',
+            warehouseLocations: [] as string[],
+            isNewProduct: false
+          };
         });
         setReceivingItems(items);
       }
