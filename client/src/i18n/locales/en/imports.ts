@@ -1297,6 +1297,7 @@ const imports = {
   // Revert to Receiving
   sendBackToReceive: 'Send Back to Receiving',
   shipmentRevertedToReceiving: 'Shipment has been reverted to receiving status',
+  inventoryRevertedDetails: 'Reverted {{quantity}} units from {{products}} products ({{locations}} locations cleared)',
   failedToRevertShipment: 'Failed to revert shipment',
   confirmRevertTitle: 'Revert to Receiving?',
   confirmRevertDescription: 'This will revert the shipment back to receiving status. The following changes will be made:',

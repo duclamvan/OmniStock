@@ -1314,6 +1314,7 @@ const imports = {
   // Revert to Receiving
   sendBackToReceive: 'Chuyển về Nhận hàng',
   shipmentRevertedToReceiving: 'Lô hàng đã được chuyển về trạng thái nhận hàng',
+  inventoryRevertedDetails: 'Đã hoàn tác {{quantity}} đơn vị từ {{products}} sản phẩm ({{locations}} vị trí đã xóa)',
   failedToRevertShipment: 'Không thể hoàn tác lô hàng',
   confirmRevertTitle: 'Chuyển về Nhận hàng?',
   confirmRevertDescription: 'Thao tác này sẽ chuyển lô hàng về trạng thái nhận hàng. Các thay đổi sau sẽ được thực hiện:',

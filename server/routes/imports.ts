@@ -3882,6 +3882,11 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
       .from(receipts)
       .where(eq(receipts.shipmentId, shipmentId));
     
+    // Track what was reverted for the response
+    let totalQuantityReverted = 0;
+    let locationsReverted = 0;
+    let productsAffected = 0;
+    
     if (existingReceipt) {
       // Revert inventory changes and receipt status
       const allReceiptItems = await db
@@ -3907,6 +3912,9 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                 updatedAt: new Date()
               })
               .where(eq(products.id, item.productId));
+            
+            totalQuantityReverted += item.receivedQuantity;
+            productsAffected++;
           }
           
           // BULLETPROOF: Clean up ALL productLocations tagged with this receipt item
@@ -3936,6 +3944,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                 .delete(productLocations)
                 .where(eq(productLocations.id, taggedLoc.id));
               console.log(`Deleted location ${taggedLoc.locationCode} during revert`);
+              locationsReverted++;
             } else {
               // Remove the receipt item tag from notes and decrement quantity
               const updatedNotes = (taggedLoc.notes || '').replace(new RegExp(`\\s*RI:${item.id}:Q\\d+`), '').trim();
@@ -3948,6 +3957,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                 })
                 .where(eq(productLocations.id, taggedLoc.id));
               console.log(`Reverted ${assignedQty} from ${taggedLoc.locationCode} during revert, remaining: ${newLocationQty}`);
+              locationsReverted++;
             }
           }
           
@@ -3970,6 +3980,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                 await db
                   .delete(productLocations)
                   .where(eq(productLocations.id, existingLocation.id));
+                locationsReverted++;
               } else {
                 await db
                   .update(productLocations)
@@ -3978,6 +3989,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
                     updatedAt: new Date()
                   })
                   .where(eq(productLocations.id, existingLocation.id));
+                locationsReverted++;
               }
             }
           }
@@ -4018,7 +4030,12 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
     
     res.json({ 
       message: "Shipment reverted to receiving status successfully",
-      shipment: updated
+      shipment: updated,
+      inventoryReverted: {
+        totalQuantity: totalQuantityReverted,
+        productsAffected: productsAffected,
+        locationsReverted: locationsReverted
+      }
     });
   } catch (error) {
     console.error("Error reverting shipment to receiving:", error);

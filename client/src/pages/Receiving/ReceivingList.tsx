@@ -3877,7 +3877,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
       }
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       // Invalidate all relevant queries for UI refresh
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
@@ -3885,9 +3885,21 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/storage'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/product-locations'] });
+      
+      // Show detailed toast about inventory revert
+      const inv = data.inventoryReverted;
+      const inventoryMsg = inv && inv.totalQuantity > 0
+        ? t('inventoryRevertedDetails', { 
+            quantity: inv.totalQuantity, 
+            products: inv.productsAffected,
+            locations: inv.locationsReverted 
+          })
+        : t('shipmentRevertedToReceiving');
+      
       toast({
         title: t('statusUpdated'),
-        description: t('shipmentRevertedToReceiving'),
+        description: inventoryMsg,
       });
       setShowRevertConfirm(false);
     },
