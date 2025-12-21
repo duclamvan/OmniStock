@@ -17271,6 +17271,7 @@ Important rules:
 
   // Helper function to add inventory quantities when receiving is completed
   // Adds ALL receivedQuantity to product.quantity (storage assignment only updates productLocations now)
+  // CRITICAL: Aggregates by productId first to handle same product in multiple receipt items
   async function addInventoryOnCompletion(shipmentId: string): Promise<string[]> {
     const inventoryUpdates: string[] = [];
     
@@ -17303,33 +17304,37 @@ Important rules:
         return inventoryUpdates;
       }
       
-      // Step 3: For each receipt item, add ALL receivedQuantity to product inventory
+      // Step 3: AGGREGATE quantities by productId to avoid duplicate updates
+      const productQuantityMap = new Map<string, number>();
       for (const item of allReceiptItems) {
         if (!item.productId) {
           console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - no productId`);
           continue;
         }
-        
-        const quantityToAdd = item.receivedQuantity || 0;
-        
-        if (quantityToAdd <= 0) {
-          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - no quantity to add`);
-          continue;
+        const qty = item.receivedQuantity || 0;
+        if (qty > 0) {
+          const existingQty = productQuantityMap.get(item.productId) || 0;
+          productQuantityMap.set(item.productId, existingQty + qty);
         }
-        
+      }
+      
+      console.log(`[addInventoryOnCompletion] Aggregated ${productQuantityMap.size} unique products from ${allReceiptItems.length} receipt items`);
+      
+      // Step 4: Update each product's inventory ONCE with aggregated quantity
+      for (const [productId, quantityToAdd] of productQuantityMap.entries()) {
         try {
           // Get current product quantity
           const [product] = await db
             .select({ id: products.id, quantity: products.quantity, sku: products.sku })
             .from(products)
-            .where(eq(products.id, item.productId));
+            .where(eq(products.id, productId));
           
           if (!product) {
-            console.log(`[addInventoryOnCompletion] Product ${item.productId} not found`);
+            console.log(`[addInventoryOnCompletion] Product ${productId} not found`);
             continue;
           }
           
-          // Add ALL receivedQuantity to product's main stock quantity
+          // Add aggregated receivedQuantity to product's main stock quantity
           const currentStock = product.quantity || 0;
           const newStock = currentStock + quantityToAdd;
           
@@ -17339,13 +17344,13 @@ Important rules:
               quantity: newStock,
               updatedAt: new Date()
             })
-            .where(eq(products.id, item.productId));
+            .where(eq(products.id, productId));
           
-          inventoryUpdates.push(`Product ${product.sku || item.productId}: +${quantityToAdd} units (${currentStock} → ${newStock})`);
-          console.log(`[addInventoryOnCompletion] Product ${item.productId}: added ${quantityToAdd} units (${currentStock} → ${newStock})`);
+          inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock})`);
+          console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock})`);
           
         } catch (itemError) {
-          console.error(`[addInventoryOnCompletion] Error updating inventory for product ${item.productId}:`, itemError);
+          console.error(`[addInventoryOnCompletion] Error updating inventory for product ${productId}:`, itemError);
         }
       }
       
@@ -17370,6 +17375,28 @@ Important rules:
         });
       }
       
+      // CRITICAL: Get current status BEFORE updating to prevent duplicate inventory additions
+      const [currentShipment] = await db
+        .select({ receivingStatus: shipments.receivingStatus })
+        .from(shipments)
+        .where(eq(shipments.id, id));
+      
+      if (!currentShipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      const wasAlreadyCompleted = currentShipment.receivingStatus === 'completed';
+      const isTransitioningToCompleted = receivingStatus === 'completed' && !wasAlreadyCompleted;
+      
+      // Prevent completing an already completed shipment (idempotency guard)
+      if (receivingStatus === 'completed' && wasAlreadyCompleted) {
+        console.log(`[receiving-status] Shipment ${id} is already completed - skipping inventory addition`);
+        return res.status(400).json({ 
+          message: 'Shipment is already completed. Use revert first if you need to re-process.',
+          currentStatus: 'completed'
+        });
+      }
+      
       // Update the shipment (id is UUID string, not integer)
       const [updated] = await db
         .update(shipments)
@@ -17386,11 +17413,13 @@ Important rules:
         return res.status(404).json({ message: 'Shipment not found' });
       }
       
-      // When receiving is completed, add inventory, calculate landed costs, and reconcile purchase order statuses
+      // Only add inventory when TRANSITIONING to completed (not if already completed)
       let updatedPurchases: string[] = [];
       let updatedProductCosts: string[] = [];
       let inventoryUpdates: string[] = [];
-      if (receivingStatus === 'completed') {
+      if (isTransitioningToCompleted) {
+        console.log(`[receiving-status] Shipment ${id} transitioning to completed - adding inventory`);
+        
         // Add received quantities to product inventory
         inventoryUpdates = await addInventoryOnCompletion(id);
         
@@ -17463,19 +17492,27 @@ Important rules:
           .from(receiptItems)
           .where(inArray(receiptItems.receiptId, receiptIds));
         
-        // Step 3a: Subtract receivedQuantity from product.quantity for ALL items
-        // (completion adds ALL receivedQuantity, so revert must subtract ALL)
+        // Step 3a: AGGREGATE quantities by productId first to avoid duplicate subtractions
+        // (mirrors the aggregation in addInventoryOnCompletion)
+        const productQuantityMap = new Map<string, number>();
         for (const item of allReceiptItems) {
           if (!item.productId) continue;
-          
-          const quantityToSubtract = item.receivedQuantity || 0;
-          if (quantityToSubtract <= 0) continue;
-          
+          const qty = item.receivedQuantity || 0;
+          if (qty > 0) {
+            const existingQty = productQuantityMap.get(item.productId) || 0;
+            productQuantityMap.set(item.productId, existingQty + qty);
+          }
+        }
+        
+        console.log(`[revert-to-receiving] Aggregated ${productQuantityMap.size} unique products from ${allReceiptItems.length} receipt items`);
+        
+        // Step 3b: Subtract aggregated quantity from each product ONCE
+        for (const [productId, quantityToSubtract] of productQuantityMap.entries()) {
           try {
             const [product] = await db
               .select({ id: products.id, quantity: products.quantity, sku: products.sku })
               .from(products)
-              .where(eq(products.id, item.productId));
+              .where(eq(products.id, productId));
             
             if (product) {
               const currentStock = product.quantity || 0;
@@ -17486,17 +17523,17 @@ Important rules:
                   quantity: newStockQuantity,
                   updatedAt: new Date()
                 })
-                .where(eq(products.id, item.productId));
+                .where(eq(products.id, productId));
               
-              revertResults.inventoryReverted.push(`Product ${product.sku || item.productId}: -${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
-              console.log(`[revert-to-receiving] Product ${item.productId}: subtracted ${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
+              revertResults.inventoryReverted.push(`Product ${product.sku || productId}: -${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
+              console.log(`[revert-to-receiving] Product ${productId}: subtracted ${quantityToSubtract} units (${currentStock} → ${newStockQuantity})`);
             }
           } catch (stockError) {
-            console.error(`Error subtracting stock for product ${item.productId}:`, stockError);
+            console.error(`Error subtracting stock for product ${productId}:`, stockError);
           }
         }
         
-        // Step 3b: Clean up productLocations for items that had stored locations
+        // Step 3c: Clean up productLocations for items that had stored locations
         for (const item of allReceiptItems) {
           if (!item.productId || !item.storedLocations) continue;
           
