@@ -1828,6 +1828,7 @@ export default function PickPack() {
   const [isPrintingAllLabels, setIsPrintingAllLabels] = useState(false);
   const [generatingLabelForCarton, setGeneratingLabelForCarton] = useState<Record<string, boolean>>({});
   const [deletingShipment, setDeletingShipment] = useState<Record<string, boolean>>({});
+  const [isAwaitingPPLLabels, setIsAwaitingPPLLabels] = useState(false); // True while creating labels and fetching them
   
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -3234,6 +3235,9 @@ export default function PickPack() {
   // PPL Label mutations
   const createPPLLabelsMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      // Set loading state to prevent UI flashing
+      setIsAwaitingPPLLabels(true);
+      
       // First, check if cartons exist - if not, create one
       const cartonsResponse = await fetch(`/api/orders/${orderId}/cartons`);
       const existingCartons = await cartonsResponse.json();
@@ -3269,8 +3273,14 @@ export default function PickPack() {
       // Wait a moment for database to commit, then fetch labels to update UI immediately
       await new Promise(resolve => setTimeout(resolve, 300));
       await fetchShipmentLabels();
+      
+      // Clear loading state after labels are fetched
+      setIsAwaitingPPLLabels(false);
     },
     onError: (error: any) => {
+      // Clear loading state on error
+      setIsAwaitingPPLLabels(false);
+      
       console.error('Error creating PPL labels:', error);
       console.error('Error details:', {
         message: error.message,
@@ -10060,8 +10070,18 @@ export default function PickPack() {
                 
                 return (
                 <>
-                  {/* Generate/Cancel PPL Labels Button */}
-                  {activePackingOrder.pplStatus !== 'created' ? (
+                  {/* Show loading state while creating/fetching labels */}
+                  {isAwaitingPPLLabels ? (
+                    <Button
+                      variant="default"
+                      className="w-full bg-orange-600 dark:bg-orange-700 text-white font-semibold"
+                      disabled={true}
+                      data-testid="button-creating-ppl-labels"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      {t('creatingLabels')}
+                    </Button>
+                  ) : activePackingOrder.pplStatus !== 'created' ? (
                     <>
                       <Button
                         variant="default"
