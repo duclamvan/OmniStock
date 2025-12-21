@@ -13795,7 +13795,7 @@ Important:
         carrier: 'PPL',
         trackingNumbers: shipmentNumbers,
         batchId,
-        labelBase64,
+        labelBase64: label.labelContent,
         labelData: {
           pplShipment,
           // cartonNumber: nextCartonNumber, // This is for single carton creation
