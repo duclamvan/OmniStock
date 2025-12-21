@@ -451,8 +451,9 @@ export default function GeneralSettings() {
                         <FormControl>
                           <Input 
                             {...field}
+                            type="tel"
                             value={field.value ?? ''} 
-                            placeholder={t('settings:companyPhonePlaceholder', 'Enter phone number')} 
+                            placeholder={t('settings:companyPhonePlaceholder', '+420 123 456 789')} 
                             data-testid="input-company_phone"
                             onChange={(e) => {
                               field.onChange(e);
@@ -728,7 +729,8 @@ export default function GeneralSettings() {
                         </FormLabel>
                         <FormControl>
                           <Input 
-                            {...field} 
+                            {...field}
+                            type="tel"
                             placeholder={t('settings:whatsappNumberPlaceholder', '+1234567890')} 
                             data-testid="input-company_whatsapp_number"
                             onChange={(e) => {
@@ -752,8 +754,9 @@ export default function GeneralSettings() {
                         <FormLabel>{t('settings:zaloNumber', 'Zalo Number')}</FormLabel>
                         <FormControl>
                           <Input 
-                            {...field} 
-                            placeholder={t('settings:zaloNumberPlaceholder', 'Enter Zalo number')} 
+                            {...field}
+                            type="tel"
+                            placeholder={t('settings:zaloNumberPlaceholder', '+84 123 456 789')} 
                             data-testid="input-company_zalo_number"
                             onChange={(e) => {
                               field.onChange(e);

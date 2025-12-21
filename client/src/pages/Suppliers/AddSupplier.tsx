@@ -411,7 +411,8 @@ export default function AddSupplier() {
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          {...field} 
+                          {...field}
+                          type="tel"
                           value={field.value || ""} 
                           placeholder={t('inventory:phonePlaceholder')}
                           data-testid="input-phone"
