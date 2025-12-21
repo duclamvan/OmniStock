@@ -1292,29 +1292,89 @@ router.post("/consolidations", async (req, res) => {
 router.post("/consolidations/:id/items", async (req, res) => {
   try {
     const consolidationId = req.params.id; // UUID string
-    const { itemIds } = req.body;
+    const { itemIds, itemType: providedItemType } = req.body;
     
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
       return res.status(400).json({ message: "Invalid item IDs" });
     }
     
-    // Add items to consolidation
-    const itemsToAdd = itemIds.map((itemId: string) => ({
-      consolidationId: consolidationId,
-      itemId: itemId,
-      itemType: 'custom',
-      createdAt: new Date()
-    }));
+    // CRITICAL FIX: Detect actual item type for each item by checking if it exists in purchase_items or custom_items
+    // This prevents purchase items from being incorrectly marked as 'custom'
+    const itemsToAdd = [];
+    const purchaseItemIdsFound = [];
+    const customItemIdsFound = [];
     
-    await db.insert(consolidationItems).values(itemsToAdd);
+    for (const itemId of itemIds) {
+      // If itemType is explicitly provided, use it (for backwards compatibility)
+      if (providedItemType) {
+        itemsToAdd.push({
+          consolidationId: consolidationId,
+          itemId: itemId,
+          itemType: providedItemType,
+          createdAt: new Date()
+        });
+        if (providedItemType === 'purchase') {
+          purchaseItemIdsFound.push(itemId);
+        } else {
+          customItemIdsFound.push(itemId);
+        }
+        continue;
+      }
+      
+      // Auto-detect item type by checking which table the item exists in
+      const [purchaseItem] = await db
+        .select({ id: purchaseItems.id })
+        .from(purchaseItems)
+        .where(eq(purchaseItems.id, itemId));
+      
+      if (purchaseItem) {
+        // This is a purchase item
+        itemsToAdd.push({
+          consolidationId: consolidationId,
+          itemId: itemId,
+          itemType: 'purchase',
+          createdAt: new Date()
+        });
+        purchaseItemIdsFound.push(itemId);
+      } else {
+        // Check if it's a custom item
+        const [customItem] = await db
+          .select({ id: customItems.id })
+          .from(customItems)
+          .where(eq(customItems.id, itemId));
+        
+        if (customItem) {
+          itemsToAdd.push({
+            consolidationId: consolidationId,
+            itemId: itemId,
+            itemType: 'custom',
+            createdAt: new Date()
+          });
+          customItemIdsFound.push(itemId);
+        } else {
+          console.warn(`[consolidation/items] Item ${itemId} not found in purchase_items or custom_items, skipping`);
+        }
+      }
+    }
     
-    // Update item status to consolidated
-    await db
-      .update(customItems)
-      .set({ status: 'consolidated' })
-      .where(sql`id IN (${sql.join(itemIds.map(id => sql`${id}`), sql`, `)})`);
+    if (itemsToAdd.length > 0) {
+      await db.insert(consolidationItems).values(itemsToAdd);
+    }
     
-    res.json({ message: "Items added to consolidation successfully" });
+    // Update custom item status to consolidated (only for custom items)
+    if (customItemIdsFound.length > 0) {
+      await db
+        .update(customItems)
+        .set({ status: 'consolidated' })
+        .where(sql`id IN (${sql.join(customItemIdsFound.map(id => sql`${id}`), sql`, `)})`);
+    }
+    
+    res.json({ 
+      message: "Items added to consolidation successfully",
+      added: itemsToAdd.length,
+      purchaseItems: purchaseItemIdsFound.length,
+      customItems: customItemIdsFound.length
+    });
   } catch (error) {
     console.error("Error adding items to consolidation:", error);
     res.status(500).json({ message: "Failed to add items to consolidation" });
@@ -7753,8 +7813,9 @@ router.post("/receipts/auto-save", async (req, res) => {
         // Use itemId as string (UUIDs)
         const itemId = item.itemId || item.id;
         
-        // Preserve the original itemType from the database, or default to 'custom'
-        const itemType = itemTypeMap.get(itemId) || 'custom';
+        // Preserve the original itemType from the database
+        // CRITICAL: Default to 'purchase' instead of 'custom' since most items come from purchase orders
+        const itemType = itemTypeMap.get(itemId) || item.itemType || 'purchase';
         
         // CRITICAL FIX: Preserve expectedQuantity from database if not provided
         // Priority: provided value → existing DB value → default to 1
@@ -7979,12 +8040,32 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
     // If item doesn't exist, create it first with the delta value
     if (!existingItem) {
       const initialQuantity = Math.max(0, delta);
+      
+      // CRITICAL FIX: Detect actual item type by checking purchase_items first
+      let detectedItemType = 'purchase'; // Default to purchase since most items are from purchase orders
+      const [purchaseItem] = await db
+        .select({ id: purchaseItems.id })
+        .from(purchaseItems)
+        .where(eq(purchaseItems.id, shipmentItemId));
+      
+      if (!purchaseItem) {
+        // Only mark as custom if it's not a purchase item
+        const [customItem] = await db
+          .select({ id: customItems.id })
+          .from(customItems)
+          .where(eq(customItems.id, shipmentItemId));
+        
+        if (customItem) {
+          detectedItemType = 'custom';
+        }
+      }
+      
       const [newItem] = await db
         .insert(receiptItems)
         .values({
           receiptId,
           itemId: shipmentItemId,
-          itemType: 'custom', // Default, can be updated
+          itemType: detectedItemType,
           expectedQuantity: 1,
           receivedQuantity: initialQuantity,
           damagedQuantity: 0,
