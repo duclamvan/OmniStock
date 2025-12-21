@@ -2228,7 +2228,8 @@ function QuickStorageSheet({
     setScanFeedback({ type: 'success', message: feedbackMsg });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
     
-    setLocationInput("");
+    // Keep the input value so user can quickly modify and add another similar location
+    // setLocationInput(""); - Removed to allow faster multi-location entry
     
     // Auto-focus on quantity input only if not auto-filled
     if (!isFirstLocation) {
@@ -2567,6 +2568,16 @@ function QuickStorageSheet({
                                       {t('addLocation')}
                                     </p>
                                     
+                                    {/* Location segment labels */}
+                                    <div className="text-xs text-center text-blue-600 dark:text-blue-400 mb-1 space-x-2">
+                                      <span><strong>WH</strong>=Warehouse</span>
+                                      <span><strong>A</strong>=Aisle</span>
+                                      <span><strong>R</strong>=Rack</span>
+                                      <span><strong>L</strong>=Level</span>
+                                      <span><strong>P</strong>=Pallet</span>
+                                      <span><strong>B</strong>=Bin</span>
+                                    </div>
+                                    
                                     {/* Format guide - shows structure before typing */}
                                     <div className="flex justify-center gap-1 mb-3">
                                       <div className="flex items-center gap-1 text-xs">
@@ -2593,7 +2604,7 @@ function QuickStorageSheet({
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        placeholder="wh1a01r02l03"
+                                        placeholder="WH1-A01-R02-L03"
                                         className="flex-1 h-14 text-lg font-mono font-bold text-center border-2 rounded-xl"
                                         data-testid="input-location-manual"
                                       />
