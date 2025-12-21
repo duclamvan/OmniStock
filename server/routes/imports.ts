@@ -3814,7 +3814,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
         .from(receiptItems)
         .where(eq(receiptItems.receiptId, existingReceipt.id));
       
-      // Subtract received quantities from products
+      // Subtract received quantities from products AND clean up productLocations
       for (const item of allReceiptItems) {
         if (item.productId && item.receivedQuantity > 0) {
           const [existingProduct] = await db
@@ -3833,6 +3833,79 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
               })
               .where(eq(products.id, item.productId));
           }
+          
+          // BULLETPROOF: Clean up ALL productLocations tagged with this receipt item
+          // Uses notes field with format "RI:{receiptItemId}:Q{qty}" to track assignments
+          const receiptItemTag = `RI:${item.id}`;
+          
+          const taggedLocations = await db
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, item.productId),
+                sql`${productLocations.notes} LIKE ${`%${receiptItemTag}%`}`
+              )
+            );
+          
+          for (const taggedLoc of taggedLocations) {
+            // Extract the assigned quantity from the notes tag
+            const qtyMatch = taggedLoc.notes?.match(new RegExp(`RI:${item.id}:Q(\\d+)`));
+            const assignedQty = qtyMatch ? parseInt(qtyMatch[1], 10) : item.assignedQuantity || 0;
+            
+            const newLocationQty = Math.max(0, taggedLoc.quantity - assignedQty);
+            
+            if (newLocationQty === 0) {
+              // Delete the location entry if quantity becomes 0
+              await db
+                .delete(productLocations)
+                .where(eq(productLocations.id, taggedLoc.id));
+              console.log(`Deleted location ${taggedLoc.locationCode} during revert`);
+            } else {
+              // Remove the receipt item tag from notes and decrement quantity
+              const updatedNotes = (taggedLoc.notes || '').replace(new RegExp(`\\s*RI:${item.id}:Q\\d+`), '').trim();
+              await db
+                .update(productLocations)
+                .set({
+                  quantity: newLocationQty,
+                  notes: updatedNotes || null,
+                  updatedAt: new Date()
+                })
+                .where(eq(productLocations.id, taggedLoc.id));
+              console.log(`Reverted ${assignedQty} from ${taggedLoc.locationCode} during revert, remaining: ${newLocationQty}`);
+            }
+          }
+          
+          // Fallback: Also clean up by warehouseLocation if no tags found (legacy data)
+          if (taggedLocations.length === 0 && item.warehouseLocation) {
+            const [existingLocation] = await db
+              .select()
+              .from(productLocations)
+              .where(
+                and(
+                  eq(productLocations.productId, item.productId),
+                  eq(productLocations.locationCode, item.warehouseLocation)
+                )
+              );
+            
+            if (existingLocation) {
+              const newLocationQty = Math.max(0, existingLocation.quantity - (item.assignedQuantity || item.receivedQuantity));
+              
+              if (newLocationQty === 0) {
+                await db
+                  .delete(productLocations)
+                  .where(eq(productLocations.id, existingLocation.id));
+              } else {
+                await db
+                  .update(productLocations)
+                  .set({
+                    quantity: newLocationQty,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(productLocations.id, existingLocation.id));
+              }
+            }
+          }
         }
         
         // Clear warehouse location so item can be stored again
@@ -3840,6 +3913,7 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
           .update(receiptItems)
           .set({
             warehouseLocation: null,
+            assignedQuantity: 0,
             updatedAt: new Date()
           })
           .where(eq(receiptItems.id, item.id));
@@ -9294,15 +9368,110 @@ router.post('/receipts/:id/store-items', async (req, res) => {
       for (const assignment of locations) {
         const { receiptItemId, productId, locations: itemLocations } = assignment;
         
+        // Get the receipt item to check for previous assignments
+        const [receiptItem] = await tx
+          .select()
+          .from(receiptItems)
+          .where(eq(receiptItems.id, receiptItemId));
+        
+        if (!receiptItem) {
+          console.warn(`Receipt item ${receiptItemId} not found, skipping`);
+          continue;
+        }
+        
+        // BULLETPROOF: First, reverse ALL previous storage assignments for this receipt item
+        // Uses notes field with format "RI:{receiptItemId}" to track which entries belong to which receipt item
+        // This prevents quantity inflation when re-assigning storage or reverting
+        if (productId) {
+          const receiptItemTag = `RI:${receiptItemId}`;
+          
+          // Find all productLocations tagged with this receipt item
+          const previousLocations = await tx
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, productId),
+                sql`${productLocations.notes} LIKE ${`%${receiptItemTag}%`}`
+              )
+            );
+          
+          // Subtract quantities and remove empty locations
+          for (const prevLoc of previousLocations) {
+            // Extract the assigned quantity from the notes tag format "RI:{id}:Q{qty}"
+            const qtyMatch = prevLoc.notes?.match(new RegExp(`RI:${receiptItemId}:Q(\\d+)`));
+            const prevAssignedQty = qtyMatch ? parseInt(qtyMatch[1], 10) : receiptItem.assignedQuantity || 0;
+            
+            const revertedQty = Math.max(0, prevLoc.quantity - prevAssignedQty);
+            
+            if (revertedQty === 0) {
+              await tx
+                .delete(productLocations)
+                .where(eq(productLocations.id, prevLoc.id));
+              console.log(`Deleted location ${prevLoc.locationCode} (qty was ${prevLoc.quantity})`);
+            } else {
+              // Remove the receipt item tag from notes
+              const updatedNotes = (prevLoc.notes || '').replace(new RegExp(`\\s*RI:${receiptItemId}:Q\\d+`), '').trim();
+              await tx
+                .update(productLocations)
+                .set({
+                  quantity: revertedQty,
+                  notes: updatedNotes || null,
+                  updatedAt: new Date()
+                })
+                .where(eq(productLocations.id, prevLoc.id));
+              console.log(`Reverted ${prevAssignedQty} from ${prevLoc.locationCode}, remaining: ${revertedQty}`);
+            }
+          }
+          
+          // LEGACY FALLBACK: If no tagged locations found, check by warehouseLocation field
+          // This handles data created before the tagging system was implemented
+          if (previousLocations.length === 0 && receiptItem.warehouseLocation && receiptItem.assignedQuantity > 0) {
+            const [legacyLocation] = await tx
+              .select()
+              .from(productLocations)
+              .where(
+                and(
+                  eq(productLocations.productId, productId),
+                  eq(productLocations.locationCode, receiptItem.warehouseLocation)
+                )
+              );
+            
+            if (legacyLocation) {
+              const revertedQty = Math.max(0, legacyLocation.quantity - receiptItem.assignedQuantity);
+              
+              if (revertedQty === 0) {
+                await tx
+                  .delete(productLocations)
+                  .where(eq(productLocations.id, legacyLocation.id));
+                console.log(`[Legacy] Deleted location ${legacyLocation.locationCode}`);
+              } else {
+                await tx
+                  .update(productLocations)
+                  .set({
+                    quantity: revertedQty,
+                    updatedAt: new Date()
+                  })
+                  .where(eq(productLocations.id, legacyLocation.id));
+                console.log(`[Legacy] Reverted ${receiptItem.assignedQuantity} from ${legacyLocation.locationCode}, remaining: ${revertedQty}`);
+              }
+            }
+          }
+        }
+        
         // Process each location for this item
         for (const loc of (itemLocations || [])) {
           const { locationCode, locationType, quantity, isPrimary, notes } = loc;
           
-          // Update receipt item with warehouse location
+          // Create the receipt item tracking tag with quantity
+          const receiptItemTag = `RI:${receiptItemId}:Q${quantity}`;
+          
+          // Update receipt item with warehouse location AND track assigned quantity
           await tx
             .update(receiptItems)
             .set({
               warehouseLocation: locationCode,
+              assignedQuantity: quantity,
               storageInstructions: notes,
               updatedAt: new Date()
             })
@@ -9310,75 +9479,79 @@ router.post('/receipts/:id/store-items', async (req, res) => {
           
           // If product exists, update or create product location
           if (productId) {
-          // Check if location already exists for this product
-          const [existingLocation] = await tx
-            .select()
-            .from(productLocations)
-            .where(
-              and(
-                eq(productLocations.productId, productId),
-                eq(productLocations.locationCode, locationCode)
-              )
-            );
-          
-          if (existingLocation) {
-            // Update existing location - add to quantity
-            const [updatedLocation] = await tx
-              .update(productLocations)
-              .set({
-                quantity: existingLocation.quantity + quantity,
-                isPrimary: isPrimary || existingLocation.isPrimary,
-                notes: notes || existingLocation.notes,
-                updatedAt: new Date()
-              })
-              .where(eq(productLocations.id, existingLocation.id))
-              .returning();
-            
-            processedLocations.push(updatedLocation);
-          } else {
-            // Create new location
-            const [newLocation] = await tx
-              .insert(productLocations)
-              .values({
-                productId,
-                locationCode,
-                locationType: locationType || 'warehouse',
-                quantity,
-                isPrimary,
-                notes
-              })
-              .returning();
-            
-            processedLocations.push(newLocation);
-          }
-          
-          // If this is set as primary, unset other locations as primary
-          if (isPrimary) {
-            await tx
-              .update(productLocations)
-              .set({ isPrimary: false })
+            // Check if location already exists for this product
+            const [existingLocation] = await tx
+              .select()
+              .from(productLocations)
               .where(
                 and(
                   eq(productLocations.productId, productId),
-                  ne(productLocations.locationCode, locationCode)
+                  eq(productLocations.locationCode, locationCode)
                 )
               );
-          }
-          
-          // Update product stock levels
-          const totalStock = await tx
-            .select({
-              total: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)`
-            })
-            .from(productLocations)
-            .where(eq(productLocations.productId, productId));
-          
-          await tx
-            .update(products)
-            .set({
-              updatedAt: new Date()
-            })
-            .where(eq(products.id, productId));
+            
+            if (existingLocation) {
+              // Update existing location - ADD the new quantity
+              // (Previous assignment was already subtracted above)
+              // Append the receipt item tag to notes for tracking
+              const existingNotes = existingLocation.notes || '';
+              const newNotes = existingNotes 
+                ? `${existingNotes} ${receiptItemTag}` 
+                : receiptItemTag;
+              
+              const [updatedLocation] = await tx
+                .update(productLocations)
+                .set({
+                  quantity: existingLocation.quantity + quantity,
+                  isPrimary: isPrimary || existingLocation.isPrimary,
+                  notes: newNotes,
+                  updatedAt: new Date()
+                })
+                .where(eq(productLocations.id, existingLocation.id))
+                .returning();
+              
+              processedLocations.push(updatedLocation);
+            } else {
+              // Create new location with receipt item tag
+              const notesWithTag = notes 
+                ? `${notes} ${receiptItemTag}` 
+                : receiptItemTag;
+              
+              const [newLocation] = await tx
+                .insert(productLocations)
+                .values({
+                  productId,
+                  locationCode,
+                  locationType: locationType || 'warehouse',
+                  quantity,
+                  isPrimary,
+                  notes: notesWithTag
+                })
+                .returning();
+              
+              processedLocations.push(newLocation);
+            }
+            
+            // If this is set as primary, unset other locations as primary
+            if (isPrimary) {
+              await tx
+                .update(productLocations)
+                .set({ isPrimary: false })
+                .where(
+                  and(
+                    eq(productLocations.productId, productId),
+                    ne(productLocations.locationCode, locationCode)
+                  )
+                );
+            }
+            
+            // Update product timestamp
+            await tx
+              .update(products)
+              .set({
+                updatedAt: new Date()
+              })
+              .where(eq(products.id, productId));
           }
         }
       }
@@ -9398,6 +9571,14 @@ router.post('/receipts/:id/store-items', async (req, res) => {
       const unstoredCount = Number(unstored[0]?.count || 0);
       
       if (unstoredCount === 0) {
+        // IDEMPOTENCY GUARD: Check if this receipt was already marked as stored
+        // This prevents duplicate inventory additions if the API is called multiple times
+        const wasAlreadyStored = receipt.status === 'stored';
+        
+        if (wasAlreadyStored) {
+          console.log(`Receipt ${receiptId} was already stored, skipping inventory addition to prevent duplicates`);
+        }
+        
         // Mark receipt as stored
         await tx
           .update(receipts)
@@ -9427,7 +9608,11 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         // ================================================================
         // INVENTORY AND LANDED COST CALCULATION ON COMPLETION
         // Add received quantities to products and calculate weighted average costs
+        // Only add inventory if this is the FIRST time completing (not already stored)
         // ================================================================
+        if (wasAlreadyStored) {
+          console.log('Skipping inventory addition - receipt was already completed previously');
+        } else {
         const allReceiptItems = await tx
           .select()
           .from(receiptItems)
@@ -9636,6 +9821,7 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             console.error(`Failed to add inventory for product ${productId}:`, error);
           }
         }
+        } // End of else block (not already stored)
         
         if (shipment?.consolidationId) {
           // Update consolidation status to completed
