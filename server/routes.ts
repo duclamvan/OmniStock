@@ -14220,9 +14220,9 @@ Important:
       hX += colSku;
       doc.text('DESCRIPTION', hX, tableTop + 5, { width: colDesc });
       hX += colDesc;
-      doc.text('WT', hX, tableTop + 5, { width: colWeight, align: 'right' });
+      doc.text('WT', hX, tableTop + 5, { width: colWeight - 5, align: 'right' });
       hX += colWeight;
-      doc.text('QTY', hX, tableTop + 5, { width: colQty, align: 'right' });
+      doc.text('QTY', hX, tableTop + 5, { width: colQty - 8, align: 'right' });
 
       // Table rows
       let yPosition = tableTop + tableHeaderHeight;
@@ -14263,16 +14263,16 @@ Important:
            .text(item.productName, cellX, textY, { width: colDesc - 3, ellipsis: true });
         cellX += colDesc;
 
-        // Weight
+        // Weight - with padding from edge
         const wt = item.weight ? `${item.weight}` : '-';
         doc.fontSize(fontSize - 1)
-           .text(wt, cellX, textY, { width: colWeight, align: 'right' });
+           .text(wt, cellX, textY, { width: colWeight - 5, align: 'right' });
         cellX += colWeight;
 
-        // Quantity - bold
+        // Quantity - bold with proper right padding
         doc.fontSize(fontSize + 1)
            .font('DejaVu-Bold')
-           .text(item.quantity.toString(), cellX, textY, { width: colQty, align: 'right' });
+           .text(item.quantity.toString(), cellX, textY, { width: colQty - 8, align: 'right' });
 
         yPosition += rowHeight;
       });
