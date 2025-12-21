@@ -3643,13 +3643,51 @@ router.post("/shipments/:id/move-to-receive", async (req, res) => {
       });
     }
     
-    // Find and delete the associated receipt and its items
+    // Find the associated receipt
     const [existingReceipt] = await db
       .select()
       .from(receipts)
       .where(eq(receipts.shipmentId, shipmentId));
     
     if (existingReceipt) {
+      // CRITICAL: If receipt was approved/verified (inventory already added), 
+      // we MUST reverse the inventory changes before deleting
+      const approvedStatuses = ['verified', 'approved', 'completed'];
+      if (approvedStatuses.includes(existingReceipt.status || '')) {
+        // Get all receipt items to reverse inventory
+        const allReceiptItems = await db
+          .select()
+          .from(receiptItems)
+          .where(eq(receiptItems.receiptId, existingReceipt.id));
+        
+        console.log(`[move-to-receive] Reversing inventory for ${allReceiptItems.length} items from receipt ${existingReceipt.id}`);
+        
+        // Subtract received quantities from products to reverse inventory
+        for (const item of allReceiptItems) {
+          if (item.productId && item.receivedQuantity > 0) {
+            const [existingProduct] = await db
+              .select()
+              .from(products)
+              .where(eq(products.id, item.productId));
+            
+            if (existingProduct) {
+              const oldQuantity = existingProduct.quantity || 0;
+              const newQuantity = Math.max(0, oldQuantity - item.receivedQuantity);
+              
+              console.log(`[move-to-receive] Product ${item.productId}: ${oldQuantity} -> ${newQuantity} (subtracting ${item.receivedQuantity})`);
+              
+              await db
+                .update(products)
+                .set({
+                  quantity: newQuantity,
+                  updatedAt: new Date()
+                })
+                .where(eq(products.id, item.productId));
+            }
+          }
+        }
+      }
+      
       // Delete receipt items first (foreign key constraint)
       await db
         .delete(receiptItems)
