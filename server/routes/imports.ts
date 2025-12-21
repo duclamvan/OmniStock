@@ -9682,10 +9682,10 @@ router.patch("/shipments/:id/allocation-method", async (req, res) => {
     }
     
     // Validate allocation method (null is allowed to reset to auto-selection)
-    const validMethods = ['PER_UNIT', 'CHARGEABLE_WEIGHT', 'VALUE', 'QUANTITY', 'HYBRID', null];
+    const validMethods = ['PER_UNIT', 'CHARGEABLE_WEIGHT', 'VALUE', 'QUANTITY', 'HYBRID', 'VOLUME', null];
     if (allocationMethod !== null && !validMethods.includes(allocationMethod)) {
       return res.status(400).json({ 
-        message: `Invalid allocation method. Must be one of: PER_UNIT, CHARGEABLE_WEIGHT, VALUE, QUANTITY, HYBRID, or null to reset to auto-selection` 
+        message: `Invalid allocation method. Must be one of: PER_UNIT, CHARGEABLE_WEIGHT, VALUE, QUANTITY, HYBRID, VOLUME, or null to reset to auto-selection` 
       });
     }
     
