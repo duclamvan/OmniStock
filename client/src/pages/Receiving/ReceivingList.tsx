@@ -2189,14 +2189,15 @@ function QuickStorageSheet({
     }
   });
   
-  // Calculate progress
+  // Calculate progress using actual saved location quantities (not stale assignedQuantity)
   const totalItems = items.length;
-  const completedItems = items.filter(item => 
-    item.assignedQuantity >= item.receivedQuantity
-  ).length;
+  const completedItems = items.filter(item => {
+    const savedQty = (item.existingLocations || []).reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+    return savedQty >= item.receivedQuantity;
+  }).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
   
-  // Check if all items are fully stored
+  // Check if all items are fully stored (based on SAVED locations only, not pending)
   const allItemsStored = totalItems > 0 && completedItems === totalItems;
   
   const currentItem = items[selectedItemIndex];
