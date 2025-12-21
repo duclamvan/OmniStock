@@ -124,10 +124,15 @@ export default function ProductLocations({
   });
 
   // Fetch product locations
-  const { data: locations = [], isLoading } = useQuery<ProductLocation[]>({
+  const { data: rawLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: [`/api/products/${productId}/locations`],
     enabled: !!productId,
   });
+
+  // Sort locations alphabetically by locationCode
+  const locations = [...rawLocations].sort((a, b) => 
+    a.locationCode.localeCompare(b.locationCode, undefined, { numeric: true, sensitivity: 'base' })
+  );
 
   // Add location mutation
   const addLocationMutation = useMutation({
