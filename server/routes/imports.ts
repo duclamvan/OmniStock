@@ -4891,15 +4891,81 @@ router.get("/shipments/storage", async (req, res) => {
           }
         }
         
-        // Attach items array to each shipment
+        // Get all shipment IDs to fetch receipt data for storage items
+        const shipmentIds = formattedShipments.map(s => s.id);
+        
+        // Fetch receipts for all shipments to get receivedQuantity/assignedQuantity
+        const allReceipts = await db
+          .select()
+          .from(receipts)
+          .where(inArray(receipts.shipmentId, shipmentIds));
+        
+        // Create shipment to receipt mapping
+        const receiptByShipmentId: Record<string, any> = {};
+        allReceipts.forEach(r => { receiptByShipmentId[r.shipmentId] = r; });
+        
+        // Fetch all receipt items for all receipts
+        const receiptIds = allReceipts.map(r => r.id);
+        const allReceiptItems = receiptIds.length > 0 
+          ? await db.select().from(receiptItems).where(inArray(receiptItems.receiptId, receiptIds))
+          : [];
+        
+        // Group receipt items by receiptId
+        const receiptItemsByReceiptId: Record<string, any[]> = {};
+        allReceiptItems.forEach(ri => {
+          if (!receiptItemsByReceiptId[ri.receiptId]) {
+            receiptItemsByReceiptId[ri.receiptId] = [];
+          }
+          receiptItemsByReceiptId[ri.receiptId].push(ri);
+        });
+        
+        // Attach items array to each shipment with receivedQuantity from receipt_items
         formattedShipments = formattedShipments.map(shipment => {
           const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
-          const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          const receipt = receiptByShipmentId[shipment.id];
+          const shipmentReceiptItems = receipt ? (receiptItemsByReceiptId[receipt.id] || []) : [];
+          
+          // Merge receipt item data with purchase/custom item data
+          const itemsWithReceiptData = items.map(item => {
+            // Find matching receipt item by:
+            // 1. Consolidation item ID (receipt_items.itemId == consolidationItemId)
+            // 2. SKU match
+            // 3. Direct item ID match (for non-consolidation items)
+            const matchingReceiptItem = shipmentReceiptItems.find((ri: any) => {
+              // Match by consolidation item ID (most common case)
+              if (item.consolidationItemId && ri.itemId === item.consolidationItemId) {
+                return true;
+              }
+              // Match by SKU
+              if (ri.sku && item.sku && ri.sku === item.sku) {
+                return true;
+              }
+              // Match by direct item ID (for non-consolidation items)
+              if (ri.itemId === item.id) {
+                return true;
+              }
+              return false;
+            });
+            
+            return {
+              ...item,
+              receiptItemId: matchingReceiptItem?.id,
+              receivedQuantity: matchingReceiptItem?.receivedQuantity ?? item.quantity ?? 0,
+              assignedQuantity: matchingReceiptItem?.assignedQuantity ?? 0,
+              expectedQuantity: matchingReceiptItem?.expectedQuantity ?? item.quantity ?? 0,
+              warehouseLocation: matchingReceiptItem?.warehouseLocation
+            };
+          });
+          
+          const totalQuantity = itemsWithReceiptData.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          const receivedQuantity = itemsWithReceiptData.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0);
+          
           return {
             ...shipment,
-            items,
-            itemCount: items.length,
-            totalQuantity
+            items: itemsWithReceiptData,
+            itemCount: itemsWithReceiptData.length,
+            totalQuantity,
+            receivedQuantity
           };
         });
       }
