@@ -2085,6 +2085,10 @@ const imports = {
   itemsStoredProgress: '{{completed}}/{{total}} sản phẩm đã lưu kho',
   addedProduct: 'Đã thêm {{name}}',
   barcodeNotFoundInDatabase: 'Không tìm thấy {{barcode}} trong cơ sở dữ liệu',
+  locationUpdated: 'Đã cập nhật vị trí',
+  locationDeleted: 'Đã xóa vị trí',
+  failedToUpdateLocation: 'Cập nhật vị trí thất bại',
+  failedToDeleteLocation: 'Xóa vị trí thất bại',
   
 } as const;
 

@@ -2145,6 +2145,10 @@ const imports = {
   itemsStoredProgress: '{{completed}}/{{total}} items stored',
   addedProduct: 'Added {{name}}',
   barcodeNotFoundInDatabase: '{{barcode}} not found in database',
+  locationUpdated: 'Location updated',
+  locationDeleted: 'Location removed',
+  failedToUpdateLocation: 'Failed to update location',
+  failedToDeleteLocation: 'Failed to remove location',
   
 } as const;
 

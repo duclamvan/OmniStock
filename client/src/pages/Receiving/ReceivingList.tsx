@@ -2106,6 +2106,59 @@ function QuickStorageSheet({
       });
     }
   });
+
+  // Update existing location mutation
+  const updateLocationMutation = useMutation({
+    mutationFn: async ({ productId, locationId, quantity, receiptItemId }: {
+      productId: string;
+      locationId: string;
+      quantity: number;
+      receiptItemId?: string;
+    }) => {
+      return apiRequest('PATCH', `/api/products/${productId}/locations/${locationId}`, { quantity, receiptItemId });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${variables.productId}/locations`] });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: error instanceof Error ? error.message : t('failedToUpdateLocation'),
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete existing location mutation
+  const deleteLocationMutation = useMutation({
+    mutationFn: async ({ productId, locationId, receiptItemId }: {
+      productId: string;
+      locationId: string;
+      receiptItemId?: string;
+    }) => {
+      return apiRequest('DELETE', `/api/products/${productId}/locations/${locationId}`, { receiptItemId });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.refetchQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
+      queryClient.refetchQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${variables.productId}/locations`] });
+      toast({
+        title: t('locationDeleted'),
+        duration: 2000
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: t('common:error'),
+        description: error instanceof Error ? error.message : t('failedToDeleteLocation'),
+        variant: "destructive",
+      });
+    }
+  });
   
   // Complete receiving mutation - updates shipment status to completed
   const completeReceivingMutation = useMutation({
@@ -2674,10 +2727,10 @@ function QuickStorageSheet({
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-64 overflow-y-auto">
-                                    {/* SAVED LOCATIONS - Green, locked */}
+                                    {/* SAVED LOCATIONS - Green, editable */}
                                     {item.existingLocations?.map((loc: any, locIdx: number) => (
                                       <div 
-                                        key={`saved-${locIdx}`}
+                                        key={`saved-${loc.id || locIdx}`}
                                         className="p-4 flex items-center gap-4 bg-green-50 dark:bg-green-950/20"
                                       >
                                         <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
@@ -2687,10 +2740,76 @@ function QuickStorageSheet({
                                           <p className="font-mono font-bold text-base truncate">{loc.locationCode}</p>
                                           <p className="text-sm text-green-700 dark:text-green-400">{t('saved')}</p>
                                         </div>
-                                        <div className="text-right">
-                                          <span className="text-xl font-bold text-green-700 dark:text-green-300">{loc.quantity}</span>
-                                          <span className="text-sm text-muted-foreground ml-1">{t('units')}</span>
-                                        </div>
+                                        
+                                        <Input
+                                          type="number"
+                                          defaultValue={loc.quantity || 0}
+                                          onBlur={async (e) => {
+                                            e.stopPropagation();
+                                            const newQty = parseInt(e.target.value) || 0;
+                                            if (newQty === loc.quantity) return;
+                                            
+                                            const qtyDiff = newQty - (loc.quantity || 0);
+                                            
+                                            if (item.productId && loc.id) {
+                                              try {
+                                                await updateLocationMutation.mutateAsync({
+                                                  productId: String(item.productId),
+                                                  locationId: String(loc.id),
+                                                  quantity: newQty,
+                                                  receiptItemId: String(item.receiptItemId)
+                                                });
+                                                
+                                                const updatedItems = [...items];
+                                                updatedItems[index].existingLocations[locIdx].quantity = newQty;
+                                                updatedItems[index].assignedQuantity += qtyDiff;
+                                                setItems(updatedItems);
+                                                
+                                                toast({
+                                                  title: t('locationUpdated'),
+                                                  duration: 2000
+                                                });
+                                              } catch (error) {
+                                                e.target.value = String(loc.quantity || 0);
+                                              }
+                                            }
+                                          }}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="w-24 h-12 text-center text-xl font-bold rounded-xl border-green-300 dark:border-green-700"
+                                          min="0"
+                                          data-testid={`input-saved-qty-${locIdx}`}
+                                        />
+                                        
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!item.productId || !loc.id) return;
+                                            
+                                            try {
+                                              await deleteLocationMutation.mutateAsync({
+                                                productId: String(item.productId),
+                                                locationId: String(loc.id),
+                                                receiptItemId: String(item.receiptItemId)
+                                              });
+                                              
+                                              const updatedItems = [...items];
+                                              const deletedQty = loc.quantity || 0;
+                                              updatedItems[index].existingLocations = updatedItems[index].existingLocations.filter(
+                                                (_: any, i: number) => i !== locIdx
+                                              );
+                                              updatedItems[index].assignedQuantity -= deletedQty;
+                                              setItems(updatedItems);
+                                            } catch (error) {
+                                              console.error('Failed to delete location:', error);
+                                            }
+                                          }}
+                                          disabled={deleteLocationMutation.isPending}
+                                          className="h-12 w-12 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl"
+                                        >
+                                          <X className="h-6 w-6" />
+                                        </Button>
                                       </div>
                                     ))}
                                     
