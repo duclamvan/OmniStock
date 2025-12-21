@@ -2902,12 +2902,12 @@ function QuickStorageSheet({
                                           const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                           if (locationsToSave.length === 0) return;
                                           
-                                          const savedLocations: LocationAssignment[] = [];
+                                          const savedLocationsWithDbId: Array<{loc: LocationAssignment, dbId: string}> = [];
                                           
                                           for (const loc of locationsToSave) {
                                             if (item.productId && loc.quantity > 0) {
                                               try {
-                                                await storeLocationMutation.mutateAsync({
+                                                const response = await storeLocationMutation.mutateAsync({
                                                   productId: String(item.productId),
                                                   locationCode: loc.locationCode,
                                                   locationType: loc.locationType,
@@ -2915,22 +2915,24 @@ function QuickStorageSheet({
                                                   isPrimary: loc.isPrimary,
                                                   receiptItemId: item.receiptItemId
                                                 });
-                                                savedLocations.push(loc);
+                                                // Capture database ID from response
+                                                const dbId = (response as any)?.id || loc.id;
+                                                savedLocationsWithDbId.push({ loc, dbId });
                                               } catch (error) {
                                                 console.error('Failed to save location:', error);
                                               }
                                             }
                                           }
                                           
-                                          const newlyAssignedTotal = savedLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                                          const newlyAssignedTotal = savedLocationsWithDbId.reduce((sum, { loc }) => sum + (loc.quantity || 0), 0);
                                           const updatedItems = [...items];
                                           updatedItems[index].assignedQuantity += newlyAssignedTotal;
                                           
-                                          // Move saved locations to existingLocations for persistent display
+                                          // Move saved locations to existingLocations with real database ID
                                           const newExisting = [...(updatedItems[index].existingLocations || [])];
-                                          savedLocations.forEach(loc => {
+                                          savedLocationsWithDbId.forEach(({ loc, dbId }) => {
                                             newExisting.push({
-                                              id: loc.id,
+                                              id: dbId,
                                               locationCode: loc.locationCode,
                                               locationType: loc.locationType,
                                               quantity: loc.quantity,
@@ -2940,8 +2942,9 @@ function QuickStorageSheet({
                                           updatedItems[index].existingLocations = newExisting;
                                           
                                           // Remove saved locations from pending
+                                          const savedLocs = savedLocationsWithDbId.map(s => s.loc);
                                           updatedItems[index].locations = updatedItems[index].locations.filter(
-                                            loc => !savedLocations.includes(loc)
+                                            loc => !savedLocs.includes(loc)
                                           );
                                           setItems(updatedItems);
                                           
