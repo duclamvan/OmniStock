@@ -13639,7 +13639,8 @@ Important:
         pplStatus: 'created'
       });
 
-      // Save to shipment_labels table
+      // Save to shipment_labels table - include cartonNumber for UI matching
+      const cartonIds = cartons.map(c => c.id);
       await storage.createShipmentLabel({
         orderId,
         carrier: 'PPL',
@@ -13649,13 +13650,25 @@ Important:
         labelData: {
           pplShipment,
           referenceId: order.orderId,
-          hasCOD
+          hasCOD,
+          cartonNumber: 1, // For single carton, always 1
+          cartonIds
         },
         shipmentCount: shipmentNumbers.length,
         status: 'active'
       });
 
-      console.log('✅ PPL label created successfully');
+      // Update cartons with tracking info so UI can detect label exists
+      for (let i = 0; i < cartons.length; i++) {
+        const carton = cartons[i];
+        const trackingNumber = shipmentNumbers[i] || shipmentNumbers[0];
+        await storage.updateOrderCarton(carton.id, {
+          labelPrinted: true,
+          trackingNumber
+        });
+      }
+
+      console.log('✅ PPL label created successfully, cartons updated');
       res.json({
         success: true,
         batchId,
