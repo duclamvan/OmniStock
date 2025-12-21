@@ -849,15 +849,21 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     {dueTicketsCount}
                   </Badge>
                 )}
-                {/* Red dot indicators for warehouse operations */}
+                {/* Number badges for warehouse operations */}
                 {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
+                    {toFulfillCount}
+                  </Badge>
                 )}
                 {item.href === "/receiving" && receivingTodayCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
+                    {receivingTodayCount}
+                  </Badge>
                 )}
                 {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
+                    {pendingStockAdjustmentsCount}
+                  </Badge>
                 )}
               </button>
             </Link>
@@ -931,15 +937,21 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    {/* Red dot indicators for collapsed sidebar */}
+                    {/* Number badges for collapsed sidebar */}
                     {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
-                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
+                        {toFulfillCount > 9 ? '9+' : toFulfillCount}
+                      </span>
                     )}
                     {item.href === "/receiving" && receivingTodayCount > 0 && (
-                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
+                        {receivingTodayCount > 9 ? '9+' : receivingTodayCount}
+                      </span>
                     )}
                     {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
-                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
+                        {pendingStockAdjustmentsCount > 9 ? '9+' : pendingStockAdjustmentsCount}
+                      </span>
                     )}
                   </button>
                 </Link>
