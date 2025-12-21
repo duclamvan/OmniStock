@@ -502,32 +502,33 @@ export default function StartReceiving() {
         setCarrier(shipment.endCarrier || shipment.easypostCarrier || shipment.carrier || "");
       }
       
-      // Only set other defaults if the current values are empty/default
-      if (!receivedBy || receivedBy === "Employee #1") {
-        setParcelCount(shipment.totalUnits || 1);
-        setScannedParcels(0); // No parcels scanned yet for new receiving
-        setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
-        setUploadedPhotos([]); // Clear photos for new receiving
-        setNotes(""); // Clear notes for new receiving
-        
-        if (shipment.items && shipment.items.length > 0) {
-          const items = shipment.items.map((item: any, index: number) => ({
-            id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
-            itemId: item.id, // Add itemId field for API calls
-            productId: item.productId?.toString() || item.id?.toString(),
-            name: item.name || item.productName || `Item ${index + 1}`,
-            sku: item.sku || '',
-            expectedQty: item.quantity || 1,
-            receivedQty: 0,
-            status: 'pending' as const,
-            notes: '',
-            checked: false,
-            imageUrl: item.imageUrl || '',
-            warehouseLocations: [] as string[], // Will be populated after initialization
-            isNewProduct: false // Will be determined when fetching locations
-          }));
-          setReceivingItems(items);
-        }
+      // Initialize default values for new receiving session
+      setParcelCount(shipment.totalUnits || 1);
+      setScannedParcels(0); // No parcels scanned yet for new receiving
+      setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
+      setUploadedPhotos([]); // Clear photos for new receiving
+      setNotes(""); // Clear notes for new receiving
+      
+      // ALWAYS initialize items from shipment when no receipt exists
+      // This ensures items are restored when a shipment is moved back to receiving
+      if (shipment.items && shipment.items.length > 0 && receivingItems.length === 0) {
+        console.log('Initializing items from shipment.items:', shipment.items.length, 'items');
+        const items = shipment.items.map((item: any, index: number) => ({
+          id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
+          itemId: item.id, // Add itemId field for API calls
+          productId: item.productId?.toString() || item.id?.toString(),
+          name: item.name || item.productName || `Item ${index + 1}`,
+          sku: item.sku || '',
+          expectedQty: item.quantity || 1,
+          receivedQty: 0,
+          status: 'pending' as const,
+          notes: '',
+          checked: false,
+          imageUrl: item.imageUrl || '',
+          warehouseLocations: [] as string[], // Will be populated after initialization
+          isNewProduct: false // Will be determined when fetching locations
+        }));
+        setReceivingItems(items);
       }
     }
   }, [shipment, receipt, receiptLoading]);
