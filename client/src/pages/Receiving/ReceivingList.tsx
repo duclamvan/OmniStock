@@ -2395,8 +2395,10 @@ function QuickStorageSheet({
                   <AnimatePresence mode="wait">
                     {items.map((item, index) => {
                       const isSelected = index === selectedItemIndex;
-                      const itemRemainingQty = item.receivedQuantity - item.assignedQuantity;
-                      const isFullyStored = itemRemainingQty === 0;
+                      // Include pending location quantities in remaining calculation
+                      const pendingLocationQty = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                      const itemRemainingQty = item.receivedQuantity - item.assignedQuantity - pendingLocationQty;
+                      const isFullyStored = itemRemainingQty <= 0;
 
                       return (
                         <motion.div
