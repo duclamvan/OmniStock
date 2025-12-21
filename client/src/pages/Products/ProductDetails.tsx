@@ -177,7 +177,7 @@ export default function ProductDetails() {
     { id: 'details', label: t('products:productDetails', 'Details'), icon: Tag },
     { id: 'warehouse', label: t('common:warehouseLocation', 'Warehouse'), icon: Warehouse },
     ...(variants.length > 0 ? [{ id: 'variants', label: t('products:variantsTab', 'Variants'), icon: Sparkles }] : []),
-    ...(tieredPricing.length > 0 ? [{ id: 'tiered', label: t('products:tieredPricing', 'Tiered Pricing'), icon: BarChart3 }] : []),
+    ...(tieredPricing.length > 0 ? [{ id: 'tiered', label: t('products:tieredPricing.title', 'Tiered Pricing'), icon: BarChart3 }] : []),
     { id: 'packing', label: t('products:packingInstructions', 'Packing'), icon: Package },
     { id: 'files', label: t('products:productFiles', 'Files'), icon: FileText },
   ];
