@@ -14058,12 +14058,19 @@ Important:
         })
       );
 
-      // Create a new PDF document
+      // Create a new PDF document - optimized for printing
       const doc = new PDFDocument({ 
         size: 'A4', 
-        margin: 40,
+        margin: 35,
         bufferPages: true
       });
+
+      // Page dimensions for A4
+      const pageWidth = 595;
+      const pageHeight = 842;
+      const marginLeft = 35;
+      const marginRight = 35;
+      const contentWidth = pageWidth - marginLeft - marginRight;
 
       // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
@@ -14072,166 +14079,226 @@ Important:
       // Pipe the PDF directly to the response
       doc.pipe(res);
 
-      // ===== HEADER SECTION =====
-      // Add company logo (in black/grayscale)
+      // ===== HEADER SECTION - Two column layout =====
       const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1754349267160.png');
       try {
-        doc.image(logoPath, 40, 40, { width: 80 });
+        doc.image(logoPath, marginLeft, 30, { width: 70 });
       } catch (error) {
         console.error('Logo not found, skipping:', error);
       }
 
-      // Company information
-      doc.fontSize(18)
+      // Company name and ID next to logo
+      doc.fontSize(16)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text('Davie Lam s.r.o.', 135, 45)
+         .text('Davie Lam s.r.o.', 115, 35)
          .fontSize(9)
          .font('Helvetica')
-         .fillColor('#666666')
-         .text('ID: CZ17587816', 135, 65);
+         .fillColor('#555555')
+         .text('IČO: CZ17587816', 115, 54);
 
-      // Document title
-      doc.fontSize(26)
+      // Document title - Large and clear for print
+      doc.fontSize(28)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text('PACKING LIST', 40, 115, { align: 'center' });
+         .text('PACKING LIST', marginLeft, 85, { align: 'center', width: contentWidth });
 
-      // Horizontal line under title
+      // Double line under title for professional look
       doc.strokeColor('#000000')
          .lineWidth(2)
-         .moveTo(40, 150)
-         .lineTo(555, 150)
+         .moveTo(marginLeft, 118)
+         .lineTo(pageWidth - marginRight, 118)
+         .stroke()
+         .lineWidth(0.5)
+         .moveTo(marginLeft, 122)
+         .lineTo(pageWidth - marginRight, 122)
          .stroke();
 
-      // ===== ORDER INFORMATION =====
-      const infoStartY = 165;
-      doc.fontSize(9)
-         .fillColor('#666666')
+      // ===== ORDER INFORMATION - Two column layout =====
+      const infoStartY = 135;
+      const labelWidth = 100;
+      
+      // Left column - Order info
+      doc.fontSize(10)
+         .fillColor('#555555')
          .font('Helvetica')
-         .text('Document Date:', 40, infoStartY)
+         .text('Date:', marginLeft, infoStartY)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text(new Date().toLocaleDateString('en-US', { 
+         .text(new Date().toLocaleDateString('en-GB', { 
            year: 'numeric', 
-           month: 'long', 
+           month: 'short', 
            day: 'numeric' 
-         }), 120, infoStartY);
+         }), marginLeft + 45, infoStartY);
 
-      doc.fontSize(9)
-         .fillColor('#666666')
+      doc.fontSize(10)
+         .fillColor('#555555')
          .font('Helvetica')
-         .text('Order Number:', 40, infoStartY + 15)
+         .text('Order #:', marginLeft, infoStartY + 16)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text(order.orderId, 120, infoStartY + 15);
+         .text(order.orderId, marginLeft + 55, infoStartY + 16);
 
+      // Right column - Shipping method (if exists)
       if (order.shippingMethod) {
-        doc.fontSize(9)
-           .fillColor('#666666')
+        doc.fontSize(10)
+           .fillColor('#555555')
            .font('Helvetica')
-           .text('Shipping Method:', 40, infoStartY + 30)
+           .text('Shipping:', pageWidth / 2, infoStartY)
            .fillColor('#000000')
            .font('Helvetica-Bold')
-           .text(order.shippingMethod, 120, infoStartY + 30);
+           .text(order.shippingMethod, pageWidth / 2 + 55, infoStartY);
       }
 
-      // ===== CUSTOMER INFORMATION BOX =====
-      const customerBoxY = 220;
-      // Box background - increased height to accommodate address
-      doc.rect(40, customerBoxY, 515, 120)
-         .fillAndStroke('#F8F9FA', '#CCCCCC');
+      // ===== CUSTOMER INFORMATION BOX - Cleaner design =====
+      const customerBoxY = 175;
+      const customerBoxHeight = 95;
+      
+      // Box with thicker border for visibility
+      doc.rect(marginLeft, customerBoxY, contentWidth, customerBoxHeight)
+         .lineWidth(1.5)
+         .fillAndStroke('#FAFAFA', '#333333');
 
-      // Box title
+      // Box title with background strip
+      doc.rect(marginLeft, customerBoxY, contentWidth, 22)
+         .fillAndStroke('#2C3E50', '#2C3E50');
+      
       doc.fontSize(11)
-         .fillColor('#000000')
+         .fillColor('#FFFFFF')
          .font('Helvetica-Bold')
-         .text('SHIP TO:', 50, customerBoxY + 15);
+         .text('SHIP TO', marginLeft + 12, customerBoxY + 6);
 
-      // Address details (no separate customer name line - it's in the formatted address)
-      doc.fontSize(9)
+      // Address details - larger font for readability
+      doc.fontSize(11)
          .font('Helvetica')
-         .fillColor('#333333')
-         .text(formattedAddress, 50, customerBoxY + 35, { 
-           width: 500,
-           lineGap: 3
+         .fillColor('#000000')
+         .text(formattedAddress, marginLeft + 12, customerBoxY + 30, { 
+           width: contentWidth - 24,
+           lineGap: 2
          });
 
-      // ===== ITEMS TABLE =====
-      const tableTop = 355;
+      // ===== ITEMS TABLE - Improved for print =====
+      const tableTop = customerBoxY + customerBoxHeight + 15;
+      const colCheck = 30;  // Checkbox column
+      const colNum = 25;    // # column  
+      const colSku = 95;    // SKU column
+      const colDesc = 250;  // Description column
+      const colWeight = 55; // Weight column
+      const colQty = 50;    // Qty column
 
-      // Table header background
-      doc.rect(40, tableTop, 515, 28)
-         .fillAndStroke('#2C3E50', '#2C3E50');
+      // Table header with dark background
+      doc.rect(marginLeft, tableTop, contentWidth, 26)
+         .fillAndStroke('#1a1a1a', '#1a1a1a');
 
-      // Table headers (white text on dark background)
-      doc.fontSize(10)
+      // Table headers (white text) - includes checkbox column
+      let headerX = marginLeft + 5;
+      doc.fontSize(9)
          .font('Helvetica-Bold')
          .fillColor('#FFFFFF')
-         .text('#', 45, tableTop + 9, { width: 25 })
-         .text('SKU', 75, tableTop + 9, { width: 90 })
-         .text('ITEM DESCRIPTION', 170, tableTop + 9, { width: 250 })
-         .text('WEIGHT', 425, tableTop + 9, { width: 60, align: 'right' })
-         .text('QTY', 490, tableTop + 9, { width: 60, align: 'right' });
+         .text('✓', headerX, tableTop + 8, { width: colCheck, align: 'center' });
+      headerX += colCheck;
+      doc.text('#', headerX, tableTop + 8, { width: colNum, align: 'center' });
+      headerX += colNum;
+      doc.text('SKU', headerX, tableTop + 8, { width: colSku });
+      headerX += colSku;
+      doc.text('ITEM DESCRIPTION', headerX, tableTop + 8, { width: colDesc });
+      headerX += colDesc;
+      doc.text('WEIGHT', headerX, tableTop + 8, { width: colWeight, align: 'right' });
+      headerX += colWeight;
+      doc.text('QTY', headerX, tableTop + 8, { width: colQty, align: 'right' });
 
       // Table body
-      let yPosition = tableTop + 28;
-      const rowHeight = 32;
+      let yPosition = tableTop + 26;
+      const rowHeight = 28;
+
+      // Helper function to draw table header
+      const drawTableHeader = (y: number) => {
+        doc.rect(marginLeft, y, contentWidth, 26)
+           .fillAndStroke('#1a1a1a', '#1a1a1a');
+        let hX = marginLeft + 5;
+        doc.fontSize(9)
+           .font('Helvetica-Bold')
+           .fillColor('#FFFFFF')
+           .text('✓', hX, y + 8, { width: colCheck, align: 'center' });
+        hX += colCheck;
+        doc.text('#', hX, y + 8, { width: colNum, align: 'center' });
+        hX += colNum;
+        doc.text('SKU', hX, y + 8, { width: colSku });
+        hX += colSku;
+        doc.text('ITEM DESCRIPTION', hX, y + 8, { width: colDesc });
+        hX += colDesc;
+        doc.text('WEIGHT', hX, y + 8, { width: colWeight, align: 'right' });
+        hX += colWeight;
+        doc.text('QTY', hX, y + 8, { width: colQty, align: 'right' });
+        return y + 26;
+      };
 
       itemsWithProducts.forEach((item, index) => {
         // Check if we need a new page
-        if (yPosition > 720) {
+        if (yPosition > 740) {
           doc.addPage();
-          yPosition = 50;
-
-          // Redraw table header on new page
-          doc.rect(40, yPosition, 515, 28)
-             .fillAndStroke('#2C3E50', '#2C3E50');
-          doc.fontSize(10)
-             .font('Helvetica-Bold')
-             .fillColor('#FFFFFF')
-             .text('#', 45, yPosition + 9, { width: 25 })
-             .text('SKU', 75, yPosition + 9, { width: 90 })
-             .text('ITEM DESCRIPTION', 170, yPosition + 9, { width: 250 })
-             .text('WEIGHT', 425, yPosition + 9, { width: 60, align: 'right' })
-             .text('QTY', 490, yPosition + 9, { width: 60, align: 'right' });
-          yPosition += 28;
+          yPosition = drawTableHeader(40);
         }
 
-        // Alternating row colors
-        const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
-        doc.rect(40, yPosition, 515, rowHeight)
-           .fillAndStroke(bgColor, '#E0E0E0');
+        // Alternating row colors with clear borders
+        const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F5F5F5';
+        doc.rect(marginLeft, yPosition, contentWidth, rowHeight)
+           .lineWidth(0.5)
+           .fillAndStroke(bgColor, '#CCCCCC');
 
-        // Row data
-        doc.fontSize(9)
+        // Draw checkbox
+        let cellX = marginLeft + 5;
+        doc.rect(cellX + 8, yPosition + 7, 14, 14)
+           .lineWidth(1)
+           .stroke('#333333');
+        cellX += colCheck;
+
+        // Row number
+        doc.fontSize(10)
            .fillColor('#000000')
            .font('Helvetica')
-           .text(`${index + 1}`, 45, yPosition + 10, { width: 25 })
-           .text(item.sku || 'N/A', 75, yPosition + 10, { width: 90 })
-           .text(item.productName, 170, yPosition + 10, { width: 245, ellipsis: true });
+           .text(`${index + 1}`, cellX, yPosition + 8, { width: colNum, align: 'center' });
+        cellX += colNum;
+
+        // SKU - monospace style
+        doc.fontSize(9)
+           .font('Helvetica')
+           .text(item.sku || 'N/A', cellX, yPosition + 9, { width: colSku - 5 });
+        cellX += colSku;
+
+        // Product name
+        doc.fontSize(10)
+           .text(item.productName, cellX, yPosition + 8, { width: colDesc - 5, ellipsis: true });
+        cellX += colDesc;
 
         // Weight
-        const weightText = item.weight ? `${item.weight}kg` : '-';
-        doc.text(weightText, 425, yPosition + 10, { width: 60, align: 'right' });
+        const weightText = item.weight ? `${item.weight} kg` : '-';
+        doc.fontSize(10)
+           .text(weightText, cellX, yPosition + 8, { width: colWeight, align: 'right' });
+        cellX += colWeight;
 
-        // Quantity (bold)
-        doc.font('Helvetica-Bold')
-           .text(item.quantity.toString(), 490, yPosition + 10, { width: 60, align: 'right' });
+        // Quantity - bold and larger
+        doc.fontSize(12)
+           .font('Helvetica-Bold')
+           .text(item.quantity.toString(), cellX, yPosition + 7, { width: colQty, align: 'right' });
 
         yPosition += rowHeight;
       });
 
-      // ===== SUMMARY SECTION =====
-      yPosition += 15;
-      if (yPosition > 700) {
+      // ===== SUMMARY SECTION - Cleaner box =====
+      yPosition += 20;
+      if (yPosition > 720) {
         doc.addPage();
         yPosition = 50;
       }
 
-      // Summary box
-      doc.rect(350, yPosition, 205, 66)
-         .fillAndStroke('#F8F9FA', '#CCCCCC');
+      const summaryWidth = 200;
+      const summaryX = pageWidth - marginRight - summaryWidth;
+
+      // Summary box with border
+      doc.rect(summaryX, yPosition, summaryWidth, 75)
+         .lineWidth(1.5)
+         .fillAndStroke('#F8F8F8', '#333333');
 
       const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
       const totalWeight = itemsWithProducts.reduce((sum, item) => {
@@ -14239,45 +14306,57 @@ Important:
         return sum + (weight * item.quantity);
       }, 0);
 
+      // Summary content with better spacing
+      const summaryLabelX = summaryX + 15;
+      const summaryValueX = summaryX + summaryWidth - 15;
+
       // Total cartons
-      doc.fontSize(10)
+      doc.fontSize(11)
          .font('Helvetica')
-         .fillColor('#666666')
-         .text('Total Cartons:', 360, yPosition + 10)
+         .fillColor('#333333')
+         .text('Total Cartons:', summaryLabelX, yPosition + 12)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(cartonCount.toString(), 480, yPosition + 10, { align: 'right' });
+         .text(cartonCount.toString(), summaryValueX - 50, yPosition + 12, { width: 50, align: 'right' });
 
       // Total items
-      doc.fontSize(10)
+      doc.fontSize(11)
          .font('Helvetica')
-         .fillColor('#666666')
-         .text('Total Items:', 360, yPosition + 28)
+         .fillColor('#333333')
+         .text('Total Items:', summaryLabelX, yPosition + 32)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(totalItems.toString(), 480, yPosition + 28, { align: 'right' });
+         .text(totalItems.toString(), summaryValueX - 50, yPosition + 32, { width: 50, align: 'right' });
 
       // Total weight
-      doc.fontSize(10)
+      doc.fontSize(11)
          .font('Helvetica')
-         .fillColor('#666666')
-         .text('Total Weight:', 360, yPosition + 46)
+         .fillColor('#333333')
+         .text('Total Weight:', summaryLabelX, yPosition + 52)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(`${totalWeight.toFixed(2)} kg`, 480, yPosition + 46, { align: 'right' });
+         .text(`${totalWeight.toFixed(2)} kg`, summaryValueX - 60, yPosition + 52, { width: 60, align: 'right' });
+
+      // ===== VERIFICATION SECTION - For signature =====
+      const verifyY = yPosition + 90;
+      if (verifyY < 720) {
+        doc.fontSize(9)
+           .font('Helvetica')
+           .fillColor('#555555')
+           .text('Packed by: _______________________', marginLeft, verifyY)
+           .text('Date: _______________', marginLeft + 200, verifyY)
+           .text('Verified by: _______________________', marginLeft, verifyY + 25)
+           .text('Date: _______________', marginLeft + 200, verifyY + 25);
+      }
 
       // ===== FOOTER =====
-      const footerY = 760;
+      const footerY = 780;
       doc.fontSize(8)
-         .fillColor('#999999')
+         .fillColor('#888888')
          .font('Helvetica-Oblique')
-         .text('This packing list confirms the items included in this shipment.', 40, footerY, { 
+         .text('Please verify all items upon receipt and report any discrepancies immediately.', marginLeft, footerY, { 
            align: 'center', 
-           width: 515 
-         })
-         .text('Please verify all items upon receipt and report any discrepancies immediately.', 40, footerY + 12, { 
-           align: 'center', 
-           width: 515 
+           width: contentWidth 
          });
 
       // Page numbers
@@ -14285,11 +14364,11 @@ Important:
       for (let i = 0; i < range.count; i++) {
         doc.switchToPage(i);
         doc.fontSize(8)
-           .fillColor('#999999')
+           .fillColor('#888888')
            .font('Helvetica')
-           .text(`Page ${i + 1} of ${range.count}`, 40, 790, { 
+           .text(`Page ${i + 1} of ${range.count}`, marginLeft, 810, { 
              align: 'center', 
-             width: 515 
+             width: contentWidth 
            });
       }
 
