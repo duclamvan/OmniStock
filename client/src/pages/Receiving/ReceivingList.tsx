@@ -2838,10 +2838,20 @@ function QuickStorageSheet({
                                           onChange={(e) => {
                                             e.stopPropagation();
                                             const newQty = parseInt(e.target.value) || 0;
-                                            const updatedItems = [...items];
-                                            const maxAllowed = itemRemainingQty + (loc.quantity || 0);
-                                            updatedItems[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
-                                            setItems(updatedItems);
+                                            // Use state updater to get FRESH state and recalculate max
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              const currentItem = updated[index];
+                                              // Recalculate from fresh state
+                                              const freshExistingQty = (currentItem.existingLocations || [])
+                                                .reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
+                                              const freshPendingQty = currentItem.locations
+                                                .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
+                                              const freshRemaining = currentItem.receivedQuantity - freshExistingQty - freshPendingQty;
+                                              const maxAllowed = Math.max(0, freshRemaining);
+                                              updated[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
+                                              return updated;
+                                            });
                                           }}
                                           onClick={(e) => e.stopPropagation()}
                                           className="w-24 h-12 text-center text-xl font-bold rounded-xl"
@@ -2882,11 +2892,19 @@ function QuickStorageSheet({
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          const lastIndex = item.locations.length - 1;
-                                          const updatedItems = [...items];
-                                          updatedItems[index].locations[lastIndex].quantity = 
-                                            (updatedItems[index].locations[lastIndex].quantity || 0) + itemRemainingQty;
-                                          setItems(updatedItems);
+                                          // Use fresh calculation for fill all
+                                          setItems(prevItems => {
+                                            const updated = [...prevItems];
+                                            const currentItem = updated[index];
+                                            const lastIndex = currentItem.locations.length - 1;
+                                            const freshExistingQty = (currentItem.existingLocations || [])
+                                              .reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
+                                            const freshPendingQty = currentItem.locations
+                                              .reduce((sum, l, i) => sum + (i === lastIndex ? 0 : (l.quantity || 0)), 0);
+                                            const freshRemaining = Math.max(0, currentItem.receivedQuantity - freshExistingQty - freshPendingQty);
+                                            updated[index].locations[lastIndex].quantity = freshRemaining;
+                                            return updated;
+                                          });
                                         }}
                                         className="flex-1 h-14 rounded-xl text-base"
                                       >
@@ -2903,12 +2921,12 @@ function QuickStorageSheet({
                                           const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                           if (locationsToSave.length === 0) return;
                                           
-                                          const savedLocationsWithDbId: Array<{loc: LocationAssignment, dbId: string, serverQty: number}> = [];
+                                          let savedCount = 0;
                                           
                                           for (const loc of locationsToSave) {
                                             if (item.productId && loc.quantity > 0) {
                                               try {
-                                                const response = await storeLocationMutation.mutateAsync({
+                                                await storeLocationMutation.mutateAsync({
                                                   productId: String(item.productId),
                                                   locationCode: loc.locationCode,
                                                   locationType: loc.locationType,
@@ -2916,63 +2934,65 @@ function QuickStorageSheet({
                                                   isPrimary: loc.isPrimary,
                                                   receiptItemId: item.receiptItemId
                                                 });
-                                                // Parse JSON from response (apiRequest returns raw Response)
-                                                const data = await (response as Response).json();
-                                                // Capture database ID and server's total quantity from response
-                                                const dbId = data?.id || loc.id;
-                                                // Server returns the NEW TOTAL after adding, use it to avoid double-count
-                                                const serverQty = data?.quantity ?? loc.quantity;
-                                                savedLocationsWithDbId.push({ loc, dbId, serverQty });
+                                                savedCount++;
                                               } catch (error) {
                                                 console.error('Failed to save location:', error);
                                               }
                                             }
                                           }
                                           
-                                          const updatedItems = [...items];
-                                          
-                                          // Update existingLocations with server-returned quantities
-                                          // The API returns the NEW TOTAL (after adding), not just what we sent
-                                          const newExisting = [...(updatedItems[index].existingLocations || [])];
-                                          savedLocationsWithDbId.forEach(({ loc, dbId, serverQty }) => {
-                                            const existingIdx = newExisting.findIndex(e => e.locationCode === loc.locationCode);
-                                            if (existingIdx >= 0) {
-                                              // Update existing entry with server's total (not adding again!)
-                                              newExisting[existingIdx].quantity = serverQty;
-                                              newExisting[existingIdx].id = dbId;
-                                            } else {
-                                              // New location code - use server quantity
-                                              newExisting.push({
-                                                id: dbId,
-                                                locationCode: loc.locationCode,
-                                                locationType: loc.locationType,
-                                                quantity: serverQty,
-                                                isPrimary: loc.isPrimary
+                                          if (savedCount > 0) {
+                                            // Refetch product locations from server to get authoritative data
+                                            try {
+                                              const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
+                                              if (locResponse.ok) {
+                                                const serverLocations = await locResponse.json();
+                                                // Filter to only locations for this receipt item (tagged with RI:{receiptItemId})
+                                                const relevantLocations = serverLocations.filter((loc: any) => 
+                                                  loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
+                                                  !loc.notes?.includes('RI:')
+                                                );
+                                                
+                                                setItems(prevItems => {
+                                                  const updated = [...prevItems];
+                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => ({
+                                                    id: loc.id,
+                                                    locationCode: loc.locationCode,
+                                                    locationType: loc.locationType,
+                                                    quantity: loc.quantity,
+                                                    isPrimary: loc.isPrimary
+                                                  }));
+                                                  updated[index].locations = []; // Clear pending
+                                                  return updated;
+                                                });
+                                              }
+                                            } catch (err) {
+                                              console.error('Failed to refetch locations:', err);
+                                              // Fallback: just clear pending
+                                              setItems(prevItems => {
+                                                const updated = [...prevItems];
+                                                updated[index].locations = [];
+                                                return updated;
                                               });
                                             }
-                                          });
-                                          updatedItems[index].existingLocations = newExisting;
-                                          
-                                          // Remove saved locations from pending
-                                          const savedLocs = savedLocationsWithDbId.map(s => s.loc);
-                                          updatedItems[index].locations = updatedItems[index].locations.filter(
-                                            loc => !savedLocs.includes(loc)
-                                          );
-                                          setItems(updatedItems);
+                                            
+                                            // Check if fully stored and play appropriate sound
+                                            const totalSaved = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                                            const currentExisting = (item.existingLocations || []).reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
+                                            const isFullyAssigned = currentExisting + totalSaved >= item.receivedQuantity;
+                                            
+                                            if (isFullyAssigned) {
+                                              if (index < items.length - 1) {
+                                                setSelectedItemIndex(index + 1);
+                                              }
+                                              await soundEffects.playCompletionSound();
+                                            } else {
+                                              await soundEffects.playSuccessBeep();
+                                            }
+                                          }
                                           
                                           // Auto-focus input for next location
                                           setTimeout(() => locationInputRef.current?.focus(), 100);
-                                          
-                                          const isFullyAssigned = updatedItems[index].assignedQuantity >= updatedItems[index].receivedQuantity;
-                                          
-                                          if (isFullyAssigned) {
-                                            if (index < items.length - 1) {
-                                              setSelectedItemIndex(index + 1);
-                                            }
-                                            await soundEffects.playCompletionSound();
-                                          } else {
-                                            await soundEffects.playSuccessBeep();
-                                          }
                                         }}
                                         disabled={storeLocationMutation.isPending}
                                       >
