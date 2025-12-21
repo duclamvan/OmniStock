@@ -14065,6 +14065,11 @@ Important:
         bufferPages: false // No multi-page
       });
 
+      // Register Unicode-compatible fonts (DejaVu Sans supports all European languages)
+      const fontPath = '/usr/share/fonts/truetype/dejavu';
+      doc.registerFont('DejaVu', `${fontPath}/DejaVuSans.ttf`);
+      doc.registerFont('DejaVu-Bold', `${fontPath}/DejaVuSans-Bold.ttf`);
+
       // Page dimensions for A4
       const pageWidth = 595;
       const pageHeight = 842;
@@ -14102,58 +14107,52 @@ Important:
         console.error('Logo not found, skipping:', error);
       }
 
-      // Company info - compact
+      // Company info - compact (using DejaVu for Unicode support)
       doc.fontSize(14)
          .fillColor('#000000')
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .text('Davie Lam s.r.o.', 88, 22)
          .fontSize(8)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#666666')
          .text('IČO: CZ17587816', 88, 38);
 
       // Title - right aligned, compact
       doc.fontSize(22)
          .fillColor('#000000')
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .text('PACKING LIST', pageWidth - marginRight - 180, 22, { width: 180, align: 'right' });
 
-      // Order info inline with title
+      // Order info - separate lines to avoid strikethrough issue
       doc.fontSize(8)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#555555')
-         .text(`Order: `, pageWidth - marginRight - 180, 48, { continued: true, width: 180, align: 'right' })
-         .font('Helvetica-Bold')
+         .text('Order:', pageWidth - marginRight - 180, 48, { width: 180, align: 'right' });
+      doc.fontSize(9)
+         .font('DejaVu-Bold')
          .fillColor('#000000')
-         .text(order.orderId);
-
-      // Thin separator line
-      doc.strokeColor('#CCCCCC')
-         .lineWidth(0.5)
-         .moveTo(marginLeft, 60)
-         .lineTo(pageWidth - marginRight, 60)
-         .stroke();
+         .text(order.orderId, pageWidth - marginRight - 180, 58, { width: 180, align: 'right' });
 
       // ===== ORDER INFO + ADDRESS - Side by side =====
-      const infoY = 68;
+      const infoY = 75;
       
       // Left side: Order details (compact)
       doc.fontSize(8)
          .fillColor('#666666')
-         .font('Helvetica')
+         .font('DejaVu')
          .text('Date:', marginLeft, infoY)
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .fillColor('#000000')
          .text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), marginLeft + 30, infoY);
 
       if (order.shippingMethod) {
         doc.fontSize(8)
            .fillColor('#666666')
-           .font('Helvetica')
+           .font('DejaVu')
            .text('Ship via:', marginLeft, infoY + 12)
-           .font('Helvetica-Bold')
+           .font('DejaVu-Bold')
            .fillColor('#000000')
-           .text(order.shippingMethod, marginLeft + 40, infoY + 12);
+           .text(order.shippingMethod, marginLeft + 45, infoY + 12);
       }
 
       // Right side: Shipping address box (compact)
@@ -14170,12 +14169,12 @@ Important:
          .fillAndStroke('#1a1a1a', '#1a1a1a');
       doc.fontSize(8)
          .fillColor('#FFFFFF')
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .text('SHIP TO', addressBoxX + 8, infoY);
 
-      // Address text (compact)
+      // Address text (compact) - DejaVu for European characters
       doc.fontSize(8)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#000000')
          .text(formattedAddress, addressBoxX + 8, infoY + 14, { 
            width: addressBoxWidth - 16,
@@ -14201,7 +14200,7 @@ Important:
 
       let hX = marginLeft + 3;
       doc.fontSize(7)
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .fillColor('#FFFFFF')
          .text('✓', hX, tableTop + 5, { width: colCheck, align: 'center' });
       hX += colCheck;
@@ -14239,7 +14238,7 @@ Important:
         // Row number
         doc.fontSize(fontSize)
            .fillColor('#333333')
-           .font('Helvetica')
+           .font('DejaVu')
            .text(`${index + 1}`, cellX, textY, { width: colNum, align: 'center' });
         cellX += colNum;
 
@@ -14249,7 +14248,7 @@ Important:
            .text(item.sku || '-', cellX, textY, { width: colSku - 3, ellipsis: true });
         cellX += colSku;
 
-        // Product name
+        // Product name (DejaVu for Vietnamese/European characters)
         doc.fontSize(fontSize)
            .text(item.productName, cellX, textY, { width: colDesc - 3, ellipsis: true });
         cellX += colDesc;
@@ -14262,7 +14261,7 @@ Important:
 
         // Quantity - bold
         doc.fontSize(fontSize + 1)
-           .font('Helvetica-Bold')
+           .font('DejaVu-Bold')
            .text(item.quantity.toString(), cellX, textY, { width: colQty, align: 'right' });
 
         yPosition += rowHeight;
@@ -14295,11 +14294,11 @@ Important:
          .lineWidth(0.8)
          .stroke('#333333');
       doc.fontSize(7)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#666666')
          .text('CARTONS', summaryStartX + 5, yPosition + 5)
          .fontSize(12)
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .fillColor('#000000')
          .text(cartonCount.toString(), summaryStartX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
@@ -14309,11 +14308,11 @@ Important:
          .lineWidth(0.8)
          .stroke('#333333');
       doc.fontSize(7)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#666666')
          .text('ITEMS', itemsBoxX + 5, yPosition + 5)
          .fontSize(12)
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .fillColor('#000000')
          .text(totalItems.toString(), itemsBoxX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
@@ -14323,18 +14322,18 @@ Important:
          .lineWidth(0.8)
          .stroke('#333333');
       doc.fontSize(7)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#666666')
          .text('WEIGHT', weightBoxX + 5, yPosition + 5)
          .fontSize(12)
-         .font('Helvetica-Bold')
+         .font('DejaVu-Bold')
          .fillColor('#000000')
          .text(`${totalWeight.toFixed(1)} kg`, weightBoxX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
       // ===== SIGNATURE LINE - Bottom of page =====
       const signatureY = 780;
       doc.fontSize(7)
-         .font('Helvetica')
+         .font('DejaVu')
          .fillColor('#666666')
          .text('Packed by: ________________________', marginLeft, signatureY)
          .text('Date: ______________', marginLeft + 180, signatureY)
@@ -14344,7 +14343,7 @@ Important:
       // Footer
       doc.fontSize(6)
          .fillColor('#999999')
-         .font('Helvetica-Oblique')
+         .font('DejaVu')
          .text('Please verify all items upon receipt.', marginLeft, 800, { align: 'center', width: contentWidth });
 
       // Finalize the PDF
