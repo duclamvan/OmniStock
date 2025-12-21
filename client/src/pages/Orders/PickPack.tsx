@@ -2797,7 +2797,13 @@ export default function PickPack() {
     if (activePackingOrder?.id) {
       try {
         console.log('🔍 Fetching shipment labels for order:', activePackingOrder.id);
-        const res = await fetch(`/api/shipment-labels/order/${activePackingOrder.id}`);
+        // Add cache-busting timestamp to force fresh data after label creation
+        const res = await fetch(`/api/shipment-labels/order/${activePackingOrder.id}?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
         if (!res.ok) {
           throw new Error(`Failed to fetch labels: ${res.status}`);
         }

@@ -13489,11 +13489,61 @@ Important:
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Check if order already has PPL labels
+      // Check if order already has PPL labels - but also check if shipment_labels record exists
       if (order.pplLabelData && order.pplStatus === 'created') {
+        // Check if shipment_labels record exists
+        const existingLabels = await storage.getShipmentLabelsByOrderId(orderId);
+        const activeLabels = existingLabels.filter((l: any) => l.status === 'active');
+        
+        if (activeLabels.length > 0) {
+          // Labels already exist in shipment_labels table
+          return res.json({
+            success: true,
+            message: 'Labels already exist for this order',
+            batchId: order.pplBatchId,
+            trackingNumbers: order.pplShipmentNumbers,
+            trackingNumber: order.pplShipmentNumbers?.[0]
+          });
+        }
+        
+        // Order has pplLabelData but no shipment_labels record - create one now
+        console.log('📦 Order has pplLabelData but no shipment_labels - creating record...');
+        const pplData = order.pplLabelData as any;
+        const cartons = await storage.getOrderCartons(orderId);
+        const cartonIds = cartons.map(c => c.id);
+        
+        await storage.createShipmentLabel({
+          orderId,
+          carrier: 'PPL',
+          trackingNumbers: order.pplShipmentNumbers || [],
+          batchId: order.pplBatchId || pplData.batchId,
+          labelBase64: pplData.labelBase64,
+          labelData: {
+            referenceId: order.orderId,
+            cartonNumber: 1,
+            cartonIds,
+            hasCOD: order.paymentMethod === 'COD' || order.paymentMethod === 'Dobírka'
+          },
+          shipmentCount: cartons.length || 1,
+          status: 'active'
+        });
+        
+        // Update cartons with tracking info
+        for (let i = 0; i < cartons.length; i++) {
+          const carton = cartons[i];
+          const trackingNumber = order.pplShipmentNumbers?.[i] || order.pplShipmentNumbers?.[0];
+          if (trackingNumber) {
+            await storage.updateOrderCarton(carton.id, {
+              labelPrinted: true,
+              trackingNumber
+            });
+          }
+        }
+        
+        console.log('✅ Created missing shipment_labels record');
         return res.json({
           success: true,
-          message: 'Labels already exist for this order',
+          message: 'Labels migrated to shipment_labels table',
           batchId: order.pplBatchId,
           trackingNumbers: order.pplShipmentNumbers,
           trackingNumber: order.pplShipmentNumbers?.[0]
