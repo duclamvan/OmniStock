@@ -283,10 +283,38 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
 
   // Calculate order counts for each submenu
   const allOrdersCount = orders.length;
-  const toFulfillCount = orders.filter((o: any) => o.status === 'pending' || o.status === 'processing').length;
+  const toFulfillCount = orders.filter((o: any) => o.orderStatus === 'to_fulfill' || o.status === 'pending' || o.status === 'processing').length;
   const shippedCount = orders.filter((o: any) => o.status === 'shipped' || o.status === 'delivered').length;
   const payLaterCount = orders.filter((o: any) => o.paymentStatus === 'pay_later' && o.status !== 'delivered').length;
   const preOrdersCount = preOrders?.length || 0;
+
+  // Fetch shipments to receive for sidebar notification (items arriving today - 0 days)
+  const { data: shipmentsToReceive = [] } = useQuery<any[]>({
+    queryKey: ['/api/imports/shipments/to-receive'],
+    refetchInterval: 60000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Count shipments arriving today (expected arrival <= today)
+  const receivingTodayCount = shipmentsToReceive.filter((shipment: any) => {
+    if (!shipment.expectedArrival) return false;
+    const expectedDate = new Date(shipment.expectedArrival);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expectedDate.setHours(0, 0, 0, 0);
+    return expectedDate <= today;
+  }).length;
+
+  // Fetch pending stock adjustments count
+  const { data: stockAdjustments = [] } = useQuery<any[]>({
+    queryKey: ['/api/stock-adjustment-requests'],
+    refetchInterval: 60000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const pendingStockAdjustmentsCount = stockAdjustments.filter((adj: any) => adj.status === 'pending').length;
 
   useEffect(() => {
     setLocalStorageItem('sidebarCollapsed', isCollapsed);
@@ -821,6 +849,16 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     {dueTicketsCount}
                   </Badge>
                 )}
+                {/* Red dot indicators for warehouse operations */}
+                {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                )}
+                {item.href === "/receiving" && receivingTodayCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                )}
+                {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse" />
+                )}
               </button>
             </Link>
           </div>
@@ -893,6 +931,16 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
+                    {/* Red dot indicators for collapsed sidebar */}
+                    {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                    )}
+                    {item.href === "/receiving" && receivingTodayCount > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                    )}
+                    {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                    )}
                   </button>
                 </Link>
               </TooltipTrigger>

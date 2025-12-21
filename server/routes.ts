@@ -13594,6 +13594,16 @@ Important:
         productType = hasCOD ? 'COND' : 'BUSS';
       }
 
+      // Prepare recipient info (customer receiving the package)
+      const recipientName = shippingAddress.company?.trim() || 
+                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
+                           customer?.name || 
+                           'Unknown';
+
+      const contactName = shippingAddress.company?.trim() 
+        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
+        : undefined;
+
       // Prepare PPL shipment data
       // For multi-carton orders, we use shipmentSet to create ONE shipment with multiple cartons
       // This ensures labels show "1/2", "2/2" instead of separate "1/1", "1/1" shipments
