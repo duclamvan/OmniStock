@@ -17562,15 +17562,45 @@ Important rules:
           }
           
           // Derive old costs from any available currency if some are missing
+          // Find the best source currency (one that has a value) and derive ALL others from it
           let derivedOldUsd = oldCostUsd, derivedOldCzk = oldCostCzk, derivedOldEur = oldCostEur;
           let derivedOldVnd = oldCostVnd, derivedOldCny = oldCostCny;
           
-          if (oldCostUsd > 0 && oldCostCzk === 0) derivedOldCzk = oldCostUsd * usdToCzk;
-          if (oldCostUsd > 0 && oldCostEur === 0) derivedOldEur = oldCostUsd * usdToEur;
-          if (oldCostUsd > 0 && oldCostVnd === 0) derivedOldVnd = oldCostUsd * usdToVnd;
-          if (oldCostUsd > 0 && oldCostCny === 0) derivedOldCny = oldCostUsd * usdToCny;
-          if (oldCostEur > 0 && oldCostUsd === 0) derivedOldUsd = oldCostEur * eurToUsd;
-          if (oldCostCzk > 0 && oldCostUsd === 0) derivedOldUsd = oldCostCzk / eurToCzk * eurToUsd;
+          // Determine source currency for derivation (use the first one that has a value)
+          if (oldCostUsd > 0) {
+            // Derive all currencies from USD
+            if (derivedOldEur === 0) derivedOldEur = oldCostUsd * usdToEur;
+            if (derivedOldCzk === 0) derivedOldCzk = oldCostUsd * usdToCzk;
+            if (derivedOldVnd === 0) derivedOldVnd = oldCostUsd * usdToVnd;
+            if (derivedOldCny === 0) derivedOldCny = oldCostUsd * usdToCny;
+          } else if (oldCostEur > 0) {
+            // Derive all currencies from EUR
+            if (derivedOldUsd === 0) derivedOldUsd = oldCostEur * eurToUsd;
+            if (derivedOldCzk === 0) derivedOldCzk = oldCostEur * eurToCzk;
+            if (derivedOldVnd === 0) derivedOldVnd = oldCostEur * eurToVnd;
+            if (derivedOldCny === 0) derivedOldCny = oldCostEur * eurToCny;
+          } else if (oldCostCzk > 0) {
+            // Derive all currencies from CZK (convert via EUR)
+            const oldInEur = oldCostCzk / eurToCzk;
+            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
+            if (derivedOldEur === 0) derivedOldEur = oldInEur;
+            if (derivedOldVnd === 0) derivedOldVnd = oldInEur * eurToVnd;
+            if (derivedOldCny === 0) derivedOldCny = oldInEur * eurToCny;
+          } else if (oldCostVnd > 0) {
+            // Derive all currencies from VND (convert via EUR)
+            const oldInEur = oldCostVnd / eurToVnd;
+            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
+            if (derivedOldEur === 0) derivedOldEur = oldInEur;
+            if (derivedOldCzk === 0) derivedOldCzk = oldInEur * eurToCzk;
+            if (derivedOldCny === 0) derivedOldCny = oldInEur * eurToCny;
+          } else if (oldCostCny > 0) {
+            // Derive all currencies from CNY (convert via EUR)
+            const oldInEur = oldCostCny / eurToCny;
+            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
+            if (derivedOldEur === 0) derivedOldEur = oldInEur;
+            if (derivedOldCzk === 0) derivedOldCzk = oldInEur * eurToCzk;
+            if (derivedOldVnd === 0) derivedOldVnd = oldInEur * eurToVnd;
+          }
           
           // Calculate weighted averages for all currencies
           const avgCostUsd = totalQuantity > 0 
