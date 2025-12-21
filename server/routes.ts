@@ -14058,18 +14058,18 @@ Important:
         })
       );
 
-      // Create a new PDF document - optimized for printing
+      // Create a new PDF document - STRICT SINGLE PAGE layout
       const doc = new PDFDocument({ 
         size: 'A4', 
-        margin: 35,
-        bufferPages: true
+        margin: 25,
+        bufferPages: false // No multi-page
       });
 
       // Page dimensions for A4
       const pageWidth = 595;
       const pageHeight = 842;
-      const marginLeft = 35;
-      const marginRight = 35;
+      const marginLeft = 25;
+      const marginRight = 25;
       const contentWidth = pageWidth - marginLeft - marginRight;
 
       // Set response headers
@@ -14079,298 +14079,273 @@ Important:
       // Pipe the PDF directly to the response
       doc.pipe(res);
 
-      // ===== HEADER SECTION - Two column layout =====
+      // Calculate dynamic sizing based on number of items
+      const itemCount = itemsWithProducts.length;
+      const maxItemsForNormalSize = 15;
+      const maxItemsForPage = 35;
+      
+      // Dynamic row height: shrink rows if many items
+      let rowHeight = 22;
+      let fontSize = 9;
+      let checkboxSize = 11;
+      if (itemCount > maxItemsForNormalSize) {
+        rowHeight = Math.max(14, Math.floor(380 / Math.min(itemCount, maxItemsForPage)));
+        fontSize = rowHeight > 16 ? 9 : 7;
+        checkboxSize = rowHeight > 16 ? 11 : 8;
+      }
+
+      // ===== COMPACT HEADER =====
       const logoPath = path.join(process.cwd(), 'attached_assets', 'logo_1754349267160.png');
       try {
-        doc.image(logoPath, marginLeft, 30, { width: 70 });
+        doc.image(logoPath, marginLeft, 20, { width: 55 });
       } catch (error) {
         console.error('Logo not found, skipping:', error);
       }
 
-      // Company name and ID next to logo
-      doc.fontSize(16)
+      // Company info - compact
+      doc.fontSize(14)
          .fillColor('#000000')
          .font('Helvetica-Bold')
-         .text('Davie Lam s.r.o.', 115, 35)
-         .fontSize(9)
+         .text('Davie Lam s.r.o.', 88, 22)
+         .fontSize(8)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('IČO: CZ17587816', 88, 38);
+
+      // Title - right aligned, compact
+      doc.fontSize(22)
+         .fillColor('#000000')
+         .font('Helvetica-Bold')
+         .text('PACKING LIST', pageWidth - marginRight - 180, 22, { width: 180, align: 'right' });
+
+      // Order info inline with title
+      doc.fontSize(8)
          .font('Helvetica')
          .fillColor('#555555')
-         .text('IČO: CZ17587816', 115, 54);
-
-      // Document title - Large and clear for print
-      doc.fontSize(28)
-         .fillColor('#000000')
+         .text(`Order: `, pageWidth - marginRight - 180, 48, { continued: true, width: 180, align: 'right' })
          .font('Helvetica-Bold')
-         .text('PACKING LIST', marginLeft, 85, { align: 'center', width: contentWidth });
+         .fillColor('#000000')
+         .text(order.orderId);
 
-      // Double line under title for professional look
-      doc.strokeColor('#000000')
-         .lineWidth(2)
-         .moveTo(marginLeft, 118)
-         .lineTo(pageWidth - marginRight, 118)
-         .stroke()
+      // Thin separator line
+      doc.strokeColor('#CCCCCC')
          .lineWidth(0.5)
-         .moveTo(marginLeft, 122)
-         .lineTo(pageWidth - marginRight, 122)
+         .moveTo(marginLeft, 60)
+         .lineTo(pageWidth - marginRight, 60)
          .stroke();
 
-      // ===== ORDER INFORMATION - Two column layout =====
-      const infoStartY = 135;
-      const labelWidth = 100;
+      // ===== ORDER INFO + ADDRESS - Side by side =====
+      const infoY = 68;
       
-      // Left column - Order info
-      doc.fontSize(10)
-         .fillColor('#555555')
+      // Left side: Order details (compact)
+      doc.fontSize(8)
+         .fillColor('#666666')
          .font('Helvetica')
-         .text('Date:', marginLeft, infoStartY)
-         .fillColor('#000000')
+         .text('Date:', marginLeft, infoY)
          .font('Helvetica-Bold')
-         .text(new Date().toLocaleDateString('en-GB', { 
-           year: 'numeric', 
-           month: 'short', 
-           day: 'numeric' 
-         }), marginLeft + 45, infoStartY);
-
-      doc.fontSize(10)
-         .fillColor('#555555')
-         .font('Helvetica')
-         .text('Order #:', marginLeft, infoStartY + 16)
          .fillColor('#000000')
-         .font('Helvetica-Bold')
-         .text(order.orderId, marginLeft + 55, infoStartY + 16);
+         .text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), marginLeft + 30, infoY);
 
-      // Right column - Shipping method (if exists)
       if (order.shippingMethod) {
-        doc.fontSize(10)
-           .fillColor('#555555')
+        doc.fontSize(8)
+           .fillColor('#666666')
            .font('Helvetica')
-           .text('Shipping:', pageWidth / 2, infoStartY)
-           .fillColor('#000000')
+           .text('Ship via:', marginLeft, infoY + 12)
            .font('Helvetica-Bold')
-           .text(order.shippingMethod, pageWidth / 2 + 55, infoStartY);
+           .fillColor('#000000')
+           .text(order.shippingMethod, marginLeft + 40, infoY + 12);
       }
 
-      // ===== CUSTOMER INFORMATION BOX - Cleaner design =====
-      const customerBoxY = 175;
-      const customerBoxHeight = 95;
+      // Right side: Shipping address box (compact)
+      const addressBoxX = pageWidth / 2 - 20;
+      const addressBoxWidth = contentWidth / 2 + 20;
+      const addressBoxHeight = 70;
       
-      // Box with thicker border for visibility
-      doc.rect(marginLeft, customerBoxY, contentWidth, customerBoxHeight)
-         .lineWidth(1.5)
-         .fillAndStroke('#FAFAFA', '#333333');
+      doc.rect(addressBoxX, infoY - 3, addressBoxWidth, addressBoxHeight)
+         .lineWidth(1)
+         .stroke('#333333');
 
-      // Box title with background strip
-      doc.rect(marginLeft, customerBoxY, contentWidth, 22)
-         .fillAndStroke('#2C3E50', '#2C3E50');
-      
-      doc.fontSize(11)
+      // "SHIP TO" label
+      doc.rect(addressBoxX, infoY - 3, addressBoxWidth, 14)
+         .fillAndStroke('#1a1a1a', '#1a1a1a');
+      doc.fontSize(8)
          .fillColor('#FFFFFF')
          .font('Helvetica-Bold')
-         .text('SHIP TO', marginLeft + 12, customerBoxY + 6);
+         .text('SHIP TO', addressBoxX + 8, infoY);
 
-      // Address details - larger font for readability
-      doc.fontSize(11)
+      // Address text (compact)
+      doc.fontSize(8)
          .font('Helvetica')
          .fillColor('#000000')
-         .text(formattedAddress, marginLeft + 12, customerBoxY + 30, { 
-           width: contentWidth - 24,
-           lineGap: 2
+         .text(formattedAddress, addressBoxX + 8, infoY + 14, { 
+           width: addressBoxWidth - 16,
+           lineGap: 0,
+           height: addressBoxHeight - 20
          });
 
-      // ===== ITEMS TABLE - Improved for print =====
-      const tableTop = customerBoxY + customerBoxHeight + 15;
-      const colCheck = 30;  // Checkbox column
-      const colNum = 25;    // # column  
-      const colSku = 95;    // SKU column
-      const colDesc = 250;  // Description column
-      const colWeight = 55; // Weight column
-      const colQty = 50;    // Qty column
+      // ===== ITEMS TABLE - Dynamic sizing =====
+      const tableTop = infoY + addressBoxHeight + 8;
+      const tableHeaderHeight = 18;
+      
+      // Column widths (optimized)
+      const colCheck = 22;
+      const colNum = 18;
+      const colSku = 85;
+      const colDesc = contentWidth - colCheck - colNum - colSku - 45 - 35;
+      const colWeight = 45;
+      const colQty = 35;
 
-      // Table header with dark background
-      doc.rect(marginLeft, tableTop, contentWidth, 26)
+      // Table header
+      doc.rect(marginLeft, tableTop, contentWidth, tableHeaderHeight)
          .fillAndStroke('#1a1a1a', '#1a1a1a');
 
-      // Table headers (white text) - includes checkbox column
-      let headerX = marginLeft + 5;
-      doc.fontSize(9)
+      let hX = marginLeft + 3;
+      doc.fontSize(7)
          .font('Helvetica-Bold')
          .fillColor('#FFFFFF')
-         .text('✓', headerX, tableTop + 8, { width: colCheck, align: 'center' });
-      headerX += colCheck;
-      doc.text('#', headerX, tableTop + 8, { width: colNum, align: 'center' });
-      headerX += colNum;
-      doc.text('SKU', headerX, tableTop + 8, { width: colSku });
-      headerX += colSku;
-      doc.text('ITEM DESCRIPTION', headerX, tableTop + 8, { width: colDesc });
-      headerX += colDesc;
-      doc.text('WEIGHT', headerX, tableTop + 8, { width: colWeight, align: 'right' });
-      headerX += colWeight;
-      doc.text('QTY', headerX, tableTop + 8, { width: colQty, align: 'right' });
+         .text('✓', hX, tableTop + 5, { width: colCheck, align: 'center' });
+      hX += colCheck;
+      doc.text('#', hX, tableTop + 5, { width: colNum, align: 'center' });
+      hX += colNum;
+      doc.text('SKU', hX, tableTop + 5, { width: colSku });
+      hX += colSku;
+      doc.text('DESCRIPTION', hX, tableTop + 5, { width: colDesc });
+      hX += colDesc;
+      doc.text('WT', hX, tableTop + 5, { width: colWeight, align: 'right' });
+      hX += colWeight;
+      doc.text('QTY', hX, tableTop + 5, { width: colQty, align: 'right' });
 
-      // Table body
-      let yPosition = tableTop + 26;
-      const rowHeight = 28;
-
-      // Helper function to draw table header
-      const drawTableHeader = (y: number) => {
-        doc.rect(marginLeft, y, contentWidth, 26)
-           .fillAndStroke('#1a1a1a', '#1a1a1a');
-        let hX = marginLeft + 5;
-        doc.fontSize(9)
-           .font('Helvetica-Bold')
-           .fillColor('#FFFFFF')
-           .text('✓', hX, y + 8, { width: colCheck, align: 'center' });
-        hX += colCheck;
-        doc.text('#', hX, y + 8, { width: colNum, align: 'center' });
-        hX += colNum;
-        doc.text('SKU', hX, y + 8, { width: colSku });
-        hX += colSku;
-        doc.text('ITEM DESCRIPTION', hX, y + 8, { width: colDesc });
-        hX += colDesc;
-        doc.text('WEIGHT', hX, y + 8, { width: colWeight, align: 'right' });
-        hX += colWeight;
-        doc.text('QTY', hX, y + 8, { width: colQty, align: 'right' });
-        return y + 26;
-      };
+      // Table rows
+      let yPosition = tableTop + tableHeaderHeight;
 
       itemsWithProducts.forEach((item, index) => {
-        // Check if we need a new page
-        if (yPosition > 740) {
-          doc.addPage();
-          yPosition = drawTableHeader(40);
-        }
-
-        // Alternating row colors with clear borders
+        // Alternating colors
         const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F5F5F5';
         doc.rect(marginLeft, yPosition, contentWidth, rowHeight)
-           .lineWidth(0.5)
-           .fillAndStroke(bgColor, '#CCCCCC');
+           .lineWidth(0.3)
+           .fillAndStroke(bgColor, '#DDDDDD');
 
-        // Draw checkbox
-        let cellX = marginLeft + 5;
-        doc.rect(cellX + 8, yPosition + 7, 14, 14)
-           .lineWidth(1)
+        const textY = yPosition + (rowHeight - fontSize) / 2;
+        let cellX = marginLeft + 3;
+
+        // Checkbox
+        const cbSize = checkboxSize;
+        const cbY = yPosition + (rowHeight - cbSize) / 2;
+        doc.rect(cellX + (colCheck - cbSize) / 2, cbY, cbSize, cbSize)
+           .lineWidth(0.8)
            .stroke('#333333');
         cellX += colCheck;
 
         // Row number
-        doc.fontSize(10)
-           .fillColor('#000000')
+        doc.fontSize(fontSize)
+           .fillColor('#333333')
            .font('Helvetica')
-           .text(`${index + 1}`, cellX, yPosition + 8, { width: colNum, align: 'center' });
+           .text(`${index + 1}`, cellX, textY, { width: colNum, align: 'center' });
         cellX += colNum;
 
-        // SKU - monospace style
-        doc.fontSize(9)
-           .font('Helvetica')
-           .text(item.sku || 'N/A', cellX, yPosition + 9, { width: colSku - 5 });
+        // SKU
+        doc.fontSize(fontSize - 1)
+           .fillColor('#000000')
+           .text(item.sku || '-', cellX, textY, { width: colSku - 3, ellipsis: true });
         cellX += colSku;
 
         // Product name
-        doc.fontSize(10)
-           .text(item.productName, cellX, yPosition + 8, { width: colDesc - 5, ellipsis: true });
+        doc.fontSize(fontSize)
+           .text(item.productName, cellX, textY, { width: colDesc - 3, ellipsis: true });
         cellX += colDesc;
 
         // Weight
-        const weightText = item.weight ? `${item.weight} kg` : '-';
-        doc.fontSize(10)
-           .text(weightText, cellX, yPosition + 8, { width: colWeight, align: 'right' });
+        const wt = item.weight ? `${item.weight}` : '-';
+        doc.fontSize(fontSize - 1)
+           .text(wt, cellX, textY, { width: colWeight, align: 'right' });
         cellX += colWeight;
 
-        // Quantity - bold and larger
-        doc.fontSize(12)
+        // Quantity - bold
+        doc.fontSize(fontSize + 1)
            .font('Helvetica-Bold')
-           .text(item.quantity.toString(), cellX, yPosition + 7, { width: colQty, align: 'right' });
+           .text(item.quantity.toString(), cellX, textY, { width: colQty, align: 'right' });
 
         yPosition += rowHeight;
       });
 
-      // ===== SUMMARY SECTION - Cleaner box =====
-      yPosition += 20;
-      if (yPosition > 720) {
-        doc.addPage();
-        yPosition = 50;
-      }
+      // Table bottom border
+      doc.strokeColor('#333333')
+         .lineWidth(1)
+         .moveTo(marginLeft, yPosition)
+         .lineTo(pageWidth - marginRight, yPosition)
+         .stroke();
 
-      const summaryWidth = 200;
-      const summaryX = pageWidth - marginRight - summaryWidth;
-
-      // Summary box with border
-      doc.rect(summaryX, yPosition, summaryWidth, 75)
-         .lineWidth(1.5)
-         .fillAndStroke('#F8F8F8', '#333333');
-
+      // ===== SUMMARY - Compact inline =====
+      yPosition += 10;
+      
       const totalItems = itemsWithProducts.reduce((sum, item) => sum + item.quantity, 0);
       const totalWeight = itemsWithProducts.reduce((sum, item) => {
         const weight = item.weight || 0;
         return sum + (weight * item.quantity);
       }, 0);
 
-      // Summary content with better spacing
-      const summaryLabelX = summaryX + 15;
-      const summaryValueX = summaryX + summaryWidth - 15;
+      // Summary in single line with boxes
+      const summaryBoxWidth = 90;
+      const summaryBoxHeight = 32;
+      const summarySpacing = 10;
+      const summaryStartX = pageWidth - marginRight - (summaryBoxWidth * 3 + summarySpacing * 2);
 
-      // Total cartons
-      doc.fontSize(11)
+      // Cartons box
+      doc.rect(summaryStartX, yPosition, summaryBoxWidth, summaryBoxHeight)
+         .lineWidth(0.8)
+         .stroke('#333333');
+      doc.fontSize(7)
          .font('Helvetica')
-         .fillColor('#333333')
-         .text('Total Cartons:', summaryLabelX, yPosition + 12)
+         .fillColor('#666666')
+         .text('CARTONS', summaryStartX + 5, yPosition + 5)
+         .fontSize(12)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(cartonCount.toString(), summaryValueX - 50, yPosition + 12, { width: 50, align: 'right' });
+         .text(cartonCount.toString(), summaryStartX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
-      // Total items
-      doc.fontSize(11)
+      // Items box
+      const itemsBoxX = summaryStartX + summaryBoxWidth + summarySpacing;
+      doc.rect(itemsBoxX, yPosition, summaryBoxWidth, summaryBoxHeight)
+         .lineWidth(0.8)
+         .stroke('#333333');
+      doc.fontSize(7)
          .font('Helvetica')
-         .fillColor('#333333')
-         .text('Total Items:', summaryLabelX, yPosition + 32)
+         .fillColor('#666666')
+         .text('ITEMS', itemsBoxX + 5, yPosition + 5)
+         .fontSize(12)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(totalItems.toString(), summaryValueX - 50, yPosition + 32, { width: 50, align: 'right' });
+         .text(totalItems.toString(), itemsBoxX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
-      // Total weight
-      doc.fontSize(11)
+      // Weight box
+      const weightBoxX = itemsBoxX + summaryBoxWidth + summarySpacing;
+      doc.rect(weightBoxX, yPosition, summaryBoxWidth, summaryBoxHeight)
+         .lineWidth(0.8)
+         .stroke('#333333');
+      doc.fontSize(7)
          .font('Helvetica')
-         .fillColor('#333333')
-         .text('Total Weight:', summaryLabelX, yPosition + 52)
+         .fillColor('#666666')
+         .text('WEIGHT', weightBoxX + 5, yPosition + 5)
+         .fontSize(12)
          .font('Helvetica-Bold')
          .fillColor('#000000')
-         .text(`${totalWeight.toFixed(2)} kg`, summaryValueX - 60, yPosition + 52, { width: 60, align: 'right' });
+         .text(`${totalWeight.toFixed(1)} kg`, weightBoxX + 5, yPosition + 15, { width: summaryBoxWidth - 10, align: 'right' });
 
-      // ===== VERIFICATION SECTION - For signature =====
-      const verifyY = yPosition + 90;
-      if (verifyY < 720) {
-        doc.fontSize(9)
-           .font('Helvetica')
-           .fillColor('#555555')
-           .text('Packed by: _______________________', marginLeft, verifyY)
-           .text('Date: _______________', marginLeft + 200, verifyY)
-           .text('Verified by: _______________________', marginLeft, verifyY + 25)
-           .text('Date: _______________', marginLeft + 200, verifyY + 25);
-      }
+      // ===== SIGNATURE LINE - Bottom of page =====
+      const signatureY = 780;
+      doc.fontSize(7)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('Packed by: ________________________', marginLeft, signatureY)
+         .text('Date: ______________', marginLeft + 180, signatureY)
+         .text('Checked: ________________________', pageWidth / 2 + 30, signatureY)
+         .text('Date: ______________', pageWidth - marginRight - 80, signatureY);
 
-      // ===== FOOTER =====
-      const footerY = 780;
-      doc.fontSize(8)
-         .fillColor('#888888')
+      // Footer
+      doc.fontSize(6)
+         .fillColor('#999999')
          .font('Helvetica-Oblique')
-         .text('Please verify all items upon receipt and report any discrepancies immediately.', marginLeft, footerY, { 
-           align: 'center', 
-           width: contentWidth 
-         });
-
-      // Page numbers
-      const range = doc.bufferedPageRange();
-      for (let i = 0; i < range.count; i++) {
-        doc.switchToPage(i);
-        doc.fontSize(8)
-           .fillColor('#888888')
-           .font('Helvetica')
-           .text(`Page ${i + 1} of ${range.count}`, marginLeft, 810, { 
-             align: 'center', 
-             width: contentWidth 
-           });
-      }
+         .text('Please verify all items upon receipt.', marginLeft, 800, { align: 'center', width: contentWidth });
 
       // Finalize the PDF
       doc.end();
