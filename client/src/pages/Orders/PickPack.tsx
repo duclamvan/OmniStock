@@ -10724,15 +10724,21 @@ export default function PickPack() {
                                             setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                             await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
                                             
-                                            // Refresh data to update UI
-                                            console.log('🔄 Refreshing after delete...');
+                                            // Clear labels state immediately to show UI change
+                                            console.log('🔄 Clearing labels and refreshing after delete...');
+                                            setShipmentLabelsFromDB([]);
+                                            
+                                            // Invalidate all related queries
                                             await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                             await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                            
+                                            // Refetch data with delay to ensure database is updated
                                             await refetchCartons();
-                                            await new Promise(resolve => setTimeout(resolve, 300));
+                                            await new Promise(resolve => setTimeout(resolve, 500));
+                                            
+                                            // Fetch fresh labels - the endpoint won't auto-migrate cancelled labels
                                             await fetchShipmentLabels();
-                                            setShipmentLabelsFromDB(prev => [...prev]);
-                                            console.log('✅ Delete refresh complete');
+                                            console.log('✅ Delete refresh complete, labels state:', shipmentLabelsFromDB.length);
                                             
                                             toast({ 
                                               title: t('labelDeleted'),
@@ -10875,13 +10881,18 @@ export default function PickPack() {
                                             setDeletingShipment(prev => ({ ...prev, [label.id]: true }));
                                             await apiRequest('DELETE', `/api/shipment-labels/${label.id}`, {});
                                             
-                                            // Refresh data
+                                            // Clear labels state immediately to show UI change
+                                            console.log('🔄 Clearing orphaned labels after delete...');
+                                            setShipmentLabelsFromDB([]);
+                                            
+                                            // Invalidate all related queries
                                             await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                             await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                                            
+                                            // Refetch with delay
                                             await refetchCartons();
-                                            await new Promise(resolve => setTimeout(resolve, 300));
+                                            await new Promise(resolve => setTimeout(resolve, 500));
                                             await fetchShipmentLabels();
-                                            setShipmentLabelsFromDB(prev => [...prev]);
                                             
                                             toast({ 
                                               title: t('labelDeleted'), 

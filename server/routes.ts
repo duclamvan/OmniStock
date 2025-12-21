@@ -13098,6 +13098,17 @@ Important:
       // Cancel the label in our database
       await storage.cancelShipmentLabel(labelId, 'User requested cancellation');
 
+      // Also clear the order's pplLabelData and pplStatus to prevent auto-migration from recreating
+      if (label.orderId) {
+        await storage.updateOrder(label.orderId, {
+          pplLabelData: null as any,
+          pplStatus: 'cancelled',
+          pplShipmentNumbers: null as any,
+          pplBatchId: null
+        });
+        console.log(`✅ Order ${label.orderId} pplLabelData cleared to prevent auto-migration`);
+      }
+
       // Note: We do NOT delete the carton - only the label is removed
       // This allows regenerating labels without losing carton data (weight, dimensions, etc.)
       console.log(`✅ Label ${labelId} cancelled - carton data preserved`);
