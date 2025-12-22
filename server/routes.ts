@@ -13119,6 +13119,305 @@ Important:
     }
   });
 
+  // Rebuild COD PPL shipment (delete all labels and recreate with new carton count)
+  // This is needed because PPL doesn't allow adding labels to existing COD shipments
+  app.post('/api/shipping/rebuild-cod-shipment/:orderId', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      if (!orderId) {
+        return res.status(400).json({ error: 'Order ID is required' });
+      }
+
+      // Get order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Load shipping settings
+      const shippingSettings = await getSettingsByCategory('shipping');
+      const senderAddress = shippingSettings.pplDefaultSenderAddress;
+
+      if (!senderAddress) {
+        return res.status(400).json({ 
+          error: 'No default PPL sender address configured. Please set it in Shipping Management settings.' 
+        });
+      }
+
+      // Get existing cartons
+      const existingCartons = await db
+        .select()
+        .from(orderCartons)
+        .where(eq(orderCartons.orderId, orderId))
+        .orderBy(orderCartons.cartonNumber);
+
+      // Get existing labels
+      const existingLabels = await storage.getShipmentLabelsByOrderId(orderId);
+      const activeLabels = existingLabels.filter((l: any) => l.status === 'active');
+
+      console.log(`🔄 Rebuilding COD shipment for order ${orderId}`);
+      console.log(`📦 Existing cartons: ${existingCartons.length}`);
+      console.log(`🏷️ Active labels to cancel: ${activeLabels.length}`);
+
+      // STEP 1: Cancel all existing PPL labels
+      const { cancelPPLShipment } = await import('./services/pplService');
+      
+      for (const label of activeLabels) {
+        if (label.carrier === 'PPL' && label.trackingNumbers?.[0]) {
+          try {
+            await cancelPPLShipment(label.trackingNumbers[0]);
+            console.log(`✅ Cancelled PPL shipment: ${label.trackingNumbers[0]}`);
+          } catch (pplError) {
+            console.log(`⚠️ PPL cancellation failed (may already be processed): ${label.trackingNumbers[0]}`);
+          }
+        }
+        // Mark label as cancelled in our database
+        await storage.cancelShipmentLabel(label.id, 'Rebuilding COD shipment');
+      }
+
+      // Clear order's pplLabelData
+      await storage.updateOrder(orderId, {
+        pplLabelData: null as any,
+        pplStatus: null as any,
+        pplShipmentNumbers: null as any,
+        pplBatchId: null
+      });
+
+      // STEP 2: Create a new carton
+      const nextCartonNumber = existingCartons.length > 0
+        ? Math.max(...existingCartons.map(c => c.cartonNumber || 0)) + 1
+        : 1;
+
+      const [newCarton] = await db
+        .insert(orderCartons)
+        .values({
+          orderId,
+          cartonNumber: nextCartonNumber,
+          cartonType: 'non-company',
+          source: 'manual_ppl_shipment',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      if (!newCarton) {
+        throw new Error('Failed to create carton');
+      }
+
+      console.log(`📦 Created new carton #${nextCartonNumber}`);
+
+      // STEP 3: Get all cartons (including the new one)
+      const allCartons = await db
+        .select()
+        .from(orderCartons)
+        .where(eq(orderCartons.orderId, orderId))
+        .orderBy(orderCartons.cartonNumber);
+
+      // STEP 4: Create new batch shipment with ALL cartons
+      try {
+        // Get shipping address
+        let shippingAddress;
+        if (order.shippingAddressId) {
+          const addresses = await db
+            .select()
+            .from(customerShippingAddresses)
+            .where(eq(customerShippingAddresses.id, order.shippingAddressId))
+            .limit(1);
+          shippingAddress = addresses[0];
+        }
+
+        if (!shippingAddress) {
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ error: 'No shipping address found for order' });
+        }
+
+        // Get customer details
+        let customer;
+        if (order.customerId) {
+          const customerResult = await db
+            .select()
+            .from(customers)
+            .where(eq(customers.id, order.customerId))
+            .limit(1);
+          customer = customerResult[0];
+        }
+
+        // Validate shipping address
+        if (!shippingAddress.zipCode?.trim()) {
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ error: 'Missing Postal Code for shipping address' });
+        }
+        if (!shippingAddress.street?.trim()) {
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ error: 'Missing Street Address' });
+        }
+        if (!shippingAddress.city?.trim()) {
+          await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+          return res.status(400).json({ error: 'Missing City' });
+        }
+
+        // Normalize country
+        const normalizeCountry = (country: string | null | undefined): string => {
+          if (!country) return 'CZ';
+          const upper = country.toUpperCase();
+          if (upper === 'CZECH REPUBLIC' || upper === 'CZECHIA') return 'CZ';
+          if (upper.length === 2) return upper;
+          return 'CZ';
+        };
+
+        // COD amount (this is specifically for COD orders)
+        const codAmount = typeof order.codAmount === 'string' 
+          ? parseFloat(order.codAmount) 
+          : (order.codAmount || 0);
+        const codCurrency = order.codCurrency || 'CZK';
+
+        // Build PPL shipment with all cartons
+        const referenceId = `${order.orderId}-R${Date.now()}`;
+        const pplShipment: any = {
+          referenceId,
+          productType: 'BUSD', // COD product type
+          sender: {
+            country: senderAddress.country || 'CZ',
+            zipCode: senderAddress.zipCode,
+            name: senderAddress.name,
+            street: senderAddress.street,
+            city: senderAddress.city,
+            phone: senderAddress.phone,
+            email: senderAddress.email
+          },
+          recipient: {
+            country: normalizeCountry(shippingAddress.country),
+            zipCode: shippingAddress.zipCode.trim(),
+            name: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
+            street: shippingAddress.street.trim(),
+            city: shippingAddress.city.trim(),
+            phone: shippingAddress.tel || customer?.phone || undefined,
+            email: shippingAddress.email || customer?.email || undefined
+          },
+          cashOnDelivery: {
+            value: codAmount,
+            currency: codCurrency,
+            variableSymbol: order.orderId
+          }
+        };
+
+        // Add shipment set for multiple cartons
+        if (allCartons.length > 1) {
+          pplShipment.shipmentSet = {
+            numberOfShipments: allCartons.length,
+            shipmentSetItems: allCartons.map((carton) => ({
+              shipmentNumber: `${order.orderId}-${carton.cartonNumber}`
+            }))
+          };
+        }
+
+        // Create shipment via PPL API
+        const { batchId } = await createPPLShipment({
+          shipments: [pplShipment],
+          labelSettings: {
+            format: 'Pdf',
+            dpi: 203,
+            completeLabelSettings: {
+              isCompleteLabelRequested: true,
+              pageSize: 'Default'
+            }
+          }
+        });
+
+        // Get shipment numbers from batch status
+        let shipmentNumbers: string[] = [];
+        try {
+          const batchStatus = await getPPLBatchStatus(batchId);
+          console.log('📦 Rebuild batch status:', JSON.stringify(batchStatus, null, 2));
+          if (batchStatus.items && Array.isArray(batchStatus.items)) {
+            shipmentNumbers = batchStatus.items
+              .filter((item: any) => item.shipmentNumber)
+              .map((item: any) => item.shipmentNumber!);
+          }
+        } catch (statusError) {
+          console.log('⚠️ Could not get batch status:', statusError);
+          // Generate placeholder tracking numbers
+          shipmentNumbers = allCartons.map((_, i) => `PENDING-${batchId}-${i + 1}`);
+        }
+
+        // Get label PDF
+        const label = await getPPLLabel(batchId, 'pdf');
+        const labelBase64 = label.labelContent;
+
+        // Update order with new PPL info
+        await db
+          .update(orders)
+          .set({
+            pplBatchId: batchId,
+            pplShipmentNumbers: shipmentNumbers,
+            pplLabelData: {
+              batchId,
+              shipmentNumbers,
+              labelBase64,
+              createdAt: new Date().toISOString(),
+              isRebuild: true
+            },
+            pplStatus: 'created',
+            trackingNumber: shipmentNumbers[0] || null
+          })
+          .where(eq(orders.id, orderId));
+
+        // Save shipment labels for each carton (all share same PDF)
+        for (let i = 0; i < allCartons.length; i++) {
+          const carton = allCartons[i];
+          const trackingNumber = shipmentNumbers[i] || `PENDING-${batchId}-${i + 1}`;
+          
+          await storage.createShipmentLabel({
+            orderId,
+            carrier: 'PPL',
+            trackingNumbers: [trackingNumber],
+            batchId,
+            labelBase64,
+            labelData: {
+              pplShipment,
+              cartonNumber: carton.cartonNumber,
+              cartonId: carton.id,
+              referenceId,
+              isRebuild: true
+            },
+            shipmentCount: 1,
+            status: 'active'
+          });
+
+          // Update carton with tracking
+          await storage.updateOrderCarton(carton.id, {
+            labelPrinted: false,
+            trackingNumber
+          });
+        }
+
+        console.log(`✅ COD shipment rebuilt: ${allCartons.length} labels created`);
+
+        res.json({
+          success: true,
+          cartonCount: allCartons.length,
+          batchId,
+          shipmentNumbers,
+          trackingNumbers: shipmentNumbers,
+          message: `Successfully recreated ${allCartons.length} labels for COD shipment`
+        });
+
+      } catch (labelError) {
+        // If PPL label creation fails, rollback the new carton
+        console.error('PPL rebuild failed, rolling back new carton:', labelError);
+        await db.delete(orderCartons).where(eq(orderCartons.id, newCarton.id));
+        throw labelError;
+      }
+
+    } catch (error) {
+      console.error('Failed to rebuild COD shipment:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to rebuild COD shipment' 
+      });
+    }
+  });
+
   // Shipment Labels Routes
 
   // Get all shipment labels

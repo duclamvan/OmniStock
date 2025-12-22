@@ -11303,77 +11303,109 @@ export default function PickPack() {
                     </div>
                   )}
 
-                  {/* Add Carton Label Button - Creates new non-company carton and generates new PPL label */}
-                  {/* Only shown for PPL shipments WITHOUT COD (dobirka) - COD orders cannot have multiple cartons */}
+                  {/* Add Carton Label Button - Creates new carton and generates PPL label */}
+                  {/* For COD orders: Shows confirmation dialog and rebuilds all labels */}
+                  {/* For non-COD orders: Directly creates additional label */}
                   {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (() => {
                     const codAmount = typeof activePackingOrder.codAmount === 'string'
                       ? parseFloat(activePackingOrder.codAmount)
                       : (activePackingOrder.codAmount || 0);
                     const hasCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
-                    return !hasCOD;
-                  })() && (
-                    <Button
-                      variant="outline"
-                      className="w-full border-2 border-dashed border-orange-400 text-orange-700 dark:text-orange-200 hover:bg-orange-50 dark:bg-orange-900/30 hover:border-orange-300 dark:border-orange-700"
-                      onClick={async () => {
-                        try {
-                          console.log('🔧 Adding carton label - Current cartons:', cartons.length);
-                          
-                          // Show loading toast
-                          toast({
-                            title: t('creatingCartonLabel'),
-                            description: t('creatingCartonLabelDesc'),
-                          });
-                          
-                          // Create PPL label (backend atomically creates carton + label)
-                          const labelResponse = await apiRequest('POST', `/api/shipping/create-additional-label/${activePackingOrder.id}`, {});
-                          
-                          if (!labelResponse.ok) {
-                            const errorData = await labelResponse.json();
-                            throw new Error(errorData.error || 'Failed to create PPL label');
-                          }
-                          
-                          const labelResult = await labelResponse.json();
-                          console.log('✅ PPL label and carton created:', labelResult);
-                          
-                          // Refetch cartons and order data to update the UI
-                          await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
-                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-                          
-                          // Force a refetch to ensure UI updates
-                          await refetchCartons();
-                          
-                          // Add delay to ensure database commit completes
-                          await new Promise(resolve => setTimeout(resolve, 500));
-                          
-                          // Refresh shipment labels AFTER database commit
-                          await fetchShipmentLabels();
-                          
-                          // Force re-render by updating state
-                          setShipmentLabelsFromDB(prev => [...prev]);
-                          
-                          // Extract tracking number from response (handle both formats)
-                          const trackingNumber = labelResult.trackingNumber || labelResult.trackingNumbers?.[0] || 'N/A';
-                          
-                          toast({
-                            title: t('cartonLabelAdded'),
-                            description: t('cartonLabelAddedDesc', { trackingNumber, count: cartons.length + 1 }),
-                          });
-                        } catch (error: any) {
-                          console.error('❌ Error adding carton label:', error);
-                          toast({
-                            title: t('errorTitle'),
-                            description: error.message || t('failedToAddCartonLabel'),
-                            variant: "destructive"
-                          });
+                    
+                    const handleAddCarton = async () => {
+                      try {
+                        console.log('🔧 Adding carton label - Current cartons:', cartons.length, 'hasCOD:', hasCOD);
+                        
+                        // Show loading toast
+                        toast({
+                          title: hasCOD ? t('rebuildingCodShipment', 'Rebuilding COD Shipment') : t('creatingCartonLabel'),
+                          description: hasCOD 
+                            ? t('rebuildingCodShipmentDesc', 'Cancelling existing labels and creating new ones...')
+                            : t('creatingCartonLabelDesc'),
+                        });
+                        
+                        // For COD: Use rebuild endpoint, for non-COD: use create-additional-label
+                        const endpoint = hasCOD 
+                          ? `/api/shipping/rebuild-cod-shipment/${activePackingOrder.id}`
+                          : `/api/shipping/create-additional-label/${activePackingOrder.id}`;
+                        
+                        const labelResponse = await apiRequest('POST', endpoint, {});
+                        
+                        if (!labelResponse.ok) {
+                          const errorData = await labelResponse.json();
+                          throw new Error(errorData.error || 'Failed to create PPL label');
                         }
-                      }}
-                      data-testid="button-add-ppl-shipment"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('addCartonLabel')}
-                    </Button>
-                  )}
+                        
+                        const labelResult = await labelResponse.json();
+                        console.log('✅ PPL label operation completed:', labelResult);
+                        
+                        // Refetch cartons and order data to update the UI
+                        await queryClient.invalidateQueries({ queryKey: ['/api/orders', activePackingOrder.id, 'cartons'] });
+                        await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                        
+                        // Force a refetch to ensure UI updates
+                        await refetchCartons();
+                        
+                        // Add delay to ensure database commit completes
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Refresh shipment labels AFTER database commit
+                        await fetchShipmentLabels();
+                        
+                        // Force re-render by updating state
+                        setShipmentLabelsFromDB(prev => [...prev]);
+                        
+                        // Extract tracking number from response
+                        const newCartonCount = labelResult.cartonCount || cartons.length + 1;
+                        
+                        toast({
+                          title: hasCOD 
+                            ? t('codShipmentRebuilt', 'COD Shipment Rebuilt')
+                            : t('cartonLabelAdded'),
+                          description: hasCOD
+                            ? t('codShipmentRebuiltDesc', { count: newCartonCount }, `All ${newCartonCount} labels have been recreated`)
+                            : t('cartonLabelAddedDesc', { trackingNumber: labelResult.trackingNumber || 'N/A', count: newCartonCount }),
+                        });
+                      } catch (error: any) {
+                        console.error('❌ Error adding carton label:', error);
+                        toast({
+                          title: t('errorTitle'),
+                          description: error.message || t('failedToAddCartonLabel'),
+                          variant: "destructive"
+                        });
+                      }
+                    };
+                    
+                    return (
+                      <Button
+                        variant="outline"
+                        className={`w-full border-2 border-dashed ${
+                          hasCOD 
+                            ? 'border-amber-500 text-amber-700 dark:text-amber-200 hover:bg-amber-50 dark:bg-amber-900/30 hover:border-amber-400 dark:border-amber-600'
+                            : 'border-orange-400 text-orange-700 dark:text-orange-200 hover:bg-orange-50 dark:bg-orange-900/30 hover:border-orange-300 dark:border-orange-700'
+                        }`}
+                        onClick={async () => {
+                          if (hasCOD && cartons.length > 0) {
+                            // Show confirmation dialog for COD orders with existing labels
+                            const confirmed = confirm(
+                              `⚠️ COD Order - Rebuild Required\n\n` +
+                              `This is a Cash on Delivery (dobírka) order.\n\n` +
+                              `Adding a new carton requires:\n` +
+                              `• Cancelling all ${cartons.length} existing label(s)\n` +
+                              `• Creating ${cartons.length + 1} new labels\n\n` +
+                              `Do you want to proceed?`
+                            );
+                            if (!confirmed) return;
+                          }
+                          await handleAddCarton();
+                        }}
+                        data-testid="button-add-ppl-shipment"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {hasCOD ? t('addCartonLabelCOD', '+ Add Carton (Rebuild)') : t('addCartonLabel')}
+                      </Button>
+                    );
+                  })()}
                 </>
                 );
               })()}
