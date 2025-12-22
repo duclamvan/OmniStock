@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LabelContent, type LabelProduct } from "@/components/warehouse/WarehouseLabelPreview";
+import { generateProductQRUrl } from "@shared/qrUtils";
 import {
   ArrowLeft,
   Printer,
@@ -137,7 +138,8 @@ export default function WarehouseLabels() {
 
     const labelsHtml = selectedLabels
       .map((label) => {
-        const stockUrl = `${window.location.origin}/stock?q=${encodeURIComponent(label.sku || label.productName)}`;
+        const productCode = label.sku || label.productId;
+        const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
         const vietnameseName = label.vietnameseName || label.productName;
         const priceEur = label.priceEur ? Number(label.priceEur) : null;
         const priceCzk = label.priceCzk ? Number(label.priceCzk) : null;
@@ -148,7 +150,7 @@ export default function WarehouseLabels() {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="90" height="90">
                 <rect width="45" height="45" fill="white"/>
                 <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
-                <text x="22.5" y="30" text-anchor="middle" font-size="4">${label.sku || ""}</text>
+                <text x="22.5" y="30" text-anchor="middle" font-size="4">${productCode}</text>
               </svg>
             </div>
             <div class="name-section">

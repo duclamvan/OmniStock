@@ -98,6 +98,7 @@ import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
 import WarehouseLabels from "@/pages/Stock/WarehouseLabels";
+import ProductLookup from "@/pages/Public/ProductLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
 // Legacy imports - some uncommmented for unified add/edit
@@ -120,6 +121,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/p/:code" component={ProductLookup} />
       <Layout>
         <Route path="/">
           {() => <ProtectedRoute requireAdmin><Home /></ProtectedRoute>}

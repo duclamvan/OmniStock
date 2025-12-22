@@ -6,6 +6,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "
 import { Printer, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiRequest } from "@/lib/queryClient";
+import { generateProductQRUrl } from "@shared/qrUtils";
 
 interface WarehouseLabelPreviewProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface WarehouseLabelPreviewProps {
     name: string;
     vietnameseName?: string | null;
     sku?: string | null;
+    barcode?: string | null;
     priceEur?: number | string | null;
     priceCzk?: number | string | null;
   } | null;
@@ -25,6 +27,7 @@ export interface LabelProduct {
   name: string;
   vietnameseName?: string | null;
   sku?: string | null;
+  barcode?: string | null;
   priceEur?: number | string | null;
   priceCzk?: number | string | null;
 }
@@ -32,7 +35,8 @@ export interface LabelProduct {
 export function LabelContent({ product }: { product: LabelProduct | null }) {
   if (!product) return null;
 
-  const stockUrl = `${window.location.origin}/stock?q=${encodeURIComponent(product.sku || product.name)}`;
+  const productCode = product.sku || product.barcode || product.id;
+  const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
   const vietnameseName = product.vietnameseName || product.name;
   const englishName = product.name;
   const priceEur = product.priceEur ? Number(product.priceEur) : null;
@@ -46,7 +50,7 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
     >
       <div className="flex-shrink-0 w-[22mm] flex items-center justify-center p-[1.5mm] bg-white border-r-2 border-black">
         <QRCodeSVG
-          value={stockUrl}
+          value={qrUrl}
           size={72}
           level="M"
           includeMargin={false}

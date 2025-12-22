@@ -362,6 +362,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PUBLIC endpoint for product lookup by SKU/barcode (for QR code scanning by external users)
+  // Returns only basic product identification info, no sensitive data like pricing or inventory
+  app.get('/api/products/lookup/:code', async (req, res) => {
+    try {
+      const code = decodeURIComponent(req.params.code);
+      
+      // Search by SKU or barcode
+      const allProducts = await storage.getProducts();
+      const product = allProducts.find(p => 
+        p.sku === code || 
+        p.barcode === code ||
+        p.id === code
+      );
+      
+      if (!product) {
+        return res.json(null);
+      }
+      
+      // Return only basic identification info for external users
+      res.json({
+        id: product.id,
+        name: product.name,
+        vietnameseName: product.vietnameseName,
+        sku: product.sku,
+        barcode: product.barcode,
+      });
+    } catch (error) {
+      console.error('Product lookup error:', error);
+      res.status(500).json({ message: 'Failed to lookup product' });
+    }
+  });
+
   // Maintenance mode middleware - checks if system is in maintenance mode
   // Allows auth, user, and settings routes to pass through so admins can manage it
   app.use('/api', async (req: any, res, next) => {
