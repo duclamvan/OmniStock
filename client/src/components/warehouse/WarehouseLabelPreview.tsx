@@ -56,20 +56,20 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
 
       <div className="flex-1 px-[2mm] py-[1mm] flex flex-col justify-center overflow-hidden min-w-0 border-l border-gray-200">
         <span
-          className="font-bold text-[9pt] leading-tight block uppercase"
+          className="font-bold text-[10pt] leading-tight block uppercase"
           style={{ lineHeight: 1.15, wordBreak: 'break-word' }}
         >
           {vietnameseName}
         </span>
         <span
-          className="text-[8pt] leading-tight block text-gray-700 mt-[0.5mm]"
+          className="text-[9pt] leading-tight block text-gray-700 mt-[0.5mm]"
           style={{ lineHeight: 1.15, wordBreak: 'break-word' }}
         >
           {englishName}
         </span>
         {product.sku && (
           <span
-            className="text-[6pt] text-gray-500 mt-[0.5mm] font-mono block"
+            className="text-[7pt] text-gray-500 mt-[0.5mm] font-mono block"
             style={{ lineHeight: 1.1 }}
           >
             {product.sku}
@@ -77,23 +77,28 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
         )}
       </div>
 
-      <div className="flex-shrink-0 w-[22mm] px-[2mm] py-[1mm] flex flex-col justify-center items-end text-right border-l border-gray-200">
+      <div className="flex-shrink-0 w-[24mm] flex flex-col justify-center border-l border-gray-200">
         {priceEur !== null && (
-          <div className="flex flex-col items-end">
-            <span className="font-bold text-[12pt] text-black" style={{ lineHeight: 1.1 }}>
+          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+            <span className="font-bold text-[13pt] text-black" style={{ lineHeight: 1.1 }}>
               €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         )}
+        {priceEur !== null && priceCzk !== null && (
+          <div className="border-t border-gray-300 mx-[1mm]"></div>
+        )}
         {priceCzk !== null && (
-          <div className="flex flex-col items-end mt-[1mm]">
-            <span className="font-bold text-[11pt] text-black" style={{ lineHeight: 1.1 }}>
+          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+            <span className="font-bold text-[12pt] text-black" style={{ lineHeight: 1.1 }}>
               {priceCzk.toLocaleString("cs-CZ")} Kč
             </span>
           </div>
         )}
         {priceEur === null && priceCzk === null && (
-          <span className="text-[9pt] text-gray-400">N/A</span>
+          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+            <span className="text-[9pt] text-gray-400">N/A</span>
+          </div>
         )}
       </div>
     </div>
@@ -187,20 +192,20 @@ export default function WarehouseLabelPreview({
           }
           .vn-name {
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 10pt;
             line-height: 1.15;
             text-transform: uppercase;
             word-break: break-word;
           }
           .en-name {
-            font-size: 8pt;
+            font-size: 9pt;
             line-height: 1.15;
             color: #374151;
             margin-top: 0.5mm;
             word-break: break-word;
           }
           .sku {
-            font-size: 6pt;
+            font-size: 7pt;
             line-height: 1.1;
             color: #6b7280;
             margin-top: 0.5mm;
@@ -208,27 +213,33 @@ export default function WarehouseLabelPreview({
           }
           .price-section {
             flex-shrink: 0;
-            width: 22mm;
-            padding: 1mm 2mm;
+            width: 24mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: flex-end;
-            text-align: right;
             border-left: 0.5pt solid #e5e7eb;
+          }
+          .price-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 1mm 2mm;
+          }
+          .price-divider {
+            border-top: 0.5pt solid #d1d5db;
+            margin: 0 1mm;
           }
           .price-eur {
             font-weight: bold;
-            font-size: 12pt;
+            font-size: 13pt;
             line-height: 1.1;
             color: black;
           }
           .price-czk {
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.1;
             color: black;
-            margin-top: 1mm;
           }
         </style>
       </head>
@@ -243,8 +254,9 @@ export default function WarehouseLabelPreview({
             ${product?.sku ? `<div class="sku">${product.sku}</div>` : ""}
           </div>
           <div class="price-section">
-            ${product?.priceEur ? `<div class="price-eur">€${Number(product.priceEur).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ""}
-            ${product?.priceCzk ? `<div class="price-czk">${Number(product.priceCzk).toLocaleString("cs-CZ")} Kč</div>` : ""}
+            ${product?.priceEur ? `<div class="price-row"><span class="price-eur">€${Number(product.priceEur).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
+            ${product?.priceEur && product?.priceCzk ? `<div class="price-divider"></div>` : ""}
+            ${product?.priceCzk ? `<div class="price-row"><span class="price-czk">${Number(product.priceCzk).toLocaleString("cs-CZ")} Kč</span></div>` : ""}
           </div>
         </div>
       </body>

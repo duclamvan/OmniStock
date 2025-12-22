@@ -157,9 +157,10 @@ export default function WarehouseLabels() {
               ${label.sku ? `<span class="sku">${label.sku}</span>` : ""}
             </div>
             <div class="price-section">
-              ${priceEur !== null ? `<span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` : ""}
-              ${priceCzk !== null ? `<span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span>` : ""}
-              ${priceEur === null && priceCzk === null ? `<span class="price-na">N/A</span>` : ""}
+              ${priceEur !== null ? `<div class="price-row"><span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
+              ${priceEur !== null && priceCzk !== null ? `<div class="price-divider"></div>` : ""}
+              ${priceCzk !== null ? `<div class="price-row"><span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
+              ${priceEur === null && priceCzk === null ? `<div class="price-row"><span class="price-na">N/A</span></div>` : ""}
             </div>
           </div>
         `;
@@ -223,47 +224,53 @@ export default function WarehouseLabels() {
           }
           .vn-name {
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 10pt;
             line-height: 1.15;
             text-transform: uppercase;
             word-break: break-word;
           }
           .en-name {
-            font-size: 8pt;
+            font-size: 9pt;
             line-height: 1.15;
             color: #374151;
             margin-top: 0.5mm;
             word-break: break-word;
           }
           .sku {
-            font-size: 6pt;
+            font-size: 7pt;
             color: #6b7280;
             margin-top: 0.5mm;
             font-family: monospace;
           }
           .price-section {
             flex-shrink: 0;
-            width: 22mm;
-            padding: 1mm 2mm;
+            width: 24mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: flex-end;
-            text-align: right;
             border-left: 0.5pt solid #e5e7eb;
+          }
+          .price-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 1mm 2mm;
+          }
+          .price-divider {
+            border-top: 0.5pt solid #d1d5db;
+            margin: 0 1mm;
           }
           .price-eur {
             font-weight: bold;
-            font-size: 12pt;
+            font-size: 13pt;
             line-height: 1.1;
             color: black;
           }
           .price-czk {
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.1;
             color: black;
-            margin-top: 1mm;
           }
           .price-na {
             font-size: 9pt;
