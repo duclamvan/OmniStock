@@ -1751,16 +1751,9 @@ function PickingLocationSelector({
     });
   };
 
-  // If no product ID (e.g., service item), just show the location text
+  // If no product ID (e.g., service item), don't show location selector
   if (!currentItem.productId) {
-    return (
-      <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
-        <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
-        <p className="font-black text-orange-600 dark:text-orange-400 font-mono text-2xl">
-          {currentItem.warehouseLocation || '-'}
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -1824,18 +1817,11 @@ function PickingLocationSelector({
           )}
         </div>
       ) : (
-        // Fallback to just showing the default location
-        <div className="text-center">
-          <p 
-            className="font-black text-orange-600 dark:text-orange-400 font-mono"
-            style={{
-              fontSize: 'min(4.5vw, 2.5rem)',
-              lineHeight: '1.3',
-            }}
-          >
-            {currentItem.warehouseLocation || '-'}
+        // No locations configured - show warning
+        <div className="text-center py-2">
+          <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">
+            {t('noLocationsConfigured') || 'No locations configured for this product'}
           </p>
-          <p className="text-xs text-orange-700/70 mt-1">{t('noLocationsConfigured') || 'No locations configured'}</p>
         </div>
       )}
     </div>
@@ -5867,8 +5853,8 @@ export default function PickPack() {
     // Auto-save progress to localStorage
     savePickedProgress(activePickingOrder.id, updatedItems);
 
-    // Get selected location (use default or passed locationCode)
-    const selectedLocation = locationCode || selectedPickingLocations[itemId] || item?.warehouseLocation;
+    // Get selected location from the picker (do NOT use legacy warehouseLocation field)
+    const selectedLocation = locationCode || selectedPickingLocations[itemId];
 
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
