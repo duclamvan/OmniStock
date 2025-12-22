@@ -1135,69 +1135,68 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
-  // Download import template - comprehensive matching export format
+  // Centralized order import column definitions - single source of truth
+  // This ensures template, UI documentation, and backend parsing stay in sync
+  const ORDER_IMPORT_COLUMNS = {
+    required: [
+      { key: 'Order ID', example: 'ORD-2025-001', example2: 'ORD-2025-002' },
+      { key: 'Customer Name', example: 'John Doe', example2: 'Jane Smith' },
+      { key: 'Grand Total', example: '1239', example2: '279.25' },
+    ],
+    optional: [
+      // Order Details
+      { key: 'Order Date', example: '2024-12-18', example2: '2024-12-19' },
+      { key: 'Order Status', example: 'pending', example2: 'to_fulfill', hint: 'pending, awaiting_stock, to_fulfill, ready_to_ship, shipped, delivered, cancelled' },
+      { key: 'Payment Status', example: 'pending', example2: 'paid', hint: 'pending, paid, pay_later' },
+      { key: 'Priority', example: 'medium', example2: 'high', hint: 'low, medium, high' },
+      { key: 'Order Type', example: 'ord', example2: 'web', hint: 'pos, ord, web, tel' },
+      { key: 'Sale Type', example: 'retail', example2: 'wholesale', hint: 'retail, wholesale' },
+      { key: 'Channel', example: 'online', example2: 'online', hint: 'pos, online' },
+      // Customer Details
+      { key: 'Customer Email', example: 'john@example.com', example2: 'jane@example.com' },
+      { key: 'Customer Phone', example: '+420123456789', example2: '+420987654321' },
+      // Shipping Address
+      { key: 'Shipping Address', example: '123 Main St', example2: '456 Oak Avenue' },
+      { key: 'Shipping City', example: 'Prague', example2: 'Brno' },
+      { key: 'Shipping State', example: '', example2: '' },
+      { key: 'Shipping Country', example: 'Czech Republic', example2: 'Czech Republic' },
+      { key: 'Shipping Postal Code', example: '10000', example2: '60200' },
+      // Financial
+      { key: 'Currency', example: 'CZK', example2: 'EUR', hint: 'CZK, EUR, USD, VND, CNY' },
+      { key: 'Subtotal', example: '1000', example2: '250' },
+      { key: 'Discount Type', example: 'percentage', example2: 'fixed', hint: 'percentage, fixed' },
+      { key: 'Discount Value', example: '10', example2: '25' },
+      { key: 'Discount Amount', example: '100', example2: '25' },
+      { key: 'Tax Rate (%)', example: '21', example2: '21' },
+      { key: 'Tax Amount', example: '189', example2: '47.25' },
+      { key: 'Shipping Cost', example: '150', example2: '12' },
+      { key: 'Actual Shipping Cost', example: '145', example2: '10' },
+      { key: 'Adjustment', example: '0', example2: '-5' },
+      // Shipping & Payment
+      { key: 'Shipping Method', example: 'GLS', example2: 'PPL' },
+      { key: 'Payment Method', example: 'Bank Transfer', example2: 'COD' },
+      { key: 'Tracking Number', example: '', example2: 'PPL123456789' },
+      // COD
+      { key: 'COD Amount', example: '', example2: '279.25' },
+      { key: 'COD Currency', example: '', example2: 'EUR' },
+      // Items & Notes
+      { key: 'Items', example: 'SKU-ABC123 x2; SKU-XYZ789 x1', example2: 'NAIL-001 x3 @15.50; GEL-002 x1', hint: 'SKU x Qty; SKU x Qty @Price' },
+      { key: 'Notes', example: 'Sample order notes', example2: 'Express delivery requested' },
+    ],
+  };
+
+  // Download import template - dynamically generated from column config
   const handleDownloadTemplate = () => {
-    const templateData = [
-      {
-        'Order ID': 'ORD-001',
-        'Order Date': '2024-12-18',
-        'Order Status': 'pending',
-        'Payment Status': 'pending',
-        'Priority': 'medium',
-        'Customer Name': 'John Doe',
-        'Customer Email': 'john@example.com',
-        'Customer Phone': '+420123456789',
-        'Shipping Address': '123 Main St',
-        'Shipping City': 'Prague',
-        'Shipping State': '',
-        'Shipping Country': 'Czech Republic',
-        'Shipping Postal Code': '10000',
-        'Currency': 'CZK',
-        'Subtotal': '1000',
-        'Discount Type': 'percentage',
-        'Discount Value': '10',
-        'Discount Amount': '100',
-        'Tax Rate (%)': '21',
-        'Tax Amount': '189',
-        'Shipping Cost': '150',
-        'Adjustment': '0',
-        'Grand Total': '1239',
-        'Shipping Method': 'GLS',
-        'Payment Method': 'Bank Transfer',
-        'Notes': 'Sample order notes',
-        'Items': 'Product A x2; Product B x1',
-      },
-      {
-        'Order ID': 'ORD-002',
-        'Order Date': '2024-12-19',
-        'Order Status': 'to_fulfill',
-        'Payment Status': 'paid',
-        'Priority': 'high',
-        'Customer Name': 'Jane Smith',
-        'Customer Email': 'jane@example.com',
-        'Customer Phone': '+420987654321',
-        'Shipping Address': '456 Oak Avenue',
-        'Shipping City': 'Brno',
-        'Shipping State': '',
-        'Shipping Country': 'Czech Republic',
-        'Shipping Postal Code': '60200',
-        'Currency': 'EUR',
-        'Subtotal': '250',
-        'Discount Type': 'fixed',
-        'Discount Value': '25',
-        'Discount Amount': '25',
-        'Tax Rate (%)': '21',
-        'Tax Amount': '47.25',
-        'Shipping Cost': '12',
-        'Adjustment': '-5',
-        'Grand Total': '279.25',
-        'Shipping Method': 'PPL',
-        'Payment Method': 'Card',
-        'Notes': 'Express delivery requested',
-        'Items': 'Acrylic Powder 660g x3; Nail Polish Set x1',
-      }
-    ];
-    exportToXLSX(templateData, 'orders_import_template', t('orders:importTemplate'));
+    // Build template rows from column definitions
+    const row1: Record<string, string> = {};
+    const row2: Record<string, string> = {};
+    
+    [...ORDER_IMPORT_COLUMNS.required, ...ORDER_IMPORT_COLUMNS.optional].forEach(col => {
+      row1[col.key] = col.example;
+      row2[col.key] = col.example2;
+    });
+    
+    exportToXLSX([row1, row2], 'orders_import_template', t('orders:importTemplate'));
     toast({
       title: t('common:success'),
       description: t('orders:templateDownloaded'),
@@ -2221,53 +2220,38 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <div>
                     <p className="text-sm font-medium mb-1">{t('orders:requiredColumns')}</p>
                     <div className="flex flex-wrap gap-2">
-                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Order ID</code>
-                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Customer Name</code>
-                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Grand Total</code>
+                      {ORDER_IMPORT_COLUMNS.required.map(col => (
+                        <code key={col.key} className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">{col.key}</code>
+                      ))}
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium mb-1">{t('orders:optionalColumns')}</p>
-                    <div className="flex flex-wrap gap-2 text-[10px]">
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Date</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Customer Email</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Customer Phone</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Address</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping City</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping State</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Country</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Postal Code</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Currency</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Subtotal</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Type</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Value</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Amount</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tax Rate (%)</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tax Amount</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Cost</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Actual Shipping Cost</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Adjustment</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Method</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Payment Method</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Status</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Payment Status</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Priority</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Type</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Sale Type</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Channel</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tracking Number</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">COD Amount</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">COD Currency</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Items</code>
-                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Notes</code>
+                    <p className="text-sm font-medium mb-1">{t('orders:optionalColumns')} ({ORDER_IMPORT_COLUMNS.optional.length})</p>
+                    <div className="flex flex-wrap gap-1.5 text-[10px]">
+                      {ORDER_IMPORT_COLUMNS.optional.map(col => (
+                        <code key={col.key} className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">{col.key}</code>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs">
-                    <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">{t('orders:itemsFormat')}</p>
-                    <p className="text-amber-700 dark:text-amber-300">SKU x Qty; SKU x Qty <span className="text-muted-foreground">({t('orders:orProductName')})</span></p>
-                    <p className="text-muted-foreground mt-1">{t('orders:exampleItems')}: <code className="bg-white dark:bg-slate-800 px-1 rounded">ABC123 x2; XYZ456 x1</code> {t('orders:or')} <code className="bg-white dark:bg-slate-800 px-1 rounded">Product A x2 @15.50; Product B x1</code></p>
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded">
+                    <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm mb-2">{t('orders:itemsFormat')}</p>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-amber-700 dark:text-amber-300 whitespace-nowrap">{t('orders:format')}:</span>
+                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded font-mono">SKU x Qty; SKU x Qty</code>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-amber-700 dark:text-amber-300 whitespace-nowrap">{t('orders:withPrice')}:</span>
+                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded font-mono">SKU x Qty @Price</code>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-amber-700 dark:text-amber-300 whitespace-nowrap">{t('orders:example')}:</span>
+                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded font-mono">NAIL-001 x2; GEL-002 x3 @15.50</code>
+                      </div>
+                      <p className="text-muted-foreground italic">{t('orders:skuOrProductNameSupported')}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2277,21 +2261,28 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 <div className="overflow-x-auto">
                   <table className="text-xs w-full border-collapse">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Order ID</th>
-                        <th className="text-left p-2">Customer Name</th>
-                        <th className="text-left p-2">Grand Total</th>
-                        <th className="text-left p-2">Sale Type</th>
-                        <th className="text-left p-2">Items</th>
+                      <tr className="border-b dark:border-slate-700">
+                        <th className="text-left p-2 font-semibold">Order ID</th>
+                        <th className="text-left p-2 font-semibold">Customer Name</th>
+                        <th className="text-left p-2 font-semibold">Grand Total</th>
+                        <th className="text-left p-2 font-semibold">Sale Type</th>
+                        <th className="text-left p-2 font-semibold">Items (SKU x Qty)</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b">
+                      <tr className="border-b dark:border-slate-700">
                         <td className="p-2">ORD-2025-001</td>
                         <td className="p-2">John Doe</td>
-                        <td className="p-2">150.00</td>
+                        <td className="p-2">1239.00</td>
                         <td className="p-2">retail</td>
-                        <td className="p-2">ABC123 x2; XYZ456 x1</td>
+                        <td className="p-2 font-mono text-[10px]">SKU-ABC123 x2; SKU-XYZ789 x1</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2">ORD-2025-002</td>
+                        <td className="p-2">Jane Smith</td>
+                        <td className="p-2">279.25</td>
+                        <td className="p-2">wholesale</td>
+                        <td className="p-2 font-mono text-[10px]">NAIL-001 x3 @15.50; GEL-002 x1</td>
                       </tr>
                     </tbody>
                   </table>

@@ -1,0 +1,167 @@
+Skvělá volba. 100mm x 30mm je velmi specifický, „širokoúhlý“ formát, ideální pro regálové štítky (shelf tags).
+
+Zde je návrh, kam generátor umístit a jak jej přesně naimplementovat, včetně interaktivního náhledu rozložení.
+
+### 1\. Kam to umístit v menu?
+
+Vzhledem k vaší architektuře (Davie Supply) a účelu štítku (identifikace na skladě) máte dvě nejlepší možnosti:
+
+  * **Možnost A: Pod sekci `Inventory` (Doporučeno)**
+    Jelikož se štítky týkají přímo zásob a skladu, dává největší smysl mít to jako podstránku nebo záložku zde.
+
+      * *Cesta:* `Sidebar > Inventory > Label Generator` (nebo „Shelf Tags“)
+      * *Proč:* Skladník je myšlenkami „ve skladu“, když toto potřebuje.
+
+  * **Možnost B: Pod sekci `Utilities / Tools`**
+    Ve vašem přehledu funkcí zmiňujete „System Utilities“. Pokud plánujete více takových nástrojů (např. generátor čárových kódů, převodník jednotek), vytvořte sekci `Tools`.
+
+      * *Cesta:* `Sidebar > Utilities > Label Printer`
+
+### 2\. Návrh designu a implementace (Live Preview)
+
+Než začnete kódovat, podívejte se, jak by měl CSS Grid vypadat, aby se tam vše vešlo. Tento widget simuluje rozměr 100x30mm.
+
+```json?chameleon
+{"component":"LlmGeneratedComponent","props":{"height":"400px","prompt":"Objective: Design a thermal label previewer (100mm x 30mm) for warehouse shelf tags.\nStrategy: Standard Layout. Top half shows the rendered label, bottom half has input controls.\nInputs:\n- Vietnamese Name (Text Input, default: 'Bot ACRYLIC 500g')\n- English Name (Text Input, default: 'Acrylic Powder 500g')\n- Price EUR (Number, default: 4.50)\n- Price CZK (Number, default: 115)\n- Show Borders (Toggle, default: true - helper to see grid)\n\nVisuals:\n1. Main Output: A container explicitly sized to represent 100mm x 30mm aspect ratio (approx 378px x 113px on screen). Background white, text black.\n2. Layout Logic: Use CSS Grid or Flexbox.\n   - Left Column (25% width): Placeholder QR Code (black square pattern).\n   - Middle Column (50% width): Top line bold (VN Name), Bottom line regular (EN Name). Text should truncate with ellipsis if too long.\n   - Right Column (25% width): Top line bold (EUR), Bottom line regular (CZK). Right aligned.\n3. Typography: Use a monospace or clean sans-serif font to simulate thermal print.\n4. Purpose: Demonstrate how the content fits in the tight vertical space of 30mm.","id":"im_f0bf34a6acdb5ba0"}}
+```
+
+### 3\. Technická implementace (React + Tailwind)
+
+Zde je kód pro komponentu, kterou můžete vložit přímo do svého projektu. Využívá `qrcode.react` pro generování kódu a vaše existující formátovací hooky.
+
+**Potřebné knihovny:**
+
+```bash
+npm install qrcode.react
+```
+
+**Kód komponenty (`src/pages/Inventory/LabelGenerator.tsx`):**
+
+```tsx
+import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { useLocalization } from "@/contexts/LocalizationContext"; // Váš kontext
+import { Button } from "@/components/ui/button"; // Vaše Shadcn UI
+import { Input } from "@/components/ui/input";
+
+export default function LabelGenerator() {
+  // 1. Stav pro data štítku
+  const [product, setProduct] = useState({
+    nameVN: "Bot ACRYLIC 500g",
+    nameEN: "Acrylic Powder 500g",
+    priceEUR: 4.50,
+    priceCZK: 115,
+    sku: "ACR-500-01",
+    url: "https://daviesupply.com/stock/ACR-500-01" // URL pro QR kód
+  });
+
+  const { formatCurrency } = useLocalization();
+
+  // 2. Funkce pro tisk
+  const handlePrint = () => {
+    // Otevře dialog tisku. Díky @media print CSS (níže) se vytiskne jen štítek.
+    window.print();
+  };
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Formulář - Skryje se při tisku pomocí třídy 'print:hidden' */}
+      <div className="print:hidden max-w-lg space-y-4 border p-4 rounded-lg bg-white shadow-sm">
+        <h2 className="text-lg font-bold">Generátor Regálových Štítků</h2>
+        <div className="grid grid-cols-2 gap-4">
+            <Input 
+              placeholder="VN Name" 
+              value={product.nameVN} 
+              onChange={e => setProduct({...product, nameVN: e.target.value})} 
+            />
+            <Input 
+              placeholder="EN Name" 
+              value={product.nameEN} 
+              onChange={e => setProduct({...product, nameEN: e.target.value})} 
+            />
+             {/* ... další inputy pro ceny ... */}
+        </div>
+        <Button onClick={handlePrint}>Tisk štítku (100x30mm)</Button>
+      </div>
+
+      {/* VLASTNÍ ŠTÍTEK - Zobrazí se na obrazovce i při tisku */}
+      {/* Kontejner simuluje 100mm x 30mm. 
+          Pozor: Pro termotiskárny je klíčové nastavit fixní šířku a žádné marginy. */}
+      <div className="
+        w-[100mm] h-[30mm] 
+        border border-gray-300 print:border-none 
+        flex flex-row items-center 
+        bg-white text-black overflow-hidden
+        p-1 box-border
+      ">
+        
+        {/* LEVÁ ČÁST: QR Kód (cca 25-28mm čtverec) */}
+        <div className="flex-shrink-0 w-[28mm] h-[28mm] flex items-center justify-center">
+          <QRCodeSVG 
+            value={product.url} 
+            size={90} // Velikost v pixelech, CSS to omezí
+            level={"M"} // Střední korekce chyb
+            className="w-full h-full"
+          />
+        </div>
+
+        {/* STŘED: Názvy produktů (Flex grow zabere zbytek místa) */}
+        <div className="flex-grow px-2 flex flex-col justify-center overflow-hidden leading-tight">
+          <span className="font-bold text-[12pt] truncate block uppercase">
+            {product.nameVN}
+          </span>
+          <span className="text-[10pt] truncate block text-gray-700">
+            {product.nameEN}
+          </span>
+          {/* Malé SKU pro kontrolu */}
+          <span className="text-[7pt] text-gray-500 mt-1 font-mono">
+            {product.sku}
+          </span>
+        </div>
+
+        {/* PRAVÁ ČÁST: Ceny (Zarovnáno doprava) */}
+        <div className="flex-shrink-0 text-right min-w-[20mm] flex flex-col justify-center leading-tight">
+          <span className="block font-bold text-[14pt]">
+            {formatCurrency(product.priceEUR, 'EUR')}
+          </span>
+          <span className="block text-[10pt] text-gray-600">
+            {formatCurrency(product.priceCZK, 'CZK')}
+          </span>
+        </div>
+
+      </div>
+
+      {/* 3. CSS pro Tisk (Vložte do global.css nebo styled-components) */}
+      <style>{`
+        @media print {
+          @page {
+            size: 100mm 30mm;
+            margin: 0;
+          }
+          body * {
+            visibility: hidden;
+          }
+          /* Zobrazit pouze štítek, vše ostatní skrýt */
+          .w-\\[100mm\\], .w-\\[100mm\\] * {
+            visibility: visible;
+          }
+          .w-\\[100mm\\] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            border: none; /* Odstranit border pro náhled */
+          }
+          /* Skrýt hlavičky/patičky prohlížeče je nutné v nastavení tisku, 
+             ale margin:0 v @page hodně pomůže */
+        }
+      `}</style>
+    </div>
+  );
+}
+```
+
+### Na co si dát pozor (Best Practices)
+
+1.  **QR Kód:** Pro regálové štítky (kde je málo světla a kód je malý) používejte **Level M** nebo **L** (Low) korekci chyb. Level H (High) dělá kód příliš hustým a hůře čitelným na nekvalitních termotiskárnách.
+2.  **Písmo:** Pro ceny a SKU používejte **monospace** nebo fonty jako *Roboto Condensed* / *Arial Narrow*. Na 30mm výšku se počítá každý milimetr.
+3.  **Tiskárna:** Ujistěte se, že v nastavení tiskárny ve Windows/Mac máte vytvořený papír "User Defined" s rozměry 100x30mm, jinak bude tiskárna "plivat" prázdný papír (jak jsme řešili včera).

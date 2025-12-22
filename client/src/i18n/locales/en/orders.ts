@@ -1823,6 +1823,36 @@ const orders = {
   quantityReduced: 'Quantity Reduced',
   onlyXInStock: 'Only {{count}} available in stock',
   
+  // Order Import - Bulk Import Dialog
+  customersWillBeCreatedOrMatched: 'Customers will be automatically created or matched by name/email/phone',
+  orderIdRequired: 'Order ID is required and must be unique',
+  itemsFormatNote: 'Items use format: SKU x Qty or ProductName x Qty (with optional @Price)',
+  requiredExcelFormat: 'Required Excel Format',
+  requiredColumns: 'Required Columns',
+  optionalColumns: 'Optional Columns',
+  itemsFormat: 'Items Format',
+  format: 'Format',
+  withPrice: 'With Price',
+  example: 'Example',
+  skuOrProductNameSupported: 'Both SKU and product name are supported for item lookup',
+  exampleRow: 'Example Rows',
+  importComplete: 'Import Complete',
+  totalRows: 'Total Rows',
+  imported: 'Imported',
+  failed: 'Failed',
+  customersCreated: 'Customers Created',
+  customersExisting: 'Existing Customers',
+  errorLog: 'Error Log',
+  successfulOrders: 'Successful Orders',
+  downloadErrorLog: 'Download Error Log',
+  revertAll: 'Revert All',
+  keepAll: 'Keep All',
+  importingOrders: 'Importing Orders...',
+  pleaseWait: 'Please wait while we process your file',
+  row: 'Row',
+  selectExcelFile: 'Select Excel File',
+  importReverted: 'Successfully reverted {{count}} imported order(s)',
+  
 } as const;
 
 export default orders;

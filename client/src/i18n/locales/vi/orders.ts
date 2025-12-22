@@ -1800,6 +1800,36 @@ const orders = {
   quantityReduced: 'Đã giảm số lượng',
   onlyXInStock: 'Chỉ còn {{count}} trong kho',
   
+  // Order Import - Bulk Import Dialog
+  customersWillBeCreatedOrMatched: 'Khách hàng sẽ được tự động tạo hoặc khớp theo tên/email/điện thoại',
+  orderIdRequired: 'Mã đơn hàng là bắt buộc và phải duy nhất',
+  itemsFormatNote: 'Sản phẩm dùng định dạng: SKU x SL hoặc Tên sản phẩm x SL (tùy chọn @Giá)',
+  requiredExcelFormat: 'Định dạng Excel Bắt buộc',
+  requiredColumns: 'Cột Bắt buộc',
+  optionalColumns: 'Cột Tùy chọn',
+  itemsFormat: 'Định dạng Sản phẩm',
+  format: 'Định dạng',
+  withPrice: 'Có giá',
+  example: 'Ví dụ',
+  skuOrProductNameSupported: 'Hỗ trợ cả SKU và tên sản phẩm để tra cứu',
+  exampleRow: 'Dòng Ví dụ',
+  importComplete: 'Nhập Hoàn tất',
+  totalRows: 'Tổng dòng',
+  imported: 'Đã nhập',
+  failed: 'Thất bại',
+  customersCreated: 'Khách hàng mới',
+  customersExisting: 'Khách hàng có sẵn',
+  errorLog: 'Nhật ký lỗi',
+  successfulOrders: 'Đơn hàng thành công',
+  downloadErrorLog: 'Tải nhật ký lỗi',
+  revertAll: 'Hoàn tác tất cả',
+  keepAll: 'Giữ tất cả',
+  importingOrders: 'Đang nhập đơn hàng...',
+  pleaseWait: 'Vui lòng chờ trong khi chúng tôi xử lý file của bạn',
+  row: 'Dòng',
+  selectExcelFile: 'Chọn File Excel',
+  importReverted: 'Đã hoàn tác thành công {{count}} đơn hàng đã nhập',
+  
 } as const;
 
 export default orders;
