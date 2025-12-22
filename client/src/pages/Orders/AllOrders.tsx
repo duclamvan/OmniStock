@@ -216,27 +216,32 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
+  // Default column visibility settings
+  const defaultColumnVisibility: Record<string, boolean> = {
+    order: true,
+    customer: true,
+    date: true,
+    status: true,
+    payment: true,
+    tracking: false,
+    total: true,
+    profit: false,
+    biller: false,
+  };
+
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('ordersVisibleColumns');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        // Merge saved values with defaults to ensure all columns have explicit values
+        const parsed = JSON.parse(saved);
+        return { ...defaultColumnVisibility, ...parsed };
       } catch {
-        return {};
+        return defaultColumnVisibility;
       }
     }
-    return {
-      order: true,
-      customer: true,
-      date: true,
-      status: true,
-      payment: true,
-      tracking: false,
-      total: true,
-      profit: false,
-      biller: false,
-    };
+    return defaultColumnVisibility;
   });
 
   // Toggle view mode and save to localStorage
@@ -262,7 +267,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   // Toggle column visibility and save to localStorage
   const toggleColumnVisibility = (columnKey: string) => {
-    const newVisibility = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    // Strict boolean toggle - true becomes false, false becomes true
+    const currentValue = visibleColumns[columnKey] === true;
+    const newVisibility = { ...visibleColumns, [columnKey]: !currentValue };
     setVisibleColumns(newVisibility);
     localStorage.setItem('ordersVisibleColumns', JSON.stringify(newVisibility));
   };
@@ -937,7 +944,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     if (!canAccessFinancialData && col.key === 'profit') {
       return false;
     }
-    return visibleColumns[col.key] !== false;
+    // Strictly check if column is visible (true) - not just "not false"
+    return visibleColumns[col.key] === true;
   });
 
   // Bulk actions for DataTable
@@ -1599,7 +1607,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       {columns.map((column) => (
                         <DropdownMenuCheckboxItem
                           key={column.key}
-                          checked={visibleColumns[column.key] !== false}
+                          checked={visibleColumns[column.key] === true}
                           onCheckedChange={() => toggleColumnVisibility(column.key)}
                           onSelect={(e) => e.preventDefault()}
                           className="cursor-pointer"
