@@ -1705,9 +1705,6 @@ function PickingLocationSelector({
     queryKey: ['/api/products', currentItem.productId, 'locations'],
     enabled: !!currentItem.productId,
   });
-
-  // Get selected location or default to item's warehouseLocation
-  const selectedLocation = selectedPickingLocations[currentItem.id] || currentItem.warehouseLocation || '';
   
   // Sort locations: primary first, then by code
   const sortedLocations = [...productLocations].sort((a, b) => {
@@ -1715,6 +1712,32 @@ function PickingLocationSelector({
     if (!a.isPrimary && b.isPrimary) return 1;
     return a.locationCode.localeCompare(b.locationCode);
   });
+
+  // Find primary location
+  const primaryLocation = sortedLocations.find(loc => loc.isPrimary);
+  
+  // Auto-select primary location when locations load (if not already selected)
+  useEffect(() => {
+    if (sortedLocations.length > 0 && !selectedPickingLocations[currentItem.id]) {
+      // Default to primary location, or first location with stock, or first location
+      const defaultLocation = primaryLocation?.locationCode 
+        || sortedLocations.find(loc => (loc.quantity || 0) > 0)?.locationCode
+        || sortedLocations[0]?.locationCode;
+      
+      if (defaultLocation) {
+        setSelectedPickingLocations({
+          ...selectedPickingLocations,
+          [currentItem.id]: defaultLocation
+        });
+      }
+    }
+  }, [sortedLocations.length, currentItem.id, primaryLocation?.locationCode]);
+
+  // Get selected location - use primary/first location as fallback (NOT warehouseLocation)
+  const selectedLocation = selectedPickingLocations[currentItem.id] 
+    || primaryLocation?.locationCode 
+    || sortedLocations[0]?.locationCode 
+    || '';
 
   // Find the selected location to show its stock
   const selectedLocationData = sortedLocations.find(loc => 
