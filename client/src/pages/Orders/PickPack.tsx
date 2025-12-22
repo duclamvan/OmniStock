@@ -1639,7 +1639,7 @@ function PickingListView({
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
                     }`}>
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} showStock={true} requiredQty={item.quantity * (item.bulkUnitQty || 1)} />
+                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} />
                     </div>
                     {/* Same aisle indicator - shows when next item is in same aisle */}
                     {isSameAisleAsNext && !isPicked && (
@@ -1989,15 +1989,11 @@ function BundleComponentLocationSelector({
 const ItemPrimaryLocation = memo(({ 
   productId,
   fallbackLocation,
-  className = "",
-  showStock = false,
-  requiredQty = 0
+  className = ""
 }: { 
   productId?: string | null;
   fallbackLocation?: string;
   className?: string;
-  showStock?: boolean;
-  requiredQty?: number;
 }) => {
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', productId, 'locations'],
@@ -2006,11 +2002,8 @@ const ItemPrimaryLocation = memo(({
   });
   
   // Find primary location, or first with stock, or first location
-  const { primaryLocation, primaryStock, totalStock } = useMemo(() => {
-    if (!productLocations.length) return { primaryLocation: null, primaryStock: 0, totalStock: 0 };
-    
-    // Calculate total stock across all locations
-    const total = productLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+  const primaryLocation = useMemo(() => {
+    if (!productLocations.length) return null;
     
     // Sort: primary first, then by stock quantity
     const sorted = [...productLocations].sort((a, b) => {
@@ -2019,11 +2012,7 @@ const ItemPrimaryLocation = memo(({
       return (b.quantity || 0) - (a.quantity || 0);
     });
     
-    return {
-      primaryLocation: sorted[0]?.locationCode || null,
-      primaryStock: sorted[0]?.quantity || 0,
-      totalStock: total
-    };
+    return sorted[0]?.locationCode || null;
   }, [productLocations]);
   
   if (!productId) {
@@ -2040,25 +2029,9 @@ const ItemPrimaryLocation = memo(({
     return null;
   }
   
-  // Use primaryStock (stock at displayed location), not totalStock
-  // This ensures the stock shown matches the specific location displayed
-  const displayStock = primaryStock;
-  
-  // Determine stock status color based on stock at the displayed location
-  const stockColor = displayStock >= requiredQty 
-    ? 'text-green-600 dark:text-green-400' 
-    : displayStock > 0 
-      ? 'text-yellow-600 dark:text-yellow-400' 
-      : 'text-red-600 dark:text-red-400';
-  
   return (
     <span className={className}>
       {displayLocation}
-      {showStock && (
-        <span className={`ml-1 font-medium ${stockColor}`}>
-          ({displayStock})
-        </span>
-      )}
     </span>
   );
 });
@@ -7707,7 +7680,7 @@ export default function PickPack() {
                                   <div className="mt-1">
                                     {!isBundle && (
                                       <div className="text-xs text-gray-600 font-medium">
-                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                         {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
@@ -7769,7 +7742,7 @@ export default function PickPack() {
                                 <div className="flex items-center gap-2 mt-1">
                                   {!isBundle && (
                                     <span className="text-xs text-gray-600 font-medium truncate">
-                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                     </span>
                                   )}
                                   {item.sku && (
@@ -13066,7 +13039,7 @@ export default function PickPack() {
                               <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
                                 <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
                                 <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                 </p>
                               </div>
                               <Button
@@ -13333,12 +13306,11 @@ export default function PickPack() {
                                       <div className="text-sm font-medium text-gray-800 truncate">
                                         {bundleItem.name}
                                       </div>
-                                      {bundleItem.location && (
-                                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                          <MapPin className="h-3 w-3" />
-                                          {bundleItem.location}
-                                        </div>
-                                      )}
+                                      {/* Fetch real location from product locations API */}
+                                      <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        <ItemPrimaryLocation productId={bundleItem.productId} fallbackLocation={bundleItem.location || 'N/A'} />
+                                      </div>
                                       <div className="text-xs text-gray-600 mt-1">
                                         Qty: {bundleItem.quantity}
                                       </div>
@@ -13346,7 +13318,7 @@ export default function PickPack() {
                                     
                                     <div className={`w-6 h-6 flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                                       isPicked 
-                                        ? 'bg-green-50 dark:bg-green-900/300 border-green-600' 
+                                        ? 'bg-green-500 dark:bg-green-600 border-green-600 dark:border-green-500' 
                                         : 'bg-white border-gray-400'
                                     }`}>
                                       {isPicked && <CheckCircle className="h-4 w-4 text-white" />}
@@ -13743,7 +13715,7 @@ export default function PickPack() {
                                   <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
                                     isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
                                   }`}>
-                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
@@ -13869,7 +13841,7 @@ export default function PickPack() {
                               )}
                               {!isServiceBill && (
                                 <span className="text-xs font-mono font-bold">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                 </span>
                               )}
                             </div>
@@ -14997,7 +14969,7 @@ export default function PickPack() {
                                           )}
                                           <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                             <MapPin className="h-3 w-3" />
-                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                           </span>
                                         </div>
                                       </div>
@@ -15170,7 +15142,7 @@ export default function PickPack() {
                                           <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                               <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
+                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                             </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
@@ -15353,7 +15325,7 @@ export default function PickPack() {
                                           <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                               <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
+                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                             </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
@@ -15863,7 +15835,7 @@ export default function PickPack() {
                                                     </p>
                                                     <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
                                                       <MapPin className="h-2.5 w-2.5" />
-                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
+                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                                     </span>
                                                   </div>
                                                 </div>
@@ -16095,7 +16067,7 @@ export default function PickPack() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                           </div>
                         </div>
                         {showPricing ? (
