@@ -5893,11 +5893,6 @@ Important:
         });
       }
 
-      // NOTE: Product's main stock quantity is now updated ONLY on receiving completion,
-      // not during storage assignment. This ensures inventory is added atomically
-      // when the receiving process is finalized, preventing double-counting issues.
-      // Storage assignment only updates productLocations for location-based tracking.
-
       // Update receipt item's assignedQuantity if receiptItemId is provided
       const receiptItemId = req.body.receiptItemId;
       if (receiptItemId && quantityToAdd > 0) {
