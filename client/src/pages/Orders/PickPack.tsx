@@ -2726,6 +2726,40 @@ export default function PickPack() {
     }
   }, [activePickingOrder?.id, activePickingOrder?.pickStatus, JSON.stringify(activePickingOrder?.items?.map(i => ({ id: i.id, pickedQuantity: i.pickedQuantity })))]);
 
+  // Preload all product images when picking order is activated
+  // This ensures instant image loading when navigating between items
+  useEffect(() => {
+    if (!activePickingOrder?.items) return;
+    
+    // Collect all image URLs from order items
+    const imageUrls: string[] = [];
+    
+    activePickingOrder.items.forEach(item => {
+      // Add main product image
+      if (item.image) {
+        imageUrls.push(item.image);
+      }
+      
+      // Add bundle item images if available
+      if (item.bundleItems && item.bundleItems.length > 0) {
+        item.bundleItems.forEach(bundleItem => {
+          if ((bundleItem as any).image) {
+            imageUrls.push((bundleItem as any).image);
+          }
+        });
+      }
+    });
+    
+    // Preload all unique images in the background
+    const uniqueUrls = [...new Set(imageUrls)];
+    uniqueUrls.forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
+    
+    console.log(`📷 Preloading ${uniqueUrls.length} product images for order ${activePickingOrder.orderId}`);
+  }, [activePickingOrder?.id]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPackingTimerRunning) {
