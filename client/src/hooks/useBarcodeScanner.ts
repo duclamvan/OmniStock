@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
+import { extractCodeFromQRValue } from '@shared/qrUtils';
 
 export interface UseBarcodeScanner {
   isActive: boolean;
@@ -115,7 +116,12 @@ export function useBarcodeScanner({ onScan, scanInterval = 500 }: UseBarcodeScan
             
             if (barcodes.length > 0) {
               const barcode = barcodes[0];
-              onScan(barcode.rawValue);
+              if (barcode.rawValue) {
+                const code = extractCodeFromQRValue(barcode.rawValue);
+                if (code) {
+                  onScan(code);
+                }
+              }
             }
           } catch (err) {
             console.error('Barcode detection error:', err);
