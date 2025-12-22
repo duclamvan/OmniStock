@@ -73,6 +73,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/components/ThemeProvider';
+import { ScrollToTop } from '@/components/ScrollToTop';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -1343,6 +1344,9 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           {children}
         </div>
       </main>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop threshold={400} />
     </div>
   );
 }
