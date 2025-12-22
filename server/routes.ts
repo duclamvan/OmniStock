@@ -15885,9 +15885,10 @@ Important:
       const expandedItems: any[] = [];
       
       for (const item of items) {
-        // Skip service items (they have no physical weight/dimensions)
-        if (item.serviceId) {
-          console.log(`Skipping service item "${item.productName}" - no physical packing needed`);
+        // Skip pure service items (serviceId without productId - they have no physical weight/dimensions)
+        // But include service parts (items with both serviceId AND productId - these are physical products)
+        if (item.serviceId && !item.productId) {
+          console.log(`Skipping pure service item "${item.productName}" - no physical packing needed`);
           continue;
         }
         
@@ -15923,9 +15924,14 @@ Important:
           continue;
         }
         
-        // Regular product with productId
+        // Regular product with productId (including service parts)
         if (item.productId) {
           const product = await storage.getProductById(item.productId);
+          const isServicePart = item.isServicePart || (item.serviceId && item.productId);
+          
+          if (isServicePart) {
+            console.log(`Including service part "${item.productName}" in packing calculation`);
+          }
           
           if (item.bulkUnitQty && item.bulkUnitQty > 1) {
             // Bulk unit item - calculate as multiple individual items
@@ -15939,6 +15945,7 @@ Important:
               product,
               isBulkExpanded: true,
               bulkUnitQty: item.bulkUnitQty,
+              isServicePart,
               discount: item.discount,
               discountPercentage: item.discountPercentage,
               appliedDiscountId: item.appliedDiscountId,
@@ -15949,7 +15956,7 @@ Important:
               buyXGetYGetQty: item.buyXGetYGetQty
             });
           } else {
-            // Regular item
+            // Regular item (or service part)
             expandedItems.push({
               productId: item.productId,
               productName: item.productName,
@@ -15957,6 +15964,7 @@ Important:
               quantity: item.quantity,
               price: item.price,
               product,
+              isServicePart,
               discount: item.discount,
               discountPercentage: item.discountPercentage,
               appliedDiscountId: item.appliedDiscountId,

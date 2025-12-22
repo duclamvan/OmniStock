@@ -251,7 +251,12 @@ export async function optimizeCartonPacking(
         discountPercentage: orderItem.discountPercentage,
         appliedDiscountLabel: orderItem.appliedDiscountLabel,
         appliedDiscountType: orderItem.appliedDiscountType,
-        freeItemsCount: orderItem.freeItemsCount
+        freeItemsCount: orderItem.freeItemsCount,
+        // Origin tracking
+        fromBundle: orderItem.fromBundle,
+        isBulkExpanded: orderItem.isBulkExpanded,
+        bulkUnitQty: orderItem.bulkUnitQty,
+        isServicePart: orderItem.isServicePart
       });
     }
 

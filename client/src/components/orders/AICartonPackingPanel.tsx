@@ -196,7 +196,7 @@ export function AICartonPackingPanel({
                           <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400">
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
                                   {/* Show bundle origin badge */}
                                   {item.fromBundle && (
@@ -208,6 +208,12 @@ export function AICartonPackingPanel({
                                   {item.isBulkExpanded && (
                                     <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
                                       📦 {item.bulkUnitQty}x bulk
+                                    </Badge>
+                                  )}
+                                  {/* Show service part badge */}
+                                  {item.isServicePart && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700">
+                                      🔧 {t('servicePart') || 'Service Part'}
                                     </Badge>
                                   )}
                                 </div>
