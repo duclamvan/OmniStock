@@ -197,6 +197,14 @@ const inventory = {
   templateDownloaded: 'Import template downloaded successfully',
   templateDownloadFailed: 'Failed to download template',
   
+  // Export Dialog
+  exportProducts: 'Export Products',
+  chooseExportFormat: 'Choose your preferred export format',
+  exportingCount: 'Exporting {{count}} products',
+  excelFormatDesc: 'Full data with all columns - best for editing',
+  pdfFormatDesc: 'Print-ready summary report',
+  exportIncludesAllColumns: 'Export includes all product data: names, SKU, prices, costs, quantities, and more.',
+  
   // Returns Import/Export
   importReturns: 'Import Returns',
   importReturnsDescription: 'Upload an Excel file to import returns data. Use the template to ensure correct format.',

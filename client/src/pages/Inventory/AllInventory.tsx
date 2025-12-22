@@ -70,6 +70,7 @@ export default function AllInventory() {
   const [showArchive, setShowArchive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -1232,13 +1233,9 @@ export default function AllInventory() {
                 {t('inventory:importFromExcel')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportXLSX} data-testid="menu-export-xlsx">
+              <DropdownMenuItem onClick={() => setShowExportDialog(true)} data-testid="menu-export">
                 <Download className="h-4 w-4 mr-2" />
-                {t('inventory:exportToExcel')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} data-testid="menu-export-pdf">
-                <FileText className="h-4 w-4 mr-2" />
-                {t('inventory:exportToPDF')}
+                {t('inventory:export')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1945,6 +1942,72 @@ export default function AllInventory() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
               {t('inventory:cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('inventory:exportProducts')}</DialogTitle>
+            <DialogDescription>
+              {t('inventory:chooseExportFormat')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">
+                {t('inventory:exportingCount', { count: filteredProducts?.length || 0 })}
+              </p>
+              
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-12"
+                  onClick={() => {
+                    handleExportXLSX();
+                    setShowExportDialog(false);
+                  }}
+                  data-testid="button-export-xlsx"
+                >
+                  <Download className="mr-3 h-5 w-5 text-green-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t('inventory:exportToExcel')}</p>
+                    <p className="text-xs text-muted-foreground">{t('inventory:excelFormatDesc')}</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-12"
+                  onClick={() => {
+                    handleExportPDF();
+                    setShowExportDialog(false);
+                  }}
+                  data-testid="button-export-pdf"
+                >
+                  <FileText className="mr-3 h-5 w-5 text-red-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t('inventory:exportToPDF')}</p>
+                    <p className="text-xs text-muted-foreground">{t('inventory:pdfFormatDesc')}</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {t('inventory:exportIncludesAllColumns')}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+              {t('common:cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>

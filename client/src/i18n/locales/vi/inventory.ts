@@ -299,6 +299,14 @@ const inventory = {
   templateDownloaded: 'Tải mẫu nhập thành công',
   templateDownloadFailed: 'Không thể tải mẫu nhập',
   
+  // Export Dialog
+  exportProducts: 'Xuất sản phẩm',
+  chooseExportFormat: 'Chọn định dạng xuất mong muốn',
+  exportingCount: 'Xuất {{count}} sản phẩm',
+  excelFormatDesc: 'Dữ liệu đầy đủ với tất cả các cột - tốt nhất để chỉnh sửa',
+  pdfFormatDesc: 'Báo cáo tóm tắt sẵn sàng in',
+  exportIncludesAllColumns: 'Xuất bao gồm tất cả dữ liệu sản phẩm: tên, SKU, giá, chi phí, số lượng và nhiều hơn nữa.',
+  
   // Returns Import/Export
   importReturns: 'Nhập đơn trả hàng',
   importReturnsDescription: 'Tải lên file Excel để nhập dữ liệu trả hàng. Sử dụng mẫu để đảm bảo định dạng đúng.',
