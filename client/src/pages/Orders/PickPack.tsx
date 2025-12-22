@@ -12311,9 +12311,10 @@ export default function PickPack() {
                   </div>
                   <Button
                     size="icon"
-                    className="h-7 w-7 bg-red-50 dark:bg-red-900/300/80 hover:bg-red-600/90 touch-manipulation"
+                    className="h-7 w-7 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 touch-manipulation relative z-10"
                     onClick={() => setShowResetOrderDialog(true)}
                     title={t('resetOrder')}
+                    data-testid="button-reset-order-mobile"
                   >
                     <RotateCcw className="h-3.5 w-3.5 text-white" />
                   </Button>
@@ -12401,8 +12402,9 @@ export default function PickPack() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-10 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md"
+                    className="h-10 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md relative z-10"
                     onClick={() => setShowResetOrderDialog(true)}
+                    data-testid="button-reset-order-desktop"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     {t('resetOrder')}
@@ -15963,7 +15965,7 @@ export default function PickPack() {
 
       {/* Reset Order Confirmation Dialog */}
       <Dialog open={showResetOrderDialog} onOpenChange={setShowResetOrderDialog}>
-        <DialogContent>
+        <DialogContent className="z-[100]">
           <DialogHeader>
             <DialogTitle>{t('resetOrder')}</DialogTitle>
             <DialogDescription>
@@ -15974,12 +15976,14 @@ export default function PickPack() {
             <Button
               variant="outline"
               onClick={() => setShowResetOrderDialog(false)}
+              data-testid="button-cancel-reset"
             >
               {t('cancel')}
             </Button>
             <Button
               className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600"
               onClick={resetOrder}
+              data-testid="button-confirm-reset"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               {t('resetOrder')}
