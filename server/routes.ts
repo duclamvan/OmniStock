@@ -5133,13 +5133,39 @@ Important:
       
       let deleted = 0;
       for (const id of orderIds) {
+        // Get order items before deletion to restore inventory
+        const orderItems = await storage.getOrderItems(id);
+        
+        // Restore inventory for each item (add quantities back)
+        for (const item of orderItems) {
+          if (item.productId && !item.serviceId) {
+            const product = await storage.getProductById(item.productId);
+            if (product) {
+              const currentQty = product.quantity || 0;
+              const restoreQty = item.quantity || 0;
+              await storage.updateProduct(item.productId, {
+                quantity: currentQty + restoreQty
+              });
+            }
+          } else if (item.bundleId) {
+            const bundle = await storage.getBundleById(item.bundleId);
+            if (bundle) {
+              const currentStock = bundle.availableStock || 0;
+              const restoreQty = item.quantity || 0;
+              await storage.updateBundle(item.bundleId, {
+                availableStock: currentStock + restoreQty
+              });
+            }
+          }
+        }
+        
         // Delete order items first, then order
         await storage.deleteOrderItems(id);
         const success = await storage.deleteOrder(id);
         if (success) deleted++;
       }
       
-      res.json({ deleted, message: `Reverted ${deleted} orders` });
+      res.json({ deleted, message: `Reverted ${deleted} orders (inventory restored)` });
     } catch (error) {
       console.error("Error reverting import:", error);
       res.status(500).json({ message: "Failed to revert import" });
@@ -9853,6 +9879,37 @@ Important:
         return res.status(404).json({ message: "Order not found" });
       }
 
+      // Get order items before deletion to restore inventory
+      const orderItems = await storage.getOrderItems(req.params.id);
+      
+      // Restore inventory for each item (add quantities back)
+      for (const item of orderItems) {
+        if (item.productId && !item.serviceId) {
+          // Regular product - restore quantity
+          const product = await storage.getProductById(item.productId);
+          if (product) {
+            const currentQty = product.quantity || 0;
+            const restoreQty = item.quantity || 0;
+            await storage.updateProduct(item.productId, {
+              quantity: currentQty + restoreQty
+            });
+            console.log(`Restored ${restoreQty} units to product ${product.name} (${item.productId})`);
+          }
+        } else if (item.bundleId) {
+          // Bundle - restore availableStock
+          const bundle = await storage.getBundleById(item.bundleId);
+          if (bundle) {
+            const currentStock = bundle.availableStock || 0;
+            const restoreQty = item.quantity || 0;
+            await storage.updateBundle(item.bundleId, {
+              availableStock: currentStock + restoreQty
+            });
+            console.log(`Restored ${restoreQty} units to bundle ${bundle.name} (${item.bundleId})`);
+          }
+        }
+        // Note: Services don't have inventory to restore
+      }
+
       await storage.deleteOrder(req.params.id);
 
       await storage.createUserActivity({
@@ -9860,7 +9917,7 @@ Important:
         action: 'delete',
         entityType: 'order',
         entityId: req.params.id,
-        description: `Deleted order: ${order.orderId}`,
+        description: `Deleted order: ${order.orderId} (inventory restored)`,
       });
 
       res.status(204).send();
