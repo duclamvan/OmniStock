@@ -223,30 +223,23 @@ export default function WarehouseLabels() {
           }
           .vn-name {
             font-weight: bold;
-            font-size: 11pt;
-            line-height: 1.2;
+            font-size: 9pt;
+            line-height: 1.15;
             text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
           }
           .en-name {
-            font-size: 9pt;
-            line-height: 1.2;
+            font-size: 8pt;
+            line-height: 1.15;
             color: #374151;
             margin-top: 0.5mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
           }
           .sku {
-            font-size: 7pt;
+            font-size: 6pt;
             color: #6b7280;
-            margin-top: 1mm;
+            margin-top: 0.5mm;
             font-family: monospace;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
           }
           .price-section {
             flex-shrink: 0;

@@ -56,20 +56,20 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
 
       <div className="flex-1 px-[2mm] py-[1mm] flex flex-col justify-center overflow-hidden min-w-0 border-l border-gray-200">
         <span
-          className="font-bold text-[11pt] leading-tight truncate block uppercase"
-          style={{ lineHeight: 1.2 }}
+          className="font-bold text-[9pt] leading-tight block uppercase"
+          style={{ lineHeight: 1.15, wordBreak: 'break-word' }}
         >
           {vietnameseName}
         </span>
         <span
-          className="text-[9pt] leading-tight truncate block text-gray-700 mt-[0.5mm]"
-          style={{ lineHeight: 1.2 }}
+          className="text-[8pt] leading-tight block text-gray-700 mt-[0.5mm]"
+          style={{ lineHeight: 1.15, wordBreak: 'break-word' }}
         >
           {englishName}
         </span>
         {product.sku && (
           <span
-            className="text-[7pt] text-gray-500 mt-[1mm] font-mono truncate block"
+            className="text-[6pt] text-gray-500 mt-[0.5mm] font-mono block"
             style={{ lineHeight: 1.1 }}
           >
             {product.sku}
@@ -183,31 +183,24 @@ export default function WarehouseLabelPreview({
           }
           .vn-name {
             font-weight: bold;
-            font-size: 11pt;
-            line-height: 1.2;
+            font-size: 9pt;
+            line-height: 1.15;
             text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
           }
           .en-name {
-            font-size: 9pt;
-            line-height: 1.2;
+            font-size: 8pt;
+            line-height: 1.15;
             color: #374151;
             margin-top: 0.5mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-break: break-word;
           }
           .sku {
-            font-size: 7pt;
+            font-size: 6pt;
             line-height: 1.1;
             color: #6b7280;
-            margin-top: 1mm;
+            margin-top: 0.5mm;
             font-family: monospace;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
           }
           .price-section {
             flex-shrink: 0;
