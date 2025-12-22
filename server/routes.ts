@@ -8446,11 +8446,55 @@ Important:
     }
   });
 
-  // Update picked quantity for an order item
+  // Update picked quantity for an order item and reduce stock from location
   app.patch('/api/orders/:id/items/:itemId/pick', isAuthenticated, async (req: any, res) => {
     try {
-      const { pickedQuantity } = req.body;
+      const { pickedQuantity, locationCode, qtyChange, productId } = req.body;
+      
+      // Update the order item's picked quantity
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      
+      // Reduce stock from location if we have the necessary info and quantity increased
+      if (productId && locationCode && qtyChange > 0) {
+        try {
+          // Find the location for this product with the given location code
+          const locations = await storage.getProductLocations(productId);
+          const location = locations.find(loc => 
+            loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+          );
+          
+          if (location) {
+            const currentQty = location.quantity || 0;
+            const newQty = Math.max(0, currentQty - qtyChange);
+            await storage.updateProductLocation(location.id, { quantity: newQty });
+            console.log(`📦 Reduced stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (picked ${qtyChange})`);
+          } else {
+            console.warn(`⚠️ Location ${locationCode} not found for product ${productId} - stock not reduced`);
+          }
+        } catch (locationError) {
+          console.error('Error reducing location stock:', locationError);
+          // Don't fail the pick operation if stock reduction fails
+        }
+      } else if (productId && locationCode && qtyChange < 0) {
+        // If quantity decreased (unpicking), restore stock to location
+        try {
+          const locations = await storage.getProductLocations(productId);
+          const location = locations.find(loc => 
+            loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+          );
+          
+          if (location) {
+            const currentQty = location.quantity || 0;
+            const restoreQty = Math.abs(qtyChange);
+            const newQty = currentQty + restoreQty;
+            await storage.updateProductLocation(location.id, { quantity: newQty });
+            console.log(`📦 Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (unpicked ${restoreQty})`);
+          }
+        } catch (locationError) {
+          console.error('Error restoring location stock:', locationError);
+        }
+      }
+      
       res.json(orderItem);
     } catch (error) {
       console.error("Error updating picked quantity:", error);

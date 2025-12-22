@@ -179,6 +179,15 @@ interface PackingRecommendation {
   reasoning: string;
 }
 
+interface ProductLocation {
+  id: string;
+  productId: string;
+  locationCode: string;
+  quantity: number | null;
+  isPrimary: boolean | null;
+  notes?: string | null;
+}
+
 interface OrderItem {
   id: string;
   productId?: string | null;
@@ -1675,6 +1684,137 @@ function PickingListView({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Component: Location selector for picking - allows employee to select which location to pick from
+function PickingLocationSelector({ 
+  currentItem, 
+  selectedPickingLocations, 
+  setSelectedPickingLocations,
+  t 
+}: { 
+  currentItem: OrderItem; 
+  selectedPickingLocations: Record<string, string>;
+  setSelectedPickingLocations: (locations: Record<string, string>) => void;
+  t: (key: string) => string;
+}) {
+  // Fetch product locations for this item
+  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', currentItem.productId, 'locations'],
+    enabled: !!currentItem.productId,
+  });
+
+  // Get selected location or default to item's warehouseLocation
+  const selectedLocation = selectedPickingLocations[currentItem.id] || currentItem.warehouseLocation || '';
+  
+  // Sort locations: primary first, then by code
+  const sortedLocations = [...productLocations].sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1;
+    if (!a.isPrimary && b.isPrimary) return 1;
+    return a.locationCode.localeCompare(b.locationCode);
+  });
+
+  // Find the selected location to show its stock
+  const selectedLocationData = sortedLocations.find(loc => 
+    loc.locationCode.toUpperCase() === selectedLocation.toUpperCase()
+  );
+
+  const handleLocationChange = (locationCode: string) => {
+    setSelectedPickingLocations({
+      ...selectedPickingLocations,
+      [currentItem.id]: locationCode
+    });
+  };
+
+  // If no product ID (e.g., service item), just show the location text
+  if (!currentItem.productId) {
+    return (
+      <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
+        <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
+        <p className="font-black text-orange-600 dark:text-orange-400 font-mono text-2xl">
+          {currentItem.warehouseLocation || '-'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-4 shadow-lg">
+      <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-3 tracking-wider text-center">
+        {t('warehouseLocation')}
+      </p>
+      
+      {isLoading ? (
+        <div className="h-14 bg-white/50 rounded-lg animate-pulse" />
+      ) : sortedLocations.length > 0 ? (
+        <div className="space-y-2">
+          <Select value={selectedLocation} onValueChange={handleLocationChange}>
+            <SelectTrigger className="w-full h-14 bg-white border-2 border-orange-300 text-xl font-bold font-mono text-center shadow-md hover:border-orange-400 focus:ring-orange-500">
+              <SelectValue placeholder={t('selectLocation') || 'Select location'}>
+                <span className="text-orange-700 dark:text-orange-600 text-xl font-black">{selectedLocation}</span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-2 border-orange-300">
+              {sortedLocations.map((location) => (
+                <SelectItem 
+                  key={location.id} 
+                  value={location.locationCode}
+                  className="text-lg font-mono py-3 cursor-pointer hover:bg-orange-50"
+                >
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <span className="font-bold text-gray-900">{location.locationCode}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`text-sm ${
+                        (location.quantity || 0) > 0 
+                          ? 'bg-green-100 text-green-700 border-green-300' 
+                          : 'bg-red-100 text-red-700 border-red-300'
+                      }`}>
+                        {location.quantity || 0} {t('inStock') || 'in stock'}
+                      </Badge>
+                      {location.isPrimary && (
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
+                          {t('primary') || 'Primary'}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Show current stock at selected location */}
+          {selectedLocationData && (
+            <div className="flex justify-center">
+              <Badge className={`text-sm px-3 py-1 ${
+                (selectedLocationData.quantity || 0) >= currentItem.quantity 
+                  ? 'bg-green-600 text-white' 
+                  : (selectedLocationData.quantity || 0) > 0
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-red-600 text-white'
+              }`}>
+                {selectedLocationData.quantity || 0} {t('available') || 'available'}
+              </Badge>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Fallback to just showing the default location
+        <div className="text-center">
+          <p 
+            className="font-black text-orange-600 dark:text-orange-400 font-mono"
+            style={{
+              fontSize: 'min(4.5vw, 2.5rem)',
+              lineHeight: '1.3',
+            }}
+          >
+            {currentItem.warehouseLocation || '-'}
+          </p>
+          <p className="text-xs text-orange-700/70 mt-1">{t('noLocationsConfigured') || 'No locations configured'}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -12645,32 +12785,14 @@ export default function PickPack() {
                         )}
                       </div>
 
-                      {/* Warehouse Location - High Contrast Banner (Hidden for services) */}
+                      {/* Warehouse Location Selector - High Contrast Banner (Hidden for services) */}
                       {!currentItem.serviceId && (
-                        <div className="bg-orange-100 dark:bg-orange-900/30 border-4 border-orange-500 rounded-lg p-6 text-center shadow-lg overflow-hidden">
-                          <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
-                          <p 
-                            className="font-black text-orange-600 dark:text-orange-400 font-mono"
-                            style={{
-                              fontSize: 'min(4.5vw, 2.5rem)',
-                              lineHeight: '1.3',
-                              width: '100%',
-                              display: 'block',
-                              whiteSpace: 'nowrap',
-                              overflowWrap: 'normal',
-                              wordBreak: 'keep-all',
-                              hyphens: 'manual'
-                            }}
-                          >
-                            {(currentItem.warehouseLocation || '').split('-').map((part, i, arr) => (
-                              <span key={i}>
-                                {part}
-                                {i < arr.length - 1 && <wbr />}
-                                {i < arr.length - 1 && '-'}
-                              </span>
-                            ))}
-                          </p>
-                        </div>
+                        <PickingLocationSelector 
+                          currentItem={currentItem}
+                          selectedPickingLocations={selectedPickingLocations}
+                          setSelectedPickingLocations={setSelectedPickingLocations}
+                          t={t}
+                        />
                       )}
 
                       {/* Carton/Bulk Unit Details - Shows how many cartons to pick (Hidden for services) */}
