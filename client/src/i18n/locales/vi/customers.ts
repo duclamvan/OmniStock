@@ -632,6 +632,36 @@ const customers = {
   templateDownloaded: 'Tải mẫu thành công',
   noFileSelected: 'Chưa chọn tệp',
   
+  // Import Preview Modal
+  reviewImportData: 'Xem xét dữ liệu nhập',
+  reviewBeforeImport: 'Xem xét dữ liệu bên dưới trước khi xác nhận nhập',
+  totalRows: 'Tổng hàng',
+  newCustomers: 'Khách hàng mới',
+  updates: 'Cập nhật',
+  validationErrors: '{{count}} lỗi xác thực',
+  andMore: '... và {{count}} khác',
+  invalidRow: 'Không hợp lệ',
+  updateRow: 'Cập nhật',
+  newRow: 'Mới',
+  row: 'Hàng',
+  missingRequiredFields: 'Thiếu trường bắt buộc',
+  importing: 'Đang nhập...',
+  confirmImport: 'Xác nhận nhập ({{count}})',
+  importCompleted: 'Nhập hoàn tất',
+  importedCustomersCount: 'Đã nhập {{count}} khách hàng',
+  revert: 'Hoàn tác',
+  revertSuccessful: 'Hoàn tác thành công',
+  revertedCustomers: 'Đã hoàn tác {{count}} khách hàng',
+  revertPartial: 'Hoàn tác một phần',
+  revertFailed: 'Hoàn tác thất bại',
+  
+  // Export Modal
+  chooseExportFormat: 'Chọn định dạng xuất',
+  exportingCount: 'Đang xuất {{count}} khách hàng',
+  excelFormatDesc: 'Định dạng bảng tính để phân tích dữ liệu',
+  pdfFormatDesc: 'Định dạng PDF để in và chia sẻ',
+  exportIncludesAllColumns: 'Xuất sẽ bao gồm tất cả các cột hiển thị dựa trên bộ lọc hiện tại',
+  
 } as const;
 
 export default customers;

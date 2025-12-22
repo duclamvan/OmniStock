@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp, Download, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban, Filter, Users, DollarSign, FileDown, FileText, UserCog, FileUp, Download, Upload, AlertCircle, RefreshCw, CheckCircle2, RotateCcw, X, Check } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 import * as XLSX from 'xlsx';
 import {
@@ -70,6 +71,19 @@ export default function AllCustomers() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Import preview states
+  const [importPreviewData, setImportPreviewData] = useState<any[]>([]);
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  
+  // Revert states
+  const [lastImportedIds, setLastImportedIds] = useState<string[]>([]);
+  const [showRevertButton, setShowRevertButton] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
+  
+  // Export modal state
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -655,31 +669,131 @@ export default function AllCustomers() {
       return;
     }
 
-    setIsImporting(true);
     try {
-      const formData = new FormData();
-      formData.append('file', importFile);
+      const arrayBuffer = await importFile.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
 
-      const response = await fetch('/api/customers/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || t('customers:failedToImportCustomers'));
+      if (jsonData.length === 0) {
+        toast({
+          title: t('common:error'),
+          description: t('customers:noValidRowsToImport'),
+          variant: "destructive",
+        });
+        return;
       }
 
-      const result = await response.json();
+      const errors: string[] = [];
+      const existingCustomers = customers || [];
+      
+      const previewData = jsonData.map((row, index) => {
+        const customer: any = {
+          _rowNumber: index + 2,
+          _isValid: true,
+          _isUpdate: false,
+          _validationErrors: [],
+        };
+
+        for (const [key, value] of Object.entries(row)) {
+          const lowerKey = key.toLowerCase().trim();
+          if (lowerKey === 'name' || lowerKey === 'tên' || lowerKey === 'ten') {
+            customer.name = String(value);
+          } else if (lowerKey === 'email') {
+            customer.email = String(value);
+          } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
+            customer.phone = String(value);
+          } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
+            customer.country = String(value);
+          } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi' || lowerKey === 'street') {
+            customer.street = String(value);
+          } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
+            customer.city = String(value);
+          } else if (lowerKey === 'company' || lowerKey === 'công ty' || lowerKey === 'cong ty') {
+            customer.company = String(value);
+          } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
+            customer.notes = String(value);
+          } else if (lowerKey === 'customer type' || lowerKey === 'type' || lowerKey === 'loại') {
+            customer.type = String(value);
+          }
+        }
+
+        if (!customer.name || customer.name.trim() === '') {
+          customer._isValid = false;
+          customer._validationErrors.push(t('customers:missingRequiredFields'));
+          errors.push(`${t('customers:row')} ${index + 2}: ${t('customers:missingRequiredFields')} (name)`);
+        }
+
+        const existingCustomer = existingCustomers.find((c: any) => 
+          c.email && customer.email && c.email.toLowerCase() === customer.email.toLowerCase()
+        );
+        if (existingCustomer) {
+          customer._isUpdate = true;
+          customer._existingId = existingCustomer.id;
+        }
+
+        return customer;
+      });
+
+      setImportPreviewData(previewData);
+      setImportErrors(errors);
+      setShowImportDialog(false);
+      setShowImportPreview(true);
+    } catch (error: any) {
+      console.error('Import preview error:', error);
+      toast({
+        title: t('common:error'),
+        description: error.message || t('customers:failedToImportCustomers'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmImport = async () => {
+    setIsImporting(true);
+    const validItems = importPreviewData.filter(item => item._isValid);
+    const importedIds: string[] = [];
+
+    try {
+      for (const item of validItems) {
+        const customerData = {
+          name: item.name,
+          email: item.email || null,
+          phone: item.phone || null,
+          country: item.country || null,
+          street: item.street || null,
+          city: item.city || null,
+          company: item.company || null,
+          notes: item.notes || null,
+          type: item.type || 'regular',
+          isNew: true,
+        };
+
+        if (item._isUpdate && item._existingId) {
+          // Update existing customer - don't track for revert (would delete original data)
+          await apiRequest('PATCH', `/api/customers/${item._existingId}`, customerData);
+        } else {
+          // Create new customer - track for revert
+          const result = await apiRequest('POST', '/api/customers', customerData);
+          if (result && result.id) {
+            importedIds.push(result.id);
+          }
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       
       toast({
-        title: t('customers:importSuccessful'),
-        description: t('customers:importedCustomers', { count: result.imported || 0 }),
+        title: t('customers:importCompleted'),
+        description: t('customers:importedCustomersCount', { count: importedIds.length }),
       });
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
-      setShowImportDialog(false);
+
+      setLastImportedIds(importedIds);
+      setShowRevertButton(true);
+      setShowImportPreview(false);
+      setImportPreviewData([]);
+      setImportErrors([]);
       setImportFile(null);
     } catch (error: any) {
       console.error('Import error:', error);
@@ -690,6 +804,56 @@ export default function AllCustomers() {
       });
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  const handleRevertImport = async () => {
+    if (lastImportedIds.length === 0) return;
+
+    setIsReverting(true);
+    let revertedCount = 0;
+
+    try {
+      for (const id of lastImportedIds) {
+        try {
+          await apiRequest('DELETE', `/api/customers/${id}`);
+          revertedCount++;
+        } catch (error) {
+          console.error(`Failed to revert customer ${id}:`, error);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+
+      if (revertedCount === lastImportedIds.length) {
+        toast({
+          title: t('customers:revertSuccessful'),
+          description: t('customers:revertedCustomers', { count: revertedCount }),
+        });
+      } else if (revertedCount > 0) {
+        toast({
+          title: t('customers:revertPartial'),
+          description: t('customers:revertedCustomers', { count: revertedCount }),
+        });
+      } else {
+        toast({
+          title: t('customers:revertFailed'),
+          description: t('common:error'),
+          variant: "destructive",
+        });
+      }
+
+      setShowRevertButton(false);
+      setLastImportedIds([]);
+    } catch (error) {
+      console.error('Revert error:', error);
+      toast({
+        title: t('customers:revertFailed'),
+        description: t('common:error'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsReverting(false);
     }
   };
 
@@ -1337,6 +1501,252 @@ export default function AllCustomers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import Preview Modal */}
+      <Dialog open={showImportPreview} onOpenChange={setShowImportPreview}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <FileUp className="h-5 w-5" />
+              {t('customers:reviewImportData')}
+            </DialogTitle>
+            <DialogDescription className="text-gray-700 dark:text-gray-300">
+              {t('customers:reviewBeforeImport')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden space-y-4">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{importPreviewData.length}</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">{t('customers:totalRows')}</p>
+              </div>
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {importPreviewData.filter(i => i._isValid && !i._isUpdate).length}
+                </p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70">{t('customers:newCustomers')}</p>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {importPreviewData.filter(i => i._isUpdate).length}
+                </p>
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{t('customers:updates')}</p>
+              </div>
+            </div>
+
+            {/* Errors Warning */}
+            {importErrors.length > 0 && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="font-medium text-red-700 dark:text-red-300">
+                    {t('customers:validationErrors', { count: importErrors.length })}
+                  </span>
+                </div>
+                <ul className="text-xs text-red-600 dark:text-red-400 space-y-1 max-h-20 overflow-y-auto">
+                  {importErrors.slice(0, 5).map((error, i) => (
+                    <li key={i}>{error}</li>
+                  ))}
+                  {importErrors.length > 5 && (
+                    <li>{t('customers:andMore', { count: importErrors.length - 5 })}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview Table */}
+            <ScrollArea className="h-[300px] border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+                  <tr>
+                    <th className="text-left p-2 font-medium">#</th>
+                    <th className="text-left p-2 font-medium">{t('customers:status')}</th>
+                    <th className="text-left p-2 font-medium">{t('customers:name')}</th>
+                    <th className="text-left p-2 font-medium">{t('customers:phone')}</th>
+                    <th className="text-left p-2 font-medium">{t('customers:email')}</th>
+                    <th className="text-left p-2 font-medium">{t('customers:address')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreviewData.map((item, index) => (
+                    <tr 
+                      key={index} 
+                      className={`border-b ${!item._isValid ? 'bg-red-50 dark:bg-red-950/20' : item._isUpdate ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                    >
+                      <td className="p-2 text-muted-foreground">{item._rowNumber}</td>
+                      <td className="p-2">
+                        {!item._isValid ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            {t('customers:invalidRow')}
+                          </Badge>
+                        ) : item._isUpdate ? (
+                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-500">
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            {t('customers:updateRow')}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t('customers:newRow')}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="p-2 font-medium">{item.name || '-'}</td>
+                      <td className="p-2 text-xs">{item.phone || '-'}</td>
+                      <td className="p-2 text-xs">{item.email || '-'}</td>
+                      <td className="p-2 text-xs">{[item.street, item.city, item.country].filter(Boolean).join(', ') || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowImportPreview(false);
+                setImportPreviewData([]);
+                setImportErrors([]);
+              }}
+              className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+              data-testid="button-cancel-preview"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button 
+              onClick={confirmImport}
+              disabled={isImporting || importPreviewData.filter(i => i._isValid).length === 0}
+              className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800"
+              data-testid="button-confirm-import-preview"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {t('customers:importing')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('customers:confirmImport', { count: importPreviewData.filter(i => i._isValid).length })}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-gray-100">{t('customers:exportCustomers')}</DialogTitle>
+            <DialogDescription className="text-gray-700 dark:text-gray-300">
+              {t('customers:chooseExportFormat')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">
+                {t('customers:exportingCount', { count: filteredCustomers?.length || 0 })}
+              </p>
+              
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-12 bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => {
+                    handleExportXLSX();
+                    setShowExportDialog(false);
+                  }}
+                  data-testid="button-export-xlsx"
+                >
+                  <Download className="mr-3 h-5 w-5 text-green-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t('customers:exportToExcel')}</p>
+                    <p className="text-xs text-muted-foreground">{t('customers:excelFormatDesc')}</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-12 bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => {
+                    handleExportPDF();
+                    setShowExportDialog(false);
+                  }}
+                  data-testid="button-export-pdf"
+                >
+                  <FileText className="mr-3 h-5 w-5 text-red-600" />
+                  <div className="text-left">
+                    <p className="font-medium">{t('common:exportToPDF')}</p>
+                    <p className="text-xs text-muted-foreground">{t('customers:pdfFormatDesc')}</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {t('customers:exportIncludesAllColumns')}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)} className="bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
+              {t('common:cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Revert Button */}
+      {showRevertButton && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-3 flex items-center gap-3">
+            <div className="text-sm">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {t('customers:importCompleted')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('customers:importedCustomersCount', { count: lastImportedIds.length })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRevertImport}
+                disabled={isReverting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                data-testid="button-revert-import"
+              >
+                {isReverting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span className="ml-1">{t('customers:revert')}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowRevertButton(false)}
+                className="h-8 w-8"
+                data-testid="button-dismiss-revert"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

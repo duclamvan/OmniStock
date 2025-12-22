@@ -481,6 +481,37 @@ const customers = {
   templateDownloaded: 'Template downloaded successfully',
   noFileSelected: 'No file selected',
   
+  // Import Preview Modal
+  reviewImportData: 'Review Import Data',
+  reviewBeforeImport: 'Review the data below before confirming the import',
+  totalRows: 'Total Rows',
+  newCustomers: 'New Customers',
+  updates: 'Updates',
+  validationErrors: '{{count}} validation error(s)',
+  andMore: '... and {{count}} more',
+  invalidRow: 'Invalid',
+  updateRow: 'Update',
+  newRow: 'New',
+  row: 'Row',
+  missingRequiredFields: 'Missing required fields',
+  importing: 'Importing...',
+  confirmImport: 'Confirm Import ({{count}})',
+  importCompleted: 'Import Completed',
+  importedCustomersCount: '{{count}} customer(s) imported',
+  revert: 'Revert',
+  revertSuccessful: 'Revert Successful',
+  revertedCustomers: 'Reverted {{count}} customer(s)',
+  revertPartial: 'Partial Revert',
+  revertFailed: 'Revert Failed',
+  
+  // Export Modal
+  exportCustomers: 'Export Customers',
+  chooseExportFormat: 'Choose your preferred export format',
+  exportingCount: 'Exporting {{count}} customer(s)',
+  excelFormatDesc: 'Spreadsheet format for data analysis',
+  pdfFormatDesc: 'PDF format for printing and sharing',
+  exportIncludesAllColumns: 'Export will include all visible columns based on current filters',
+  
 } as const;
 
 export default customers;

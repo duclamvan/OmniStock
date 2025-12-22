@@ -16,7 +16,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -71,6 +71,17 @@ export default function AllInventory() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  
+  // Import preview states
+  const [importPreviewData, setImportPreviewData] = useState<any[]>([]);
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  
+  // Revert functionality - stores last import session
+  const [lastImportedIds, setLastImportedIds] = useState<string[]>([]);
+  const [showRevertButton, setShowRevertButton] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
 
   // Column visibility state with localStorage persistence
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -581,7 +592,7 @@ export default function AllInventory() {
     }
   };
 
-  // Import from Excel
+  // Parse Excel file and show preview instead of importing directly
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -601,73 +612,73 @@ export default function AllInventory() {
         return;
       }
 
-      // Process and validate data
-      let successCount = 0;
-      let errorCount = 0;
+      // Parse and validate data for preview
+      const previewItems: any[] = [];
       const errors: string[] = [];
 
-      for (const row of jsonData as any[]) {
-        try {
-          // Map Excel columns to product data
-          const productData: any = {
-            name: row.Name || row.name,
-            sku: row.SKU || row.sku,
-            barcode: row.Barcode || row.barcode || null,
-            quantity: Number(row.Quantity || row.quantity || 0),
-            lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
-            priceEur: row['Price EUR'] || row.priceEur || '0',
-            priceCzk: row['Price CZK'] || row.priceCzk || '0',
-            importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
-            importCostEur: row['Import Cost EUR'] || row.importCostEur || null,
-            importCostCzk: row['Import Cost CZK'] || row.importCostCzk || null,
-            description: row.Description || row.description || '',
-          };
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i] as any;
+        const rowNum = i + 2; // Excel row number (1-indexed + header)
+        
+        const productData: any = {
+          _rowNumber: rowNum,
+          name: row.Name || row.name || '',
+          sku: row.SKU || row.sku || '',
+          barcode: row.Barcode || row.barcode || null,
+          quantity: Number(row.Quantity || row.quantity || 0),
+          lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
+          priceEur: row['Price EUR'] || row.priceEur || '0',
+          priceCzk: row['Price CZK'] || row.priceCzk || '0',
+          importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
+          importCostEur: row['Import Cost EUR'] || row.importCostEur || null,
+          importCostCzk: row['Import Cost CZK'] || row.importCostCzk || null,
+          description: row.Description || row.description || '',
+          _isValid: true,
+          _error: '',
+          _isUpdate: false,
+        };
 
-          // Validate required fields
-          if (!productData.name || !productData.sku) {
-            errors.push(t('inventory:rowSkipped'));
-            errorCount++;
-            continue;
-          }
-
-          // Find category by name
-          const categoryName = row.Category || row.category;
-          if (categoryName) {
-            const category = (categories as any[])?.find(
-              (c: any) => c.name.toLowerCase() === categoryName.toLowerCase()
-            );
-            if (category) {
-              productData.categoryId = String(category.id);
-            }
-          }
-
-          // Find warehouse by name
-          const warehouseName = row.Warehouse || row.warehouse;
-          if (warehouseName) {
-            const warehouse = (warehouses as any[])?.find(
-              (w: any) => w.name.toLowerCase() === warehouseName.toLowerCase()
-            );
-            if (warehouse) {
-              productData.warehouseId = warehouse.id;
-            }
-          }
-
-          // Check if product exists by SKU
-          const existingProduct = products.find((p: any) => p.sku === productData.sku);
-
-          if (existingProduct) {
-            // Update existing product
-            await apiRequest('PATCH', `/api/products/${existingProduct.id}`, productData);
-          } else {
-            // Create new product
-            await apiRequest('POST', '/api/products', productData);
-          }
-
-          successCount++;
-        } catch (error: any) {
-          errorCount++;
-          errors.push(`${row.Name || row.name || 'Unknown'}: ${error.message}`);
+        // Validate required fields
+        if (!productData.name || !productData.sku) {
+          productData._isValid = false;
+          productData._error = t('inventory:missingRequiredFields');
+          errors.push(`${t('inventory:row')} ${rowNum}: ${t('inventory:missingRequiredFields')}`);
         }
+
+        // Find category by name
+        const categoryName = row.Category || row.category;
+        if (categoryName) {
+          const category = (categories as any[])?.find(
+            (c: any) => c.name.toLowerCase() === categoryName.toLowerCase()
+          );
+          if (category) {
+            productData.categoryId = String(category.id);
+            productData._categoryName = category.name;
+          } else {
+            productData._categoryName = categoryName + ' (' + t('inventory:notFound') + ')';
+          }
+        }
+
+        // Find warehouse by name
+        const warehouseName = row.Warehouse || row.warehouse;
+        if (warehouseName) {
+          const warehouse = (warehouses as any[])?.find(
+            (w: any) => w.name.toLowerCase() === warehouseName.toLowerCase()
+          );
+          if (warehouse) {
+            productData.warehouseId = warehouse.id;
+            productData._warehouseName = warehouse.name;
+          }
+        }
+
+        // Check if product exists by SKU
+        const existingProduct = products.find((p: any) => p.sku === productData.sku);
+        if (existingProduct) {
+          productData._isUpdate = true;
+          productData._existingId = existingProduct.id;
+        }
+
+        previewItems.push(productData);
       }
 
       // Reset file input
@@ -675,11 +686,75 @@ export default function AllInventory() {
         fileInputRef.current.value = '';
       }
 
-      // Close dialog
+      // Close import dialog and show preview
       setShowImportDialog(false);
+      setImportPreviewData(previewItems);
+      setImportErrors(errors);
+      setShowImportPreview(true);
+
+    } catch (error: any) {
+      console.error("Import parse error:", error);
+      toast({
+        title: t('inventory:importFailed'),
+        description: error.message || t('inventory:importFailedExcel'),
+        variant: "destructive",
+      });
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Confirm and execute the actual import
+  const confirmImport = async () => {
+    setIsImporting(true);
+    const importedIds: string[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    try {
+      for (const item of importPreviewData) {
+        if (!item._isValid) {
+          errorCount++;
+          continue;
+        }
+
+        try {
+          // Remove preview-only fields
+          const { _rowNumber, _isValid, _error, _isUpdate, _existingId, _categoryName, _warehouseName, ...productData } = item;
+
+          if (_isUpdate && _existingId) {
+            // Update existing product - don't track for revert (would delete original data)
+            await apiRequest('PATCH', `/api/products/${_existingId}`, productData);
+          } else {
+            // Create new product - track for revert
+            const response = await apiRequest('POST', '/api/products', productData);
+            if (response.id) {
+              importedIds.push(response.id);
+            }
+          }
+          successCount++;
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`${item.name}: ${error.message}`);
+        }
+      }
+
+      // Close preview modal
+      setShowImportPreview(false);
+      setImportPreviewData([]);
+      setImportErrors([]);
 
       // Refresh products
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+
+      // Store imported IDs for revert
+      if (importedIds.length > 0) {
+        setLastImportedIds(importedIds);
+        setShowRevertButton(true);
+      }
 
       // Show result
       if (errorCount > 0) {
@@ -688,7 +763,6 @@ export default function AllInventory() {
           description: t('inventory:importSuccessWithErrors', { successCount, errorCount }),
           variant: "destructive",
         });
-        console.error("Import errors:", errors);
       } else {
         toast({
           title: t('inventory:importSuccessful'),
@@ -699,14 +773,60 @@ export default function AllInventory() {
       console.error("Import error:", error);
       toast({
         title: t('inventory:importFailed'),
-        description: error.message || t('inventory:importFailedExcel'),
+        description: error.message,
         variant: "destructive",
       });
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Revert last import
+  const handleRevertImport = async () => {
+    if (lastImportedIds.length === 0) return;
+    
+    setIsReverting(true);
+    let revertedCount = 0;
+    let failedCount = 0;
+
+    try {
+      for (const id of lastImportedIds) {
+        try {
+          await apiRequest('DELETE', `/api/products/${id}`);
+          revertedCount++;
+        } catch (error) {
+          failedCount++;
+          console.error(`Failed to revert product ${id}:`, error);
+        }
       }
+
+      // Clear revert state
+      setLastImportedIds([]);
+      setShowRevertButton(false);
+
+      // Refresh products
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+
+      toast({
+        title: t('inventory:revertSuccessful'),
+        description: t('inventory:revertedProducts', { count: revertedCount }),
+      });
+
+      if (failedCount > 0) {
+        toast({
+          title: t('inventory:revertPartial'),
+          description: t('inventory:revertFailed', { count: failedCount }),
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: t('inventory:revertFailed'),
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsReverting(false);
     }
   };
 
@@ -2012,6 +2132,185 @@ export default function AllInventory() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import Preview Modal */}
+      <Dialog open={showImportPreview} onOpenChange={setShowImportPreview}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileUp className="h-5 w-5" />
+              {t('inventory:reviewImportData')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('inventory:reviewBeforeImport')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden space-y-4">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{importPreviewData.length}</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">{t('inventory:totalRows')}</p>
+              </div>
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {importPreviewData.filter(i => i._isValid && !i._isUpdate).length}
+                </p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70">{t('inventory:newProducts')}</p>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {importPreviewData.filter(i => i._isUpdate).length}
+                </p>
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{t('inventory:updates')}</p>
+              </div>
+            </div>
+
+            {/* Errors Warning */}
+            {importErrors.length > 0 && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="font-medium text-red-700 dark:text-red-300">
+                    {t('inventory:validationErrors', { count: importErrors.length })}
+                  </span>
+                </div>
+                <ul className="text-xs text-red-600 dark:text-red-400 space-y-1 max-h-20 overflow-y-auto">
+                  {importErrors.slice(0, 5).map((error, i) => (
+                    <li key={i}>{error}</li>
+                  ))}
+                  {importErrors.length > 5 && (
+                    <li>... {t('inventory:andMore', { count: importErrors.length - 5 })}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview Table */}
+            <ScrollArea className="h-[300px] border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+                  <tr>
+                    <th className="text-left p-2 font-medium">#</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:status')}</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:name')}</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:sku')}</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:quantity')}</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:priceEur')}</th>
+                    <th className="text-left p-2 font-medium">{t('inventory:category')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreviewData.map((item, index) => (
+                    <tr 
+                      key={index} 
+                      className={`border-b ${!item._isValid ? 'bg-red-50 dark:bg-red-950/20' : item._isUpdate ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                    >
+                      <td className="p-2 text-muted-foreground">{item._rowNumber}</td>
+                      <td className="p-2">
+                        {!item._isValid ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            {t('inventory:invalid')}
+                          </Badge>
+                        ) : item._isUpdate ? (
+                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-500">
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            {t('inventory:update')}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t('inventory:new')}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="p-2 font-medium">{item.name || '-'}</td>
+                      <td className="p-2 font-mono text-xs">{item.sku || '-'}</td>
+                      <td className="p-2">{item.quantity}</td>
+                      <td className="p-2">{item.priceEur}</td>
+                      <td className="p-2 text-muted-foreground">{item._categoryName || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowImportPreview(false);
+                setImportPreviewData([]);
+                setImportErrors([]);
+              }}
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button 
+              onClick={confirmImport}
+              disabled={isImporting || importPreviewData.filter(i => i._isValid).length === 0}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {t('inventory:importing')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('inventory:confirmImport', { count: importPreviewData.filter(i => i._isValid).length })}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Revert Button */}
+      {showRevertButton && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-3 flex items-center gap-3">
+            <div className="text-sm">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {t('inventory:importCompleted')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('inventory:importedProductsCount', { count: lastImportedIds.length })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRevertImport}
+                disabled={isReverting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                data-testid="button-revert-import"
+              >
+                {isReverting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span className="ml-1">{t('inventory:revert')}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowRevertButton(false)}
+                className="h-8 w-8"
+                data-testid="button-dismiss-revert"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

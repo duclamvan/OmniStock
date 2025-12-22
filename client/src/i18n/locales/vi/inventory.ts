@@ -307,6 +307,32 @@ const inventory = {
   pdfFormatDesc: 'Báo cáo tóm tắt sẵn sàng in',
   exportIncludesAllColumns: 'Xuất bao gồm tất cả dữ liệu sản phẩm: tên, SKU, giá, chi phí, số lượng và nhiều hơn nữa.',
   
+  // Import Preview
+  reviewImportData: 'Xem lại dữ liệu nhập',
+  reviewBeforeImport: 'Vui lòng xem lại dữ liệu bên dưới trước khi nhập. Các dòng không hợp lệ sẽ bị bỏ qua.',
+  totalRows: 'Tổng số dòng',
+  newProducts: 'Sản phẩm mới',
+  updates: 'Cập nhật',
+  validationErrors: '{{count}} lỗi xác thực',
+  andMore: '{{count}} dòng nữa...',
+  invalid: 'Không hợp lệ',
+  update: 'Cập nhật',
+  new: 'Mới',
+  row: 'Dòng',
+  missingRequiredFields: 'Thiếu trường bắt buộc (tên hoặc SKU)',
+  notFound: 'không tìm thấy',
+  importing: 'Đang nhập...',
+  confirmImport: 'Nhập {{count}} mục',
+  
+  // Revert Import
+  importCompleted: 'Nhập hoàn tất',
+  importedProductsCount: 'Đã nhập {{count}} sản phẩm',
+  revert: 'Hoàn tác',
+  revertSuccessful: 'Hoàn tác thành công',
+  revertedProducts: 'Đã hoàn tác {{count}} sản phẩm',
+  revertPartial: 'Hoàn tác một phần',
+  revertFailed: 'Không thể hoàn tác {{count}} sản phẩm',
+  
   // Returns Import/Export
   importReturns: 'Nhập đơn trả hàng',
   importReturnsDescription: 'Tải lên file Excel để nhập dữ liệu trả hàng. Sử dụng mẫu để đảm bảo định dạng đúng.',
@@ -1400,6 +1426,13 @@ const inventory = {
   downloadTemplateFirst: 'Tải mẫu nhập trước',
   supplierTemplateDescription: 'Sử dụng mẫu này để đảm bảo dữ liệu được định dạng chính xác. Bao gồm các dòng mẫu.',
   supplierLink: 'Liên kết nhà cung cấp',
+  
+  // Supplier Import Preview
+  newSuppliers: 'Nhà cung cấp mới',
+  importedSuppliersCount: 'Đã nhập {{count}} nhà cung cấp',
+  revertedSuppliers: 'Đã hoàn tác {{count}} nhà cung cấp',
+  exportSuppliers: 'Xuất nhà cung cấp',
+  regular: 'Thường xuyên',
   
 } as const;
 

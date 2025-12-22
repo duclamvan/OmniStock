@@ -205,6 +205,32 @@ const inventory = {
   pdfFormatDesc: 'Print-ready summary report',
   exportIncludesAllColumns: 'Export includes all product data: names, SKU, prices, costs, quantities, and more.',
   
+  // Import Preview
+  reviewImportData: 'Review Import Data',
+  reviewBeforeImport: 'Please review the data below before importing. Invalid rows will be skipped.',
+  totalRows: 'Total Rows',
+  newProducts: 'New Products',
+  updates: 'Updates',
+  validationErrors: '{{count}} validation error(s)',
+  andMore: '{{count}} more...',
+  invalid: 'Invalid',
+  update: 'Update',
+  new: 'New',
+  row: 'Row',
+  missingRequiredFields: 'Missing required fields (name or SKU)',
+  notFound: 'not found',
+  importing: 'Importing...',
+  confirmImport: 'Import {{count}} items',
+  
+  // Revert Import
+  importCompleted: 'Import Completed',
+  importedProductsCount: '{{count}} product(s) imported',
+  revert: 'Revert',
+  revertSuccessful: 'Revert Successful',
+  revertedProducts: 'Successfully reverted {{count}} product(s)',
+  revertPartial: 'Partial Revert',
+  revertFailed: 'Failed to revert {{count}} product(s)',
+  
   // Returns Import/Export
   importReturns: 'Import Returns',
   importReturnsDescription: 'Upload an Excel file to import returns data. Use the template to ensure correct format.',
@@ -1325,6 +1351,13 @@ const inventory = {
   downloadTemplateFirst: 'Download template first',
   supplierTemplateDescription: 'Use this template to ensure your data is formatted correctly. Includes sample rows.',
   supplierLink: 'Supplier Link',
+  
+  // Supplier Import Preview
+  newSuppliers: 'New Suppliers',
+  importedSuppliersCount: '{{count}} supplier(s) imported',
+  revertedSuppliers: 'Successfully reverted {{count}} supplier(s)',
+  exportSuppliers: 'Export Suppliers',
+  regular: 'Regular',
   
 } as const;
 
