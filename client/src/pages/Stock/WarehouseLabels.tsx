@@ -345,32 +345,56 @@ export default function WarehouseLabels() {
     if (selectedProductIds.size === 0) return;
 
     setPrintingSelected(true);
+    let savedCount = 0;
+    const failedProducts: string[] = [];
+    
     try {
       const selectedProducts = allProducts.filter((p: any) => selectedProductIds.has(p.id));
       
       for (const product of selectedProducts) {
-        await apiRequest("POST", "/api/warehouse-labels", {
-          productId: product.id,
-          englishName: product.name,
-          vietnameseName: product.vietnameseName || product.name,
-          sku: product.sku || null,
-          priceEur: product.priceEur ? String(product.priceEur) : null,
-          priceCzk: product.priceCzk ? String(product.priceCzk) : null,
-        });
+        try {
+          await apiRequest("POST", "/api/warehouse-labels", {
+            productId: product.id,
+            productName: product.name,
+            vietnameseName: product.vietnameseName || product.name,
+            sku: product.sku || null,
+            priceEur: product.priceEur ? String(product.priceEur) : null,
+            priceCzk: product.priceCzk ? String(product.priceCzk) : null,
+          });
+          savedCount++;
+        } catch (err) {
+          console.error(`Failed to save label for ${product.name}:`, err);
+          failedProducts.push(product.name || product.sku || product.id);
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
+      
+      // Still print labels even if some failed to save
       printProductLabels(selectedProducts, `Labels - ${selectedProducts.length} Products`);
       
-      toast({
-        title: t("common:success"),
-        description: t("inventory:labelsPrinted", { count: selectedProducts.length }),
-      });
-    } catch (error) {
+      if (failedProducts.length > 0) {
+        toast({
+          title: t("inventory:labelsPrintedWithErrors"),
+          description: t("inventory:labelsSaveFailedSome", { 
+            saved: savedCount, 
+            failed: failedProducts.length,
+            products: failedProducts.slice(0, 3).join(", ") + (failedProducts.length > 3 ? "..." : "")
+          }),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("common:success"),
+          description: t("inventory:labelsPrinted", { count: selectedProducts.length }),
+        });
+      }
+    } catch (error: any) {
       console.error("Failed to print labels:", error);
+      const errorMessage = error?.message || error?.fullResponse?.message || t("inventory:generateLabelsError");
       toast({
         title: t("common:error"),
-        description: t("inventory:generateLabelsError"),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -389,31 +413,54 @@ export default function WarehouseLabels() {
     }
 
     setGeneratingAll(true);
+    let savedCount = 0;
+    const failedProducts: string[] = [];
 
     try {
       for (const product of allProducts) {
-        await apiRequest("POST", "/api/warehouse-labels", {
-          productId: product.id,
-          englishName: product.name,
-          vietnameseName: product.vietnameseName || product.name,
-          sku: product.sku || null,
-          priceEur: product.priceEur ? String(product.priceEur) : null,
-          priceCzk: product.priceCzk ? String(product.priceCzk) : null,
-        });
+        try {
+          await apiRequest("POST", "/api/warehouse-labels", {
+            productId: product.id,
+            productName: product.name,
+            vietnameseName: product.vietnameseName || product.name,
+            sku: product.sku || null,
+            priceEur: product.priceEur ? String(product.priceEur) : null,
+            priceCzk: product.priceCzk ? String(product.priceCzk) : null,
+          });
+          savedCount++;
+        } catch (err) {
+          console.error(`Failed to save label for ${product.name}:`, err);
+          failedProducts.push(product.name || product.sku || product.id);
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
+      
+      // Still print labels even if some failed to save
       printProductLabels(allProducts, "All Product Labels");
 
-      toast({
-        title: t("common:success"),
-        description: t("inventory:allLabelsGenerated", { count: allProducts.length }),
-      });
-    } catch (error) {
+      if (failedProducts.length > 0) {
+        toast({
+          title: t("inventory:labelsPrintedWithErrors"),
+          description: t("inventory:labelsSaveFailedSome", { 
+            saved: savedCount, 
+            failed: failedProducts.length,
+            products: failedProducts.slice(0, 3).join(", ") + (failedProducts.length > 3 ? "..." : "")
+          }),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("common:success"),
+          description: t("inventory:allLabelsGenerated", { count: allProducts.length }),
+        });
+      }
+    } catch (error: any) {
       console.error("Failed to generate all labels:", error);
+      const errorMessage = error?.message || error?.fullResponse?.message || t("inventory:generateLabelsError");
       toast({
         title: t("common:error"),
-        description: t("inventory:generateLabelsError"),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -632,6 +632,8 @@ const inventory = {
   labelsPrinted: '{{count}} label(s) printed successfully',
   allLabelsGenerated: 'Generated labels for {{count}} products',
   generateLabelsError: 'Failed to generate labels',
+  labelsPrintedWithErrors: 'Labels printed with some errors',
+  labelsSaveFailedSome: 'Saved {{saved}} labels, {{failed}} failed to save ({{products}})',
   noProductsInStock: 'No products in stock',
   labelsDeleted: 'Labels deleted successfully',
   labelsDeleteError: 'Failed to delete labels',
