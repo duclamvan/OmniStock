@@ -1770,14 +1770,14 @@ function PickingLocationSelector({
       ) : sortedLocations.length > 0 ? (
         <div className="space-y-3">
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
-            <SelectTrigger className="w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 border-orange-400 rounded-xl text-center shadow-lg hover:border-orange-500 hover:shadow-xl focus:ring-4 focus:ring-orange-300 transition-all">
-              <SelectValue placeholder={t('selectLocation') || 'Select location'} className="w-full">
-                <div className="w-full flex flex-col items-center justify-center gap-1">
+            <SelectTrigger className="w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 border-orange-400 rounded-xl shadow-lg hover:border-orange-500 hover:shadow-xl focus:ring-4 focus:ring-orange-300 transition-all [&>span]:flex-1 [&>span]:text-center [&>svg]:hidden">
+              <SelectValue placeholder={t('selectLocation') || 'Select location'}>
+                <div className="flex flex-col items-center justify-center gap-1 w-full">
                   <span className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono text-orange-700 dark:text-orange-600 tracking-wider drop-shadow-sm">
                     {selectedLocation}
                   </span>
-                  <span className="text-xs text-orange-500 font-medium uppercase tracking-widest">
-                    ▼ {t('tapToChange') || 'Tap to change'}
+                  <span className="text-xs text-orange-500 font-medium uppercase tracking-widest flex items-center gap-1">
+                    <ChevronDown className="h-3 w-3" /> {t('tapToChange') || 'Tap to change'}
                   </span>
                 </div>
               </SelectValue>
