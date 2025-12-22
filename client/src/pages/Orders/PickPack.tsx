@@ -2073,7 +2073,6 @@ export default function PickPack() {
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [manualItemIndex, setManualItemIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
-  const [showResetOrderDialog, setShowResetOrderDialog] = useState(false);
   const [showForceFinishButton, setShowForceFinishButton] = useState(false);
   const [isCompletingPacking, setIsCompletingPacking] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -6245,7 +6244,6 @@ export default function PickPack() {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       
       playSound('success');
-      setShowResetOrderDialog(false);
       
       toast({
         title: t('orderReset') || 'Order Reset',
@@ -12665,8 +12663,10 @@ export default function PickPack() {
                     size="icon"
                     className="h-7 w-7 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 touch-manipulation relative z-10"
                     onClick={() => {
-                      setShowPickingCompletionModal(false);
-                      setShowResetOrderDialog(true);
+                      if (window.confirm(t('resetOrderDialogDetailed') || 'Are you sure you want to reset this order? All picked quantities will be cleared.')) {
+                        setShowPickingCompletionModal(false);
+                        resetOrder();
+                      }
                     }}
                     title={t('resetOrder')}
                     data-testid="button-reset-order-mobile"
@@ -12759,8 +12759,10 @@ export default function PickPack() {
                     size="sm"
                     className="h-10 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md relative z-10"
                     onClick={() => {
-                      setShowPickingCompletionModal(false);
-                      setShowResetOrderDialog(true);
+                      if (window.confirm(t('resetOrderDialogDetailed') || 'Are you sure you want to reset this order? All picked quantities will be cleared.')) {
+                        setShowPickingCompletionModal(false);
+                        resetOrder();
+                      }
                     }}
                     data-testid="button-reset-order-desktop"
                   >
@@ -16345,53 +16347,6 @@ export default function PickPack() {
         </DialogContent>
       </Dialog>
 
-      {/* Reset Order Confirmation Modal - Custom implementation for picking mode */}
-      {showResetOrderDialog && (
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
-          onClick={() => setShowResetOrderDialog(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full p-6 border dark:border-gray-700"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <RotateCcw className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('resetOrder')}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('confirmAction')}</p>
-              </div>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              {t('resetOrderDialogDetailed')}
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowResetOrderDialog(false)}
-                className="min-w-[100px]"
-                data-testid="button-cancel-reset"
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white min-w-[120px]"
-                onClick={() => {
-                  resetOrder();
-                  setShowResetOrderDialog(false);
-                }}
-                data-testid="button-confirm-reset"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {t('resetOrder')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Label Preview Dialog */}
       <Dialog open={!!labelPreviewData} onOpenChange={() => setLabelPreviewData(null)}>
