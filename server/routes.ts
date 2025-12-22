@@ -4853,8 +4853,28 @@ Important:
         return res.status(400).json({ message: "No data found in Excel file" });
       }
 
-      const importedOrders: any[] = [];
-      const errors: string[] = [];
+      const importedOrders: Array<{ orderId: string; orderDbId: string; customerName: string }> = [];
+      const detailedErrors: Array<{ row: number; orderId?: string; reason: string; data: any }> = [];
+      let newCustomersCount = 0;
+      let existingCustomersCount = 0;
+
+      // Pre-fetch customers and products once for performance (avoid O(n²) queries)
+      const allCustomers = await storage.getCustomers();
+      const allProducts = await storage.getProducts();
+      
+      // Create lookup maps for fast matching
+      const customersByName = new Map<string, any>();
+      const customersByEmail = new Map<string, any>();
+      for (const c of allCustomers) {
+        if (c.name) customersByName.set(c.name.toLowerCase(), c);
+        if (c.email) customersByEmail.set(c.email.toLowerCase(), c);
+      }
+      
+      const productsByName = new Map<string, any>();
+      for (const p of allProducts) {
+        if (p.name) productsByName.set(p.name.toLowerCase(), p);
+        if (p.vietnameseName) productsByName.set(p.vietnameseName.toLowerCase(), p);
+      }
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -4896,17 +4916,18 @@ Important:
           const notes = row['Notes'];
           const items = row['Items']; // Format: "Product A x2; Product B x1"
 
-          // Find or create customer if name provided
+          // Find or create customer if name provided (using pre-fetched maps)
           let customerId = null;
+          let resolvedCustomerName = customerName || 'Unknown';
           if (customerName) {
-            const customers = await storage.getCustomers();
-            const existingCustomer = customers.find((c: any) => 
-              c.name?.toLowerCase() === customerName.toLowerCase() ||
-              (customerEmail && c.email?.toLowerCase() === customerEmail?.toLowerCase())
-            );
+            // Fast lookup using maps instead of full list scan
+            const existingCustomer = customersByName.get(customerName.toLowerCase()) || 
+              (customerEmail ? customersByEmail.get(customerEmail.toLowerCase()) : null);
             
             if (existingCustomer) {
               customerId = existingCustomer.id;
+              resolvedCustomerName = existingCustomer.name;
+              existingCustomersCount++;
             } else {
               // Create new customer with full address
               const fullAddress = [shippingAddress, shippingCity, shippingState, shippingCountry, shippingPostalCode]
@@ -4924,6 +4945,12 @@ Important:
                 isActive: true,
               });
               customerId = newCustomer.id;
+              resolvedCustomerName = newCustomer.name;
+              newCustomersCount++;
+              
+              // Add to maps so subsequent rows can find this customer
+              customersByName.set(customerName.toLowerCase(), newCustomer);
+              if (customerEmail) customersByEmail.set(customerEmail.toLowerCase(), newCustomer);
             }
           }
 
@@ -4952,7 +4979,7 @@ Important:
 
           const newOrder = await storage.createOrder(orderData);
           
-          // Parse and create order items if provided
+          // Parse and create order items if provided (using pre-fetched products map)
           if (items && typeof items === 'string') {
             const itemParts = items.split(';').map(s => s.trim()).filter(Boolean);
             for (const itemPart of itemParts) {
@@ -4962,12 +4989,8 @@ Important:
                 const productName = match[1].trim();
                 const quantity = parseInt(match[2], 10) || 1;
                 
-                // Try to find product by name
-                const products = await storage.getProducts();
-                const product = products.find((p: any) => 
-                  p.name?.toLowerCase() === productName.toLowerCase() ||
-                  p.vietnameseName?.toLowerCase() === productName.toLowerCase()
-                );
+                // Fast lookup using pre-fetched map
+                const product = productsByName.get(productName.toLowerCase());
                 
                 if (product) {
                   await storage.createOrderItem({
@@ -4983,20 +5006,57 @@ Important:
             }
           }
           
-          importedOrders.push(newOrder);
+          importedOrders.push({
+            orderId: newOrder.orderId,
+            orderDbId: newOrder.id,
+            customerName: resolvedCustomerName,
+          });
         } catch (rowError: any) {
-          errors.push(`Row ${i + 2}: ${rowError.message}`);
+          detailedErrors.push({
+            row: i + 2,
+            orderId: row['Order ID'],
+            reason: rowError.message,
+            data: row,
+          });
         }
       }
 
       res.json({ 
         imported: importedOrders.length,
-        errors: errors.length > 0 ? errors : undefined,
-        message: `Successfully imported ${importedOrders.length} order(s)${errors.length > 0 ? ` with ${errors.length} error(s)` : ''}`
+        failed: detailedErrors.length,
+        totalRows: data.length,
+        customersCreated: newCustomersCount,
+        customersExisting: existingCustomersCount,
+        successfulOrders: importedOrders,
+        errors: detailedErrors,
+        message: `Successfully imported ${importedOrders.length} order(s)${detailedErrors.length > 0 ? ` with ${detailedErrors.length} error(s)` : ''}`
       });
     } catch (error: any) {
       console.error("Error importing orders:", error);
       res.status(500).json({ message: error.message || "Failed to import orders" });
+    }
+  });
+
+  // Revert imported orders endpoint
+  app.delete('/api/orders/import/revert', isAuthenticated, async (req, res) => {
+    try {
+      const { orderIds } = req.body;
+      if (!orderIds || !Array.isArray(orderIds)) {
+        return res.status(400).json({ message: "Order IDs required" });
+      }
+      
+      let deleted = 0;
+      for (const id of orderIds) {
+        // Delete order items first, then order
+        await storage.deleteOrderItems(id);
+        const success = await storage.deleteOrder(id);
+        if (success) deleted++;
+      }
+      
+      res.json({ deleted, message: `Reverted ${deleted} orders` });
+    } catch (error) {
+      console.error("Error reverting import:", error);
+      res.status(500).json({ message: "Failed to revert import" });
     }
   });
 

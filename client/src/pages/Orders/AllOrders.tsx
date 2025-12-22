@@ -23,7 +23,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck, Upload, Undo2, X } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TrackingStatusBadge } from "@/components/orders/TrackingStatusBadge";
 import { OrderItemsLoader } from "@/components/orders/OrderItemsLoader";
 import {
@@ -157,6 +160,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Import results state
+  const [importPhase, setImportPhase] = useState<'upload' | 'processing' | 'results'>('upload');
+  const [importResults, setImportResults] = useState<{
+    totalRows: number;
+    imported: number;
+    failed: number;
+    customersCreated: number;
+    customersExisting: number;
+    successfulOrders: Array<{ orderId: string; orderDbId: string; customerName: string }>;
+    errors: Array<{ row: number; orderId?: string; reason: string; data: any }>;
+    message?: string;
+  } | null>(null);
+  const [isReverting, setIsReverting] = useState(false);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [showSuccessfulOrders, setShowSuccessfulOrders] = useState(false);
   
   // Ref to store clearSelection function from DataTable
   const clearSelectionRef = useRef<(() => void) | null>(null);
@@ -1213,6 +1232,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
 
     setIsImporting(true);
+    setImportPhase('processing');
+    
     try {
       const formData = new FormData();
       formData.append('file', importFile);
@@ -1223,21 +1244,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || t('orders:importFailed'));
-      }
-
       const result = await response.json();
       
-      toast({
-        title: t('common:success'),
-        description: t('orders:importSuccess', { count: result.imported || 0 }),
-      });
+      if (!response.ok) {
+        throw new Error(result.message || t('orders:importFailed'));
+      }
       
+      setImportResults(result);
+      setImportPhase('results');
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      setShowImportDialog(false);
-      setImportFile(null);
+      
+      // Show success toast
+      if (result.imported > 0) {
+        toast({
+          title: t('common:success'),
+          description: t('orders:importSuccess', { count: result.imported }),
+        });
+      }
+      
     } catch (error: any) {
       console.error('Import error:', error);
       toast({
@@ -1245,9 +1269,71 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         description: error.message || t('orders:importFailed'),
         variant: "destructive",
       });
+      setImportPhase('upload');
     } finally {
       setIsImporting(false);
     }
+  };
+
+  // Handle revert import
+  const handleRevertImport = async () => {
+    if (!importResults?.successfulOrders.length) return;
+    
+    setIsReverting(true);
+    try {
+      const orderIds = importResults.successfulOrders.map(o => o.orderDbId);
+      await apiRequest('DELETE', '/api/orders/import/revert', { orderIds });
+      
+      toast({ 
+        title: t('common:success'), 
+        description: t('orders:importReverted', { count: orderIds.length }) 
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      resetImportDialog();
+    } catch (error: any) {
+      toast({ 
+        title: t('common:error'), 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
+  // Reset import dialog state
+  const resetImportDialog = () => {
+    setShowImportDialog(false);
+    setImportFile(null);
+    setImportPhase('upload');
+    setImportResults(null);
+    setShowErrorDetails(false);
+    setShowSuccessfulOrders(false);
+  };
+
+  // Download error log as CSV
+  const downloadErrorLog = () => {
+    if (!importResults?.errors.length) return;
+    
+    const csvContent = [
+      ['Row', 'Order ID', 'Reason', 'Data'].join(','),
+      ...importResults.errors.map(err => 
+        [
+          err.row,
+          err.orderId || '',
+          `"${err.reason.replace(/"/g, '""')}"`,
+          `"${JSON.stringify(err.data).replace(/"/g, '""')}"`
+        ].join(',')
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `order_import_errors_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
@@ -2100,96 +2186,294 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Import Orders Dialog */}
+      {/* Import Orders Dialog - 3 Phase Design */}
       <Dialog open={showImportDialog} onOpenChange={(open) => {
-        setShowImportDialog(open);
-        if (!open) {
-          setImportFile(null);
+        if (!open && importPhase !== 'processing') {
+          resetImportDialog();
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('orders:importOrders')}</DialogTitle>
             <DialogDescription>
-              {t('orders:importOrdersDescription')}
+              {importPhase === 'upload' && t('orders:importOrdersDescription')}
+              {importPhase === 'processing' && t('common:processing')}
+              {importPhase === 'results' && t('orders:importComplete')}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            {/* Template Download Section */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-start gap-3">
-                <FileDown className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    {t('orders:downloadTemplateFirst')}
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    {t('orders:templateDescription')}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadTemplate}
-                    className="mt-3"
-                    data-testid="button-download-template"
-                  >
-                    <FileDown className="h-4 w-4 mr-2" />
-                    {t('orders:downloadTemplate')}
-                  </Button>
+          {/* Phase 1: Upload */}
+          {importPhase === 'upload' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">{t('orders:importantNotes')}</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• {t('orders:customersWillBeCreatedOrMatched')}</li>
+                  <li>• {t('orders:orderIdRequired')}</li>
+                  <li>• {t('orders:itemsFormatNote')}</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                <h4 className="font-semibold text-sm mb-3">{t('orders:requiredExcelFormat')}</h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1">{t('orders:requiredColumns')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Order ID</code>
+                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Customer Name</code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-1">{t('orders:optionalColumns')}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Order Date</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Customer Email</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Customer Phone</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Shipping Address</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Grand Total</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Currency</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Items</code>
+                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Notes</code>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <Label htmlFor="import-file">{t('orders:selectFile')}</Label>
-              <Input
-                id="import-file"
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileSelect}
-                className="cursor-pointer"
-                data-testid="input-import-file"
-              />
-              {importFile && (
-                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                  <Check className="h-4 w-4" />
-                  {importFile.name}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">{t('orders:exampleRow')}</h4>
+                <div className="overflow-x-auto">
+                  <table className="text-xs w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Order ID</th>
+                        <th className="text-left p-2">Customer Name</th>
+                        <th className="text-left p-2">Grand Total</th>
+                        <th className="text-left p-2">Items</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="p-2">ORD-2025-001</td>
+                        <td className="p-2">John Doe</td>
+                        <td className="p-2">150.00</td>
+                        <td className="p-2">Product A x2; Product B x1</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowImportDialog(false);
-                setImportFile(null);
-              }}
-              data-testid="button-cancel-import"
-            >
-              {t('common:cancel')}
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={!importFile || isImporting}
-              data-testid="button-confirm-import"
-            >
-              {isImporting ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  {t('common:processing')}
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleDownloadTemplate}
+                    data-testid="button-download-template"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('orders:downloadTemplate')}
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={() => document.getElementById('order-import-file')?.click()}
+                    data-testid="button-select-import-file"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {t('orders:selectExcelFile')}
+                  </Button>
+                </div>
+                <input
+                  id="order-import-file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  data-testid="input-import-file"
+                />
+                {importFile && (
+                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                      <Check className="h-4 w-4" />
+                      <span className="text-sm font-medium">{importFile.name}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setImportFile(null)}
+                      data-testid="button-remove-file"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={resetImportDialog} data-testid="button-cancel-import">
+                  {t('common:cancel')}
+                </Button>
+                <Button 
+                  onClick={handleImport} 
+                  disabled={!importFile || isImporting}
+                  data-testid="button-confirm-import"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
                   {t('orders:importOrders')}
-                </>
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {/* Phase 2: Processing */}
+          {importPhase === 'processing' && (
+            <div className="py-8 space-y-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-800 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-600 dark:border-blue-400 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-lg">{t('orders:importingOrders')}</p>
+                  <p className="text-sm text-muted-foreground">{t('orders:pleaseWait')}</p>
+                </div>
+              </div>
+              <Progress value={undefined} className="w-full" />
+            </div>
+          )}
+
+          {/* Phase 3: Results */}
+          {importPhase === 'results' && importResults && (
+            <div className="space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800">
+                  <div className="text-2xl font-bold">{importResults.totalRows}</div>
+                  <div className="text-xs text-muted-foreground">{t('orders:totalRows')}</div>
+                </div>
+                <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-400">{importResults.imported}</div>
+                  <div className="text-xs text-muted-foreground">{t('orders:imported')}</div>
+                </div>
+                <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30">
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-400">{importResults.failed}</div>
+                  <div className="text-xs text-muted-foreground">{t('orders:failed')}</div>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">{importResults.customersCreated}</div>
+                  <div className="text-xs text-muted-foreground">{t('orders:customersCreated')}</div>
+                </div>
+                <div className="p-4 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                  <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">{importResults.customersExisting}</div>
+                  <div className="text-xs text-muted-foreground">{t('orders:customersExisting')}</div>
+                </div>
+              </div>
+
+              {/* Error Log (Collapsible) */}
+              {importResults.errors.length > 0 && (
+                <Collapsible open={showErrorDetails} onOpenChange={setShowErrorDetails}>
+                  <CollapsibleTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-between text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+                      data-testid="button-toggle-errors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        {t('orders:errorLog')} ({importResults.errors.length})
+                      </span>
+                      {showErrorDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <ScrollArea className="h-48 mt-2 rounded-lg border">
+                      <div className="p-3 space-y-2">
+                        {importResults.errors.map((err, idx) => (
+                          <div key={idx} className="p-2 bg-red-50 dark:bg-red-950/20 rounded text-sm">
+                            <div className="font-medium text-red-700 dark:text-red-400">
+                              {t('orders:row')} {err.row}{err.orderId && ` - ${err.orderId}`}
+                            </div>
+                            <div className="text-red-600 dark:text-red-300">{err.reason}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
-            </Button>
-          </DialogFooter>
+
+              {/* Successful Orders (Collapsible) */}
+              {importResults.successfulOrders.length > 0 && (
+                <Collapsible open={showSuccessfulOrders} onOpenChange={setShowSuccessfulOrders}>
+                  <CollapsibleTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-between text-green-600 dark:text-green-400 border-green-200 dark:border-green-800"
+                      data-testid="button-toggle-successful"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Check className="h-4 w-4" />
+                        {t('orders:successfulOrders')} ({importResults.successfulOrders.length})
+                      </span>
+                      {showSuccessfulOrders ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <ScrollArea className="h-48 mt-2 rounded-lg border">
+                      <div className="p-3 space-y-2">
+                        {importResults.successfulOrders.map((order, idx) => (
+                          <div key={idx} className="p-2 bg-green-50 dark:bg-green-950/20 rounded text-sm flex justify-between items-center">
+                            <span className="font-medium">{order.orderId}</span>
+                            <span className="text-muted-foreground">{order.customerName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Action Buttons */}
+              <DialogFooter className="gap-2 flex-col sm:flex-row">
+                {importResults.errors.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    onClick={downloadErrorLog}
+                    data-testid="button-download-errors"
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    {t('orders:downloadErrorLog')}
+                  </Button>
+                )}
+                {importResults.successfulOrders.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleRevertImport}
+                    disabled={isReverting}
+                    data-testid="button-revert-import"
+                  >
+                    {isReverting ? (
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Undo2 className="mr-2 h-4 w-4" />
+                    )}
+                    {t('orders:revertAll')}
+                  </Button>
+                )}
+                <Button 
+                  onClick={resetImportDialog}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="button-keep-all"
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('orders:keepAll')}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
