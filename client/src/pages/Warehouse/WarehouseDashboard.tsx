@@ -534,13 +534,40 @@ export default function WarehouseDashboard() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="task-due-date">{t('common:dueDate')}</Label>
-                        <Input
-                          id="task-due-date"
-                          type="date"
-                          value={newTask.dueAt}
-                          onChange={(e) => setNewTask(prev => ({ ...prev, dueAt: e.target.value }))}
-                          data-testid="input-task-due-date"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            id="task-due-date"
+                            type="date"
+                            value={newTask.dueAt}
+                            onChange={(e) => setNewTask(prev => ({ ...prev, dueAt: e.target.value }))}
+                            className="flex-1"
+                            data-testid="input-task-due-date"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => setNewTask(prev => ({ ...prev, dueAt: new Date().toISOString().split('T')[0] }))}
+                            data-testid="button-today"
+                          >
+                            {t('common:today')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              setNewTask(prev => ({ ...prev, dueAt: tomorrow.toISOString().split('T')[0] }));
+                            }}
+                            data-testid="button-tomorrow"
+                          >
+                            {t('common:tomorrow')}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
