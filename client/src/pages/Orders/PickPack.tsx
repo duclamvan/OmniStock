@@ -6159,12 +6159,12 @@ export default function PickPack() {
 
   // Toggle full pick for list view - handles bundles, partials, and offline queue
   const toggleFullPick = (item: OrderItem) => {
-    if (item.isBundle) {
-      // Handle bundle logic: check if all bundle items are picked
-      const allPicked = bundlePickedItems[item.id]?.size === item.bundleItems?.length;
+    // For bundles with actual bundle items, check if all components are picked
+    if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+      const allPicked = bundlePickedItems[item.id]?.size === item.bundleItems.length;
       updatePickedItem(item.id, allPicked ? 0 : item.quantity);
     } else {
-      // Simple toggle for non-bundle items
+      // Simple toggle for non-bundle items OR bundles without bundleItems defined
       const isPicked = item.pickedQuantity >= item.quantity;
       updatePickedItem(item.id, isPicked ? 0 : item.quantity);
     }
@@ -14997,7 +14997,7 @@ export default function PickPack() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
-                                <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-4 w-4 text-gray-400" />
@@ -15167,7 +15167,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                  <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -15350,7 +15350,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
+                                  <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -15855,7 +15855,7 @@ export default function PickPack() {
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                                           <div className="flex items-center gap-1.5">
                                             <User className="h-3 w-3 text-gray-400" />
-                                            <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1 py-0.5 rounded text-xs">{order.customerName}</span>
+                                            <span className="truncate font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1 py-0.5 rounded text-xs">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Globe className="h-3 w-3 text-gray-400" />
@@ -16056,7 +16056,7 @@ export default function PickPack() {
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
-                    <span className="font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{previewOrder?.customerName}</span>
+                    <span className="font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{previewOrder?.customerName}</span>
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
