@@ -196,7 +196,21 @@ export function AICartonPackingPanel({
                           <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400">
                             <div className="flex justify-between items-start">
                               <div className="flex flex-col gap-0.5">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
+                                  {/* Show bundle origin badge */}
+                                  {item.fromBundle && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                      📦 {item.fromBundle}
+                                    </Badge>
+                                  )}
+                                  {/* Show bulk unit badge */}
+                                  {item.isBulkExpanded && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
+                                      📦 {item.bulkUnitQty}x bulk
+                                    </Badge>
+                                  )}
+                                </div>
                                 {/* Show dimensions if available */}
                                 {(item.lengthCm && item.widthCm && item.heightCm) && (
                                   <span className="text-[10px] text-gray-500 dark:text-gray-500">
