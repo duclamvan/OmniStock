@@ -955,6 +955,7 @@ export const orders = pgTable("orders", {
   codCurrency: varchar("cod_currency"),
   channel: varchar("channel").notNull().default("online"), // Values: 'pos', 'online'
   allocated: boolean("allocated").default(false), // Track if order inventory is allocated
+  isArchived: boolean("is_archived").notNull().default(false), // Soft delete - moved to trash
 });
 
 // Product Files table for document management
