@@ -12482,6 +12482,9 @@ export default function PickPack() {
               <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-black">🎉 {t('packingComplete')}</h2>
+            <p className="text-2xl sm:text-3xl font-black mt-2 text-yellow-300 drop-shadow-lg">
+              {activePackingOrder.customerName}
+            </p>
             <p className="text-sm sm:text-base text-white/90 mt-1">
               {t('excellentWork', { orderId: activePackingOrder.orderId })}
             </p>
