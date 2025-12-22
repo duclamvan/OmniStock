@@ -619,6 +619,22 @@ const inventory = {
   itemHas: 'item has',
   itemsHave: 'items have',
   
+  // Warehouse Labels Management
+  warehouseLabels: 'Warehouse Labels',
+  labels: 'labels',
+  searchLabels: 'Search labels by name, SKU...',
+  printSelected: 'Print Selected',
+  labelsDeleted: 'Labels deleted successfully',
+  labelsDeleteError: 'Failed to delete labels',
+  noLabelsFound: 'No labels match your search',
+  noLabelsYet: 'No labels saved yet',
+  generateLabelsHint: 'Generate labels from the Stock Lookup page to save them here',
+  deleteLabelsTitle: 'Delete Labels?',
+  deleteLabelsConfirm: 'Are you sure you want to delete {{count}} label(s)?',
+  printedTimes: 'Printed {{count}}x',
+  popupBlocked: 'Pop-up blocked. Please allow pop-ups to print labels.',
+  manageLabels: 'Manage Labels',
+  
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',
   reviewAndApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',

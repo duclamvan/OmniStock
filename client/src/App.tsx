@@ -97,6 +97,7 @@ import ActivityLog from "@/pages/ActivityLog";
 import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
 import StockLookup from "@/pages/Stock/StockLookup";
+import WarehouseLabels from "@/pages/Stock/WarehouseLabels";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
 // Legacy imports - some uncommmented for unified add/edit
@@ -326,6 +327,7 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><Notifications /></ProtectedRoute>}
         </Route>
         <Route path="/stock" component={StockLookup} />
+        <Route path="/stock/labels" component={WarehouseLabels} />
         <Route path="/stock/approvals" component={StockAdjustmentApprovals} />
         <Route path="/stock/inconsistencies" component={StockInconsistencies} />
         <Route path="/stock/over-allocated" component={StockInconsistencies} />

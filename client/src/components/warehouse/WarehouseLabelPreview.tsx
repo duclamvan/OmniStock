@@ -19,7 +19,16 @@ interface WarehouseLabelPreviewProps {
   } | null;
 }
 
-function LabelContent({ product }: { product: WarehouseLabelPreviewProps["product"] }) {
+export interface LabelProduct {
+  id: string;
+  name: string;
+  vietnameseName?: string | null;
+  sku?: string | null;
+  priceEur?: number | string | null;
+  priceCzk?: number | string | null;
+}
+
+export function LabelContent({ product }: { product: LabelProduct | null }) {
   if (!product) return null;
 
   const stockUrl = `${window.location.origin}/stock?q=${encodeURIComponent(product.sku || product.name)}`;

@@ -713,6 +713,22 @@ const inventory = {
   itemHas: 'sản phẩm có',
   itemsHave: 'sản phẩm có',
   
+  // Warehouse Labels Management
+  warehouseLabels: 'Nhãn kho hàng',
+  labels: 'nhãn',
+  searchLabels: 'Tìm nhãn theo tên, SKU...',
+  printSelected: 'In đã chọn',
+  labelsDeleted: 'Đã xóa nhãn thành công',
+  labelsDeleteError: 'Không thể xóa nhãn',
+  noLabelsFound: 'Không tìm thấy nhãn phù hợp',
+  noLabelsYet: 'Chưa có nhãn nào được lưu',
+  generateLabelsHint: 'Tạo nhãn từ trang Tra cứu tồn kho để lưu tại đây',
+  deleteLabelsTitle: 'Xóa nhãn?',
+  deleteLabelsConfirm: 'Bạn có chắc muốn xóa {{count}} nhãn không?',
+  printedTimes: 'Đã in {{count}} lần',
+  popupBlocked: 'Popup bị chặn. Vui lòng cho phép popup để in nhãn.',
+  manageLabels: 'Quản lý nhãn',
+  
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',
   reviewAndApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',
