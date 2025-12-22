@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -358,18 +358,31 @@ export default function StockLookup() {
         <div className="px-3 py-3">
           <div className="flex items-center justify-between mb-2.5">
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('stockLookup')}</h1>
-            {enableBarcodeScanning && (
-              <Button
-                variant={barcodeMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setBarcodeMode(!barcodeMode)}
-                className="h-8"
-                data-testid="button-toggle-barcode-mode"
-              >
-                <Barcode className="h-4 w-4 mr-1.5" />
-                {barcodeMode ? t('scanning') : t('scanLabel')}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <Link href="/stock/labels">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  data-testid="button-manage-labels"
+                >
+                  <Tag className="h-4 w-4 mr-1.5" />
+                  {t('manageLabels')}
+                </Button>
+              </Link>
+              {enableBarcodeScanning && (
+                <Button
+                  variant={barcodeMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBarcodeMode(!barcodeMode)}
+                  className="h-8"
+                  data-testid="button-toggle-barcode-mode"
+                >
+                  <Barcode className="h-4 w-4 mr-1.5" />
+                  {barcodeMode ? t('scanning') : t('scanLabel')}
+                </Button>
+              )}
+            </div>
           </div>
           
           {/* Search/Barcode Input */}
