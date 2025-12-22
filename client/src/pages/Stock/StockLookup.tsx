@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +79,7 @@ export default function StockLookup() {
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -976,7 +977,7 @@ export default function StockLookup() {
                         )}
                         <Button
                           variant="outline"
-                          className={`${selectedProductData.description ? 'flex-1' : 'w-full'} h-10`}
+                          className="flex-1 h-10"
                           onClick={(e) => {
                             e.stopPropagation();
                             setLabelDialogOpen(true);
@@ -985,6 +986,18 @@ export default function StockLookup() {
                         >
                           <Printer className="h-4 w-4 mr-2" />
                           {t('generateLabel')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1 h-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInfoDialogOpen(true);
+                          }}
+                          data-testid={`button-show-info-${product.id}`}
+                        >
+                          <Info className="h-4 w-4 mr-2" />
+                          {t('showInfo')}
                         </Button>
                       </div>
                     </div>
@@ -1126,6 +1139,181 @@ export default function StockLookup() {
             onOpenChange={setLabelDialogOpen}
             product={selectedProductData}
           />
+          
+          {/* Product Information Dialog */}
+          {isMobile ? (
+            <Drawer open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader>
+                  <DrawerTitle className="text-left flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    {t('productInformation')}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-6 overflow-y-auto space-y-4">
+                  <div className="flex items-start gap-4">
+                    {selectedProductData.imageUrl && (
+                      <img
+                        src={selectedProductData.imageUrl}
+                        alt={selectedProductData.name}
+                        className="h-20 w-20 rounded-lg object-cover bg-gray-100 dark:bg-gray-800 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                        {selectedProductData.name}
+                      </h3>
+                      {selectedProductData.vietnameseName && selectedProductData.vietnameseName !== selectedProductData.name && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {selectedProductData.vietnameseName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedProductData.sku && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('sku')}</p>
+                        <p className="font-mono font-bold text-sm mt-1">{selectedProductData.sku}</p>
+                      </div>
+                    )}
+                    {selectedProductData.barcode && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('barcode')}</p>
+                        <p className="font-mono font-bold text-sm mt-1">{selectedProductData.barcode}</p>
+                      </div>
+                    )}
+                    {selectedProductData.categoryName && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('category')}</p>
+                        <p className="font-semibold text-sm mt-1">{selectedProductData.categoryName}</p>
+                      </div>
+                    )}
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('totalStock')}</p>
+                      <p className="font-bold text-lg mt-1">{selectedProductData.totalStock}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedProductData.priceEur && (
+                      <div className="bg-black text-white rounded-lg p-3">
+                        <p className="text-xs text-gray-300 uppercase font-medium">{t('priceEur')}</p>
+                        <p className="font-black text-xl mt-1">€{Number(selectedProductData.priceEur).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    )}
+                    {selectedProductData.priceCzk && (
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('priceCzk')}</p>
+                        <p className="font-bold text-xl mt-1">{Number(selectedProductData.priceCzk).toLocaleString("cs-CZ")} Kč</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedProductData.locations && selectedProductData.locations.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium mb-2">{t('locations')}</p>
+                      <div className="space-y-2">
+                        {selectedProductData.locations.map((loc) => (
+                          <div key={loc.id} className="flex items-center justify-between text-sm">
+                            <span className="font-mono font-medium">{loc.locationCode}</span>
+                            <Badge variant="secondary">{loc.quantity} {t('units')}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+              <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    {t('productInformation')}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="overflow-y-auto flex-1 pr-2 space-y-4">
+                  <div className="flex items-start gap-4">
+                    {selectedProductData.imageUrl && (
+                      <img
+                        src={selectedProductData.imageUrl}
+                        alt={selectedProductData.name}
+                        className="h-24 w-24 rounded-lg object-cover bg-gray-100 dark:bg-gray-800 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-xl text-gray-900 dark:text-white">
+                        {selectedProductData.name}
+                      </h3>
+                      {selectedProductData.vietnameseName && selectedProductData.vietnameseName !== selectedProductData.name && (
+                        <p className="text-base text-gray-600 dark:text-gray-400 mt-1">
+                          {selectedProductData.vietnameseName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedProductData.sku && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('sku')}</p>
+                        <p className="font-mono font-bold text-sm mt-1">{selectedProductData.sku}</p>
+                      </div>
+                    )}
+                    {selectedProductData.barcode && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('barcode')}</p>
+                        <p className="font-mono font-bold text-sm mt-1">{selectedProductData.barcode}</p>
+                      </div>
+                    )}
+                    {selectedProductData.categoryName && (
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('category')}</p>
+                        <p className="font-semibold text-sm mt-1">{selectedProductData.categoryName}</p>
+                      </div>
+                    )}
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('totalStock')}</p>
+                      <p className="font-bold text-lg mt-1">{selectedProductData.totalStock}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedProductData.priceEur && (
+                      <div className="bg-black text-white rounded-lg p-3">
+                        <p className="text-xs text-gray-300 uppercase font-medium">{t('priceEur')}</p>
+                        <p className="font-black text-xl mt-1">€{Number(selectedProductData.priceEur).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    )}
+                    {selectedProductData.priceCzk && (
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('priceCzk')}</p>
+                        <p className="font-bold text-xl mt-1">{Number(selectedProductData.priceCzk).toLocaleString("cs-CZ")} Kč</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedProductData.locations && selectedProductData.locations.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium mb-2">{t('locations')}</p>
+                      <div className="space-y-2">
+                        {selectedProductData.locations.map((loc) => (
+                          <div key={loc.id} className="flex items-center justify-between text-sm">
+                            <span className="font-mono font-medium">{loc.locationCode}</span>
+                            <Badge variant="secondary">{loc.quantity} {t('units')}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       )}
     </div>
