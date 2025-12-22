@@ -932,7 +932,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortable: false,
       cell: (order) => (
         <div className="text-sm text-slate-700 dark:text-slate-300">
-          {order.biller?.email || 'N/A'}
+          {order.biller?.firstName || order.biller?.email || 'N/A'}
         </div>
       ),
     },
