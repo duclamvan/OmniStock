@@ -15885,34 +15885,46 @@ Important:
       const expandedItems: any[] = [];
       
       for (const item of items) {
-        // Check if this is a bundle
-        const bundle = await storage.getBundleById(item.productId);
+        // Skip service items (they have no physical weight/dimensions)
+        if (item.serviceId) {
+          console.log(`Skipping service item "${item.productName}" - no physical packing needed`);
+          continue;
+        }
         
-        if (bundle) {
-          // It's a bundle - expand into individual items
-          const bundleItems = await storage.getBundleItems(item.productId);
-          console.log(`Expanding bundle "${bundle.name}" with ${bundleItems.length} items for packing calculation`);
-          
-          for (const bundleItem of bundleItems) {
-            if (bundleItem.productId) {
-              const product = await storage.getProductById(bundleItem.productId);
-              if (product) {
-                expandedItems.push({
-                  productId: bundleItem.productId,
-                  productName: bundleItem.productName || product.name,
-                  sku: product.sku,
-                  quantity: (bundleItem.quantity || 1) * item.quantity, // Multiply by order quantity
-                  price: 0, // Bundle items have combined price
-                  product,
-                  fromBundle: bundle.name,
-                  appliedDiscountLabel: item.appliedDiscountLabel,
-                  discountPercentage: item.discountPercentage,
-                });
+        // Check if this is a bundle (has bundleId field)
+        if (item.bundleId) {
+          const bundle = await storage.getBundleById(item.bundleId);
+          if (bundle) {
+            // It's a bundle - expand into individual items
+            const bundleItems = await storage.getBundleItems(item.bundleId);
+            console.log(`Expanding bundle "${bundle.name}" with ${bundleItems.length} items for packing calculation`);
+            
+            for (const bundleItem of bundleItems) {
+              if (bundleItem.productId) {
+                const product = await storage.getProductById(bundleItem.productId);
+                if (product) {
+                  expandedItems.push({
+                    productId: bundleItem.productId,
+                    productName: bundleItem.productName || product.name,
+                    sku: product.sku,
+                    quantity: (bundleItem.quantity || 1) * item.quantity, // Multiply by order quantity
+                    price: 0, // Bundle items have combined price
+                    product,
+                    fromBundle: bundle.name,
+                    appliedDiscountLabel: item.appliedDiscountLabel,
+                    discountPercentage: item.discountPercentage,
+                  });
+                }
               }
             }
+          } else {
+            console.log(`Bundle ${item.bundleId} not found, skipping`);
           }
-        } else {
-          // Regular product - check if it has bulk unit info
+          continue;
+        }
+        
+        // Regular product with productId
+        if (item.productId) {
           const product = await storage.getProductById(item.productId);
           
           if (item.bulkUnitQty && item.bulkUnitQty > 1) {
@@ -15955,6 +15967,8 @@ Important:
               buyXGetYGetQty: item.buyXGetYGetQty
             });
           }
+        } else {
+          console.log(`Item "${item.productName}" has no productId or bundleId, skipping`);
         }
       }
       
