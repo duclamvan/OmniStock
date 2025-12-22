@@ -12646,7 +12646,7 @@ export default function PickPack() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold truncate">{activePickingOrder.orderId}</div>
-                  <div className="text-xs text-blue-100 dark:text-blue-50 truncate font-semibold">{activePickingOrder.customerName}</div>
+                  <div className="text-sm text-yellow-300 truncate font-black drop-shadow-md">{activePickingOrder.customerName}</div>
                 </div>
                 
                 <div className="flex items-center gap-1.5">
@@ -12773,7 +12773,7 @@ export default function PickPack() {
                         {activePickingOrder.priority.toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-xl font-bold text-white mt-1">{activePickingOrder.customerName}</p>
+                    <p className="text-xl font-black text-yellow-300 mt-1 drop-shadow-md">{activePickingOrder.customerName}</p>
                   </div>
                 </div>
                 
@@ -13191,7 +13191,7 @@ export default function PickPack() {
                               #{activePickingOrder.orderId}
                             </h2>
                             <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200">
-                              {activePickingOrder.customerName}
+                              <span className="text-yellow-300 font-black drop-shadow-lg">{activePickingOrder.customerName}</span>
                             </p>
                           </div>
                         ) : (
@@ -14964,7 +14964,7 @@ export default function PickPack() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                               <div className="flex items-center gap-1.5">
                                 <User className="h-4 w-4 text-gray-400" />
-                                <span className="truncate font-medium">{order.customerName}</span>
+                                <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-4 w-4 text-gray-400" />
@@ -15134,7 +15134,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-medium">{order.customerName}</span>
+                                  <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -15169,6 +15169,10 @@ export default function PickPack() {
                                             {item.productName}
                                           </p>
                                           <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                              <MapPin className="h-3 w-3" />
+                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
+                                            </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
                                             )}
@@ -15313,7 +15317,7 @@ export default function PickPack() {
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                                 <div className="flex items-center gap-1.5">
                                   <User className="h-4 w-4 text-gray-400" />
-                                  <span className="truncate font-medium">{order.customerName}</span>
+                                  <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <Globe className="h-4 w-4 text-gray-400" />
@@ -15348,6 +15352,10 @@ export default function PickPack() {
                                             {item.productName}
                                           </p>
                                           <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                              <MapPin className="h-3 w-3" />
+                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
+                                            </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
                                             )}
@@ -15814,7 +15822,7 @@ export default function PickPack() {
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                                           <div className="flex items-center gap-1.5">
                                             <User className="h-3 w-3 text-gray-400" />
-                                            <span className="truncate font-medium">{order.customerName}</span>
+                                            <span className="truncate font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1 py-0.5 rounded text-xs">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5">
                                             <Globe className="h-3 w-3 text-gray-400" />
@@ -15856,7 +15864,7 @@ export default function PickPack() {
                                                     </p>
                                                     <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
                                                       <MapPin className="h-2.5 w-2.5" />
-                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
+                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={false} />
                                                     </span>
                                                   </div>
                                                 </div>
@@ -16015,7 +16023,7 @@ export default function PickPack() {
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{previewOrder?.customerName}</span>
+                    <span className="font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{previewOrder?.customerName}</span>
                   </div>
                   <div className="flex justify-between items-start">
                     <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
