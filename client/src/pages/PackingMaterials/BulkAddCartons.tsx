@@ -185,6 +185,7 @@ export default function BulkAddCartons() {
       name: carton.name || generateCartonName(carton.length, carton.width, carton.height, carton.dimensionUnit),
       code: carton.code,
       category: 'cartons',
+      type: 'carton',
       dimensions: `${carton.length}×${carton.width}×${carton.height} ${carton.dimensionUnit}`,
       stockQuantity: carton.stockQuantity,
       cost: carton.cost || undefined,
