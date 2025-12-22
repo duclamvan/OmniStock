@@ -2465,7 +2465,7 @@ router.get("/shipments", async (req, res) => {
       .where(isNull(shipments.archivedAt))
       .orderBy(desc(shipments.createdAt));
     
-    // Get items for each shipment from consolidation
+    // Get items for each shipment from consolidation OR direct purchase order
     const shipmentsWithDetails = await Promise.all(
       shipmentList.map(async (shipment) => {
         let items: any[] = [];
@@ -2488,6 +2488,47 @@ router.get("/shipments", async (req, res) => {
           
           items = consolidationItemList;
           itemCount = consolidationItemList.length;
+        } 
+        // If no consolidation, check if this is a direct purchase order shipment
+        else if (shipment.notes && shipment.notes.includes('Auto-created from Purchase Order PO #')) {
+          // Extract purchase ID from notes
+          const match = shipment.notes.match(/PO #([a-zA-Z0-9-]+)/);
+          if (match) {
+            const purchaseId = match[1];
+            // Try to find by full ID first, then by prefix
+            let purchaseItemsList = await db
+              .select()
+              .from(purchaseItems)
+              .where(eq(purchaseItems.purchaseId, purchaseId));
+            
+            // If not found by exact match, search by ID prefix
+            if (purchaseItemsList.length === 0) {
+              const allPurchases = await db
+                .select({ id: importPurchases.id })
+                .from(importPurchases)
+                .where(like(importPurchases.id, `${purchaseId}%`))
+                .limit(1);
+              
+              if (allPurchases.length > 0) {
+                purchaseItemsList = await db
+                  .select()
+                  .from(purchaseItems)
+                  .where(eq(purchaseItems.purchaseId, allPurchases[0].id));
+              }
+            }
+            
+            items = purchaseItemsList.map(item => ({
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              weight: item.weight,
+              trackingNumber: null,
+              unitPrice: item.unitPrice,
+              sku: item.sku,
+              itemType: 'purchase'
+            }));
+            itemCount = purchaseItemsList.length;
+          }
         }
         
         // Backfill tracking numbers from legacy field
