@@ -1768,11 +1768,18 @@ function PickingLocationSelector({
       {isLoading ? (
         <div className="h-14 bg-white/50 rounded-lg animate-pulse" />
       ) : sortedLocations.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
-            <SelectTrigger className="w-full h-14 bg-white border-2 border-orange-300 text-xl font-bold font-mono text-center shadow-md hover:border-orange-400 focus:ring-orange-500">
-              <SelectValue placeholder={t('selectLocation') || 'Select location'}>
-                <span className="text-orange-700 dark:text-orange-600 text-xl font-black">{selectedLocation}</span>
+            <SelectTrigger className="w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 border-orange-400 rounded-xl text-center shadow-lg hover:border-orange-500 hover:shadow-xl focus:ring-4 focus:ring-orange-300 transition-all">
+              <SelectValue placeholder={t('selectLocation') || 'Select location'} className="w-full">
+                <div className="w-full flex flex-col items-center justify-center gap-1">
+                  <span className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono text-orange-700 dark:text-orange-600 tracking-wider drop-shadow-sm">
+                    {selectedLocation}
+                  </span>
+                  <span className="text-xs text-orange-500 font-medium uppercase tracking-widest">
+                    ▼ {t('tapToChange') || 'Tap to change'}
+                  </span>
+                </div>
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border-2 border-orange-300">
