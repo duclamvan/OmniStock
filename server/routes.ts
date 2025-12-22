@@ -4871,9 +4871,11 @@ Important:
       }
       
       const productsByName = new Map<string, any>();
+      const productsBySku = new Map<string, any>();
       for (const p of allProducts) {
         if (p.name) productsByName.set(p.name.toLowerCase(), p);
         if (p.vietnameseName) productsByName.set(p.vietnameseName.toLowerCase(), p);
+        if (p.sku) productsBySku.set(p.sku.toLowerCase(), p);
       }
 
       for (let i = 0; i < data.length; i++) {
@@ -4910,11 +4912,26 @@ Important:
           const adjustment = row['Adjustment'] || '0';
           const grandTotal = row['Grand Total'] || '0';
           
-          // Other fields
+          // Shipping & Payment
           const shippingMethod = row['Shipping Method'];
           const paymentMethod = row['Payment Method'];
+          const actualShippingCost = row['Actual Shipping Cost'] || '0';
+          
+          // Order Type & Sale Type
+          const orderType = row['Order Type'] || 'ord'; // 'pos', 'ord', 'web', 'tel'
+          const saleType = row['Sale Type'] || 'retail'; // 'retail' or 'wholesale'
+          const channel = row['Channel'] || 'online'; // 'pos', 'online'
+          
+          // COD Fields
+          const codAmount = row['COD Amount'] || null;
+          const codCurrency = row['COD Currency'] || null;
+          
+          // Tracking & Notes
+          const trackingNumber = row['Tracking Number'] || null;
           const notes = row['Notes'];
-          const items = row['Items']; // Format: "Product A x2; Product B x1"
+          
+          // Items - Format: "SKU1 x2; SKU2 x1" or "Product Name x2; Product Name x1"
+          const items = row['Items'];
 
           // Find or create customer if name provided (using pre-fetched maps)
           let customerId = null;
@@ -4954,10 +4971,9 @@ Important:
             }
           }
 
-          // Create order with comprehensive data
-          const orderData = {
+          // Create order with ALL database fields
+          const orderData: any = {
             orderId,
-            orderDate,
             customerId,
             currency,
             subtotal: String(subtotal),
@@ -4967,6 +4983,7 @@ Important:
             taxRate: String(taxRate),
             taxAmount: String(taxAmount),
             shippingCost: String(shippingCost),
+            actualShippingCost: String(actualShippingCost),
             adjustment: String(adjustment),
             grandTotal: String(grandTotal),
             shippingMethod,
@@ -4975,31 +4992,67 @@ Important:
             paymentStatus,
             priority,
             notes,
+            orderType,
+            saleType,
+            channel,
+            trackingNumber,
           };
+          
+          // Add COD fields if provided
+          if (codAmount) orderData.codAmount = String(codAmount);
+          if (codCurrency) orderData.codCurrency = codCurrency;
 
           const newOrder = await storage.createOrder(orderData);
           
-          // Parse and create order items if provided (using pre-fetched products map)
+          // Parse and create order items if provided
+          // Supports both SKU and Name lookup: "SKU123 x2" or "Product Name x2"
           if (items && typeof items === 'string') {
             const itemParts = items.split(';').map(s => s.trim()).filter(Boolean);
             for (const itemPart of itemParts) {
-              // Parse format: "Product Name x2" or "Product Name xQuantity"
-              const match = itemPart.match(/^(.+?)\s*x(\d+)$/i);
+              // Parse format: "SKU/Name x Quantity" with optional unit price
+              // Examples: "SKU123 x2", "Product Name x2", "SKU123 x2 @15.50"
+              const matchWithPrice = itemPart.match(/^(.+?)\s*x\s*(\d+)\s*@\s*([\d.]+)$/i);
+              const matchBasic = itemPart.match(/^(.+?)\s*x\s*(\d+)$/i);
+              
+              const match = matchWithPrice || matchBasic;
               if (match) {
-                const productName = match[1].trim();
+                const skuOrName = match[1].trim();
                 const quantity = parseInt(match[2], 10) || 1;
+                const customUnitPrice = matchWithPrice ? parseFloat(match[3]) : null;
                 
-                // Fast lookup using pre-fetched map
-                const product = productsByName.get(productName.toLowerCase());
+                // Try SKU lookup first, then fall back to name lookup
+                let product = productsBySku.get(skuOrName.toLowerCase()) || 
+                              productsByName.get(skuOrName.toLowerCase());
                 
                 if (product) {
+                  // Determine unit price based on currency and sale type
+                  let unitPrice = customUnitPrice;
+                  if (!unitPrice) {
+                    if (saleType === 'wholesale') {
+                      unitPrice = parseFloat(product.wholesalePriceEur || product.wholesalePriceCzk || product.priceEur || product.priceCzk || '0');
+                    } else {
+                      if (currency === 'EUR') {
+                        unitPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+                      } else if (currency === 'USD') {
+                        unitPrice = parseFloat(product.priceUsd || product.priceEur || '0');
+                      } else if (currency === 'VND') {
+                        unitPrice = parseFloat(product.priceVnd || '0');
+                      } else if (currency === 'CNY') {
+                        unitPrice = parseFloat(product.priceCny || '0');
+                      } else {
+                        unitPrice = parseFloat(product.priceCzk || product.priceEur || '0');
+                      }
+                    }
+                  }
+                  
                   await storage.createOrderItem({
                     orderId: newOrder.id,
                     productId: product.id,
                     productName: product.name,
+                    sku: product.sku,
                     quantity,
-                    unitPrice: product.priceEur || product.priceCzk || '0',
-                    totalPrice: String(quantity * parseFloat(product.priceEur || product.priceCzk || '0')),
+                    unitPrice: String(unitPrice),
+                    totalPrice: String(quantity * unitPrice),
                   });
                 }
               }

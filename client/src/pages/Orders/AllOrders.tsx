@@ -2223,21 +2223,51 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <div className="flex flex-wrap gap-2">
                       <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Order ID</code>
                       <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Customer Name</code>
+                      <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Grand Total</code>
                     </div>
                   </div>
 
                   <div>
                     <p className="text-sm font-medium mb-1">{t('orders:optionalColumns')}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Order Date</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Customer Email</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Customer Phone</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Shipping Address</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Grand Total</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Currency</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Items</code>
-                      <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Notes</code>
+                    <div className="flex flex-wrap gap-2 text-[10px]">
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Date</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Customer Email</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Customer Phone</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Address</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping City</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping State</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Country</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Postal Code</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Currency</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Subtotal</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Type</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Value</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Discount Amount</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tax Rate (%)</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tax Amount</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Cost</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Actual Shipping Cost</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Adjustment</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Shipping Method</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Payment Method</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Status</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Payment Status</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Priority</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Order Type</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Sale Type</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Channel</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Tracking Number</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">COD Amount</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">COD Currency</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Items</code>
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">Notes</code>
                     </div>
+                  </div>
+
+                  <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs">
+                    <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">{t('orders:itemsFormat')}</p>
+                    <p className="text-amber-700 dark:text-amber-300">SKU x Qty; SKU x Qty <span className="text-muted-foreground">({t('orders:orProductName')})</span></p>
+                    <p className="text-muted-foreground mt-1">{t('orders:exampleItems')}: <code className="bg-white dark:bg-slate-800 px-1 rounded">ABC123 x2; XYZ456 x1</code> {t('orders:or')} <code className="bg-white dark:bg-slate-800 px-1 rounded">Product A x2 @15.50; Product B x1</code></p>
                   </div>
                 </div>
               </div>
@@ -2251,6 +2281,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         <th className="text-left p-2">Order ID</th>
                         <th className="text-left p-2">Customer Name</th>
                         <th className="text-left p-2">Grand Total</th>
+                        <th className="text-left p-2">Sale Type</th>
                         <th className="text-left p-2">Items</th>
                       </tr>
                     </thead>
@@ -2259,7 +2290,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         <td className="p-2">ORD-2025-001</td>
                         <td className="p-2">John Doe</td>
                         <td className="p-2">150.00</td>
-                        <td className="p-2">Product A x2; Product B x1</td>
+                        <td className="p-2">retail</td>
+                        <td className="p-2">ABC123 x2; XYZ456 x1</td>
                       </tr>
                     </tbody>
                   </table>
