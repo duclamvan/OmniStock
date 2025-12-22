@@ -318,6 +318,7 @@ export default function ProductForm() {
   
   // Inline supplier creation dialog state
   const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
+  const [bulkPriceManuallyEdited, setBulkPriceManuallyEdited] = useState(false);
   const [newSupplierData, setNewSupplierData] = useState({
     name: "",
     email: "",
@@ -878,6 +879,9 @@ export default function ProductForm() {
         czk: !!product.wholesalePriceCzk,
         eur: !!product.wholesalePriceEur
       };
+      
+      // Mark bulk price as manually edited if both values already exist (prevents overwriting)
+      setBulkPriceManuallyEdited(!!(product.bulkPriceCzk && product.bulkPriceEur));
       
       // Set packing instructions state
       setPackingInstructionsTexts(Array.isArray(product.packingInstructionsTexts) ? product.packingInstructionsTexts : []);
@@ -3904,9 +3908,10 @@ export default function ProductForm() {
                                 onChange={(e) => {
                                   const value = parseFloat(e.target.value);
                                   form.setValue('bulkPriceCzk', value);
-                                  if (!isNaN(value) && value > 0) {
+                                  if (!bulkPriceManuallyEdited && !isNaN(value) && value > 0) {
                                     form.setValue('bulkPriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                                   }
+                                  setBulkPriceManuallyEdited(true);
                                 }}
                               />
                             </div>
@@ -3927,9 +3932,10 @@ export default function ProductForm() {
                                 onChange={(e) => {
                                   const value = parseFloat(e.target.value);
                                   form.setValue('bulkPriceEur', value);
-                                  if (!isNaN(value) && value > 0) {
+                                  if (!bulkPriceManuallyEdited && !isNaN(value) && value > 0) {
                                     form.setValue('bulkPriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                                   }
+                                  setBulkPriceManuallyEdited(true);
                                 }}
                               />
                             </div>
