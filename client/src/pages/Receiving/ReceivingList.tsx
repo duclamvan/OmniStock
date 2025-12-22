@@ -2406,42 +2406,54 @@ function QuickStorageSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-[95vh] p-0 flex flex-col"
+        className="h-[92vh] p-0 flex flex-col rounded-t-2xl"
         data-testid="sheet-quick-storage"
       >
-        <SheetHeader className="p-4 border-b dark:border-gray-800">
-          <SheetTitle className="flex items-center gap-2">
-            <Warehouse className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            {t('quickStorage')}
-          </SheetTitle>
-          <SheetDescription>
-            {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
-          </SheetDescription>
-        </SheetHeader>
+        {/* Compact Header with Progress */}
+        <div className="px-4 pt-3 pb-2 border-b dark:border-gray-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                <Warehouse className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <SheetTitle className="text-sm font-semibold">{t('quickStorage')}</SheetTitle>
+                <SheetDescription className="text-xs truncate max-w-[200px]">
+                  {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
+                </SheetDescription>
+              </div>
+            </div>
+            {/* Progress Circle */}
+            <div className="flex items-center gap-2">
+              <div className="relative w-12 h-12">
+                <svg className="w-12 h-12 transform -rotate-90">
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="4" className="text-gray-200 dark:text-gray-700" />
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" 
+                    strokeDasharray={`${progress * 1.256} 125.6`} 
+                    className="text-amber-500 dark:text-amber-400 transition-all duration-300" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{Math.round(progress)}%</span>
+              </div>
+            </div>
+          </div>
+          {/* Items counter bar */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckCircle className="h-3 w-3 text-green-500" />
+            <span>{completedItems}/{totalItems} {t('itemsCompleted')}</span>
+          </div>
+        </div>
         
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className={`flex-1 flex flex-col overflow-hidden ${allItemsStored ? 'pb-44' : 'pb-24'}`}>
-            {/* Progress bar */}
-            <div className="p-4 border-b dark:border-gray-800 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
-                  {completedItems}/{totalItems} {t('itemsCompleted')}
-                </span>
-                <span className="text-muted-foreground">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
+          <div className={`flex-1 flex flex-col overflow-hidden ${allItemsStored ? 'pb-40' : 'pb-20'}`}>
             
             {/* Item Cards with Animation */}
             {items.length > 0 && (
               <ScrollArea className="flex-1">
-                <div className="p-4 space-y-3">
+                <div className="p-3 space-y-2">
                   <AnimatePresence mode="wait">
                     {items.map((item, index) => {
                       const isSelected = index === selectedItemIndex;
@@ -2454,126 +2466,97 @@ function QuickStorageSheet({
                       return (
                         <motion.div
                           key={item.receiptItemId}
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ duration: 0.2 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.15 }}
                           onClick={() => setSelectedItemIndex(isSelected ? -1 : index)}
-                          className={`bg-white dark:bg-gray-950 rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
+                          className={`bg-white dark:bg-gray-950 rounded-lg border overflow-hidden transition-all cursor-pointer active:scale-[0.99] ${
                             isFullyStored
-                              ? 'border-green-500 dark:border-green-600 shadow-md'
+                              ? 'border-green-500 dark:border-green-600'
                               : isSelected 
-                                ? 'border-amber-600 dark:border-amber-500 shadow-lg' 
-                                : 'border-gray-200 dark:border-gray-700 shadow-sm hover:border-amber-300 dark:hover:border-amber-700'
+                                ? 'border-amber-500 dark:border-amber-500 shadow-sm' 
+                                : 'border-gray-200 dark:border-gray-700'
                           }`}
                         >
-                          {/* Item Header */}
-                          <div className="p-4">
-                            <div className="flex items-start gap-3">
-                              {/* Product Image */}
-                              <div className="relative">
+                          {/* Item Header - Compact */}
+                          <div className="p-3">
+                            <div className="flex items-center gap-2.5">
+                              {/* Product Image - Smaller */}
+                              <div className="relative flex-shrink-0">
                                 {item.imageUrl ? (
                                   <img 
                                     src={item.imageUrl} 
                                     alt={item.productName}
-                                    className={`w-16 h-16 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900 ${
-                                      isFullyStored ? 'border-green-500 dark:border-green-600' : ''
+                                    className={`w-12 h-12 rounded-lg object-contain border bg-slate-50 dark:bg-slate-900 ${
+                                      isFullyStored ? 'border-green-500' : 'border-gray-200 dark:border-gray-700'
                                     }`}
                                   />
                                 ) : (
-                                  <div className={`w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center ${
-                                    isFullyStored ? 'border-2 border-green-500 dark:border-green-600' : ''
+                                  <div className={`w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center ${
+                                    isFullyStored ? 'border border-green-500' : ''
                                   }`}>
-                                    <Package className="h-8 w-8 text-gray-400 dark:text-gray-300" />
+                                    <Package className="h-6 w-6 text-gray-400" />
                                   </div>
                                 )}
                                 {isFullyStored && (
-                                  <div className="absolute -top-1 -right-1 bg-green-500 dark:bg-green-600 rounded-full p-1 shadow-sm">
-                                    <Check className="h-3 w-3 text-white" />
+                                  <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
+                                    <Check className="h-2.5 w-2.5 text-white" />
                                   </div>
                                 )}
                               </div>
 
-                              {/* Product Info */}
+                              {/* Product Info - Compact */}
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-sm line-clamp-1">{item.productName}</h3>
-                                {item.description && item.description !== item.productName && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
-                                )}
-                                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   {item.sku && (
-                                    <span className="text-xs text-muted-foreground font-mono">
+                                    <span className="text-[10px] text-muted-foreground font-mono">
                                       {item.sku}
                                     </span>
                                   )}
-                                  <Badge variant="outline" className="text-xs">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-medium">
                                     {t('qty')} {item.receivedQuantity}
-                                  </Badge>
-                                  <Badge 
-                                    variant={itemRemainingQty > 0 ? "secondary" : "default"} 
-                                    className={`text-xs ${
-                                      itemRemainingQty === 0 
-                                        ? 'bg-green-500 dark:bg-green-600 text-white' 
-                                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                                    }`}
-                                  >
-                                    {t('notStored')} {itemRemainingQty}
-                                  </Badge>
+                                  </span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                    itemRemainingQty === 0 
+                                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                  }`}>
+                                    {itemRemainingQty === 0 ? '✓' : `${itemRemainingQty} left`}
+                                  </span>
                                 </div>
                                 
-                                {/* Warehouse Locations - Always visible in collapsed state */}
+                                {/* Warehouse Locations - Inline compact */}
                                 {(item.existingLocations?.length > 0 || item.locations.length > 0) && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {/* Show existing locations first */}
-                                    {item.existingLocations?.slice(0, 3).map((loc, idx) => (
-                                      <Badge 
-                                        key={`existing-${idx}`} 
-                                        variant="secondary" 
-                                        className="text-xs font-mono bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
-                                      >
-                                        <MapPin className="h-3 w-3 mr-1" />
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {item.existingLocations?.slice(0, 2).map((loc, idx) => (
+                                      <span key={`existing-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
                                         {loc.locationCode}
-                                        {loc.isPrimary && <Star className="h-3 w-3 ml-1" fill="currentColor" />}
-                                      </Badge>
+                                      </span>
                                     ))}
-                                    {/* Show new locations */}
-                                    {item.locations.slice(0, 3).map((loc, idx) => (
-                                      <Badge 
-                                        key={`new-${idx}`} 
-                                        variant="outline" 
-                                        className="text-xs font-mono border-green-500 text-green-600 dark:text-green-400"
-                                      >
-                                        <MapPin className="h-3 w-3 mr-1" />
+                                    {item.locations.slice(0, 2).map((loc, idx) => (
+                                      <span key={`new-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700">
                                         {loc.locationCode}
-                                        {loc.quantity > 0 && <span className="ml-1">×{loc.quantity}</span>}
-                                      </Badge>
+                                      </span>
                                     ))}
-                                    {/* Show overflow count */}
-                                    {((item.existingLocations?.length || 0) + item.locations.length) > 3 && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        +{((item.existingLocations?.length || 0) + item.locations.length) - 3}
-                                      </Badge>
+                                    {((item.existingLocations?.length || 0) + item.locations.length) > 2 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        +{((item.existingLocations?.length || 0) + item.locations.length) - 2}
+                                      </span>
                                     )}
                                   </div>
                                 )}
                               </div>
 
-                              {/* Expand/Collapse Icon */}
-                              <div className={`flex items-center justify-center h-8 w-8 rounded-full transition-all ${
+                              {/* Expand Icon */}
+                              <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${
                                 isFullyStored 
-                                  ? 'bg-green-100 dark:bg-green-900/30' 
+                                  ? 'text-green-500' 
                                   : isSelected 
-                                    ? 'bg-amber-100 dark:bg-amber-900/30' 
-                                    : 'bg-gray-100 dark:bg-gray-800'
-                              }`}>
-                                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${
-                                  isFullyStored 
-                                    ? 'text-green-600 dark:text-green-400' 
-                                    : isSelected 
-                                      ? 'text-amber-600 dark:text-amber-400'
-                                      : 'text-gray-400 dark:text-gray-500'
-                                } ${isSelected ? 'rotate-180' : ''}`} />
-                              </div>
+                                    ? 'text-amber-500'
+                                    : 'text-gray-400'
+                              } ${isSelected ? 'rotate-180' : ''}`} />
                             </div>
                           </div>
 
@@ -2583,72 +2566,45 @@ function QuickStorageSheet({
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className={`border-t-2 bg-gray-50 dark:bg-gray-900 ${
+                              transition={{ duration: 0.15 }}
+                              className={`border-t bg-gray-50 dark:bg-gray-900 ${
                                 isFullyStored 
-                                  ? 'border-green-500 dark:border-green-600' 
-                                  : 'border-amber-500 dark:border-amber-600'
+                                  ? 'border-green-500' 
+                                  : 'border-amber-400'
                               }`}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {/* SIMPLIFIED LAYOUT - Easy for warehouse workers */}
-                              <div className="p-4 space-y-4">
+                              {/* Mobile-optimized layout */}
+                              <div className="p-3 space-y-3">
                                 
                                 {/* Scan feedback */}
                                 {scanFeedback.type && (
                                   <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
                                 )}
 
-                                {/* Progress + Remaining - Large and clear */}
-                                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 border-2 dark:border-gray-800">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-lg font-medium">{t('remaining')}</span>
-                                    <span className={`text-3xl font-bold ${itemRemainingQty === 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                {/* Progress bar - Compact */}
+                                <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-sm font-medium">{t('remaining')}</span>
+                                    <span className={`text-xl font-bold ${itemRemainingQty === 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                                       {itemRemainingQty}
                                     </span>
                                   </div>
-                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                     <div 
-                                      className="bg-green-500 h-3 rounded-full transition-all"
+                                      className="bg-green-500 h-2 rounded-full transition-all"
                                       style={{ width: `${((item.receivedQuantity - itemRemainingQty) / item.receivedQuantity) * 100}%` }}
                                     />
                                   </div>
-                                  <p className="text-sm text-muted-foreground mt-2 text-center">
+                                  <p className="text-xs text-muted-foreground mt-1.5 text-center">
                                     {existingLocationQty + pendingLocationQty} / {item.receivedQuantity} {t('stored')}
                                   </p>
                                 </div>
 
-                                {/* ADD LOCATION - Simple input with big button */}
+                                {/* ADD LOCATION - Simplified for mobile */}
                                 {itemRemainingQty > 0 && (
-                                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
-                                    <p className="text-base font-semibold text-blue-800 dark:text-blue-300 mb-2 text-center">
-                                      {t('addLocation')}
-                                    </p>
-                                    
-                                    {/* Location segment labels */}
-                                    <div className="text-xs text-center text-blue-600 dark:text-blue-400 mb-1 space-x-2">
-                                      <span><strong>WH</strong>=Warehouse</span>
-                                      <span><strong>A</strong>=Aisle</span>
-                                      <span><strong>R</strong>=Rack</span>
-                                      <span><strong>L</strong>=Level</span>
-                                      <span><strong>P</strong>=Pallet</span>
-                                      <span><strong>B</strong>=Bin</span>
-                                    </div>
-                                    
-                                    {/* Format guide - shows structure before typing */}
-                                    <div className="flex justify-center gap-1 mb-3">
-                                      <div className="flex items-center gap-1 text-xs">
-                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">WH1</span>
-                                        <span className="text-blue-400">-</span>
-                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">A01</span>
-                                        <span className="text-blue-400">-</span>
-                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">R02</span>
-                                        <span className="text-blue-400">-</span>
-                                        <span className="px-2 py-1 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded font-mono font-bold">L03</span>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex gap-3">
+                                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                                    <div className="flex gap-2 mb-2">
                                       <Input
                                         ref={locationInputRef}
                                         value={locationInput}
@@ -2662,7 +2618,7 @@ function QuickStorageSheet({
                                         }}
                                         onClick={(e) => e.stopPropagation()}
                                         placeholder="WH1-A01-R02-L03"
-                                        className="flex-1 h-14 text-lg font-mono font-bold text-center border-2 rounded-xl"
+                                        className="flex-1 h-12 text-base font-mono font-bold text-center border-2 rounded-lg bg-white dark:bg-gray-950"
                                         data-testid="input-location-manual"
                                       />
                                       <Button
@@ -2671,52 +2627,41 @@ function QuickStorageSheet({
                                           handleLocationScan();
                                         }}
                                         disabled={!locationInput}
-                                        className="h-14 px-6 rounded-xl text-lg"
+                                        className="h-12 w-12 rounded-lg p-0"
                                         size="lg"
                                       >
-                                        <Plus className="h-6 w-6" />
+                                        <Plus className="h-5 w-5" />
                                       </Button>
+                                      {/* Camera Scanner Button */}
+                                      {barcodeScanner.scanningEnabled && (
+                                        <Button
+                                          variant={barcodeScanner.isActive ? "destructive" : "outline"}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (barcodeScanner.isActive) {
+                                              barcodeScanner.stopScanning();
+                                            } else {
+                                              barcodeScanner.startScanning();
+                                            }
+                                          }}
+                                          className="h-12 w-12 rounded-lg p-0"
+                                        >
+                                          {barcodeScanner.isActive ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
+                                        </Button>
+                                      )}
                                     </div>
                                     
-                                    {/* Camera Scanner - Only if available */}
-                                    {barcodeScanner.scanningEnabled && (
-                                      <Button
-                                        variant={barcodeScanner.isActive ? "destructive" : "outline"}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (barcodeScanner.isActive) {
-                                            barcodeScanner.stopScanning();
-                                          } else {
-                                            barcodeScanner.startScanning();
-                                          }
-                                        }}
-                                        className="w-full h-12 rounded-xl mt-3"
-                                      >
-                                        {barcodeScanner.isActive ? (
-                                          <>
-                                            <CameraOff className="h-5 w-5 mr-2" />
-                                            {t('stopCamera')}
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Camera className="h-5 w-5 mr-2" />
-                                            {t('scanBarcode')}
-                                          </>
-                                        )}
-                                      </Button>
-                                    )}
-                                    
-                                    {/* Camera Preview */}
+                                    {/* Camera Preview - Compact */}
                                     {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
-                                      <div className="relative rounded-xl overflow-hidden bg-black mt-3">
+                                      <div className="relative rounded-lg overflow-hidden bg-black">
                                         <video
                                           ref={barcodeScanner.videoRef}
-                                          className="w-full h-40 object-cover"
+                                          className="w-full h-32 object-cover"
                                           playsInline
                                           muted
                                         />
-                                        <Badge className="absolute top-2 right-2 bg-green-500 text-white">
-                                          <Camera className="h-3 w-3 mr-1" />
+                                        <Badge className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1.5 py-0.5">
+                                          <Camera className="h-2.5 w-2.5 mr-0.5" />
                                           {t('scanning')}
                                         </Badge>
                                       </div>
@@ -2724,29 +2669,24 @@ function QuickStorageSheet({
                                   </div>
                                 )}
 
-                                {/* ALL LOCATIONS LIST - Persistent display of saved + pending */}
-                                <div className="rounded-xl border-2 dark:border-gray-800 overflow-hidden">
-                                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 border-b dark:border-gray-700">
-                                    <p className="font-semibold text-base flex items-center gap-2">
-                                      <MapPin className="h-5 w-5" />
+                                {/* ALL LOCATIONS LIST - Compact */}
+                                <div className="rounded-lg border dark:border-gray-800 overflow-hidden">
+                                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 border-b dark:border-gray-700">
+                                    <p className="font-medium text-sm flex items-center gap-1.5">
+                                      <MapPin className="h-4 w-4" />
                                       {t('allLocations')} ({(item.existingLocations?.length || 0) + item.locations.length})
                                     </p>
                                   </div>
                                   
-                                  <div className="divide-y dark:divide-gray-800 max-h-64 overflow-y-auto">
-                                    {/* SAVED LOCATIONS - Green, editable */}
+                                  <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">
+                                    {/* SAVED LOCATIONS - Compact rows */}
                                     {item.existingLocations?.map((loc: any, locIdx: number) => (
                                       <div 
                                         key={`saved-${loc.id || locIdx}`}
-                                        className="p-4 flex items-center gap-4 bg-green-50 dark:bg-green-950/20"
+                                        className="p-2.5 flex items-center gap-2 bg-green-50 dark:bg-green-950/20"
                                       >
-                                        <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
-                                          <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-mono font-bold text-base truncate">{loc.locationCode}</p>
-                                          <p className="text-sm text-green-700 dark:text-green-400">{t('saved')}</p>
-                                        </div>
+                                        <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                        <span className="font-mono text-sm font-medium flex-1 truncate">{loc.locationCode}</span>
                                         
                                         <Input
                                           type="number"
@@ -2782,7 +2722,7 @@ function QuickStorageSheet({
                                             }
                                           }}
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-24 h-12 text-center text-xl font-bold rounded-xl border-green-300 dark:border-green-700"
+                                          className="w-16 h-9 text-center text-base font-bold rounded-lg border-green-300 dark:border-green-700"
                                           min="0"
                                           data-testid={`input-saved-qty-${locIdx}`}
                                         />
@@ -2813,26 +2753,21 @@ function QuickStorageSheet({
                                             }
                                           }}
                                           disabled={deleteLocationMutation.isPending}
-                                          className="h-12 w-12 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl"
+                                          className="h-9 w-9 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
                                         >
-                                          <X className="h-6 w-6" />
+                                          <X className="h-4 w-4" />
                                         </Button>
                                       </div>
                                     ))}
                                     
-                                    {/* PENDING LOCATIONS - Amber, editable */}
+                                    {/* PENDING LOCATIONS - Compact rows */}
                                     {item.locations.map((loc, locIndex) => (
                                       <div 
                                         key={loc.id}
-                                        className="p-4 flex items-center gap-4 bg-amber-50 dark:bg-amber-950/20"
+                                        className="p-2.5 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/20"
                                       >
-                                        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
-                                          <MapPin className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-mono font-bold text-base truncate">{loc.locationCode}</p>
-                                          <p className="text-sm text-amber-700 dark:text-amber-400">{t('pending')}</p>
-                                        </div>
+                                        <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                        <span className="font-mono text-sm font-medium flex-1 truncate">{loc.locationCode}</span>
                                         
                                         <Input
                                           type="number"
@@ -2840,11 +2775,9 @@ function QuickStorageSheet({
                                           onChange={(e) => {
                                             e.stopPropagation();
                                             const newQty = parseInt(e.target.value) || 0;
-                                            // Use state updater to get FRESH state and recalculate max
                                             setItems(prevItems => {
                                               const updated = [...prevItems];
                                               const currentItem = updated[index];
-                                              // Recalculate from fresh state
                                               const freshExistingQty = (currentItem.existingLocations || [])
                                                 .reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
                                               const freshPendingQty = currentItem.locations
@@ -2856,7 +2789,7 @@ function QuickStorageSheet({
                                             });
                                           }}
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-24 h-12 text-center text-xl font-bold rounded-xl"
+                                          className="w-16 h-9 text-center text-base font-bold rounded-lg"
                                           min="0"
                                           placeholder="0"
                                           data-testid={`input-qty-${locIndex}`}
@@ -2869,32 +2802,31 @@ function QuickStorageSheet({
                                             e.stopPropagation();
                                             handleRemoveLocation(locIndex);
                                           }}
-                                          className="h-12 w-12 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-xl"
+                                          className="h-9 w-9 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
                                         >
-                                          <X className="h-6 w-6" />
+                                          <X className="h-4 w-4" />
                                         </Button>
                                       </div>
                                     ))}
                                     
-                                    {/* Empty state */}
+                                    {/* Empty state - Compact */}
                                     {(!item.existingLocations || item.existingLocations.length === 0) && item.locations.length === 0 && (
-                                      <div className="p-6 text-center text-muted-foreground">
-                                        <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                                      <div className="p-4 text-center text-muted-foreground text-sm">
+                                        <MapPin className="h-6 w-6 mx-auto mb-1 opacity-30" />
                                         <p>{t('noLocationsYet')}</p>
                                       </div>
                                     )}
                                   </div>
                                 </div>
 
-                                {/* ACTION BUTTONS - Large, clear */}
+                                {/* ACTION BUTTONS - Compact */}
                                 {item.locations.length > 0 && (
-                                  <div className="flex gap-3">
+                                  <div className="flex gap-2">
                                     {itemRemainingQty > 0 && (
                                       <Button
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          // Use fresh calculation for fill all
                                           setItems(prevItems => {
                                             const updated = [...prevItems];
                                             const currentItem = updated[index];
@@ -2908,16 +2840,16 @@ function QuickStorageSheet({
                                             return updated;
                                           });
                                         }}
-                                        className="flex-1 h-14 rounded-xl text-base"
+                                        className="flex-1 h-10 rounded-lg text-sm"
                                       >
-                                        <Plus className="h-5 w-5 mr-2" />
+                                        <Plus className="h-4 w-4 mr-1" />
                                         {t('fillAll')} ({itemRemainingQty})
                                       </Button>
                                     )}
                                     
                                     {item.locations.some(loc => (loc.quantity || 0) > 0) && (
                                       <Button
-                                        className="flex-1 h-14 bg-green-600 hover:bg-green-700 rounded-xl text-base"
+                                        className="flex-1 h-10 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
                                         onClick={async (e) => {
                                           e.stopPropagation();
                                           const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
@@ -2999,9 +2931,9 @@ function QuickStorageSheet({
                                         disabled={storeLocationMutation.isPending}
                                       >
                                         {storeLocationMutation.isPending ? (
-                                          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
                                         ) : (
-                                          <Check className="h-6 w-6 mr-2" />
+                                          <Check className="h-4 w-4 mr-1" />
                                         )}
                                         {t('saveLocations')}
                                       </Button>
@@ -3009,16 +2941,16 @@ function QuickStorageSheet({
                                   </div>
                                 )}
 
-                                {/* Product Details - Compact link */}
+                                {/* Product Details - Inline link */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setShowProductDetails(true);
                                   }}
-                                  className="w-full py-3 text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  className="w-full py-2 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                   data-testid="button-item-details"
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-3.5 w-3.5" />
                                   {t('common:productDetails')}
                                 </button>
                               </div>
@@ -3034,25 +2966,25 @@ function QuickStorageSheet({
           </div>
         )}
         
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shadow-lg z-40">
+        {/* Bottom Navigation - Compact */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shadow-lg z-40 safe-area-pb">
           {/* Complete Receiving Button - Shows when all items are stored */}
           {allItemsStored && (
-            <div className="px-4 pt-4 pb-2">
+            <div className="px-3 pt-3 pb-1">
               <button
                 onClick={() => completeReceivingMutation.mutate()}
                 disabled={completeReceivingMutation.isPending}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg py-4 flex items-center justify-center gap-3 font-semibold text-base shadow-lg"
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl py-3 flex items-center justify-center gap-2 font-semibold text-sm shadow-lg"
                 data-testid="button-complete-receiving"
               >
                 {completeReceivingMutation.isPending ? (
                   <>
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                     {t('common:loading')}
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-6 w-6" />
+                    <CheckCircle className="h-5 w-5" />
                     {t('completeReceiving')}
                   </>
                 )}
@@ -3060,47 +2992,57 @@ function QuickStorageSheet({
             </div>
           )}
           
-          <div className={`p-4 flex gap-2 ${allItemsStored ? 'pt-2' : ''}`}>
-            <button
-              onClick={() => {
-                if (selectedItemIndex > 0) {
-                  setSelectedItemIndex(selectedItemIndex - 1);
-                }
-              }}
-              disabled={selectedItemIndex === 0}
-              className={`p-3 rounded-lg border dark:border-gray-800 ${
-                selectedItemIndex === 0 
-                  ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
-                  : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              <ArrowUp className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => {
-                if (selectedItemIndex < items.length - 1) {
-                  setSelectedItemIndex(selectedItemIndex + 1);
-                }
-              }}
-              disabled={selectedItemIndex === items.length - 1}
-              className={`p-3 rounded-lg border dark:border-gray-800 ${
-                selectedItemIndex === items.length - 1
-                  ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
-                  : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              <ArrowDown className="h-5 w-5" />
-            </button>
+          <div className={`px-3 py-2 flex gap-2 ${allItemsStored ? 'pt-1' : ''}`}>
+            {/* Item Navigation */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  if (selectedItemIndex > 0) {
+                    setSelectedItemIndex(selectedItemIndex - 1);
+                  }
+                }}
+                disabled={selectedItemIndex === 0}
+                className={`p-2.5 rounded-lg border dark:border-gray-800 ${
+                  selectedItemIndex === 0 
+                    ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                    : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 active:bg-gray-100'
+                }`}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedItemIndex < items.length - 1) {
+                    setSelectedItemIndex(selectedItemIndex + 1);
+                  }
+                }}
+                disabled={selectedItemIndex === items.length - 1}
+                className={`p-2.5 rounded-lg border dark:border-gray-800 ${
+                  selectedItemIndex === items.length - 1
+                    ? 'bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600' 
+                    : 'bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-300 active:bg-gray-100'
+                }`}
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {/* Item counter */}
+            <div className="flex items-center px-2 text-xs text-muted-foreground">
+              {selectedItemIndex >= 0 ? selectedItemIndex + 1 : 0}/{items.length}
+            </div>
+            
+            {/* Quick Scan Button */}
             <button
               onClick={() => setShowScanner(true)}
               disabled={!currentItem || allItemsStored}
-              className={`flex-1 rounded-lg py-3 flex items-center justify-center gap-2 font-medium ${
+              className={`flex-1 rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium text-sm ${
                 allItemsStored 
                   ? 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white'
               }`}
             >
-              <ScanLine className="h-5 w-5" />
+              <ScanLine className="h-4 w-4" />
               {allItemsStored ? t('allStored') : t('quickScan')}
             </button>
           </div>
