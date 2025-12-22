@@ -1636,7 +1636,7 @@ function PickingListView({
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
                     }`}>
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span>{item.warehouseLocation || t('noLocation') || 'No location'}</span>
+                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} />
                     </div>
                     {/* Same aisle indicator - shows when next item is in same aisle */}
                     {isSameAisleAsNext && !isPicked && (
@@ -1827,6 +1827,54 @@ function PickingLocationSelector({
     </div>
   );
 }
+
+// Component: Display primary location for an item - fetches from product locations API
+// Used in list views where we want to show real location data instead of legacy warehouseLocation
+const ItemPrimaryLocation = memo(({ 
+  productId,
+  fallbackLocation,
+  className = ""
+}: { 
+  productId?: string | null;
+  fallbackLocation?: string;
+  className?: string;
+}) => {
+  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', productId, 'locations'],
+    enabled: !!productId,
+    staleTime: 30000, // Cache for 30 seconds to reduce API calls in list views
+  });
+  
+  // Find primary location, or first with stock, or first location
+  const primaryLocation = useMemo(() => {
+    if (!productLocations.length) return null;
+    
+    // Sort: primary first, then by stock quantity
+    const sorted = [...productLocations].sort((a, b) => {
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return (b.quantity || 0) - (a.quantity || 0);
+    });
+    
+    return sorted[0]?.locationCode || null;
+  }, [productLocations]);
+  
+  if (!productId) {
+    return fallbackLocation ? <span className={className}>{fallbackLocation}</span> : null;
+  }
+  
+  if (isLoading) {
+    return <span className={`${className} animate-pulse`}>...</span>;
+  }
+  
+  const displayLocation = primaryLocation || fallbackLocation;
+  
+  if (!displayLocation) {
+    return null;
+  }
+  
+  return <span className={className}>{displayLocation}</span>;
+});
 
 export default function PickPack() {
   const { t } = useTranslation('orders');
@@ -7551,9 +7599,9 @@ export default function PickPack() {
                                   
                                   {/* Location and Badges - Below on mobile */}
                                   <div className="mt-1">
-                                    {!isBundle && item.warehouseLocation && (
+                                    {!isBundle && (
                                       <div className="text-xs text-gray-600 font-medium">
-                                        📍 {item.warehouseLocation}
+                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                         {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
@@ -7613,9 +7661,9 @@ export default function PickPack() {
                                 
                                 {/* SKU and Location */}
                                 <div className="flex items-center gap-2 mt-1">
-                                  {!isBundle && item.warehouseLocation && (
+                                  {!isBundle && (
                                     <span className="text-xs text-gray-600 font-medium truncate">
-                                      📍 {item.warehouseLocation}
+                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                     </span>
                                   )}
                                   {item.sku && (
@@ -12638,7 +12686,9 @@ export default function PickPack() {
                             <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
                               <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
                                 <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
-                                <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">{item.warehouseLocation}</p>
+                                <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                </p>
                               </div>
                               <Button
                                 variant="outline"
@@ -13247,7 +13297,7 @@ export default function PickPack() {
                         if (isPicked) {
                           toast({
                             title: t('itemReview') || 'Item Review',
-                            description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                            description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'}`,
                           });
                           playSound('scan');
                         } else {
@@ -13297,7 +13347,7 @@ export default function PickPack() {
                                   <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
                                     isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
                                   }`}>
-                                    📍 {item.warehouseLocation}
+                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
@@ -13402,7 +13452,7 @@ export default function PickPack() {
                               if (isPicked) {
                                 toast({
                                   title: t('itemReview') || 'Item Review',
-                                  description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'} • ${item.warehouseLocation}`,
+                                  description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'}`,
                                 });
                                 playSound('scan');
                               } else {
@@ -13422,7 +13472,9 @@ export default function PickPack() {
                                 </div>
                               )}
                               {!isServiceBill && (
-                                <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                                <span className="text-xs font-mono font-bold">
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                </span>
                               )}
                             </div>
                             {isServiceBill ? (
@@ -14547,12 +14599,10 @@ export default function PickPack() {
                                           {item.sku && (
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
                                           )}
-                                          {item.warehouseLocation && (
-                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                              <MapPin className="h-3 w-3" />
-                                              {item.warehouseLocation}
-                                            </span>
-                                          )}
+                                          <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                                            <MapPin className="h-3 w-3" />
+                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
@@ -15407,12 +15457,10 @@ export default function PickPack() {
                                                     <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
                                                       {item.productName}
                                                     </p>
-                                                    {item.warehouseLocation && (
-                                                      <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
-                                                        <MapPin className="h-2.5 w-2.5" />
-                                                        {item.warehouseLocation}
-                                                      </span>
-                                                    )}
+                                                    <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
+                                                      <MapPin className="h-2.5 w-2.5" />
+                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                                    </span>
                                                   </div>
                                                 </div>
                                               ))}
@@ -15643,7 +15691,7 @@ export default function PickPack() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {t('sku')}: {item.sku}{item.warehouseLocation && ` • ${item.warehouseLocation}`}
+                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                           </div>
                         </div>
                         {showPricing ? (
