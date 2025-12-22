@@ -13191,8 +13191,8 @@ export default function PickPack() {
                             <h2 className="text-3xl sm:text-4xl font-black text-purple-700 dark:text-purple-400 mb-3">
                               #{activePickingOrder.orderId}
                             </h2>
-                            <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200">
-                              <span className="text-yellow-300 font-black drop-shadow-lg">{activePickingOrder.customerName}</span>
+                            <p className="text-lg sm:text-xl font-bold">
+                              <span className="text-purple-900 dark:text-purple-100 font-black">{activePickingOrder.customerName}</span>
                             </p>
                           </div>
                         ) : (
