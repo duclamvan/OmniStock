@@ -1230,6 +1230,18 @@ const orders = {
   documentWillBeIncluded: '{{count}} tài liệu sẽ được đính kèm',
   documentsWillBeIncluded: '{{count}} tài liệu sẽ được đính kèm',
 
+  // TrackingStatusBadge Component
+  noTracking: 'Không có theo dõi',
+  outForDelivery: 'Đang giao',
+  inTransit: 'Đang vận chuyển',
+  exception: 'Lỗi',
+  labelCreated: 'Đã tạo nhãn',
+  deliveryComplete: 'Đã giao thành công',
+  cartonsCount: '{{count}} thùng',
+  cartonsCount_plural: '{{count}} thùng',
+  lastUpdate: 'Cập nhật lần cuối: {{time}}',
+  never: 'Chưa bao giờ',
+
   // PickPack.tsx - Comprehensive Translation Keys
   // Default values & placeholders
   weightPlaceholder: '0.000',

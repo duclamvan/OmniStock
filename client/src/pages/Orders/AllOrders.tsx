@@ -877,9 +877,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         }
         return (
           <div className="flex flex-col gap-1">
-            <TrackingStatusBadge orderId={order.id} />
+            <TrackingStatusBadge 
+              orderId={order.id} 
+              orderStatus={order.orderStatus}
+            />
             {order.trackingNumber && (
-              <span className="font-mono text-xs text-slate-600 dark:text-slate-400">{order.trackingNumber}</span>
+              <span className="font-mono text-xs text-slate-600 dark:text-slate-400 truncate max-w-[120px]" title={order.trackingNumber}>
+                {order.trackingNumber}
+              </span>
             )}
           </div>
         );

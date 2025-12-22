@@ -1238,6 +1238,7 @@ const orders = {
   inTransit: 'In Transit',
   exception: 'Exception',
   labelCreated: 'Label Created',
+  deliveryComplete: 'Delivery complete',
   cartonsCount: '{{count}} carton',
   cartonsCount_plural: '{{count}} cartons',
   lastUpdate: 'Last update: {{time}}',
