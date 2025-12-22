@@ -11334,11 +11334,22 @@ export default function PickPack() {
                                     </>
                                   )}
                                   
-                                  {/* For multi-carton: Show checkmark if label ready */}
-                                  {isMultiCartonShipment && label?.labelBase64 && !isCancelled && (
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    </div>
+                                  {/* For multi-carton: Show checkmark if label ready OR if batch was printed */}
+                                  {isMultiCartonShipment && !isCancelled && (
+                                    // Check if any label in the batch was printed (all share same PDF)
+                                    (label?.labelBase64 || hasLabelsWithPDF) && (
+                                      // Check if this label or ANY label in batch was printed
+                                      (label?.trackingNumbers?.[0] && printedPPLLabels.has(label.trackingNumbers[0])) ||
+                                      shipmentLabelsFromDB.some(l => l.trackingNumbers?.[0] && printedPPLLabels.has(l.trackingNumbers[0]))
+                                    ) ? (
+                                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-md">
+                                        <CheckCircle className="h-5 w-5 text-white" />
+                                      </div>
+                                    ) : (label?.labelBase64 || hasLabelsWithPDF) ? (
+                                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                      </div>
+                                    ) : null
                                   )}
                                 </div>
                               );
@@ -12450,8 +12461,10 @@ export default function PickPack() {
                       return;
                     }
                     
-                    if (shipmentLabelsFromDB.length < cartons.length) {
-                      scrollToElement('checklist-shipping-labels', `Missing PPL labels: ${shipmentLabelsFromDB.length} of ${cartons.length} cartons have labels. Please generate all labels.`);
+                    // PPL generates all labels in one PDF file, so we only need to check
+                    // that at least one label exists (the batch PDF contains all carton labels)
+                    if (shipmentLabelsFromDB.length === 0) {
+                      scrollToElement('checklist-shipping-labels', 'Please generate PPL labels before completing packing.');
                       return;
                     }
                   }
