@@ -359,7 +359,7 @@ export function useOrderReceiptData(order: any, currency: string = 'EUR'): Recei
     : '';
 
   return {
-    orderId: order.customOrderId || order.id?.slice(0, 8).toUpperCase() || '',
+    orderId: order.orderId || order.customOrderId || order.id?.slice(0, 8).toUpperCase() || '',
     items,
     subtotal: subtotal || total,
     discount,
