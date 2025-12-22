@@ -1835,6 +1835,7 @@ export default function PickPack() {
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
+  const [selectedPickingLocations, setSelectedPickingLocations] = useState<Record<string, string>>({}); // itemId -> selected locationCode
   const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(() => {
     // Load expanded items state from localStorage on mount
     try {
@@ -5679,18 +5680,23 @@ export default function PickPack() {
     }
   };
 
-  // Update item picked quantity
-  const updatePickedItem = (itemId: string, pickedQty: number) => {
+  // Update item picked quantity and reduce stock from selected location
+  const updatePickedItem = (itemId: string, pickedQty: number, locationCode?: string) => {
     if (!activePickingOrder) return;
 
-    const updatedItems = activePickingOrder.items.map(item =>
-      item.id === itemId ? { ...item, pickedQuantity: pickedQty } : item
+    // Get item to find its productId
+    const item = activePickingOrder.items.find(i => i.id === itemId);
+    const previousQty = item?.pickedQuantity || 0;
+    const qtyChange = pickedQty - previousQty;
+
+    const updatedItems = activePickingOrder.items.map(i =>
+      i.id === itemId ? { ...i, pickedQuantity: pickedQty } : i
     );
 
     const updatedOrder = {
       ...activePickingOrder,
       items: updatedItems,
-      pickedItems: updatedItems.reduce((sum, item) => sum + item.pickedQuantity, 0)
+      pickedItems: updatedItems.reduce((sum, i) => sum + i.pickedQuantity, 0)
     };
 
     setActivePickingOrder(updatedOrder);
@@ -5698,20 +5704,29 @@ export default function PickPack() {
     // Auto-save progress to localStorage
     savePickedProgress(activePickingOrder.id, updatedItems);
 
+    // Get selected location (use default or passed locationCode)
+    const selectedLocation = locationCode || selectedPickingLocations[itemId] || item?.warehouseLocation;
+
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
       const isOnline = offlineQueue.getOnlineStatus();
       
       if (isOnline) {
-        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}`, {
-          pickedQuantity: pickedQty
+        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}/pick`, {
+          pickedQuantity: pickedQty,
+          locationCode: selectedLocation,
+          qtyChange: qtyChange, // How much to reduce from location (positive = reduce, negative = restore)
+          productId: item?.productId
         }).catch(error => {
           console.error('Error saving picked quantity:', error);
           // Queue for offline sync if request fails
           offlineQueue.queueMutation('pick', itemId, 'update', {
             orderId: activePickingOrder.id,
             itemId: itemId,
-            pickedQuantity: pickedQty
+            pickedQuantity: pickedQty,
+            locationCode: selectedLocation,
+            qtyChange: qtyChange,
+            productId: item?.productId
           });
         });
       } else {
@@ -5719,14 +5734,17 @@ export default function PickPack() {
         offlineQueue.queueMutation('pick', itemId, 'update', {
           orderId: activePickingOrder.id,
           itemId: itemId,
-          pickedQuantity: pickedQty
+          pickedQuantity: pickedQty,
+          locationCode: selectedLocation,
+          qtyChange: qtyChange,
+          productId: item?.productId
         });
         playSound('success'); // Provide feedback that action was queued
       }
     }
 
     // Check if all items are picked
-    const allPicked = updatedItems.every(item => item.pickedQuantity >= item.quantity);
+    const allPicked = updatedItems.every(i => i.pickedQuantity >= i.quantity);
     if (allPicked) {
       setIsTimerRunning(false); // Stop the timer when all items are picked
       playSound('success');
