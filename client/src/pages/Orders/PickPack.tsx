@@ -1782,26 +1782,28 @@ function PickingLocationSelector({
                 </div>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white border-2 border-orange-300">
+            <SelectContent className="bg-white border-4 border-orange-400 rounded-xl shadow-xl min-w-[320px]">
               {sortedLocations.map((location) => (
                 <SelectItem 
                   key={location.id} 
                   value={location.locationCode}
-                  className="text-lg font-mono py-3 cursor-pointer hover:bg-orange-50"
+                  className="py-4 px-4 cursor-pointer hover:bg-orange-50 focus:bg-orange-100 border-b border-orange-200 last:border-b-0"
                 >
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <span className="font-bold text-gray-900">{location.locationCode}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`text-sm ${
+                  <div className="flex flex-col items-center w-full gap-2">
+                    <span className="text-2xl sm:text-3xl font-black font-mono text-orange-700 tracking-wider">
+                      {location.locationCode}
+                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <Badge className={`text-sm px-3 py-1 ${
                         (location.quantity || 0) > 0 
-                          ? 'bg-green-100 text-green-700 border-green-300' 
-                          : 'bg-red-100 text-red-700 border-red-300'
+                          ? 'bg-green-500 text-white border-green-600' 
+                          : 'bg-red-500 text-white border-red-600'
                       }`}>
                         {location.quantity || 0} {t('inStock') || 'in stock'}
                       </Badge>
                       {location.isPrimary && (
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
-                          {t('primary') || 'Primary'}
+                        <Badge className="bg-blue-500 text-white border-blue-600 text-sm px-2 py-1">
+                          ★ {t('primary') || 'Primary'}
                         </Badge>
                       )}
                     </div>
