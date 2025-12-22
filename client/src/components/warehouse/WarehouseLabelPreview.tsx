@@ -79,7 +79,7 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
 
       <div className="flex-shrink-0 w-[24mm] flex flex-col justify-center border-l border-gray-200">
         {priceEur !== null && (
-          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+          <div className="flex items-center justify-center py-[1.5mm]">
             <span className="font-bold text-[13pt] text-black" style={{ lineHeight: 1.1 }}>
               €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -89,14 +89,14 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
           <div className="border-t border-gray-300 mx-[1mm]"></div>
         )}
         {priceCzk !== null && (
-          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+          <div className="flex items-center justify-center py-[1.5mm]">
             <span className="font-bold text-[12pt] text-black" style={{ lineHeight: 1.1 }}>
               {priceCzk.toLocaleString("cs-CZ")} Kč
             </span>
           </div>
         )}
         {priceEur === null && priceCzk === null && (
-          <div className="flex items-center justify-end pr-[2mm] py-[1mm]">
+          <div className="flex items-center justify-center py-[1.5mm]">
             <span className="text-[9pt] text-gray-400">N/A</span>
           </div>
         )}
@@ -222,8 +222,8 @@ export default function WarehouseLabelPreview({
           .price-row {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            padding: 1mm 2mm;
+            justify-content: center;
+            padding: 1.5mm 1mm;
           }
           .price-divider {
             border-top: 0.5pt solid #d1d5db;

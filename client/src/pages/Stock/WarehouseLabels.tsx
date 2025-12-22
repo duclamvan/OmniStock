@@ -253,8 +253,8 @@ export default function WarehouseLabels() {
           .price-row {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            padding: 1mm 2mm;
+            justify-content: center;
+            padding: 1.5mm 1mm;
           }
           .price-divider {
             border-top: 0.5pt solid #d1d5db;
