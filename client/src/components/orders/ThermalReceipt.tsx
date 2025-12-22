@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Printer, Download, Loader2 } from 'lucide-react';
+import { Printer, Download, Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -44,9 +44,10 @@ interface ThermalReceiptProps {
   onClose: () => void;
   onPrint?: () => void;
   companyInfo: CompanyInfo;
+  fullOrderId?: string; // Full order ID for packing list print
 }
 
-export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalReceiptProps) {
+export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderId }: ThermalReceiptProps) {
   const { t } = useTranslation(['common', 'financial']);
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -286,7 +287,26 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalR
       </div>
       
       <div className="no-print flex flex-wrap gap-3 justify-center mt-6">
-        <Button size="lg" onClick={handlePrint} disabled={isPrinting || isLoadingPdf} className="px-6" data-testid="button-print-receipt">
+        {/* Print Packing List - uses same format as Pick & Pack mode */}
+        {fullOrderId && (
+          <Button 
+            size="lg" 
+            onClick={() => {
+              const printWindow = window.open(`/api/orders/${fullOrderId}/packing-list.pdf`, '_blank');
+              if (printWindow) {
+                printWindow.onload = () => {
+                  printWindow.print();
+                };
+              }
+            }}
+            className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+            data-testid="button-print-packing-list"
+          >
+            <FileText className="h-5 w-5 mr-2" />
+            {t('orders:packingList', 'Packing List')}
+          </Button>
+        )}
+        <Button size="lg" variant="secondary" onClick={handlePrint} disabled={isPrinting || isLoadingPdf} className="px-6" data-testid="button-print-receipt">
           {isPrinting ? (
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
           ) : (
@@ -296,7 +316,7 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalR
         </Button>
         <Button 
           size="lg" 
-          variant="secondary" 
+          variant="outline" 
           onClick={handleDownloadPDF} 
           disabled={isDownloading || isLoadingPdf}
           className="px-6"
@@ -309,7 +329,7 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo }: ThermalR
           )}
           {t('financial:downloadPDF')}
         </Button>
-        <Button size="lg" variant="outline" onClick={onClose} data-testid="button-close-receipt">
+        <Button size="lg" variant="ghost" onClick={onClose} data-testid="button-close-receipt">
           {t('common:close')}
         </Button>
       </div>

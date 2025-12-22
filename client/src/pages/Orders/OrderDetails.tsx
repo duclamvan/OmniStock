@@ -108,7 +108,7 @@ import { Receipt } from "lucide-react";
 function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
   const receiptData = useOrderReceiptData(order, order?.currency || 'EUR');
   if (!receiptData) return null;
-  return <ThermalReceipt data={receiptData} onClose={onClose} companyInfo={companyInfo} />;
+  return <ThermalReceipt data={receiptData} onClose={onClose} companyInfo={companyInfo} fullOrderId={order?.id} />;
 }
 
 export default function OrderDetails() {
