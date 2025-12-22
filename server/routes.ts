@@ -7996,6 +7996,8 @@ Important:
 
               return {
                 id: bundleItem.id,
+                productId: bundleItem.productId || null,
+                variantId: bundleItem.variantId || null,
                 name: productName || bundleItem.notes || 'Bundle Item',
                 quantity: bundleItem.quantity,
                 picked: false,

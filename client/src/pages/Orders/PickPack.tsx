@@ -138,6 +138,8 @@ import {
 
 interface BundleItem {
   id: string;
+  productId?: string | null;
+  variantId?: string | null;
   name: string;
   colorNumber?: string;
   quantity: number;
@@ -1821,6 +1823,150 @@ function PickingLocationSelector({
         <div className="text-center py-2">
           <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">
             {t('noLocationsConfigured') || 'No locations configured for this product'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component: Location selector for bundle component picking
+// Similar to PickingLocationSelector but for individual bundle components
+function BundleComponentLocationSelector({ 
+  bundleItem, 
+  componentId,
+  selectedPickingLocations, 
+  setSelectedPickingLocations,
+  t 
+}: { 
+  bundleItem: BundleItem;
+  componentId: string;
+  selectedPickingLocations: Record<string, string>;
+  setSelectedPickingLocations: (locations: Record<string, string>) => void;
+  t: (key: string, fallback?: string) => string;
+}) {
+  // Fetch product locations for this bundle component
+  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', bundleItem.productId, 'locations'],
+    enabled: !!bundleItem.productId,
+    staleTime: 30000,
+  });
+  
+  // Sort locations: primary first, then by code
+  const sortedLocations = [...productLocations].sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1;
+    if (!a.isPrimary && b.isPrimary) return 1;
+    return a.locationCode.localeCompare(b.locationCode);
+  });
+
+  // Find primary location
+  const primaryLocation = sortedLocations.find(loc => loc.isPrimary);
+  
+  // Auto-select primary location when locations load (if not already selected)
+  useEffect(() => {
+    if (sortedLocations.length > 0 && !selectedPickingLocations[componentId]) {
+      const defaultLocation = primaryLocation?.locationCode 
+        || sortedLocations.find(loc => (loc.quantity || 0) > 0)?.locationCode
+        || sortedLocations[0]?.locationCode;
+      
+      if (defaultLocation) {
+        setSelectedPickingLocations({
+          ...selectedPickingLocations,
+          [componentId]: defaultLocation
+        });
+      }
+    }
+  }, [sortedLocations.length, componentId, primaryLocation?.locationCode]);
+
+  // Get selected location
+  const selectedLocation = selectedPickingLocations[componentId] 
+    || primaryLocation?.locationCode 
+    || sortedLocations[0]?.locationCode 
+    || '';
+
+  // Find the selected location to show its stock
+  const selectedLocationData = sortedLocations.find(loc => 
+    loc.locationCode.toUpperCase() === selectedLocation.toUpperCase()
+  );
+
+  const handleLocationChange = (locationCode: string) => {
+    setSelectedPickingLocations({
+      ...selectedPickingLocations,
+      [componentId]: locationCode
+    });
+  };
+
+  // If no product ID, don't show location selector
+  if (!bundleItem.productId) {
+    return null;
+  }
+
+  return (
+    <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 mt-2">
+      <p className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase mb-2 tracking-wider">
+        📍 {t('pickFromLocation', 'Pick From Location')}
+      </p>
+      
+      {isLoading ? (
+        <div className="h-10 bg-white/50 rounded animate-pulse" />
+      ) : sortedLocations.length > 0 ? (
+        <div className="space-y-2">
+          <Select value={selectedLocation} onValueChange={handleLocationChange}>
+            <SelectTrigger className="w-full h-12 bg-white dark:bg-gray-800 border-2 border-amber-300 dark:border-amber-600 text-base font-bold font-mono text-center">
+              <SelectValue placeholder={t('selectLocation', 'Select location')}>
+                <span className="text-amber-700 dark:text-amber-300 text-lg font-black">{selectedLocation}</span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-gray-800 border-2 border-amber-300">
+              {sortedLocations.map((location) => (
+                <SelectItem 
+                  key={location.id} 
+                  value={location.locationCode}
+                  className="text-base font-mono py-2 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                >
+                  <div className="flex items-center justify-between w-full gap-3">
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{location.locationCode}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`text-xs ${
+                        (location.quantity || 0) >= bundleItem.quantity 
+                          ? 'bg-green-100 text-green-700 border-green-300' 
+                          : (location.quantity || 0) > 0
+                            ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                            : 'bg-red-100 text-red-700 border-red-300'
+                      }`}>
+                        {location.quantity || 0}
+                      </Badge>
+                      {location.isPrimary && (
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
+                          ★
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Show current stock at selected location */}
+          {selectedLocationData && (
+            <div className="flex justify-center">
+              <Badge className={`text-xs px-2 py-0.5 ${
+                (selectedLocationData.quantity || 0) >= bundleItem.quantity 
+                  ? 'bg-green-600 text-white' 
+                  : (selectedLocationData.quantity || 0) > 0
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-red-600 text-white'
+              }`}>
+                {selectedLocationData.quantity || 0} {t('inStock', 'in stock')}
+              </Badge>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-1">
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {t('noLocations', 'No locations configured')}
           </p>
         </div>
       )}
@@ -7783,9 +7929,12 @@ export default function PickPack() {
                               </div>
                             </div>
                             
-                            {/* Bundle Components - Compact Expandable Section */}
+                            {/* Bundle Components - Expanded with Individual Location Selectors */}
                             {isBundle && isExpanded && (
-                              <div className="mt-2 ml-2 space-y-1">
+                              <div className="mt-3 ml-2 space-y-3 border-l-4 border-amber-400 pl-3">
+                                <div className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider mb-2">
+                                  {t('bundleComponents', 'Bundle Components')} ({item.bundleItems?.length || 0})
+                                </div>
                                 {item.bundleItems?.map((bundleItem: any, idx: number) => {
                                   const componentId = `${item.id}-${bundleItem.id}`;
                                   const isComponentVerified = (verifiedItems[componentId] || 0) >= bundleItem.quantity;
@@ -7793,57 +7942,102 @@ export default function PickPack() {
                                   return (
                                     <div 
                                       key={bundleItem.id}
-                                      className={`flex items-center gap-2 p-2 rounded border ${
+                                      className={`p-3 rounded-lg border-2 transition-all ${
                                         isComponentVerified 
-                                          ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700' 
-                                          : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
+                                          ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
+                                          : 'bg-white dark:bg-gray-800 border-amber-300 dark:border-amber-700'
                                       }`}
                                     >
-                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                        isComponentVerified ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-amber-500 dark:bg-amber-600 text-white'
-                                      }`}>
-                                        {isComponentVerified ? '✓' : idx + 1}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                          <span className="font-semibold text-gray-700 text-sm truncate">{bundleItem.name}</span>
-                                          {bundleItem.colorNumber && (
-                                            <span className="text-gray-500 text-xs shrink-0">#{bundleItem.colorNumber}</span>
-                                          )}
+                                      {/* Component Header */}
+                                      <div className="flex items-start gap-3 mb-2">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                                          isComponentVerified ? 'bg-green-600 dark:bg-green-700 text-white' : 'bg-amber-500 dark:bg-amber-600 text-white'
+                                        }`}>
+                                          {isComponentVerified ? <Check className="h-4 w-4" /> : idx + 1}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                          <span className={`shrink-0 ${isComponentVerified ? 'font-bold text-green-600 dark:text-green-400 dark:text-green-300' : ''}`}>
-                                            {verifiedItems[componentId] || 0}/{bundleItem.quantity}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{bundleItem.name}</span>
+                                            {bundleItem.colorNumber && (
+                                              <Badge className="text-xs bg-gray-100 text-gray-600 border-gray-300">
+                                                #{bundleItem.colorNumber}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                            <span className={`font-bold ${isComponentVerified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                              {verifiedItems[componentId] || 0} / {bundleItem.quantity} {t('picked', 'picked')}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant={isComponentVerified ? "default" : "outline"}
+                                          size="sm"
+                                          className={`h-10 px-4 text-sm font-bold shrink-0 ${
+                                            isComponentVerified 
+                                              ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
+                                              : 'border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+                                          }`}
+                                          onClick={() => {
+                                            setVerifiedItems(prev => {
+                                              const currentCount = prev[componentId] || 0;
+                                              const newRecord = { ...prev };
+                                              if (currentCount >= bundleItem.quantity) {
+                                                newRecord[componentId] = 0;
+                                              } else {
+                                                // For quantity > 4, complete all at once
+                                                const newCount = bundleItem.quantity > 4 
+                                                  ? bundleItem.quantity 
+                                                  : currentCount + 1;
+                                                newRecord[componentId] = newCount;
+                                                playSound('scan');
+                                              }
+                                              return newRecord;
+                                            });
+                                          }}
+                                        >
+                                          {isComponentVerified ? (
+                                            <><Check className="h-4 w-4 mr-1" /> {t('done', 'Done')}</>
+                                          ) : (
+                                            <><ScanLine className="h-4 w-4 mr-1" /> {t('pick', 'Pick')}</>
+                                          )}
+                                        </Button>
+                                      </div>
+                                      
+                                      {/* Location Selector for this bundle component */}
+                                      {bundleItem.productId && !isComponentVerified && (
+                                        <BundleComponentLocationSelector
+                                          bundleItem={bundleItem}
+                                          componentId={componentId}
+                                          selectedPickingLocations={selectedPickingLocations}
+                                          setSelectedPickingLocations={setSelectedPickingLocations}
+                                          t={t}
+                                        />
+                                      )}
+                                      
+                                      {/* Show selected location when verified */}
+                                      {isComponentVerified && selectedPickingLocations[componentId] && (
+                                        <div className="mt-2 p-2 bg-green-100 dark:bg-green-900/50 rounded text-center">
+                                          <span className="text-xs text-green-700 dark:text-green-300 font-medium">
+                                            {t('pickedFrom', 'Picked from')}: 
                                           </span>
-                                          {bundleItem.location && (
-                                            <span className="text-gray-400 truncate">📍 {bundleItem.location}</span>
-                                          )}
+                                          <span className="text-sm font-bold text-green-800 dark:text-green-200 ml-1">
+                                            📍 {selectedPickingLocations[componentId]}
+                                          </span>
                                         </div>
-                                      </div>
-                                      <Button
-                                        variant={isComponentVerified ? "default" : "outline"}
-                                        size="sm"
-                                        className={`h-7 px-2 text-xs shrink-0 ${
-                                          isComponentVerified 
-                                            ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                        onClick={() => {
-                                          setVerifiedItems(prev => {
-                                            const currentCount = prev[componentId] || 0;
-                                            const newRecord = { ...prev };
-                                            if (currentCount >= bundleItem.quantity) {
-                                              newRecord[componentId] = 0;
-                                            } else {
-                                              newRecord[componentId] = currentCount + 1;
-                                              playSound('scan');
-                                            }
-                                            return newRecord;
-                                          });
-                                        }}
-                                      >
-                                        {isComponentVerified ? '✓' : 'Check'}
-                                      </Button>
+                                      )}
+                                      
+                                      {/* Progress bar for component */}
+                                      {!isComponentVerified && bundleItem.quantity > 1 && (
+                                        <div className="mt-2">
+                                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div 
+                                              className="h-full bg-amber-500 transition-all duration-300"
+                                              style={{ width: `${((verifiedItems[componentId] || 0) / bundleItem.quantity) * 100}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
