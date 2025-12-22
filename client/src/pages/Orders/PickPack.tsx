@@ -13507,49 +13507,68 @@ export default function PickPack() {
                   )}
                 </div>
               ) : allItemsPicked ? (
-              /* All items picked - Show completion prompt with Complete button */
-              <div className="h-full flex flex-col bg-gradient-to-br from-green-50 dark:from-green-900/20 to-emerald-50 dark:to-emerald-900/20">
-                <div className="flex-1 p-4 flex items-center justify-center">
-                  <div className="text-center max-w-md">
-                    <div className="bg-gradient-to-br from-green-400 dark:from-green-500 to-emerald-400 dark:to-emerald-500 rounded-full w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 flex items-center justify-center shadow-xl">
-                      <CheckCircle className="h-14 w-14 sm:h-20 sm:w-20 text-white" />
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-black mb-3 text-gray-800 dark:text-gray-100">
-                      🎉 All Items Picked!
-                    </h2>
-                    <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6">
-                      You've picked all {activePickingOrder.totalItems} items for order {activePickingOrder.orderId}
-                    </p>
-                    
-                    {/* Stats Summary */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-md border border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-                        <div className="p-2 sm:p-0">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
-                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
+              /* All items picked - Show completion popup overlay above the items list */
+              <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 relative">
+                {/* Floating Completion Popup - Overlay at top */}
+                <div className="sticky top-0 z-20 p-3 sm:p-4">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 dark:from-green-600 dark:to-emerald-600 rounded-xl shadow-2xl p-4 sm:p-5 border-2 border-green-400 dark:border-green-500">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      {/* Success Icon & Message */}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="bg-white/20 rounded-full p-2 sm:p-3 flex-shrink-0">
+                          <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                         </div>
-                        <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
-                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{activePickingOrder.totalItems}</p>
-                        </div>
-                        <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('score')}</p>
-                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">100%</p>
+                        <div className="text-white text-center sm:text-left">
+                          <h2 className="text-lg sm:text-xl font-black">🎉 {t('allItemsPicked') || 'All Items Picked!'}</h2>
+                          <p className="text-sm text-green-100 hidden sm:block">
+                            {activePickingOrder.totalItems} items • {formatTimer(pickingTimer)}
+                          </p>
                         </div>
                       </div>
+                      
+                      {/* Complete Button */}
+                      <Button 
+                        size="lg" 
+                        onClick={() => setShowPickingCompletionModal(true)}
+                        className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-bold bg-white hover:bg-green-50 text-green-700 shadow-lg transform hover:scale-[1.02] transition-all"
+                        data-testid="button-complete-picking"
+                      >
+                        <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                        {t('complete') || 'Complete'}
+                      </Button>
                     </div>
                     
-                    {/* Complete Button - Opens the completion modal for double-checking */}
-                    <Button 
-                      size="lg" 
-                      onClick={() => setShowPickingCompletionModal(true)}
-                      className="w-full h-14 sm:h-16 text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white shadow-xl transform hover:scale-[1.02] transition-all animate-pulse"
-                      data-testid="button-complete-picking"
-                    >
-                      <CheckCircle className="h-6 w-6 sm:h-7 sm:w-7 mr-3" />
-                      {t('complete') || 'Complete'}
-                    </Button>
+                    {/* Mini Stats Row */}
+                    <div className="flex justify-center gap-4 mt-3 pt-3 border-t border-white/20 text-white/90 text-xs sm:text-sm">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                        {formatTimer(pickingTimer)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+                        {activePickingOrder.totalItems} {t('items') || 'items'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                        100%
+                      </span>
+                    </div>
                   </div>
+                </div>
+                
+                {/* Items List Below - Still accessible for modifications */}
+                <div className="flex-1 p-4 overflow-auto">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3 font-medium">
+                    {t('tapItemsToModify') || 'Tap items below to modify if needed'}
+                  </p>
+                  <PickingListView 
+                    order={activePickingOrder}
+                    currentItem={currentItem}
+                    onUpdatePickedItem={updatePickedItem}
+                    onItemClick={setManualItemIndex}
+                    recentlyScannedItemId={recentlyScannedItemId}
+                    onToggleFullPick={toggleFullPick}
+                  />
                 </div>
               </div>
             ) : (
