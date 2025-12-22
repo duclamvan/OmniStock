@@ -201,15 +201,15 @@ export default function WarehouseLabels() {
           }
           .qr-section {
             flex-shrink: 0;
-            width: 26mm;
+            width: 20mm;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1mm;
           }
           .qr-section svg {
-            width: 24mm;
-            height: 24mm;
+            width: 18mm;
+            height: 18mm;
           }
           .name-section {
             flex: 1;
@@ -254,15 +254,16 @@ export default function WarehouseLabels() {
           }
           .price-eur {
             font-weight: bold;
-            font-size: 13pt;
-            line-height: 1.2;
-            color: #15803d;
+            font-size: 12pt;
+            line-height: 1.1;
+            color: black;
           }
           .price-czk {
-            font-size: 10pt;
-            line-height: 1.2;
-            color: #1d4ed8;
-            margin-top: 0.5mm;
+            font-weight: bold;
+            font-size: 11pt;
+            line-height: 1.1;
+            color: black;
+            margin-top: 1mm;
           }
           .price-na {
             font-size: 9pt;

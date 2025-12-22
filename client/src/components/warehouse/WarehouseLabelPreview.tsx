@@ -44,10 +44,10 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
       className="w-[100mm] h-[30mm] flex flex-row items-stretch bg-white text-black overflow-hidden border border-gray-300 print:border-0 box-border"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
-      <div className="flex-shrink-0 w-[26mm] h-[28mm] flex items-center justify-center p-[1mm] self-center">
+      <div className="flex-shrink-0 w-[20mm] h-[28mm] flex items-center justify-center p-[1mm] self-center">
         <QRCodeSVG
           value={stockUrl}
-          size={95}
+          size={68}
           level="M"
           includeMargin={false}
           className="w-full h-full"
@@ -79,14 +79,18 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
 
       <div className="flex-shrink-0 w-[22mm] px-[2mm] py-[1mm] flex flex-col justify-center items-end text-right border-l border-gray-200">
         {priceEur !== null && (
-          <span className="font-bold text-[13pt] leading-tight text-green-700" style={{ lineHeight: 1.2 }}>
-            €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-bold text-[12pt] text-black" style={{ lineHeight: 1.1 }}>
+              €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
         )}
         {priceCzk !== null && (
-          <span className="text-[10pt] leading-tight text-blue-700 mt-[0.5mm]" style={{ lineHeight: 1.2 }}>
-            {priceCzk.toLocaleString("cs-CZ")} Kč
-          </span>
+          <div className="flex flex-col items-end mt-[1mm]">
+            <span className="font-bold text-[11pt] text-black" style={{ lineHeight: 1.1 }}>
+              {priceCzk.toLocaleString("cs-CZ")} Kč
+            </span>
+          </div>
         )}
         {priceEur === null && priceCzk === null && (
           <span className="text-[9pt] text-gray-400">N/A</span>
@@ -161,15 +165,15 @@ export default function WarehouseLabelPreview({
           }
           .qr-section {
             flex-shrink: 0;
-            width: 26mm;
+            width: 20mm;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1mm;
           }
           .qr-section svg {
-            width: 24mm;
-            height: 24mm;
+            width: 18mm;
+            height: 18mm;
           }
           .name-section {
             flex: 1;
@@ -215,15 +219,16 @@ export default function WarehouseLabelPreview({
           }
           .price-eur {
             font-weight: bold;
-            font-size: 13pt;
-            line-height: 1.2;
-            color: #15803d;
+            font-size: 12pt;
+            line-height: 1.1;
+            color: black;
           }
           .price-czk {
-            font-size: 10pt;
-            line-height: 1.2;
-            color: #1d4ed8;
-            margin-top: 0.5mm;
+            font-weight: bold;
+            font-size: 11pt;
+            line-height: 1.1;
+            color: black;
+            margin-top: 1mm;
           }
         </style>
       </head>
