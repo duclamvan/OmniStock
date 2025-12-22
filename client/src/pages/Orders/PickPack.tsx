@@ -2102,6 +2102,7 @@ export default function PickPack() {
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const [showResetOrderDialog, setShowResetOrderDialog] = useState(false);
   const [showForceFinishButton, setShowForceFinishButton] = useState(false);
+  const [isCompletingPacking, setIsCompletingPacking] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const overviewBarcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -6364,6 +6365,9 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
     
+    // Show loading state immediately for better UX
+    setIsCompletingPacking(true);
+    
     // CRITICAL: Save any unsaved GLS/DHL tracking numbers before completion
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
     const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
@@ -6402,6 +6406,7 @@ export default function PickPack() {
           description: t('failedToSaveTracking'),
           variant: "destructive"
         });
+        setIsCompletingPacking(false);
         return; // Abort completion
       }
     }
@@ -6490,6 +6495,7 @@ export default function PickPack() {
         duration: 5000,
       });
       playSound('error');
+      setIsCompletingPacking(false);
       return;
     }
 
@@ -6554,8 +6560,10 @@ export default function PickPack() {
       
       // Show completion modal instead of immediately switching tabs
       setShowPackingCompletionModal(true);
+      setIsCompletingPacking(false);
     } catch (error) {
       console.error('Error completing packing:', error);
+      setIsCompletingPacking(false);
       // Suppress error notifications in picking/packing mode
     }
   };
@@ -12385,14 +12393,22 @@ export default function PickPack() {
                   setShowForceFinishButton(true);
                 }
               }}
+              disabled={isCompletingPacking}
               className={`w-full h-14 text-base font-bold shadow-lg transition-all ${
-                canCompletePacking
+                isCompletingPacking
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white cursor-wait'
+                  : canCompletePacking
                   ? 'bg-gradient-to-r from-green-600 dark:from-green-500 to-emerald-600 dark:to-emerald-500 hover:from-green-700 dark:hover:from-green-600 hover:to-emerald-700 dark:hover:to-emerald-600 text-white'
                   : 'bg-yellow-50 dark:bg-yellow-900/300 hover:bg-yellow-600 text-white'
               }`}
               data-testid="button-complete-packing"
             >
-              {canCompletePacking ? (
+              {isCompletingPacking ? (
+                <>
+                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                  {t('completingPacking') || 'Completing...'}
+                </>
+              ) : canCompletePacking ? (
                 <>
                   <CheckCircle className="h-5 w-5 mr-2" />
                   {t('completePackingReadyForShipping')}
