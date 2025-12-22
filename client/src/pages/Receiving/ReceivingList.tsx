@@ -3973,11 +3973,14 @@ function ShipmentReportDialog({
                   {showLabelsSection && (
                     <div className="p-3 space-y-3">
                       {/* Actions - Inline */}
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 relative z-50">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={selectAllForLabels}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectAllForLabels();
+                          }}
                           className="h-8 text-xs"
                         >
                           <CheckSquare className="h-3.5 w-3.5 mr-1" />
@@ -3989,9 +3992,12 @@ function ShipmentReportDialog({
                           </span>
                           <Button 
                             size="sm"
-                            onClick={printLabels}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              printLabels();
+                            }}
                             disabled={selectedItemsForLabels.size === 0}
-                            className="h-8"
+                            className="h-8 relative z-50"
                           >
                             <Printer className="h-3.5 w-3.5 mr-1" />
                             {t('printLabels')}
