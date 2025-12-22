@@ -15881,29 +15881,84 @@ Important:
         return res.status(400).json({ message: 'No items provided for optimization' });
       }
 
-      // Enrich items with product information
-      const enrichedItems = await Promise.all(
-        items.map(async (item: any) => {
+      // Enrich items with product information and expand bundles/bulk units
+      const expandedItems: any[] = [];
+      
+      for (const item of items) {
+        // Check if this is a bundle
+        const bundle = await storage.getBundleById(item.productId);
+        
+        if (bundle) {
+          // It's a bundle - expand into individual items
+          const bundleItems = await storage.getBundleItems(item.productId);
+          console.log(`Expanding bundle "${bundle.name}" with ${bundleItems.length} items for packing calculation`);
+          
+          for (const bundleItem of bundleItems) {
+            if (bundleItem.productId) {
+              const product = await storage.getProductById(bundleItem.productId);
+              if (product) {
+                expandedItems.push({
+                  productId: bundleItem.productId,
+                  productName: bundleItem.productName || product.name,
+                  sku: product.sku,
+                  quantity: (bundleItem.quantity || 1) * item.quantity, // Multiply by order quantity
+                  price: 0, // Bundle items have combined price
+                  product,
+                  fromBundle: bundle.name,
+                  appliedDiscountLabel: item.appliedDiscountLabel,
+                  discountPercentage: item.discountPercentage,
+                });
+              }
+            }
+          }
+        } else {
+          // Regular product - check if it has bulk unit info
           const product = await storage.getProductById(item.productId);
-          return {
-            productId: item.productId,
-            productName: item.productName,
-            sku: item.sku,
-            quantity: item.quantity,
-            price: item.price,
-            product,
-            // Discount information for AI optimization
-            discount: item.discount,
-            discountPercentage: item.discountPercentage,
-            appliedDiscountId: item.appliedDiscountId,
-            appliedDiscountLabel: item.appliedDiscountLabel,
-            appliedDiscountType: item.appliedDiscountType,
-            freeItemsCount: item.freeItemsCount,
-            buyXGetYBuyQty: item.buyXGetYBuyQty,
-            buyXGetYGetQty: item.buyXGetYGetQty
-          };
-        })
-      );
+          
+          if (item.bulkUnitQty && item.bulkUnitQty > 1) {
+            // Bulk unit item - calculate as multiple individual items
+            console.log(`Bulk unit item "${item.productName}" with ${item.bulkUnitQty} units per pack`);
+            expandedItems.push({
+              productId: item.productId,
+              productName: item.productName,
+              sku: item.sku,
+              quantity: item.quantity * item.bulkUnitQty, // Total individual units
+              price: item.price,
+              product,
+              isBulkExpanded: true,
+              bulkUnitQty: item.bulkUnitQty,
+              discount: item.discount,
+              discountPercentage: item.discountPercentage,
+              appliedDiscountId: item.appliedDiscountId,
+              appliedDiscountLabel: item.appliedDiscountLabel,
+              appliedDiscountType: item.appliedDiscountType,
+              freeItemsCount: item.freeItemsCount,
+              buyXGetYBuyQty: item.buyXGetYBuyQty,
+              buyXGetYGetQty: item.buyXGetYGetQty
+            });
+          } else {
+            // Regular item
+            expandedItems.push({
+              productId: item.productId,
+              productName: item.productName,
+              sku: item.sku,
+              quantity: item.quantity,
+              price: item.price,
+              product,
+              discount: item.discount,
+              discountPercentage: item.discountPercentage,
+              appliedDiscountId: item.appliedDiscountId,
+              appliedDiscountLabel: item.appliedDiscountLabel,
+              appliedDiscountType: item.appliedDiscountType,
+              freeItemsCount: item.freeItemsCount,
+              buyXGetYBuyQty: item.buyXGetYBuyQty,
+              buyXGetYGetQty: item.buyXGetYGetQty
+            });
+          }
+        }
+      }
+      
+      const enrichedItems = expandedItems;
 
       // Fetch all packing cartons - first try dedicated table, then fall back to packing materials
       let cartons = await storage.getPackingCartons();
