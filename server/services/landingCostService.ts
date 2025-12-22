@@ -1408,6 +1408,270 @@ export class LandingCostService {
       return { isValid: false, errors, warnings };
     }
   }
+
+  /**
+   * Apply landing costs to products when shipment is delivered
+   * Uses weighted average calculation to update import costs in EUR only
+   * Other currencies are calculated from EUR using consistent exchange rates
+   * 
+   * IMPORTANT: Only averages in EUR to preserve historical accuracy.
+   * Stores exchange rates used for auditing.
+   */
+  async applyLandingCostsToProducts(shipmentId: string): Promise<{
+    success: boolean;
+    productsUpdated: number;
+    errors: string[];
+    warnings: string[];
+    details: Array<{
+      productId: string;
+      sku: string;
+      quantityAdded: number;
+      oldImportCostEur: number;
+      newImportCostEur: number;
+    }>;
+    exchangeRatesUsed?: Record<string, number>;
+  }> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const details: Array<{
+      productId: string;
+      sku: string;
+      quantityAdded: number;
+      oldImportCostEur: number;
+      newImportCostEur: number;
+    }> = [];
+    let productsUpdated = 0;
+
+    try {
+      console.log(`🚀 Applying landing costs to products for shipment ${shipmentId}`);
+
+      // 1. Get the shipment and check if already processed
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+
+      if (!shipment) {
+        errors.push(`Shipment ${shipmentId} not found`);
+        return { success: false, productsUpdated: 0, errors, warnings, details };
+      }
+
+      // 2. Fetch exchange rates ONCE at the start and cache them
+      let exchangeRates: Record<string, number> = {};
+      let exchangeRatesFetched = false;
+      
+      try {
+        const ratesRes = await fetch('https://api.frankfurter.app/latest?from=EUR');
+        if (!ratesRes.ok) {
+          throw new Error(`Exchange rate API returned ${ratesRes.status}`);
+        }
+        const rates = await ratesRes.json();
+        if (rates.rates) {
+          // Normalize all keys to uppercase
+          for (const [key, value] of Object.entries(rates.rates)) {
+            exchangeRates[key.toUpperCase()] = value as number;
+          }
+          exchangeRatesFetched = true;
+        }
+      } catch (e) {
+        console.error('Failed to fetch exchange rates from API:', e);
+        errors.push('Exchange rate API unavailable - cannot apply landing costs safely');
+        return { success: false, productsUpdated: 0, errors, warnings, details };
+      }
+
+      // Add fallback rates for currencies not in Frankfurter (VND, CNY)
+      // These are approximate but clearly logged
+      if (!exchangeRates.VND) {
+        exchangeRates.VND = 27000; // EUR to VND
+        warnings.push('Using fallback rate for VND (27000)');
+      }
+      if (!exchangeRates.CNY) {
+        exchangeRates.CNY = 7.9; // EUR to CNY
+        warnings.push('Using fallback rate for CNY (7.9)');
+      }
+
+      console.log(`💱 Exchange rates fetched:`, exchangeRates);
+
+      // 3. Get shipment costs and convert to EUR
+      const shipmentCostRecords = await db
+        .select()
+        .from(shipmentCosts)
+        .where(eq(shipmentCosts.shipmentId, shipmentId));
+
+      let totalShippingCostEur = new Decimal(0);
+      for (const cost of shipmentCostRecords) {
+        const amount = new Decimal(cost.amount?.toString() || '0');
+        const currencyUpper = (cost.currency || 'EUR').toUpperCase();
+        
+        if (currencyUpper === 'EUR') {
+          totalShippingCostEur = totalShippingCostEur.add(amount);
+        } else if (exchangeRates[currencyUpper]) {
+          // Convert to EUR: foreign amount / EUR rate = EUR amount
+          const amountInEur = amount.div(exchangeRates[currencyUpper]);
+          totalShippingCostEur = totalShippingCostEur.add(amountInEur);
+          console.log(`   Converted ${amount} ${currencyUpper} → ${amountInEur.toFixed(2)} EUR`);
+        } else {
+          // Cannot convert - treat as hard error to prevent incomplete freight allocation
+          errors.push(`Cannot convert ${cost.currency} to EUR - unsupported currency. Add exchange rate mapping or correct the currency.`);
+          return { success: false, productsUpdated: 0, errors, warnings, details };
+        }
+      }
+
+      console.log(`💰 Total shipping cost: ${totalShippingCostEur.toFixed(2)} EUR`);
+
+      // 4. Get custom items from shipment
+      const shipmentItems = await db
+        .select()
+        .from(customItems)
+        .where(eq(customItems.shipmentId, shipmentId));
+
+      if (shipmentItems.length === 0) {
+        warnings.push('No items found in shipment');
+        return { success: true, productsUpdated: 0, errors, warnings, details, exchangeRatesUsed: exchangeRates };
+      }
+
+      // 5. Calculate totals for allocation
+      let totalUnits = 0;
+      let totalWeight = 0;
+      let totalValue = new Decimal(0);
+
+      for (const item of shipmentItems) {
+        const qty = item.quantity || 1;
+        totalUnits += qty;
+        totalWeight += (parseFloat(item.weight?.toString() || '0') * qty);
+        totalValue = totalValue.add(new Decimal(item.unitPrice?.toString() || '0').mul(qty));
+      }
+
+      console.log(`📦 Total units: ${totalUnits}, Weight: ${totalWeight}kg, Value: ${totalValue.toFixed(2)} EUR`);
+
+      // 6. Calculate shipping cost allocation per unit
+      const shippingPerUnit = totalUnits > 0 
+        ? totalShippingCostEur.div(totalUnits) 
+        : new Decimal(0);
+
+      console.log(`📊 Base shipping per unit: ${shippingPerUnit.toFixed(4)} EUR`);
+
+      // 7. Process each item and update product import costs
+      for (const item of shipmentItems) {
+        if (!item.sku) {
+          warnings.push(`Item "${item.name}" has no SKU, skipping`);
+          continue;
+        }
+
+        // Find product by SKU
+        const [product] = await db
+          .select()
+          .from(products)
+          .where(eq(products.sku, item.sku));
+
+        if (!product) {
+          warnings.push(`Product with SKU "${item.sku}" not found, skipping`);
+          continue;
+        }
+
+        const itemQty = item.quantity || 1;
+        const itemUnitPrice = new Decimal(item.unitPrice?.toString() || '0');
+        
+        // Calculate shipping allocation using hybrid method (60% weight, 40% value)
+        let shippingAllocationTotal = shippingPerUnit.mul(itemQty);
+        
+        if (totalWeight > 0 && item.weight && totalShippingCostEur.gt(0)) {
+          const itemWeight = parseFloat(item.weight.toString()) * itemQty;
+          const weightPortion = totalShippingCostEur.mul(0.6).mul(itemWeight).div(totalWeight);
+          const valuePortion = totalValue.gt(0)
+            ? totalShippingCostEur.mul(0.4).mul(itemUnitPrice.mul(itemQty)).div(totalValue)
+            : new Decimal(0);
+          shippingAllocationTotal = weightPortion.add(valuePortion);
+        }
+
+        const shippingPerItemUnit = shippingAllocationTotal.div(itemQty);
+        const landedCostPerUnitEur = itemUnitPrice.add(shippingPerItemUnit);
+
+        // Get current product values for weighted average calculation
+        // Ensure numeric values are properly parsed with NaN guards
+        let currentQty: number;
+        if (typeof product.quantity === 'number' && !isNaN(product.quantity)) {
+          currentQty = product.quantity;
+        } else if (typeof product.quantity === 'string') {
+          const parsed = parseInt(product.quantity, 10);
+          currentQty = isNaN(parsed) ? 0 : parsed;
+        } else {
+          currentQty = 0;
+        }
+        
+        let currentImportCostEur: number;
+        const parsedCost = parseFloat(product.importCostEur?.toString() || '0');
+        currentImportCostEur = isNaN(parsedCost) ? 0 : parsedCost;
+
+        // Calculate weighted average in EUR only
+        // Formula: (oldQty * oldCost + newQty * newCost) / (oldQty + newQty)
+        const newQty = itemQty;
+        const totalQtyAfter = currentQty + newQty;
+        
+        let newWeightedAvgCostEur: number;
+        if (totalQtyAfter > 0) {
+          const oldValue = currentQty * currentImportCostEur;
+          const newValue = newQty * landedCostPerUnitEur.toNumber();
+          newWeightedAvgCostEur = (oldValue + newValue) / totalQtyAfter;
+        } else {
+          newWeightedAvgCostEur = landedCostPerUnitEur.toNumber();
+        }
+        
+        // Final NaN guard before database update
+        if (isNaN(newWeightedAvgCostEur) || !isFinite(newWeightedAvgCostEur)) {
+          warnings.push(`Calculated NaN/Infinite cost for SKU ${item.sku} - skipping update`);
+          console.error(`⚠️ NaN guard triggered for ${item.sku}: qty=${currentQty}+${newQty}, cost=${currentImportCostEur}, landed=${landedCostPerUnitEur.toString()}`);
+          continue;
+        }
+
+        // Convert EUR to other currencies using the SAME exchange rates
+        // This ensures consistency across all currency fields
+        const newImportCostUsd = newWeightedAvgCostEur * (exchangeRates.USD || 1.08);
+        const newImportCostCzk = newWeightedAvgCostEur * (exchangeRates.CZK || 25.3);
+        const newImportCostVnd = newWeightedAvgCostEur * exchangeRates.VND;
+        const newImportCostCny = newWeightedAvgCostEur * exchangeRates.CNY;
+
+        // Update product with new weighted average import costs
+        await db
+          .update(products)
+          .set({
+            importCostEur: newWeightedAvgCostEur.toFixed(2),
+            importCostUsd: newImportCostUsd.toFixed(2),
+            importCostCzk: newImportCostCzk.toFixed(2),
+            importCostVnd: newImportCostVnd.toFixed(0), // VND has no decimals
+            importCostCny: newImportCostCny.toFixed(2),
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, product.id));
+
+        productsUpdated++;
+        details.push({
+          productId: product.id,
+          sku: item.sku,
+          quantityAdded: itemQty,
+          oldImportCostEur: currentImportCostEur,
+          newImportCostEur: newWeightedAvgCostEur
+        });
+
+        console.log(`✅ Updated ${item.sku}: ${currentImportCostEur.toFixed(2)} → ${newWeightedAvgCostEur.toFixed(2)} EUR (qty: ${currentQty} + ${itemQty} = ${totalQtyAfter})`);
+      }
+
+      console.log(`🎉 Successfully updated ${productsUpdated} products with landing costs`);
+
+      return {
+        success: true,
+        productsUpdated,
+        errors,
+        warnings,
+        details,
+        exchangeRatesUsed: exchangeRates
+      };
+    } catch (error) {
+      console.error(`Error applying landing costs for shipment ${shipmentId}:`, error);
+      errors.push(`Failed to apply landing costs: ${error}`);
+      return { success: false, productsUpdated, errors, warnings, details };
+    }
+  }
 }
 
 // Export singleton instance

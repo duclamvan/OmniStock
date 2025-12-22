@@ -2918,8 +2918,16 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
     if (req.body.notes) updateData.notes = req.body.notes;
     if (req.body.estimatedDelivery) updateData.estimatedDelivery = new Date(req.body.estimatedDelivery);
     
-    // If status is "delivered", set deliveredAt
+    // Check if status is changing TO "delivered" (need to get current status first)
+    let wasDelivered = false;
     if (req.body.status === "delivered") {
+      // Check if already delivered to prevent re-applying landing costs
+      const [existingShipment] = await db
+        .select({ status: shipments.status })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      wasDelivered = existingShipment?.status === 'delivered';
       updateData.deliveredAt = new Date();
     }
     
@@ -2945,6 +2953,44 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
       .set(updateData)
       .where(eq(shipments.id, shipmentId))
       .returning();
+    
+    // If status changed to "delivered" (not already delivered), apply landing costs to products
+    if (req.body.status === "delivered" && !wasDelivered) {
+      console.log(`📦 Shipment ${shipmentId} delivered - triggering automatic landing cost calculation`);
+      
+      // Import the singleton instance and apply landing costs
+      const { landingCostService } = await import("../services/landingCostService");
+      const result = await landingCostService.applyLandingCostsToProducts(shipmentId);
+      
+      if (result.success) {
+        console.log(`✅ Landing costs applied to ${result.productsUpdated} products`);
+        if (result.warnings.length > 0) {
+          console.log(`⚠️ Warnings: ${result.warnings.join(', ')}`);
+        }
+        // Log exchange rates used for audit trail
+        if (result.exchangeRatesUsed) {
+          console.log(`💱 Exchange rates used: USD=${result.exchangeRatesUsed.USD}, CZK=${result.exchangeRatesUsed.CZK}`);
+        }
+        // Store details for audit trail in notes (append to existing notes)
+        const auditNote = `\n[Landing Cost Applied: ${new Date().toISOString()}] Updated ${result.productsUpdated} products. FX: EUR/USD=${result.exchangeRatesUsed?.USD?.toFixed(4)}, EUR/CZK=${result.exchangeRatesUsed?.CZK?.toFixed(2)}`;
+        await db
+          .update(shipments)
+          .set({ 
+            notes: sql`COALESCE(${shipments.notes}, '') || ${auditNote}` 
+          })
+          .where(eq(shipments.id, shipmentId));
+      } else {
+        console.error(`❌ Failed to apply landing costs: ${result.errors.join(', ')}`);
+        // Store error in notes for visibility
+        const errorNote = `\n[Landing Cost Error: ${new Date().toISOString()}] ${result.errors.join('; ')}`;
+        await db
+          .update(shipments)
+          .set({ 
+            notes: sql`COALESCE(${shipments.notes}, '') || ${errorNote}` 
+          })
+          .where(eq(shipments.id, shipmentId));
+      }
+    }
     
     res.json(updated);
   } catch (error) {
