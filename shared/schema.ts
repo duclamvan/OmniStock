@@ -705,7 +705,6 @@ export const products = pgTable("products", {
   supplierId: varchar("supplier_id").references(() => suppliers.id),
   description: text("description"),
   quantity: integer("quantity").default(0),
-  allocatedQuantity: integer("allocated_quantity").default(0), // Reserved for pending orders
   lowStockAlertType: text("low_stock_alert_type").default("percentage"), // 'amount' or 'percentage'
   lowStockAlert: integer("low_stock_alert").default(45), // Units if 'amount', percentage if 'percentage' (default 45%)
   priceCzk: decimal("price_czk"),
@@ -809,7 +808,6 @@ export const productVariants = pgTable("product_variants", {
   name: varchar("name").notNull(),
   barcode: varchar("barcode"),
   quantity: integer("quantity").default(0),
-  allocatedQuantity: integer("allocated_quantity").default(0), // Reserved for pending orders
   importCostUsd: decimal("import_cost_usd", { precision: 10, scale: 2 }),
   importCostCzk: decimal("import_cost_czk", { precision: 10, scale: 2 }),
   importCostEur: decimal("import_cost_eur", { precision: 10, scale: 2 }),
