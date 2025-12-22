@@ -23,7 +23,9 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck, Upload, Undo2, X } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays } from "lucide-react";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { format, startOfDay, endOfDay, subDays, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -155,6 +157,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [dateRangePreset, setDateRangePreset] = useState("all");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [showFilters, setShowFilters] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [ordersToDelete, setOrdersToDelete] = useState<any[]>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -594,6 +601,33 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
   });
 
+  // Get computed date range from preset
+  const getDateRangeFromPreset = useCallback((preset: string): { start: Date | undefined, end: Date | undefined } => {
+    const now = new Date();
+    switch (preset) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      case 'last7days':
+        return { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
+      case 'last30days':
+        return { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
+      case 'thisWeek':
+        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+      case 'thisMonth':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'lastMonth':
+        const lastMonth = subMonths(now, 1);
+        return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) };
+      case 'custom':
+        return { start: startDate, end: endDate };
+      default:
+        return { start: undefined, end: undefined };
+    }
+  }, [startDate, endDate]);
+
   // Filter orders based on search query and status (memoized for performance)
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -605,33 +639,90 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       filtered = filtered.filter((order: any) => order.orderStatus === statusFilter);
     }
     
-    // Apply search filter
+    // Apply payment filter
+    if (paymentFilter && paymentFilter !== 'all') {
+      filtered = filtered.filter((order: any) => order.paymentStatus === paymentFilter);
+    }
+    
+    // Apply date range filter
+    const { start: dateStart, end: dateEnd } = getDateRangeFromPreset(dateRangePreset);
+    if (dateStart && dateEnd) {
+      filtered = filtered.filter((order: any) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= dateStart && orderDate <= dateEnd;
+      });
+    }
+    
+    // Apply search filter - comprehensive search across all text fields
     if (searchQuery) {
-      const query = searchQuery.trim();
+      const query = searchQuery.trim().toLowerCase();
       
       // Check if searching for order ID number (digits only or with common prefixes)
-      const isOrderIdSearch = /^[\d-]+$/.test(query) || query.toLowerCase().startsWith('ord');
+      const isOrderIdSearch = /^[\d-]+$/.test(query) || query.startsWith('ord');
       
       if (isOrderIdSearch) {
         // Direct substring match on orderId for number searches
-        const lowerQuery = query.toLowerCase();
         filtered = filtered.filter((order: any) => 
-          order.orderId?.toLowerCase().includes(lowerQuery)
+          order.orderId?.toLowerCase().includes(query)
         );
       } else {
-        // Use fuzzy search for name/text searches
-        const results = fuzzySearch(filtered, query, {
-          fields: ['orderId', 'customer.name', 'customer.facebookName'],
-          threshold: 0.2,
-          fuzzy: true,
-          vietnameseNormalization: true,
+        // Comprehensive text search across all fields
+        filtered = filtered.filter((order: any) => {
+          // Order ID
+          if (order.orderId?.toLowerCase().includes(query)) return true;
+          
+          // Customer fields
+          if (order.customer?.name?.toLowerCase().includes(query)) return true;
+          if (order.customer?.email?.toLowerCase().includes(query)) return true;
+          if (order.customer?.phone?.toLowerCase().includes(query)) return true;
+          if (order.customer?.facebookName?.toLowerCase().includes(query)) return true;
+          
+          // Address fields
+          if (order.customer?.street?.toLowerCase().includes(query)) return true;
+          if (order.customer?.city?.toLowerCase().includes(query)) return true;
+          if (order.customer?.postalCode?.toLowerCase().includes(query)) return true;
+          if (order.customer?.country?.toLowerCase().includes(query)) return true;
+          
+          // Tracking number
+          if (order.trackingNumber?.toLowerCase().includes(query)) return true;
+          
+          // Notes
+          if (order.notes?.toLowerCase().includes(query)) return true;
+          if (order.shippingNotes?.toLowerCase().includes(query)) return true;
+          
+          // Biller name
+          if (order.biller?.firstName?.toLowerCase().includes(query)) return true;
+          if (order.biller?.email?.toLowerCase().includes(query)) return true;
+          
+          // Shipping method
+          if (order.shippingMethod?.toLowerCase().includes(query)) return true;
+          
+          return false;
         });
-        filtered = results.map(r => r.item);
       }
     }
     
     return filtered;
-  }, [orders, searchQuery, statusFilter]);
+  }, [orders, searchQuery, statusFilter, paymentFilter, dateRangePreset, getDateRangeFromPreset]);
+  
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== 'all') count++;
+    if (paymentFilter !== 'all') count++;
+    if (dateRangePreset !== 'all') count++;
+    return count;
+  }, [statusFilter, paymentFilter, dateRangePreset]);
+  
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setStatusFilter('all');
+    setPaymentFilter('all');
+    setDateRangePreset('all');
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setSearchQuery('');
+  }, []);
 
   // Sync expanded items with expandAll state when orders load
   useEffect(() => {
@@ -1507,35 +1598,167 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Filters Section - Compact on mobile */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-2.5 sm:p-6">
+          {/* Main filter row */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            {/* Search input */}
             <div className="relative flex-1">
               <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder={t('orders:searchPlaceholder')}
+                placeholder={t('orders:searchPlaceholderExtended')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 sm:pl-10 h-9 sm:h-10 text-sm focus:border-cyan-500 border-slate-200 dark:border-slate-800"
                 data-testid="input-search"
               />
             </div>
-            {!filter && (
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 sm:h-10 text-sm sm:w-[180px] focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
-                  <SelectValue placeholder={t('orders:filterByStatus')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('orders:allOrders')}</SelectItem>
-                  <SelectItem value="pending">{t('orders:pending')}</SelectItem>
-                  <SelectItem value="awaiting_stock">{t('orders:awaitingStock')}</SelectItem>
-                  <SelectItem value="to_fulfill">{t('orders:toFulfill')}</SelectItem>
-                  <SelectItem value="ready_to_ship">{t('orders:readyToShip')}</SelectItem>
-                  <SelectItem value="shipped">{t('orders:shipped')}</SelectItem>
-                  <SelectItem value="delivered">{t('orders:delivered')}</SelectItem>
-                  <SelectItem value="cancelled">{t('orders:cancelled')}</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            {/* Filter toggle button */}
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-9 sm:h-10 px-3 gap-2"
+              data-testid="button-toggle-filters"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('orders:filters')}</span>
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {/* Clear filters button - only show if filters are active */}
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="h-9 sm:h-10 px-3 text-muted-foreground hover:text-foreground"
+                data-testid="button-clear-filters"
+              >
+                <X className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">{t('orders:clearFilters')}</span>
+              </Button>
             )}
           </div>
+          
+          {/* Expandable filter options */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Order Status Filter */}
+                {!filter && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">{t('orders:orderStatus')}</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="h-9 text-sm focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-status-filter">
+                        <SelectValue placeholder={t('orders:allStatuses')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('orders:allStatuses')}</SelectItem>
+                        <SelectItem value="pending">{t('orders:pending')}</SelectItem>
+                        <SelectItem value="awaiting_stock">{t('orders:awaitingStock')}</SelectItem>
+                        <SelectItem value="to_fulfill">{t('orders:toFulfill')}</SelectItem>
+                        <SelectItem value="ready_to_ship">{t('orders:readyToShip')}</SelectItem>
+                        <SelectItem value="shipped">{t('orders:shipped')}</SelectItem>
+                        <SelectItem value="delivered">{t('orders:delivered')}</SelectItem>
+                        <SelectItem value="cancelled">{t('orders:cancelled')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                {/* Payment Status Filter */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">{t('orders:paymentStatus')}</Label>
+                  <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                    <SelectTrigger className="h-9 text-sm focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-payment-filter">
+                      <SelectValue placeholder={t('orders:allPayments')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('orders:allPayments')}</SelectItem>
+                      <SelectItem value="pending">{t('orders:pending')}</SelectItem>
+                      <SelectItem value="paid">{t('orders:paid')}</SelectItem>
+                      <SelectItem value="pay_later">{t('orders:payLater')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Date Range Filter */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">{t('orders:dateRange')}</Label>
+                  <Select value={dateRangePreset} onValueChange={setDateRangePreset}>
+                    <SelectTrigger className="h-9 text-sm focus:border-cyan-500 border-slate-200 dark:border-slate-800" data-testid="select-date-range">
+                      <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <SelectValue placeholder={t('orders:allTime')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('orders:allTime')}</SelectItem>
+                      <SelectItem value="today">{t('orders:today')}</SelectItem>
+                      <SelectItem value="yesterday">{t('orders:yesterday')}</SelectItem>
+                      <SelectItem value="last7days">{t('orders:last7Days')}</SelectItem>
+                      <SelectItem value="last30days">{t('orders:last30Days')}</SelectItem>
+                      <SelectItem value="thisWeek">{t('orders:thisWeek')}</SelectItem>
+                      <SelectItem value="thisMonth">{t('orders:thisMonth')}</SelectItem>
+                      <SelectItem value="lastMonth">{t('orders:lastMonth')}</SelectItem>
+                      <SelectItem value="custom">{t('orders:customRange')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Custom Date Range Picker */}
+                {dateRangePreset === 'custom' && (
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <Label className="text-xs font-medium text-muted-foreground">{t('orders:selectDates')}</Label>
+                    <div className="flex gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 flex-1 justify-start text-left font-normal text-sm"
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, 'MMM dd') : t('orders:startDate')}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarPicker
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 flex-1 justify-start text-left font-normal text-sm"
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, 'MMM dd') : t('orders:endDate')}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarPicker
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -2068,6 +2291,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                         );
                       }
                     })}
+                    
+                    {/* Export Options */}
+                    <div className="flex items-center gap-1 ml-2 pl-2 border-l border-slate-300 dark:border-slate-600">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleExportXLSX}
+                        className="h-6 px-2 text-xs"
+                        data-testid="button-bulk-export-xlsx"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        {t('orders:exportToExcel')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleExportPDF}
+                        className="h-6 px-2 text-xs"
+                        data-testid="button-bulk-export-pdf"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        {t('orders:exportToPDF')}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : null;

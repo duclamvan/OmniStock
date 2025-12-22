@@ -272,7 +272,6 @@ const reports = {
   overview: 'Overview',
   
   // Additional UI elements
-  allTime: 'All Time',
   last7Days: 'Last 7 Days',
   last30Days: 'Last 30 Days',
   exportOptions: 'Export Options',
