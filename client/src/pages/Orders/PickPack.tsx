@@ -2064,6 +2064,7 @@ export default function PickPack() {
   const [recentlyScannedItemId, setRecentlyScannedItemId] = useState<string | null>(null);
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
+  const [finalPickingTime, setFinalPickingTime] = useState<number | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const pickingStartTimeRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -6058,6 +6059,7 @@ export default function PickPack() {
       );
       setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
       setPickingTimer(0);
+      setFinalPickingTime(null); // Reset final time for new order
       setIsTimerRunning(true);
       playSound('success');
       
@@ -6153,6 +6155,7 @@ export default function PickPack() {
     const allPicked = updatedItems.every(i => i.pickedQuantity >= i.quantity);
     if (allPicked) {
       setIsTimerRunning(false); // Stop the timer when all items are picked
+      setFinalPickingTime(pickingTimer); // Capture the final time
       playSound('success');
     }
   };
@@ -13636,7 +13639,7 @@ export default function PickPack() {
                     <div className="flex justify-center gap-4 mt-3 pt-3 border-t border-white/20 text-white/90 text-xs sm:text-sm">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                        {formatTimer(pickingTimer)}
+                        {formatTimer(finalPickingTime ?? pickingTimer)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Package className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -13967,7 +13970,7 @@ export default function PickPack() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                 <div className="p-2 sm:p-0">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('time')}</p>
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(pickingTimer)}</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatTimer(finalPickingTime ?? pickingTimer)}</p>
                 </div>
                 <div className="p-2 sm:p-0 border-t sm:border-t-0 border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t('items')}</p>
