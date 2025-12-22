@@ -2863,12 +2863,13 @@ export default function PickPack() {
   }, [verifiedItems, activePackingOrder?.id, selectedCarton, packingRecommendation]);
 
   // Fetch real orders from the API with items and bundle details
-  // Real-time data synchronization: refetch every 5 seconds to ensure Pick & Pack always shows latest order data
+  // Real-time data synchronization: refetch every 5 seconds ONLY when not actively picking/packing
+  // This prevents background refetches from interfering with local state changes during active picking
   const { data: allOrders = [], isLoading, isSuccess } = useQuery<PickPackOrder[]>({
     queryKey: ['/api/orders/pick-pack'],
     staleTime: 0, // IMPORTANT: Set to 0 to always fetch fresh data (fixes 304 cache issue)
-    refetchInterval: 5000, // 5 seconds - real-time updates for active picking/packing
-    refetchOnWindowFocus: true, // Always refetch when user returns to tab
+    refetchInterval: activePickingOrder || activePackingOrder ? false : 5000, // Disable polling during active picking/packing
+    refetchOnWindowFocus: !activePickingOrder && !activePackingOrder, // Don't refetch during active mode
     refetchOnMount: true, // Always refetch when component mounts
     gcTime: 0, // Don't cache query results
   });
@@ -13390,8 +13391,6 @@ export default function PickPack() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                        {/* DEBUG: Log currentItem for carton details troubleshooting */}
-                        {console.log('🔍 DEBUG currentItem:', currentItem.productName, 'bulkUnitQty:', currentItem.bulkUnitQty, 'bulkUnitName:', currentItem.bulkUnitName, 'full item:', currentItem)}
                         {/* Carton Details Summary - Above Quantity Picker */}
                         {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
                           <div className="bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 rounded-xl p-4 border-2 border-amber-300 dark:border-amber-700 shadow-md">
