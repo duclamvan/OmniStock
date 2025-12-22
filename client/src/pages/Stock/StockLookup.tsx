@@ -1170,6 +1170,13 @@ export default function StockLookup() {
                       )}
                     </div>
                   </div>
+
+                  {selectedProductData.description && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium mb-1">{t('itemDescription')}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedProductData.description}</p>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-3">
                     {selectedProductData.sku && (
@@ -1256,6 +1263,13 @@ export default function StockLookup() {
                       )}
                     </div>
                   </div>
+
+                  {selectedProductData.description && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium mb-1">{t('itemDescription')}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedProductData.description}</p>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-3">
                     {selectedProductData.sku && (
