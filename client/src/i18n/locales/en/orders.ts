@@ -1845,6 +1845,13 @@ const orders = {
   // Quantity/Stock Warnings
   quantityReduced: 'Quantity Reduced',
   onlyXInStock: 'Only {{count}} available in stock',
+  stockLimitReached: 'Stock Limit Reached',
+  stockLimitDesc: 'You requested {{requested}} units of "{{productName}}", but only {{available}} are in stock.',
+  noStockAvailableForProduct: '"{{productName}}" has no stock available.',
+  fillRemaining: 'Fill {{count}}',
+  forceAdd: 'Force Add {{count}}',
+  quantityAdjusted: 'Quantity Adjusted',
+  setToRemainingStock: 'Set to remaining {{count}} units in stock',
   
   // Order Import - Bulk Import Dialog
   customersWillBeCreatedOrMatched: 'Customers will be automatically created or matched by name/email/phone',

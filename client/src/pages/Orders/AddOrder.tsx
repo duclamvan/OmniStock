@@ -577,6 +577,15 @@ export default function AddOrder() {
   // Out-of-stock warning dialog state
   const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
   const [pendingOutOfStockProduct, setPendingOutOfStockProduct] = useState<any>(null);
+  
+  // Stock limit modal for quantity updates
+  const [stockLimitModalOpen, setStockLimitModalOpen] = useState(false);
+  const [pendingQuantityUpdate, setPendingQuantityUpdate] = useState<{
+    itemId: string;
+    requestedQty: number;
+    availableStock: number;
+    productName: string;
+  } | null>(null);
   const [alwaysAllowOutOfStock, setAlwaysAllowOutOfStock] = useState(() => {
     // Load preference from localStorage
     if (typeof window !== 'undefined') {
@@ -2532,6 +2541,64 @@ export default function AddOrder() {
     setPendingOutOfStockProduct(null);
   }, []);
 
+  // Stock limit modal handlers for quantity updates
+  const handleStockLimitForceAdd = useCallback(() => {
+    if (pendingQuantityUpdate) {
+      const { itemId, requestedQty } = pendingQuantityUpdate;
+      // Force update with requested quantity, bypassing stock check
+      setOrderItems(items =>
+        items.map(item => {
+          if (item.id === itemId) {
+            const updatedItem = { ...item, quantity: requestedQty };
+            // Recalculate totals
+            if (updatedItem.discountPercentage > 0) {
+              updatedItem.discount = (updatedItem.price * updatedItem.quantity * updatedItem.discountPercentage) / 100;
+            }
+            updatedItem.total = (updatedItem.price * updatedItem.quantity) - updatedItem.discount + updatedItem.tax;
+            return updatedItem;
+          }
+          return item;
+        })
+      );
+      setStockLimitModalOpen(false);
+      setPendingQuantityUpdate(null);
+    }
+  }, [pendingQuantityUpdate]);
+
+  const handleStockLimitFillRemaining = useCallback(() => {
+    if (pendingQuantityUpdate) {
+      const { itemId, availableStock } = pendingQuantityUpdate;
+      if (availableStock > 0) {
+        // Set quantity to available stock
+        setOrderItems(items =>
+          items.map(item => {
+            if (item.id === itemId) {
+              const updatedItem = { ...item, quantity: availableStock };
+              // Recalculate totals
+              if (updatedItem.discountPercentage > 0) {
+                updatedItem.discount = (updatedItem.price * updatedItem.quantity * updatedItem.discountPercentage) / 100;
+              }
+              updatedItem.total = (updatedItem.price * updatedItem.quantity) - updatedItem.discount + updatedItem.tax;
+              return updatedItem;
+            }
+            return item;
+          })
+        );
+        toast({
+          title: t('orders:quantityAdjusted'),
+          description: t('orders:setToRemainingStock', { count: availableStock }),
+        });
+      }
+      setStockLimitModalOpen(false);
+      setPendingQuantityUpdate(null);
+    }
+  }, [pendingQuantityUpdate, t, toast]);
+
+  const handleStockLimitCancel = useCallback(() => {
+    setStockLimitModalOpen(false);
+    setPendingQuantityUpdate(null);
+  }, []);
+
   const addVariantsToOrder = async () => {
     if (!selectedProductForVariant) return;
     
@@ -2945,22 +3012,18 @@ export default function AddOrder() {
             
             const availableStock = Math.max(0, baseStock - otherItemsQty);
             
-            // Cap quantity to available stock
-            if (requestedQty > availableStock && availableStock > 0) {
-              finalValue = availableStock;
-              toast({
-                title: t('orders:quantityReduced'),
-                description: t('orders:onlyXInStock', { count: availableStock }),
-                variant: "destructive",
+            // Check if exceeding available stock
+            if (requestedQty > availableStock && !alwaysAllowOutOfStock) {
+              // Show modal for user to decide
+              setPendingQuantityUpdate({
+                itemId: id,
+                requestedQty,
+                availableStock,
+                productName: item.productName,
               });
-            } else if (availableStock <= 0 && requestedQty > item.quantity) {
-              // Don't allow increasing if no stock available
-              finalValue = item.quantity;
-              toast({
-                title: t('orders:outOfStock'),
-                description: t('orders:noMoreStockAvailable'),
-                variant: "destructive",
-              });
+              setStockLimitModalOpen(true);
+              // Don't update yet - wait for user decision
+              return item;
             }
           }
           
@@ -7997,6 +8060,48 @@ export default function AddOrder() {
               </Button>
               <Button onClick={() => handleOutOfStockConfirm(true)} data-testid="button-out-of-stock-always-add">
                 {t('orders:yesAlwaysAdd')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Stock Limit Modal for Quantity Updates */}
+        <Dialog open={stockLimitModalOpen} onOpenChange={setStockLimitModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                {t('orders:stockLimitReached', 'Stock Limit Reached')}
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                {pendingQuantityUpdate?.availableStock === 0 ? (
+                  t('orders:noStockAvailableForProduct', {
+                    productName: pendingQuantityUpdate?.productName,
+                    defaultValue: `"${pendingQuantityUpdate?.productName}" has no stock available.`
+                  })
+                ) : (
+                  t('orders:stockLimitDesc', {
+                    productName: pendingQuantityUpdate?.productName,
+                    requested: pendingQuantityUpdate?.requestedQty,
+                    available: pendingQuantityUpdate?.availableStock,
+                    defaultValue: `You requested ${pendingQuantityUpdate?.requestedQty} units of "${pendingQuantityUpdate?.productName}", but only ${pendingQuantityUpdate?.availableStock} are in stock.`
+                  })
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button variant="outline" onClick={handleStockLimitCancel} data-testid="button-stock-limit-cancel">
+                {t('common:cancel')}
+              </Button>
+              {pendingQuantityUpdate?.availableStock && pendingQuantityUpdate.availableStock > 0 && (
+                <Button variant="secondary" onClick={handleStockLimitFillRemaining} data-testid="button-stock-limit-fill-remaining">
+                  <Package className="h-4 w-4 mr-2" />
+                  {t('orders:fillRemaining', { count: pendingQuantityUpdate.availableStock, defaultValue: `Fill ${pendingQuantityUpdate.availableStock}` })}
+                </Button>
+              )}
+              <Button variant="destructive" onClick={handleStockLimitForceAdd} data-testid="button-stock-limit-force-add">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                {t('orders:forceAdd', { count: pendingQuantityUpdate?.requestedQty, defaultValue: `Force Add ${pendingQuantityUpdate?.requestedQty}` })}
               </Button>
             </DialogFooter>
           </DialogContent>

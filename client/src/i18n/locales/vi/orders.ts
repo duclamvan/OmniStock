@@ -1833,6 +1833,13 @@ const orders = {
   // Quantity/Stock Warnings
   quantityReduced: 'Đã giảm số lượng',
   onlyXInStock: 'Chỉ còn {{count}} trong kho',
+  stockLimitReached: 'Đã đạt giới hạn kho',
+  stockLimitDesc: 'Bạn yêu cầu {{requested}} đơn vị "{{productName}}", nhưng chỉ còn {{available}} trong kho.',
+  noStockAvailableForProduct: '"{{productName}}" không còn hàng trong kho.',
+  fillRemaining: 'Điền {{count}}',
+  forceAdd: 'Bắt buộc thêm {{count}}',
+  quantityAdjusted: 'Đã điều chỉnh số lượng',
+  setToRemainingStock: 'Đã đặt thành {{count}} đơn vị còn lại trong kho',
   
   // Order Import - Bulk Import Dialog
   customersWillBeCreatedOrMatched: 'Khách hàng sẽ được tự động tạo hoặc khớp theo tên/email/điện thoại',
