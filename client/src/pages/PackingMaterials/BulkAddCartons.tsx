@@ -358,27 +358,103 @@ export default function BulkAddCartons() {
               </div>
             </div>
 
-            {/* Carton Cards */}
-            <div className="space-y-3">
+            {/* Carton Cards - Compact Layout */}
+            <div className="space-y-2">
               {cartons.map((carton, index) => {
                 const isValid = carton.length && carton.width && carton.height;
                 return (
-                  <Card 
+                  <div 
                     key={carton.id} 
-                    className={`p-4 transition-colors ${isValid ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/20' : 'bg-muted/20'}`}
+                    className={`rounded-lg border p-3 transition-colors ${isValid ? 'border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/30' : 'border-border bg-muted/20'}`}
                   >
-                    {/* Card Header Row */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs font-mono">#{index + 1}</Badge>
-                        {carton.code && (
-                          <Badge variant="secondary" className="text-xs font-mono">{carton.code}</Badge>
-                        )}
-                        {isValid && (
-                          <Check className="h-4 w-4 text-green-500" />
-                        )}
+                    {/* Single Row Layout - Desktop */}
+                    <div className="hidden md:flex items-center gap-3">
+                      {/* Row Number & Status */}
+                      <div className="flex items-center gap-1.5 w-16 shrink-0">
+                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                        {isValid && <Check className="h-4 w-4 text-green-500" />}
                       </div>
-                      <div className="flex items-center gap-1">
+
+                      {/* Name */}
+                      <Input
+                        className="h-9 w-48 shrink-0"
+                        placeholder={t('cartonNamePlaceholder')}
+                        value={carton.name}
+                        onChange={(e) => updateCarton(carton.id, 'name', e.target.value)}
+                        data-testid={`input-name-${index}`}
+                      />
+
+                      {/* Dimensions Group with × separators */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Input
+                          className="h-9 w-16 text-center font-mono"
+                          placeholder="L"
+                          inputMode="decimal"
+                          value={carton.length}
+                          onChange={(e) => updateCarton(carton.id, 'length', e.target.value)}
+                          data-testid={`input-length-${index}`}
+                        />
+                        <span className="text-muted-foreground">×</span>
+                        <Input
+                          className="h-9 w-16 text-center font-mono"
+                          placeholder="W"
+                          inputMode="decimal"
+                          value={carton.width}
+                          onChange={(e) => updateCarton(carton.id, 'width', e.target.value)}
+                          data-testid={`input-width-${index}`}
+                        />
+                        <span className="text-muted-foreground">×</span>
+                        <Input
+                          className="h-9 w-16 text-center font-mono"
+                          placeholder="H"
+                          inputMode="decimal"
+                          value={carton.height}
+                          onChange={(e) => updateCarton(carton.id, 'height', e.target.value)}
+                          data-testid={`input-height-${index}`}
+                        />
+                        <Select 
+                          value={carton.dimensionUnit} 
+                          onValueChange={(value) => updateCarton(carton.id, 'dimensionUnit', value)}
+                        >
+                          <SelectTrigger className="h-9 w-16" data-testid={`select-unit-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cm">cm</SelectItem>
+                            <SelectItem value="mm">mm</SelectItem>
+                            <SelectItem value="in">in</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Stock & Cost */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">{t('stockQty')}:</span>
+                          <Input
+                            className="h-9 w-16 text-center"
+                            type="number"
+                            min="0"
+                            value={carton.stockQuantity}
+                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', parseInt(e.target.value) || 0)}
+                            data-testid={`input-stock-${index}`}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">{t('unitCost')}:</span>
+                          <Input
+                            className="h-9 w-20 text-right"
+                            placeholder="0.00"
+                            inputMode="decimal"
+                            value={carton.cost}
+                            onChange={(e) => updateCarton(carton.id, 'cost', e.target.value)}
+                            data-testid={`input-cost-${index}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 ml-auto shrink-0">
                         <Button
                           type="button"
                           variant="ghost"
@@ -405,63 +481,79 @@ export default function BulkAddCartons() {
                       </div>
                     </div>
 
-                    {/* Dimensions Row - Mobile Optimized */}
-                    <div className="grid grid-cols-12 gap-2 md:gap-3">
-                      {/* Name - Full width on mobile, 3 cols on desktop */}
-                      <div className="col-span-12 md:col-span-3">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('materialNameLabel')}</Label>
-                        <Input
-                          className="h-10"
-                          placeholder={t('cartonNamePlaceholder')}
-                          value={carton.name}
-                          onChange={(e) => updateCarton(carton.id, 'name', e.target.value)}
-                          data-testid={`input-name-${index}`}
-                        />
+                    {/* Mobile Layout - Stacked */}
+                    <div className="md:hidden space-y-3">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs font-mono">#{index + 1}</Badge>
+                          {carton.code && (
+                            <Badge variant="secondary" className="text-xs font-mono">{carton.code}</Badge>
+                          )}
+                          {isValid && <Check className="h-4 w-4 text-green-500" />}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => duplicateRow(carton.id)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          {cartons.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => removeRow(carton.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Dimensions - 3 inputs in a row */}
-                      <div className="col-span-4 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('length')}</Label>
+                      {/* Name */}
+                      <Input
+                        className="h-11"
+                        placeholder={t('cartonNamePlaceholder')}
+                        value={carton.name}
+                        onChange={(e) => updateCarton(carton.id, 'name', e.target.value)}
+                      />
+
+                      {/* Dimensions Row */}
+                      <div className="flex items-center gap-1">
                         <Input
-                          className="h-10 text-center font-mono"
-                          placeholder="0"
+                          className="h-11 flex-1 text-center font-mono"
+                          placeholder="L"
                           inputMode="decimal"
                           value={carton.length}
                           onChange={(e) => updateCarton(carton.id, 'length', e.target.value)}
-                          data-testid={`input-length-${index}`}
                         />
-                      </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('width')}</Label>
+                        <span className="text-muted-foreground font-bold">×</span>
                         <Input
-                          className="h-10 text-center font-mono"
-                          placeholder="0"
+                          className="h-11 flex-1 text-center font-mono"
+                          placeholder="W"
                           inputMode="decimal"
                           value={carton.width}
                           onChange={(e) => updateCarton(carton.id, 'width', e.target.value)}
-                          data-testid={`input-width-${index}`}
                         />
-                      </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('height')}</Label>
+                        <span className="text-muted-foreground font-bold">×</span>
                         <Input
-                          className="h-10 text-center font-mono"
-                          placeholder="0"
+                          className="h-11 flex-1 text-center font-mono"
+                          placeholder="H"
                           inputMode="decimal"
                           value={carton.height}
                           onChange={(e) => updateCarton(carton.id, 'height', e.target.value)}
-                          data-testid={`input-height-${index}`}
                         />
-                      </div>
-
-                      {/* Unit Select */}
-                      <div className="col-span-4 md:col-span-1">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('unit')}</Label>
                         <Select 
                           value={carton.dimensionUnit} 
                           onValueChange={(value) => updateCarton(carton.id, 'dimensionUnit', value)}
                         >
-                          <SelectTrigger className="h-10" data-testid={`select-unit-${index}`}>
+                          <SelectTrigger className="h-11 w-16">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -472,33 +564,31 @@ export default function BulkAddCartons() {
                         </Select>
                       </div>
 
-                      {/* Stock Quantity */}
-                      <div className="col-span-4 md:col-span-1">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('stockQty')}</Label>
-                        <Input
-                          className="h-10 text-center"
-                          type="number"
-                          min="0"
-                          value={carton.stockQuantity}
-                          onChange={(e) => updateCarton(carton.id, 'stockQuantity', parseInt(e.target.value) || 0)}
-                          data-testid={`input-stock-${index}`}
-                        />
-                      </div>
-
-                      {/* Unit Cost */}
-                      <div className="col-span-4 md:col-span-1">
-                        <Label className="text-xs text-muted-foreground mb-1 block">{t('unitCost')}</Label>
-                        <Input
-                          className="h-10 text-right"
-                          placeholder="0.00"
-                          inputMode="decimal"
-                          value={carton.cost}
-                          onChange={(e) => updateCarton(carton.id, 'cost', e.target.value)}
-                          data-testid={`input-cost-${index}`}
-                        />
+                      {/* Stock & Cost Row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">{t('stockQty')}</Label>
+                          <Input
+                            className="h-11 text-center"
+                            type="number"
+                            min="0"
+                            value={carton.stockQuantity}
+                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">{t('unitCost')}</Label>
+                          <Input
+                            className="h-11 text-right"
+                            placeholder="0.00"
+                            inputMode="decimal"
+                            value={carton.cost}
+                            onChange={(e) => updateCarton(carton.id, 'cost', e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 );
               })}
             </div>
