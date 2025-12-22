@@ -223,7 +223,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     date: true,
     status: true,
     payment: true,
-    tracking: false,
+    tracking: true,
     total: true,
     profit: false,
     biller: false,

@@ -108,6 +108,17 @@ export function DataTable<T>({
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     return new Set(columns.map(col => col.key));
   });
+
+  // Sync visibleColumns when the columns prop changes (e.g., parent toggles visibility)
+  useEffect(() => {
+    const currentColumnKeys = new Set(columns.map(col => col.key));
+    setVisibleColumns(prev => {
+      // Start with current columns - any column not in props should be kept if it was visible
+      const updated = new Set<string>();
+      currentColumnKeys.forEach(key => updated.add(key));
+      return updated;
+    });
+  }, [columns]);
   
   // Track previous defaultExpandAll to only update when it changes
   const prevDefaultExpandAll = useRef(defaultExpandAll);
