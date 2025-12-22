@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Printer, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiRequest } from "@/lib/queryClient";
 
 interface WarehouseLabelPreviewProps {
   open: boolean;
@@ -103,12 +104,28 @@ export default function WarehouseLabelPreview({
   const { t } = useTranslation(["inventory", "common"]);
   const isMobile = useIsMobile();
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const printContent = document.getElementById("warehouse-label-print");
     if (!printContent) return;
 
     const printWindow = window.open("", "_blank", "width=500,height=200");
     if (!printWindow) return;
+    
+    // Save label to history (upsert - creates new or increments print count)
+    if (product) {
+      try {
+        await apiRequest("POST", "/api/warehouse-labels", {
+          productId: product.id,
+          englishName: product.name,
+          vietnameseName: product.vietnameseName || product.name,
+          sku: product.sku || null,
+          priceEur: product.priceEur ? String(product.priceEur) : null,
+          priceCzk: product.priceCzk ? String(product.priceCzk) : null,
+        });
+      } catch (error) {
+        console.error("Failed to save label to history:", error);
+      }
+    }
 
     const htmlContent = `
       <!DOCTYPE html>
