@@ -287,6 +287,10 @@ const inventory = {
   moveToArchive: 'Chuyển vào lưu trữ',
   partialSuccess: 'Thành công một phần',
   export: 'Xuất',
+  exportExcel: 'Xuất Excel',
+  exportPDF: 'Xuất PDF',
+  selectedProducts: 'Sản phẩm đã chọn',
+  selectedProductsReport: 'Báo cáo sản phẩm đã chọn',
   
   // Import/Export Menu
   importExport: 'Nhập / Xuất',

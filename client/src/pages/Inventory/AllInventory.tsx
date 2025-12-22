@@ -463,6 +463,123 @@ export default function AllInventory() {
     }
   };
 
+  // Bulk Export to XLSX - exports only selected products
+  const handleBulkExportXLSX = (selectedProducts: any[]) => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      toast({
+        title: t('inventory:noDataToExport'),
+        description: t('inventory:noProductsSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const exportData = selectedProducts.map((product: any) => {
+        const category = (categories as any[])?.find((c: any) => String(c.id) === product.categoryId);
+        const supplier = (suppliers as any[])?.find((s: any) => s.id === product.supplierId);
+        const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
+        
+        return {
+          'Name': product.name || '',
+          'Vietnamese Name': product.vietnameseName || '',
+          'SKU': product.sku || '',
+          'Barcode': product.barcode || '',
+          'Category': category?.name || '',
+          'Supplier': supplier?.name || '',
+          'Warehouse': warehouse?.name || '',
+          'Warehouse Location': product.warehouseLocation || '',
+          'Quantity': product.quantity || 0,
+          'Low Stock Alert': product.lowStockAlert || 0,
+          'Price CZK': product.priceCzk || '',
+          'Price EUR': product.priceEur || '',
+          'Price USD': product.priceUsd || '',
+          'Wholesale Price CZK': product.wholesalePriceCzk || '',
+          'Wholesale Price EUR': product.wholesalePriceEur || '',
+          'Import Cost USD': product.importCostUsd || '',
+          'Import Cost EUR': product.importCostEur || '',
+          'Import Cost CZK': product.importCostCzk || '',
+          'Import Cost VND': product.importCostVnd || '',
+          'Import Cost CNY': product.importCostCny || '',
+          'Weight (kg)': product.weight || '',
+          'Length (cm)': product.length || '',
+          'Width (cm)': product.width || '',
+          'Height (cm)': product.height || '',
+          'Description': product.description || '',
+          'Shipment Notes': product.shipmentNotes || '',
+          'Status': product.isActive ? 'Active' : 'Inactive',
+          'Units Sold': unitsSoldByProduct[product.id] || 0,
+        };
+      });
+
+      exportToXLSX(exportData, 'products-selected-export', t('inventory:selectedProducts'));
+
+      toast({
+        title: t('inventory:exportSuccessful'),
+        description: t('inventory:exportSuccessXLSX', { count: selectedProducts.length }),
+      });
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast({
+        title: t('inventory:exportFailed'),
+        description: error.message || t('inventory:exportFailedXLSX'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Bulk Export to PDF - exports only selected products
+  const handleBulkExportPDF = (selectedProducts: any[]) => {
+    if (!selectedProducts || selectedProducts.length === 0) {
+      toast({
+        title: t('inventory:noDataToExport'),
+        description: t('inventory:noProductsSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare data for export
+      const exportData = selectedProducts.map((product: any) => ({
+        name: product.name,
+        sku: product.sku,
+        category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
+        quantity: product.quantity,
+        unitsSold: unitsSoldByProduct[product.id] || 0,
+        priceEur: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
+        priceCzk: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
+        status: product.isActive ? t('inventory:active') : t('inventory:inactive'),
+      }));
+
+      // Define columns for PDF
+      const columns: PDFColumn[] = [
+        { key: 'name', header: t('inventory:name') },
+        { key: 'sku', header: t('inventory:sku') },
+        { key: 'category', header: t('inventory:category') },
+        { key: 'quantity', header: t('inventory:quantity') },
+        { key: 'unitsSold', header: t('inventory:unitsSold') },
+        { key: 'priceEur', header: t('inventory:priceEur') },
+        { key: 'priceCzk', header: t('inventory:priceCzk') },
+        { key: 'status', header: t('inventory:status') },
+      ];
+
+      exportToPDF(t('inventory:selectedProductsReport'), exportData, columns, 'inventory-selected');
+
+      toast({
+        title: t('inventory:exportSuccessful'),
+        description: t('inventory:exportSuccessPDF', { count: selectedProducts.length }),
+      });
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast({
+        title: t('inventory:exportFailed'),
+        description: error.message || t('inventory:exportFailedPDF'),
+        variant: "destructive",
+      });
+    }
+  };
+
   // Import from Excel
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -923,12 +1040,16 @@ export default function AllInventory() {
     },
     {
       type: "button" as const,
-      label: t('inventory:export'),
+      label: t('inventory:exportExcel'),
       action: (products: any[]) => {
-        toast({
-          title: t('inventory:export'),
-          description: t('inventory:exportingArchivedProducts', { count: products.length }),
-        });
+        handleBulkExportXLSX(products);
+      },
+    },
+    {
+      type: "button" as const,
+      label: t('inventory:exportPDF'),
+      action: (products: any[]) => {
+        handleBulkExportPDF(products);
       },
     },
   ] : [
@@ -992,12 +1113,16 @@ export default function AllInventory() {
     },
     {
       type: "button" as const,
-      label: t('inventory:export'),
+      label: t('inventory:exportExcel'),
       action: (products: any[]) => {
-        toast({
-          title: t('inventory:export'),
-          description: t('inventory:exportingProducts', { count: products.length }),
-        });
+        handleBulkExportXLSX(products);
+      },
+    },
+    {
+      type: "button" as const,
+      label: t('inventory:exportPDF'),
+      action: (products: any[]) => {
+        handleBulkExportPDF(products);
       },
     },
   ];

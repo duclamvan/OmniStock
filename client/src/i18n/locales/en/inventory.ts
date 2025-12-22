@@ -185,6 +185,10 @@ const inventory = {
   moveToArchive: 'Move to Archive',
   partialSuccess: 'Partial Success',
   export: 'Export',
+  exportExcel: 'Export Excel',
+  exportPDF: 'Export PDF',
+  selectedProducts: 'Selected Products',
+  selectedProductsReport: 'Selected Products Report',
   
   // Import/Export Menu
   importExport: 'Import / Export',
