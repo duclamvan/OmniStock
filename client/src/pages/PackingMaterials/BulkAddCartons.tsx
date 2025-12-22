@@ -370,9 +370,14 @@ export default function BulkAddCartons() {
                   >
                     {/* Single Row Layout - Desktop */}
                     <div className="hidden md:flex items-center gap-3">
-                      {/* Row Number & Status */}
-                      <div className="flex items-center gap-1.5 w-16 shrink-0">
-                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                      {/* Row Number & Code */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
+                        {carton.code ? (
+                          <Badge variant="secondary" className="text-xs font-mono">{carton.code}</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">—</span>
+                        )}
                         {isValid && <Check className="h-4 w-4 text-green-500" />}
                       </div>
 
