@@ -8502,6 +8502,86 @@ Important:
     }
   });
 
+  // Reset all picking for an order - restores location quantities
+  app.post('/api/orders/:id/reset-picking', isAuthenticated, async (req: any, res) => {
+    try {
+      const orderId = req.params.id;
+      const { pickedLocations } = req.body;
+      
+      // Get order items with their picked quantities
+      const orderItems = await storage.getOrderItems(orderId);
+      
+      let restoredLocations = 0;
+      let restoredQuantity = 0;
+      
+      // For each item with picked quantity > 0, restore stock
+      for (const item of orderItems) {
+        if ((item.pickedQuantity || 0) > 0 && item.productId) {
+          try {
+            // Get product locations
+            const locations = await storage.getProductLocations(item.productId);
+            
+            // Check if we have the specific location that was used for this item
+            const usedLocationCode = pickedLocations?.[item.id];
+            let targetLocation = null;
+            
+            if (usedLocationCode) {
+              // Restore to the actual location that was picked from
+              targetLocation = locations.find(loc => 
+                loc.locationCode.toUpperCase() === usedLocationCode.toUpperCase()
+              );
+            }
+            
+            // Fallback to primary location if the picked location wasn't provided or not found
+            if (!targetLocation) {
+              targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+            }
+            
+            if (targetLocation) {
+              const currentQty = targetLocation.quantity || 0;
+              const restoreQty = item.pickedQuantity || 0;
+              const newQty = currentQty + restoreQty;
+              
+              await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+              console.log(`📦 Reset: Restored ${restoreQty} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+              
+              restoredLocations++;
+              restoredQuantity += restoreQty;
+            }
+            
+            // Reset the picked quantity for this item
+            await storage.updateOrderItemPickedQuantity(item.id, 0);
+          } catch (itemError) {
+            console.error(`Error restoring stock for item ${item.id}:`, itemError);
+          }
+        } else if ((item.pickedQuantity || 0) > 0) {
+          // Service items or items without productId - just reset picked quantity
+          await storage.updateOrderItemPickedQuantity(item.id, 0);
+        }
+      }
+      
+      // Reset order pick status
+      await storage.updateOrder(orderId, {
+        pickStatus: 'not_started',
+        pickStartTime: null,
+        pickEndTime: null,
+        pickedBy: null
+      });
+      
+      console.log(`📦 Order ${orderId} picking reset: ${restoredLocations} locations, ${restoredQuantity} units restored`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Order picking reset successfully',
+        restoredLocations,
+        restoredQuantity
+      });
+    } catch (error) {
+      console.error("Error resetting order picking:", error);
+      res.status(500).json({ message: "Failed to reset order picking" });
+    }
+  });
+
   // Update packed quantity for an order item
   app.patch('/api/orders/:id/items/:itemId/pack', isAuthenticated, async (req: any, res) => {
     try {

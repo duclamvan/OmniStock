@@ -6000,38 +6000,64 @@ export default function PickPack() {
     }
   };
 
-  // Reset order (clear all picked quantities)
-  const resetOrder = () => {
+  // Reset order (clear all picked quantities and restore location stock)
+  const resetOrder = async () => {
     if (!activePickingOrder) return;
 
-    const resetItems = activePickingOrder.items.map(item => ({
-      ...item,
-      pickedQuantity: 0
-    }));
+    try {
+      // Call API to reset picking and restore location quantities (for real orders)
+      if (!activePickingOrder.id.startsWith('mock-')) {
+        // Pass the selected picking locations so stock is restored to the correct locations
+        await apiRequest('POST', `/api/orders/${activePickingOrder.id}/reset-picking`, {
+          pickedLocations: selectedPickingLocations
+        });
+      }
+      
+      // Update local state
+      const resetItems = activePickingOrder.items.map(item => ({
+        ...item,
+        pickedQuantity: 0
+      }));
 
-    const updatedOrder = {
-      ...activePickingOrder,
-      items: resetItems,
-      pickedItems: 0
-    };
+      const updatedOrder = {
+        ...activePickingOrder,
+        items: resetItems,
+        pickedItems: 0,
+        pickStatus: 'not_started' as const
+      };
 
-    setActivePickingOrder(updatedOrder);
-    setManualItemIndex(0);
-    
-    // Clear saved progress
-    clearPickedProgress(activePickingOrder.id);
-    
-    // Reset timer
-    setPickingTimer(0);
-    setIsTimerRunning(true);
-    
-    playSound('success');
-    setShowResetOrderDialog(false);
-    
-    toast({
-      title: t('orderReset'),
-      description: t('orderResetDesc'),
-    });
+      setActivePickingOrder(updatedOrder);
+      setManualItemIndex(0);
+      
+      // Clear saved progress
+      clearPickedProgress(activePickingOrder.id);
+      
+      // Clear selected picking locations since we're starting fresh
+      setSelectedPickingLocations({});
+      
+      // Reset timer
+      setPickingTimer(0);
+      setIsTimerRunning(true);
+      
+      // Invalidate location queries to refresh stock data
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      
+      playSound('success');
+      setShowResetOrderDialog(false);
+      
+      toast({
+        title: t('orderReset') || 'Order Reset',
+        description: t('orderResetDesc') || 'All picked items have been reset and location stock restored.',
+      });
+    } catch (error) {
+      console.error('Error resetting order:', error);
+      playSound('error');
+      toast({
+        title: t('error') || 'Error',
+        description: t('orderResetError') || 'Failed to reset order. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   // Start packing an order
