@@ -6368,6 +6368,7 @@ export default function PickPack() {
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
     const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
     const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
+    const isPPL = shippingMethod.includes('PPL');
     
     if ((isGLS || isDHL) && cartons.length > 0) {
       console.log('💾 Saving unsaved GLS/DHL tracking numbers before completion...');
@@ -6443,14 +6444,17 @@ export default function PickPack() {
     // It will be required later when generating shipping labels
     
     // Label validation depends on shipping method
-    // GLS uses tracking numbers (validated separately), other methods use labelPrinted
-    console.log('🔍 Label validation - isGLS:', isGLS, 'shippingMethod:', shippingMethod, 'cartons:', cartons.length);
-    if (!isGLS && !isDHL) {
-      const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
-      if (cartonsWithoutLabel.length > 0) {
-        missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
+    // GLS uses tracking numbers (validated separately), PPL uses shipment labels from DB, other methods use labelPrinted
+    console.log('🔍 Label validation - isGLS:', isGLS, 'isPPL:', isPPL, 'shippingMethod:', shippingMethod, 'cartons:', cartons.length);
+    if (isPPL) {
+      // PPL: Must have created shipment and at least one label exists
+      // PPL generates all labels in one batch PDF, so we don't need one label per carton
+      if (activePackingOrder.pplStatus !== 'created') {
+        missingChecks.push('PPL shipment not created');
+      } else if (shipmentLabelsFromDB.length === 0) {
+        missingChecks.push('No PPL labels generated');
       }
-    } else {
+    } else if (isGLS || isDHL) {
       // For GLS/DHL, check tracking numbers from controlled state OR database (fallback)
       const cartonsWithoutTracking = cartons.filter(c => {
         const trackingValue = (trackingInputs[c.id] || c.trackingNumber || '').trim();
@@ -6469,6 +6473,12 @@ export default function PickPack() {
       const uniqueTracking = new Set(trackingNumbers);
       if (trackingNumbers.length !== uniqueTracking.size) {
         missingChecks.push('Duplicate tracking numbers');
+      }
+    } else {
+      // Other shipping methods: check labelPrinted for each carton
+      const cartonsWithoutLabel = cartons.filter(c => !c.labelPrinted);
+      if (cartonsWithoutLabel.length > 0) {
+        missingChecks.push(`Label for ${cartonsWithoutLabel.length} carton(s)`);
       }
     }
     
