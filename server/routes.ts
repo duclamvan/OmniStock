@@ -15905,10 +15905,60 @@ Important:
         })
       );
 
-      // Fetch all packing cartons
-      const cartons = await storage.getPackingCartons();
+      // Fetch all packing cartons - first try dedicated table, then fall back to packing materials
+      let cartons = await storage.getPackingCartons();
+      
+      // If no cartons in dedicated table, check packing materials with category 'cartons'
       if (!cartons || cartons.length === 0) {
-        return res.status(400).json({ message: 'No packing cartons configured' });
+        const packingMaterials = await storage.getPackingMaterials();
+        const cartonMaterials = packingMaterials.filter(m => 
+          m.category === 'cartons' && m.isActive && m.dimensions
+        );
+        
+        if (cartonMaterials.length > 0) {
+          // Convert packing materials to carton format
+          cartons = cartonMaterials.map(m => {
+            // Parse dimensions like "30×20×15 cm" or "30x20x15cm"
+            const dimMatch = m.dimensions?.match(/(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)\s*(cm|mm|in)?/i);
+            let length = 30, width = 20, height = 15; // defaults
+            let unit = 'cm';
+            
+            if (dimMatch) {
+              length = parseFloat(dimMatch[1]);
+              width = parseFloat(dimMatch[2]);
+              height = parseFloat(dimMatch[3]);
+              unit = (dimMatch[4] || 'cm').toLowerCase();
+              
+              // Convert to cm if needed
+              if (unit === 'mm') {
+                length /= 10; width /= 10; height /= 10;
+              } else if (unit === 'in') {
+                length *= 2.54; width *= 2.54; height *= 2.54;
+              }
+            }
+            
+            return {
+              id: m.id,
+              name: m.name,
+              innerLengthCm: length.toString(),
+              innerWidthCm: width.toString(),
+              innerHeightCm: height.toString(),
+              maxWeightKg: '30', // default max weight
+              tareWeightKg: '0.5', // default tare weight
+              cost: m.cost || '0',
+              currency: m.currency || 'EUR',
+              isActive: m.isActive ?? true,
+              usageCount: 0,
+              createdAt: m.createdAt,
+              updatedAt: m.updatedAt
+            };
+          });
+          console.log(`Using ${cartons.length} cartons from packing materials table`);
+        }
+      }
+      
+      if (!cartons || cartons.length === 0) {
+        return res.status(400).json({ message: 'No packing cartons configured. Add cartons in Packing Materials.' });
       }
 
       // Call optimization service with carrier constraints
@@ -15965,10 +16015,50 @@ Important:
         return res.status(400).json({ message: 'Invalid cartons array' });
       }
 
-      // Fetch all packing cartons for reference
-      const cartons = await storage.getPackingCartons();
+      // Fetch all packing cartons for reference - try dedicated table first, then packing materials
+      let cartons = await storage.getPackingCartons();
+      
       if (!cartons || cartons.length === 0) {
-        return res.status(400).json({ message: 'No packing cartons configured' });
+        const packingMaterials = await storage.getPackingMaterials();
+        const cartonMaterials = packingMaterials.filter(m => 
+          m.category === 'cartons' && m.isActive && m.dimensions
+        );
+        
+        if (cartonMaterials.length > 0) {
+          cartons = cartonMaterials.map(m => {
+            const dimMatch = m.dimensions?.match(/(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)\s*(cm|mm|in)?/i);
+            let length = 30, width = 20, height = 15;
+            
+            if (dimMatch) {
+              length = parseFloat(dimMatch[1]);
+              width = parseFloat(dimMatch[2]);
+              height = parseFloat(dimMatch[3]);
+              const unit = (dimMatch[4] || 'cm').toLowerCase();
+              if (unit === 'mm') { length /= 10; width /= 10; height /= 10; }
+              else if (unit === 'in') { length *= 2.54; width *= 2.54; height *= 2.54; }
+            }
+            
+            return {
+              id: m.id,
+              name: m.name,
+              innerLengthCm: length.toString(),
+              innerWidthCm: width.toString(),
+              innerHeightCm: height.toString(),
+              maxWeightKg: '30',
+              tareWeightKg: '0.5',
+              cost: m.cost || '0',
+              currency: m.currency || 'EUR',
+              isActive: m.isActive ?? true,
+              usageCount: 0,
+              createdAt: m.createdAt,
+              updatedAt: m.updatedAt
+            };
+          });
+        }
+      }
+      
+      if (!cartons || cartons.length === 0) {
+        return res.status(400).json({ message: 'No packing cartons configured. Add cartons in Packing Materials.' });
       }
 
       console.log(`Saving packing plan for order ${orderId}:`, {
