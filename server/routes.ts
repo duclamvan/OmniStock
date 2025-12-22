@@ -40,6 +40,7 @@ import {
   insertEmployeeIncidentSchema,
   warehouseTasks,
   insertWarehouseTaskSchema,
+  insertWarehouseLabelSchema,
   productCostHistory,
   products,
   productBundles,
@@ -11149,6 +11150,155 @@ Important:
     } catch (error) {
       console.error("Error deleting warehouse task:", error);
       res.status(500).json({ message: "Failed to delete warehouse task" });
+    }
+  });
+
+  // ============================================================================
+  // WAREHOUSE LABELS - Track printed labels for bulk printing
+  // ============================================================================
+
+  // GET /api/warehouse-labels - List all saved labels sorted by most recently used
+  app.get('/api/warehouse-labels', isAuthenticated, async (req: any, res) => {
+    try {
+      const labels = await storage.getWarehouseLabels();
+      res.json(labels);
+    } catch (error) {
+      console.error("Error fetching warehouse labels:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse labels" });
+    }
+  });
+
+  // GET /api/warehouse-labels/:id - Get a specific label
+  app.get('/api/warehouse-labels/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const label = await storage.getWarehouseLabel(req.params.id);
+      if (!label) {
+        return res.status(404).json({ message: "Warehouse label not found" });
+      }
+      res.json(label);
+    } catch (error) {
+      console.error("Error fetching warehouse label:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse label" });
+    }
+  });
+
+  // POST /api/warehouse-labels - Create or update a label (upsert by productId)
+  app.post('/api/warehouse-labels', isAuthenticated, async (req: any, res) => {
+    try {
+      const data = insertWarehouseLabelSchema.parse(req.body);
+      
+      // Check if a label already exists for this product
+      const existingLabel = await storage.getWarehouseLabelByProductId(data.productId);
+      
+      if (existingLabel) {
+        // Update existing label and increment print count
+        const updated = await storage.incrementWarehouseLabelPrintCount(existingLabel.id);
+        return res.json(updated);
+      }
+      
+      // Create new label
+      const label = await storage.createWarehouseLabel(data);
+      res.status(201).json(label);
+    } catch (error) {
+      console.error("Error creating warehouse label:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create warehouse label" });
+    }
+  });
+
+  // PATCH /api/warehouse-labels/:id - Update a label
+  app.patch('/api/warehouse-labels/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const labelId = req.params.id;
+      const existingLabel = await storage.getWarehouseLabel(labelId);
+      
+      if (!existingLabel) {
+        return res.status(404).json({ message: "Warehouse label not found" });
+      }
+      
+      const updates = insertWarehouseLabelSchema.partial().parse(req.body);
+      const updated = await storage.updateWarehouseLabel(labelId, updates);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating warehouse label:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update warehouse label" });
+    }
+  });
+
+  // POST /api/warehouse-labels/:id/print - Increment print count for a label
+  app.post('/api/warehouse-labels/:id/print', isAuthenticated, async (req: any, res) => {
+    try {
+      const labelId = req.params.id;
+      const label = await storage.incrementWarehouseLabelPrintCount(labelId);
+      
+      if (!label) {
+        return res.status(404).json({ message: "Warehouse label not found" });
+      }
+      
+      res.json(label);
+    } catch (error) {
+      console.error("Error incrementing print count:", error);
+      res.status(500).json({ message: "Failed to increment print count" });
+    }
+  });
+
+  // DELETE /api/warehouse-labels/:id - Delete a single label
+  app.delete('/api/warehouse-labels/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const labelId = req.params.id;
+      const existingLabel = await storage.getWarehouseLabel(labelId);
+      
+      if (!existingLabel) {
+        return res.status(404).json({ message: "Warehouse label not found" });
+      }
+      
+      await storage.deleteWarehouseLabel(labelId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting warehouse label:", error);
+      res.status(500).json({ message: "Failed to delete warehouse label" });
+    }
+  });
+
+  // POST /api/warehouse-labels/bulk-delete - Delete multiple labels
+  app.post('/api/warehouse-labels/bulk-delete', isAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "ids array is required" });
+      }
+      
+      const deletedCount = await storage.deleteWarehouseLabels(ids);
+      res.json({ deletedCount });
+    } catch (error) {
+      console.error("Error bulk deleting warehouse labels:", error);
+      res.status(500).json({ message: "Failed to delete warehouse labels" });
+    }
+  });
+
+  // POST /api/warehouse-labels/bulk-print - Mark multiple labels as printed
+  app.post('/api/warehouse-labels/bulk-print', isAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "ids array is required" });
+      }
+      
+      const results = await Promise.all(
+        ids.map(id => storage.incrementWarehouseLabelPrintCount(id))
+      );
+      
+      res.json({ updatedCount: results.filter(r => r !== undefined).length });
+    } catch (error) {
+      console.error("Error bulk printing warehouse labels:", error);
+      res.status(500).json({ message: "Failed to update print counts" });
     }
   });
 
