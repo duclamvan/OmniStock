@@ -15965,7 +15965,7 @@ export default function PickPack() {
 
       {/* Reset Order Confirmation Dialog */}
       <Dialog open={showResetOrderDialog} onOpenChange={setShowResetOrderDialog}>
-        <DialogContent className="z-[100]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('resetOrder')}</DialogTitle>
             <DialogDescription>
