@@ -12312,7 +12312,10 @@ export default function PickPack() {
                   <Button
                     size="icon"
                     className="h-7 w-7 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 touch-manipulation relative z-10"
-                    onClick={() => setShowResetOrderDialog(true)}
+                    onClick={() => {
+                      setShowPickingCompletionModal(false);
+                      setShowResetOrderDialog(true);
+                    }}
                     title={t('resetOrder')}
                     data-testid="button-reset-order-mobile"
                   >
@@ -12403,7 +12406,10 @@ export default function PickPack() {
                     variant="secondary"
                     size="sm"
                     className="h-10 bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md relative z-10"
-                    onClick={() => setShowResetOrderDialog(true)}
+                    onClick={() => {
+                      setShowPickingCompletionModal(false);
+                      setShowResetOrderDialog(true);
+                    }}
                     data-testid="button-reset-order-desktop"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
