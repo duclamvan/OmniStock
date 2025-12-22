@@ -1,6 +1,6 @@
 import { db } from "../db";
-import { shipments } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { shipments, orders, orderCartons } from "@shared/schema";
+import { eq, inArray, sql, and, ne, isNotNull } from "drizzle-orm";
 
 const EASYPOST_API_BASE = "https://api.easypost.com/v2";
 
@@ -307,13 +307,14 @@ export class EasyPostService {
 
       const events = this.formatTrackingEvents(lastTracker.tracking_details || []);
       const latestEvent = events.length > 0 ? events[events.length - 1] : undefined;
+      const internalStatus = this.mapStatusToInternal(lastTracker.status);
 
       await db
         .update(shipments)
         .set({
           easypostTrackerId: trackerId,
           easypostRegistered: true,
-          easypostStatus: this.mapStatusToInternal(lastTracker.status),
+          easypostStatus: internalStatus,
           easypostStatusDetail: lastTracker.status_detail,
           easypostLastEvent: latestEvent?.description || null,
           easypostLastEventTime: latestEvent?.time ? new Date(latestEvent.time) : null,
@@ -325,6 +326,10 @@ export class EasyPostService {
           updatedAt: new Date(),
         })
         .where(eq(shipments.id, shipmentId));
+
+      if (internalStatus === 'Delivered') {
+        await this.updateOrdersToDelivered(shipment);
+      }
 
       return { success: true };
     } catch (error: any) {
@@ -362,10 +367,12 @@ export class EasyPostService {
       const events = this.formatTrackingEvents(tracker.tracking_details || []);
       const latestEvent = events.length > 0 ? events[events.length - 1] : undefined;
 
+      const internalStatus = this.mapStatusToInternal(tracker.status);
+      
       await db
         .update(shipments)
         .set({
-          easypostStatus: this.mapStatusToInternal(tracker.status),
+          easypostStatus: internalStatus,
           easypostStatusDetail: tracker.status_detail,
           easypostLastEvent: latestEvent?.description || null,
           easypostLastEventTime: latestEvent?.time ? new Date(latestEvent.time) : null,
@@ -377,10 +384,63 @@ export class EasyPostService {
         })
         .where(eq(shipments.id, shipmentId));
 
+      if (internalStatus === 'Delivered') {
+        await this.updateOrdersToDelivered(shipment);
+      }
+
       return { success: true };
     } catch (error: any) {
       console.error("EasyPost syncShipmentTracking error:", error);
       return { success: false, error: error.message || "Failed to sync tracking" };
+    }
+  }
+
+  private async updateOrdersToDelivered(shipment: any): Promise<void> {
+    try {
+      const trackingNumbers: string[] = [];
+      if (shipment.trackingNumber) trackingNumbers.push(shipment.trackingNumber);
+      if (shipment.endTrackingNumber) trackingNumbers.push(shipment.endTrackingNumber);
+      if (shipment.endTrackingNumbers?.length) {
+        trackingNumbers.push(...shipment.endTrackingNumbers);
+      }
+
+      if (trackingNumbers.length === 0) return;
+
+      const normalizedNumbers = trackingNumbers.map(n => n.toUpperCase().trim());
+
+      const matchingCartons = await db
+        .select({ orderId: orderCartons.orderId })
+        .from(orderCartons)
+        .where(
+          and(
+            isNotNull(orderCartons.trackingNumber),
+            sql`UPPER(${orderCartons.trackingNumber}) IN (${sql.join(
+              normalizedNumbers.map(n => sql`${n}`),
+              sql`, `
+            )})`
+          )
+        );
+
+      if (matchingCartons.length === 0) return;
+
+      const uniqueOrderIds = [...new Set(matchingCartons.map(c => c.orderId))];
+
+      await db
+        .update(orders)
+        .set({
+          orderStatus: 'delivered',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            inArray(orders.id, uniqueOrderIds),
+            ne(orders.orderStatus, 'delivered')
+          )
+        );
+
+      console.log(`[EasyPost] Auto-updated ${uniqueOrderIds.length} order(s) to delivered for shipment ${shipment.id}`);
+    } catch (error) {
+      console.error('[EasyPost] Error updating orders to delivered:', error);
     }
   }
 
