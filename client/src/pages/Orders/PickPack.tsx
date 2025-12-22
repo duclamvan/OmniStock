@@ -10741,25 +10741,6 @@ export default function PickPack() {
                         // Return both cartons with labels AND orphaned labels
                         return (
                           <>
-                            {/* Multi-carton shipment header */}
-                            {isMultiCartonShipment && hasLabelsWithPDF && (
-                              <div className="bg-gradient-to-r from-orange-100 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/30 border-2 border-orange-400 dark:border-orange-600 rounded-xl p-4 mb-3">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-orange-600 dark:bg-orange-700 flex items-center justify-center shadow-lg">
-                                    <Package className="h-6 w-6 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                                      PPL Shipment - {cartons.length} {t('common:labels', 'Labels')}
-                                    </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                      {t('orders:allLabelsInOnePDF', 'All labels are in one PDF document')}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            
                             {/* Show cartons with their matched labels */}
                             {cartonsWithLabels.map(({ carton, label, index }) => {
                               return (
@@ -11323,7 +11304,14 @@ export default function PickPack() {
                   )}
 
                   {/* Add Carton Label Button - Creates new non-company carton and generates new PPL label */}
-                  {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (
+                  {/* Only shown for PPL shipments WITHOUT COD (dobirka) - COD orders cannot have multiple cartons */}
+                  {activePackingOrder.pplLabelData && activePackingOrder.pplStatus !== 'cancelled' && (() => {
+                    const codAmount = typeof activePackingOrder.codAmount === 'string'
+                      ? parseFloat(activePackingOrder.codAmount)
+                      : (activePackingOrder.codAmount || 0);
+                    const hasCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
+                    return !hasCOD;
+                  })() && (
                     <Button
                       variant="outline"
                       className="w-full border-2 border-dashed border-orange-400 text-orange-700 dark:text-orange-200 hover:bg-orange-50 dark:bg-orange-900/30 hover:border-orange-300 dark:border-orange-700"
