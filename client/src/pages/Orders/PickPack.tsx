@@ -2057,7 +2057,10 @@ export default function PickPack() {
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
   const [packingTimer, setPackingTimer] = useState(0);
   const [isPackingTimerRunning, setIsPackingTimerRunning] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(() => {
+    const saved = localStorage.getItem('pickpack_audio_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [recentlyScannedItemId, setRecentlyScannedItemId] = useState<string | null>(null);
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
@@ -2148,6 +2151,11 @@ export default function PickPack() {
     
     saveViewPreference.mutate(pickingViewMode);
   }, [pickingViewMode, userId]);
+  
+  // Persist audio preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('pickpack_audio_enabled', String(audioEnabled));
+  }, [audioEnabled]);
   
   // State for packing process
   const [packingChecklist, setPackingChecklist] = useState({
@@ -7265,16 +7273,18 @@ export default function PickPack() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 lg:h-9 lg:w-9 bg-white/20 hover:bg-white/30 text-white"
+                  className={`h-8 w-8 lg:h-9 lg:w-9 transition-all duration-200 text-white ${audioEnabled ? 'bg-green-500/80 hover:bg-green-500' : 'bg-white/20 hover:bg-white/30'}`}
                   onClick={() => setAudioEnabled(!audioEnabled)}
                   title={audioEnabled ? t('muteSounds') : t('unmuteSounds')}
                   data-testid="button-toggle-sound"
                 >
-                  {audioEnabled ? (
-                    <Volume2 className="h-4 w-4" />
-                  ) : (
-                    <VolumeX className="h-4 w-4" />
-                  )}
+                  <span className={`transition-transform duration-150 ${audioEnabled ? 'scale-100' : 'scale-90'}`}>
+                    {audioEnabled ? (
+                      <Volume2 className="h-4 w-4" />
+                    ) : (
+                      <VolumeX className="h-4 w-4 opacity-70" />
+                    )}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -12686,10 +12696,18 @@ export default function PickPack() {
                   </Button>
                   <Button
                     size="icon"
-                    className="h-7 w-7 bg-white/20 hover:bg-white/30 touch-manipulation"
+                    className={`h-7 w-7 transition-all duration-200 touch-manipulation ${audioEnabled ? 'bg-green-500/80 hover:bg-green-500' : 'bg-white/20 hover:bg-white/30'}`}
                     onClick={() => setAudioEnabled(!audioEnabled)}
+                    title={audioEnabled ? t('muteSounds') : t('unmuteSounds')}
+                    data-testid="button-toggle-audio-mobile"
                   >
-                    <Volume2 className={`h-3.5 w-3.5 ${audioEnabled ? 'text-white' : 'text-white/50'}`} />
+                    <span className={`transition-transform duration-150 ${audioEnabled ? 'scale-100' : 'scale-90'}`}>
+                      {audioEnabled ? (
+                        <Volume2 className="h-3.5 w-3.5 text-white" />
+                      ) : (
+                        <VolumeX className="h-3.5 w-3.5 text-white/70" />
+                      )}
+                    </span>
                   </Button>
                   <Button
                     size="icon"
@@ -12798,10 +12816,18 @@ export default function PickPack() {
                   
                   <Button
                     size="sm"
-                    className={`h-10 ${audioEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'} text-white border-0 shadow-md`}
+                    className={`h-10 min-w-[64px] transition-all duration-300 ${audioEnabled ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'} text-white border-0 shadow-md`}
                     onClick={() => setAudioEnabled(!audioEnabled)}
+                    title={audioEnabled ? t('muteSounds') : t('unmuteSounds')}
+                    data-testid="button-toggle-audio-desktop"
                   >
-                    <Volume2 className="h-4 w-4 text-white" />
+                    <span className={`transition-transform duration-200 ${audioEnabled ? 'scale-100' : 'scale-90'}`}>
+                      {audioEnabled ? (
+                        <Volume2 className="h-4 w-4 text-white" />
+                      ) : (
+                        <VolumeX className="h-4 w-4 text-white" />
+                      )}
+                    </span>
                   </Button>
                   
                   <Button
