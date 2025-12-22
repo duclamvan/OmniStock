@@ -9507,7 +9507,7 @@ Important:
   });
 
   // Batch update order status - Optimized for multiple orders
-  // CRITICAL: This endpoint deducts inventory when orders are shipped
+  // NOTE: Inventory is already deducted during picking, NOT during shipping
   app.post('/api/orders/batch-ship', isAuthenticated, async (req: any, res) => {
     try {
       const { orderIds } = req.body;
@@ -9519,9 +9519,8 @@ Important:
       const shippedAt = new Date();
       const results: any[] = [];
       const errors: any[] = [];
-      const inventoryDeductions: { productId: string; variantId?: string; quantity: number; orderId: string }[] = [];
 
-      // Process all orders sequentially to ensure proper inventory deduction
+      // Process all orders
       for (const orderId of orderIds) {
         try {
           // Skip mock orders
@@ -9537,48 +9536,13 @@ Important:
             continue;
           }
 
-          // IDEMPOTENCY: Skip if order is already shipped to prevent double inventory deduction
+          // IDEMPOTENCY: Skip if order is already shipped
           if (existingOrder.orderStatus === 'shipped') {
-            results.push({ id: orderId, success: true, message: 'Order already shipped', skippedInventory: true });
+            results.push({ id: orderId, success: true, message: 'Order already shipped' });
             continue;
           }
 
-          // Get order items for inventory deduction
-          const orderItems = await storage.getOrderItems(orderId);
-
-          // Deduct inventory for each order item
-          for (const item of orderItems) {
-            // Use packedQuantity if available (completed packing), otherwise use quantity
-            const shippedQty = Number(item.packedQuantity) || Number(item.quantity) || 0;
-            if (shippedQty <= 0) continue;
-
-            // Deduct from product quantity (use Number() to safely convert DB numeric types)
-            if (item.productId) {
-              const product = await storage.getProduct(item.productId);
-              if (product) {
-                const currentQty = Number(product.quantity) || 0;
-                const newQty = Math.max(0, currentQty - shippedQty);
-                await storage.updateProduct(item.productId, { quantity: newQty });
-                inventoryDeductions.push({ productId: item.productId, quantity: shippedQty, orderId });
-                console.log(`Deducted ${shippedQty} from product ${item.productId} (${currentQty} -> ${newQty})`);
-              }
-            }
-
-            // Also deduct from variant quantity if variant is specified
-            if (item.variantId) {
-              const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
-              const variant = variants.find(v => v.id === item.variantId);
-              if (variant) {
-                const currentQty = Number(variant.quantity) || 0;
-                const newQty = Math.max(0, currentQty - shippedQty);
-                await storage.updateProductVariant(item.variantId, { quantity: newQty });
-                inventoryDeductions.push({ productId: item.productId || '', variantId: item.variantId, quantity: shippedQty, orderId });
-                console.log(`Deducted ${shippedQty} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
-              }
-            }
-          }
-
-          // Update order status to shipped
+          // Update order status to shipped (NO inventory deduction - already done during picking)
           const updates = {
             orderStatus: 'shipped' as const,
             packStatus: 'completed' as const,
@@ -9594,10 +9558,10 @@ Important:
               activityType: 'order_shipped',
               userId: req.user?.claims?.sub || "system",
               userName: req.user?.claims?.first_name || 'System',
-              notes: `Order ${order.orderId} marked as shipped. Inventory deducted for ${orderItems.length} items.`,
+              notes: `Order ${order.orderId} marked as shipped.`,
             });
 
-            results.push({ id: orderId, success: true, order, itemsDeducted: orderItems.length });
+            results.push({ id: orderId, success: true, order });
           } else {
             errors.push({ id: orderId, success: false, error: 'Failed to update order' });
           }
@@ -9613,8 +9577,7 @@ Important:
         failed: errors.length,
         results,
         errors,
-        inventoryDeductions: inventoryDeductions.length,
-        message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}. Inventory deducted for ${inventoryDeductions.length} items.`
+        message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
       });
 
     } catch (error) {
@@ -9672,46 +9635,8 @@ Important:
         return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
       }
 
-      // CRITICAL: Deduct inventory when order is marked as shipped
-      let inventoryDeducted = false;
-      if (updates.orderStatus === 'shipped') {
-        // Check if order is already shipped (idempotency check)
-        const existingOrder = await storage.getOrder(req.params.id);
-        if (existingOrder && existingOrder.orderStatus !== 'shipped') {
-          // Get order items and deduct inventory
-          const orderItems = await storage.getOrderItems(req.params.id);
-          
-          for (const item of orderItems) {
-            // Use packedQuantity if available (completed packing), otherwise use quantity
-            const shippedQty = Number(item.packedQuantity) || Number(item.quantity) || 0;
-            if (shippedQty <= 0) continue;
-
-            // Deduct from product quantity (use Number() to safely convert DB numeric types)
-            if (item.productId) {
-              const product = await storage.getProduct(item.productId);
-              if (product) {
-                const currentQty = Number(product.quantity) || 0;
-                const newQty = Math.max(0, currentQty - shippedQty);
-                await storage.updateProduct(item.productId, { quantity: newQty });
-                console.log(`Status endpoint: Deducted ${shippedQty} from product ${item.productId} (${currentQty} -> ${newQty})`);
-              }
-            }
-
-            // Also deduct from variant quantity if variant is specified
-            if (item.variantId) {
-              const variants = item.productId ? await storage.getProductVariants(item.productId) : [];
-              const variant = variants.find(v => v.id === item.variantId);
-              if (variant) {
-                const currentQty = Number(variant.quantity) || 0;
-                const newQty = Math.max(0, currentQty - shippedQty);
-                await storage.updateProductVariant(item.variantId, { quantity: newQty });
-                console.log(`Status endpoint: Deducted ${shippedQty} from variant ${item.variantId} (${currentQty} -> ${newQty})`);
-              }
-            }
-          }
-          inventoryDeducted = true;
-        }
-      }
+      // NOTE: Inventory deduction is handled during PICKING, not during shipping
+      // This prevents double-deduction when orders go through the pick & pack workflow
 
       const order = await storage.updateOrder(req.params.id, updates);
 
