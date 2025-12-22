@@ -3955,7 +3955,7 @@ function ShipmentReportDialog({
               
               {/* Labels Section - Collapsible with cleaner design */}
               {reportData.items.filter(i => i.locations.length > 0).length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border rounded-lg">
                   <div 
                     className="bg-muted/50 px-3 py-2 border-b flex items-center justify-between cursor-pointer hover:bg-muted/70 transition-colors"
                     onClick={() => setShowLabelsSection(!showLabelsSection)}
@@ -3972,16 +3972,22 @@ function ShipmentReportDialog({
                   </div>
                   {showLabelsSection && (
                     <div className="p-3 space-y-3">
-                      {/* Actions - Inline */}
-                      <div className="flex items-center justify-between gap-2 relative z-50">
+                      {/* Actions - Inline with explicit pointer events */}
+                      <div className="flex items-center justify-between gap-2 relative" style={{ zIndex: 9999, pointerEvents: 'auto' }}>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={(e) => {
+                          onMouseDown={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             selectAllForLabels();
                           }}
-                          className="h-8 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          className="h-8 text-xs pointer-events-auto"
+                          style={{ pointerEvents: 'auto' }}
                         >
                           <CheckSquare className="h-3.5 w-3.5 mr-1" />
                           {t('selectAll')}
@@ -3992,12 +3998,20 @@ function ShipmentReportDialog({
                           </span>
                           <Button 
                             size="sm"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              if (selectedItemsForLabels.size > 0) {
+                                printLabels();
+                              }
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              printLabels();
+                              e.preventDefault();
                             }}
                             disabled={selectedItemsForLabels.size === 0}
-                            className="h-8 relative z-50"
+                            className="h-8 pointer-events-auto"
+                            style={{ pointerEvents: 'auto', zIndex: 9999 }}
                           >
                             <Printer className="h-3.5 w-3.5 mr-1" />
                             {t('printLabels')}
