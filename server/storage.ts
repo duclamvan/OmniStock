@@ -169,7 +169,10 @@ import {
   type InsertCustomerBadge,
   customerBadges,
   type WarehouseTask,
-  type InsertWarehouseTask
+  type InsertWarehouseTask,
+  warehouseLabels,
+  type WarehouseLabel,
+  type InsertWarehouseLabel
 } from "@shared/schema";
 import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, lt, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -704,6 +707,16 @@ export interface IStorage {
   createWarehouseTask(task: InsertWarehouseTask): Promise<WarehouseTask>;
   updateWarehouseTask(id: string, updates: Partial<WarehouseTask>): Promise<WarehouseTask | undefined>;
   deleteWarehouseTask(id: string): Promise<boolean>;
+
+  // Warehouse Labels
+  getWarehouseLabels(): Promise<WarehouseLabel[]>;
+  getWarehouseLabel(id: string): Promise<WarehouseLabel | undefined>;
+  getWarehouseLabelByProductId(productId: string): Promise<WarehouseLabel | undefined>;
+  createWarehouseLabel(label: InsertWarehouseLabel): Promise<WarehouseLabel>;
+  updateWarehouseLabel(id: string, updates: Partial<InsertWarehouseLabel>): Promise<WarehouseLabel | undefined>;
+  deleteWarehouseLabel(id: string): Promise<boolean>;
+  deleteWarehouseLabels(ids: string[]): Promise<number>;
+  incrementWarehouseLabelPrintCount(id: string): Promise<WarehouseLabel | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -6338,6 +6351,115 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting warehouse task:', error);
       throw new Error('Failed to delete warehouse task');
+    }
+  }
+
+  // Warehouse Labels
+  async getWarehouseLabels(): Promise<WarehouseLabel[]> {
+    try {
+      return await db
+        .select()
+        .from(warehouseLabels)
+        .orderBy(desc(warehouseLabels.lastUsedAt));
+    } catch (error) {
+      console.error('Error getting warehouse labels:', error);
+      throw new Error('Failed to retrieve warehouse labels');
+    }
+  }
+
+  async getWarehouseLabel(id: string): Promise<WarehouseLabel | undefined> {
+    try {
+      const [label] = await db
+        .select()
+        .from(warehouseLabels)
+        .where(eq(warehouseLabels.id, id))
+        .limit(1);
+      return label;
+    } catch (error) {
+      console.error('Error getting warehouse label:', error);
+      throw new Error('Failed to retrieve warehouse label');
+    }
+  }
+
+  async getWarehouseLabelByProductId(productId: string): Promise<WarehouseLabel | undefined> {
+    try {
+      const [label] = await db
+        .select()
+        .from(warehouseLabels)
+        .where(eq(warehouseLabels.productId, productId))
+        .limit(1);
+      return label;
+    } catch (error) {
+      console.error('Error getting warehouse label by product:', error);
+      throw new Error('Failed to retrieve warehouse label');
+    }
+  }
+
+  async createWarehouseLabel(label: InsertWarehouseLabel): Promise<WarehouseLabel> {
+    try {
+      const [result] = await db
+        .insert(warehouseLabels)
+        .values(label)
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error creating warehouse label:', error);
+      throw new Error('Failed to create warehouse label');
+    }
+  }
+
+  async updateWarehouseLabel(id: string, updates: Partial<InsertWarehouseLabel>): Promise<WarehouseLabel | undefined> {
+    try {
+      const [result] = await db
+        .update(warehouseLabels)
+        .set({
+          ...updates,
+          lastUsedAt: new Date()
+        })
+        .where(eq(warehouseLabels.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error updating warehouse label:', error);
+      throw new Error('Failed to update warehouse label');
+    }
+  }
+
+  async deleteWarehouseLabel(id: string): Promise<boolean> {
+    try {
+      await db.delete(warehouseLabels).where(eq(warehouseLabels.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting warehouse label:', error);
+      throw new Error('Failed to delete warehouse label');
+    }
+  }
+
+  async deleteWarehouseLabels(ids: string[]): Promise<number> {
+    try {
+      if (ids.length === 0) return 0;
+      const result = await db.delete(warehouseLabels).where(inArray(warehouseLabels.id, ids));
+      return ids.length;
+    } catch (error) {
+      console.error('Error deleting warehouse labels:', error);
+      throw new Error('Failed to delete warehouse labels');
+    }
+  }
+
+  async incrementWarehouseLabelPrintCount(id: string): Promise<WarehouseLabel | undefined> {
+    try {
+      const [result] = await db
+        .update(warehouseLabels)
+        .set({
+          printCount: sql`${warehouseLabels.printCount} + 1`,
+          lastUsedAt: new Date()
+        })
+        .where(eq(warehouseLabels.id, id))
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error incrementing warehouse label print count:', error);
+      throw new Error('Failed to increment print count');
     }
   }
 }

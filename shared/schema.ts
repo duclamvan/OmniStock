@@ -3283,3 +3283,36 @@ export const insertBusinessReportSchema = createInsertSchema(businessReports, {
 
 export type BusinessReport = typeof businessReports.$inferSelect;
 export type InsertBusinessReport = z.infer<typeof insertBusinessReportSchema>;
+
+// Warehouse Labels table - tracks printed labels for products
+export const warehouseLabels = pgTable("warehouse_labels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  productName: varchar("product_name").notNull(), // Snapshot of name at print time
+  vietnameseName: varchar("vietnamese_name"), // Snapshot of Vietnamese name at print time
+  sku: varchar("sku"),
+  priceEur: decimal("price_eur", { precision: 10, scale: 2 }),
+  priceCzk: decimal("price_czk", { precision: 10, scale: 2 }),
+  quantity: integer("quantity").notNull().default(1), // Number of labels to print
+  lastUsedAt: timestamp("last_used_at").notNull().defaultNow(),
+  printCount: integer("print_count").notNull().default(1), // How many times this label was printed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertWarehouseLabelSchema = createInsertSchema(warehouseLabels, {
+  productId: z.string(),
+  productName: z.string(),
+  vietnameseName: z.string().optional(),
+  sku: z.string().optional(),
+  priceEur: z.string().optional(),
+  priceCzk: z.string().optional(),
+  quantity: z.number().int().min(1).default(1),
+}).omit({
+  id: true,
+  lastUsedAt: true,
+  printCount: true,
+  createdAt: true,
+});
+
+export type WarehouseLabel = typeof warehouseLabels.$inferSelect;
+export type InsertWarehouseLabel = z.infer<typeof insertWarehouseLabelSchema>;
