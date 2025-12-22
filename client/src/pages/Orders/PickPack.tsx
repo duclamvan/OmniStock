@@ -12581,7 +12581,7 @@ export default function PickPack() {
                 data-testid="button-go-to-ready"
               >
                 <Truck className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
-                GO TO READY TO SHIP ({readyOrdersForModal.length})
+                GO TO READY TO SHIP
               </Button>
               
               {/* Back to Overview */}
