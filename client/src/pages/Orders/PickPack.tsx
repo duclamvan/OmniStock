@@ -7213,7 +7213,7 @@ export default function PickPack() {
               <div className="flex-1 flex flex-col items-start gap-1.5 min-w-0 ml-2">
                 <div className="text-base lg:text-lg font-bold tracking-wide truncate w-full">{activePackingOrder.orderId}</div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="text-sm lg:text-base text-white font-medium truncate">{activePackingOrder.customerName}</span>
+                  <span className="text-base lg:text-lg text-yellow-300 font-black truncate drop-shadow-md">{activePackingOrder.customerName}</span>
                   {(() => {
                     const shippingAddr = activePackingOrder.shippingAddress;
                     const country = (typeof shippingAddr === 'object' && shippingAddr !== null && 'country' in shippingAddr) ? shippingAddr.country : '';
