@@ -1845,7 +1845,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </div>
           </div>
 
-          {/* Mobile Card View - Compact */}
+          {/* Mobile Card View - Compact with all column details */}
           <div className="sm:hidden space-y-1.5 px-2 py-2">
             {filteredOrders?.map((order: any) => (
               <div 
@@ -1868,27 +1868,65 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   </span>
                 </div>
                 
-                {/* Row 2: Customer + Date + Expand Arrow */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Row 2: Customer + Date */}
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
                     {order.customer?.name || t('orders:walkInCustomer')}
                   </span>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                      {formatDate(order.createdAt)}
-                    </span>
-                    {/* Expand/Collapse arrow for items */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpandedItems(order.id);
-                      }}
-                      className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                      data-testid={`button-expand-items-${order.id}`}
-                    >
-                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedItemsOrders.has(order.id) ? 'rotate-180' : ''}`} />
-                    </button>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {formatDate(order.createdAt)}
+                  </span>
+                </div>
+                
+                {/* Row 3: Tracking + Profit + Biller (additional details) */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-slate-800">
+                  {/* Tracking Info */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {(order.orderStatus === 'shipped' || order.orderStatus === 'delivered') ? (
+                      <div className="flex items-center gap-1.5">
+                        <TrackingStatusBadge 
+                          orderId={order.id} 
+                          orderStatus={order.orderStatus}
+                        />
+                        {order.trackingNumber && (
+                          <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[80px]" title={order.trackingNumber}>
+                            {order.trackingNumber}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">—</span>
+                    )}
                   </div>
+                  
+                  {/* Profit (if user has access) */}
+                  {canAccessFinancialData && visibleColumns.profit && (
+                    <span className={cn(
+                      "text-[10px] font-medium",
+                      calculateOrderProfit(order) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    )}>
+                      {formatCurrency(calculateOrderProfit(order), order.currency)}
+                    </span>
+                  )}
+                  
+                  {/* Biller */}
+                  {visibleColumns.biller && (
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[60px]">
+                      {order.biller?.firstName || order.biller?.email || 'N/A'}
+                    </span>
+                  )}
+                  
+                  {/* Expand/Collapse arrow for items */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpandedItems(order.id);
+                    }}
+                    className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0"
+                    data-testid={`button-expand-items-${order.id}`}
+                  >
+                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedItemsOrders.has(order.id) ? 'rotate-180' : ''}`} />
+                  </button>
                 </div>
                   
                 {/* Order Items Summary - Only show when expanded */}
