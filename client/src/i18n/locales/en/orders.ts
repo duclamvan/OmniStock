@@ -36,6 +36,10 @@ const orders = {
   orderDate: 'Order Date',
   orderStatus: 'Order Status',
   customer: 'Customer',
+  date: 'Date',
+  status: 'Status',
+  payment: 'Payment',
+  biller: 'Biller',
   customerName: 'Customer Name',
   shippingAddress: 'Shipping Address',
   billingAddress: 'Billing Address',
@@ -339,9 +343,6 @@ const orders = {
   adjustment: 'Adjustment',
   grandTotal: 'Grand Total',
   itemTotal: 'Item Total',
-  qty: 'Qty',
-  price: 'Price',
-  total: 'Total',
   addNotes: 'Add notes',
   editNotes: 'Edit notes',
   swipeDownToClose: 'Swipe down to close',
@@ -949,7 +950,7 @@ const orders = {
   remindersEnabled: 'Reminders On',
   sendTo: 'Send to',
   estimatedArrival: 'Estimated Arrival',
-  qty: 'qty',
+  qtyLower: 'qty',
   
   // PreOrders - Notifications
   reminderSettings: 'Reminder Settings',
@@ -1383,7 +1384,6 @@ const orders = {
   shippingCostLabel: 'Shipping Cost',
   actualShippingCostLabel: 'Actual Shipping Cost',
   rounding: 'Rounding',
-  total: 'Total',
   products: 'Products',
   requiredFieldsMissing: 'Required fields missing:',
   
@@ -1660,7 +1660,7 @@ const orders = {
   clickToUnverifyAll: 'Click to unverify all items',
   
   // PickPack.tsx - Status & Totals
-  date: 'Date:',
+  dateColon: 'Date:',
   totalCartons: 'Total Cartons:',
   totalLabels: 'Total Labels:',
   forMaterial: 'For: {{name}}',

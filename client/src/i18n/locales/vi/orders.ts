@@ -36,6 +36,10 @@ const orders = {
   orderDate: 'Ngày đặt hàng',
   orderStatus: 'Trạng thái đơn hàng',
   customer: 'Khách hàng',
+  date: 'Ngày',
+  status: 'Trạng thái',
+  payment: 'Thanh toán',
+  biller: 'Người lập',
   customerName: 'Tên khách hàng',
   shippingAddress: 'Địa chỉ giao hàng',
   billingAddress: 'Địa chỉ thanh toán',
@@ -333,9 +337,6 @@ const orders = {
   adjustment: 'Điều chỉnh',
   grandTotal: 'Tổng cộng',
   itemTotal: 'Tổng sản phẩm',
-  qty: 'SL',
-  price: 'Giá',
-  total: 'Tổng',
   addNotes: 'Thêm ghi chú',
   editNotes: 'Sửa ghi chú',
   swipeDownToClose: 'Vuốt xuống để đóng',
@@ -953,7 +954,7 @@ const orders = {
   remindersEnabled: 'Đã bật nhắc',
   sendTo: 'Gửi tới',
   estimatedArrival: 'Dự kiến về',
-  qty: 'SL',
+  qtyLower: 'sl',
   
   // PreOrders - Notifications
   reminderSettings: 'Cài đặt nhắc nhở',
@@ -1371,7 +1372,6 @@ const orders = {
   shippingCostLabel: 'Phí vận chuyển',
   actualShippingCostLabel: 'Phí vận chuyển thực tế',
   rounding: 'Làm tròn',
-  total: 'Tổng',
   products: 'Sản phẩm',
   requiredFieldsMissing: 'Thiếu trường bắt buộc:',
   
@@ -1648,7 +1648,7 @@ const orders = {
   forceFinishWarning: 'Thao tác này sẽ hoàn tất đóng gói mà không xác minh tất cả các bước. Chỉ sử dụng khi bạn chắc chắn mọi thứ đều đúng.',
   
   // PickPack.tsx - Status & Totals
-  date: 'Ngày:',
+  dateColon: 'Ngày:',
   totalCartons: 'Tổng số thùng:',
   totalLabels: 'Tổng số nhãn:',
   forMaterial: 'Cho: {{name}}',
