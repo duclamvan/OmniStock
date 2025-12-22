@@ -7072,9 +7072,10 @@ export default function PickPack() {
       const showCOD = codAmount > 0 || activePackingOrder.paymentMethod?.toUpperCase().includes('COD');
       
       if (isPPL) {
-        // PPL: Must have created shipment and all cartons must have labels from database
+        // PPL: Must have created shipment and at least one label exists
+        // PPL generates all labels in one batch PDF, so we don't need one label per carton
         if (activePackingOrder.pplStatus !== 'created') return false;
-        if (shipmentLabelsFromDB.length < cartons.length) return false;
+        if (shipmentLabelsFromDB.length === 0) return false;
       } else if (isGLS) {
         // GLS: All cartons must have tracking numbers (check controlled state OR database) and no duplicates
         if (cartons.some(c => {
