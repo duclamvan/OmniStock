@@ -4,6 +4,10 @@ const orders = {
   order: 'Đơn hàng',
   orderManagement: 'Quản lý đơn hàng',
   
+  // Common
+  inStock: 'còn hàng',
+  primary: 'Chính',
+  
   // Actions
   createOrder: 'Tạo đơn hàng',
   editOrder: 'Chỉnh sửa đơn hàng',

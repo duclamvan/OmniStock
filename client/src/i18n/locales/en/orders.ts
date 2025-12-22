@@ -4,6 +4,10 @@ const orders = {
   order: 'Order',
   orderManagement: 'Order Management',
   
+  // Common
+  inStock: 'in stock',
+  primary: 'Primary',
+  
   // Actions
   createOrder: 'Create Order',
   editOrder: 'Edit Order',

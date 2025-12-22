@@ -403,6 +403,7 @@ const imports = {
   stockAlerts: 'Cảnh báo tồn kho',
   topProductsByValue: 'Sản phẩm giá trị cao nhất',
   inStock: 'Còn hàng',
+  primary: 'Chính',
   lowStock: 'Sắp hết',
   outOfStock: 'Hết hàng',
   skuLabel: 'SKU:',
