@@ -3466,6 +3466,7 @@ function ShipmentReportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation(['imports', 'common']);
+  const { toast } = useToast();
   const [selectedItemsForLabels, setSelectedItemsForLabels] = useState<Set<string>>(new Set());
   const [showLabelsSection, setShowLabelsSection] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -3529,67 +3530,188 @@ function ShipmentReportDialog({
   const printLabels = () => {
     if (!printRef.current) return;
     
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    const printWindow = window.open('', '_blank', 'width=600,height=800');
+    if (!printWindow) {
+      toast({
+        title: t('common:error'),
+        description: t('popupBlocked'),
+        variant: 'destructive',
+      });
+      return;
+    }
     
     const selectedItems = reportData?.items.filter(item => 
       selectedItemsForLabels.has(String(item.receiptItemId))
     ) || [];
     
+    // Generate labels in the same format as /stock warehouse labels
+    const labelsHtml = selectedItems.map(item => {
+      const productCode = item.sku || item.productId || '-';
+      const vietnameseName = item.vietnameseName || item.productName;
+      const priceEur = item.prices?.priceEur ? Number(item.prices.priceEur) : null;
+      const priceCzk = item.prices?.priceCzk ? Number(item.prices.priceCzk) : null;
+      
+      return `
+        <div class="label-container">
+          <div class="qr-section">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="90" height="90">
+              <rect width="45" height="45" fill="white"/>
+              <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
+              <text x="22.5" y="30" text-anchor="middle" font-size="4">${productCode}</text>
+            </svg>
+          </div>
+          <div class="name-section">
+            <div class="vn-name">${vietnameseName}</div>
+            <div class="en-name">${item.productName}</div>
+            ${item.sku ? `<div class="sku">${item.sku}</div>` : ''}
+          </div>
+          <div class="price-section">
+            ${priceEur !== null ? `<div class="price-eur-row"><span class="price-eur">€${priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ''}
+            ${priceCzk !== null ? `<div class="price-czk-row"><span class="price-czk">${priceCzk.toLocaleString('cs-CZ')} Kč</span></div>` : ''}
+            ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
         <title>${t('warehouseLabels')}</title>
         <style>
-          @page { size: 50mm 30mm; margin: 2mm; }
-          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          .label { 
-            width: 46mm; 
-            height: 26mm; 
-            border: 1px solid #000; 
-            padding: 2mm; 
+          @page {
+            size: 100mm 30mm;
+            margin: 0;
+          }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+          }
+          .label-container {
+            width: 100mm;
+            height: 30mm;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            background: white;
+            color: black;
+            overflow: hidden;
+            border: 2pt solid black;
             page-break-after: always;
+          }
+          .label-container:last-child {
+            page-break-after: auto;
+          }
+          .qr-section {
+            flex-shrink: 0;
+            width: 22mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5mm;
+            background: white;
+            border-right: 2pt solid black;
+          }
+          .qr-section svg {
+            width: 19mm;
+            height: 19mm;
+          }
+          .name-section {
+            flex: 1;
+            padding: 1.5mm 2mm;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
+            overflow: hidden;
+            min-width: 0;
+            background: white;
           }
-          .label:last-child { page-break-after: auto; }
-          .location { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 1mm; }
-          .product-name { font-size: 8pt; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .sku { font-size: 7pt; text-align: center; color: #666; }
-          .prices { display: flex; justify-content: space-between; font-size: 9pt; font-weight: bold; margin-top: 1mm; }
-          .price { text-align: center; flex: 1; }
-          .currency { font-size: 6pt; color: #666; }
+          .vn-name {
+            font-weight: 900;
+            font-size: 10pt;
+            line-height: 1.2;
+            text-transform: uppercase;
+            word-break: break-word;
+            letter-spacing: -0.3pt;
+          }
+          .en-name {
+            font-size: 9pt;
+            font-weight: 500;
+            line-height: 1.2;
+            color: #1f2937;
+            margin-top: 1mm;
+            word-break: break-word;
+          }
+          .sku {
+            font-size: 8pt;
+            line-height: 1.1;
+            color: black;
+            margin-top: 1mm;
+            font-family: monospace;
+            font-weight: bold;
+            background: #f3f4f6;
+            padding: 0.5mm 1mm;
+            display: inline-block;
+          }
+          .price-section {
+            flex-shrink: 0;
+            width: 26mm;
+            display: flex;
+            flex-direction: column;
+            border-left: 2pt solid black;
+          }
+          .price-eur-row {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+          }
+          .price-czk-row {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-top: 1pt solid black;
+          }
+          .price-eur {
+            font-weight: 900;
+            font-size: 14pt;
+            line-height: 1;
+            color: white;
+            letter-spacing: -0.3pt;
+          }
+          .price-czk {
+            font-weight: bold;
+            font-size: 12pt;
+            line-height: 1;
+            color: black;
+            letter-spacing: -0.3pt;
+          }
+          .price-na {
+            font-size: 10pt;
+            color: #6b7280;
+            font-weight: 500;
+          }
         </style>
       </head>
       <body>
-        ${selectedItems.map(item => 
-          item.locations.map(loc => `
-            <div class="label">
-              <div class="location">${loc.locationCode}</div>
-              <div class="product-name">${item.productName}</div>
-              <div class="sku">${item.sku || '-'}</div>
-              <div class="prices">
-                <div class="price">
-                  <div>${item.prices?.priceCzk ? parseFloat(item.prices.priceCzk).toFixed(0) : '-'}</div>
-                  <div class="currency">CZK</div>
-                </div>
-                <div class="price">
-                  <div>${item.prices?.priceEur ? parseFloat(item.prices.priceEur).toFixed(2) : '-'}</div>
-                  <div class="currency">EUR</div>
-                </div>
-              </div>
-            </div>
-          `).join('')
-        ).join('')}
+        ${labelsHtml}
       </body>
       </html>
     `);
     
     printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 250);
+    printWindow.onload = () => {
+      printWindow.print();
+    };
   };
   
   return (
