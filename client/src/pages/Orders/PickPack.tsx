@@ -1782,17 +1782,17 @@ function PickingLocationSelector({
                 </div>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white border-4 border-orange-400 rounded-xl shadow-xl min-w-[320px]">
+            <SelectContent className="bg-white border-4 border-orange-400 rounded-xl shadow-xl min-w-[320px] p-2">
               {sortedLocations.map((location) => (
                 <SelectItem 
                   key={location.id} 
                   value={location.locationCode}
-                  className="py-4 px-4 cursor-pointer hover:bg-orange-50 focus:bg-orange-100 border-b border-orange-200 last:border-b-0"
+                  className="py-4 px-4 cursor-pointer hover:bg-orange-50 focus:bg-orange-100 border-b border-orange-200 last:border-b-0 [&>span]:w-full [&>span:first-child]:hidden"
                 >
-                  <div className="flex flex-col items-center w-full gap-2">
-                    <span className="text-2xl sm:text-3xl font-black font-mono text-orange-700 tracking-wider">
+                  <div className="w-full text-center">
+                    <div className="text-2xl sm:text-3xl font-black font-mono text-orange-700 tracking-wider mb-2">
                       {location.locationCode}
-                    </span>
+                    </div>
                     <div className="flex items-center justify-center gap-2">
                       <Badge className={`text-sm px-3 py-1 ${
                         (location.quantity || 0) > 0 
