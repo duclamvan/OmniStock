@@ -201,7 +201,7 @@ export default function BulkAddCartons() {
   const validCartonCount = cartons.filter(c => c.length && c.width && c.height && c.code).length;
 
   return (
-    <div className="container mx-auto py-4 md:py-6 px-3 md:px-6 max-w-4xl pb-28 md:pb-8">
+    <div className="py-3 md:py-4 px-2 md:px-4 lg:px-6 max-w-7xl pb-28 md:pb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Button 
@@ -377,7 +377,7 @@ export default function BulkAddCartons() {
 
                       {/* Name */}
                       <Input
-                        className="h-9 w-48 shrink-0"
+                        className="h-9 flex-1 min-w-[180px] max-w-[280px]"
                         placeholder={t('cartonNamePlaceholder')}
                         value={carton.name}
                         onChange={(e) => updateCarton(carton.id, 'name', e.target.value)}
@@ -596,7 +596,7 @@ export default function BulkAddCartons() {
 
           {/* Action Buttons - Fixed at bottom on mobile */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t md:relative md:border-t-0 md:p-0 md:pt-4 z-50">
-            <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-4xl mx-auto">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <Button
                 type="button"
                 variant="outline"
