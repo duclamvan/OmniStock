@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,7 @@ import { Link } from "wouter";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
 import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
+import WarehouseLabelPreview from "@/components/warehouse/WarehouseLabelPreview";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
@@ -55,6 +56,7 @@ interface ProductLocation {
 interface EnrichedProduct {
   id: string;
   name: string;
+  vietnameseName?: string | null;
   sku?: string;
   barcode?: string;
   categoryName?: string;
@@ -76,6 +78,7 @@ export default function StockLookup() {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -196,6 +199,7 @@ export default function StockLookup() {
       return {
         id: p.id,
         name: p.name,
+        vietnameseName: p.vietnameseName,
         sku: p.sku,
         barcode: p.barcode,
         categoryName: p.categoryName,
@@ -941,21 +945,35 @@ export default function StockLookup() {
                         </div>
                       )}
 
-                      {/* Item Description Button */}
-                      {selectedProductData.description && (
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        {selectedProductData.description && (
+                          <Button
+                            variant="outline"
+                            className="flex-1 h-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDescriptionDialogOpen(true);
+                            }}
+                            data-testid={`button-view-description-${product.id}`}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            {t('viewItemDescription')}
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
-                          className="w-full"
+                          className={`${selectedProductData.description ? 'flex-1' : 'w-full'} h-10`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setDescriptionDialogOpen(true);
+                            setLabelDialogOpen(true);
                           }}
-                          data-testid={`button-view-description-${product.id}`}
+                          data-testid={`button-generate-label-${product.id}`}
                         >
-                          <FileText className="h-4 w-4 mr-2" />
-                          {t('viewItemDescription')}
+                          <Printer className="h-4 w-4 mr-2" />
+                          {t('generateLabel')}
                         </Button>
-                      )}
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -1089,6 +1107,11 @@ export default function StockLookup() {
               setSelectedLocation(null);
               setQuickButtonType(null);
             }}
+          />
+          <WarehouseLabelPreview
+            open={labelDialogOpen}
+            onOpenChange={setLabelDialogOpen}
+            product={selectedProductData}
           />
         </>
       )}
