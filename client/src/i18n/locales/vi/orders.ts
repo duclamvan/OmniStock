@@ -1871,6 +1871,23 @@ const orders = {
   selectExcelFile: 'Chọn File Excel',
   importReverted: 'Đã hoàn tác thành công {{count}} đơn hàng đã nhập',
   
+  // Trash
+  trash: 'Thùng rác',
+  trashDescription: 'Các đơn hàng đã xóa được lưu trữ tạm thời ở đây',
+  trashEmpty: 'Thùng rác trống',
+  trashEmptyDescription: 'Các đơn hàng đã xóa sẽ xuất hiện ở đây',
+  restore: 'Khôi phục',
+  deletePermanently: 'Xóa vĩnh viễn',
+  orderRestored: 'Đã khôi phục đơn hàng',
+  orderRestoredDescription: 'Đơn hàng đã được khôi phục thành công',
+  restoreError: 'Không thể khôi phục đơn hàng',
+  orderPermanentlyDeleted: 'Đã xóa vĩnh viễn đơn hàng',
+  inventoryRestored: 'Số lượng tồn kho đã được khôi phục',
+  permanentDeleteError: 'Không thể xóa vĩnh viễn đơn hàng',
+  permanentDeleteTitle: 'Xóa vĩnh viễn đơn hàng?',
+  permanentDeleteWarning: 'Hành động này không thể hoàn tác. Đơn hàng {{orderId}} sẽ bị xóa vĩnh viễn và tồn kho sẽ được khôi phục.',
+  deletedOn: 'Đã xóa',
+  
 } as const;
 
 export default orders;

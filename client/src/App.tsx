@@ -18,6 +18,7 @@ import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
 import AllOrders from "@/pages/Orders/AllOrders";
+import OrdersTrash from "@/pages/Orders/OrdersTrash";
 import AddOrder from "@/pages/Orders/AddOrder";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
@@ -141,6 +142,9 @@ function Router() {
         </Route>
         <Route path="/orders/pay-later">
           {() => <ProtectedRoute requireAdmin><AllOrders filter="pay_later" /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/trash">
+          {() => <ProtectedRoute requireAdmin><OrdersTrash /></ProtectedRoute>}
         </Route>
         <Route path="/orders/pre-orders">
           {() => <ProtectedRoute requireAdmin><AllPreOrders /></ProtectedRoute>}

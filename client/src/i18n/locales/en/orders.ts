@@ -1883,6 +1883,23 @@ const orders = {
   selectExcelFile: 'Select Excel File',
   importReverted: 'Successfully reverted {{count}} imported order(s)',
   
+  // Trash
+  trash: 'Trash',
+  trashDescription: 'Deleted orders are stored here temporarily',
+  trashEmpty: 'Trash is Empty',
+  trashEmptyDescription: 'Deleted orders will appear here',
+  restore: 'Restore',
+  deletePermanently: 'Delete Permanently',
+  orderRestored: 'Order Restored',
+  orderRestoredDescription: 'The order has been restored successfully',
+  restoreError: 'Failed to restore order',
+  orderPermanentlyDeleted: 'Order Permanently Deleted',
+  inventoryRestored: 'Inventory quantities have been restored',
+  permanentDeleteError: 'Failed to permanently delete order',
+  permanentDeleteTitle: 'Permanently Delete Order?',
+  permanentDeleteWarning: 'This action cannot be undone. Order {{orderId}} will be permanently deleted and inventory will be restored.',
+  deletedOn: 'Deleted',
+  
 } as const;
 
 export default orders;

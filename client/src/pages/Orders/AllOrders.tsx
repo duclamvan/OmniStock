@@ -1466,6 +1466,18 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Trash Button */}
+          <Link href="/orders/trash">
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-9 w-9 sm:h-10 sm:w-10"
+              data-testid="button-order-trash"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Link>
+          
           {/* Import/Export Menu - Three Dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

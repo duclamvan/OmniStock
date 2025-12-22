@@ -9872,7 +9872,76 @@ Important:
     }
   });
 
+  // Soft delete (move to trash)
   app.delete('/api/orders/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const order = await storage.getOrderById(req.params.id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Soft delete - move to trash (isArchived = true)
+      const archivedOrder = await storage.archiveOrder(req.params.id);
+      if (!archivedOrder) {
+        return res.status(500).json({ message: "Failed to archive order" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'archive',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Moved order to trash: ${order.orderId}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error archiving order:", error);
+      res.status(500).json({ message: "Failed to move order to trash" });
+    }
+  });
+
+  // Get archived/trashed orders
+  app.get('/api/orders/trash', isAuthenticated, async (req: any, res) => {
+    try {
+      const archivedOrders = await storage.getArchivedOrders();
+      res.json(archivedOrders);
+    } catch (error) {
+      console.error("Error fetching trashed orders:", error);
+      res.status(500).json({ message: "Failed to fetch trashed orders" });
+    }
+  });
+
+  // Restore order from trash
+  app.post('/api/orders/:id/restore', isAuthenticated, async (req: any, res) => {
+    try {
+      const order = await storage.getOrderById(req.params.id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      const restoredOrder = await storage.restoreOrder(req.params.id);
+      if (!restoredOrder) {
+        return res.status(500).json({ message: "Failed to restore order" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'restore',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Restored order from trash: ${order.orderId}`,
+      });
+
+      res.json(restoredOrder);
+    } catch (error) {
+      console.error("Error restoring order:", error);
+      res.status(500).json({ message: "Failed to restore order" });
+    }
+  });
+
+  // Permanent delete (with inventory restoration)
+  app.delete('/api/orders/:id/permanent', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
@@ -9917,13 +9986,13 @@ Important:
         action: 'delete',
         entityType: 'order',
         entityId: req.params.id,
-        description: `Deleted order: ${order.orderId} (inventory restored)`,
+        description: `Permanently deleted order: ${order.orderId} (inventory restored)`,
       });
 
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting order:", error);
-      res.status(500).json({ message: "Failed to delete order" });
+      console.error("Error permanently deleting order:", error);
+      res.status(500).json({ message: "Failed to permanently delete order" });
     }
   });
 

@@ -331,6 +331,7 @@ export interface IStorage {
 
   // Orders (compatibility layer for old code)
   getOrders(customerId?: number): Promise<Order[]>;
+  getArchivedOrders(): Promise<Order[]>;
   getOrdersByStatus(status: string): Promise<Order[]>;
   getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
@@ -338,6 +339,8 @@ export interface IStorage {
   createOrder(order: any): Promise<Order>;
   updateOrder(id: string, order: any): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
+  archiveOrder(id: string): Promise<Order | undefined>;
+  restoreOrder(id: string): Promise<Order | undefined>;
   getPickPackOrders(status?: string): Promise<Order[]>;
   startPickingOrder(id: string, employeeId: string): Promise<Order | undefined>;
   completePickingOrder(id: string): Promise<Order | undefined>;
@@ -1326,7 +1329,10 @@ export class DatabaseStorage implements IStorage {
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id))
         .leftJoin(users, eq(orders.billerId, users.id))
-        .where(eq(orders.customerId, customerId.toString()))
+        .where(and(
+          eq(orders.customerId, customerId.toString()),
+          eq(orders.isArchived, false)
+        ))
         .orderBy(desc(orders.createdAt));
 
         return ordersData.map(row => ({
@@ -1343,6 +1349,7 @@ export class DatabaseStorage implements IStorage {
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id))
         .leftJoin(users, eq(orders.billerId, users.id))
+        .where(eq(orders.isArchived, false))
         .orderBy(desc(orders.createdAt));
 
         return ordersData.map(row => ({
@@ -1357,6 +1364,61 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Get archived/trashed orders
+  async getArchivedOrders(): Promise<Order[]> {
+    try {
+      const ordersData = await db.select({
+        order: orders,
+        customer: customers,
+        biller: users,
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(users, eq(orders.billerId, users.id))
+      .where(eq(orders.isArchived, true))
+      .orderBy(desc(orders.updatedAt));
+
+      return ordersData.map(row => ({
+        ...row.order,
+        customer: row.customer || undefined,
+        biller: row.biller || undefined,
+      })) as any;
+    } catch (error) {
+      console.error('Error fetching archived orders:', error);
+      return [];
+    }
+  }
+
+  // Soft delete order (move to trash)
+  async archiveOrder(id: string): Promise<Order | undefined> {
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({ isArchived: true, updatedAt: new Date() })
+        .where(eq(orders.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error archiving order:', error);
+      return undefined;
+    }
+  }
+
+  // Restore order from trash
+  async restoreOrder(id: string): Promise<Order | undefined> {
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({ isArchived: false, updatedAt: new Date() })
+        .where(eq(orders.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error restoring order:', error);
+      return undefined;
+    }
+  }
+
   async getOrdersByStatus(status: string): Promise<Order[]> {
     try {
       const ordersData = await db.select({
@@ -1367,7 +1429,7 @@ export class DatabaseStorage implements IStorage {
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(users, eq(orders.billerId, users.id))
-      .where(eq(orders.orderStatus, status))
+      .where(and(eq(orders.orderStatus, status), eq(orders.isArchived, false)))
       .orderBy(desc(orders.createdAt));
 
       return ordersData.map(row => ({
@@ -1391,7 +1453,7 @@ export class DatabaseStorage implements IStorage {
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(users, eq(orders.billerId, users.id))
-      .where(eq(orders.paymentStatus, paymentStatus))
+      .where(and(eq(orders.paymentStatus, paymentStatus), eq(orders.isArchived, false)))
       .orderBy(desc(orders.createdAt));
 
       return ordersData.map(row => ({
