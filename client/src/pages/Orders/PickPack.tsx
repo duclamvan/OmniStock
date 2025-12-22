@@ -143,6 +143,7 @@ interface BundleItem {
   name: string;
   colorNumber?: string;
   quantity: number;
+  bulkUnitQty?: number | null;
   picked: boolean;
   location?: string;
 }
@@ -1638,7 +1639,7 @@ function PickingListView({
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
                     }`}>
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} />
+                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} showStock={true} requiredQty={item.quantity * (item.bulkUnitQty || 1)} />
                     </div>
                     {/* Same aisle indicator - shows when next item is in same aisle */}
                     {isSameAisleAsNext && !isPicked && (
@@ -1928,7 +1929,7 @@ function BundleComponentLocationSelector({
                     <span className="font-bold text-gray-900 dark:text-gray-100">{location.locationCode}</span>
                     <div className="flex items-center gap-2">
                       <Badge className={`text-xs ${
-                        (location.quantity || 0) >= bundleItem.quantity 
+                        (location.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
                           ? 'bg-green-100 text-green-700 border-green-300' 
                           : (location.quantity || 0) > 0
                             ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
@@ -1952,7 +1953,7 @@ function BundleComponentLocationSelector({
           {selectedLocationData && (
             <div className="flex justify-center">
               <Badge className={`text-xs px-2 py-0.5 ${
-                (selectedLocationData.quantity || 0) >= bundleItem.quantity 
+                (selectedLocationData.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
                   ? 'bg-green-600 text-white' 
                   : (selectedLocationData.quantity || 0) > 0
                     ? 'bg-yellow-500 text-white'
@@ -1979,11 +1980,15 @@ function BundleComponentLocationSelector({
 const ItemPrimaryLocation = memo(({ 
   productId,
   fallbackLocation,
-  className = ""
+  className = "",
+  showStock = false,
+  requiredQty = 0
 }: { 
   productId?: string | null;
   fallbackLocation?: string;
   className?: string;
+  showStock?: boolean;
+  requiredQty?: number;
 }) => {
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', productId, 'locations'],
@@ -1992,8 +1997,11 @@ const ItemPrimaryLocation = memo(({
   });
   
   // Find primary location, or first with stock, or first location
-  const primaryLocation = useMemo(() => {
-    if (!productLocations.length) return null;
+  const { primaryLocation, primaryStock, totalStock } = useMemo(() => {
+    if (!productLocations.length) return { primaryLocation: null, primaryStock: 0, totalStock: 0 };
+    
+    // Calculate total stock across all locations
+    const total = productLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
     
     // Sort: primary first, then by stock quantity
     const sorted = [...productLocations].sort((a, b) => {
@@ -2002,7 +2010,11 @@ const ItemPrimaryLocation = memo(({
       return (b.quantity || 0) - (a.quantity || 0);
     });
     
-    return sorted[0]?.locationCode || null;
+    return {
+      primaryLocation: sorted[0]?.locationCode || null,
+      primaryStock: sorted[0]?.quantity || 0,
+      totalStock: total
+    };
   }, [productLocations]);
   
   if (!productId) {
@@ -2019,7 +2031,27 @@ const ItemPrimaryLocation = memo(({
     return null;
   }
   
-  return <span className={className}>{displayLocation}</span>;
+  // Use primaryStock (stock at displayed location), not totalStock
+  // This ensures the stock shown matches the specific location displayed
+  const displayStock = primaryStock;
+  
+  // Determine stock status color based on stock at the displayed location
+  const stockColor = displayStock >= requiredQty 
+    ? 'text-green-600 dark:text-green-400' 
+    : displayStock > 0 
+      ? 'text-yellow-600 dark:text-yellow-400' 
+      : 'text-red-600 dark:text-red-400';
+  
+  return (
+    <span className={className}>
+      {displayLocation}
+      {showStock && (
+        <span className={`ml-1 font-medium ${stockColor}`}>
+          ({displayStock})
+        </span>
+      )}
+    </span>
+  );
 });
 
 export default function PickPack() {
@@ -6053,13 +6085,17 @@ export default function PickPack() {
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
       const isOnline = offlineQueue.getOnlineStatus();
+      // Include bulkUnitQty for carton/bulk items so stock is properly deducted
+      // e.g., picking 1 carton of 12 should deduct 12 pieces from stock
+      const bulkUnitQty = item?.bulkUnitQty || 1;
       
       if (isOnline) {
         apiRequest('PATCH', `/api/orders/${activePickingOrder.id}/items/${itemId}/pick`, {
           pickedQuantity: pickedQty,
           locationCode: selectedLocation,
           qtyChange: qtyChange, // How much to reduce from location (positive = reduce, negative = restore)
-          productId: item?.productId
+          productId: item?.productId,
+          bulkUnitQty: bulkUnitQty
         }).catch(error => {
           console.error('Error saving picked quantity:', error);
           // Queue for offline sync if request fails
@@ -6069,7 +6105,8 @@ export default function PickPack() {
             pickedQuantity: pickedQty,
             locationCode: selectedLocation,
             qtyChange: qtyChange,
-            productId: item?.productId
+            productId: item?.productId,
+            bulkUnitQty: bulkUnitQty
           });
         });
       } else {
@@ -6080,7 +6117,8 @@ export default function PickPack() {
           pickedQuantity: pickedQty,
           locationCode: selectedLocation,
           qtyChange: qtyChange,
-          productId: item?.productId
+          productId: item?.productId,
+          bulkUnitQty: bulkUnitQty
         });
         playSound('success'); // Provide feedback that action was queued
       }
@@ -7773,7 +7811,7 @@ export default function PickPack() {
                                   <div className="mt-1">
                                     {!isBundle && (
                                       <div className="text-xs text-gray-600 font-medium">
-                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                         {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
@@ -7835,7 +7873,7 @@ export default function PickPack() {
                                 <div className="flex items-center gap-2 mt-1">
                                   {!isBundle && (
                                     <span className="text-xs text-gray-600 font-medium truncate">
-                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                     </span>
                                   )}
                                   {item.sku && (
@@ -7978,22 +8016,53 @@ export default function PickPack() {
                                               ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white' 
                                               : 'border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'
                                           }`}
-                                          onClick={() => {
-                                            setVerifiedItems(prev => {
-                                              const currentCount = prev[componentId] || 0;
-                                              const newRecord = { ...prev };
-                                              if (currentCount >= bundleItem.quantity) {
-                                                newRecord[componentId] = 0;
-                                              } else {
-                                                // For quantity > 4, complete all at once
-                                                const newCount = bundleItem.quantity > 4 
-                                                  ? bundleItem.quantity 
-                                                  : currentCount + 1;
-                                                newRecord[componentId] = newCount;
-                                                playSound('scan');
+                                          onClick={async () => {
+                                            const currentCount = verifiedItems[componentId] || 0;
+                                            const locationCode = selectedPickingLocations[componentId];
+                                            
+                                            if (currentCount >= bundleItem.quantity) {
+                                              // Unpicking - restore all quantities
+                                              if (bundleItem.productId && locationCode) {
+                                                try {
+                                                  await apiRequest('POST', `/api/orders/${order.id}/bundle-component/pick`, {
+                                                    productId: bundleItem.productId,
+                                                    locationCode,
+                                                    quantity: bundleItem.quantity,
+                                                    componentId,
+                                                    action: 'restore'
+                                                  });
+                                                  queryClient.invalidateQueries({ queryKey: ['/api/products', bundleItem.productId, 'locations'] });
+                                                } catch (err) {
+                                                  console.error('Failed to restore bundle component stock:', err);
+                                                }
                                               }
-                                              return newRecord;
-                                            });
+                                              setVerifiedItems(prev => ({ ...prev, [componentId]: 0 }));
+                                            } else {
+                                              // Picking - deduct inventory
+                                              const pickQty = bundleItem.quantity > 4 
+                                                ? bundleItem.quantity - currentCount  // Pick remaining
+                                                : 1;
+                                              const newCount = bundleItem.quantity > 4 
+                                                ? bundleItem.quantity 
+                                                : currentCount + 1;
+                                              
+                                              if (bundleItem.productId && locationCode) {
+                                                try {
+                                                  await apiRequest('POST', `/api/orders/${order.id}/bundle-component/pick`, {
+                                                    productId: bundleItem.productId,
+                                                    locationCode,
+                                                    quantity: pickQty,
+                                                    componentId,
+                                                    action: 'pick'
+                                                  });
+                                                  queryClient.invalidateQueries({ queryKey: ['/api/products', bundleItem.productId, 'locations'] });
+                                                } catch (err) {
+                                                  console.error('Failed to deduct bundle component stock:', err);
+                                                }
+                                              }
+                                              setVerifiedItems(prev => ({ ...prev, [componentId]: newCount }));
+                                              playSound('scan');
+                                            }
                                           }}
                                         >
                                           {isComponentVerified ? (
@@ -12935,7 +13004,7 @@ export default function PickPack() {
                               <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
                                 <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
                                 <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                 </p>
                               </div>
                               <Button
@@ -13595,7 +13664,7 @@ export default function PickPack() {
                                   <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
                                     isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
                                   }`}>
-                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
@@ -13721,7 +13790,7 @@ export default function PickPack() {
                               )}
                               {!isServiceBill && (
                                 <span className="text-xs font-mono font-bold">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                 </span>
                               )}
                             </div>
@@ -14849,7 +14918,7 @@ export default function PickPack() {
                                           )}
                                           <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                             <MapPin className="h-3 w-3" />
-                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                           </span>
                                         </div>
                                       </div>
@@ -15707,7 +15776,7 @@ export default function PickPack() {
                                                     </p>
                                                     <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
                                                       <MapPin className="h-2.5 w-2.5" />
-                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                                                     </span>
                                                   </div>
                                                 </div>
@@ -15939,7 +16008,7 @@ export default function PickPack() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} showStock={true} requiredQty={item.quantity * ((item as any).bulkUnitQty || 1)} />
                           </div>
                         </div>
                         {showPricing ? (

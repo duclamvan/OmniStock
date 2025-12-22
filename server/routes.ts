@@ -7994,12 +7994,22 @@ Important:
                 }
               }
 
+              // Get bulkUnitQty from the product if this is a bulk item
+              let bulkUnitQty: number | null = null;
+              if (bundleItem.productId) {
+                const product = productsMap.get(bundleItem.productId);
+                if (product && (product as any).bulkUnitQty) {
+                  bulkUnitQty = (product as any).bulkUnitQty;
+                }
+              }
+
               return {
                 id: bundleItem.id,
                 productId: bundleItem.productId || null,
                 variantId: bundleItem.variantId || null,
                 name: productName || bundleItem.notes || 'Bundle Item',
                 quantity: bundleItem.quantity,
+                bulkUnitQty: bulkUnitQty,
                 picked: false,
                 location: item.warehouseLocation || 'A1-R1-S1'
               };
@@ -8451,13 +8461,18 @@ Important:
   // Update picked quantity for an order item and reduce stock from location
   app.patch('/api/orders/:id/items/:itemId/pick', isAuthenticated, async (req: any, res) => {
     try {
-      const { pickedQuantity, locationCode, qtyChange, productId } = req.body;
+      const { pickedQuantity, locationCode, qtyChange, productId, bulkUnitQty } = req.body;
       
       // Update the order item's picked quantity
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
       
+      // Calculate actual stock change - multiply by bulkUnitQty if this is a bulk unit item
+      // e.g., picking 1 carton of 12 should deduct 12 pieces from stock
+      const stockMultiplier = (bulkUnitQty && bulkUnitQty > 1) ? bulkUnitQty : 1;
+      const actualQtyChange = qtyChange * stockMultiplier;
+      
       // Reduce stock from location if we have the necessary info and quantity increased
-      if (productId && locationCode && qtyChange > 0) {
+      if (productId && locationCode && actualQtyChange > 0) {
         try {
           // Find the location for this product with the given location code
           const locations = await storage.getProductLocations(productId);
@@ -8467,9 +8482,9 @@ Important:
           
           if (location) {
             const currentQty = location.quantity || 0;
-            const newQty = Math.max(0, currentQty - qtyChange);
+            const newQty = Math.max(0, currentQty - actualQtyChange);
             await storage.updateProductLocation(location.id, { quantity: newQty });
-            console.log(`📦 Reduced stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (picked ${qtyChange})`);
+            console.log(`📦 Reduced stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (picked ${qtyChange}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${actualQtyChange}` : ''})`);
           } else {
             console.warn(`⚠️ Location ${locationCode} not found for product ${productId} - stock not reduced`);
           }
@@ -8477,7 +8492,7 @@ Important:
           console.error('Error reducing location stock:', locationError);
           // Don't fail the pick operation if stock reduction fails
         }
-      } else if (productId && locationCode && qtyChange < 0) {
+      } else if (productId && locationCode && actualQtyChange < 0) {
         // If quantity decreased (unpicking), restore stock to location
         try {
           const locations = await storage.getProductLocations(productId);
@@ -8487,10 +8502,10 @@ Important:
           
           if (location) {
             const currentQty = location.quantity || 0;
-            const restoreQty = Math.abs(qtyChange);
+            const restoreQty = Math.abs(actualQtyChange);
             const newQty = currentQty + restoreQty;
             await storage.updateProductLocation(location.id, { quantity: newQty });
-            console.log(`📦 Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (unpicked ${restoreQty})`);
+            console.log(`📦 Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (unpicked ${Math.abs(qtyChange)}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${restoreQty}` : ''})`);
           }
         } catch (locationError) {
           console.error('Error restoring location stock:', locationError);
@@ -8501,6 +8516,67 @@ Important:
     } catch (error) {
       console.error("Error updating picked quantity:", error);
       res.status(500).json({ message: "Failed to update picked quantity" });
+    }
+  });
+
+  // Deduct inventory for bundle component picking
+  // This endpoint handles inventory deduction for individual bundle components
+  app.post('/api/orders/:id/bundle-component/pick', isAuthenticated, async (req: any, res) => {
+    try {
+      const { productId, locationCode, quantity, componentId, action } = req.body;
+      
+      if (!productId || !locationCode || !quantity) {
+        return res.status(400).json({ message: 'Missing required fields: productId, locationCode, quantity' });
+      }
+      
+      // Find the location for this product
+      const locations = await storage.getProductLocations(productId);
+      const location = locations.find(loc => 
+        loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+      );
+      
+      if (!location) {
+        return res.status(404).json({ message: `Location ${locationCode} not found for product ${productId}` });
+      }
+      
+      const currentQty = location.quantity || 0;
+      let newQty;
+      
+      if (action === 'restore') {
+        // Restore stock (unpicking)
+        newQty = currentQty + quantity;
+        console.log(`📦 [Bundle Component] Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (+${quantity})`);
+      } else {
+        // Deduct stock (picking)
+        newQty = Math.max(0, currentQty - quantity);
+        console.log(`📦 [Bundle Component] Deducted stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (-${quantity})`);
+      }
+      
+      await storage.updateProductLocation(location.id, { quantity: newQty });
+      
+      // Log the activity
+      await storage.createPickPackLog({
+        orderId: req.params.id,
+        orderItemId: componentId || null,
+        activityType: action === 'restore' ? 'bundle_component_unpicked' : 'bundle_component_picked',
+        userId: req.user?.id || "system",
+        userName: req.user?.username || "System",
+        productName: '',
+        sku: '',
+        quantity: quantity,
+        location: locationCode,
+        notes: `Bundle component ${action === 'restore' ? 'unpicked' : 'picked'}: ${quantity} from ${locationCode}`,
+      });
+      
+      res.json({ 
+        success: true, 
+        previousQuantity: currentQty,
+        newQuantity: newQty,
+        action: action || 'pick'
+      });
+    } catch (error) {
+      console.error("Error handling bundle component pick:", error);
+      res.status(500).json({ message: "Failed to process bundle component pick" });
     }
   });
 
@@ -8541,11 +8617,14 @@ Important:
             
             if (targetLocation) {
               const currentQty = targetLocation.quantity || 0;
-              const restoreQty = item.pickedQuantity || 0;
+              const pickedCount = item.pickedQuantity || 0;
+              // Account for bulk unit items (e.g., cartons) - multiply by bulkUnitQty
+              const bulkMultiplier = (item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1;
+              const restoreQty = pickedCount * bulkMultiplier;
               const newQty = currentQty + restoreQty;
               
               await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
-              console.log(`📦 Reset: Restored ${restoreQty} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+              console.log(`📦 Reset: Restored ${pickedCount}${bulkMultiplier > 1 ? ` × ${bulkMultiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
               
               restoredLocations++;
               restoredQuantity += restoreQty;
