@@ -152,15 +152,14 @@ export default function WarehouseLabels() {
               </svg>
             </div>
             <div class="name-section">
-              <span class="vn-name">${vietnameseName}</span>
-              <span class="en-name">${label.productName}</span>
-              ${label.sku ? `<span class="sku">${label.sku}</span>` : ""}
+              <div class="vn-name">${vietnameseName}</div>
+              <div class="en-name">${label.productName}</div>
+              ${label.sku ? `<div class="sku">${label.sku}</div>` : ""}
             </div>
             <div class="price-section">
-              ${priceEur !== null ? `<div class="price-row"><span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
-              ${priceEur !== null && priceCzk !== null ? `<div class="price-divider"></div>` : ""}
-              ${priceCzk !== null ? `<div class="price-row"><span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
-              ${priceEur === null && priceCzk === null ? `<div class="price-row"><span class="price-na">N/A</span></div>` : ""}
+              ${priceEur !== null ? `<div class="price-eur-row"><span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
+              ${priceCzk !== null ? `<div class="price-czk-row"><span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
+              ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
             </div>
           </div>
         `;
@@ -184,7 +183,7 @@ export default function WarehouseLabels() {
             box-sizing: border-box;
           }
           body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
           }
           .label-container {
             width: 100mm;
@@ -195,6 +194,7 @@ export default function WarehouseLabels() {
             background: white;
             color: black;
             overflow: hidden;
+            border: 2pt solid black;
             page-break-after: always;
           }
           .label-container:last-child {
@@ -202,79 +202,95 @@ export default function WarehouseLabels() {
           }
           .qr-section {
             flex-shrink: 0;
-            width: 20mm;
+            width: 22mm;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1mm;
+            padding: 1.5mm;
+            background: white;
+            border-right: 2pt solid black;
           }
           .qr-section svg {
-            width: 18mm;
-            height: 18mm;
+            width: 19mm;
+            height: 19mm;
           }
           .name-section {
             flex: 1;
-            padding: 1mm 2mm;
+            padding: 1.5mm 2mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
             overflow: hidden;
             min-width: 0;
-            border-left: 0.5pt solid #e5e7eb;
+            background: white;
           }
           .vn-name {
-            font-weight: bold;
+            font-weight: 900;
             font-size: 10pt;
-            line-height: 1.15;
+            line-height: 1.2;
             text-transform: uppercase;
             word-break: break-word;
+            letter-spacing: -0.3pt;
           }
           .en-name {
             font-size: 9pt;
-            line-height: 1.15;
-            color: #374151;
-            margin-top: 0.5mm;
+            font-weight: 500;
+            line-height: 1.2;
+            color: #1f2937;
+            margin-top: 1mm;
             word-break: break-word;
           }
           .sku {
-            font-size: 7pt;
-            color: #6b7280;
-            margin-top: 0.5mm;
+            font-size: 8pt;
+            line-height: 1.1;
+            color: black;
+            margin-top: 1mm;
             font-family: monospace;
+            font-weight: bold;
+            background: #f3f4f6;
+            padding: 0.5mm 1mm;
+            display: inline-block;
           }
           .price-section {
             flex-shrink: 0;
-            width: 24mm;
+            width: 26mm;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            border-left: 0.5pt solid #e5e7eb;
+            border-left: 2pt solid black;
           }
-          .price-row {
+          .price-eur-row {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5mm 1mm;
+            background: black;
           }
-          .price-divider {
-            border-top: 0.5pt solid #d1d5db;
-            margin: 0 1mm;
+          .price-czk-row {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-top: 1pt solid black;
           }
           .price-eur {
-            font-weight: bold;
-            font-size: 13pt;
-            line-height: 1.1;
-            color: black;
+            font-weight: 900;
+            font-size: 14pt;
+            line-height: 1;
+            color: white;
+            letter-spacing: -0.3pt;
           }
           .price-czk {
             font-weight: bold;
             font-size: 12pt;
-            line-height: 1.1;
+            line-height: 1;
             color: black;
+            letter-spacing: -0.3pt;
           }
           .price-na {
-            font-size: 9pt;
-            color: #9ca3af;
+            font-size: 10pt;
+            color: #6b7280;
+            font-weight: 500;
           }
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
