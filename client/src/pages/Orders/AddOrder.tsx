@@ -7435,34 +7435,32 @@ export default function AddOrder() {
                       ) : null;
                     })()}
 
-                    {/* Dev-Only Form Errors Display */}
-                    {import.meta.env.DEV && Object.keys(form.formState.errors).length > 0 && (
-                      <Accordion type="single" collapsible className="mb-3">
-                        <AccordionItem value="form-errors" className="border border-red-200 dark:border-red-800 rounded-lg">
-                          <AccordionTrigger className="px-3 py-2 hover:no-underline">
-                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                              <AlertCircle className="h-4 w-4" />
-                              <span className="text-sm font-medium">
-                                Form Validation Errors ({Object.keys(form.formState.errors).length})
-                              </span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-3 pb-3">
-                            <Alert variant="destructive" className="mb-0">
-                              <AlertDescription>
-                                <div className="space-y-1 text-xs font-mono">
-                                  {Object.entries(form.formState.errors).map(([field, error]) => (
-                                    <div key={field} className="flex gap-2">
-                                      <span className="font-bold">{field}:</span>
-                                      <span>{error?.message?.toString() || 'Invalid value'}</span>
-                                    </div>
-                                  ))}
+                    {/* Form Errors Display - Always expanded with human-readable messages */}
+                    {Object.keys(form.formState.errors).length > 0 && (
+                      <Alert variant="destructive" className="mb-3">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <div className="space-y-1.5 mt-1">
+                            {Object.entries(form.formState.errors).map(([field, error]) => {
+                              const errorMessage = error?.message?.toString() || '';
+                              const isRequired = errorMessage.toLowerCase().includes('required') || errorMessage === '';
+                              const errorType = isRequired ? 'required' : 'invalid';
+                              const fieldKey = `fieldError_${field}_${errorType}` as const;
+                              const fieldNameKey = `fieldError_${field}` as const;
+                              const humanMessage = t(`orders:${fieldKey}`, { defaultValue: '' }) || 
+                                                   t(`orders:fieldError_${errorType}`, { defaultValue: errorMessage || t('orders:invalidValue') });
+                              const fieldName = t(`orders:${fieldNameKey}`, { defaultValue: field });
+                              
+                              return (
+                                <div key={field} className="flex items-start gap-2 text-sm">
+                                  <span className="font-medium">{fieldName}:</span>
+                                  <span>{humanMessage}</span>
                                 </div>
-                              </AlertDescription>
-                            </Alert>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
+                              );
+                            })}
+                          </div>
+                        </AlertDescription>
+                      </Alert>
                     )}
 
                     <div className="pt-2 sm:pt-3 space-y-2">
