@@ -18,7 +18,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package } from "lucide-react";
+import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package, ChevronDown, ChevronUp } from "lucide-react";
+
+// Component to display order items for a trashed order
+function OrderItemsList({ orderId, currency }: { orderId: string; currency: string }) {
+  const { formatCurrency } = useLocalization();
+  const { t } = useTranslation(['orders']);
+  
+  const { data: items = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/orders', orderId, 'items'],
+  });
+
+  if (isLoading) {
+    return <div className="text-xs text-slate-400 animate-pulse">{t('common:loading')}...</div>;
+  }
+
+  if (items.length === 0) {
+    return <div className="text-xs text-slate-400">{t('orders:noItems')}</div>;
+  }
+
+  return (
+    <div className="mt-2 space-y-1">
+      {items.map((item: any) => (
+        <div key={item.id} className="flex justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded px-2 py-1">
+          <span className="flex-1 truncate">
+            {item.quantity}× {item.productName}
+            {item.isVirtual && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">Virtual</Badge>}
+          </span>
+          <span className="ml-2 font-medium">
+            {formatCurrency(parseFloat(item.total || '0'), currency)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function OrdersTrash() {
   const { t } = useTranslation(['orders', 'common']);
@@ -138,20 +172,26 @@ export default function OrdersTrash() {
           {trashedOrders.map((order: any) => (
             <Card key={order.id} className="border-slate-200 dark:border-slate-700">
               <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold text-lg">{order.orderId}</span>
                       <Badge variant="secondary">{order.orderStatus}</Badge>
+                      {order.pickStatus === 'completed' && (
+                        <Badge variant="outline" className="text-green-600 border-green-300">Picked</Badge>
+                      )}
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 space-y-0.5">
                       <p>{order.customer?.name || t('orders:walkInCustomer')}</p>
                       <p>
-                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+                        </span>
                         {' • '}
                         {t('orders:deletedOn')}: {formatDate(order.updatedAt)}
                       </p>
                     </div>
+                    <OrderItemsList orderId={order.id} currency={order.currency || 'EUR'} />
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
