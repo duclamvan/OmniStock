@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { normalizeForSKU } from "@/lib/vietnameseSearch";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
 import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
 import { useSettings, DEFAULT_BULK_UNITS } from "@/contexts/SettingsContext";
@@ -1450,17 +1451,6 @@ export default function ProductForm() {
   };
 
   const generateSKU = () => {
-    // Helper function to remove Vietnamese diacritics and clean text
-    const cleanText = (text: string): string => {
-      return text
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'D')
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, '');
-    };
-    
     // Get form values
     const name = form.watch('name') || '';
     const vietnameseName = form.watch('vietnameseName') || '';
@@ -1470,11 +1460,11 @@ export default function ProductForm() {
     
     // 1. Category Part (3 chars)
     const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || t('products:defaults.categoryFallback');
-    const categoryPart = cleanText(categoryName).slice(0, 3) || t('products:defaults.categoryFallback');
+    const categoryPart = normalizeForSKU(categoryName).slice(0, 3) || t('products:defaults.categoryFallback');
     
     // 2. Supplier Part (2 chars) - optional
     const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
-    const supplierPart = supplierName ? cleanText(supplierName).slice(0, 2) : '';
+    const supplierPart = supplierName ? normalizeForSKU(supplierName).slice(0, 2) : '';
     
     // 3. Product Name Part (4-6 chars) - prefer Vietnamese name if available
     const productText = vietnameseName || name || 'ITEM';
@@ -1483,13 +1473,13 @@ export default function ProductForm() {
     
     if (words.length === 1) {
       // Single word: take first 6 characters
-      productPart = cleanText(words[0]).slice(0, 6);
+      productPart = normalizeForSKU(words[0]).slice(0, 6);
     } else if (words.length === 2) {
       // Two words: take first 3 chars of each
-      productPart = cleanText(words[0]).slice(0, 3) + cleanText(words[1]).slice(0, 3);
+      productPart = normalizeForSKU(words[0]).slice(0, 3) + normalizeForSKU(words[1]).slice(0, 3);
     } else {
       // Multiple words: take first 2 chars of first 3 words
-      productPart = words.slice(0, 3).map(w => cleanText(w).slice(0, 2)).join('');
+      productPart = words.slice(0, 3).map(w => normalizeForSKU(w).slice(0, 2)).join('');
     }
     
     // Ensure product part is not empty

@@ -371,6 +371,7 @@ export interface IStorage {
   getLowStockProducts(): Promise<Product[]>;
   calculateProductReorderRate(productId: string): Promise<number>;
   updateProductReorderRate(productId: string, rate: number): Promise<void>;
+  generateSKU(categoryName: string, productName: string): Promise<string>;
 
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -2459,6 +2460,16 @@ export class DatabaseStorage implements IStorage {
       console.error('Error updating reorder rate:', error);
       throw error;
     }
+  }
+
+  async generateSKU(categoryName: string, productName: string): Promise<string> {
+    const { normalizeForSKU } = await import('@shared/vietnameseUtils');
+    
+    const categoryPart = normalizeForSKU(categoryName).slice(0, 3) || 'GEN';
+    const productPart = normalizeForSKU(productName).slice(0, 6) || 'ITEM';
+    const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
+    
+    return `${categoryPart}-${productPart}-${randomSuffix}`;
   }
 
   // Product Variants

@@ -51,6 +51,7 @@ import {
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, ProductBundle } from '@shared/schema';
+import { normalizeForSKU } from '@/lib/vietnameseSearch';
 
 interface ProductVariant {
   id: string;
@@ -527,10 +528,8 @@ export default function EditBundle() {
   const generateSKU = () => {
     const bundleName = formData.nameVi.trim() || 'BUNDLE';
     
-    const namePart = bundleName
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '')
-      .slice(0, 8);
+    // Uses normalizeForSKU to handle Vietnamese diacritics (e.g., Thùng → THUNG)
+    const namePart = normalizeForSKU(bundleName).slice(0, 8);
     
     const randomNum = Math.floor(100 + Math.random() * 900);
     
