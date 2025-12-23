@@ -215,7 +215,7 @@ const inventory = {
   andMore: '{{count}} more...',
   invalid: 'Invalid',
   update: 'Update',
-  new: 'New',
+  importStatusNew: 'New',
   row: 'Row',
   missingRequiredFields: 'Missing required fields (name or SKU)',
   notFound: 'not found',
@@ -785,7 +785,6 @@ const inventory = {
   categoryImportSuccess: 'Successfully imported {{count}} categories',
   categoryImportFailed: 'Failed to import categories',
   noCategoryDataToExport: 'No category data to export',
-  importing: 'Importing...',
   
   // Category Messages
   categoryCreatedSuccess: 'Category created successfully',

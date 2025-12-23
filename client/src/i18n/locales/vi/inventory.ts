@@ -317,7 +317,7 @@ const inventory = {
   andMore: '{{count}} dòng nữa...',
   invalid: 'Không hợp lệ',
   update: 'Cập nhật',
-  new: 'Mới',
+  importStatusNew: 'Mới',
   row: 'Dòng',
   missingRequiredFields: 'Thiếu trường bắt buộc (tên hoặc SKU)',
   notFound: 'không tìm thấy',
@@ -879,7 +879,6 @@ const inventory = {
   categoryImportSuccess: 'Đã nhập thành công {{count}} danh mục',
   categoryImportFailed: 'Không thể nhập danh mục',
   noCategoryDataToExport: 'Không có dữ liệu danh mục để xuất',
-  importing: 'Đang nhập...',
   
   // Category Messages
   categoryCreatedSuccess: 'Tạo danh mục thành công',
