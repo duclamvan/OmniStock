@@ -2355,73 +2355,66 @@ function MultiLocationPicker({
                     : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
                 }`}
               >
-                {/* Single Row: Location + Controls */}
-                <div className="flex items-center gap-2">
-                  {/* Location Info - Left side */}
-                  <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-                    <MapPin className={`h-4 w-4 flex-shrink-0 ${pickedFromThis > 0 ? 'text-green-600' : 'text-gray-500'}`} />
-                    <span className="text-base font-bold font-mono truncate">
-                      {location.locationCode}
-                    </span>
-                    {location.isPrimary && (
-                      <span className="text-yellow-500 text-sm">★</span>
-                    )}
-                  </div>
-
-                  {/* Stock Badge */}
-                  <Badge className={`text-xs px-1.5 py-0.5 flex-shrink-0 ${
+                {/* Row 1: Location code (full width on mobile) */}
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className={`h-5 w-5 flex-shrink-0 ${pickedFromThis > 0 ? 'text-green-600' : 'text-gray-500'}`} />
+                  <span className="text-lg font-black font-mono">
+                    {location.locationCode}
+                  </span>
+                  {location.isPrimary && (
+                    <span className="text-yellow-500 text-base">★</span>
+                  )}
+                  <div className="flex-1" />
+                  <Badge className={`text-sm px-2 py-0.5 ${
                     availableStock >= remainingToPick + pickedFromThis
                       ? 'bg-green-600 text-white'
                       : 'bg-amber-500 text-white'
                   }`}>
                     {availableStock}x
                   </Badge>
+                </div>
 
-                  {/* Spacer */}
-                  <div className="flex-1" />
+                {/* Row 2: Controls */}
+                <div className="flex items-center justify-between gap-2">
+                  {/* Minus Button */}
+                  <Button
+                    size="lg"
+                    className="h-12 w-12 p-0 text-xl font-black bg-red-500 hover:bg-red-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis - 1, availableStock)}
+                    disabled={!canPickLess}
+                  >
+                    <Minus className="h-6 w-6" />
+                  </Button>
 
-                  {/* Controls - Right side */}
-                  <div className="flex items-center gap-1.5">
-                    {/* Minus Button */}
-                    <Button
-                      size="sm"
-                      className="h-10 w-10 p-0 text-lg font-black bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-30"
-                      onClick={() => updateLocationPick(location.locationCode, pickedFromThis - 1, availableStock)}
-                      disabled={!canPickLess}
-                    >
-                      <Minus className="h-5 w-5" />
-                    </Button>
-
-                    {/* Picked Count Display */}
-                    <div className="w-16 text-center">
-                      <span className={`text-xl font-black ${
-                        pickedFromThis > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'
-                      }`}>
-                        {pickedFromThis}
-                      </span>
-                      <span className="text-sm text-gray-400">/{availableStock}</span>
-                    </div>
-
-                    {/* Plus Button */}
-                    <Button
-                      size="sm"
-                      className="h-10 w-10 p-0 text-lg font-black bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-30"
-                      onClick={() => updateLocationPick(location.locationCode, pickedFromThis + 1, availableStock)}
-                      disabled={!canPickMore}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </Button>
-
-                    {/* Pick All from Location Button */}
-                    <Button
-                      size="sm"
-                      className="h-10 px-3 text-xs font-bold bg-green-500 hover:bg-green-600 text-white rounded-lg disabled:opacity-30"
-                      onClick={() => pickAllFromLocation(location.locationCode, availableStock)}
-                      disabled={!canPickMore}
-                    >
-                      ALL
-                    </Button>
+                  {/* Picked Count Display */}
+                  <div className="flex-1 text-center">
+                    <span className={`text-3xl font-black ${
+                      pickedFromThis > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'
+                    }`}>
+                      {pickedFromThis}
+                    </span>
+                    <span className="text-lg text-gray-400">/{availableStock}</span>
                   </div>
+
+                  {/* Plus Button */}
+                  <Button
+                    size="lg"
+                    className="h-12 w-12 p-0 text-xl font-black bg-blue-500 hover:bg-blue-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis + 1, availableStock)}
+                    disabled={!canPickMore}
+                  >
+                    <Plus className="h-6 w-6" />
+                  </Button>
+
+                  {/* Pick All from Location Button */}
+                  <Button
+                    size="lg"
+                    className="h-12 px-4 text-sm font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => pickAllFromLocation(location.locationCode, availableStock)}
+                    disabled={!canPickMore}
+                  >
+                    ALL
+                  </Button>
                 </div>
               </div>
             );
