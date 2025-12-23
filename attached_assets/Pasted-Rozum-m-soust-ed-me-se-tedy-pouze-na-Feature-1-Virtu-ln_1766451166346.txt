@@ -1,0 +1,63 @@
+Rozumím, soustředíme se tedy **pouze na "Feature 1": Virtuální produkty (Kbelíky vs. Dózy)** a archivaci odložíme.
+
+Zde je detailní plán a připravený prompt pro Replit, který je mnohem podrobnější a technicky přesnější, aby to AI pochopila na první pokus.
+
+### Jak to bude fungovat (Technický design)
+
+Nebudeme vytvářet složité "balíčky". Uděláme to elegantně přes **"Rodičovský produkt"**.
+
+1.  **Produkt A (Rodič):** `Acrylic Powder 660g` (Fyzicky existuje na skladě).
+2.  **Produkt B (Virtuální):** `Acrylic Powder 25lbs Bucket` (Neexistuje fyzicky).
+    * V databázi bude mít nastaveno: *"Jsem jen odkaz na Produkt A a spotřebuju jich 17."*
+
+Když někdo koupí **Produkt B**, systém na pozadí sáhne do skladu **Produktu A** a odečte **17 kusů**.
+
+---
+
+### 📋 Replit Prompt (Vylepšený pro Feature 1)
+
+Zkopírujte tento text do Replitu. Je v angličtině (pro AI), ale obsahuje všechny vaše specifické požadavky ("Strict 17 Rule").
+
+> **I need to implement a "Virtual SKU" system for my Warehouse Management App (Davie Supply) using Drizzle ORM and TypeScript.**
+>
+> **The Goal:**
+> I sell products in different packaging sizes, but I only stock the smallest unit.
+> * **Example:** I stock "Acrylic Powder (Jar 660g)".
+> * **Virtual Item:** I also sell "Acrylic Powder (Bucket 25lbs)".
+> * **The Rule:** 1 Bucket = STRICTLY 17 Jars.
+> * When a user orders a Bucket, the system must deduct 17 Jars from the inventory.
+>
+> **Step 1: Database Schema Updates (`products` table)**
+> Please modify the `products` table schema to add self-referencing capabilities:
+> 1.  `masterProductId`: A text/varchar column that references `products.id`. This links a virtual product to its physical parent.
+> 2.  `inventoryDeductionRatio`: An integer column (default 1). This defines how many units of the master product are consumed (e.g., 17).
+>
+> **Step 2: Inventory Logic (`deductInventory` service)**
+> Update my backend inventory deduction logic. When an order is packed:
+> 1.  Fetch the sold product's details.
+> 2.  **Check if `masterProductId` exists.**
+>     * **IF YES (It's a Bucket):**
+>         * Target Product for deduction = `masterProductId`.
+>         * Quantity to Deduct = `Sold Quantity` * `inventoryDeductionRatio` (e.g., 1 * 17).
+>         * *Audit Log Note:* Record that this was a virtual sale (e.g., "Sold 1x Bucket, deducted 17x Jars").
+>     * **IF NO (Standard Item):**
+>         * Target Product = The product itself.
+>         * Quantity to Deduct = `Sold Quantity`.
+>
+> **Step 3: Frontend "Available Stock" Calculation**
+> In the Product List and Order creation screens, the "Stock" for a Virtual Product (Bucket) should be calculated dynamically:
+> * `Bucket Stock` = `Math.floor(MasterProduct.Stock / inventoryDeductionRatio)`
+> * Do not store stock for the Bucket directly; always derive it from the Master.
+>
+> **Please implement the schema changes and the updated service functions.**
+
+---
+
+### Co tento prompt zajistí?
+
+1.  **Databáze:** Přidá sloupce `masterProductId` a `inventoryDeductionRatio`.
+2.  **Logika:** AI pochopí, že `Bucket` je jen převlek.
+3.  **Matematika:** Zavede pravidlo, že `1 Bucket` se automaticky přepočítá na `17 Jars` při odečtu ze skladu.
+4.  **Zobrazení:** Zajistí, že na webu uvidíte "Skladem: 5 Bucketů", pokud máte fyzicky "85 Dóz" (85 / 17 = 5), aniž byste musel ručně udržovat sklad Bucketů.
+
+Tento přístup je pro váš WMS nejbezpečnější a nejméně náchylný k chybám.

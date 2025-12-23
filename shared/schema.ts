@@ -770,6 +770,11 @@ export const products = pgTable("products", {
   allocated: boolean("allocated").default(false), // Track if product is allocated to orders
   // Multi-unit selling & purchasing fields
   sellingUnitName: text("selling_unit_name").default("piece"), // Base unit name: piece, box, jar, bottle
+  // Virtual SKU fields - for products that don't exist physically but represent bundled master products
+  isVirtual: boolean("is_virtual").default(false), // If true, this product deducts from master product
+  masterProductId: varchar("master_product_id"), // Self-reference: the physical product this virtual SKU represents
+  inventoryDeductionRatio: decimal("inventory_deduction_ratio", { precision: 10, scale: 2 }), // How many master units per 1 virtual unit (e.g., 17 jars per bucket)
+  // Deprecated packaging unit fields (kept for backward compatibility during migration)
   bulkUnitName: text("bulk_unit_name"), // Optional bulk unit: carton, pallet, case
   bulkUnitQty: integer("bulk_unit_qty"), // How many selling units per bulk unit (e.g., 50 boxes per carton)
   bulkPriceCzk: decimal("bulk_price_czk", { precision: 12, scale: 2 }), // Optional special bulk price in CZK
@@ -1033,6 +1038,13 @@ export const orderItems = pgTable("order_items", {
   appliedDiscountType: varchar("applied_discount_type"), // percentage, fixed, buy_x_get_y
   appliedDiscountScope: varchar("applied_discount_scope"), // product, order, customer
   freeItemsCount: integer("free_items_count"), // For buy_x_get_y: number of free items earned
+  // Virtual SKU tracking - records which master product was deducted
+  isVirtual: boolean("is_virtual").default(false), // If true, this was a virtual SKU
+  masterProductId: varchar("master_product_id"), // The physical product that was deducted
+  masterProductName: varchar("master_product_name"), // Snapshot of master product name
+  inventoryDeductionRatio: decimal("inventory_deduction_ratio", { precision: 10, scale: 2 }), // How many master units were deducted per item
+  deductedQuantity: integer("deducted_quantity"), // Actual quantity deducted from master (quantity * ratio)
+  // Deprecated - kept for backward compatibility
   bulkUnitQty: integer("bulk_unit_qty"), // Quantity per bulk unit for carton badge display
   bulkUnitName: varchar("bulk_unit_name"), // Name of bulk unit (carton, pallet, case)
 });
@@ -1661,6 +1673,16 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.warehouseId],
     references: [warehouses.id],
   }),
+  // Virtual SKU: self-reference to master product
+  masterProduct: one(products, {
+    fields: [products.masterProductId],
+    references: [products.id],
+    relationName: "virtualToMaster",
+  }),
+  // Reverse relation: virtual products that point to this as master
+  virtualProducts: many(products, {
+    relationName: "virtualToMaster",
+  }),
   orderItems: many(orderItems),
   locations: many(productLocations),
   costHistory: many(productCostHistory),
@@ -2041,6 +2063,14 @@ export const insertProductSchema = createInsertSchema(products)
       .nullable()
       .transform((val) => (val ? String(val) : null)),
     reorderRate: z
+      .union([z.string(), z.number()])
+      .optional()
+      .nullable()
+      .transform((val) => (val ? String(val) : null)),
+    // Virtual SKU fields
+    isVirtual: z.boolean().optional().nullable(),
+    masterProductId: z.string().optional().nullable(),
+    inventoryDeductionRatio: z
       .union([z.string(), z.number()])
       .optional()
       .nullable()

@@ -1,0 +1,35 @@
+Jasně, tohle je "Vibe Coding" prompt, který můžete zkopírovat a vložit přímo do Replit AI (Agenta).
+
+Je napsaný v angličtině, protože Replit Agent (a LLM modely obecně) chápou komplexní logiku databází a vztahů lépe v angličtině, ale popisuje přesně to, co jsme řešili (pravidlo 17 a archivaci).
+
+📋 Zkopírujte tento text do Replitu:
+I need to implement two advanced features for my Warehouse Management System (Davie Supply) using Drizzle ORM and TypeScript.
+
+Feature 1: Virtual SKU / Packaging Logic (The "Bucket" Rule) I sell products like "Acrylic Powder" in two forms: a small Jar (660g) and a large Bucket (25lbs). Physically, I only stock Jars. One Bucket equals exactly 17 Jars.
+
+Schema: Update the products table to add masterProductId (self-relation) and inventoryDeductionRatio (number).
+
+Logic: Update the backend inventory service (deductInventory). When a product is sold, check if it has a masterProductId.
+
+If yes (it's a Bucket), calculate Quantity Sold * inventoryDeductionRatio (e.g., 1 * 17) and deduct that amount from the Master Product's stock at the specific location.
+
+If no, deduct normally.
+
+Audit: Ensure the inventory transaction log clearly states: "Sold 1x Bucket (Virtual), deducted 17x Jars from Master SKU".
+
+Feature 2: Historical Data Archive (Snapshot Strategy) I have legacy CSV data (2019-2025) that I need to import for financial reporting (Revenue/Profit), but I don't want to pollute my active orders or products tables with old data.
+
+Schema: Create a new independent table called historical_orders. It should have fields for legacyInvoiceId, date, totalRevenue, totalProfit, currency.
+
+Snapshots: Instead of foreign keys to products/customers (which might not exist anymore), use JSONB columns: customerSnapshot (stores name, address, FB_ID) and itemsSnapshot (stores the array of items, prices, and quantities from the CSV).
+
+Script: Create a script import_history.ts that reads CSV files from a folder named import_data. It needs to handle header files (OrdersID) and item files (Orders), merging them based on Invoice Number before inserting into the DB.
+
+Co tento prompt udělá?
+Vysvětlí kontext: Říká AI, že děláte WMS systém a používáte Drizzle ORM (aby věděl, jak upravit databázi).
+
+Definuje "Bucket" problém: Jasně popisuje, že Bucket je jen virtuální obal pro 17 Jars a že se má odečítat ze skladu "rodiče" (Master).
+
+Definuje Archivaci: Přikazuje vytvořit tabulku historical_orders s JSON sloupci (Snapshoty), aby se nemusely vytvářet staré produkty, a žádá o skript na import CSV.
+
+Stačí to takto vložit a Replit by měl začít generovat změny v databázi a kódu.
