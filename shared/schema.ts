@@ -3347,3 +3347,63 @@ export const insertWarehouseLabelSchema = createInsertSchema(warehouseLabels, {
 
 export type WarehouseLabel = typeof warehouseLabels.$inferSelect;
 export type InsertWarehouseLabel = z.infer<typeof insertWarehouseLabelSchema>;
+
+// Historical Orders table - stores legacy data (2019-2025) with snapshots for financial reporting
+// Uses JSONB for customer/items snapshots to avoid polluting active tables with old references
+export const historicalOrders = pgTable("historical_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  legacyInvoiceId: varchar("legacy_invoice_id").notNull(), // Original invoice number from CSV
+  orderDate: date("order_date").notNull(), // Date of the historical order
+  
+  // Financial data
+  totalRevenue: decimal("total_revenue", { precision: 15, scale: 2 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 15, scale: 2 }), // If available
+  totalProfit: decimal("total_profit", { precision: 15, scale: 2 }),
+  currency: varchar("currency").notNull().default("CZK"), // CZK, EUR, USD
+  
+  // Snapshots - stores data without foreign keys to non-existent records
+  customerSnapshot: jsonb("customer_snapshot"), // { name, address, fb_id, phone, email }
+  itemsSnapshot: jsonb("items_snapshot").notNull(), // Array of { sku, name, quantity, unitPrice, totalPrice }
+  
+  // Metadata
+  paymentMethod: varchar("payment_method"), // cash, bank_transfer, card, etc.
+  shippingMethod: varchar("shipping_method"),
+  notes: text("notes"),
+  importedFrom: varchar("imported_from"), // Original CSV filename
+  importedAt: timestamp("imported_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertHistoricalOrderSchema = createInsertSchema(historicalOrders, {
+  legacyInvoiceId: z.string(),
+  orderDate: z.string(),
+  totalRevenue: z.string(),
+  totalCost: z.string().optional(),
+  totalProfit: z.string().optional(),
+  currency: z.string().default("CZK"),
+  customerSnapshot: z.object({
+    name: z.string().optional(),
+    address: z.string().optional(),
+    fbId: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+  }).optional(),
+  itemsSnapshot: z.array(z.object({
+    sku: z.string().optional(),
+    name: z.string(),
+    quantity: z.number(),
+    unitPrice: z.number().optional(),
+    totalPrice: z.number().optional(),
+  })),
+  paymentMethod: z.string().optional(),
+  shippingMethod: z.string().optional(),
+  notes: z.string().optional(),
+  importedFrom: z.string().optional(),
+}).omit({
+  id: true,
+  importedAt: true,
+  createdAt: true,
+});
+
+export type HistoricalOrder = typeof historicalOrders.$inferSelect;
+export type InsertHistoricalOrder = z.infer<typeof insertHistoricalOrderSchema>;

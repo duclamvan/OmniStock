@@ -8665,16 +8665,40 @@ Important:
       // Update the order item's picked quantity
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
       
-      // Calculate actual stock change - multiply by bulkUnitQty if this is a bulk unit item
-      // e.g., picking 1 carton of 12 should deduct 12 pieces from stock
-      const stockMultiplier = (bulkUnitQty && bulkUnitQty > 1) ? bulkUnitQty : 1;
+      // Check if this is a virtual SKU product that deducts from master product
+      let targetProductId = productId;
+      let deductionRatio = 1;
+      let isVirtualSku = false;
+      let virtualProductName = '';
+      let masterProductName = '';
+      
+      if (productId) {
+        const product = await storage.getProductById(productId);
+        if (product?.isVirtual && product?.masterProductId) {
+          isVirtualSku = true;
+          targetProductId = product.masterProductId;
+          deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
+          virtualProductName = product.name;
+          
+          // Get master product name for logging
+          const masterProduct = await storage.getProductById(targetProductId);
+          masterProductName = masterProduct?.name || 'Unknown Master';
+          
+          console.log(`🎯 Virtual SKU detected: "${virtualProductName}" → deducting from "${masterProductName}" (ratio: ${deductionRatio})`);
+        }
+      }
+      
+      // Calculate actual stock change
+      // For virtual SKUs: multiply by deduction ratio (e.g., 1 Bucket = 17 Jars)
+      // For bulk units: multiply by bulkUnitQty (e.g., 1 carton = 12 pieces)
+      const stockMultiplier = isVirtualSku ? deductionRatio : ((bulkUnitQty && bulkUnitQty > 1) ? bulkUnitQty : 1);
       const actualQtyChange = qtyChange * stockMultiplier;
       
       // Reduce stock from location if we have the necessary info and quantity increased
-      if (productId && locationCode && actualQtyChange > 0) {
+      if (targetProductId && locationCode && actualQtyChange > 0) {
         try {
-          // Find the location for this product with the given location code
-          const locations = await storage.getProductLocations(productId);
+          // Find the location for the target product (master product for virtual SKUs)
+          const locations = await storage.getProductLocations(targetProductId);
           const location = locations.find(loc => 
             loc.locationCode.toUpperCase() === locationCode.toUpperCase()
           );
@@ -8683,18 +8707,23 @@ Important:
             const currentQty = location.quantity || 0;
             const newQty = Math.max(0, currentQty - actualQtyChange);
             await storage.updateProductLocation(location.id, { quantity: newQty });
-            console.log(`📦 Reduced stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (picked ${qtyChange}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${actualQtyChange}` : ''})`);
+            
+            if (isVirtualSku) {
+              console.log(`📦 [Virtual SKU] Picked ${qtyChange}x "${virtualProductName}", deducted ${actualQtyChange}x "${masterProductName}" from ${locationCode}: ${currentQty} → ${newQty}`);
+            } else {
+              console.log(`📦 Reduced stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (picked ${qtyChange}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${actualQtyChange}` : ''})`);
+            }
           } else {
-            console.warn(`⚠️ Location ${locationCode} not found for product ${productId} - stock not reduced`);
+            console.warn(`⚠️ Location ${locationCode} not found for ${isVirtualSku ? 'master ' : ''}product ${targetProductId} - stock not reduced`);
           }
         } catch (locationError) {
           console.error('Error reducing location stock:', locationError);
           // Don't fail the pick operation if stock reduction fails
         }
-      } else if (productId && locationCode && actualQtyChange < 0) {
+      } else if (targetProductId && locationCode && actualQtyChange < 0) {
         // If quantity decreased (unpicking), restore stock to location
         try {
-          const locations = await storage.getProductLocations(productId);
+          const locations = await storage.getProductLocations(targetProductId);
           const location = locations.find(loc => 
             loc.locationCode.toUpperCase() === locationCode.toUpperCase()
           );
@@ -8704,14 +8733,56 @@ Important:
             const restoreQty = Math.abs(actualQtyChange);
             const newQty = currentQty + restoreQty;
             await storage.updateProductLocation(location.id, { quantity: newQty });
-            console.log(`📦 Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (unpicked ${Math.abs(qtyChange)}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${restoreQty}` : ''})`);
+            
+            if (isVirtualSku) {
+              console.log(`📦 [Virtual SKU] Unpicked ${Math.abs(qtyChange)}x "${virtualProductName}", restored ${restoreQty}x "${masterProductName}" to ${locationCode}: ${currentQty} → ${newQty}`);
+            } else {
+              console.log(`📦 Restored stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (unpicked ${Math.abs(qtyChange)}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${restoreQty}` : ''})`);
+            }
           }
         } catch (locationError) {
           console.error('Error restoring location stock:', locationError);
         }
       }
       
-      res.json(orderItem);
+      // Log virtual SKU deduction in audit trail
+      if (isVirtualSku && actualQtyChange !== 0) {
+        try {
+          const actionType = actualQtyChange > 0 ? 'virtual_sku_picked' : 'virtual_sku_unpicked';
+          const notes = actualQtyChange > 0 
+            ? `Sold ${qtyChange}x ${virtualProductName} (Virtual SKU), deducted ${actualQtyChange}x ${masterProductName} from Master SKU`
+            : `Unpicked ${Math.abs(qtyChange)}x ${virtualProductName} (Virtual SKU), restored ${Math.abs(actualQtyChange)}x ${masterProductName} to Master SKU`;
+          
+          await storage.createPickPackLog({
+            orderId: req.params.id,
+            orderItemId: req.params.itemId,
+            activityType: actionType,
+            userId: req.user?.id || "system",
+            userName: req.user?.username || "System",
+            productName: virtualProductName,
+            sku: '',
+            quantity: Math.abs(actualQtyChange),
+            location: locationCode,
+            notes: notes,
+          });
+        } catch (logError) {
+          console.error('Error logging virtual SKU activity:', logError);
+        }
+      }
+      
+      // Add virtual SKU info to response for frontend logging
+      const response: any = { ...orderItem };
+      if (isVirtualSku) {
+        response.virtualSkuDeduction = {
+          virtualProductName,
+          masterProductName,
+          masterProductId: targetProductId,
+          deductionRatio,
+          actualDeducted: actualQtyChange
+        };
+      }
+      
+      res.json(response);
     } catch (error) {
       console.error("Error updating picked quantity:", error);
       res.status(500).json({ message: "Failed to update picked quantity" });
@@ -8795,8 +8866,20 @@ Important:
       for (const item of orderItems) {
         if ((item.pickedQuantity || 0) > 0 && item.productId) {
           try {
-            // Get product locations
-            const locations = await storage.getProductLocations(item.productId);
+            // Check if this is a virtual SKU - restore to master product
+            const product = await storage.getProductById(item.productId);
+            let targetProductId = item.productId;
+            let deductionRatio = 1;
+            let isVirtualSku = false;
+            
+            if (product?.isVirtual && product?.masterProductId) {
+              isVirtualSku = true;
+              targetProductId = product.masterProductId;
+              deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
+            }
+            
+            // Get product locations for the target product (master product for virtual SKUs)
+            const locations = await storage.getProductLocations(targetProductId);
             
             // Check if we have the specific location that was used for this item
             const usedLocationCode = pickedLocations?.[item.id];
@@ -8817,13 +8900,21 @@ Important:
             if (targetLocation) {
               const currentQty = targetLocation.quantity || 0;
               const pickedCount = item.pickedQuantity || 0;
-              // Account for bulk unit items (e.g., cartons) - multiply by bulkUnitQty
-              const bulkMultiplier = (item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1;
-              const restoreQty = pickedCount * bulkMultiplier;
+              
+              // Calculate restore quantity
+              // For virtual SKUs: multiply by deduction ratio (e.g., 1 Bucket = 17 Jars)
+              // For bulk units: multiply by bulkUnitQty
+              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+              const restoreQty = pickedCount * multiplier;
               const newQty = currentQty + restoreQty;
               
               await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
-              console.log(`📦 Reset: Restored ${pickedCount}${bulkMultiplier > 1 ? ` × ${bulkMultiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+              
+              if (isVirtualSku) {
+                console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
+              } else {
+                console.log(`📦 Reset: Restored ${pickedCount}${multiplier > 1 ? ` × ${multiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+              }
               
               restoredLocations++;
               restoredQuantity += restoreQty;
