@@ -2032,7 +2032,11 @@ const ItemPrimaryLocation = memo(({
   const displayLocation = primaryLocation || fallbackLocation;
   
   if (!displayLocation) {
-    return null;
+    return (
+      <span className={`${className} text-slate-400 dark:text-slate-500 italic`}>
+        No Location
+      </span>
+    );
   }
   
   return (
@@ -3961,18 +3965,9 @@ export default function PickPack() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [activePickingOrder, activePackingOrder, showPickingCompletionModal, selectedTab, manualItemIndex, allOrders]);
 
-  // Mock location generator for demo
-  const generateMockLocation = () => {
-    const zones = ['A', 'B', 'C', 'D', 'E'];
-    const zone = zones[Math.floor(Math.random() * zones.length)];
-    const row = Math.floor(Math.random() * 20) + 1;
-    const shelf = Math.floor(Math.random() * 5) + 1;
-    return `${zone}${row}-${shelf}`;
-  };
-
-  // Mock barcode generator for demo
-  const generateMockBarcode = (sku: string) => {
-    return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+  // No mock location - show real data or "No Location"
+  const getLocationDisplay = (location?: string | null) => {
+    return location || null;
   };
 
   // No mock images in production - items without images show default icons
@@ -4852,8 +4847,6 @@ export default function PickPack() {
       pickStatus: order.pickStatus || 'not_started',
       packStatus: order.packStatus || 'not_started',
       items: (order.items?.map((item: any) => {
-        const warehouseLocation = item.warehouseLocation || generateMockLocation();
-        
         return {
           id: item.id,
           productId: item.productId,
@@ -4864,8 +4857,8 @@ export default function PickPack() {
           quantity: item.quantity,
           pickedQuantity: item.pickedQuantity || 0,
           packedQuantity: item.packedQuantity || 0,
-          warehouseLocation: warehouseLocation,
-          barcode: item.barcode || generateMockBarcode(item.sku),
+          warehouseLocation: item.warehouseLocation || null,
+          barcode: item.barcode || item.sku || null,
           image: item.image || null, // No mock images - use default icons based on type
           isBundle: item.isBundle || false,
           bundleItems: item.bundleItems || undefined,
