@@ -2189,7 +2189,7 @@ function StockAwarePickingButtons({
           {t('piecesPicked', 'pieces picked')}
           {totalStock > 0 && (
             <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm">
-              {totalStock} {t('inStock', 'in stock')}
+              {totalStock} x
             </Badge>
           )}
         </p>
