@@ -34,7 +34,8 @@ import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressModal } from "@/components/ShippingAddressModal";
 import { CustomerBadges } from '@/components/CustomerBadges';
 import { 
-  Plus, 
+  Plus,
+  Minus,
   Search, 
   Trash2, 
   ShoppingCart, 
@@ -5830,39 +5831,77 @@ export default function AddOrder() {
                               </div>
                             </TableCell>
                             <TableCell className="text-center align-middle">
-                              <div className="flex justify-center">
-                                <MathInput
-                                  min={1}
-                                  value={item.quantity}
-                                  onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
-                                  isInteger={true}
-                                  className="w-16 h-9 text-center"
-                                  data-testid={`input-quantity-${item.id}`}
-                                  onBlur={() => {
-                                    // For free items, commit the split logic on blur
-                                    if (item.isFreeItem) {
-                                      commitFreeItemQuantity(item.id, item.quantity);
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      // For free items, commit the split logic on enter
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-1">
+                                  <MathInput
+                                    min={1}
+                                    value={item.quantity}
+                                    onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
+                                    isInteger={true}
+                                    className="w-16 h-9 text-center"
+                                    data-testid={`input-quantity-${item.id}`}
+                                    onBlur={() => {
+                                      // For free items, commit the split logic on blur
                                       if (item.isFreeItem) {
                                         commitFreeItemQuantity(item.id, item.quantity);
                                       }
-                                      productSearchRef.current?.focus();
-                                    } else if (e.key === 'Tab') {
-                                      e.preventDefault();
-                                      // For free items, commit the split logic on tab
-                                      if (item.isFreeItem) {
-                                        commitFreeItemQuantity(item.id, item.quantity);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        // For free items, commit the split logic on enter
+                                        if (item.isFreeItem) {
+                                          commitFreeItemQuantity(item.id, item.quantity);
+                                        }
+                                        productSearchRef.current?.focus();
+                                      } else if (e.key === 'Tab') {
+                                        e.preventDefault();
+                                        // For free items, commit the split logic on tab
+                                        if (item.isFreeItem) {
+                                          commitFreeItemQuantity(item.id, item.quantity);
+                                        }
+                                        const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                                        shippingCostInput?.focus();
                                       }
-                                      const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
-                                      shippingCostInput?.focus();
-                                    }
-                                  }}
-                                />
+                                    }}
+                                  />
+                                </div>
+                                {/* Packaging unit quick-add buttons */}
+                                {item.allowBulkSales && item.bulkUnitQty && item.bulkUnitQty > 1 && !item.isFreeItem && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-1.5 text-xs bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300"
+                                      onClick={() => {
+                                        const newQty = Math.max(1, item.quantity - item.bulkUnitQty!);
+                                        updateOrderItem(item.id, 'quantity', newQty);
+                                      }}
+                                      disabled={item.quantity - item.bulkUnitQty! < 1}
+                                      data-testid={`btn-remove-packaging-unit-${item.id}`}
+                                    >
+                                      <Minus className="h-3 w-3 mr-0.5" />
+                                      <Box className="h-3 w-3" />
+                                    </Button>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {item.bulkUnitName || t('orders:carton')}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-1.5 text-xs bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300"
+                                      onClick={() => {
+                                        updateOrderItem(item.id, 'quantity', item.quantity + item.bulkUnitQty!);
+                                      }}
+                                      data-testid={`btn-add-packaging-unit-${item.id}`}
+                                    >
+                                      <Plus className="h-3 w-3 mr-0.5" />
+                                      <Box className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-right align-middle">

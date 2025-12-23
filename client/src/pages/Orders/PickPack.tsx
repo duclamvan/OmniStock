@@ -13520,6 +13520,45 @@ export default function PickPack() {
                               <span className="ml-2">ALL</span>
                             </Button>
                           </div>
+                          
+                          {/* Packaging Unit Buttons - Add/Remove Full Cartons */}
+                          {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 1 && (
+                            <div className="mt-4 pt-4 border-t-2 border-amber-200 dark:border-amber-700">
+                              <p className="text-center text-sm font-bold text-amber-700 dark:text-amber-300 mb-3">
+                                {t('pickByPackagingUnit') || 'Pick by Packaging Unit'}
+                              </p>
+                              <div className="grid grid-cols-2 gap-3">
+                                {/* Remove Carton Button */}
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+                                  onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - currentItem.bulkUnitQty!, 0))}
+                                  disabled={currentItem.pickedQuantity < currentItem.bulkUnitQty}
+                                  data-testid="btn-remove-packaging-unit"
+                                >
+                                  <Minus className="h-5 w-5 mr-1" />
+                                  <Box className="h-5 w-5 mr-2" />
+                                  <span>1 {currentItem.bulkUnitName || t('carton')}</span>
+                                </Button>
+                                
+                                {/* Add Carton Button */}
+                                <Button
+                                  size="lg"
+                                  className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+                                  onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + currentItem.bulkUnitQty!, currentItem.quantity))}
+                                  disabled={currentItem.pickedQuantity + currentItem.bulkUnitQty! > currentItem.quantity}
+                                  data-testid="btn-add-packaging-unit"
+                                >
+                                  <Plus className="h-5 w-5 mr-1" />
+                                  <Box className="h-5 w-5 mr-2" />
+                                  <span>1 {currentItem.bulkUnitName || t('carton')}</span>
+                                </Button>
+                              </div>
+                              <p className="text-center text-xs text-amber-600 dark:text-amber-400 mt-2">
+                                1 {currentItem.bulkUnitName || t('carton')} = {currentItem.bulkUnitQty} {t('pieces') || 'pcs'}
+                              </p>
+                            </div>
+                          )}
 
                           {/* Reset Button if needed */}
                           {currentItem.pickedQuantity > 0 && (

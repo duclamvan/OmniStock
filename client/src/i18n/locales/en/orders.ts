@@ -1399,6 +1399,8 @@ const orders = {
   pickingAccuracy: 'Picking Accuracy',
   avgItemsPerOrder: 'Avg. Items/Order',
   avgPickTime: 'Avg. Pick Time',
+  pickByPackagingUnit: 'Pick by Packaging Unit',
+  pieces: 'pcs',
   
   // Section Headers
   orderItemsHeader: 'Order Items',

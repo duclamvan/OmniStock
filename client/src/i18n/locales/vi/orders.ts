@@ -1387,6 +1387,8 @@ const orders = {
   pickingAccuracy: 'Độ chính xác lấy hàng',
   avgItemsPerOrder: 'TB sản phẩm/Đơn',
   avgPickTime: 'TB thời gian lấy',
+  pickByPackagingUnit: 'Lấy theo đơn vị đóng gói',
+  pieces: 'chiếc',
   
   // Section Headers
   orderItemsHeader: 'Sản phẩm trong đơn',

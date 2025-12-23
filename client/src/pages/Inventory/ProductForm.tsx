@@ -3829,28 +3829,28 @@ export default function ProductForm() {
 
                   <Separator />
 
-                  {/* Bulk Unit (Optional) */}
+                  {/* Packaging Unit (Optional) */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:units.bulkUnit', 'Bulk Unit (Optional)')}</h4>
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:units.packagingUnit', 'Packaging Unit (Optional)')}</h4>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-4">{t('products:units.bulkUnitHelp', 'Configure a larger unit for purchasing (e.g., cartons containing multiple boxes)')}</p>
+                    <p className="text-xs text-muted-foreground mb-4">{t('products:units.packagingUnitHelp', 'Configure a larger container unit (e.g., 1 carton = 50 pieces). This is NOT for volume discounts.')}</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="bulkUnitName" className="text-sm font-medium">{t('products:units.bulkUnitName', 'Bulk Unit Name')}</Label>
+                        <Label htmlFor="bulkUnitName" className="text-sm font-medium">{t('products:units.bulkUnitName', 'Packaging Unit Name')}</Label>
                         <Select
                           value={form.watch('bulkUnitName') || ''}
                           onValueChange={(value) => form.setValue('bulkUnitName', value === 'none' ? '' : value)}
                         >
                           <SelectTrigger className="mt-1" data-testid="select-bulk-unit">
-                            <SelectValue placeholder={t('products:units.noBulkUnit', 'No bulk unit')} />
+                            <SelectValue placeholder={t('products:units.noBulkUnit', 'No packaging unit')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">{t('products:units.noBulkUnit', 'No bulk unit')}</SelectItem>
+                            <SelectItem value="none">{t('products:units.noBulkUnit', 'No packaging unit')}</SelectItem>
                             {(inventorySettings?.bulkUnits || DEFAULT_BULK_UNITS)
                               .filter(bu => bu.enabled)
                               .map(bu => (
@@ -3866,7 +3866,7 @@ export default function ProductForm() {
                       {form.watch('bulkUnitName') && (
                         <>
                           <div>
-                            <Label htmlFor="bulkUnitQty" className="text-sm font-medium">{t('products:units.bulkUnitQty', 'Qty per Bulk Unit')}</Label>
+                            <Label htmlFor="bulkUnitQty" className="text-sm font-medium">{t('products:units.bulkUnitQty', 'Qty per Packaging Unit')}</Label>
                             <Input 
                               type="number"
                               min="1"
@@ -3889,12 +3889,12 @@ export default function ProductForm() {
                       )}
                     </div>
 
-                    {/* Bulk Pricing & Sales Options */}
+                    {/* Packaging Unit Pricing & Sales Options */}
                     {form.watch('bulkUnitName') && form.watch('bulkUnitQty') && (
                       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <Label htmlFor="bulkPriceCzk" className="text-sm font-medium">{t('products:units.bulkPriceCzk', 'Bulk Price (CZK)')}</Label>
+                            <Label htmlFor="bulkPriceCzk" className="text-sm font-medium">{t('products:bulkPriceCzk', 'Packaging Unit Price (CZK)')}</Label>
                             <div className="relative mt-1">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyCzk')}</span>
                               <Input 
@@ -3915,10 +3915,10 @@ export default function ProductForm() {
                                 }}
                               />
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">{t('products:units.bulkPriceHelp', 'Optional special price per bulk unit')}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:units.bulkPriceHelp', 'Price for 1 full packaging unit (e.g., 1 carton)')}</p>
                           </div>
                           <div>
-                            <Label htmlFor="bulkPriceEur" className="text-sm font-medium">{t('products:units.bulkPriceEur', 'Bulk Price (EUR)')}</Label>
+                            <Label htmlFor="bulkPriceEur" className="text-sm font-medium">{t('products:bulkPriceEur', 'Packaging Unit Price (EUR)')}</Label>
                             <div className="relative mt-1">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyEur')}</span>
                               <Input 
@@ -3948,8 +3948,8 @@ export default function ProductForm() {
                               data-testid="checkbox-allow-bulk-sales"
                             />
                             <div>
-                              <Label htmlFor="allowBulkSales" className="text-sm font-medium cursor-pointer">{t('products:units.allowBulkSales', 'Allow bulk sales')}</Label>
-                              <p className="text-xs text-muted-foreground">{t('products:units.allowBulkSalesHelp', 'Enable bulk unit option in orders/POS')}</p>
+                              <Label htmlFor="allowBulkSales" className="text-sm font-medium cursor-pointer">{t('products:allowBulkSales', 'Allow packaging unit sales')}</Label>
+                              <p className="text-xs text-muted-foreground">{t('products:allowBulkSalesHelp', 'Enable ordering full cartons/pallets in orders')}</p>
                             </div>
                           </div>
                         </div>
