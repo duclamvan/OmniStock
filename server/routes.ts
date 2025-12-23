@@ -8108,6 +8108,17 @@ Important:
     }
   });
 
+  // Get archived/trashed orders - MUST be before /api/orders/:id to avoid route conflict
+  app.get('/api/orders/trash', isAuthenticated, async (req: any, res) => {
+    try {
+      const archivedOrders = await storage.getArchivedOrders();
+      res.json(archivedOrders);
+    } catch (error) {
+      console.error("Error fetching trashed orders:", error);
+      res.status(500).json({ message: "Failed to fetch trashed orders" });
+    }
+  });
+
   // Fetch all order items for analytics (e.g., units sold calculation)
   app.get('/api/order-items/all', isAuthenticated, async (req, res) => {
     try {
@@ -10428,17 +10439,6 @@ Important:
     } catch (error) {
       console.error("Error archiving order:", error);
       res.status(500).json({ message: "Failed to move order to trash" });
-    }
-  });
-
-  // Get archived/trashed orders
-  app.get('/api/orders/trash', isAuthenticated, async (req: any, res) => {
-    try {
-      const archivedOrders = await storage.getArchivedOrders();
-      res.json(archivedOrders);
-    } catch (error) {
-      console.error("Error fetching trashed orders:", error);
-      res.status(500).json({ message: "Failed to fetch trashed orders" });
     }
   });
 
