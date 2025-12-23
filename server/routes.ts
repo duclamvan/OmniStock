@@ -10283,17 +10283,36 @@ Important:
       let totalRestoredLocations = 0;
       let totalRestoredQuantity = 0;
       
+      // Only restore inventory if the order was actually picked (inventory was deducted)
+      // If pickStatus is 'pending' or empty, no inventory was ever deducted
+      const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress';
+      
+      if (!shouldRestoreInventory) {
+        console.log(`🔄 [Soft Delete] Order ${order.orderId} was never picked (pickStatus: ${order.pickStatus}), no inventory to restore`);
+      }
+      
       // Restore inventory for each item (add quantities back to specific locations)
+      // Only if inventory was actually picked/deducted
       for (const item of orderItems) {
+        if (!shouldRestoreInventory) continue; // Skip inventory restoration if order was never picked
+        
         if (item.productId && !item.serviceId) {
           const product = await storage.getProductById(item.productId);
           if (product) {
             // Check if this is a virtual SKU that deducts from master product
+            // Use order item fields first (set at order creation), fallback to product fields
             let targetProductId = item.productId;
             let deductionRatio = 1;
             let isVirtualSku = false;
             
-            if (product.isVirtual && product.masterProductId) {
+            // Check order item fields first (they capture state at order time)
+            if (item.isVirtual && item.masterProductId) {
+              isVirtualSku = true;
+              targetProductId = item.masterProductId;
+              deductionRatio = parseFloat(item.inventoryDeductionRatio || '1');
+            }
+            // Fallback to product fields for legacy orders
+            else if (product.isVirtual && product.masterProductId) {
               isVirtualSku = true;
               targetProductId = product.masterProductId;
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
