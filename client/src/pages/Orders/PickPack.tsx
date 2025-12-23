@@ -2376,10 +2376,10 @@ function MultiLocationPicker({
 
                 {/* Row 2: Controls */}
                 <div className="flex items-center justify-between gap-2">
-                  {/* Minus Button */}
+                  {/* Minus Button - Red for remove */}
                   <Button
                     size="lg"
-                    className="h-12 w-12 p-0 text-xl font-black bg-red-500 hover:bg-red-600 text-white rounded-xl disabled:opacity-30"
+                    className="h-12 w-12 p-0 text-xl font-black bg-rose-500 hover:bg-rose-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
                     onClick={() => updateLocationPick(location.locationCode, pickedFromThis - 1, availableStock)}
                     disabled={!canPickLess}
                   >
@@ -2389,27 +2389,27 @@ function MultiLocationPicker({
                   {/* Picked Count Display */}
                   <div className="flex-1 text-center">
                     <span className={`text-3xl font-black ${
-                      pickedFromThis > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'
+                      pickedFromThis > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-400'
                     }`}>
                       {pickedFromThis}
                     </span>
                     <span className="text-lg text-gray-400">/{availableStock}</span>
                   </div>
 
-                  {/* Plus Button */}
+                  {/* Plus Button - Blue for add */}
                   <Button
                     size="lg"
-                    className="h-12 w-12 p-0 text-xl font-black bg-blue-500 hover:bg-blue-600 text-white rounded-xl disabled:opacity-30"
+                    className="h-12 w-12 p-0 text-xl font-black bg-sky-500 hover:bg-sky-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
                     onClick={() => updateLocationPick(location.locationCode, pickedFromThis + 1, availableStock)}
                     disabled={!canPickMore}
                   >
                     <Plus className="h-6 w-6" />
                   </Button>
 
-                  {/* Pick All from Location Button */}
+                  {/* Pick All from Location Button - Purple/Indigo for quick action */}
                   <Button
                     size="lg"
-                    className="h-12 px-4 text-sm font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl disabled:opacity-30"
+                    className="h-12 px-4 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
                     onClick={() => pickAllFromLocation(location.locationCode, availableStock)}
                     disabled={!canPickMore}
                   >
