@@ -885,6 +885,8 @@ const orders = {
   pleaseAddItemsFirst: 'Vui lòng thêm sản phẩm vào đơn hàng trước',
   packingPlanOptimized: 'Kế hoạch đóng gói đã được tối ưu hóa thành công',
   failedToOptimizePacking: 'Không thể tối ưu hóa đóng gói',
+  aiCartonPlan: 'Kế hoạch thùng AI',
+  filled: 'đầy',
   saveOrderBeforeCartons: 'Vui lòng lưu đơn hàng trước khi thêm thùng',
   addManualCartonError: 'Không thể thêm thùng thủ công',
   noVariantsSelected: 'Chưa chọn biến thể',

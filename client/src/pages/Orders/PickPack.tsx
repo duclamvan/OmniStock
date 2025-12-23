@@ -133,7 +133,8 @@ import {
   Flame,
   Target,
   Lock,
-  Sparkles
+  Sparkles,
+  Scale
 } from "lucide-react";
 
 interface BundleItem {
@@ -8311,6 +8312,55 @@ export default function PickPack() {
             </CardHeader>
             {!isCartonSectionCollapsed && (
               <CardContent className="p-4 space-y-3">
+              
+              {/* AI Carton Plan Banner - Show saved plan from order creation */}
+              {packingPlan && packingPlan.cartons && packingPlan.cartons.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-2">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-bold text-blue-800 dark:text-blue-200 text-sm">{t('orders:aiCartonPlan')}</h4>
+                        <Badge variant="outline" className="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600 text-xs">
+                          {packingPlan.totalCartons} {packingPlan.totalCartons === 1 ? t('carton') : t('cartons')}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1.5">
+                        {packingPlan.cartons.map((planCarton: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-blue-100 dark:border-blue-800">
+                            <div className="flex items-center gap-2">
+                              <Box className="h-3.5 w-3.5 text-blue-500" />
+                              <span className="font-medium text-gray-800 dark:text-gray-200">
+                                {planCarton.cartonName || `Carton ${idx + 1}`}
+                              </span>
+                              {planCarton.dimensions && (
+                                <span className="text-gray-500 dark:text-gray-400">({planCarton.dimensions})</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                              <span className="flex items-center gap-1">
+                                <Scale className="h-3 w-3" />
+                                {(planCarton.totalWeightKg || planCarton.weight || 0).toFixed(2)} kg
+                              </span>
+                              {planCarton.volumeUtilization !== undefined && (
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                  {Math.round(planCarton.volumeUtilization)}% {t('filled')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {packingPlan.suggestions && packingPlan.suggestions.length > 0 && (
+                        <div className="mt-2 text-xs text-blue-700 dark:text-blue-300 italic">
+                          {packingPlan.suggestions[0]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Carton List */}
               {[...cartons, ...cartonsDraft].map((carton, index) => {
                 const isDraft = cartonsDraft.some(d => d.id === carton.id);

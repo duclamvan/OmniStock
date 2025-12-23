@@ -881,6 +881,8 @@ const orders = {
   pleaseAddItemsFirst: 'Please add items to the order first',
   packingPlanOptimized: 'Packing plan optimized successfully',
   failedToOptimizePacking: 'Failed to optimize packing',
+  aiCartonPlan: 'AI Carton Plan',
+  filled: 'filled',
   saveOrderBeforeCartons: 'Please save the order before adding cartons',
   addManualCartonError: 'Failed to add manual carton',
   noVariantsSelected: 'No Variants Selected',
