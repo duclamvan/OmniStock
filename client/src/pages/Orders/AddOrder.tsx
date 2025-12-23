@@ -5803,10 +5803,9 @@ export default function AddOrder() {
                                       </Badge>
                                     )}
                                     {item.isVirtual && (
-                                      <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
-                                        <Link2 className="h-3 w-3 mr-0.5" />
+                                      <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
                                         {t('orders:virtualSku.badge', 'Virtual')}
-                                      </Badge>
+                                      </span>
                                     )}
                                     {item.priceTier === 'bulk' && (
                                       <Badge className="text-xs px-1.5 py-0 bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-600">
@@ -5891,18 +5890,6 @@ export default function AddOrder() {
                                     }}
                                   />
                                 </div>
-                                {/* Virtual SKU indicator - shows deduction info */}
-                                {item.isVirtual && item.masterProductName && item.inventoryDeductionRatio && (
-                                  <div className="flex items-center gap-1">
-                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
-                                      <Link2 className="h-3 w-3 mr-0.5" />
-                                      {t('orders:virtualSku.deducts', '{{ratio}}x {{master}}', {
-                                        ratio: item.quantity * item.inventoryDeductionRatio,
-                                        master: item.masterProductName
-                                      })}
-                                    </Badge>
-                                  </div>
-                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-right align-middle">
@@ -6240,10 +6227,9 @@ export default function AddOrder() {
                               </Badge>
                             )}
                             {item.isVirtual && (
-                              <Badge className="text-[10px] px-1 py-0 h-4 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
-                                <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                              <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
                                 {t('orders:virtualSku.badge', 'Virtual')}
-                              </Badge>
+                              </span>
                             )}
                             {item.variantName && (
                               <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300">
