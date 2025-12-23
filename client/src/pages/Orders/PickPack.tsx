@@ -1728,23 +1728,32 @@ function PickingLocationSelector({
     enabled: !!currentItem.productId,
   });
   
-  // Sort locations: primary first, then by code
+  // Sort locations alphabetically by code
   const sortedLocations = [...productLocations].sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1;
-    if (!a.isPrimary && b.isPrimary) return 1;
     return a.locationCode.localeCompare(b.locationCode);
   });
 
+  // Filter locations with stock for auto-selection
+  const availableLocations = sortedLocations.filter(loc => (loc.quantity || 0) > 0);
+
   // Find primary location
   const primaryLocation = sortedLocations.find(loc => loc.isPrimary);
+  const primaryHasStock = primaryLocation && (primaryLocation.quantity || 0) > 0;
   
-  // Auto-select primary location when locations load (if not already selected)
+  // Auto-select location when locations load (if not already selected)
+  // Priority: primary with stock > first alphabetical with stock > primary without stock
   useEffect(() => {
     if (sortedLocations.length > 0 && !selectedPickingLocations[currentItem.id]) {
-      // Default to primary location, or first location with stock, or first location
-      const defaultLocation = primaryLocation?.locationCode 
-        || sortedLocations.find(loc => (loc.quantity || 0) > 0)?.locationCode
-        || sortedLocations[0]?.locationCode;
+      let defaultLocation: string | undefined;
+      
+      if (primaryHasStock) {
+        // Primary has stock - use it
+        defaultLocation = primaryLocation?.locationCode;
+      } else if (availableLocations.length > 0) {
+        // Primary doesn't have stock - use first alphabetical location with stock
+        defaultLocation = availableLocations[0]?.locationCode;
+      }
+      // If no locations have stock, don't auto-select anything
       
       if (defaultLocation) {
         setSelectedPickingLocations({
@@ -1753,18 +1762,20 @@ function PickingLocationSelector({
         });
       }
     }
-  }, [sortedLocations.length, currentItem.id, primaryLocation?.locationCode]);
+  }, [sortedLocations.length, currentItem.id, primaryHasStock, availableLocations.length]);
 
-  // Get selected location - use primary/first location as fallback (NOT warehouseLocation)
+  // Get selected location - use primary with stock, or first with stock, or empty
   const selectedLocation = selectedPickingLocations[currentItem.id] 
-    || primaryLocation?.locationCode 
-    || sortedLocations[0]?.locationCode 
+    || (primaryHasStock ? primaryLocation?.locationCode : availableLocations[0]?.locationCode)
     || '';
 
   // Find the selected location to show its stock
   const selectedLocationData = sortedLocations.find(loc => 
     loc.locationCode.toUpperCase() === selectedLocation.toUpperCase()
   );
+  
+  // Check if selected location has stock available
+  const hasStockAvailable = (selectedLocationData?.quantity || 0) > 0;
 
   const handleLocationChange = (locationCode: string) => {
     setSelectedPickingLocations({
@@ -1789,11 +1800,17 @@ function PickingLocationSelector({
       ) : sortedLocations.length > 0 ? (
         <div className="space-y-3">
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
-            <SelectTrigger className="w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 border-orange-400 rounded-xl shadow-lg hover:border-orange-500 hover:shadow-xl focus:ring-4 focus:ring-orange-300 transition-all [&>span]:flex-1 [&>span]:text-center [&>svg]:hidden">
+            <SelectTrigger className={`w-full h-20 sm:h-24 bg-gradient-to-br from-orange-50 to-white border-4 rounded-xl shadow-lg hover:shadow-xl focus:ring-4 transition-all [&>span]:flex-1 [&>span]:text-center [&>svg]:hidden ${
+              hasStockAvailable 
+                ? 'border-orange-400 hover:border-orange-500 focus:ring-orange-300' 
+                : 'border-red-400 hover:border-red-500 focus:ring-red-300'
+            }`}>
               <SelectValue placeholder={t('selectLocation') || 'Select location'}>
                 <div className="flex flex-col items-center justify-center gap-1 w-full">
-                  <span className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono text-orange-700 dark:text-orange-600 tracking-wider drop-shadow-sm">
-                    {selectedLocation}
+                  <span className={`text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-wider drop-shadow-sm ${
+                    hasStockAvailable ? 'text-orange-700 dark:text-orange-600' : 'text-red-600 dark:text-red-500'
+                  }`}>
+                    {selectedLocation || t('noStock', 'NO STOCK')}
                   </span>
                   <span className="text-xs text-orange-500 font-medium uppercase tracking-widest flex items-center gap-1">
                     <ChevronDown className="h-3 w-3" /> {t('tapToChange') || 'Tap to change'}
@@ -1802,33 +1819,44 @@ function PickingLocationSelector({
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white border-4 border-orange-400 rounded-xl shadow-xl min-w-[320px] p-2">
-              {sortedLocations.map((location) => (
-                <SelectItem 
-                  key={location.id} 
-                  value={location.locationCode}
-                  className="py-4 px-4 cursor-pointer hover:bg-orange-50 focus:bg-orange-100 border-b border-orange-200 last:border-b-0 [&>span]:w-full [&>span:first-child]:hidden"
-                >
-                  <div className="w-full text-center">
-                    <div className="text-2xl sm:text-3xl font-black font-mono text-orange-700 tracking-wider mb-2">
-                      {location.locationCode}
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className={`text-sm px-3 py-1 ${
-                        (location.quantity || 0) > 0 
-                          ? 'bg-green-500 text-white border-green-600' 
-                          : 'bg-red-500 text-white border-red-600'
+              {/* Show all locations - 0-stock ones are disabled */}
+              {sortedLocations.map((location) => {
+                const hasStock = (location.quantity || 0) > 0;
+                return (
+                  <SelectItem 
+                    key={location.id} 
+                    value={location.locationCode}
+                    disabled={!hasStock}
+                    className={`py-4 px-4 cursor-pointer border-b border-orange-200 last:border-b-0 [&>span]:w-full [&>span:first-child]:hidden ${
+                      hasStock 
+                        ? 'hover:bg-orange-50 focus:bg-orange-100' 
+                        : 'opacity-50 cursor-not-allowed bg-gray-50'
+                    }`}
+                  >
+                    <div className="w-full text-center">
+                      <div className={`text-2xl sm:text-3xl font-black font-mono tracking-wider mb-2 ${
+                        hasStock ? 'text-orange-700' : 'text-gray-400'
                       }`}>
-                        {location.quantity || 0} {t('inStock') || 'in stock'}
-                      </Badge>
-                      {location.isPrimary && (
-                        <Badge className="bg-blue-500 text-white border-blue-600 text-sm px-2 py-1">
-                          ★ {t('primary') || 'Primary'}
+                        {location.locationCode}
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <Badge className={`text-sm px-3 py-1 ${
+                          hasStock
+                            ? 'bg-green-500 text-white border-green-600' 
+                            : 'bg-red-500 text-white border-red-600'
+                        }`}>
+                          {location.quantity || 0} {t('inStock') || 'in stock'}
                         </Badge>
-                      )}
+                        {location.isPrimary && (
+                          <Badge className="bg-blue-500 text-white border-blue-600 text-sm px-2 py-1">
+                            ★ {t('primary') || 'Primary'}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </SelectItem>
-              ))}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           
@@ -1844,6 +1872,15 @@ function PickingLocationSelector({
               }`}>
                 {selectedLocationData.quantity || 0} {t('available') || 'available'}
               </Badge>
+            </div>
+          )}
+          
+          {/* Warning when no stock at any location */}
+          {availableLocations.length === 0 && (
+            <div className="text-center py-3 bg-red-50 dark:bg-red-900/30 rounded-lg border-2 border-red-300 dark:border-red-700">
+              <p className="text-sm font-bold text-red-700 dark:text-red-300">
+                ⚠️ {t('noStockAtAnyLocation') || 'No stock available at any location'}
+              </p>
             </div>
           )}
         </div>
@@ -1881,22 +1918,29 @@ function BundleComponentLocationSelector({
     staleTime: 30000,
   });
   
-  // Sort locations: primary first, then by code
+  // Sort locations alphabetically by code
   const sortedLocations = [...productLocations].sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1;
-    if (!a.isPrimary && b.isPrimary) return 1;
     return a.locationCode.localeCompare(b.locationCode);
   });
 
+  // Filter locations with stock for auto-selection
+  const availableLocations = sortedLocations.filter(loc => (loc.quantity || 0) > 0);
+
   // Find primary location
   const primaryLocation = sortedLocations.find(loc => loc.isPrimary);
+  const primaryHasStock = primaryLocation && (primaryLocation.quantity || 0) > 0;
   
-  // Auto-select primary location when locations load (if not already selected)
+  // Auto-select location when locations load (if not already selected)
+  // Priority: primary with stock > first alphabetical with stock
   useEffect(() => {
     if (sortedLocations.length > 0 && !selectedPickingLocations[componentId]) {
-      const defaultLocation = primaryLocation?.locationCode 
-        || sortedLocations.find(loc => (loc.quantity || 0) > 0)?.locationCode
-        || sortedLocations[0]?.locationCode;
+      let defaultLocation: string | undefined;
+      
+      if (primaryHasStock) {
+        defaultLocation = primaryLocation?.locationCode;
+      } else if (availableLocations.length > 0) {
+        defaultLocation = availableLocations[0]?.locationCode;
+      }
       
       if (defaultLocation) {
         setSelectedPickingLocations({
@@ -1905,18 +1949,20 @@ function BundleComponentLocationSelector({
         });
       }
     }
-  }, [sortedLocations.length, componentId, primaryLocation?.locationCode]);
+  }, [sortedLocations.length, componentId, primaryHasStock, availableLocations.length]);
 
-  // Get selected location
+  // Get selected location - use primary with stock, or first with stock, or empty
   const selectedLocation = selectedPickingLocations[componentId] 
-    || primaryLocation?.locationCode 
-    || sortedLocations[0]?.locationCode 
+    || (primaryHasStock ? primaryLocation?.locationCode : availableLocations[0]?.locationCode)
     || '';
 
   // Find the selected location to show its stock
   const selectedLocationData = sortedLocations.find(loc => 
     loc.locationCode.toUpperCase() === selectedLocation.toUpperCase()
   );
+  
+  // Check if selected location has stock available
+  const hasStockAvailable = (selectedLocationData?.quantity || 0) > 0;
 
   const handleLocationChange = (locationCode: string) => {
     setSelectedPickingLocations({
@@ -1941,39 +1987,58 @@ function BundleComponentLocationSelector({
       ) : sortedLocations.length > 0 ? (
         <div className="space-y-2">
           <Select value={selectedLocation} onValueChange={handleLocationChange}>
-            <SelectTrigger className="w-full h-12 bg-white dark:bg-gray-800 border-2 border-amber-300 dark:border-amber-600 text-base font-bold font-mono text-center">
+            <SelectTrigger className={`w-full h-12 bg-white dark:bg-gray-800 border-2 text-base font-bold font-mono text-center ${
+              hasStockAvailable 
+                ? 'border-amber-300 dark:border-amber-600' 
+                : 'border-red-300 dark:border-red-600'
+            }`}>
               <SelectValue placeholder={t('selectLocation', 'Select location')}>
-                <span className="text-amber-700 dark:text-amber-300 text-lg font-black">{selectedLocation}</span>
+                <span className={`text-lg font-black ${
+                  hasStockAvailable ? 'text-amber-700 dark:text-amber-300' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {selectedLocation || t('noStock', 'NO STOCK')}
+                </span>
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-800 border-2 border-amber-300">
-              {sortedLocations.map((location) => (
-                <SelectItem 
-                  key={location.id} 
-                  value={location.locationCode}
-                  className="text-base font-mono py-2 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/30"
-                >
-                  <div className="flex items-center justify-between w-full gap-3">
-                    <span className="font-bold text-gray-900 dark:text-gray-100">{location.locationCode}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`text-xs ${
-                        (location.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
-                          ? 'bg-green-100 text-green-700 border-green-300' 
-                          : (location.quantity || 0) > 0
-                            ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+              {/* Show all locations - 0-stock ones are disabled */}
+              {sortedLocations.map((location) => {
+                const hasStock = (location.quantity || 0) > 0;
+                return (
+                  <SelectItem 
+                    key={location.id} 
+                    value={location.locationCode}
+                    disabled={!hasStock}
+                    className={`text-base font-mono py-2 cursor-pointer ${
+                      hasStock 
+                        ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30' 
+                        : 'opacity-50 cursor-not-allowed bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full gap-3">
+                      <span className={`font-bold ${hasStock ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
+                        {location.locationCode}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-xs ${
+                          hasStock
+                            ? (location.quantity || 0) >= bundleItem.quantity * (bundleItem.bulkUnitQty || 1)
+                              ? 'bg-green-100 text-green-700 border-green-300' 
+                              : 'bg-yellow-100 text-yellow-700 border-yellow-300'
                             : 'bg-red-100 text-red-700 border-red-300'
-                      }`}>
-                        {location.quantity || 0}
-                      </Badge>
-                      {location.isPrimary && (
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
-                          ★
+                        }`}>
+                          {location.quantity || 0}
                         </Badge>
-                      )}
+                        {location.isPrimary && (
+                          <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
+                            ★
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </SelectItem>
-              ))}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           
@@ -1991,6 +2056,13 @@ function BundleComponentLocationSelector({
               </Badge>
             </div>
           )}
+          
+          {/* Warning when no stock at any location */}
+          {availableLocations.length === 0 && (
+            <div className="text-center py-1 text-xs font-bold text-red-600 dark:text-red-400">
+              ⚠️ {t('outOfStock', 'OUT OF STOCK')}
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-1">
@@ -2000,6 +2072,259 @@ function BundleComponentLocationSelector({
         </div>
       )}
     </div>
+  );
+}
+
+// Hook: Check if current item has stock available at any location
+// Returns true if product has stock > 0 at any configured location, false otherwise
+function useItemStockAvailability(productId: string | null | undefined, selectedLocation?: string): { hasStock: boolean; isLoading: boolean; totalStock: number } {
+  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', productId, 'locations'],
+    enabled: !!productId,
+    staleTime: 5000, // Short cache for real-time stock checking
+  });
+  
+  const result = useMemo(() => {
+    if (!productId || isLoading) {
+      return { hasStock: true, totalStock: 0 }; // Default to true while loading to avoid blocking
+    }
+    
+    // If a location is selected, check that specific location
+    if (selectedLocation) {
+      const location = productLocations.find(loc => 
+        loc.locationCode.toUpperCase() === selectedLocation.toUpperCase()
+      );
+      return { 
+        hasStock: (location?.quantity || 0) > 0, 
+        totalStock: location?.quantity || 0 
+      };
+    }
+    
+    // Otherwise check if any location has stock
+    const totalStock = productLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+    return { hasStock: totalStock > 0, totalStock };
+  }, [productId, productLocations, selectedLocation, isLoading]);
+  
+  return { ...result, isLoading };
+}
+
+// Component: Stock-aware picking action buttons with strict stock enforcement
+// Disables all pick actions when no stock is available
+function StockAwarePickingButtons({
+  currentItem,
+  selectedLocation,
+  updatePickedItem,
+  t
+}: {
+  currentItem: OrderItem;
+  selectedLocation?: string;
+  updatePickedItem: (itemId: string, pickedQty: number, locationCode?: string) => void;
+  t: (key: string, fallback?: string) => string;
+}) {
+  // For virtual products, check the master product's stock
+  const productIdToCheck = currentItem.isVirtual && currentItem.masterProductId 
+    ? currentItem.masterProductId 
+    : currentItem.productId;
+  
+  const { hasStock, isLoading, totalStock } = useItemStockAvailability(productIdToCheck, selectedLocation);
+  
+  // Service items don't have stock - always allow picking
+  const isServiceItem = !!currentItem.serviceId && !currentItem.productId;
+  const stockAvailable = isServiceItem || hasStock;
+  const isDisabled = !stockAvailable;
+  
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-3">
+        <div className="h-20 bg-gray-200 rounded-xl" />
+        <div className="grid grid-cols-3 gap-3">
+          <div className="h-20 bg-gray-200 rounded-xl" />
+          <div className="h-20 bg-gray-200 rounded-xl" />
+          <div className="h-20 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+  
+  // Show out of stock warning if no stock
+  if (!stockAvailable) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded-xl p-6 text-center">
+          <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400 mx-auto mb-3" />
+          <p className="text-xl font-bold text-red-700 dark:text-red-300">
+            {t('outOfStock', 'OUT OF STOCK')}
+          </p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+            {t('cannotPickNoStock', 'Cannot pick - no stock available at any location')}
+          </p>
+        </div>
+        
+        {/* Show disabled buttons for visual reference */}
+        <div className="grid grid-cols-3 gap-3 opacity-50">
+          <Button size="lg" className="h-20 text-3xl font-black" disabled>
+            <Minus className="h-8 w-8" />
+          </Button>
+          <Button size="lg" className="h-20 text-3xl font-black" disabled>
+            <Plus className="h-8 w-8" />
+          </Button>
+          <Button size="lg" className="h-20 text-xl font-black" disabled>
+            <CheckCircle className="h-6 w-6" />
+            <span className="ml-2">ALL</span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      {/* Quantity Display */}
+      <div className="text-center mb-4">
+        <p className="text-6xl sm:text-7xl lg:text-8xl font-black text-gray-900 dark:text-gray-100 drop-shadow-lg">
+          {currentItem.pickedQuantity}
+          <span className="text-3xl sm:text-4xl lg:text-5xl text-gray-400 dark:text-gray-500 font-bold">/{currentItem.quantity}</span>
+        </p>
+        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 font-semibold mt-1 flex items-center justify-center gap-2">
+          {t('piecesPicked', 'pieces picked')}
+          {totalStock > 0 && (
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm">
+              {totalStock} {t('inStock', 'in stock')}
+            </Badge>
+          )}
+        </p>
+        {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <span className="text-base font-bold text-amber-700 dark:text-amber-300">
+              {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+              {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
+            </span>
+            {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                (+{currentItem.quantity % currentItem.bulkUnitQty} pcs)
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 transition-all duration-300"
+          style={{ width: `${(currentItem.pickedQuantity / currentItem.quantity) * 100}%` }}
+        />
+      </div>
+      
+      {/* Carton Details */}
+      {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <span className="text-base font-bold text-amber-700 dark:text-amber-300">
+            {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+            {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
+          </span>
+          {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              (+{currentItem.quantity % currentItem.bulkUnitQty} pcs)
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Quick Action Buttons Grid */}
+      <div className="grid grid-cols-3 gap-3 mt-4">
+        {/* Minus Button */}
+        <Button
+          size="lg"
+          className="h-20 text-3xl font-black bg-red-50 dark:bg-red-900/300 hover:bg-red-600 text-white shadow-lg rounded-xl"
+          onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - 1, 0))}
+          disabled={currentItem.pickedQuantity === 0}
+        >
+          <Minus className="h-8 w-8" />
+        </Button>
+        
+        {/* Plus Button */}
+        <Button
+          size="lg"
+          className="h-20 text-3xl font-black bg-blue-50 dark:bg-blue-900/300 hover:bg-blue-600 text-white shadow-lg rounded-xl"
+          onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
+          disabled={currentItem.pickedQuantity >= currentItem.quantity}
+        >
+          <Plus className="h-8 w-8" />
+        </Button>
+        
+        {/* Pick All Button */}
+        <Button
+          size="lg"
+          className="h-20 text-xl font-black bg-green-50 dark:bg-green-900/300 hover:bg-green-600 text-white shadow-lg rounded-xl"
+          onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+          disabled={currentItem.pickedQuantity >= currentItem.quantity}
+        >
+          <CheckCircle className="h-6 w-6" />
+          <span className="ml-2">ALL</span>
+        </Button>
+      </div>
+      
+      {/* Packaging Unit Buttons */}
+      {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 1 && (
+        <div className="mt-4 pt-4 border-t-2 border-amber-200 dark:border-amber-700">
+          <p className="text-center text-sm font-bold text-amber-700 dark:text-amber-300 mb-3">
+            {t('pickByPackagingUnit', 'Pick by Packaging Unit')}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              size="lg"
+              className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+              onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - currentItem.bulkUnitQty!, 0))}
+              disabled={currentItem.pickedQuantity < currentItem.bulkUnitQty}
+              data-testid="btn-remove-packaging-unit"
+            >
+              <Minus className="h-5 w-5 mr-1" />
+              <Box className="h-5 w-5 mr-2" />
+              <span>1 {currentItem.bulkUnitName || t('carton', 'carton')}</span>
+            </Button>
+            
+            <Button
+              size="lg"
+              className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
+              onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + currentItem.bulkUnitQty!, currentItem.quantity))}
+              disabled={currentItem.pickedQuantity + currentItem.bulkUnitQty! > currentItem.quantity}
+              data-testid="btn-add-packaging-unit"
+            >
+              <Plus className="h-5 w-5 mr-1" />
+              <Box className="h-5 w-5 mr-2" />
+              <span>1 {currentItem.bulkUnitName || t('carton', 'carton')}</span>
+            </Button>
+          </div>
+          <p className="text-center text-xs text-amber-600 dark:text-amber-400 mt-2">
+            1 {currentItem.bulkUnitName || t('carton', 'carton')} = {currentItem.bulkUnitQty} {t('pieces', 'pcs')}
+          </p>
+        </div>
+      )}
+
+      {/* Reset Button */}
+      {currentItem.pickedQuantity > 0 && (
+        <Button
+          className="w-full mt-3 h-12 text-base font-semibold bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md"
+          onClick={() => updatePickedItem(currentItem.id, 0)}
+        >
+          <RotateCcw className="h-5 w-5 mr-2" />
+          Reset to 0
+        </Button>
+      )}
+
+      {/* Success State */}
+      {currentItem.pickedQuantity >= currentItem.quantity && (
+        <Alert className="mt-4 bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-700">
+          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-800 dark:text-green-200 font-bold">
+            ✓ Item fully picked! Ready for next.
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
   );
 }
 
@@ -13591,137 +13916,14 @@ export default function PickPack() {
                           </div>
                         )}
                         
-                        {/* Streamlined Quantity Picker - Quick Action Buttons */}
+                        {/* Stock-Aware Quantity Picker - Strict stock enforcement */}
                         <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-700">
-                          {/* Large Visual Counter */}
-                          <div className="text-center mb-6">
-                            <div className="inline-flex items-center justify-center gap-3">
-                              <div className="text-7xl sm:text-8xl font-black text-blue-600 dark:text-blue-400 tabular-nums">
-                                {currentItem.pickedQuantity}
-                              </div>
-                              <div className="text-3xl sm:text-4xl font-bold text-gray-400">/</div>
-                              <div className="text-5xl sm:text-6xl font-black text-gray-700 tabular-nums">
-                                {currentItem.quantity}
-                              </div>
-                            </div>
-                            {/* Progress Bar */}
-                            <div className="mt-4 h-3 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 transition-all duration-300"
-                                style={{ width: `${(currentItem.pickedQuantity / currentItem.quantity) * 100}%` }}
-                              />
-                            </div>
-                            
-                            {/* Carton Details - Shows how many cartons this quantity represents */}
-                            {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
-                              <div className="mt-3 flex items-center justify-center gap-2">
-                                <Box className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                                <span className="text-base font-bold text-amber-700 dark:text-amber-300">
-                                  {Math.floor(currentItem.pickedQuantity / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
-                                </span>
-                                {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    (+{currentItem.quantity % currentItem.bulkUnitQty} pcs)
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Quick Action Buttons Grid - Simplified */}
-                          <div className="grid grid-cols-3 gap-3">
-                            {/* Minus Button */}
-                            <Button
-                              size="lg"
-                              className="h-20 text-3xl font-black bg-red-50 dark:bg-red-900/300 hover:bg-red-600 text-white shadow-lg rounded-xl"
-                              onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - 1, 0))}
-                              disabled={currentItem.pickedQuantity === 0}
-                            >
-                              <Minus className="h-8 w-8" />
-                            </Button>
-                            
-                            {/* Plus Button */}
-                            <Button
-                              size="lg"
-                              className="h-20 text-3xl font-black bg-blue-50 dark:bg-blue-900/300 hover:bg-blue-600 text-white shadow-lg rounded-xl"
-                              onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + 1, currentItem.quantity))}
-                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                            >
-                              <Plus className="h-8 w-8" />
-                            </Button>
-                            
-                            {/* Pick All Button */}
-                            <Button
-                              size="lg"
-                              className="h-20 text-xl font-black bg-green-50 dark:bg-green-900/300 hover:bg-green-600 text-white shadow-lg rounded-xl"
-                              onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
-                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                            >
-                              <CheckCircle className="h-6 w-6" />
-                              <span className="ml-2">ALL</span>
-                            </Button>
-                          </div>
-                          
-                          {/* Packaging Unit Buttons - Add/Remove Full Cartons */}
-                          {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 1 && (
-                            <div className="mt-4 pt-4 border-t-2 border-amber-200 dark:border-amber-700">
-                              <p className="text-center text-sm font-bold text-amber-700 dark:text-amber-300 mb-3">
-                                {t('pickByPackagingUnit') || 'Pick by Packaging Unit'}
-                              </p>
-                              <div className="grid grid-cols-2 gap-3">
-                                {/* Remove Carton Button */}
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
-                                  onClick={() => updatePickedItem(currentItem.id, Math.max(currentItem.pickedQuantity - currentItem.bulkUnitQty!, 0))}
-                                  disabled={currentItem.pickedQuantity < currentItem.bulkUnitQty}
-                                  data-testid="btn-remove-packaging-unit"
-                                >
-                                  <Minus className="h-5 w-5 mr-1" />
-                                  <Box className="h-5 w-5 mr-2" />
-                                  <span>1 {currentItem.bulkUnitName || t('carton')}</span>
-                                </Button>
-                                
-                                {/* Add Carton Button */}
-                                <Button
-                                  size="lg"
-                                  className="h-16 text-lg font-bold bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 shadow-md rounded-xl border-2 border-amber-300 dark:border-amber-600"
-                                  onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.pickedQuantity + currentItem.bulkUnitQty!, currentItem.quantity))}
-                                  disabled={currentItem.pickedQuantity + currentItem.bulkUnitQty! > currentItem.quantity}
-                                  data-testid="btn-add-packaging-unit"
-                                >
-                                  <Plus className="h-5 w-5 mr-1" />
-                                  <Box className="h-5 w-5 mr-2" />
-                                  <span>1 {currentItem.bulkUnitName || t('carton')}</span>
-                                </Button>
-                              </div>
-                              <p className="text-center text-xs text-amber-600 dark:text-amber-400 mt-2">
-                                1 {currentItem.bulkUnitName || t('carton')} = {currentItem.bulkUnitQty} {t('pieces') || 'pcs'}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Reset Button if needed */}
-                          {currentItem.pickedQuantity > 0 && (
-                            <Button
-                              className="w-full mt-3 h-12 text-base font-semibold bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 text-white shadow-md"
-                              onClick={() => updatePickedItem(currentItem.id, 0)}
-                            >
-                              <RotateCcw className="h-5 w-5 mr-2" />
-                              Reset to 0
-                            </Button>
-                          )}
-
-                          {/* Success State */}
-                          {currentItem.pickedQuantity >= currentItem.quantity && (
-                            <Alert className="mt-4 bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-700">
-                              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 dark:text-green-300" />
-                              <AlertDescription className="text-green-800 dark:text-green-200 font-bold">
-                                ✓ Item fully picked! Ready for next.
-                              </AlertDescription>
-                            </Alert>
-                          )}
+                          <StockAwarePickingButtons
+                            currentItem={currentItem}
+                            selectedLocation={selectedPickingLocations[currentItem.id]}
+                            updatePickedItem={updatePickedItem}
+                            t={t}
+                          />
                         </div>
                         </div>
                       )}

@@ -1866,6 +1866,10 @@ const orders = {
   // Out of Stock Warning
   outOfStockWarning: 'Cảnh báo hết hàng',
   outOfStockWarningDesc: '"{{productName}}" đã hết hàng. Bạn có muốn thêm sản phẩm này không?',
+  outOfStock: 'HẾT HÀNG',
+  noStock: 'KHÔNG CÒN HÀNG',
+  noStockAtAnyLocation: 'Không còn hàng tại bất kỳ vị trí nào',
+  cannotPickNoStock: 'Không thể lấy hàng - không còn hàng tại bất kỳ vị trí nào',
   dontAdd: 'Không thêm',
   yesAdd: 'Có, thêm',
   yesAlwaysAdd: 'Có, luôn thêm',

@@ -1878,6 +1878,10 @@ const orders = {
   // Out of Stock Warning
   outOfStockWarning: 'Out of Stock Warning',
   outOfStockWarningDesc: '"{{productName}}" is out of stock. Do you want to add it anyway?',
+  outOfStock: 'OUT OF STOCK',
+  noStock: 'NO STOCK',
+  noStockAtAnyLocation: 'No stock available at any location',
+  cannotPickNoStock: 'Cannot pick - no stock available at any location',
   dontAdd: "Don't add",
   yesAdd: 'Yes, add',
   yesAlwaysAdd: 'Yes, always add',
