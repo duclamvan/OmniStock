@@ -5842,6 +5842,19 @@ export default function PickPack() {
       // Immediately add order to the sent back set (instant UI update)
       setOrdersSentBack(prev => new Set(prev).add(order.id));
       
+      // Reset pickedFromLocations for all items in this order
+      if (order.items && order.items.length > 0) {
+        setPickedFromLocations(prev => {
+          const newState = { ...prev };
+          for (const item of order.items) {
+            if (item.id) {
+              delete newState[item.id];
+            }
+          }
+          return newState;
+        });
+      }
+      
       // Show immediate feedback if not in active mode
       if (!activePickingOrder && !activePackingOrder) {
         toast({
