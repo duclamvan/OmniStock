@@ -4273,6 +4273,14 @@ export default function AddOrder() {
                   </Button>
                 )}
               </div>
+              
+              {/* Customer validation error - inline */}
+              {form.formState.errors.customerId && (
+                <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {t('orders:fieldError_customerId_required')}
+                </p>
+              )}
 
               {/* Real-time dropdown for customers - Improved layout */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
@@ -7435,26 +7443,23 @@ export default function AddOrder() {
                       ) : null;
                     })()}
 
-                    {/* Form Errors Display - Always expanded with human-readable messages */}
+                    {/* Form Errors Summary - Always expanded with human-readable messages */}
                     {Object.keys(form.formState.errors).length > 0 && (
                       <Alert variant="destructive" className="mb-3">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                          <div className="space-y-1.5 mt-1">
+                          <div className="space-y-1 mt-1">
                             {Object.entries(form.formState.errors).map(([field, error]) => {
                               const errorMessage = error?.message?.toString() || '';
                               const isRequired = errorMessage.toLowerCase().includes('required') || errorMessage === '';
                               const errorType = isRequired ? 'required' : 'invalid';
                               const fieldKey = `fieldError_${field}_${errorType}` as const;
-                              const fieldNameKey = `fieldError_${field}` as const;
                               const humanMessage = t(`orders:${fieldKey}`, { defaultValue: '' }) || 
                                                    t(`orders:fieldError_${errorType}`, { defaultValue: errorMessage || t('orders:invalidValue') });
-                              const fieldName = t(`orders:${fieldNameKey}`, { defaultValue: field });
                               
                               return (
-                                <div key={field} className="flex items-start gap-2 text-sm">
-                                  <span className="font-medium">{fieldName}:</span>
-                                  <span>{humanMessage}</span>
+                                <div key={field} className="text-sm">
+                                  {humanMessage}
                                 </div>
                               );
                             })}
