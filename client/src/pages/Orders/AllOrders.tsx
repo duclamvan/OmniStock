@@ -484,6 +484,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       // Also invalidate trash cache since deleted orders go there
       queryClient.invalidateQueries({ queryKey: ['/api/orders/trash'] });
+      // Also invalidate pick-pack so deleted orders disappear from that view
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     },
   });
 
