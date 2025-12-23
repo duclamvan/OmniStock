@@ -5601,7 +5601,19 @@ export default function AddOrder() {
                             </div>
                             {!isService && (
                               (() => {
-                                const baseStock = isBundle ? (product.availableStock ?? 0) : (product.quantity || 0);
+                                // Calculate stock - for virtual products, derive from master product
+                                const isVirtual = product.masterProductId && product.inventoryDeductionRatio;
+                                let baseStock = 0;
+                                if (isBundle) {
+                                  baseStock = product.availableStock ?? 0;
+                                } else if (isVirtual) {
+                                  // Virtual product - calculate stock from master product
+                                  const masterProduct = allProducts?.find((p: any) => p.id === product.masterProductId);
+                                  const masterQty = masterProduct?.quantity || 0;
+                                  baseStock = Math.floor(masterQty / product.inventoryDeductionRatio);
+                                } else {
+                                  baseStock = product.quantity || 0;
+                                }
                                 const inOrder = isBundle 
                                   ? getQuantityInOrder(undefined, undefined, product.id)
                                   : getQuantityInOrder(product.productId || product.id, product.variantId);
@@ -5609,7 +5621,7 @@ export default function AddOrder() {
                                 const isLow = availableStock <= 0;
                                 return (
                                   <div className={`text-[10px] md:text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    <span className="hidden sm:inline">Stock: </span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}
+                                    <span className="hidden sm:inline">{isVirtual ? 'V.Stock: ' : 'Stock: '}</span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}
                                   </div>
                                 );
                               })()
