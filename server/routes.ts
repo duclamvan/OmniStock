@@ -8301,6 +8301,17 @@ Important:
             };
           }
 
+          // Debug: log virtual SKU fields
+          if (item.isVirtual || item.masterProductId) {
+            console.log(`[PickPack DEBUG] Virtual SKU item:`, {
+              id: item.id,
+              productName: item.productName,
+              isVirtual: item.isVirtual,
+              masterProductId: item.masterProductId,
+              inventoryDeductionRatio: item.inventoryDeductionRatio
+            });
+          }
+
           return {
             ...item,
             image: imageUrl
