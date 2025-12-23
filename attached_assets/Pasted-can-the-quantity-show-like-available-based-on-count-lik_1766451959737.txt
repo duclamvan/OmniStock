@@ -1,0 +1,89 @@
+can the quantity show like available based on count? like I want to see in inventory for 1 bucket of Natural Pink how many pcs it has for a bucket available
+
+Ano, přesně tak to má fungovat. Chcete, aby se stav skladu u "Kbelíku" vypočítával automaticky a vy jste nemusel udržovat dvě čísla.
+
+Pokud máte fyzicky 170 kusů "Natural Pink (Dóza)", systém by měl u "Natural Pink (Bucket)" automaticky ukázat 10 kusů (protože 170/17=10).
+
+Tohle se neřeší v databázi (tam u kbelíku bude 0 nebo null), ale vypočítá se to živě na obrazovce.
+
+Zde je návod, jak upravit vaši tabulku ProductList (frontend), aby to takto zobrazovala:
+
+Jak to bude vypadat v tabulce
+Product Name	Type	Physical Stock	Available to Sell
+Natural Pink (660g)	Master	170 pcs	170 pcs
+Natural Pink (25lbs)	Virtual	-	10 Buckets
+Kód pro zobrazení (React / TanStack Table)
+Ve vašem souboru, kde definujete sloupce tabulky (např. columns.tsx nebo InventoryTable.tsx), upravte sloupec pro množství (Quantity).
+
+TypeScript
+// Příklad definice sloupce v TanStack Table
+{
+  accessorKey: "quantity",
+  header: "Available Stock",
+  cell: ({ row }) => {
+    const product = row.original;
+
+    // 1. Pokud je to normální produkt (Master)
+    if (!product.masterProductId) {
+      return <span>{product.quantity} pcs</span>;
+    }
+
+    // 2. Pokud je to "Virtuální produkt" (Kbelík)
+    // Musíme najít jeho rodiče v datech (nebo ho mít načteného přes "joined" query)
+    
+    // Varianta A: Pokud máte data rodiče přímo v objektu (doporučeno, přes backend relation)
+    const masterStock = product.masterProduct?.quantity || 0; 
+    const ratio = product.inventoryDeductionRatio || 17; // Default 17
+    
+    // Výpočet: Kolik celých kbelíků můžeme složit?
+    const availableBuckets = Math.floor(masterStock / ratio);
+
+    return (
+      <div className="flex flex-col">
+        <span className="font-bold text-green-600">
+          {availableBuckets} Buckets
+        </span>
+        <span className="text-xs text-gray-400">
+          ({masterStock} pcs available)
+        </span>
+      </div>
+    );
+  },
+}
+Co musíte zajistit na Backendu (Drizzle)
+Aby frontend věděl, kolik má "Rodič" (Dóza) na skladě, musíte při načítání produktů použít .with() nebo leftJoin, abyste přitáhl data rodiče.
+
+Upravte váš API endpoint GET /api/products:
+
+TypeScript
+// server/routes/products.ts
+// Místo prostého select() použijte query builder s relací
+
+const allProducts = await db.query.products.findMany({
+  with: {
+    // Toto připojí data rodičovského produktu (Master)
+    masterProduct: true, 
+  },
+});
+
+// Výsledek JSON bude vypadat takto:
+// {
+//   id: "bucket-id",
+//   name: "Natural Pink 25lbs",
+//   masterProductId: "jar-id",
+//   masterProduct: {
+//      id: "jar-id",
+//      name: "Natural Pink 660g",
+//      quantity: 170  <-- TOTO ČÍSLO POTŘEBUJEME PRO VÝPOČET
+//   }
+// }
+Shrnutí
+Díky tomuto kódu:
+
+Když naskladníte 34 Dóz (přijde zboží), sklad u Dózy se zvedne na 34.
+
+U Kbelíku se okamžitě samo objeví "Skladem: 2 Buckets" (34/17).
+
+Když prodáte 1 Kbelík, systém odečte 17 dóz -> zůstane 17 dóz -> Kbelík ukáže "Skladem: 1 Bucket".
+
+Je to plně automatické a nikdy se vám nestane, že byste prodali kbelík, na který nemáte dost dóz.

@@ -4480,9 +4480,36 @@ Important:
         productsResult = await storage.getProducts(includeInactive);
       }
 
+      // Create a map of product IDs to quantities for virtual SKU calculation
+      const productQuantityMap = new Map<string, { quantity: number; name: string }>();
+      for (const product of productsResult) {
+        productQuantityMap.set(product.id, { 
+          quantity: product.quantity || 0,
+          name: product.name 
+        });
+      }
+
+      // Enrich virtual products with master product data
+      const enrichedProducts = productsResult.map((product: any) => {
+        if (product.isVirtual && product.masterProductId) {
+          const masterData = productQuantityMap.get(product.masterProductId);
+          if (masterData) {
+            const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+            const availableVirtualStock = Math.floor(masterData.quantity / ratio);
+            return {
+              ...product,
+              masterProductName: masterData.name,
+              masterProductQuantity: masterData.quantity,
+              availableVirtualStock: availableVirtualStock // Calculated available units for this virtual SKU
+            };
+          }
+        }
+        return product;
+      });
+
       // If landing costs are requested, fetch them from the database
       if (includeLandingCost) {
-        const productsWithCosts = await Promise.all(productsResult.map(async (product) => {
+        const productsWithCosts = await Promise.all(enrichedProducts.map(async (product: any) => {
           const [productWithCost] = await db
             .select()
             .from(products)
@@ -4502,7 +4529,7 @@ Important:
       } else {
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';
-        const filtered = filterFinancialData(productsResult, userRole);
+        const filtered = filterFinancialData(enrichedProducts, userRole);
         res.json(filtered);
       }
     } catch (error) {

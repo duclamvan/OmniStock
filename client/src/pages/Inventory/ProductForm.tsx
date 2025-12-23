@@ -154,12 +154,17 @@ const productSchema = z.object({
   packingMaterialId: z.string().optional(),
   // Multi-unit fields
   sellingUnitName: z.string().optional().default('piece'),
+  unitContentsInfo: z.string().optional(),
+  // Virtual SKU fields - product deducts from master product's inventory
+  isVirtual: z.boolean().optional().default(false),
+  masterProductId: z.string().optional(),
+  inventoryDeductionRatio: z.coerce.number().min(0.01).optional(),
+  // Deprecated packaging unit fields (kept for backward compatibility)
   bulkUnitName: z.string().optional(),
   bulkUnitQty: z.coerce.number().min(1).optional(),
   bulkPriceCzk: z.coerce.number().min(0).optional(),
   bulkPriceEur: z.coerce.number().min(0).optional(),
   allowBulkSales: z.boolean().optional().default(false),
-  unitContentsInfo: z.string().optional(),
 });
 
 const tieredPricingSchema = z.object({
@@ -397,6 +402,11 @@ export default function ProductForm() {
 
   const { data: availablePackingMaterials = [] } = useQuery<any[]>({
     queryKey: ['/api/packing-materials'],
+  });
+
+  // Fetch all products for virtual SKU master product selector
+  const { data: allProducts = [] } = useQuery<any[]>({
+    queryKey: ['/api/products'],
   });
 
   // Fetch locations for quantity sync (edit mode only)
@@ -861,12 +871,17 @@ export default function ProductForm() {
         
         // Multi-unit fields
         sellingUnitName: product.sellingUnitName || 'piece',
+        unitContentsInfo: product.unitContentsInfo || '',
+        // Virtual SKU fields
+        isVirtual: Boolean(product.isVirtual),
+        masterProductId: product.masterProductId || '',
+        inventoryDeductionRatio: product.inventoryDeductionRatio ? parseFloat(String(product.inventoryDeductionRatio)) : undefined,
+        // Deprecated packaging unit fields (kept for backward compatibility)
         bulkUnitName: product.bulkUnitName || '',
         bulkUnitQty: product.bulkUnitQty ? (typeof product.bulkUnitQty === 'number' ? product.bulkUnitQty : parseInt(String(product.bulkUnitQty))) : undefined,
         bulkPriceCzk: product.bulkPriceCzk ? parseFloat(String(product.bulkPriceCzk)) : undefined,
         bulkPriceEur: product.bulkPriceEur ? parseFloat(String(product.bulkPriceEur)) : undefined,
         allowBulkSales: Boolean(product.allowBulkSales),
-        unitContentsInfo: product.unitContentsInfo || '',
       });
       
       // Reset manual edit tracking refs - mark existing prices as "already set"
@@ -3764,7 +3779,7 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Packaging & Units - Only show if needed */}
+            {/* Units & Virtual SKU Configuration */}
             <AccordionItem value="units" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
@@ -3772,12 +3787,12 @@ export default function ProductForm() {
                     <Layers className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:units.title', 'Packaging & Units')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:units.description', 'Configure selling and bulk units for inventory and purchasing')}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{t('products:units.title', 'Units & Virtual SKU')}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:units.description', 'Configure selling units and virtual product relationships')}</p>
                   </div>
-                  {form.watch('bulkUnitName') && (
-                    <Badge variant="secondary" className="ml-auto bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300">
-                      {t('products:units.bulkConfigured', 'Bulk configured')}
+                  {form.watch('isVirtual') && (
+                    <Badge variant="secondary" className="ml-auto bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                      {t('products:virtualSku.badge', 'Virtual SKU')}
                     </Badge>
                   )}
                 </div>
@@ -3810,6 +3825,7 @@ export default function ProductForm() {
                             <SelectItem value="pair">{t('products:units.unitPair', 'Pair')}</SelectItem>
                             <SelectItem value="tube">{t('products:units.unitTube', 'Tube')}</SelectItem>
                             <SelectItem value="bag">{t('products:units.unitBag', 'Bag')}</SelectItem>
+                            <SelectItem value="bucket">{t('products:units.unitBucket', 'Bucket')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground mt-1">{t('products:units.sellingUnitHelp', 'The base unit used for inventory tracking and sales')}</p>
@@ -3829,130 +3845,87 @@ export default function ProductForm() {
 
                   <Separator />
 
-                  {/* Packaging Unit (Optional) */}
+                  {/* Virtual SKU Configuration */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:units.packagingUnit', 'Packaging Unit (Optional)')}</h4>
+                        <LinkIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:virtualSku.title', 'Virtual SKU')}</h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="isVirtual"
+                          checked={form.watch('isVirtual') || false}
+                          onCheckedChange={(checked) => {
+                            form.setValue('isVirtual', checked);
+                            if (!checked) {
+                              form.setValue('masterProductId', undefined);
+                              form.setValue('inventoryDeductionRatio', undefined);
+                            }
+                          }}
+                          data-testid="switch-is-virtual"
+                        />
+                        <Label htmlFor="isVirtual" className="text-sm cursor-pointer">{t('products:virtualSku.enable', 'Enable')}</Label>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-4">{t('products:units.packagingUnitHelp', 'Configure a larger container unit (e.g., 1 carton = 50 pieces). This is NOT for volume discounts.')}</p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="bulkUnitName" className="text-sm font-medium">{t('products:units.bulkUnitName', 'Packaging Unit Name')}</Label>
-                        <Select
-                          value={form.watch('bulkUnitName') || ''}
-                          onValueChange={(value) => form.setValue('bulkUnitName', value === 'none' ? '' : value)}
-                        >
-                          <SelectTrigger className="mt-1" data-testid="select-bulk-unit">
-                            <SelectValue placeholder={t('products:units.noBulkUnit', 'No packaging unit')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{t('products:units.noBulkUnit', 'No packaging unit')}</SelectItem>
-                            {(inventorySettings?.bulkUnits || DEFAULT_BULK_UNITS)
-                              .filter(bu => bu.enabled)
-                              .map(bu => (
-                                <SelectItem key={bu.value} value={bu.value}>
-                                  {t(`products:units.${bu.labelKey}`, bu.value.replace(/_/g, ' '))}
-                                </SelectItem>
-                              ))
-                            }
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {form.watch('bulkUnitName') && (
-                        <>
+                    <Alert className="mb-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+                      <Info className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <AlertDescription className="text-sm text-purple-700 dark:text-purple-300">
+                        {t('products:virtualSku.description', 'A virtual SKU does not exist in physical inventory. When sold, inventory is deducted from the linked master product. Example: Selling 1 "Bucket (25lbs)" deducts 17 "Jars (660g)" from stock.')}
+                      </AlertDescription>
+                    </Alert>
+                    
+                    {form.watch('isVirtual') && (
+                      <div className="space-y-4 p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="bulkUnitQty" className="text-sm font-medium">{t('products:units.bulkUnitQty', 'Qty per Packaging Unit')}</Label>
+                            <Label htmlFor="masterProductId" className="text-sm font-medium">{t('products:virtualSku.masterProduct', 'Master Product (Physical Stock)')}</Label>
+                            <Select
+                              value={form.watch('masterProductId') || ''}
+                              onValueChange={(value) => form.setValue('masterProductId', value === 'none' ? undefined : value)}
+                            >
+                              <SelectTrigger className="mt-1" data-testid="select-master-product">
+                                <SelectValue placeholder={t('products:virtualSku.selectMaster', 'Select master product...')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t('products:virtualSku.noMaster', 'No master product')}</SelectItem>
+                                {allProducts?.filter((p: any) => p.id !== params.id && !p.isVirtual).map((p: any) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.sku} - {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:virtualSku.masterProductHelp', 'The physical product whose inventory will be deducted when this virtual SKU is sold')}</p>
+                          </div>
+                          <div>
+                            <Label htmlFor="inventoryDeductionRatio" className="text-sm font-medium">{t('products:virtualSku.deductionRatio', 'Deduction Ratio')}</Label>
                             <Input 
                               type="number"
-                              min="1"
-                              {...form.register('bulkUnitQty')} 
-                              placeholder="50"
+                              min="0.01"
+                              step="0.01"
+                              {...form.register('inventoryDeductionRatio')} 
+                              placeholder="17"
                               className="mt-1"
-                              data-testid="input-bulk-qty"
+                              data-testid="input-deduction-ratio"
                             />
-                          </div>
-                          <div className="flex items-end">
-                            {form.watch('bulkUnitQty') && (
-                              <div className="bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-lg px-3 py-2 w-full">
-                                <p className="text-sm font-medium text-cyan-700 dark:text-cyan-300">
-                                  1 {form.watch('bulkUnitName')} = {form.watch('bulkUnitQty')} {form.watch('sellingUnitName') || 'pieces'}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Packaging Unit Pricing & Sales Options */}
-                    {form.watch('bulkUnitName') && form.watch('bulkUnitQty') && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label htmlFor="bulkPriceCzk" className="text-sm font-medium">{t('products:bulkPriceCzk', 'Packaging Unit Price (CZK)')}</Label>
-                            <div className="relative mt-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyCzk')}</span>
-                              <Input 
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                {...form.register('bulkPriceCzk')} 
-                                placeholder="0.00"
-                                className="pl-10"
-                                data-testid="input-bulk-price-czk"
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  form.setValue('bulkPriceCzk', value);
-                                  if (!bulkPriceManuallyEdited && !isNaN(value) && value > 0) {
-                                    form.setValue('bulkPriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
-                                  }
-                                  setBulkPriceManuallyEdited(true);
-                                }}
-                              />
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">{t('products:units.bulkPriceHelp', 'Price for 1 full packaging unit (e.g., 1 carton)')}</p>
-                          </div>
-                          <div>
-                            <Label htmlFor="bulkPriceEur" className="text-sm font-medium">{t('products:bulkPriceEur', 'Packaging Unit Price (EUR)')}</Label>
-                            <div className="relative mt-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{t('common:currencyEur')}</span>
-                              <Input 
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                {...form.register('bulkPriceEur')} 
-                                placeholder="0.00"
-                                className="pl-8"
-                                data-testid="input-bulk-price-eur"
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  form.setValue('bulkPriceEur', value);
-                                  if (!bulkPriceManuallyEdited && !isNaN(value) && value > 0) {
-                                    form.setValue('bulkPriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
-                                  }
-                                  setBulkPriceManuallyEdited(true);
-                                }}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 pt-6">
-                            <Checkbox 
-                              id="allowBulkSales"
-                              checked={form.watch('allowBulkSales') || false}
-                              onCheckedChange={(checked) => form.setValue('allowBulkSales', !!checked)}
-                              data-testid="checkbox-allow-bulk-sales"
-                            />
-                            <div>
-                              <Label htmlFor="allowBulkSales" className="text-sm font-medium cursor-pointer">{t('products:allowBulkSales', 'Allow packaging unit sales')}</Label>
-                              <p className="text-xs text-muted-foreground">{t('products:allowBulkSalesHelp', 'Enable ordering full cartons/pallets in orders')}</p>
-                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:virtualSku.deductionRatioHelp', 'How many master units to deduct per 1 virtual SKU sold (e.g., 17 jars per bucket)')}</p>
                           </div>
                         </div>
+                        
+                        {form.watch('masterProductId') && form.watch('inventoryDeductionRatio') && (
+                          <div className="bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-lg p-3">
+                            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              {t('products:virtualSku.summary', 'When 1 {{virtualName}} is sold, {{ratio}}x {{masterName}} will be deducted from inventory', {
+                                virtualName: form.watch('name') || t('products:virtualSku.thisProduct', 'this product'),
+                                ratio: form.watch('inventoryDeductionRatio'),
+                                masterName: allProducts?.find((p: any) => p.id === form.watch('masterProductId'))?.name || t('products:virtualSku.masterProduct', 'master product')
+                              })}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -84,7 +84,8 @@ import {
   Eye,
   EyeOff,
   Check,
-  TicketCheck
+  TicketCheck,
+  Link2
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -205,6 +206,12 @@ interface OrderItem {
   isFreeItem?: boolean;
   originalPrice?: number;
   isServicePart?: boolean;
+  // Virtual SKU fields - product deducts from master product's inventory
+  isVirtual?: boolean;
+  masterProductId?: string | null;
+  masterProductName?: string | null;
+  inventoryDeductionRatio?: number | null;
+  // Deprecated packaging unit fields (kept for backward compatibility)
   bulkUnitName?: string;
   bulkUnitQty?: number;
   priceTier?: 'retail' | 'bulk';
@@ -2497,6 +2504,12 @@ export default function AddOrder() {
           appliedDiscountScope: discountScope,
           categoryId: productCategoryId,
           isFreeItem: false,
+          // Virtual SKU fields
+          isVirtual: Boolean(product.isVirtual),
+          masterProductId: product.masterProductId || null,
+          masterProductName: product.masterProductName || null,
+          inventoryDeductionRatio: product.inventoryDeductionRatio ? parseFloat(String(product.inventoryDeductionRatio)) : null,
+          // Deprecated packaging unit fields
           bulkUnitQty: product.bulkUnitQty || null,
           bulkUnitName: product.bulkUnitName || null,
           priceTier: initialPriceTier,
@@ -5777,10 +5790,10 @@ export default function AddOrder() {
                                         {t('orders:freeItem')}
                                       </Badge>
                                     )}
-                                    {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && item.quantity % item.bulkUnitQty === 0 && (
-                                      <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
-                                        <Box className="h-3 w-3 mr-0.5" />
-                                        {item.quantity / item.bulkUnitQty} {item.bulkUnitName || 'carton'}
+                                    {item.isVirtual && (
+                                      <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
+                                        <Link2 className="h-3 w-3 mr-0.5" />
+                                        {t('orders:virtualSku.badge', 'Virtual')}
                                       </Badge>
                                     )}
                                     {item.priceTier === 'bulk' && (
@@ -5866,40 +5879,16 @@ export default function AddOrder() {
                                     }}
                                   />
                                 </div>
-                                {/* Packaging unit quick-add buttons */}
-                                {item.allowBulkSales && item.bulkUnitQty && item.bulkUnitQty > 1 && !item.isFreeItem && (
+                                {/* Virtual SKU indicator - shows deduction info */}
+                                {item.isVirtual && item.masterProductName && item.inventoryDeductionRatio && (
                                   <div className="flex items-center gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-6 px-1.5 text-xs bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300"
-                                      onClick={() => {
-                                        const newQty = Math.max(1, item.quantity - item.bulkUnitQty!);
-                                        updateOrderItem(item.id, 'quantity', newQty);
-                                      }}
-                                      disabled={item.quantity - item.bulkUnitQty! < 1}
-                                      data-testid={`btn-remove-packaging-unit-${item.id}`}
-                                    >
-                                      <Minus className="h-3 w-3 mr-0.5" />
-                                      <Box className="h-3 w-3" />
-                                    </Button>
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                      {item.bulkUnitName || t('orders:carton')}
-                                    </span>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-6 px-1.5 text-xs bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-600 dark:text-amber-300"
-                                      onClick={() => {
-                                        updateOrderItem(item.id, 'quantity', item.quantity + item.bulkUnitQty!);
-                                      }}
-                                      data-testid={`btn-add-packaging-unit-${item.id}`}
-                                    >
-                                      <Plus className="h-3 w-3 mr-0.5" />
-                                      <Box className="h-3 w-3" />
-                                    </Button>
+                                    <Badge className="text-xs px-1.5 py-0 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
+                                      <Link2 className="h-3 w-3 mr-0.5" />
+                                      {t('orders:virtualSku.deducts', '{{ratio}}x {{master}}', {
+                                        ratio: item.quantity * item.inventoryDeductionRatio,
+                                        master: item.masterProductName
+                                      })}
+                                    </Badge>
                                   </div>
                                 )}
                               </div>
@@ -6238,10 +6227,10 @@ export default function AddOrder() {
                                 {t('orders:freeItem')}
                               </Badge>
                             )}
-                            {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && item.quantity % item.bulkUnitQty === 0 && (
-                              <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
-                                <Box className="h-2.5 w-2.5 mr-0.5" />
-                                {item.quantity / item.bulkUnitQty} {item.bulkUnitName || 'ctn'}
+                            {item.isVirtual && (
+                              <Badge className="text-[10px] px-1 py-0 h-4 bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-600">
+                                <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                                {t('orders:virtualSku.badge', 'Virtual')}
                               </Badge>
                             )}
                             {item.variantName && (

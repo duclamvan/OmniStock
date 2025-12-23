@@ -220,6 +220,12 @@ interface OrderItem {
   packingInstructionsText?: string | null;
   packingInstructionsImage?: string | null;
   colorNumber?: string | null;
+  // Virtual SKU fields - product deducts from master product's inventory
+  isVirtual?: boolean;
+  masterProductId?: string | null;
+  masterProductName?: string | null;
+  inventoryDeductionRatio?: number | null;
+  // Deprecated packaging unit fields
   bulkUnitQty?: number | null;
   bulkUnitName?: string | null;
   price?: number | string | null;
