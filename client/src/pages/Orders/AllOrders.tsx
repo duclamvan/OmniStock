@@ -482,6 +482,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     onSettled: () => {
       // Always refetch to ensure data consistency after all deletions complete
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      // Also invalidate trash cache since deleted orders go there
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/trash'] });
     },
   });
 
