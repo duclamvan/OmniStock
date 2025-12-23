@@ -8695,30 +8695,44 @@ Important:
       const actualQtyChange = qtyChange * stockMultiplier;
       
       // Reduce stock from location if we have the necessary info and quantity increased
-      if (targetProductId && locationCode && actualQtyChange > 0) {
+      // For virtual SKUs: we ALWAYS need to deduct from master product, even if no locationCode specified
+      if (targetProductId && actualQtyChange > 0) {
         try {
           // Find the location for the target product (master product for virtual SKUs)
           const locations = await storage.getProductLocations(targetProductId);
-          const location = locations.find(loc => 
-            loc.locationCode.toUpperCase() === locationCode.toUpperCase()
-          );
+          
+          // Find location: use specified locationCode if provided, otherwise use primary or first location
+          let location = null;
+          if (locationCode) {
+            location = locations.find(loc => 
+              loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+            );
+          }
+          // For virtual SKUs or when no location specified, fallback to primary or first location
+          if (!location && (isVirtualSku || !locationCode)) {
+            location = locations.find(loc => loc.isPrimary) || locations[0];
+            if (location && isVirtualSku) {
+              console.log(`🎯 [Virtual SKU] Auto-selected master product location: ${location.locationCode}`);
+            }
+          }
           
           if (location) {
             const currentQty = location.quantity || 0;
             const newQty = Math.max(0, currentQty - actualQtyChange);
             await storage.updateProductLocation(location.id, { quantity: newQty });
             
-            // Also update the main product quantity for virtual SKUs
-            if (isVirtualSku) {
-              const masterProduct = await storage.getProductById(targetProductId);
-              if (masterProduct) {
-                const currentProductQty = masterProduct.quantity || 0;
-                const newProductQty = Math.max(0, currentProductQty - actualQtyChange);
-                await storage.updateProduct(targetProductId, { quantity: newProductQty });
+            // ALWAYS update the main product quantity (both virtual and regular products)
+            const targetProduct = await storage.getProductById(targetProductId);
+            if (targetProduct) {
+              const currentProductQty = targetProduct.quantity || 0;
+              const newProductQty = Math.max(0, currentProductQty - actualQtyChange);
+              await storage.updateProduct(targetProductId, { quantity: newProductQty });
+              
+              if (isVirtualSku) {
                 console.log(`📦 [Virtual SKU] Picked ${qtyChange}x "${virtualProductName}", deducted ${actualQtyChange}x "${masterProductName}" from ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+              } else {
+                console.log(`📦 Picked ${qtyChange}x, reduced location ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               }
-            } else {
-              console.log(`📦 Reduced stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (picked ${qtyChange}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${actualQtyChange}` : ''})`);
             }
           } else {
             console.warn(`⚠️ Location ${locationCode} not found for ${isVirtualSku ? 'master ' : ''}product ${targetProductId} - stock not reduced`);
@@ -8727,13 +8741,25 @@ Important:
           console.error('Error reducing location stock:', locationError);
           // Don't fail the pick operation if stock reduction fails
         }
-      } else if (targetProductId && locationCode && actualQtyChange < 0) {
+      } else if (targetProductId && actualQtyChange < 0) {
         // If quantity decreased (unpicking), restore stock to location
         try {
           const locations = await storage.getProductLocations(targetProductId);
-          const location = locations.find(loc => 
-            loc.locationCode.toUpperCase() === locationCode.toUpperCase()
-          );
+          
+          // Find location: use specified locationCode if provided, otherwise use primary or first location
+          let location = null;
+          if (locationCode) {
+            location = locations.find(loc => 
+              loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+            );
+          }
+          // For virtual SKUs or when no location specified, fallback to primary or first location
+          if (!location && (isVirtualSku || !locationCode)) {
+            location = locations.find(loc => loc.isPrimary) || locations[0];
+            if (location && isVirtualSku) {
+              console.log(`🎯 [Virtual SKU Unpick] Auto-selected master product location: ${location.locationCode}`);
+            }
+          }
           
           if (location) {
             const currentQty = location.quantity || 0;
@@ -8741,17 +8767,18 @@ Important:
             const newQty = currentQty + restoreQty;
             await storage.updateProductLocation(location.id, { quantity: newQty });
             
-            // Also restore the main product quantity for virtual SKUs
-            if (isVirtualSku) {
-              const masterProduct = await storage.getProductById(targetProductId);
-              if (masterProduct) {
-                const currentProductQty = masterProduct.quantity || 0;
-                const newProductQty = currentProductQty + restoreQty;
-                await storage.updateProduct(targetProductId, { quantity: newProductQty });
+            // ALWAYS restore the main product quantity (both virtual and regular products)
+            const targetProduct = await storage.getProductById(targetProductId);
+            if (targetProduct) {
+              const currentProductQty = targetProduct.quantity || 0;
+              const newProductQty = currentProductQty + restoreQty;
+              await storage.updateProduct(targetProductId, { quantity: newProductQty });
+              
+              if (isVirtualSku) {
                 console.log(`📦 [Virtual SKU] Unpicked ${Math.abs(qtyChange)}x "${virtualProductName}", restored ${restoreQty}x "${masterProductName}" to ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+              } else {
+                console.log(`📦 Unpicked ${Math.abs(qtyChange)}x, restored location ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               }
-            } else {
-              console.log(`📦 Restored stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (unpicked ${Math.abs(qtyChange)}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${restoreQty}` : ''})`);
             }
           }
         } catch (locationError) {
@@ -8837,6 +8864,17 @@ Important:
       }
       
       await storage.updateProductLocation(location.id, { quantity: newQty });
+      
+      // Also update the main product quantity
+      const bundleProduct = await storage.getProductById(productId);
+      if (bundleProduct) {
+        const currentProductQty = bundleProduct.quantity || 0;
+        const newProductQty = action === 'restore' 
+          ? currentProductQty + quantity 
+          : Math.max(0, currentProductQty - quantity);
+        await storage.updateProduct(productId, { quantity: newProductQty });
+        console.log(`📦 [Bundle Component] Product qty updated: ${currentProductQty} → ${newProductQty}`);
+      }
       
       // Log the activity
       await storage.createPickPackLog({
