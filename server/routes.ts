@@ -10049,12 +10049,55 @@ Important:
     }
   });
 
-  // Soft delete (move to trash)
+  // Soft delete (move to trash) - restores inventory
   app.delete('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Get order items to restore inventory
+      const orderItems = await storage.getOrderItems(req.params.id);
+      
+      // Restore inventory for each item (add quantities back)
+      for (const item of orderItems) {
+        if (item.productId && !item.serviceId) {
+          const product = await storage.getProductById(item.productId);
+          if (product) {
+            // Check if this is a virtual SKU that deducts from master product
+            let targetProductId = item.productId;
+            let restoreQty = item.quantity || 0;
+            
+            if (product.isVirtual && product.masterProductId) {
+              // Virtual SKU - restore to master product with ratio
+              targetProductId = product.masterProductId;
+              const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+              restoreQty = Math.round(restoreQty * ratio);
+              console.log(`🔄 [Soft Delete] Virtual SKU "${product.name}" - restoring ${restoreQty} units to master product`);
+            }
+            
+            const targetProduct = await storage.getProductById(targetProductId);
+            if (targetProduct) {
+              const currentQty = targetProduct.quantity || 0;
+              await storage.updateProduct(targetProductId, {
+                quantity: currentQty + restoreQty
+              });
+              console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to product "${targetProduct.name}" (${targetProductId})`);
+            }
+          }
+        } else if (item.bundleId) {
+          // Bundle - restore availableStock
+          const bundle = await storage.getBundleById(item.bundleId);
+          if (bundle) {
+            const currentStock = bundle.availableStock || 0;
+            const restoreQty = item.quantity || 0;
+            await storage.updateBundle(item.bundleId, {
+              availableStock: currentStock + restoreQty
+            });
+            console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to bundle "${bundle.name}"`);
+          }
+        }
       }
 
       // Soft delete - move to trash (isArchived = true)
@@ -10089,12 +10132,55 @@ Important:
     }
   });
 
-  // Restore order from trash
+  // Restore order from trash - re-deducts inventory
   app.post('/api/orders/:id/restore', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Get order items to re-deduct inventory
+      const orderItems = await storage.getOrderItems(req.params.id);
+      
+      // Re-deduct inventory for each item (subtract quantities again)
+      for (const item of orderItems) {
+        if (item.productId && !item.serviceId) {
+          const product = await storage.getProductById(item.productId);
+          if (product) {
+            // Check if this is a virtual SKU that deducts from master product
+            let targetProductId = item.productId;
+            let deductQty = item.quantity || 0;
+            
+            if (product.isVirtual && product.masterProductId) {
+              // Virtual SKU - deduct from master product with ratio
+              targetProductId = product.masterProductId;
+              const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+              deductQty = Math.round(deductQty * ratio);
+              console.log(`🔄 [Restore] Virtual SKU "${product.name}" - deducting ${deductQty} units from master product`);
+            }
+            
+            const targetProduct = await storage.getProductById(targetProductId);
+            if (targetProduct) {
+              const currentQty = targetProduct.quantity || 0;
+              await storage.updateProduct(targetProductId, {
+                quantity: Math.max(0, currentQty - deductQty)
+              });
+              console.log(`🔄 [Restore] Deducted ${deductQty} units from product "${targetProduct.name}" (${targetProductId})`);
+            }
+          }
+        } else if (item.bundleId) {
+          // Bundle - deduct availableStock
+          const bundle = await storage.getBundleById(item.bundleId);
+          if (bundle) {
+            const currentStock = bundle.availableStock || 0;
+            const deductQty = item.quantity || 0;
+            await storage.updateBundle(item.bundleId, {
+              availableStock: Math.max(0, currentStock - deductQty)
+            });
+            console.log(`🔄 [Restore] Deducted ${deductQty} units from bundle "${bundle.name}"`);
+          }
+        }
       }
 
       const restoredOrder = await storage.restoreOrder(req.params.id);
@@ -10117,7 +10203,7 @@ Important:
     }
   });
 
-  // Permanent delete (with inventory restoration)
+  // Permanent delete (inventory was already restored during soft delete)
   app.delete('/api/orders/:id/permanent', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -10125,36 +10211,8 @@ Important:
         return res.status(404).json({ message: "Order not found" });
       }
 
-      // Get order items before deletion to restore inventory
-      const orderItems = await storage.getOrderItems(req.params.id);
-      
-      // Restore inventory for each item (add quantities back)
-      for (const item of orderItems) {
-        if (item.productId && !item.serviceId) {
-          // Regular product - restore quantity
-          const product = await storage.getProductById(item.productId);
-          if (product) {
-            const currentQty = product.quantity || 0;
-            const restoreQty = item.quantity || 0;
-            await storage.updateProduct(item.productId, {
-              quantity: currentQty + restoreQty
-            });
-            console.log(`Restored ${restoreQty} units to product ${product.name} (${item.productId})`);
-          }
-        } else if (item.bundleId) {
-          // Bundle - restore availableStock
-          const bundle = await storage.getBundleById(item.bundleId);
-          if (bundle) {
-            const currentStock = bundle.availableStock || 0;
-            const restoreQty = item.quantity || 0;
-            await storage.updateBundle(item.bundleId, {
-              availableStock: currentStock + restoreQty
-            });
-            console.log(`Restored ${restoreQty} units to bundle ${bundle.name} (${item.bundleId})`);
-          }
-        }
-        // Note: Services don't have inventory to restore
-      }
+      // Note: Inventory is already restored when order is soft-deleted (moved to trash)
+      // No need to restore again here - just permanently remove the order record
 
       await storage.deleteOrder(req.params.id);
 
@@ -10163,7 +10221,7 @@ Important:
         action: 'delete',
         entityType: 'order',
         entityId: req.params.id,
-        description: `Permanently deleted order: ${order.orderId} (inventory restored)`,
+        description: `Permanently deleted order: ${order.orderId}`,
       });
 
       res.status(204).send();
