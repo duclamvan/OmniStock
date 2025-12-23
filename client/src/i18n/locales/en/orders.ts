@@ -1187,6 +1187,7 @@ const orders = {
   servicePart: 'Service Part',
   serviceParts: 'Service - Parts',
   includeServiceBill: 'Include Service Bill',
+  includePackingList: 'Include Packing List',
   applyToOrder: 'Add to Order',
   applied: 'Applied',
   serviceApplied: 'Service Applied',

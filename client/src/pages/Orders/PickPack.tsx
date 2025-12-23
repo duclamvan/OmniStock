@@ -980,12 +980,19 @@ function UnifiedDocumentsList({
 
   const orderFiles = orderFilesData || [];
 
+  // Check if packing list is included (default true for backward compatibility)
+  const shouldIncludePackingListInCount = includedDocuments?.includePackingList !== false;
+
   // Calculate total document count and collect all PDF URLs (MUST be before early return)
-  const totalDocuments = 1 + productFiles.length + orderFiles.length; // 1 for packing list
+  const totalDocuments = (shouldIncludePackingListInCount ? 1 : 0) + productFiles.length + orderFiles.length;
   
   // Collect all PDF URLs for merging (MUST be before early return)
   const allPdfUrls = useMemo(() => {
-    const urls: string[] = [`/api/orders/${orderId}/packing-list.pdf`];
+    const urls: string[] = [];
+    // Only include packing list if setting allows
+    if (shouldIncludePackingListInCount) {
+      urls.push(`/api/orders/${orderId}/packing-list.pdf`);
+    }
     productFiles.forEach((file: any) => {
       if (file.fileUrl || file.url) {
         urls.push(file.fileUrl || file.url);
@@ -997,7 +1004,7 @@ function UnifiedDocumentsList({
       }
     });
     return urls;
-  }, [orderId, productFiles, orderFiles]);
+  }, [orderId, productFiles, orderFiles, shouldIncludePackingListInCount]);
 
   // Notify parent about document count and URLs (MUST be before early return)
   useEffect(() => {
@@ -1120,17 +1127,22 @@ function UnifiedDocumentsList({
     </div>
   );
 
+  // Check if packing list should be included (default to true for backward compatibility)
+  const shouldIncludePackingList = includedDocuments?.includePackingList !== false;
+
   return (
     <div className="space-y-2">
-      {/* Packing List */}
-      <DocumentRow
-        icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 'text-emerald-600'}`} />}
-        name={t('packingList')}
-        isPrinted={printedDocuments.packingList}
-        onPrint={onPackingListPrinted}
-        onView={() => window.open(`/api/orders/${orderId}/packing-list.pdf`, '_blank')}
-        testId="doc-packing-list"
-      />
+      {/* Packing List - Only show if included */}
+      {shouldIncludePackingList && (
+        <DocumentRow
+          icon={<FileText className={`h-5 w-5 ${printedDocuments.packingList ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 'text-emerald-600'}`} />}
+          name={t('packingList')}
+          isPrinted={printedDocuments.packingList}
+          onPrint={onPackingListPrinted}
+          onView={() => window.open(`/api/orders/${orderId}/packing-list.pdf`, '_blank')}
+          testId="doc-packing-list"
+        />
+      )}
 
       {/* Product Documents */}
       {productFiles.map((file: any) => {
@@ -6527,8 +6539,9 @@ export default function PickPack() {
       missingChecks.push('Items Verification');
     }
     
-    // 2. Packing list printed
-    if (!printedDocuments.packingList) {
+    // 2. Packing list printed (only required if included)
+    const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+    if (shouldIncludePackingList && !printedDocuments.packingList) {
       missingChecks.push('Packing List');
     }
     

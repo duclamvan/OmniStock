@@ -1232,6 +1232,9 @@ export default function AddOrder() {
   
   // Auto-check Service BILL when a service is applied
   const [includeServiceBill, setIncludeServiceBill] = useState(false);
+  
+  // Include packing list document (default: no)
+  const [includePackingList, setIncludePackingList] = useState(false);
 
   // Reset applied services when customer changes
   useEffect(() => {
@@ -3385,6 +3388,7 @@ export default function AddOrder() {
       includedDocuments: {
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
         includeServiceBill: includeServiceBill,
+        includePackingList: includePackingList,
       },
     };
 
@@ -7030,6 +7034,24 @@ export default function AddOrder() {
               </div>
             </CardHeader>
             <CardContent className="p-3 space-y-3">
+              {/* Include Packing List Checkbox */}
+              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <Checkbox
+                  id="include-packing-list"
+                  checked={includePackingList}
+                  onCheckedChange={(checked) => setIncludePackingList(checked === true)}
+                  className="border-blue-400 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                  data-testid="checkbox-include-packing-list"
+                />
+                <label
+                  htmlFor="include-packing-list"
+                  className="text-sm font-medium text-blue-800 dark:text-blue-300 cursor-pointer flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  {t('orders:includePackingList')}
+                </label>
+              </div>
+              
               {/* Service BILL Checkbox - Shows when a service is applied */}
               {appliedServiceIds.size > 0 && (
                 <div className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-700 rounded-lg">

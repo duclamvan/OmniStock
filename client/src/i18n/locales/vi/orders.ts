@@ -1191,6 +1191,7 @@ const orders = {
   servicePart: 'Linh kiện dịch vụ',
   serviceParts: 'Dịch vụ - Linh kiện',
   includeServiceBill: 'Bao gồm hóa đơn dịch vụ',
+  includePackingList: 'Bao gồm phiếu đóng gói',
   applyToOrder: 'Thêm vào đơn',
   applied: 'Đã thêm',
   serviceApplied: 'Đã thêm dịch vụ',
