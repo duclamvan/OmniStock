@@ -10298,6 +10298,8 @@ Important:
       // If pickStatus is 'pending' or empty, no inventory was ever deducted
       const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress';
       
+      console.log(`🔄 [Soft Delete DEBUG] Order ${order.orderId}: pickStatus=${order.pickStatus}, shouldRestoreInventory=${shouldRestoreInventory}`);
+      
       if (!shouldRestoreInventory) {
         console.log(`🔄 [Soft Delete] Order ${order.orderId} was never picked (pickStatus: ${order.pickStatus}), no inventory to restore`);
       }
@@ -10321,12 +10323,16 @@ Important:
               isVirtualSku = true;
               targetProductId = item.masterProductId;
               deductionRatio = parseFloat(item.inventoryDeductionRatio || '1');
+              console.log(`🔄 [Soft Delete DEBUG] Virtual SKU from ORDER ITEM: isVirtual=${item.isVirtual}, masterProductId=${item.masterProductId}, ratio=${deductionRatio}`);
             }
             // Fallback to product fields for legacy orders
             else if (product.isVirtual && product.masterProductId) {
               isVirtualSku = true;
               targetProductId = product.masterProductId;
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
+              console.log(`🔄 [Soft Delete DEBUG] Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
+            } else {
+              console.log(`🔄 [Soft Delete DEBUG] Regular product (not virtual): productId=${item.productId}`);
             }
             
             // Get product locations for the target product
@@ -10334,6 +10340,8 @@ Important:
             
             // Check if we have stored pickedFromLocations data
             const multiLocationPicks = item.pickedFromLocations as Record<string, number> | null;
+            
+            console.log(`🔄 [Soft Delete DEBUG] Item ${item.id?.slice(-6)}: pickedFromLocations=${JSON.stringify(multiLocationPicks)}, pickedQuantity=${item.pickedQuantity}, quantity=${item.quantity}`);
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
               // Multi-location format: restore to each location separately
