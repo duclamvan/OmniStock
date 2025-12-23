@@ -6569,6 +6569,136 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to increment print count');
     }
   }
+
+  // Cache for allocated quantities with TTL
+  private allocatedQuantitiesCache: {
+    data: Map<string, number>;
+    timestamp: number;
+  } | null = null;
+  private readonly ALLOCATED_CACHE_TTL = 30000; // 30 seconds
+
+  /**
+   * Get allocated quantities from unfulfilled orders.
+   * Returns a map where keys are in format:
+   * - "product:{productId}" for regular products
+   * - "product:{productId}:variant:{variantId}" for variants
+   * - "virtual:{virtualSkuId}" for virtual SKUs
+   * Values are total quantities allocated to unfulfilled orders.
+   */
+  async getAllocatedQuantities(forceRefresh: boolean = false): Promise<Map<string, number>> {
+    // Check cache
+    if (!forceRefresh && this.allocatedQuantitiesCache) {
+      const cacheAge = Date.now() - this.allocatedQuantitiesCache.timestamp;
+      if (cacheAge < this.ALLOCATED_CACHE_TTL) {
+        return this.allocatedQuantitiesCache.data;
+      }
+    }
+
+    try {
+      // Unfulfilled order statuses - these have inventory allocated but not yet shipped
+      // Exclude: shipped, delivered, completed, cancelled
+      const unfulfilledStatuses = ['pending', 'confirmed', 'processing', 'to_fulfill', 'ready_to_ship', 'picking', 'packing'];
+
+      // Query order items from unfulfilled, non-cancelled, non-archived orders
+      const allocatedItems = await db
+        .select({
+          productId: orderItems.productId,
+          variantId: orderItems.variantId,
+          isVirtual: orderItems.isVirtual,
+          masterProductId: orderItems.masterProductId,
+          inventoryDeductionRatio: orderItems.inventoryDeductionRatio,
+          quantity: orderItems.quantity,
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(
+          and(
+            inArray(orders.orderStatus, unfulfilledStatuses),
+            or(
+              eq(orders.isArchived, false),
+              isNull(orders.isArchived)
+            )
+          )
+        );
+
+      const allocatedMap = new Map<string, number>();
+
+      for (const item of allocatedItems) {
+        const qty = item.quantity || 0;
+        if (qty <= 0) continue;
+
+        // Handle virtual SKUs - track both by virtual product ID and master product ID
+        if (item.isVirtual && item.productId) {
+          // Track allocation for the virtual SKU itself
+          const virtualKey = `product:${item.productId}`;
+          allocatedMap.set(virtualKey, (allocatedMap.get(virtualKey) || 0) + qty);
+          
+          // Also track impact on master product (qty * deductionRatio)
+          if (item.masterProductId) {
+            const ratio = parseFloat(item.inventoryDeductionRatio || '1');
+            const masterQty = qty * ratio;
+            const masterKey = `product:${item.masterProductId}`;
+            allocatedMap.set(masterKey, (allocatedMap.get(masterKey) || 0) + masterQty);
+          }
+        }
+        // Handle variants
+        else if (item.productId && item.variantId) {
+          const key = `product:${item.productId}:variant:${item.variantId}`;
+          allocatedMap.set(key, (allocatedMap.get(key) || 0) + qty);
+        }
+        // Handle regular products
+        else if (item.productId) {
+          const key = `product:${item.productId}`;
+          allocatedMap.set(key, (allocatedMap.get(key) || 0) + qty);
+        }
+      }
+
+      // Update cache
+      this.allocatedQuantitiesCache = {
+        data: allocatedMap,
+        timestamp: Date.now()
+      };
+
+      return allocatedMap;
+    } catch (error) {
+      console.error('Error getting allocated quantities:', error);
+      return new Map();
+    }
+  }
+
+  /**
+   * Invalidate the allocated quantities cache.
+   * Call this when orders are created, updated, or deleted.
+   */
+  invalidateAllocatedQuantitiesCache(): void {
+    this.allocatedQuantitiesCache = null;
+  }
+
+  /**
+   * Get available quantity for a specific product/variant.
+   * Available = On Hand - Allocated to Unfulfilled Orders
+   */
+  async getAvailableQuantity(
+    productId: string,
+    variantId?: string | null,
+    onHandQuantity?: number
+  ): Promise<{ allocated: number; available: number }> {
+    const allocatedMap = await this.getAllocatedQuantities();
+
+    let key: string;
+    if (variantId) {
+      key = `product:${productId}:variant:${variantId}`;
+    } else {
+      key = `product:${productId}`;
+    }
+
+    const allocated = allocatedMap.get(key) || 0;
+    const available = onHandQuantity !== undefined 
+      ? Math.max(0, onHandQuantity - allocated)
+      : -1; // -1 indicates we don't know on-hand quantity
+
+    return { allocated, available };
+  }
 }
 
 export const storage = new DatabaseStorage();

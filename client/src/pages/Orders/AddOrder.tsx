@@ -5605,27 +5605,29 @@ export default function AddOrder() {
                             </div>
                             {!isService && (
                               (() => {
-                                // Calculate stock - for virtual products, derive from master product
+                                // Calculate stock - use availableQuantity which accounts for allocations to other orders
                                 const isVirtual = product.masterProductId && product.inventoryDeductionRatio;
                                 let baseStock = 0;
                                 if (isBundle) {
                                   baseStock = product.availableStock ?? 0;
                                 } else if (isVirtual) {
-                                  // Virtual product - calculate stock from master product
-                                  const masterProduct = allProducts?.find((p: any) => p.id === product.masterProductId);
-                                  const masterQty = masterProduct?.quantity || 0;
-                                  baseStock = Math.floor(masterQty / product.inventoryDeductionRatio);
+                                  // Virtual product - use availableQuantity from API (already calculated from master)
+                                  baseStock = product.availableQuantity ?? product.availableVirtualStock ?? 0;
                                 } else {
-                                  baseStock = product.quantity || 0;
+                                  // Regular product - use availableQuantity from API (accounts for other orders)
+                                  baseStock = product.availableQuantity ?? product.quantity ?? 0;
                                 }
+                                // Subtract quantity already in this order
                                 const inOrder = isBundle 
                                   ? getQuantityInOrder(undefined, undefined, product.id)
                                   : getQuantityInOrder(product.productId || product.id, product.variantId);
                                 const availableStock = Math.max(0, baseStock - inOrder);
                                 const isLow = availableStock <= 0;
+                                // Show allocated amount from other orders if any
+                                const allocatedToOthers = product.allocatedQuantity ?? 0;
                                 return (
                                   <div className={`text-[10px] md:text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    <span className="hidden sm:inline">{isVirtual ? 'V.Stock: ' : 'Stock: '}</span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}
+                                    <span className="hidden sm:inline">{isVirtual ? 'V.Stock: ' : 'Stock: '}</span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}{allocatedToOthers > 0 && inOrder === 0 && <span className="hidden lg:inline text-amber-600"> ({allocatedToOthers} pending)</span>}
                                   </div>
                                 );
                               })()

@@ -626,13 +626,15 @@ export default function ProductDetails() {
                   <p className="text-lg sm:text-2xl font-bold">{product.lowStockAlert || 5}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:reservedStock', 'Reserved')}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{product.reservedQuantity || 0}</p>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:allocatedToOrders', 'Allocated')}</p>
+                  <p className={`text-lg sm:text-2xl font-bold ${(product.allocatedQuantity || 0) > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                    {product.allocatedQuantity || 0}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[10px] sm:text-sm text-muted-foreground">{t('products:availableStock', 'Available')}</p>
-                  <p className="text-lg sm:text-2xl font-bold text-green-600">
-                    {(product.quantity || 0) - (product.reservedQuantity || 0)}
+                  <p className={`text-lg sm:text-2xl font-bold ${(product.availableQuantity ?? (product.quantity || 0)) <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {product.availableQuantity ?? (product.quantity || 0)}
                   </p>
                 </div>
               </div>

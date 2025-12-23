@@ -2856,14 +2856,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => b.score - a.score)
         .slice(0, 10); // Top 10 after scoring
 
-      const inventoryItems = scoredProducts.map(({ product }) => ({
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        quantity: product.quantity || 0,
-        imageUrl: product.imageUrl,
-        type: 'inventory' as const
-      }));
+      // Get allocated quantities for available stock calculation
+      const allocatedMap = await storage.getAllocatedQuantities();
+
+      const inventoryItems = scoredProducts.map(({ product }) => {
+        const productKey = `product:${product.id}`;
+        const allocated = allocatedMap.get(productKey) || 0;
+        const onHand = product.quantity || 0;
+        const available = Math.max(0, onHand - allocated);
+        return {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          quantity: onHand,
+          availableQuantity: available,
+          allocatedQuantity: allocated,
+          imageUrl: product.imageUrl,
+          type: 'inventory' as const
+        };
+      });
 
       // STEP 1: Database-level filtering for shipments
       const shipmentCandidates = await db
@@ -4466,12 +4477,29 @@ Important:
     }
   });
 
+  // Inventory availability endpoint - returns allocated quantities from unfulfilled orders
+  app.get('/api/inventory/availability', isAuthenticated, async (req: any, res) => {
+    try {
+      const allocatedMap = await storage.getAllocatedQuantities();
+      // Convert Map to object for JSON serialization
+      const allocatedObj: Record<string, number> = {};
+      allocatedMap.forEach((value, key) => {
+        allocatedObj[key] = value;
+      });
+      res.json({ allocated: allocatedObj });
+    } catch (error) {
+      console.error("Error fetching inventory availability:", error);
+      res.status(500).json({ message: "Failed to fetch inventory availability" });
+    }
+  });
+
   // Products endpoints
   app.get('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const search = req.query.search as string;
       const includeInactive = req.query.includeInactive === 'true';
       const includeLandingCost = req.query.includeLandingCost === 'true';
+      const includeAvailability = req.query.includeAvailability !== 'false'; // Default to true
       let productsResult;
 
       if (search) {
@@ -4489,22 +4517,41 @@ Important:
         });
       }
 
-      // Enrich virtual products with master product data
+      // Get allocated quantities from unfulfilled orders (single query, cached)
+      const allocatedMap = includeAvailability ? await storage.getAllocatedQuantities() : new Map<string, number>();
+
+      // Enrich virtual products with master product data and availability
       const enrichedProducts = productsResult.map((product: any) => {
+        // Calculate allocated and available quantities
+        const productKey = `product:${product.id}`;
+        const allocated = allocatedMap.get(productKey) || 0;
+        const onHand = product.quantity || 0;
+        const available = Math.max(0, onHand - allocated);
+
         if (product.isVirtual && product.masterProductId) {
           const masterData = productQuantityMap.get(product.masterProductId);
           if (masterData) {
             const ratio = parseFloat(product.inventoryDeductionRatio || '1');
-            const availableVirtualStock = Math.floor(masterData.quantity / ratio);
+            // For virtual SKUs, available is based on master product availability
+            const masterKey = `product:${product.masterProductId}`;
+            const masterAllocated = allocatedMap.get(masterKey) || 0;
+            const masterAvailable = Math.max(0, masterData.quantity - masterAllocated);
+            const availableVirtualStock = Math.floor(masterAvailable / ratio);
             return {
               ...product,
               masterProductName: masterData.name,
               masterProductQuantity: masterData.quantity,
-              availableVirtualStock: availableVirtualStock // Calculated available units for this virtual SKU
+              availableVirtualStock: availableVirtualStock, // Calculated available units for this virtual SKU
+              allocatedQuantity: allocated,
+              availableQuantity: availableVirtualStock
             };
           }
         }
-        return product;
+        return {
+          ...product,
+          allocatedQuantity: allocated,
+          availableQuantity: available
+        };
       });
 
       // If landing costs are requested, fetch them from the database
@@ -4564,10 +4611,31 @@ Important:
         .from(products)
         .where(eq(products.id, req.params.id));
 
-      // Add latest_landing_cost to the product object
+      // Get allocated quantities
+      const allocatedMap = await storage.getAllocatedQuantities();
+      const productKey = `product:${product.id}`;
+      const allocated = allocatedMap.get(productKey) || 0;
+      const onHand = product.quantity || 0;
+      let available = Math.max(0, onHand - allocated);
+
+      // For virtual SKUs, calculate availability based on master product
+      if (product.isVirtual && product.masterProductId) {
+        const masterProduct = await storage.getProductById(product.masterProductId);
+        if (masterProduct) {
+          const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+          const masterKey = `product:${product.masterProductId}`;
+          const masterAllocated = allocatedMap.get(masterKey) || 0;
+          const masterAvailable = Math.max(0, (masterProduct.quantity || 0) - masterAllocated);
+          available = Math.floor(masterAvailable / ratio);
+        }
+      }
+
+      // Add latest_landing_cost and availability to the product object
       const productData = {
         ...product,
-        latest_landing_cost: productWithCost?.latestLandingCost || null
+        latest_landing_cost: productWithCost?.latestLandingCost || null,
+        allocatedQuantity: allocated,
+        availableQuantity: available
       };
 
       // Filter financial data based on user role
@@ -9666,6 +9734,9 @@ Important:
         console.log('No items to create or empty items array');
       }
 
+      // Invalidate allocated quantities cache after order creation
+      storage.invalidateAllocatedQuantitiesCache();
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'create',
@@ -9746,6 +9817,11 @@ Important:
       // Check if order exists
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Invalidate allocated quantities cache when order status changes (affects allocation)
+      if (updates.orderStatus) {
+        storage.invalidateAllocatedQuantitiesCache();
       }
 
       // Update order items if provided
@@ -10287,6 +10363,9 @@ Important:
         return res.status(500).json({ message: "Failed to archive order" });
       }
 
+      // Invalidate allocated quantities cache after archiving order
+      storage.invalidateAllocatedQuantitiesCache();
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'archive',
@@ -10435,6 +10514,9 @@ Important:
       if (!restoredOrder) {
         return res.status(500).json({ message: "Failed to restore order" });
       }
+
+      // Invalidate allocated quantities cache after restoring order
+      storage.invalidateAllocatedQuantitiesCache();
 
       await storage.createUserActivity({
         userId: "test-user",

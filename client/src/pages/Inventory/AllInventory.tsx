@@ -992,11 +992,22 @@ export default function AllInventory() {
             </div>
           );
         }
-        // Regular product: Show normal quantity
+        // Regular product: Show available quantity with allocation info
+        const available = product.availableQuantity ?? product.quantity ?? 0;
+        const allocated = product.allocatedQuantity ?? 0;
+        const total = product.quantity ?? 0;
+        const isLow = available <= (product.lowStockAlert || 0);
         return (
-          <span className={product.quantity <= (product.lowStockAlert || 0) ? 'text-red-600 font-medium' : ''}>
-            {product.quantity ?? 0}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className={isLow ? 'text-red-600 font-medium' : ''}>
+              {available}
+            </span>
+            {allocated > 0 && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                ({allocated} allocated)
+              </span>
+            )}
+          </div>
         );
       },
     },

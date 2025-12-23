@@ -15,6 +15,8 @@ interface SearchResult {
     name: string;
     sku: string;
     quantity: number;
+    availableQuantity?: number;
+    allocatedQuantity?: number;
     imageUrl?: string;
     type: 'inventory';
   }>;
@@ -218,7 +220,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate text-gray-900 dark:text-gray-100">{item.name}</div>
                         <div className="text-sm text-muted-foreground dark:text-gray-400">
-                          SKU: {item.sku} • Stock: {item.quantity}
+                          SKU: {item.sku} • {t('common:available')}: <span className={(item.availableQuantity ?? item.quantity) <= 0 ? 'text-red-500 font-medium' : ''}>{item.availableQuantity ?? item.quantity}</span>{(item.allocatedQuantity ?? 0) > 0 && <span className="text-amber-600 dark:text-amber-400"> ({item.allocatedQuantity} {t('common:allocated')})</span>}
                         </div>
                       </div>
                     </button>
