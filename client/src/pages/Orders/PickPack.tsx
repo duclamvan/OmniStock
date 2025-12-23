@@ -2108,6 +2108,339 @@ function useItemStockAvailability(productId: string | null | undefined, selected
   return { ...result, isLoading };
 }
 
+// Component: Multi-location picker with per-location stock enforcement
+// Allows picking from multiple locations when one location doesn't have enough stock
+function MultiLocationPicker({
+  currentItem,
+  pickedFromLocations,
+  setPickedFromLocations,
+  updatePickedItem,
+  t
+}: {
+  currentItem: OrderItem;
+  pickedFromLocations: Record<string, Record<string, number>>; // itemId -> locationCode -> picked qty
+  setPickedFromLocations: (locations: Record<string, Record<string, number>>) => void;
+  updatePickedItem: (itemId: string, pickedQty: number, locationCode?: string) => void;
+  t: (key: string, fallback?: string) => string;
+}) {
+  // For virtual products, check the master product's stock
+  const productIdToCheck = currentItem.isVirtual && currentItem.masterProductId 
+    ? currentItem.masterProductId 
+    : currentItem.productId;
+
+  // Fetch product locations
+  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', productIdToCheck, 'locations'],
+    enabled: !!productIdToCheck,
+    staleTime: 5000,
+  });
+
+  // Get picked quantities for this item (needed for visibility logic)
+  const itemPicks = pickedFromLocations[currentItem.id] || {};
+
+  // Sort locations: primary first, then alphabetically
+  // Keep locations visible if they have stock OR if user has picked from them
+  const sortedLocations = useMemo(() => {
+    return [...productLocations]
+      .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
+      .sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return a.locationCode.localeCompare(b.locationCode);
+      });
+  }, [productLocations, itemPicks]);
+
+  // Get total available stock across all locations
+  const totalAvailableStock = useMemo(() => {
+    return productLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+  }, [productLocations]);
+  
+  // Calculate total picked across all locations
+  const totalPicked = useMemo(() => {
+    return Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
+  }, [itemPicks]);
+
+  // Calculate remaining to pick
+  const remainingToPick = Math.max(0, currentItem.quantity - totalPicked);
+  
+  // Service items don't have stock - always allow picking
+  const isServiceItem = !!currentItem.serviceId && !currentItem.productId;
+
+  // Update picked quantity for a specific location
+  const updateLocationPick = (locationCode: string, newQty: number, availableAtLocation: number) => {
+    // Clamp to 0 and available stock at this location
+    const clampedQty = Math.max(0, Math.min(newQty, availableAtLocation));
+    
+    // Check if this would exceed the order quantity
+    const otherPicks = Object.entries(itemPicks)
+      .filter(([loc]) => loc !== locationCode)
+      .reduce((sum, [, qty]) => sum + qty, 0);
+    
+    const maxAllowed = currentItem.quantity - otherPicks;
+    const finalQty = Math.min(clampedQty, maxAllowed);
+    const previousQty = itemPicks[locationCode] || 0;
+    const qtyChange = finalQty - previousQty;
+
+    // Skip if no change
+    if (qtyChange === 0) return;
+
+    const newItemPicks = {
+      ...itemPicks,
+      [locationCode]: finalQty
+    };
+
+    // Remove location if qty is 0
+    if (finalQty === 0) {
+      delete newItemPicks[locationCode];
+    }
+
+    // Update local state
+    setPickedFromLocations({
+      ...pickedFromLocations,
+      [currentItem.id]: newItemPicks
+    });
+
+    // Calculate new total picked
+    const newTotalPicked = Object.values(newItemPicks).reduce((sum, qty) => sum + qty, 0);
+
+    // Use the passed-in updatePickedItem to handle offline queue, sounds, completion checks
+    updatePickedItem(currentItem.id, newTotalPicked, locationCode);
+  };
+
+  // Pick all available from a location (up to remaining needed)
+  const pickAllFromLocation = (locationCode: string, availableAtLocation: number) => {
+    const canPick = Math.min(availableAtLocation, remainingToPick);
+    const currentPicked = itemPicks[locationCode] || 0;
+    updateLocationPick(locationCode, currentPicked + canPick, availableAtLocation);
+  };
+
+  // Reset all picks for this item
+  const resetAllPicks = () => {
+    const newPicks = { ...pickedFromLocations };
+    delete newPicks[currentItem.id];
+    setPickedFromLocations(newPicks);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-3">
+        <div className="h-20 bg-gray-200 rounded-xl" />
+        <div className="h-32 bg-gray-200 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Service items bypass stock checks
+  if (isServiceItem) {
+    return (
+      <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-6 text-center border-2 border-purple-300 dark:border-purple-700">
+        <p className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4">
+          {t('serviceBill', 'Service Bill')}
+        </p>
+        <Button 
+          size="lg"
+          className="h-16 px-8 text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white"
+          onClick={() => {
+            setPickedFromLocations({
+              ...pickedFromLocations,
+              [currentItem.id]: { '_service': currentItem.quantity }
+            });
+          }}
+        >
+          <CheckCircle className="h-6 w-6 mr-2" />
+          {t('markComplete', 'Mark Complete')}
+        </Button>
+      </div>
+    );
+  }
+
+  // No stock available anywhere
+  if (sortedLocations.length === 0) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded-xl p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400 mx-auto mb-3" />
+        <p className="text-xl font-bold text-red-700 dark:text-red-300">
+          {t('outOfStock', 'OUT OF STOCK')}
+        </p>
+        <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+          {t('cannotPickNoStock', 'Cannot pick - no stock available at any location')}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Progress Header */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+            {t('pickProgress', 'Pick Progress')}
+          </span>
+          {totalPicked > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={resetAllPicks}
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Reset
+            </Button>
+          )}
+        </div>
+        
+        {/* Large Progress Display */}
+        <div className="text-center mb-3">
+          <p className="text-5xl sm:text-6xl font-black text-gray-900 dark:text-gray-100">
+            {totalPicked}
+            <span className="text-2xl sm:text-3xl text-gray-400 dark:text-gray-500 font-bold">/{currentItem.quantity}</span>
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {t('piecesPicked', 'pieces picked')}
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-300 ${
+              totalPicked >= currentItem.quantity 
+                ? 'bg-green-500' 
+                : 'bg-blue-500'
+            }`}
+            style={{ width: `${Math.min(100, (totalPicked / currentItem.quantity) * 100)}%` }}
+          />
+        </div>
+
+        {/* Remaining Counter */}
+        {remainingToPick > 0 && (
+          <div className="mt-3 text-center">
+            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 text-sm px-3 py-1">
+              {remainingToPick} {t('remaining', 'remaining to pick')}
+            </Badge>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {totalPicked >= currentItem.quantity && (
+          <Alert className="mt-3 bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700">
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-green-700 dark:text-green-300 font-bold text-sm">
+              ✓ {t('itemFullyPicked', 'Item fully picked!')}
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+
+      {/* Multi-Location Picker Grid */}
+      <div className="space-y-2">
+        <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase tracking-wider text-center">
+          {t('pickFromLocations', 'Pick from Locations')}
+        </p>
+        
+        <div className="grid grid-cols-1 gap-3">
+          {sortedLocations.map((location) => {
+            const pickedFromThis = itemPicks[location.locationCode] || 0;
+            const availableStock = location.quantity || 0;
+            const canPickMore = pickedFromThis < availableStock && remainingToPick > 0;
+            const canPickLess = pickedFromThis > 0;
+
+            return (
+              <div 
+                key={location.id}
+                className={`rounded-xl border-2 p-4 transition-all ${
+                  pickedFromThis > 0 
+                    ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-600 shadow-md' 
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
+                }`}
+              >
+                {/* Location Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className={`h-5 w-5 ${pickedFromThis > 0 ? 'text-green-600' : 'text-orange-600'}`} />
+                    <span className="text-xl font-black font-mono tracking-wider">
+                      {location.locationCode}
+                    </span>
+                    {location.isPrimary && (
+                      <Badge className="bg-blue-500 text-white text-xs px-1.5 py-0">
+                        ★
+                      </Badge>
+                    )}
+                  </div>
+                  <Badge className={`text-sm px-2 py-1 ${
+                    availableStock >= remainingToPick + pickedFromThis
+                      ? 'bg-green-600 text-white'
+                      : 'bg-amber-500 text-white'
+                  }`}>
+                    {availableStock} x
+                  </Badge>
+                </div>
+
+                {/* Picked Counter & Controls */}
+                <div className="flex items-center justify-between gap-3">
+                  {/* Minus Button */}
+                  <Button
+                    size="lg"
+                    className="h-14 w-14 text-2xl font-black bg-red-500 hover:bg-red-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis - 1, availableStock)}
+                    disabled={!canPickLess}
+                  >
+                    <Minus className="h-6 w-6" />
+                  </Button>
+
+                  {/* Picked Count Display */}
+                  <div className="flex-1 text-center">
+                    <span className={`text-3xl font-black ${
+                      pickedFromThis > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'
+                    }`}>
+                      {pickedFromThis}
+                    </span>
+                    <span className="text-lg text-gray-400">/{availableStock}</span>
+                  </div>
+
+                  {/* Plus Button */}
+                  <Button
+                    size="lg"
+                    className="h-14 w-14 text-2xl font-black bg-blue-500 hover:bg-blue-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis + 1, availableStock)}
+                    disabled={!canPickMore}
+                  >
+                    <Plus className="h-6 w-6" />
+                  </Button>
+
+                  {/* Pick All from Location Button */}
+                  <Button
+                    size="lg"
+                    className="h-14 px-4 text-sm font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl disabled:opacity-30"
+                    onClick={() => pickAllFromLocation(location.locationCode, availableStock)}
+                    disabled={!canPickMore}
+                  >
+                    <CheckCircle className="h-5 w-5 mr-1" />
+                    ALL
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Carton/Bulk Unit Info */}
+      {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Box className="h-5 w-5 text-amber-600" />
+            <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+              {Math.floor(totalPicked / currentItem.bulkUnitQty)} / {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}(s)
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Component: Stock-aware picking action buttons with strict stock enforcement
 // Disables all pick actions when no stock is available
 function StockAwarePickingButtons({
@@ -2550,6 +2883,7 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [selectedPickingLocations, setSelectedPickingLocations] = useState<Record<string, string>>({}); // itemId -> selected locationCode
+  const [pickedFromLocations, setPickedFromLocations] = useState<Record<string, Record<string, number>>>({}); // itemId -> locationCode -> picked qty
   const [expandedOverviewItems, setExpandedOverviewItems] = useState<Set<string>>(() => {
     // Load expanded items state from localStorage on mount
     try {
@@ -13728,16 +14062,6 @@ export default function PickPack() {
                         )}
                       </div>
 
-                      {/* Warehouse Location Selector - High Contrast Banner (Hidden for services) */}
-                      {!currentItem.serviceId && (
-                        <PickingLocationSelector 
-                          currentItem={currentItem}
-                          selectedPickingLocations={selectedPickingLocations}
-                          setSelectedPickingLocations={setSelectedPickingLocations}
-                          t={t}
-                        />
-                      )}
-
                       {/* Carton/Bulk Unit Details - Shows how many cartons to pick (Hidden for services) */}
                       {!currentItem.serviceId && currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
                         <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
@@ -13895,36 +14219,14 @@ export default function PickPack() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                        {/* Carton Details Summary - Above Quantity Picker */}
-                        {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (
-                          <div className="bg-gradient-to-r from-amber-50 dark:from-amber-900/30 to-orange-50 dark:to-orange-900/30 rounded-xl p-4 border-2 border-amber-300 dark:border-amber-700 shadow-md">
-                            <div className="flex items-center justify-center gap-3">
-                              <Box className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                              <div className="text-center">
-                                <p className="text-xs text-amber-700 dark:text-amber-200 font-semibold uppercase tracking-wide mb-1">Carton Details</p>
-                                <p className="text-2xl sm:text-3xl font-black text-amber-700 dark:text-amber-300">
-                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
-                                </p>
-                                {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
-                                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mt-1">
-                                    +{currentItem.quantity % currentItem.bulkUnitQty} pieces
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Stock-Aware Quantity Picker - Strict stock enforcement */}
-                        <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-700">
-                          <StockAwarePickingButtons
-                            currentItem={currentItem}
-                            selectedLocation={selectedPickingLocations[currentItem.id]}
-                            updatePickedItem={updatePickedItem}
-                            t={t}
-                          />
-                        </div>
+                        {/* Multi-Location Picker - Pick from multiple locations with stock enforcement */}
+                        <MultiLocationPicker
+                          currentItem={currentItem}
+                          pickedFromLocations={pickedFromLocations}
+                          setPickedFromLocations={setPickedFromLocations}
+                          updatePickedItem={updatePickedItem}
+                          t={t}
+                        />
                         </div>
                       )}
                       
