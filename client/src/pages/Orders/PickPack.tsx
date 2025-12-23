@@ -1722,10 +1722,15 @@ function PickingLocationSelector({
   setSelectedPickingLocations: (locations: Record<string, string>) => void;
   t: (key: string) => string;
 }) {
+  // For virtual products, check the master product's stock
+  const productIdToCheck = currentItem.isVirtual && currentItem.masterProductId 
+    ? currentItem.masterProductId 
+    : currentItem.productId;
+    
   // Fetch product locations for this item
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
-    queryKey: ['/api/products', currentItem.productId, 'locations'],
-    enabled: !!currentItem.productId,
+    queryKey: ['/api/products', productIdToCheck, 'locations'],
+    enabled: !!productIdToCheck,
   });
   
   // Sort locations alphabetically by code
@@ -1785,7 +1790,7 @@ function PickingLocationSelector({
   };
 
   // If no product ID (e.g., service item), don't show location selector
-  if (!currentItem.productId) {
+  if (!productIdToCheck) {
     return null;
   }
 

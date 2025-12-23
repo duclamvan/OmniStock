@@ -1,0 +1,54 @@
+{
+  "period": "weekly",
+  "startDate": "2025-12-16T00:00:00.000Z",
+  "endDate": "2025-12-23T23:59:59.999Z",
+  "generatedAt": "2025-12-23T21:08:30.591Z",
+  "summary": {
+    "totalOrders": 18,
+    "completedOrders": 5,
+    "pendingOrders": 7,
+    "cancelledOrders": 0,
+    "totalRevenue": 178278,
+    "totalItemsSold": 36,
+    "averageOrderValue": 9904.33,
+    "newCustomers": 0
+  },
+  "inventory": {
+    "totalProducts": 2,
+    "lowStockProducts": 2,
+    "outOfStockProducts": 0,
+    "stockAdjustments": 0,
+    "itemsReceived": 60
+  },
+  "topProducts": [
+    {
+      "id": "04253c78-164e-4b97-bfa8-7bf49cea2fe6",
+      "name": "Bucket Acrylic Powder 25lbs - Natural Pink",
+      "quantity": 8,
+      "revenue": 152000,
+      "quantitySold": 8
+    },
+    {
+      "id": "bcabfea8-4cae-4f08-84bf-6b623afc9a29",
+      "name": "Acrylic Powder 660g - Natural Pink",
+      "quantity": 28,
+      "revenue": 23548,
+      "quantitySold": 28
+    }
+  ],
+  "topCustomers": [
+    {
+      "id": "07568cb6-bcb9-42f9-a585-914e0c5b4eef",
+      "name": "Davie Lam",
+      "orderCount": 18,
+      "totalSpent": 178278
+    }
+  ],
+  "financials": {
+    "totalExpenses": 48000,
+    "grossProfit": 130278,
+    "expensesByCategory": {
+      "Salary": 48000
+    }
+  }
+}
