@@ -8988,6 +8988,8 @@ Important:
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object') {
               // Multi-location format: restore to each location separately
+              // Note: pickedFromLocations stores actual pieces picked, not cartons
+              // Only virtual SKUs need ratio multiplication (for master product deduction)
               for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
                 const pickedQty = Number(qty) || 0;
                 if (pickedQty <= 0) continue;
@@ -8999,9 +9001,9 @@ Important:
                 if (targetLocation) {
                   const currentQty = targetLocation.quantity || 0;
                   
-                  // Calculate restore quantity with multiplier
-                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-                  const restoreQty = pickedQty * multiplier;
+                  // Only apply multiplier for virtual SKUs (master product deduction ratio)
+                  // Do NOT apply bulkUnitQty - pickedFromLocations already stores actual pieces
+                  const restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
                   const newQty = currentQty + restoreQty;
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
@@ -9016,7 +9018,7 @@ Important:
                     if (isVirtualSku) {
                       console.log(`📦 Reset [Virtual SKU Multi-Loc]: Restored ${pickedQty} × ${deductionRatio} = ${restoreQty} to ${locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
                     } else {
-                      console.log(`📦 Reset [Multi-Loc]: Restored ${restoreQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                      console.log(`📦 Reset [Multi-Loc]: Restored ${pickedQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
                     }
                   }
                   
@@ -9046,9 +9048,9 @@ Important:
                 const currentQty = targetLocation.quantity || 0;
                 const pickedCount = item.pickedQuantity || 0;
                 
-                // Calculate restore quantity
-                const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-                const restoreQty = pickedCount * multiplier;
+                // Only apply multiplier for virtual SKUs
+                // pickedQuantity is stored in actual pieces, not cartons
+                const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
                 const newQty = currentQty + restoreQty;
                 
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
@@ -9063,7 +9065,7 @@ Important:
                   if (isVirtualSku) {
                     console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
                   } else {
-                    console.log(`📦 Reset: Restored ${pickedCount}${multiplier > 1 ? ` × ${multiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                    console.log(`📦 Reset: Restored ${pickedCount} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
                   }
                 }
                 
@@ -10198,6 +10200,7 @@ Important:
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
               // Multi-location format: restore to each location separately
+              // pickedFromLocations stores actual pieces picked, not cartons
               for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
                 const pickedQty = Number(qty) || 0;
                 if (pickedQty <= 0) continue;
@@ -10209,9 +10212,9 @@ Important:
                 if (targetLocation) {
                   const currentQty = targetLocation.quantity || 0;
                   
-                  // Calculate restore quantity with multiplier
-                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-                  const restoreQty = pickedQty * multiplier;
+                  // Only apply multiplier for virtual SKUs (master product deduction ratio)
+                  // Do NOT apply bulkUnitQty - pickedFromLocations already stores actual pieces
+                  const restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
                   const newQty = currentQty + restoreQty;
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
@@ -10223,7 +10226,7 @@ Important:
                     const newProductQty = currentProductQty + restoreQty;
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
-                    console.log(`🔄 [Soft Delete Multi-Loc] Restored ${restoreQty} to ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
+                    console.log(`🔄 [Soft Delete Multi-Loc] Restored ${pickedQty}${isVirtualSku ? ` × ${deductionRatio} = ${restoreQty}` : ''} to ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
                   }
                   
                   totalRestoredLocations++;
@@ -10234,9 +10237,9 @@ Important:
               }
             } else {
               // Fallback: restore to primary location or first location
-              let restoreQty = item.pickedQuantity || item.quantity || 0;
-              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-              restoreQty = restoreQty * multiplier;
+              // pickedQuantity is stored in actual pieces, not cartons
+              const pickedCount = item.pickedQuantity || item.quantity || 0;
+              const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
               const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
               
@@ -10245,7 +10248,7 @@ Important:
                 const newQty = currentQty + restoreQty;
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                 
-                console.log(`🔄 [Soft Delete Fallback] Restored ${restoreQty} to ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
+                console.log(`🔄 [Soft Delete Fallback] Restored ${pickedCount}${isVirtualSku ? ` × ${deductionRatio} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
                 totalRestoredLocations++;
               }
               
@@ -10348,6 +10351,7 @@ Important:
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
               // Multi-location format: deduct from each location separately
+              // pickedFromLocations stores actual pieces picked, not cartons
               for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
                 const pickedQty = Number(qty) || 0;
                 if (pickedQty <= 0) continue;
@@ -10359,9 +10363,9 @@ Important:
                 if (targetLocation) {
                   const currentQty = targetLocation.quantity || 0;
                   
-                  // Calculate deduct quantity with multiplier
-                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-                  const deductQty = pickedQty * multiplier;
+                  // Only apply multiplier for virtual SKUs (master product deduction ratio)
+                  // Do NOT apply bulkUnitQty - pickedFromLocations already stores actual pieces
+                  const deductQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
                   const newQty = Math.max(0, currentQty - deductQty);
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
@@ -10373,7 +10377,7 @@ Important:
                     const newProductQty = Math.max(0, currentProductQty - deductQty);
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
-                    console.log(`🔄 [Restore Multi-Loc] Deducted ${deductQty} from ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
+                    console.log(`🔄 [Restore Multi-Loc] Deducted ${pickedQty}${isVirtualSku ? ` × ${deductionRatio} = ${deductQty}` : ''} from ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
                   }
                   
                   totalDeductedLocations++;
@@ -10384,9 +10388,9 @@ Important:
               }
             } else {
               // Fallback: deduct from primary location or first location
-              let deductQty = item.pickedQuantity || item.quantity || 0;
-              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-              deductQty = deductQty * multiplier;
+              // pickedQuantity is stored in actual pieces, not cartons
+              const pickedCount = item.pickedQuantity || item.quantity || 0;
+              const deductQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
               const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
               
@@ -10395,7 +10399,7 @@ Important:
                 const newQty = Math.max(0, currentQty - deductQty);
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                 
-                console.log(`🔄 [Restore Fallback] Deducted ${deductQty} from ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
+                console.log(`🔄 [Restore Fallback] Deducted ${pickedCount}${isVirtualSku ? ` × ${deductionRatio} = ${deductQty}` : ''} from ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
                 totalDeductedLocations++;
               }
               
