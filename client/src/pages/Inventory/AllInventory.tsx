@@ -857,10 +857,15 @@ export default function AllInventory() {
     return results.length > 0;
   });
 
-  const getStockStatus = (quantity: number, lowStockAlert: number) => {
-    if (quantity <= lowStockAlert) {
+  const getStockStatus = (quantity: number, lowStockAlert: number, isVirtual?: boolean, availableVirtualStock?: number) => {
+    // For virtual SKUs, use the calculated available stock
+    const effectiveQuantity = isVirtual ? (availableVirtualStock ?? 0) : quantity;
+    
+    if (effectiveQuantity <= 0) {
+      return <Badge variant="destructive">{t('inventory:outOfStock')}</Badge>;
+    } else if (effectiveQuantity <= lowStockAlert) {
       return <Badge variant="destructive">{t('inventory:lowStock')}</Badge>;
-    } else if (quantity <= lowStockAlert * 2) {
+    } else if (effectiveQuantity <= lowStockAlert * 2) {
       return <Badge variant="outline" className="text-orange-600 dark:text-orange-400 border-orange-600 dark:border-orange-500">{t('inventory:warning')}</Badge>;
     } else {
       return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">{t('inventory:inStock')}</Badge>;
@@ -936,11 +941,23 @@ export default function AllInventory() {
           <Link href={`/inventory/products/${product.id}`}>
             <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
               {product.name}
+              {product.isVirtual && (
+                <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
+                  Virtual
+                </Badge>
+              )}
               {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">({t('inventory:inactive')})</span>}
-              {product.isActive && getProductStatusBadge(product)}
+              {product.isActive && !product.isVirtual && getProductStatusBadge(product)}
             </span>
           </Link>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('inventory:sku')}: {product.sku}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {t('inventory:sku')}: {product.sku}
+            {product.isVirtual && product.masterProductName && (
+              <span className="text-purple-500 ml-2">
+                → {product.masterProductName}
+              </span>
+            )}
+          </p>
         </div>
       ),
     },
@@ -957,7 +974,31 @@ export default function AllInventory() {
       key: "quantity",
       header: t('inventory:qty'),
       sortable: true,
-      className: "text-right w-[80px]",
+      className: "text-right w-[100px]",
+      cell: (product) => {
+        // Virtual SKU: Show calculated available stock from master product
+        if (product.isVirtual && product.masterProductId) {
+          const availableStock = product.availableVirtualStock ?? 0;
+          const masterQty = product.masterProductQuantity ?? 0;
+          const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+          return (
+            <div className="flex flex-col items-end">
+              <span className="font-bold text-purple-600 dark:text-purple-400">
+                {availableStock}
+              </span>
+              <span className="text-xs text-gray-400">
+                ({masterQty}/{ratio})
+              </span>
+            </div>
+          );
+        }
+        // Regular product: Show normal quantity
+        return (
+          <span className={product.quantity <= (product.lowStockAlert || 0) ? 'text-red-600 font-medium' : ''}>
+            {product.quantity ?? 0}
+          </span>
+        );
+      },
     },
     {
       key: "unitsSold",
@@ -1045,7 +1086,7 @@ export default function AllInventory() {
     {
       key: "status",
       header: t('inventory:status'),
-      cell: (product) => getStockStatus(product.quantity, product.lowStockAlert),
+      cell: (product) => getStockStatus(product.quantity, product.lowStockAlert, product.isVirtual, product.availableVirtualStock),
     },
     {
       key: "actions",
@@ -1737,17 +1778,25 @@ export default function AllInventory() {
                           <Link href={`/inventory/products/${product.id}`}>
                             <span className={`font-semibold truncate cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
                               {product.name}
-                              {product.isActive && getProductStatusBadge(product)}
+                              {product.isVirtual && (
+                                <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
+                                  Virtual
+                                </Badge>
+                              )}
+                              {product.isActive && !product.isVirtual && getProductStatusBadge(product)}
                             </span>
                           </Link>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {t('inventory:sku')}: {product.sku}
+                            {product.isVirtual && product.masterProductName && (
+                              <span className="text-purple-500 ml-2">→ {product.masterProductName}</span>
+                            )}
                             {!product.isActive && <span className="text-amber-600 font-medium ml-2">({t('inventory:inactive')})</span>}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {getStockStatus(product.quantity, product.lowStockAlert)}
+                        {getStockStatus(product.quantity, product.lowStockAlert, product.isVirtual, product.availableVirtualStock)}
                       </div>
                     </div>
                     
@@ -1761,7 +1810,18 @@ export default function AllInventory() {
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">{t('inventory:quantity')}</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} {t('common:units')}</p>
+                        {product.isVirtual && product.masterProductId ? (
+                          <div>
+                            <span className="font-bold text-purple-600 dark:text-purple-400">
+                              {product.availableVirtualStock ?? 0} {t('common:units')}
+                            </span>
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({product.masterProductQuantity ?? 0}/{parseFloat(product.inventoryDeductionRatio || '1')})
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} {t('common:units')}</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">{t('inventory:location')}</p>
