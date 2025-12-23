@@ -352,6 +352,7 @@ export interface IStorage {
 
   // Order Items
   getOrderItems(orderId: string): Promise<OrderItem[]>;
+  getOrderItemById(id: string): Promise<OrderItem | undefined>;
   getAllOrderItems(): Promise<OrderItem[]>;
   createOrderItem(item: any): Promise<OrderItem>;
   updateOrderItem(id: string, item: any): Promise<OrderItem | undefined>;
@@ -2127,6 +2128,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getOrderItemById(id: string): Promise<OrderItem | undefined> {
+    try {
+      const [item] = await db.select().from(orderItems).where(eq(orderItems.id, id)).limit(1);
+      return item;
+    } catch (error) {
+      console.error('Error getting order item by id:', error);
+      return undefined;
+    }
+  }
+
   async getAllOrderItems(): Promise<OrderItem[]> {
     // Only return order items from non-archived orders
     // This ensures units sold doesn't count deleted/archived orders
@@ -2147,7 +2158,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrderItem(id: string, item: any): Promise<OrderItem | undefined> {
-    return { id, ...item };
+    try {
+      const [updatedItem] = await db.update(orderItems).set(item).where(eq(orderItems.id, id)).returning();
+      return updatedItem;
+    } catch (error) {
+      console.error('Error updating order item:', error);
+      return undefined;
+    }
   }
 
   async deleteOrderItem(id: string): Promise<boolean> {

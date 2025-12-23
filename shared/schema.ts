@@ -1047,6 +1047,9 @@ export const orderItems = pgTable("order_items", {
   // Deprecated - kept for backward compatibility
   bulkUnitQty: integer("bulk_unit_qty"), // Quantity per bulk unit for carton badge display
   bulkUnitName: varchar("bulk_unit_name"), // Name of bulk unit (carton, pallet, case)
+  // Multi-location picking tracking - stores which locations were picked from and qty
+  // Format: { "WH1-A1-R1-L1-B1": 5, "WH1-A1-R1-L1-B2": 3 }
+  pickedFromLocations: jsonb("picked_from_locations").$type<Record<string, number>>(),
 });
 
 // Product warehouse locations table

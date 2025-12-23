@@ -8660,10 +8660,51 @@ Important:
   // Update picked quantity for an order item and reduce stock from location
   app.patch('/api/orders/:id/items/:itemId/pick', isAuthenticated, async (req: any, res) => {
     try {
-      const { pickedQuantity, locationCode, qtyChange, productId, bulkUnitQty } = req.body;
+      const { pickedQuantity, locationCode, qtyChange, productId, bulkUnitQty, pickedFromLocations } = req.body;
       
       // Update the order item's picked quantity
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      
+      // Save pickedFromLocations to the order item for later restoration
+      if (pickedFromLocations && typeof pickedFromLocations === 'object') {
+        try {
+          await storage.updateOrderItem(req.params.itemId, {
+            pickedFromLocations: pickedFromLocations
+          });
+        } catch (pfError) {
+          console.error('Error saving pickedFromLocations:', pfError);
+          // Don't fail the pick if this fails
+        }
+      } else if (locationCode && qtyChange > 0) {
+        // Single location pick - update the stored locations
+        try {
+          const currentItem = await storage.getOrderItemById(req.params.itemId);
+          const currentLocations = (currentItem?.pickedFromLocations as Record<string, number>) || {};
+          const newLocations = { ...currentLocations };
+          newLocations[locationCode] = (newLocations[locationCode] || 0) + qtyChange;
+          await storage.updateOrderItem(req.params.itemId, {
+            pickedFromLocations: newLocations
+          });
+        } catch (pfError) {
+          console.error('Error updating pickedFromLocations:', pfError);
+        }
+      } else if (locationCode && qtyChange < 0) {
+        // Unpicking - reduce the stored quantity
+        try {
+          const currentItem = await storage.getOrderItemById(req.params.itemId);
+          const currentLocations = (currentItem?.pickedFromLocations as Record<string, number>) || {};
+          const newLocations = { ...currentLocations };
+          newLocations[locationCode] = Math.max(0, (newLocations[locationCode] || 0) + qtyChange);
+          if (newLocations[locationCode] === 0) {
+            delete newLocations[locationCode];
+          }
+          await storage.updateOrderItem(req.params.itemId, {
+            pickedFromLocations: Object.keys(newLocations).length > 0 ? newLocations : null
+          });
+        } catch (pfError) {
+          console.error('Error updating pickedFromLocations:', pfError);
+        }
+      }
       
       // Check if this is a virtual SKU product that deducts from master product
       let targetProductId = productId;
@@ -8936,7 +8977,14 @@ Important:
             const locations = await storage.getProductLocations(targetProductId);
             
             // Check if we have multi-location picks for this item
-            const multiLocationPicks = pickedFromLocations?.[item.id];
+            // Priority: 1) Frontend state (pickedFromLocations), 2) Database field (item.pickedFromLocations)
+            let multiLocationPicks = pickedFromLocations?.[item.id];
+            
+            // If frontend didn't provide locations, try to read from database
+            if (!multiLocationPicks && item.pickedFromLocations) {
+              multiLocationPicks = item.pickedFromLocations as Record<string, number>;
+              console.log(`📦 Using stored pickedFromLocations for item ${item.id}:`, multiLocationPicks);
+            }
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object') {
               // Multi-location format: restore to each location separately
@@ -9024,8 +9072,9 @@ Important:
               }
             }
             
-            // Reset the picked quantity for this item
+            // Reset the picked quantity and clear pickedFromLocations for this item
             await storage.updateOrderItemPickedQuantity(item.id, 0);
+            await storage.updateOrderItem(item.id, { pickedFromLocations: null });
           } catch (itemError) {
             console.error(`Error restoring stock for item ${item.id}:`, itemError);
           }
