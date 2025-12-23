@@ -5777,10 +5777,10 @@ export default function AddOrder() {
                                         {t('orders:freeItem')}
                                       </Badge>
                                     )}
-                                    {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
+                                    {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && item.quantity % item.bulkUnitQty === 0 && (
                                       <Badge className="text-xs px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
                                         <Box className="h-3 w-3 mr-0.5" />
-                                        {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'carton'}
+                                        {item.quantity / item.bulkUnitQty} {item.bulkUnitName || 'carton'}
                                       </Badge>
                                     )}
                                     {item.priceTier === 'bulk' && (
@@ -6238,10 +6238,10 @@ export default function AddOrder() {
                                 {t('orders:freeItem')}
                               </Badge>
                             )}
-                            {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && (
+                            {item.bulkUnitQty && item.quantity >= item.bulkUnitQty && item.quantity % item.bulkUnitQty === 0 && (
                               <Badge className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600">
                                 <Box className="h-2.5 w-2.5 mr-0.5" />
-                                {Math.floor(item.quantity / item.bulkUnitQty)} {item.bulkUnitName || 'ctn'}
+                                {item.quantity / item.bulkUnitQty} {item.bulkUnitName || 'ctn'}
                               </Badge>
                             )}
                             {item.variantName && (
