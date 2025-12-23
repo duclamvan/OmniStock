@@ -8708,8 +8708,15 @@ Important:
             const newQty = Math.max(0, currentQty - actualQtyChange);
             await storage.updateProductLocation(location.id, { quantity: newQty });
             
+            // Also update the main product quantity for virtual SKUs
             if (isVirtualSku) {
-              console.log(`📦 [Virtual SKU] Picked ${qtyChange}x "${virtualProductName}", deducted ${actualQtyChange}x "${masterProductName}" from ${locationCode}: ${currentQty} → ${newQty}`);
+              const masterProduct = await storage.getProductById(targetProductId);
+              if (masterProduct) {
+                const currentProductQty = masterProduct.quantity || 0;
+                const newProductQty = Math.max(0, currentProductQty - actualQtyChange);
+                await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                console.log(`📦 [Virtual SKU] Picked ${qtyChange}x "${virtualProductName}", deducted ${actualQtyChange}x "${masterProductName}" from ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+              }
             } else {
               console.log(`📦 Reduced stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (picked ${qtyChange}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${actualQtyChange}` : ''})`);
             }
@@ -8734,8 +8741,15 @@ Important:
             const newQty = currentQty + restoreQty;
             await storage.updateProductLocation(location.id, { quantity: newQty });
             
+            // Also restore the main product quantity for virtual SKUs
             if (isVirtualSku) {
-              console.log(`📦 [Virtual SKU] Unpicked ${Math.abs(qtyChange)}x "${virtualProductName}", restored ${restoreQty}x "${masterProductName}" to ${locationCode}: ${currentQty} → ${newQty}`);
+              const masterProduct = await storage.getProductById(targetProductId);
+              if (masterProduct) {
+                const currentProductQty = masterProduct.quantity || 0;
+                const newProductQty = currentProductQty + restoreQty;
+                await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                console.log(`📦 [Virtual SKU] Unpicked ${Math.abs(qtyChange)}x "${virtualProductName}", restored ${restoreQty}x "${masterProductName}" to ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+              }
             } else {
               console.log(`📦 Restored stock at ${locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (unpicked ${Math.abs(qtyChange)}${bulkUnitQty > 1 ? ` × ${bulkUnitQty} = ${restoreQty}` : ''})`);
             }
@@ -8910,8 +8924,15 @@ Important:
               
               await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
               
+              // Also restore the main product quantity for virtual SKUs
               if (isVirtualSku) {
-                console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
+                const masterProduct = await storage.getProductById(targetProductId);
+                if (masterProduct) {
+                  const currentProductQty = masterProduct.quantity || 0;
+                  const newProductQty = currentProductQty + restoreQty;
+                  await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                  console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+                }
               } else {
                 console.log(`📦 Reset: Restored ${pickedCount}${multiplier > 1 ? ` × ${multiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
               }
