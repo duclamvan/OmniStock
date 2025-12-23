@@ -9674,6 +9674,11 @@ Important:
           let landingCostSnapshot = null;
           let productBulkUnitQty = item.bulkUnitQty || null;
           let productBulkUnitName = item.bulkUnitName || null;
+          // Virtual SKU fields - to be copied from product for allocation tracking
+          let isVirtual = false;
+          let masterProductId: string | null = null;
+          let inventoryDeductionRatio: string | null = null;
+          
           if (item.productId) {
             try {
               const product = await storage.getProductById(item.productId);
@@ -9694,6 +9699,12 @@ Important:
                 }
                 if (!productBulkUnitName && product.bulkUnitName) {
                   productBulkUnitName = product.bulkUnitName;
+                }
+                // Copy virtual SKU fields for allocation tracking
+                if (product.isVirtual && product.masterProductId) {
+                  isVirtual = true;
+                  masterProductId = product.masterProductId;
+                  inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
                 }
               }
             } catch (err) {
@@ -9721,6 +9732,10 @@ Important:
             landingCost: landingCostSnapshot ? String(landingCostSnapshot) : null, // Cost snapshot at sale time
             bulkUnitQty: productBulkUnitQty, // Bulk unit quantity for carton display
             bulkUnitName: productBulkUnitName, // Bulk unit name (e.g., "carton")
+            // Virtual SKU fields for allocation tracking
+            isVirtual: isVirtual,
+            masterProductId: masterProductId,
+            inventoryDeductionRatio: inventoryDeductionRatio,
           };
           console.log('Creating order item:', JSON.stringify(orderItem));
           try {
@@ -9833,10 +9848,14 @@ Important:
         for (const item of items) {
           const orderDetail = await storage.getOrderById(req.params.id);
           
-          // Get bulk unit fields from product if not provided
+          // Get product fields including bulk units and virtual SKU info
           let itemBulkUnitQty = item.bulkUnitQty || null;
           let itemBulkUnitName = item.bulkUnitName || null;
-          if (item.productId && (!itemBulkUnitQty || !itemBulkUnitName)) {
+          let isVirtual = false;
+          let masterProductId: string | null = null;
+          let inventoryDeductionRatio: string | null = null;
+          
+          if (item.productId) {
             try {
               const product = await storage.getProductById(item.productId);
               if (product) {
@@ -9846,9 +9865,15 @@ Important:
                 if (!itemBulkUnitName && product.bulkUnitName) {
                   itemBulkUnitName = product.bulkUnitName;
                 }
+                // Copy virtual SKU fields for allocation tracking
+                if (product.isVirtual && product.masterProductId) {
+                  isVirtual = true;
+                  masterProductId = product.masterProductId;
+                  inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
+                }
               }
             } catch (err) {
-              console.error('Failed to fetch product for bulk unit fields:', err);
+              console.error('Failed to fetch product for item fields:', err);
             }
           }
           
@@ -9874,8 +9899,14 @@ Important:
             image: item.image || null,
             bulkUnitQty: itemBulkUnitQty,
             bulkUnitName: itemBulkUnitName,
+            isVirtual: isVirtual,
+            masterProductId: masterProductId,
+            inventoryDeductionRatio: inventoryDeductionRatio,
           });
         }
+        
+        // Invalidate allocated quantities cache when order items change
+        storage.invalidateAllocatedQuantitiesCache();
       }
 
       await storage.createUserActivity({
