@@ -5837,8 +5837,19 @@ export default function PickPack() {
   };
   
   // Handle sending order back to pick
+  // This restores all inventory to product locations for products, bundles, virtual SKUs, etc.
   const sendBackToPick = async (order: PickPackOrder) => {
     try {
+      // Capture pickedFromLocations data BEFORE clearing (needed for inventory restore)
+      const currentPickedLocations: Record<string, Record<string, number>> = {};
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id && pickedFromLocations[item.id]) {
+            currentPickedLocations[item.id] = { ...pickedFromLocations[item.id] };
+          }
+        }
+      }
+      
       // Immediately add order to the sent back set (instant UI update)
       setOrdersSentBack(prev => new Set(prev).add(order.id));
       
@@ -5863,60 +5874,55 @@ export default function PickPack() {
         });
       }
       
-      // Create all API promises at once (parallel execution)
-      const promises = [];
-      
-      // Reset order status (non-blocking)
-      promises.push(
-        apiRequest('PATCH', `/api/orders/${order.id}`, {
+      try {
+        // Call reset-picking endpoint which handles inventory restoration
+        // This properly restores quantities for products, bundles, virtual SKUs, bulk units
+        await apiRequest('POST', `/api/orders/${order.id}/reset-picking`, {
+          pickedFromLocations: currentPickedLocations
+        });
+        
+        // Reset pack status separately (reset-picking only handles pick status)
+        await apiRequest('PATCH', `/api/orders/${order.id}`, {
           fulfillmentStage: null,
-          pickStatus: 'not_started',
           packStatus: 'not_started',
-          pickStartTime: null,
-          pickEndTime: null,
           packStartTime: null,
           packEndTime: null,
-          pickedBy: null,
           packedBy: null
-        })
-      );
-      
-      // Reset all item quantities in parallel (non-blocking)
-      if (order.items && order.items.length > 0) {
-        for (const item of order.items) {
-          if (item.id) {
-            promises.push(
+        });
+        
+        // Reset packed quantities for all items
+        if (order.items && order.items.length > 0) {
+          const packResetPromises = order.items
+            .filter(item => item.id && (item.packedQuantity || 0) > 0)
+            .map(item => 
               apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
-                pickedQuantity: 0,
                 packedQuantity: 0
               })
             );
-          }
+          await Promise.all(packResetPromises);
+        }
+        
+        // Refresh all related data
+        queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+        
+        console.log(`✅ Order ${order.orderId} sent back to pick with inventory restored`);
+      } catch (error) {
+        console.error('Error sending order back to pick:', error);
+        // Remove from sent back set on error
+        setOrdersSentBack(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(order.id);
+          return newSet;
+        });
+        if (!activePickingOrder && !activePackingOrder) {
+          toast({
+            title: t('error'),
+            description: t('failedToSendBackToPick'),
+            variant: 'destructive'
+          });
         }
       }
-      
-      // Execute all API calls in parallel
-      Promise.all(promises)
-        .then(() => {
-          // Just refresh the data - the useEffect will handle cleanup
-          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-        })
-        .catch(error => {
-          console.error('Error sending order back to pick:', error);
-          // Remove from sent back set on error
-          setOrdersSentBack(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(order.id);
-            return newSet;
-          });
-          if (!activePickingOrder && !activePackingOrder) {
-            toast({
-              title: t('error'),
-              description: t('failedToSendBackToPick'),
-              variant: 'destructive'
-            });
-          }
-        });
       
     } catch (error) {
       console.error('Error initiating send back to pick:', error);

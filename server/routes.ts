@@ -8903,10 +8903,12 @@ Important:
   });
 
   // Reset all picking for an order - restores location quantities
+  // Supports both single-location format (pickedLocations: { itemId: locationCode })
+  // and multi-location format (pickedFromLocations: { itemId: { locationCode: qty } })
   app.post('/api/orders/:id/reset-picking', isAuthenticated, async (req: any, res) => {
     try {
       const orderId = req.params.id;
-      const { pickedLocations } = req.body;
+      const { pickedLocations, pickedFromLocations } = req.body;
       
       // Get order items with their picked quantities
       const orderItems = await storage.getOrderItems(orderId);
@@ -8933,56 +8935,116 @@ Important:
             // Get product locations for the target product (master product for virtual SKUs)
             const locations = await storage.getProductLocations(targetProductId);
             
-            // Check if we have the specific location that was used for this item
-            const usedLocationCode = pickedLocations?.[item.id];
-            let targetLocation = null;
+            // Check if we have multi-location picks for this item
+            const multiLocationPicks = pickedFromLocations?.[item.id];
             
-            if (usedLocationCode) {
-              // Restore to the actual location that was picked from
-              targetLocation = locations.find(loc => 
-                loc.locationCode.toUpperCase() === usedLocationCode.toUpperCase()
-              );
-            }
-            
-            // Fallback to primary location if the picked location wasn't provided or not found
-            if (!targetLocation) {
-              targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
-            }
-            
-            if (targetLocation) {
-              const currentQty = targetLocation.quantity || 0;
-              const pickedCount = item.pickedQuantity || 0;
-              
-              // Calculate restore quantity
-              // For virtual SKUs: multiply by deduction ratio (e.g., 1 Bucket = 17 Jars)
-              // For bulk units: multiply by bulkUnitQty
-              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
-              const restoreQty = pickedCount * multiplier;
-              const newQty = currentQty + restoreQty;
-              
-              await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
-              
-              // Also restore the main product quantity for virtual SKUs
-              if (isVirtualSku) {
-                const masterProduct = await storage.getProductById(targetProductId);
-                if (masterProduct) {
-                  const currentProductQty = masterProduct.quantity || 0;
-                  const newProductQty = currentProductQty + restoreQty;
-                  await storage.updateProduct(targetProductId, { quantity: newProductQty });
-                  console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+            if (multiLocationPicks && typeof multiLocationPicks === 'object') {
+              // Multi-location format: restore to each location separately
+              for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
+                const pickedQty = Number(qty) || 0;
+                if (pickedQty <= 0) continue;
+                
+                const targetLocation = locations.find(loc => 
+                  loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+                );
+                
+                if (targetLocation) {
+                  const currentQty = targetLocation.quantity || 0;
+                  
+                  // Calculate restore quantity with multiplier
+                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+                  const restoreQty = pickedQty * multiplier;
+                  const newQty = currentQty + restoreQty;
+                  
+                  await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                  
+                  // Also restore the main product quantity
+                  const targetProduct = await storage.getProductById(targetProductId);
+                  if (targetProduct) {
+                    const currentProductQty = targetProduct.quantity || 0;
+                    const newProductQty = currentProductQty + restoreQty;
+                    await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                    
+                    if (isVirtualSku) {
+                      console.log(`📦 Reset [Virtual SKU Multi-Loc]: Restored ${pickedQty} × ${deductionRatio} = ${restoreQty} to ${locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
+                    } else {
+                      console.log(`📦 Reset [Multi-Loc]: Restored ${restoreQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                    }
+                  }
+                  
+                  restoredLocations++;
+                  restoredQuantity += restoreQty;
+                } else {
+                  console.warn(`⚠️ Location ${locationCode} not found for product ${targetProductId}, skipping restore`);
                 }
-              } else {
-                console.log(`📦 Reset: Restored ${pickedCount}${multiplier > 1 ? ` × ${multiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+              }
+            } else {
+              // Single-location format (legacy): restore to one location
+              const usedLocationCode = pickedLocations?.[item.id];
+              let targetLocation = null;
+              
+              if (usedLocationCode) {
+                targetLocation = locations.find(loc => 
+                  loc.locationCode.toUpperCase() === usedLocationCode.toUpperCase()
+                );
               }
               
-              restoredLocations++;
-              restoredQuantity += restoreQty;
+              // Fallback to primary location if the picked location wasn't provided or not found
+              if (!targetLocation) {
+                targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+              }
+              
+              if (targetLocation) {
+                const currentQty = targetLocation.quantity || 0;
+                const pickedCount = item.pickedQuantity || 0;
+                
+                // Calculate restore quantity
+                const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+                const restoreQty = pickedCount * multiplier;
+                const newQty = currentQty + restoreQty;
+                
+                await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                
+                // Also restore the main product quantity
+                const targetProduct = await storage.getProductById(targetProductId);
+                if (targetProduct) {
+                  const currentProductQty = targetProduct.quantity || 0;
+                  const newProductQty = currentProductQty + restoreQty;
+                  await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                  
+                  if (isVirtualSku) {
+                    console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
+                  } else {
+                    console.log(`📦 Reset: Restored ${pickedCount}${multiplier > 1 ? ` × ${multiplier} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                  }
+                }
+                
+                restoredLocations++;
+                restoredQuantity += restoreQty;
+              }
             }
             
             // Reset the picked quantity for this item
             await storage.updateOrderItemPickedQuantity(item.id, 0);
           } catch (itemError) {
             console.error(`Error restoring stock for item ${item.id}:`, itemError);
+          }
+        } else if ((item.pickedQuantity || 0) > 0 && item.bundleId) {
+          // Bundle items - restore bundle availableStock
+          try {
+            const bundle = await storage.getBundleById(item.bundleId);
+            if (bundle) {
+              const currentStock = bundle.availableStock || 0;
+              const restoreQty = item.pickedQuantity || 0;
+              await storage.updateBundle(item.bundleId, {
+                availableStock: currentStock + restoreQty
+              });
+              console.log(`📦 Reset [Bundle]: Restored ${restoreQty} to bundle "${bundle.name}": ${currentStock} → ${currentStock + restoreQty}`);
+              restoredQuantity += restoreQty;
+            }
+            await storage.updateOrderItemPickedQuantity(item.id, 0);
+          } catch (bundleError) {
+            console.error(`Error restoring bundle stock for item ${item.id}:`, bundleError);
           }
         } else if ((item.pickedQuantity || 0) > 0) {
           // Service items or items without productId - just reset picked quantity
