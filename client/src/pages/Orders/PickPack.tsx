@@ -6377,12 +6377,92 @@ export default function PickPack() {
     },
   });
 
-  // Complete packing
-  const completePacking = async () => {
+  // Complete packing (force = true skips all validation checks)
+  const completePacking = async (force: boolean = false) => {
     if (!activePackingOrder) return;
     
     // Show loading state immediately for better UX
     setIsCompletingPacking(true);
+    
+    // FORCE MODE: Skip all validation checks and complete immediately
+    if (force) {
+      console.log('⚡ Force completing packing - skipping all validation checks');
+      
+      // Go directly to completion logic
+      const orderId = activePackingOrder.id;
+      const isMockOrder = orderId.startsWith('mock-');
+      const packEndTime = new Date().toISOString();
+      
+      // 1. IMMEDIATE UI UPDATE
+      setIsPackingTimerRunning(false);
+      playSound('complete');
+      setJustCompletedPackingOrderId(orderId);
+      setShowPackingCompletionModal(true);
+      setIsCompletingPacking(false);
+      
+      // 2. OPTIMISTIC CACHE UPDATE
+      const cachedData = queryClient.getQueryData<PickPackOrder[]>(['/api/orders/pick-pack']);
+      if (cachedData) {
+        queryClient.setQueryData<PickPackOrder[]>(
+          ['/api/orders/pick-pack'],
+          cachedData.map(o => 
+            o.id === orderId 
+              ? { ...o, packStatus: 'completed' as const, packEndTime, status: 'ready_to_ship' as const }
+              : o
+          )
+        );
+      }
+      
+      // 3. BACKGROUND API CALLS
+      if (!isMockOrder) {
+        const bgSelectedCartons = [...selectedCartons];
+        const bgPackageWeight = packageWeight || '0';
+        const bgPrintedDocuments = { ...printedDocuments };
+        const bgPackingChecklist = { ...packingChecklist };
+        const bgPackingMaterialsApplied = { ...packingMaterialsApplied };
+        const bgSelectedCarton = selectedCarton;
+        const bgCurrentEmployee = currentEmployee;
+        
+        Promise.all([
+          savePackingDetailsMutation.mutateAsync({
+            orderId,
+            cartons: bgSelectedCartons.length > 0 ? bgSelectedCartons : [{ id: 'force-1', cartonId: 'force', cartonName: 'Force Completed', weight: '0' }],
+            packageWeight: bgPackageWeight,
+            printedDocuments: bgPrintedDocuments,
+            packingChecklist: bgPackingChecklist,
+            multiCartonOptimization: enableMultiCartonOptimization
+          }),
+          apiRequest('POST', `/api/orders/${orderId}/pack/complete`, {
+            cartons: bgSelectedCartons.length > 0 ? bgSelectedCartons : [{ id: 'force-1', cartonId: 'force', cartonName: 'Force Completed', weight: '0' }],
+            packageWeight: bgPackageWeight,
+            printedDocuments: bgPrintedDocuments,
+            packingChecklist: bgPackingChecklist,
+            packingMaterialsApplied: bgPackingMaterialsApplied
+          }),
+          updateOrderStatusMutation.mutateAsync({
+            orderId,
+            status: 'ready_to_ship',
+            packStatus: 'completed',
+            packEndTime,
+            finalWeight: parseFloat(bgPackageWeight) || 0,
+            cartonUsed: bgSelectedCartons.length > 0 ? bgSelectedCartons.map(c => c.cartonName).join(', ') : bgSelectedCarton || 'Force Completed'
+          })
+        ]).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        }).catch(error => {
+          console.error('Background packing completion error:', error);
+        });
+        
+        apiRequest('POST', `/api/orders/${orderId}/pick-pack-logs`, {
+          activityType: 'pack_complete',
+          userName: bgCurrentEmployee,
+          notes: `FORCE completed packing (skipped checks). ${bgSelectedCartons.length} carton(s), Total weight: ${bgPackageWeight}kg`
+        }).catch(err => console.warn('Activity log failed:', err));
+      }
+      
+      return; // Exit early for force mode
+    }
     
     // CRITICAL: Save any unsaved GLS/DHL tracking numbers before completion
     const shippingMethod = activePackingOrder.shippingMethod?.toUpperCase() || '';
@@ -12467,7 +12547,7 @@ export default function PickPack() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    completePacking();
+                    completePacking(true); // Force mode - skip all validation checks
                     setShowForceFinishButton(false);
                   }}
                   className="w-full h-10 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600"
