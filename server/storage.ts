@@ -1870,10 +1870,17 @@ export class DatabaseStorage implements IStorage {
 
       // Always get all orders in the pick/pack workflow
       // Status mapping happens in getPickPackStatus for both new and old orders
+      // Exclude archived (deleted) orders
       query = query.where(
-        or(
-          eq(orders.orderStatus, 'to_fulfill'),
-          eq(orders.orderStatus, 'ready_to_ship')
+        and(
+          or(
+            eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.orderStatus, 'ready_to_ship')
+          ),
+          or(
+            eq(orders.isArchived, false),
+            isNull(orders.isArchived)
+          )
         )
       ) as any;
 
