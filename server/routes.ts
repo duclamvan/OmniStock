@@ -10160,7 +10160,7 @@ Important:
     }
   });
 
-  // Soft delete (move to trash) - restores inventory
+  // Soft delete (move to trash) - restores inventory to specific locations
   app.delete('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -10171,30 +10171,93 @@ Important:
       // Get order items to restore inventory
       const orderItems = await storage.getOrderItems(req.params.id);
       
-      // Restore inventory for each item (add quantities back)
+      let totalRestoredLocations = 0;
+      let totalRestoredQuantity = 0;
+      
+      // Restore inventory for each item (add quantities back to specific locations)
       for (const item of orderItems) {
         if (item.productId && !item.serviceId) {
           const product = await storage.getProductById(item.productId);
           if (product) {
             // Check if this is a virtual SKU that deducts from master product
             let targetProductId = item.productId;
-            let restoreQty = item.quantity || 0;
+            let deductionRatio = 1;
+            let isVirtualSku = false;
             
             if (product.isVirtual && product.masterProductId) {
-              // Virtual SKU - restore to master product with ratio
+              isVirtualSku = true;
               targetProductId = product.masterProductId;
-              const ratio = parseFloat(product.inventoryDeductionRatio || '1');
-              restoreQty = Math.round(restoreQty * ratio);
-              console.log(`🔄 [Soft Delete] Virtual SKU "${product.name}" - restoring ${restoreQty} units to master product`);
+              deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
             }
             
-            const targetProduct = await storage.getProductById(targetProductId);
-            if (targetProduct) {
-              const currentQty = targetProduct.quantity || 0;
-              await storage.updateProduct(targetProductId, {
-                quantity: currentQty + restoreQty
-              });
-              console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to product "${targetProduct.name}" (${targetProductId})`);
+            // Get product locations for the target product
+            const locations = await storage.getProductLocations(targetProductId);
+            
+            // Check if we have stored pickedFromLocations data
+            const multiLocationPicks = item.pickedFromLocations as Record<string, number> | null;
+            
+            if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
+              // Multi-location format: restore to each location separately
+              for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
+                const pickedQty = Number(qty) || 0;
+                if (pickedQty <= 0) continue;
+                
+                const targetLocation = locations.find(loc => 
+                  loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+                );
+                
+                if (targetLocation) {
+                  const currentQty = targetLocation.quantity || 0;
+                  
+                  // Calculate restore quantity with multiplier
+                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+                  const restoreQty = pickedQty * multiplier;
+                  const newQty = currentQty + restoreQty;
+                  
+                  await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                  
+                  // Also restore the main product quantity
+                  const targetProduct = await storage.getProductById(targetProductId);
+                  if (targetProduct) {
+                    const currentProductQty = targetProduct.quantity || 0;
+                    const newProductQty = currentProductQty + restoreQty;
+                    await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                    
+                    console.log(`🔄 [Soft Delete Multi-Loc] Restored ${restoreQty} to ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
+                  }
+                  
+                  totalRestoredLocations++;
+                  totalRestoredQuantity += restoreQty;
+                } else {
+                  console.warn(`⚠️ [Soft Delete] Location ${locationCode} not found for product ${targetProductId}`);
+                }
+              }
+            } else {
+              // Fallback: restore to primary location or first location
+              let restoreQty = item.pickedQuantity || item.quantity || 0;
+              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+              restoreQty = restoreQty * multiplier;
+              
+              const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+              
+              if (targetLocation) {
+                const currentQty = targetLocation.quantity || 0;
+                const newQty = currentQty + restoreQty;
+                await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                
+                console.log(`🔄 [Soft Delete Fallback] Restored ${restoreQty} to ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
+                totalRestoredLocations++;
+              }
+              
+              // Always restore main product quantity
+              const targetProduct = await storage.getProductById(targetProductId);
+              if (targetProduct) {
+                const currentProductQty = targetProduct.quantity || 0;
+                await storage.updateProduct(targetProductId, {
+                  quantity: currentProductQty + restoreQty
+                });
+                totalRestoredQuantity += restoreQty;
+              }
             }
           }
         } else if (item.bundleId) {
@@ -10202,16 +10265,20 @@ Important:
           const bundle = await storage.getBundleById(item.bundleId);
           if (bundle) {
             const currentStock = bundle.availableStock || 0;
-            const restoreQty = item.quantity || 0;
+            const restoreQty = item.pickedQuantity || item.quantity || 0;
             await storage.updateBundle(item.bundleId, {
               availableStock: currentStock + restoreQty
             });
             console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to bundle "${bundle.name}"`);
+            totalRestoredQuantity += restoreQty;
           }
         }
       }
+      
+      console.log(`🔄 [Soft Delete] Order ${order.orderId} archived: ${totalRestoredLocations} locations, ${totalRestoredQuantity} units restored`);
 
       // Soft delete - move to trash (isArchived = true)
+      // Note: Pick/pack data (pickedFromLocations, pickedQuantity, etc.) is preserved on order items
       const archivedOrder = await storage.archiveOrder(req.params.id);
       if (!archivedOrder) {
         return res.status(500).json({ message: "Failed to archive order" });
@@ -10243,7 +10310,7 @@ Important:
     }
   });
 
-  // Restore order from trash - re-deducts inventory
+  // Restore order from trash - re-deducts inventory from specific locations
   app.post('/api/orders/:id/restore', isAuthenticated, async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -10254,30 +10321,93 @@ Important:
       // Get order items to re-deduct inventory
       const orderItems = await storage.getOrderItems(req.params.id);
       
-      // Re-deduct inventory for each item (subtract quantities again)
+      let totalDeductedLocations = 0;
+      let totalDeductedQuantity = 0;
+      
+      // Re-deduct inventory for each item (subtract quantities from specific locations)
       for (const item of orderItems) {
         if (item.productId && !item.serviceId) {
           const product = await storage.getProductById(item.productId);
           if (product) {
             // Check if this is a virtual SKU that deducts from master product
             let targetProductId = item.productId;
-            let deductQty = item.quantity || 0;
+            let deductionRatio = 1;
+            let isVirtualSku = false;
             
             if (product.isVirtual && product.masterProductId) {
-              // Virtual SKU - deduct from master product with ratio
+              isVirtualSku = true;
               targetProductId = product.masterProductId;
-              const ratio = parseFloat(product.inventoryDeductionRatio || '1');
-              deductQty = Math.round(deductQty * ratio);
-              console.log(`🔄 [Restore] Virtual SKU "${product.name}" - deducting ${deductQty} units from master product`);
+              deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
             }
             
-            const targetProduct = await storage.getProductById(targetProductId);
-            if (targetProduct) {
-              const currentQty = targetProduct.quantity || 0;
-              await storage.updateProduct(targetProductId, {
-                quantity: Math.max(0, currentQty - deductQty)
-              });
-              console.log(`🔄 [Restore] Deducted ${deductQty} units from product "${targetProduct.name}" (${targetProductId})`);
+            // Get product locations for the target product
+            const locations = await storage.getProductLocations(targetProductId);
+            
+            // Check if we have stored pickedFromLocations data
+            const multiLocationPicks = item.pickedFromLocations as Record<string, number> | null;
+            
+            if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
+              // Multi-location format: deduct from each location separately
+              for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
+                const pickedQty = Number(qty) || 0;
+                if (pickedQty <= 0) continue;
+                
+                const targetLocation = locations.find(loc => 
+                  loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+                );
+                
+                if (targetLocation) {
+                  const currentQty = targetLocation.quantity || 0;
+                  
+                  // Calculate deduct quantity with multiplier
+                  const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+                  const deductQty = pickedQty * multiplier;
+                  const newQty = Math.max(0, currentQty - deductQty);
+                  
+                  await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                  
+                  // Also deduct from main product quantity
+                  const targetProduct = await storage.getProductById(targetProductId);
+                  if (targetProduct) {
+                    const currentProductQty = targetProduct.quantity || 0;
+                    const newProductQty = Math.max(0, currentProductQty - deductQty);
+                    await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                    
+                    console.log(`🔄 [Restore Multi-Loc] Deducted ${deductQty} from ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
+                  }
+                  
+                  totalDeductedLocations++;
+                  totalDeductedQuantity += deductQty;
+                } else {
+                  console.warn(`⚠️ [Restore] Location ${locationCode} not found for product ${targetProductId}`);
+                }
+              }
+            } else {
+              // Fallback: deduct from primary location or first location
+              let deductQty = item.pickedQuantity || item.quantity || 0;
+              const multiplier = isVirtualSku ? deductionRatio : ((item.bulkUnitQty && item.bulkUnitQty > 1) ? item.bulkUnitQty : 1);
+              deductQty = deductQty * multiplier;
+              
+              const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+              
+              if (targetLocation) {
+                const currentQty = targetLocation.quantity || 0;
+                const newQty = Math.max(0, currentQty - deductQty);
+                await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                
+                console.log(`🔄 [Restore Fallback] Deducted ${deductQty} from ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
+                totalDeductedLocations++;
+              }
+              
+              // Always deduct from main product quantity
+              const targetProduct = await storage.getProductById(targetProductId);
+              if (targetProduct) {
+                const currentProductQty = targetProduct.quantity || 0;
+                await storage.updateProduct(targetProductId, {
+                  quantity: Math.max(0, currentProductQty - deductQty)
+                });
+                totalDeductedQuantity += deductQty;
+              }
             }
           }
         } else if (item.bundleId) {
@@ -10285,14 +10415,17 @@ Important:
           const bundle = await storage.getBundleById(item.bundleId);
           if (bundle) {
             const currentStock = bundle.availableStock || 0;
-            const deductQty = item.quantity || 0;
+            const deductQty = item.pickedQuantity || item.quantity || 0;
             await storage.updateBundle(item.bundleId, {
               availableStock: Math.max(0, currentStock - deductQty)
             });
             console.log(`🔄 [Restore] Deducted ${deductQty} units from bundle "${bundle.name}"`);
+            totalDeductedQuantity += deductQty;
           }
         }
       }
+      
+      console.log(`🔄 [Restore] Order ${order.orderId} restored: ${totalDeductedLocations} locations, ${totalDeductedQuantity} units deducted`);
 
       const restoredOrder = await storage.restoreOrder(req.params.id);
       if (!restoredOrder) {
