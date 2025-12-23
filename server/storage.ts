@@ -2128,7 +2128,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllOrderItems(): Promise<OrderItem[]> {
-    return await db.select().from(orderItems);
+    // Only return order items from non-archived orders
+    // This ensures units sold doesn't count deleted/archived orders
+    const items = await db
+      .select({
+        orderItem: orderItems,
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orderItems.orderId, orders.id))
+      .where(eq(orders.isArchived, false));
+    
+    return items.map(row => row.orderItem);
   }
 
   async createOrderItem(item: any): Promise<OrderItem> {
