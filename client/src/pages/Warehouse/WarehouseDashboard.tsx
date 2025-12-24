@@ -651,7 +651,7 @@ export default function WarehouseDashboard() {
       </div>
 
       {/* Empty State - When everything is done (don't show if admin can see task panel) */}
-      {totalOrders === 0 && incomingShipments.length === 0 && adminTasks.length === 0 && !isAdministrator && (
+      {toPickOrders === 0 && pickPackStats.packing === 0 && pickPackStats.ready === 0 && incomingShipments.length === 0 && adminTasks.length === 0 && !isAdministrator && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border dark:border-gray-700 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
             <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
