@@ -51,6 +51,7 @@ interface WarehouseDashboardData {
     picking: number;
     packing: number;
     ready: number;
+    toPickItems: number;
   };
   receivingTasks: Array<{
     id: number;
@@ -245,14 +246,14 @@ export default function WarehouseDashboard() {
   }
 
   const ordersToPickPack = data?.ordersToPickPack || [];
-  const pickPackStats = data?.pickPackStats || { pending: 0, picking: 0, packing: 0, ready: 0 };
+  const pickPackStats = data?.pickPackStats || { pending: 0, picking: 0, packing: 0, ready: 0, toPickItems: 0 };
   const incomingShipments = data?.incomingShipments || [];
   const adminTasks = data?.adminTasks || [];
   
-  const totalOrders = pickPackStats.pending + pickPackStats.picking + pickPackStats.packing + pickPackStats.ready;
-  const totalItems = ordersToPickPack.reduce((sum, order) => {
-    return sum + (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0);
-  }, 0);
+  // Orders that need picking (pending + in-progress picking)
+  const toPickOrders = pickPackStats.pending + pickPackStats.picking;
+  // Items that need picking - from API
+  const toPickItems = pickPackStats.toPickItems;
 
   const today = new Date();
   const currentLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
@@ -308,7 +309,7 @@ export default function WarehouseDashboard() {
 
       {/* Main Stats - Large Numbers */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {/* Total Orders */}
+        {/* Orders To Pick */}
         <Link href="/orders/pick-pack">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer" data-testid="stat-total-orders">
             <div className="flex items-center gap-3 mb-2">
@@ -317,12 +318,12 @@ export default function WarehouseDashboard() {
               </div>
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('common:orders')}</span>
             </div>
-            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalOrders}</div>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{toPickOrders}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:toPick')}</div>
           </div>
         </Link>
         
-        {/* Total Items */}
+        {/* Items To Pick */}
         <Link href="/orders/pick-pack">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-colors cursor-pointer" data-testid="stat-total-items">
             <div className="flex items-center gap-3 mb-2">
@@ -331,7 +332,7 @@ export default function WarehouseDashboard() {
               </div>
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('common:items')}</span>
             </div>
-            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{totalItems}</div>
+            <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{toPickItems}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:toPick')}</div>
           </div>
         </Link>
@@ -366,7 +367,7 @@ export default function WarehouseDashboard() {
       </div>
 
       {/* Quick Status Bar */}
-      {totalOrders > 0 && (
+      {(toPickOrders > 0 || pickPackStats.packing > 0 || pickPackStats.ready > 0) && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('common:orderStatus')}</h2>

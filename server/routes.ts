@@ -11726,20 +11726,40 @@ Important:
         )
         .orderBy(desc(orders.createdAt));
       
+      // Categorize orders by status
+      const pendingOrders = ordersToPickPackRaw.filter(o => 
+        o.orderStatus === 'to_fulfill' && (!o.pickStatus || o.pickStatus === 'not_started')
+      );
+      const pickingOrders = ordersToPickPackRaw.filter(o => 
+        o.pickStatus === 'in_progress'
+      );
+      const packingOrders = ordersToPickPackRaw.filter(o => 
+        o.pickStatus === 'completed' && (!o.packStatus || o.packStatus === 'not_started' || o.packStatus === 'in_progress')
+      );
+      const readyOrders = ordersToPickPackRaw.filter(o => 
+        o.packStatus === 'completed'
+      );
+
+      // Get order IDs for item count query (only pending + picking = "to pick")
+      const toPickOrderIds = [...pendingOrders, ...pickingOrders].map(o => o.id);
+      
+      // Query item counts for orders that need picking
+      let toPickItemCount = 0;
+      if (toPickOrderIds.length > 0) {
+        const itemCounts = await db
+          .select({ totalQty: sql<number>`COALESCE(SUM(${orderItems.quantity}), 0)` })
+          .from(orderItems)
+          .where(inArray(orderItems.orderId, toPickOrderIds));
+        toPickItemCount = Number(itemCounts[0]?.totalQty || 0);
+      }
+
       // Calculate stats matching Pick & Pack page logic
       const pickPackStats = {
-        pending: ordersToPickPackRaw.filter(o => 
-          o.orderStatus === 'to_fulfill' && (!o.pickStatus || o.pickStatus === 'not_started')
-        ).length,
-        picking: ordersToPickPackRaw.filter(o => 
-          o.pickStatus === 'in_progress'
-        ).length,
-        packing: ordersToPickPackRaw.filter(o => 
-          o.pickStatus === 'completed' && (!o.packStatus || o.packStatus === 'not_started' || o.packStatus === 'in_progress')
-        ).length,
-        ready: ordersToPickPackRaw.filter(o => 
-          o.packStatus === 'completed'
-        ).length
+        pending: pendingOrders.length,
+        picking: pickingOrders.length,
+        packing: packingOrders.length,
+        ready: readyOrders.length,
+        toPickItems: toPickItemCount
       };
       
       // Get customer names for orders
