@@ -9098,8 +9098,21 @@ Important:
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object') {
               // Multi-location format: restore to each location separately
-              // Note: pickedFromLocations stores actual pieces picked, not cartons
-              // Only virtual SKUs need ratio multiplication (for master product deduction)
+              // pickedFromLocations stores picked quantity in VIRTUAL units (e.g., buckets for virtual SKUs)
+              // The actual stock deduction was: pickedQty * deductionRatio
+              // So restoration should be: pickedQty * deductionRatio
+              
+              // SAFETY: Cap restoration at the recorded pickedQuantity (not order quantity, which may have changed)
+              // This ensures we never restore more than what was actually deducted
+              const maxRestorationVirtual = item.pickedQuantity || 0;
+              const maxRestorationMaster = isVirtualSku ? (maxRestorationVirtual * deductionRatio) : maxRestorationVirtual;
+              let totalRestoredForItem = 0;
+              
+              // Calculate total virtual picks from pickedFromLocations
+              const totalVirtualPicks = Object.values(multiLocationPicks).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+              
+              console.log(`📦 Reset [Debug]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${item.pickedQuantity}, totalVirtualPicks=${totalVirtualPicks}, maxRestoreMaster=${maxRestorationMaster}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
+              
               for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
                 const pickedQty = Number(qty) || 0;
                 if (pickedQty <= 0) continue;
@@ -9111,9 +9124,19 @@ Important:
                 if (targetLocation) {
                   const currentQty = targetLocation.quantity || 0;
                   
-                  // Only apply multiplier for virtual SKUs (master product deduction ratio)
-                  // Do NOT apply bulkUnitQty - pickedFromLocations already stores actual pieces
-                  const restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
+                  // For virtual SKUs: pickedQty is in virtual units, multiply by ratio to get master units
+                  // For regular products: pickedQty is in actual pieces
+                  let restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
+                  
+                  // SAFETY CAP: Don't restore more than the maximum allowed
+                  const remainingAllowed = maxRestorationMaster - totalRestoredForItem;
+                  if (restoreQty > remainingAllowed) {
+                    console.warn(`⚠️ Safety cap: Would restore ${restoreQty} but only ${remainingAllowed} allowed. Capping.`);
+                    restoreQty = Math.max(0, remainingAllowed);
+                  }
+                  
+                  if (restoreQty <= 0) continue;
+                  
                   const newQty = currentQty + restoreQty;
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
@@ -9132,6 +9155,7 @@ Important:
                     }
                   }
                   
+                  totalRestoredForItem += restoreQty;
                   restoredLocations++;
                   restoredQuantity += restoreQty;
                 } else {
@@ -9156,12 +9180,15 @@ Important:
               
               if (targetLocation) {
                 const currentQty = targetLocation.quantity || 0;
+                // Use pickedQuantity which is in VIRTUAL units for virtual SKUs
                 const pickedCount = item.pickedQuantity || 0;
                 
-                // Only apply multiplier for virtual SKUs
-                // pickedQuantity is stored in actual pieces, not cartons
+                // For virtual SKUs: pickedQuantity is in virtual units, multiply by ratio
+                // For regular products: pickedQuantity is in actual pieces
                 const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
                 const newQty = currentQty + restoreQty;
+                
+                console.log(`📦 Reset [Debug Single-Loc]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${pickedCount}, restoreQty=${restoreQty}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
                 
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                 
