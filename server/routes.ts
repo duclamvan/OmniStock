@@ -8328,6 +8328,26 @@ Important:
       // Filter financial data based on user role
       const userRole = req.user?.role || 'warehouse_operator';
       const filtered = filterFinancialData(ordersWithItems, userRole);
+      
+      // DEBUG: Check if virtual SKU fields survived filtering
+      if (Array.isArray(filtered) && filtered.length > 0) {
+        const firstOrder = filtered[0];
+        if (firstOrder.items && firstOrder.items.length > 0) {
+          const virtualItem = firstOrder.items.find((i: any) => i.isVirtual);
+          if (virtualItem) {
+            console.log('[PickPack RESPONSE DEBUG] Virtual SKU after filter:', {
+              id: virtualItem.id?.slice(-6),
+              isVirtual: virtualItem.isVirtual,
+              masterProductId: virtualItem.masterProductId,
+              inventoryDeductionRatio: virtualItem.inventoryDeductionRatio
+            });
+          } else {
+            console.log('[PickPack RESPONSE DEBUG] No virtual items found in first order. First item keys:', 
+              firstOrder.items[0] ? Object.keys(firstOrder.items[0]).slice(0, 15) : 'no items');
+          }
+        }
+      }
+      
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);

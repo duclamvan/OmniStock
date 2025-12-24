@@ -2095,12 +2095,15 @@ export class DatabaseStorage implements IStorage {
     try {
       const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
       
-      // DEBUG: Log what's coming from database
+      // DEBUG: Log what's coming from database including virtual SKU fields
       console.log(`[getOrderItems] Raw items from DB for order ${orderId}:`, items.map(i => ({ 
         id: i.id?.slice(-6), 
         productName: i.productName, 
         bulkUnitQty: i.bulkUnitQty, 
-        bulkUnitName: i.bulkUnitName 
+        bulkUnitName: i.bulkUnitName,
+        isVirtual: i.isVirtual,
+        masterProductId: i.masterProductId,
+        inventoryDeductionRatio: i.inventoryDeductionRatio
       })));
       
       // Enrich items with bulkUnitQty/bulkUnitName from products - ALWAYS check product table

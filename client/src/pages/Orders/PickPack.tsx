@@ -2133,6 +2133,7 @@ function MultiLocationPicker({
     ? currentItem.masterProductId 
     : currentItem.productId;
 
+
   // Fetch product locations
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
     queryKey: ['/api/products', productIdToCheck, 'locations'],
@@ -5538,6 +5539,11 @@ export default function PickPack() {
           dimensions: item.dimensions,
           isFragile: item.isFragile,
           notes: item.notes,
+          // Virtual SKU fields - product deducts from master product's inventory
+          isVirtual: item.isVirtual || false,
+          masterProductId: item.masterProductId || null,
+          masterProductName: item.masterProductName || null,
+          inventoryDeductionRatio: item.inventoryDeductionRatio ? Number(item.inventoryDeductionRatio) : null,
           // Include pricing information from backend
           price: item.price || item.appliedPrice || item.unitPrice,
           unitPrice: item.unitPrice,
