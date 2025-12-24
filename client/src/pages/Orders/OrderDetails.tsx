@@ -2872,12 +2872,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
         </DialogContent>
       </Dialog>
 
-      {/* Print Receipt Dialog */}
+      {/* Print Receipt Dialog - Mobile optimized */}
       <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="h-6 w-6 text-primary" />
+        <DialogContent className="w-[95vw] max-w-lg p-3 sm:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Receipt className="h-5 w-5 text-primary" />
               {t('financial:printReceipt', 'Print Receipt')}
             </DialogTitle>
           </DialogHeader>

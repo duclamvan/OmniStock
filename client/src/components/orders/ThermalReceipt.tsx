@@ -244,53 +244,52 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
 
   return (
     <div className="relative print-receipt-container">
-      <div className="no-print flex justify-center gap-2 mb-4">
+      {/* Language selector - compact on mobile */}
+      <div className="no-print flex justify-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
         {(Object.keys(languageFlags) as ReceiptLanguage[]).map((lang) => (
           <button
             key={lang}
             onClick={() => setReceiptLang(lang)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
               receiptLang === lang
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted hover:bg-muted/80 text-muted-foreground'
             }`}
             data-testid={`button-receipt-lang-${lang}`}
           >
-            {languageFlags[lang]} {lang.toUpperCase()}
+            {languageFlags[lang]} <span className="hidden sm:inline">{lang.toUpperCase()}</span>
           </button>
         ))}
       </div>
       
+      {/* PDF Preview - Responsive */}
       <div className="flex justify-center">
-        <div 
-          className="bg-white rounded-lg shadow-lg overflow-hidden"
-          style={{ width: '420px', minHeight: '500px' }}
-        >
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-[420px]">
           {isLoadingPdf ? (
-            <div className="flex items-center justify-center h-[500px]">
+            <div className="flex items-center justify-center h-[300px] sm:h-[450px]">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : pdfUrl ? (
             <embed
               src={pdfUrl}
               type="application/pdf"
-              width="420"
-              height="600"
+              className="w-full h-[300px] sm:h-[450px]"
               style={{ border: 'none' }}
             />
           ) : (
-            <div className="flex items-center justify-center h-[500px] text-muted-foreground">
+            <div className="flex items-center justify-center h-[300px] sm:h-[450px] text-muted-foreground">
               {t('common:error')}
             </div>
           )}
         </div>
       </div>
       
-      <div className="no-print flex flex-wrap gap-3 justify-center mt-6">
-        {/* Print Packing List - uses same format as Pick & Pack mode */}
+      {/* Action Buttons - Stack on mobile, wrap on larger screens */}
+      <div className="no-print grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 justify-center mt-4 sm:mt-6">
+        {/* Print Packing List */}
         {fullOrderId && (
           <Button 
-            size="lg" 
+            size="default"
             onClick={() => {
               const printWindow = window.open(`/api/orders/${fullOrderId}/packing-list.pdf`, '_blank');
               if (printWindow) {
@@ -299,37 +298,53 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
                 };
               }
             }}
-            className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="h-10 sm:h-11 px-3 sm:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm"
             data-testid="button-print-packing-list"
           >
-            <FileText className="h-5 w-5 mr-2" />
-            {t('orders:packingList', 'Packing List')}
+            <FileText className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('orders:packingList', 'Packing List')}</span>
+            <span className="sm:hidden ml-1.5">Pack</span>
           </Button>
         )}
-        <Button size="lg" variant="secondary" onClick={handlePrint} disabled={isPrinting || isLoadingPdf} className="px-6" data-testid="button-print-receipt">
+        <Button 
+          size="default" 
+          variant="secondary" 
+          onClick={handlePrint} 
+          disabled={isPrinting || isLoadingPdf} 
+          className="h-10 sm:h-11 px-3 sm:px-6 text-xs sm:text-sm" 
+          data-testid="button-print-receipt"
+        >
           {isPrinting ? (
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
           ) : (
-            <Printer className="h-5 w-5 mr-2" />
+            <Printer className="h-4 w-4 sm:mr-2" />
           )}
-          {t('financial:printReceipt')}
+          <span className="hidden sm:inline">{t('financial:printReceipt')}</span>
+          <span className="sm:hidden ml-1.5">{t('common:print', 'Print')}</span>
         </Button>
         <Button 
-          size="lg" 
+          size="default"
           variant="outline" 
           onClick={handleDownloadPDF} 
           disabled={isDownloading || isLoadingPdf}
-          className="px-6"
+          className="h-10 sm:h-11 px-3 sm:px-6 text-xs sm:text-sm"
           data-testid="button-download-pdf"
         >
           {isDownloading ? (
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
           ) : (
-            <Download className="h-5 w-5 mr-2" />
+            <Download className="h-4 w-4 sm:mr-2" />
           )}
-          {t('financial:downloadPDF')}
+          <span className="hidden sm:inline">{t('financial:downloadPDF')}</span>
+          <span className="sm:hidden ml-1.5">PDF</span>
         </Button>
-        <Button size="lg" variant="ghost" onClick={onClose} data-testid="button-close-receipt">
+        <Button 
+          size="default" 
+          variant="ghost" 
+          onClick={onClose} 
+          className="h-10 sm:h-11 text-xs sm:text-sm"
+          data-testid="button-close-receipt"
+        >
           {t('common:close')}
         </Button>
       </div>
