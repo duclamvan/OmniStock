@@ -560,71 +560,108 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
             </nav>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-            <div className="flex-1 w-full sm:w-auto">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">#{order.orderId}</h1>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(order.orderId, t('orders:orderIdLabel'))}
+          <div className="flex flex-col gap-3">
+            {/* Top Row: Order ID + Action Buttons */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">#{order.orderId}</h1>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => copyToClipboard(order.orderId, t('orders:orderIdLabel'))}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              
+              {/* Action Buttons - Moved to top right */}
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9">
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="ml-1.5 hidden sm:inline">{t('common:more', 'More')}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handlePrint}>
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShare}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExport}>
+                      <Download className="mr-2 h-4 w-4" />
+                      {t('orders:export')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        const newSelectedItems = new Set<string>();
+                        const newQuantities: Record<string, number> = {};
+                        order.items?.forEach((item: any) => {
+                          newSelectedItems.add(item.id);
+                          newQuantities[item.id] = item.quantity;
+                        });
+                        setSelectedItems(newSelectedItems);
+                        setReturnQuantities(newQuantities);
+                        setShowReturnDialog(true);
+                      }}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      {t('orders:createReturn')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)} className="h-9">
+                  <Edit className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{t('orders:edit')}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Customer Row */}
+            {order.customer && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link href={`/customers/${order.customer.id}`}>
+                  <span className="font-semibold text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1.5">
+                    {order.customer.country && <span className="text-base">{getCountryFlag(order.customer.country)}</span>}
+                    <User className="h-3.5 w-3.5" />
+                    {order.customer.name}
+                  </span>
+                </Link>
+                {order.customer.type && (
+                  <Badge 
+                    variant="secondary"
+                    className="text-xs h-5"
                   >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-
-                {/* Customer Name & Badges */}
-                {order.customer && (
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Link href={`/customers/${order.customer.id}`}>
-                      <p className="font-semibold text-base text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
-                        {order.customer.country && <span className="text-lg">{getCountryFlag(order.customer.country)}</span>}
-                        <User className="h-3.5 w-3.5" />
-                        {order.customer.name}
-                      </p>
-                    </Link>
-                    {order.customer.type && (
-                      <Badge 
-                        variant={
-                          order.customer.type === 'vip' ? 'default' : 
-                          order.customer.type === 'wholesale' ? 'secondary' : 
-                          order.customer.type === 'business' ? 'outline' : 
-                          'secondary'
-                        }
-                        className="text-xs"
-                      >
-                        {order.customer.type === 'vip' ? t('orders:vip') : 
-                         order.customer.type === 'wholesale' ? t('orders:wholesale') : 
-                         order.customer.type === 'business' ? t('orders:business') : 
-                         t('orders:retail')}
-                      </Badge>
-                    )}
-                    {order.customer.customerRank && (
-                      <Badge variant="default" className="text-xs bg-amber-500 hover:bg-amber-600">
-                        {order.customer.customerRank}
-                      </Badge>
-                    )}
-                    {order.paymentStatus === 'pay_later' && (
-                      <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                        {t('orders:payLater')}
-                      </Badge>
-                    )}
-                  </div>
+                    {order.customer.type === 'vip' ? t('orders:vip') : 
+                     order.customer.type === 'wholesale' ? t('orders:wholesale') : 
+                     order.customer.type === 'business' ? t('orders:business') : 
+                     t('orders:retail')}
+                  </Badge>
                 )}
-
-                {/* Customer Badges */}
-                {order.customer?.badges && (
-                  <div className="mb-2">
-                    <CustomerBadges 
-                      badges={order.customer.badges} 
-                      currency={order.currency || 'EUR'} 
-                    />
-                  </div>
+                {order.customer.customerRank && (
+                  <Badge variant="default" className="text-xs h-5 bg-amber-500 hover:bg-amber-600">
+                    {order.customer.customerRank}
+                  </Badge>
                 )}
+              </div>
+            )}
+
+            {/* Customer Badges */}
+            {order.customer?.badges && (
+              <CustomerBadges 
+                badges={order.customer.badges} 
+                currency={order.currency || 'EUR'} 
+              />
+            )}
                 
-                {/* Status Row */}
-                <div className="flex flex-wrap items-center gap-2 mb-2">
+            {/* Status Row - Compact */}
+            <div className="flex flex-wrap items-center gap-1.5">
                   {/* Order Status */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -824,68 +861,20 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   </DropdownMenu>
                 </div>
 
-                {/* Meta Info */}
-                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>{formatDate(order.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Package className="h-3.5 w-3.5" />
-                    <span>{order.items?.length || 0} items</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Banknote className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
-                  </div>
-                </div>
+            {/* Meta Info */}
+            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                <span>{formatDate(order.createdAt)}</span>
               </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="min-h-[44px] sm:min-h-[36px]">
-                    <MoreVertical className="h-4 w-4" />
-                    <span className="ml-2 sm:hidden">More</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExport}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {t('orders:export')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      const newSelectedItems = new Set<string>();
-                      const newQuantities: Record<string, number> = {};
-                      order.items?.forEach((item: any) => {
-                        newSelectedItems.add(item.id);
-                        newQuantities[item.id] = item.quantity;
-                      });
-                      setSelectedItems(newSelectedItems);
-                      setReturnQuantities(newQuantities);
-                      setShowReturnDialog(true);
-                    }}
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    {t('orders:createReturn')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)} className="min-h-[44px] sm:min-h-[36px] flex-1 sm:flex-initial">
-                <Edit className="mr-2 h-4 w-4" />
-                {t('orders:edit')}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Package className="h-3.5 w-3.5" />
+                <span>{order.items?.length || 0} items</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Banknote className="h-3.5 w-3.5" />
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+              </div>
             </div>
           </div>
         </CardContent>
