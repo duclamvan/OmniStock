@@ -17,6 +17,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,7 +85,8 @@ import {
   File,
   Upload,
   Box,
-  Wrench
+  Wrench,
+  Trash2
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
@@ -133,6 +144,7 @@ export default function OrderDetails() {
   const [showPickingMode, setShowPickingMode] = useState(false);
   const [showCapturePreview, setShowCapturePreview] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const capturePreviewRef = useRef<HTMLDivElement>(null);
   const [showBadges, setShowBadges] = useState(() => {
     const saved = localStorage.getItem('orderDetailsBadgesVisible');
@@ -210,6 +222,32 @@ export default function OrderDetails() {
       toast({
         title: t('orders:updateFailed'),
         description: error.message || t('orders:failedToUpdatePayment'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('DELETE', `/api/orders/${id}`);
+    },
+    onSuccess: () => {
+      setShowDeleteDialog(false);
+      queryClient.removeQueries({ queryKey: ['/api/orders', id, { includeBadges: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/warehouse'] });
+      toast({
+        title: t('orders:orderDeleted', 'Order deleted'),
+        description: t('orders:orderMovedToTrash', 'Order has been moved to trash'),
+      });
+      navigate('/orders');
+    },
+    onError: (error: Error) => {
+      setShowDeleteDialog(false);
+      toast({
+        title: t('orders:deleteFailed', 'Delete failed'),
+        description: error.message || t('orders:failedToDeleteOrder', 'Failed to delete order'),
         variant: "destructive",
       });
     },
@@ -613,6 +651,14 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       {t('orders:createReturn')}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('orders:deleteOrder', 'Delete Order')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -2888,6 +2934,37 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Order Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              {t('orders:deleteOrder', 'Delete Order')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('orders:deleteOrderConfirmation', 'Are you sure you want to delete order')} <strong>#{order?.orderId}</strong>?
+              <br /><br />
+              {(order?.pickStatus === 'completed' || order?.pickStatus === 'in_progress') && (
+                <span className="text-amber-600 dark:text-amber-400">
+                  {t('orders:inventoryWillBeRestored', 'Inventory will be restored to the original locations.')}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteOrderMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteOrderMutation.isPending}
+            >
+              {deleteOrderMutation.isPending ? t('common:deleting', 'Deleting...') : t('orders:deleteOrder', 'Delete Order')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
