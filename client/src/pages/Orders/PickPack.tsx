@@ -2398,115 +2398,107 @@ function MultiLocationPicker({
         )}
       </div>
 
-      {/* Location Dropdown Selector */}
+      {/* Location Picker - Clean Design */}
       {remainingToPick > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+            <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
               {t('selectLocation', 'Select Location')}
             </span>
           </div>
 
-          {/* Location Dropdown */}
-          <Select value={selectedLocationCode} onValueChange={setSelectedLocationCode}>
-            <SelectTrigger className="h-14 text-lg font-bold" data-testid="select-pick-location">
-              <SelectValue placeholder={t('chooseLocation', 'Choose a location...')} />
-            </SelectTrigger>
-            <SelectContent>
-              {locationOptions.map((loc) => (
-                <SelectItem 
-                  key={loc.id} 
-                  value={loc.locationCode}
-                  disabled={loc.availableVirtual <= 0}
-                  className="text-base py-3"
-                >
-                  <div className="flex items-center justify-between gap-4 w-full">
-                    <span className="font-mono font-bold">
-                      {loc.locationCode}
-                      {loc.isPrimary && <span className="text-yellow-500 ml-1">★</span>}
+          <div className="p-3 space-y-3">
+            {/* Location Dropdown - Compact */}
+            <Select value={selectedLocationCode} onValueChange={setSelectedLocationCode}>
+              <SelectTrigger className="h-12 bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700" data-testid="select-pick-location">
+                <SelectValue placeholder={t('chooseLocation', 'Choose location...')} />
+              </SelectTrigger>
+              <SelectContent>
+                {locationOptions.map((loc) => (
+                  <SelectItem 
+                    key={loc.id} 
+                    value={loc.locationCode}
+                    disabled={loc.availableVirtual <= 0}
+                    className="py-2.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <code className="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {loc.locationCode}
+                        {loc.isPrimary && <span className="text-amber-500 ml-1">★</span>}
+                      </code>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs px-2 py-0.5 ${
+                          loc.availableVirtual > 0 
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+                        }`}
+                      >
+                        {loc.availableVirtual}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Pick Controls - Compact & Clean */}
+            {selectedLocation && (
+              <div className="space-y-2.5">
+                {/* Quantity Controls Row */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="lg"
+                    className="h-14 w-14 p-0 bg-gray-100 hover:bg-rose-500 hover:text-white text-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-rose-500 rounded-xl transition-colors disabled:opacity-40"
+                    onClick={() => adjustPickedAtLocation(-1)}
+                    disabled={selectedLocation.pickedFromHere <= 0}
+                    data-testid="btn-pick-minus"
+                  >
+                    <Minus className="h-6 w-6" />
+                  </Button>
+
+                  <div className="flex-1 flex items-center justify-center gap-1 bg-gray-50 dark:bg-gray-900/30 rounded-xl py-3">
+                    <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
+                      {selectedLocation.pickedFromHere}
                     </span>
-                    <span className={`text-sm ${loc.availableVirtual > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
-                      {loc.availableVirtual} {t('available', 'available')}
+                    <span className="text-xl text-gray-400 dark:text-gray-500 font-medium">
+                      / {selectedLocation.virtualQty}
                     </span>
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          {/* Selected Location Info & Controls */}
-          {selectedLocation && (
-            <div className="space-y-3">
-              {/* Available at location */}
-              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('availableHere', 'Available here')}:
-                </span>
-                <Badge className={`text-lg px-3 py-1 ${
-                  selectedLocation.availableVirtual >= remainingToPick
-                    ? 'bg-green-600 text-white'
-                    : 'bg-amber-500 text-white'
-                }`}>
-                  {selectedLocation.availableVirtual}
-                </Badge>
-              </div>
-
-              {/* Pick Controls */}
-              <div className="flex items-center justify-between gap-3">
-                {/* Minus Button */}
-                <Button
-                  size="lg"
-                  className="h-16 w-16 p-0 text-2xl font-black bg-rose-500 hover:bg-rose-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                  onClick={() => adjustPickedAtLocation(-1)}
-                  disabled={selectedLocation.pickedFromHere <= 0}
-                  data-testid="btn-pick-minus"
-                >
-                  <Minus className="h-8 w-8" />
-                </Button>
-
-                {/* Current pick from this location */}
-                <div className="flex-1 text-center">
-                  <span className="text-4xl font-black text-gray-900 dark:text-gray-100">
-                    {selectedLocation.pickedFromHere}
-                  </span>
-                  <span className="text-lg text-gray-400 dark:text-gray-500">
-                    /{selectedLocation.virtualQty}
-                  </span>
+                  <Button
+                    size="lg"
+                    className="h-14 w-14 p-0 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors disabled:opacity-40 disabled:bg-gray-300"
+                    onClick={() => adjustPickedAtLocation(1)}
+                    disabled={selectedLocation.availableVirtual <= 0 || remainingToPick <= 0}
+                    data-testid="btn-pick-plus"
+                  >
+                    <Plus className="h-6 w-6" />
+                  </Button>
                 </div>
 
-                {/* Plus Button */}
+                {/* Pick All Button */}
                 <Button
-                  size="lg"
-                  className="h-16 w-16 p-0 text-2xl font-black bg-sky-500 hover:bg-sky-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                  onClick={() => adjustPickedAtLocation(1)}
+                  className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl disabled:opacity-40 disabled:bg-gray-400"
+                  onClick={pickAllFromLocation}
                   disabled={selectedLocation.availableVirtual <= 0 || remainingToPick <= 0}
-                  data-testid="btn-pick-plus"
+                  data-testid="btn-pick-all-from-location"
                 >
-                  <Plus className="h-8 w-8" />
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {t('pickAll', 'Pick All')} ({Math.min(selectedLocation.availableVirtual, remainingToPick)})
                 </Button>
+
+                {/* Hint */}
+                {selectedLocation.availableVirtual < remainingToPick && selectedLocation.availableVirtual > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 text-center py-1">
+                    {t('notEnoughHere', 'Not enough here - select another location')}
+                  </p>
+                )}
               </div>
-
-              {/* Pick All Button */}
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                onClick={pickAllFromLocation}
-                disabled={selectedLocation.availableVirtual <= 0 || remainingToPick <= 0}
-                data-testid="btn-pick-all-from-location"
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                {t('pickAll', 'Pick All')} ({Math.min(selectedLocation.availableVirtual, remainingToPick)})
-              </Button>
-
-              {/* Hint if not enough at this location */}
-              {selectedLocation.availableVirtual < remainingToPick && selectedLocation.availableVirtual > 0 && (
-                <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
-                  💡 {t('notEnoughHere', 'Not enough here - select another location for the rest')}
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
