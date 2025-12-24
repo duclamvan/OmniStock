@@ -2113,8 +2113,9 @@ function useItemStockAvailability(productId: string | null | undefined, selected
   return { ...result, isLoading };
 }
 
-// Component: Multi-location picker with per-location stock enforcement
-// Allows picking from multiple locations when one location doesn't have enough stock
+// Component: Simplified dropdown-based location picker
+// Works for both regular products and virtual products
+// Uses dropdown selection instead of complex grid - optimized for warehouse employees
 function MultiLocationPicker({
   currentItem,
   pickedFromLocations,
@@ -2129,10 +2130,12 @@ function MultiLocationPicker({
   t: (key: string, fallback?: string) => string;
 }) {
   // For virtual products, check the master product's stock
-  const productIdToCheck = currentItem.isVirtual && currentItem.masterProductId 
-    ? currentItem.masterProductId 
-    : currentItem.productId;
+  const isVirtual = currentItem.isVirtual && currentItem.masterProductId;
+  const deductionRatio = currentItem.inventoryDeductionRatio || 1;
+  const productIdToCheck = isVirtual ? currentItem.masterProductId : currentItem.productId;
 
+  // State for currently selected location in dropdown
+  const [selectedLocationCode, setSelectedLocationCode] = useState<string>('');
 
   // Fetch product locations
   const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
@@ -2141,26 +2144,9 @@ function MultiLocationPicker({
     staleTime: 5000,
   });
 
-  // Get picked quantities for this item (needed for visibility logic)
+  // Get picked quantities for this item
   const itemPicks = pickedFromLocations[currentItem.id] || {};
 
-  // Sort locations: primary first, then alphabetically
-  // Keep locations visible if they have stock OR if user has picked from them
-  const sortedLocations = useMemo(() => {
-    return [...productLocations]
-      .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
-      .sort((a, b) => {
-        if (a.isPrimary && !b.isPrimary) return -1;
-        if (!a.isPrimary && b.isPrimary) return 1;
-        return a.locationCode.localeCompare(b.locationCode);
-      });
-  }, [productLocations, itemPicks]);
-
-  // Get total available stock across all locations
-  const totalAvailableStock = useMemo(() => {
-    return productLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-  }, [productLocations]);
-  
   // Calculate total picked across all locations
   const totalPicked = useMemo(() => {
     return Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
@@ -2168,56 +2154,122 @@ function MultiLocationPicker({
 
   // Calculate remaining to pick
   const remainingToPick = Math.max(0, currentItem.quantity - totalPicked);
-  
+
+  // Transform locations with virtual quantity conversion
+  const locationOptions = useMemo(() => {
+    return [...productLocations]
+      .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
+      .sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return a.locationCode.localeCompare(b.locationCode);
+      })
+      .map(loc => {
+        const masterQty = loc.quantity || 0;
+        // For virtual products, convert master quantity to virtual quantity
+        const virtualQty = isVirtual ? Math.floor(masterQty / deductionRatio) : masterQty;
+        const pickedFromHere = itemPicks[loc.locationCode] || 0;
+        
+        return {
+          ...loc,
+          masterQty,
+          virtualQty,
+          pickedFromHere,
+          availableVirtual: virtualQty - pickedFromHere,
+        };
+      });
+  }, [productLocations, itemPicks, isVirtual, deductionRatio]);
+
+  // Auto-select first location with stock if none selected
+  useEffect(() => {
+    if (!selectedLocationCode && locationOptions.length > 0) {
+      const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
+      if (firstWithStock) {
+        setSelectedLocationCode(firstWithStock.locationCode);
+      }
+    }
+  }, [locationOptions, selectedLocationCode]);
+
+  // Get currently selected location data
+  const selectedLocation = locationOptions.find(loc => loc.locationCode === selectedLocationCode);
+
   // Service items don't have stock - always allow picking
   const isServiceItem = !!currentItem.serviceId && !currentItem.productId;
 
-  // Update picked quantity for a specific location
-  const updateLocationPick = (locationCode: string, newQty: number, availableAtLocation: number) => {
-    // Clamp to 0 and available stock at this location
-    const clampedQty = Math.max(0, Math.min(newQty, availableAtLocation));
+  // Set picked quantity at current location to an ABSOLUTE value
+  // This is called with the desired NEW total at this location (not a delta)
+  const setPickedAtLocation = (newQtyAtLocation: number) => {
+    if (!selectedLocation) return;
     
-    // Check if this would exceed the order quantity
+    // Calculate how much has been picked from OTHER locations (not this one)
     const otherPicks = Object.entries(itemPicks)
-      .filter(([loc]) => loc !== locationCode)
-      .reduce((sum, [, qty]) => sum + qty, 0);
+      .filter(([loc]) => loc !== selectedLocationCode)
+      .reduce((sum, [, q]) => sum + q, 0);
     
-    const maxAllowed = currentItem.quantity - otherPicks;
-    const finalQty = Math.min(clampedQty, maxAllowed);
-    const previousQty = itemPicks[locationCode] || 0;
-    const qtyChange = finalQty - previousQty;
-
-    // Skip if no change
-    if (qtyChange === 0) return;
+    // Maximum allowed at this location = order quantity - picks from other locations
+    const maxAllowedAtThisLocation = currentItem.quantity - otherPicks;
+    
+    // Clamp new quantity to [0, min(available, maxAllowed)]
+    const clampedQty = Math.max(0, Math.min(
+      newQtyAtLocation,
+      selectedLocation.virtualQty, // Can't pick more than available at this location
+      maxAllowedAtThisLocation // Can't exceed order quantity minus other locations' picks
+    ));
 
     const newItemPicks = {
       ...itemPicks,
-      [locationCode]: finalQty
+      [selectedLocationCode]: clampedQty
     };
 
     // Remove location if qty is 0
-    if (finalQty === 0) {
-      delete newItemPicks[locationCode];
+    if (clampedQty === 0) {
+      delete newItemPicks[selectedLocationCode];
     }
 
-    // Update local state
     setPickedFromLocations({
       ...pickedFromLocations,
       [currentItem.id]: newItemPicks
     });
 
-    // Calculate new total picked
-    const newTotalPicked = Object.values(newItemPicks).reduce((sum, qty) => sum + qty, 0);
+    const newTotalPicked = Object.values(newItemPicks).reduce((sum, q) => sum + q, 0);
+    const newRemainingToPick = currentItem.quantity - newTotalPicked;
+    updatePickedItem(currentItem.id, newTotalPicked, selectedLocationCode);
 
-    // Use the passed-in updatePickedItem to handle offline queue, sounds, completion checks
-    updatePickedItem(currentItem.id, newTotalPicked, locationCode);
+    // Auto-switch to next location if this one is exhausted and we still need more
+    // Recalculate availability after update
+    const newAvailableHere = selectedLocation.virtualQty - clampedQty;
+    if (newAvailableHere <= 0 && newRemainingToPick > 0) {
+      // Find next location with stock (recalculate from fresh data)
+      const nextLocation = locationOptions.find(loc => {
+        if (loc.locationCode === selectedLocationCode) return false;
+        const pickedFromLoc = newItemPicks[loc.locationCode] || 0;
+        return (loc.virtualQty - pickedFromLoc) > 0;
+      });
+      if (nextLocation) {
+        setSelectedLocationCode(nextLocation.locationCode);
+      }
+    }
   };
 
-  // Pick all available from a location (up to remaining needed)
-  const pickAllFromLocation = (locationCode: string, availableAtLocation: number) => {
-    const canPick = Math.min(availableAtLocation, remainingToPick);
-    const currentPicked = itemPicks[locationCode] || 0;
-    updateLocationPick(locationCode, currentPicked + canPick, availableAtLocation);
+  // Increment/decrement by delta
+  const adjustPickedAtLocation = (delta: number) => {
+    if (!selectedLocation) return;
+    const newQty = selectedLocation.pickedFromHere + delta;
+    setPickedAtLocation(newQty);
+  };
+
+  // Pick all from current location
+  const pickAllFromLocation = () => {
+    if (!selectedLocation) return;
+    // Calculate what to set: fill up to max allowed or available, whichever is less
+    const otherPicks = Object.entries(itemPicks)
+      .filter(([loc]) => loc !== selectedLocationCode)
+      .reduce((sum, [, q]) => sum + q, 0);
+    const maxAllowed = currentItem.quantity - otherPicks;
+    const targetQty = Math.min(selectedLocation.virtualQty, maxAllowed);
+    if (targetQty > selectedLocation.pickedFromHere) {
+      setPickedAtLocation(targetQty);
+    }
   };
 
   // Reset all picks for this item
@@ -2225,13 +2277,14 @@ function MultiLocationPicker({
     const newPicks = { ...pickedFromLocations };
     delete newPicks[currentItem.id];
     setPickedFromLocations(newPicks);
+    updatePickedItem(currentItem.id, 0);
   };
 
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-3">
-        <div className="h-20 bg-gray-200 rounded-xl" />
-        <div className="h-32 bg-gray-200 rounded-xl" />
+        <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+        <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl" />
       </div>
     );
   }
@@ -2251,7 +2304,9 @@ function MultiLocationPicker({
               ...pickedFromLocations,
               [currentItem.id]: { '_service': currentItem.quantity }
             });
+            updatePickedItem(currentItem.id, currentItem.quantity);
           }}
+          data-testid="btn-mark-service-complete"
         >
           <CheckCircle className="h-6 w-6 mr-2" />
           {t('markComplete', 'Mark Complete')}
@@ -2261,7 +2316,7 @@ function MultiLocationPicker({
   }
 
   // No stock available anywhere
-  if (sortedLocations.length === 0) {
+  if (locationOptions.length === 0) {
     return (
       <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-700 rounded-xl p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400 mx-auto mb-3" />
@@ -2277,38 +2332,51 @@ function MultiLocationPicker({
 
   return (
     <div className="space-y-4">
-      {/* Progress Header */}
+      {/* Virtual Product Badge */}
+      {isVirtual && (
+        <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
+          <div className="flex items-center justify-center gap-2">
+            <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+              📦 1 {currentItem.productName?.split(' ')[0] || 'unit'} = {deductionRatio}x {currentItem.masterProductName || 'pieces'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Header - Large "TO PICK" display */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-            {t('pickProgress', 'Pick Progress')}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+            {t('toPick', 'TO PICK')}
           </span>
           {totalPicked > 0 && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
               onClick={resetAllPicks}
+              data-testid="btn-reset-picks"
             >
               <RotateCcw className="h-3 w-3 mr-1" />
-              Reset
+              {t('reset', 'Reset')}
             </Button>
           )}
         </div>
         
-        {/* Large Progress Display */}
-        <div className="text-center mb-3">
-          <p className="text-5xl sm:text-6xl font-black text-gray-900 dark:text-gray-100">
+        {/* BIG Number - Physical quantity to pick */}
+        <div className="text-center">
+          <p className="text-6xl sm:text-7xl font-black text-gray-900 dark:text-gray-100">
             {totalPicked}
-            <span className="text-2xl sm:text-3xl text-gray-400 dark:text-gray-500 font-bold">/{currentItem.quantity}</span>
+            <span className="text-3xl sm:text-4xl text-gray-400 dark:text-gray-500 font-bold">/{currentItem.quantity}</span>
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {t('piecesPicked', 'pieces picked')}
+          <p className="text-base text-gray-500 dark:text-gray-400 mt-1 font-medium">
+            {isVirtual ? t('unitsPicked', 'units picked') : t('piecesPicked', 'pieces picked')}
           </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="mt-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div 
             className={`h-full transition-all duration-300 ${
               totalPicked >= currentItem.quantity 
@@ -2318,15 +2386,6 @@ function MultiLocationPicker({
             style={{ width: `${Math.min(100, (totalPicked / currentItem.quantity) * 100)}%` }}
           />
         </div>
-
-        {/* Remaining Counter */}
-        {remainingToPick > 0 && (
-          <div className="mt-3 text-center">
-            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 text-sm px-3 py-1">
-              {remainingToPick} {t('remaining', 'remaining to pick')}
-            </Badge>
-          </div>
-        )}
 
         {/* Success Message */}
         {totalPicked >= currentItem.quantity && (
@@ -2339,94 +2398,136 @@ function MultiLocationPicker({
         )}
       </div>
 
-      {/* Multi-Location Picker Grid */}
-      <div className="space-y-2">
-        <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase tracking-wider text-center">
-          {t('pickFromLocations', 'Pick from Locations')}
-        </p>
-        
-        <div className="grid grid-cols-1 gap-3">
-          {sortedLocations.map((location) => {
-            const pickedFromThis = itemPicks[location.locationCode] || 0;
-            const availableStock = location.quantity || 0;
-            const canPickMore = pickedFromThis < availableStock && remainingToPick > 0;
-            const canPickLess = pickedFromThis > 0;
+      {/* Location Dropdown Selector */}
+      {remainingToPick > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
+              {t('selectLocation', 'Select Location')}
+            </span>
+          </div>
 
-            return (
-              <div 
-                key={location.id}
-                className={`rounded-xl border-2 p-3 transition-all ${
-                  pickedFromThis > 0 
-                    ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-600 shadow-md' 
-                    : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                {/* Row 1: Location code (full width on mobile) */}
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className={`h-5 w-5 flex-shrink-0 ${pickedFromThis > 0 ? 'text-green-600' : 'text-gray-500'}`} />
-                  <span className="text-lg font-black font-mono">
-                    {location.locationCode}
-                  </span>
-                  {location.isPrimary && (
-                    <span className="text-yellow-500 text-base">★</span>
-                  )}
-                  <div className="flex-1" />
-                  <Badge className={`text-sm px-2 py-0.5 ${
-                    availableStock >= remainingToPick + pickedFromThis
-                      ? 'bg-green-600 text-white'
-                      : 'bg-amber-500 text-white'
-                  }`}>
-                    {availableStock}x
-                  </Badge>
-                </div>
-
-                {/* Row 2: Controls */}
-                <div className="flex items-center justify-between gap-2">
-                  {/* Minus Button - Red for remove */}
-                  <Button
-                    size="lg"
-                    className="h-12 w-12 p-0 text-xl font-black bg-rose-500 hover:bg-rose-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis - 1, availableStock)}
-                    disabled={!canPickLess}
-                  >
-                    <Minus className="h-6 w-6" />
-                  </Button>
-
-                  {/* Picked Count Display */}
-                  <div className="flex-1 text-center">
-                    <span className={`text-3xl font-black ${
-                      pickedFromThis > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-400'
-                    }`}>
-                      {pickedFromThis}
+          {/* Location Dropdown */}
+          <Select value={selectedLocationCode} onValueChange={setSelectedLocationCode}>
+            <SelectTrigger className="h-14 text-lg font-bold" data-testid="select-pick-location">
+              <SelectValue placeholder={t('chooseLocation', 'Choose a location...')} />
+            </SelectTrigger>
+            <SelectContent>
+              {locationOptions.map((loc) => (
+                <SelectItem 
+                  key={loc.id} 
+                  value={loc.locationCode}
+                  disabled={loc.availableVirtual <= 0}
+                  className="text-base py-3"
+                >
+                  <div className="flex items-center justify-between gap-4 w-full">
+                    <span className="font-mono font-bold">
+                      {loc.locationCode}
+                      {loc.isPrimary && <span className="text-yellow-500 ml-1">★</span>}
                     </span>
-                    <span className="text-lg text-gray-400">/{availableStock}</span>
+                    <span className={`text-sm ${loc.availableVirtual > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                      {loc.availableVirtual} {t('available', 'available')}
+                    </span>
                   </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-                  {/* Plus Button - Blue for add */}
-                  <Button
-                    size="lg"
-                    className="h-12 w-12 p-0 text-xl font-black bg-sky-500 hover:bg-sky-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                    onClick={() => updateLocationPick(location.locationCode, pickedFromThis + 1, availableStock)}
-                    disabled={!canPickMore}
-                  >
-                    <Plus className="h-6 w-6" />
-                  </Button>
-
-                  {/* Pick All from Location Button - Purple/Indigo for quick action */}
-                  <Button
-                    size="lg"
-                    className="h-12 px-4 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
-                    onClick={() => pickAllFromLocation(location.locationCode, availableStock)}
-                    disabled={!canPickMore}
-                  >
-                    ALL
-                  </Button>
-                </div>
+          {/* Selected Location Info & Controls */}
+          {selectedLocation && (
+            <div className="space-y-3">
+              {/* Available at location */}
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('availableHere', 'Available here')}:
+                </span>
+                <Badge className={`text-lg px-3 py-1 ${
+                  selectedLocation.availableVirtual >= remainingToPick
+                    ? 'bg-green-600 text-white'
+                    : 'bg-amber-500 text-white'
+                }`}>
+                  {selectedLocation.availableVirtual}
+                </Badge>
               </div>
-            );
-          })}
+
+              {/* Pick Controls */}
+              <div className="flex items-center justify-between gap-3">
+                {/* Minus Button */}
+                <Button
+                  size="lg"
+                  className="h-16 w-16 p-0 text-2xl font-black bg-rose-500 hover:bg-rose-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
+                  onClick={() => adjustPickedAtLocation(-1)}
+                  disabled={selectedLocation.pickedFromHere <= 0}
+                  data-testid="btn-pick-minus"
+                >
+                  <Minus className="h-8 w-8" />
+                </Button>
+
+                {/* Current pick from this location */}
+                <div className="flex-1 text-center">
+                  <span className="text-4xl font-black text-gray-900 dark:text-gray-100">
+                    {selectedLocation.pickedFromHere}
+                  </span>
+                  <span className="text-lg text-gray-400 dark:text-gray-500">
+                    /{selectedLocation.virtualQty}
+                  </span>
+                </div>
+
+                {/* Plus Button */}
+                <Button
+                  size="lg"
+                  className="h-16 w-16 p-0 text-2xl font-black bg-sky-500 hover:bg-sky-600 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
+                  onClick={() => adjustPickedAtLocation(1)}
+                  disabled={selectedLocation.availableVirtual <= 0 || remainingToPick <= 0}
+                  data-testid="btn-pick-plus"
+                >
+                  <Plus className="h-8 w-8" />
+                </Button>
+              </div>
+
+              {/* Pick All Button */}
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:text-gray-500"
+                onClick={pickAllFromLocation}
+                disabled={selectedLocation.availableVirtual <= 0 || remainingToPick <= 0}
+                data-testid="btn-pick-all-from-location"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                {t('pickAll', 'Pick All')} ({Math.min(selectedLocation.availableVirtual, remainingToPick)})
+              </Button>
+
+              {/* Hint if not enough at this location */}
+              {selectedLocation.availableVirtual < remainingToPick && selectedLocation.availableVirtual > 0 && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+                  💡 {t('notEnoughHere', 'Not enough here - select another location for the rest')}
+                </p>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Picked Locations Summary */}
+      {Object.keys(itemPicks).length > 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3 border-2 border-green-300 dark:border-green-700">
+          <p className="text-xs font-bold text-green-700 dark:text-green-300 uppercase mb-2">
+            {t('pickedFrom', 'Picked from')}:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(itemPicks).map(([locCode, qty]) => (
+              <Badge 
+                key={locCode} 
+                className="bg-green-600 text-white text-sm px-3 py-1"
+              >
+                {locCode}: {qty}x
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Carton/Bulk Unit Info */}
       {currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && (

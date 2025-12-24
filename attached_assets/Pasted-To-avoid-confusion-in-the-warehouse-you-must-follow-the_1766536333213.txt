@@ -1,0 +1,87 @@
+To avoid confusion in the warehouse, you must follow the **"Physical Reality" Rule**.
+
+**The Short Answer:**
+
+* **What the Packer Sees:** **"Pick 1"** (Because they are physically holding 1 bucket).
+* **What the Database Does:** **Subtracts 17** (Because that's how much powder is inside).
+
+If you show "Pick 17" to the packer, they will confusedly look for 17 items, or they might accidentally ship 17 buckets!
+
+Here is how to implement the **Pick & Pack UI** so it is safe and clear:
+
+### 1. The "Pick & Pack" Logic (Frontend)
+
+On your scanning screen (`PickingInterface.tsx`), the logic should be dumb. It should just read the Order Item quantity.
+
+* **Order:** 1x Acrylic Powder Bucket
+* **Screen:**
+* **Item:** Acrylic Powder Bucket 25lbs
+* **To Pick:** **1**
+* **Scanned:** **0 / 1**
+
+
+
+**Don't** show the math (17) to the warehouse worker. It is irrelevant to them.
+
+### 2. The "Confirm" Logic (Backend)
+
+The "Magic" happens only when they click **"Confirm"** or finish the scan.
+
+Your backend function `deductInventoryForShipment` (which we wrote earlier) already handles this:
+
+1. Frontend sends: `Completing Order Item #123 (Qty: 1)`.
+2. Backend looks up Product. Finds `inventoryDeductionRatio = 17`.
+3. Backend calculates: `1 * 17 = 17`.
+4. Backend updates Inventory: `Master_Stock = Master_Stock - 17`.
+
+### 3. Visual Aid (Optional but Recommended)
+
+If you want to be extra safe, you can add a small **"Composition Badge"** in the Pick & Pack list, just for information.
+
+**Code Example for the UI Card:**
+
+```tsx
+// src/pages/Warehouse/Picking/components/PickingItemCard.tsx
+
+export function PickingItemCard({ item }) {
+  // If it is a virtual product (Bucket), we can show a small hint
+  const isVirtual = item.product.masterProductId !== null;
+  const ratio = item.product.inventoryDeductionRatio;
+
+  return (
+    <div className="border p-4 rounded shadow-sm flex justify-between items-center">
+      <div>
+        <h3 className="font-bold text-lg">{item.product.name}</h3>
+        <p className="text-gray-500">SKU: {item.product.sku}</p>
+        
+        {/* Helper Badge for the packer - ONLY informational */}
+        {isVirtual && (
+           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mt-1 inline-block">
+             📦 Contains equivalent of {ratio}x {item.product.masterProduct?.name || 'Units'}
+           </span>
+        )}
+      </div>
+
+      <div className="text-right">
+        {/* HUGE NUMBER - Focus on what they physically hold */}
+        <div className="text-4xl font-bold">
+          {item.quantity} <span className="text-sm font-normal text-gray-400">pcs</span>
+        </div>
+        <div className="text-sm text-gray-500">to pick</div>
+      </div>
+    </div>
+  );
+}
+
+```
+
+### Summary of Workflow
+
+1. **Packer walks to shelf.**
+2. **Packer sees "1" on screen.**
+3. **Packer picks 1 Bucket.**
+4. **Packer scans Bucket barcode.** (System accepts it because it matches the Bucket SKU).
+5. **Packer clicks Finish.**
+6. **System silently subtracts 17 units** from the "Jar" inventory in the database.
+
+This keeps the warehouse fast and the accountants happy.
