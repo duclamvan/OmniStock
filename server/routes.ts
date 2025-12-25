@@ -10509,8 +10509,16 @@ Important:
               }
             } else {
               // Fallback: restore to primary location or first location
-              // pickedQuantity is stored in actual pieces, not cartons
-              const pickedCount = item.pickedQuantity || item.quantity || 0;
+              // CRITICAL: Only restore what was actually picked - do NOT fall back to item.quantity
+              // If pickedQuantity is 0, we restore 0 (nothing was ever deducted)
+              const pickedCount = item.pickedQuantity || 0;
+              
+              // Skip if nothing was picked
+              if (pickedCount <= 0) {
+                console.log(`🔄 [Soft Delete Fallback] Item ${item.id?.slice(-6)} has pickedQuantity=0, skipping restore`);
+                continue;
+              }
+              
               const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
               const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
@@ -10537,15 +10545,18 @@ Important:
           }
         } else if (item.bundleId) {
           // Bundle - restore availableStock
-          const bundle = await storage.getBundleById(item.bundleId);
-          if (bundle) {
-            const currentStock = bundle.availableStock || 0;
-            const restoreQty = item.pickedQuantity || item.quantity || 0;
-            await storage.updateBundle(item.bundleId, {
-              availableStock: currentStock + restoreQty
-            });
-            console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to bundle "${bundle.name}"`);
-            totalRestoredQuantity += restoreQty;
+          // CRITICAL: Only restore what was actually picked
+          const restoreQty = item.pickedQuantity || 0;
+          if (restoreQty > 0) {
+            const bundle = await storage.getBundleById(item.bundleId);
+            if (bundle) {
+              const currentStock = bundle.availableStock || 0;
+              await storage.updateBundle(item.bundleId, {
+                availableStock: currentStock + restoreQty
+              });
+              console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to bundle "${bundle.name}"`);
+              totalRestoredQuantity += restoreQty;
+            }
           }
         }
       }
@@ -10652,8 +10663,15 @@ Important:
               }
             } else {
               // Fallback: deduct from primary location or first location
-              // pickedQuantity is stored in actual pieces, not cartons
-              const pickedCount = item.pickedQuantity || item.quantity || 0;
+              // CRITICAL: Only deduct what was actually picked - do NOT fall back to item.quantity
+              const pickedCount = item.pickedQuantity || 0;
+              
+              // Skip if nothing was picked
+              if (pickedCount <= 0) {
+                console.log(`🔄 [Restore Fallback] Item ${item.id?.slice(-6)} has pickedQuantity=0, skipping deduction`);
+                continue;
+              }
+              
               const deductQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
               
               const targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
@@ -10680,15 +10698,18 @@ Important:
           }
         } else if (item.bundleId) {
           // Bundle - deduct availableStock
-          const bundle = await storage.getBundleById(item.bundleId);
-          if (bundle) {
-            const currentStock = bundle.availableStock || 0;
-            const deductQty = item.pickedQuantity || item.quantity || 0;
-            await storage.updateBundle(item.bundleId, {
-              availableStock: Math.max(0, currentStock - deductQty)
-            });
-            console.log(`🔄 [Restore] Deducted ${deductQty} units from bundle "${bundle.name}"`);
-            totalDeductedQuantity += deductQty;
+          // CRITICAL: Only deduct what was actually picked
+          const deductQty = item.pickedQuantity || 0;
+          if (deductQty > 0) {
+            const bundle = await storage.getBundleById(item.bundleId);
+            if (bundle) {
+              const currentStock = bundle.availableStock || 0;
+              await storage.updateBundle(item.bundleId, {
+                availableStock: Math.max(0, currentStock - deductQty)
+              });
+              console.log(`🔄 [Restore] Deducted ${deductQty} units from bundle "${bundle.name}"`);
+              totalDeductedQuantity += deductQty;
+            }
           }
         }
       }
