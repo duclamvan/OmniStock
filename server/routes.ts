@@ -9072,15 +9072,25 @@ Important:
         if ((item.pickedQuantity || 0) > 0 && item.productId) {
           try {
             // Check if this is a virtual SKU - restore to master product
+            // Use order item fields first (set at order creation), fallback to product fields
             const product = await storage.getProductById(item.productId);
             let targetProductId = item.productId;
             let deductionRatio = 1;
             let isVirtualSku = false;
             
-            if (product?.isVirtual && product?.masterProductId) {
+            // Check order item fields first (they capture state at order time)
+            if (item.isVirtual && item.masterProductId) {
+              isVirtualSku = true;
+              targetProductId = item.masterProductId;
+              deductionRatio = parseFloat(item.inventoryDeductionRatio || '1');
+              console.log(`📦 Reset [Debug]: Virtual SKU from ORDER ITEM: isVirtual=${item.isVirtual}, masterProductId=${item.masterProductId}, ratio=${deductionRatio}`);
+            }
+            // Fallback to product fields for legacy orders
+            else if (product?.isVirtual && product?.masterProductId) {
               isVirtualSku = true;
               targetProductId = product.masterProductId;
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
+              console.log(`📦 Reset [Debug]: Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
             }
             
             // Get product locations for the target product (master product for virtual SKUs)
