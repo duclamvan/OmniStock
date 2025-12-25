@@ -6149,7 +6149,7 @@ export default function PickPack() {
   const handleCancelOrder = async (order: PickPackOrder) => {
     try {
       await apiRequest('PATCH', `/api/orders/${order.id}`, {
-        status: 'cancelled',
+        orderStatus: 'cancelled',
         fulfillmentStage: null
       });
       
