@@ -6603,6 +6603,7 @@ export class DatabaseStorage implements IStorage {
       const unfulfilledStatuses = ['pending', 'confirmed', 'processing', 'to_fulfill', 'ready_to_ship', 'picking', 'packing'];
 
       // Query order items from unfulfilled, non-cancelled, non-archived orders
+      // Include pickedQuantity to calculate UNPICKED portion (what's truly "allocated" vs already deducted)
       const allocatedItems = await db
         .select({
           productId: orderItems.productId,
@@ -6611,6 +6612,7 @@ export class DatabaseStorage implements IStorage {
           masterProductId: orderItems.masterProductId,
           inventoryDeductionRatio: orderItems.inventoryDeductionRatio,
           quantity: orderItems.quantity,
+          pickedQuantity: orderItems.pickedQuantity,
         })
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
@@ -6627,19 +6629,25 @@ export class DatabaseStorage implements IStorage {
       const allocatedMap = new Map<string, number>();
 
       for (const item of allocatedItems) {
-        const qty = item.quantity || 0;
-        if (qty <= 0) continue;
+        // CRITICAL FIX: Only count the UNPICKED portion as "allocated"
+        // Once items are picked, inventory has already been deducted from product.quantity
+        // So we should not double-count those as both "deducted" AND "allocated"
+        const totalQty = item.quantity || 0;
+        const pickedQty = item.pickedQuantity || 0;
+        const unpickedQty = Math.max(0, totalQty - pickedQty);
+        
+        if (unpickedQty <= 0) continue;
 
         // Handle virtual SKUs - track both by virtual product ID and master product ID
         if (item.isVirtual && item.productId) {
-          // Track allocation for the virtual SKU itself
+          // Track allocation for the virtual SKU itself (unpicked quantity only)
           const virtualKey = `product:${item.productId}`;
-          allocatedMap.set(virtualKey, (allocatedMap.get(virtualKey) || 0) + qty);
+          allocatedMap.set(virtualKey, (allocatedMap.get(virtualKey) || 0) + unpickedQty);
           
-          // Also track impact on master product (qty * deductionRatio)
+          // Also track impact on master product (unpickedQty * deductionRatio)
           if (item.masterProductId) {
             const ratio = parseFloat(item.inventoryDeductionRatio || '1');
-            const masterQty = qty * ratio;
+            const masterQty = unpickedQty * ratio;
             const masterKey = `product:${item.masterProductId}`;
             allocatedMap.set(masterKey, (allocatedMap.get(masterKey) || 0) + masterQty);
           }
@@ -6647,12 +6655,12 @@ export class DatabaseStorage implements IStorage {
         // Handle variants
         else if (item.productId && item.variantId) {
           const key = `product:${item.productId}:variant:${item.variantId}`;
-          allocatedMap.set(key, (allocatedMap.get(key) || 0) + qty);
+          allocatedMap.set(key, (allocatedMap.get(key) || 0) + unpickedQty);
         }
         // Handle regular products
         else if (item.productId) {
           const key = `product:${item.productId}`;
-          allocatedMap.set(key, (allocatedMap.get(key) || 0) + qty);
+          allocatedMap.set(key, (allocatedMap.get(key) || 0) + unpickedQty);
         }
       }
 
