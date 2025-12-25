@@ -6006,6 +6006,9 @@ export default function PickPack() {
           await Promise.all(packResetPromises);
         }
         
+        // Clear localStorage progress for this order (prevents stale data on next pick)
+        clearPickedProgress(order.id);
+        
         // Refresh all related data
         queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
         queryClient.invalidateQueries({ queryKey: ['/api/products'] });
@@ -14486,18 +14489,30 @@ export default function PickPack() {
           {/* Right Panel - Items List - Hidden on mobile, visible on desktop, hidden in list view */}
           {pickingViewMode === 'card' && (
           <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white dark:from-gray-900 to-gray-50 dark:to-gray-800 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
-            <div className="bg-gradient-to-r from-gray-700 dark:from-gray-800 to-gray-800 dark:to-gray-900 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
-              <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <ClipboardList className="h-4 xl:h-5 w-4 xl:w-5" />
-                  {t('orderItems')}
-                </span>
-                <Badge className="bg-white text-gray-800 font-bold px-2 xl:px-3 py-1 text-sm">
-                  {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
-                </Badge>
-              </h3>
-              <div className="text-xs xl:text-sm text-gray-200">{t('trackYourPickingProgress')}</div>
-            </div>
+            {/* Calculate real-time picked count from actual items */}
+            {(() => {
+              const realPickedCount = activePickingOrder.items.filter(item => item.pickedQuantity >= item.quantity).length;
+              const totalItemCount = activePickingOrder.items.length;
+              
+              return (
+                <div className="bg-gradient-to-r from-gray-700 dark:from-gray-800 to-gray-800 dark:to-gray-900 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
+                  <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <ClipboardList className="h-4 xl:h-5 w-4 xl:w-5" />
+                      {t('orderItems')}
+                    </span>
+                    <Badge className={`font-bold px-2 xl:px-3 py-1 text-sm ${
+                      realPickedCount === totalItemCount 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-white text-gray-800'
+                    }`}>
+                      {realPickedCount}/{totalItemCount}
+                    </Badge>
+                  </h3>
+                  <div className="text-xs xl:text-sm text-gray-200">{t('trackYourPickingProgress')}</div>
+                </div>
+              );
+            })()}
             
             <div className="space-y-2 xl:space-y-3">
               {/* Consolidate service items: show only non-service items + one unified Service Bill if any service items exist */}
@@ -14510,31 +14525,32 @@ export default function PickPack() {
                 
                 // Create consolidated display items: products first, then one Service Bill entry
                 const displayItems = hasServiceItems 
-                  ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent }]
+                  ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent, _originalIndex: productItems.length }]
                   : productItems;
                 
-                return displayItems.map((item: any, index) => {
+                return displayItems.map((item: any, displayIndex) => {
                   const isServiceBill = item._isConsolidatedService;
                   const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
                   const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
                   
+                  // Find the actual index in the original items array for navigation
+                  const actualItemIndex = isServiceBill 
+                    ? activePickingOrder.items.findIndex(i => i.serviceId)
+                    : activePickingOrder.items.findIndex(i => i.id === item.id);
+                  
                   return (
                     <Card 
                       key={isServiceBill ? 'service-bill-consolidated' : item.id} 
-                      className={`cursor-pointer transition-all transform hover:scale-105 ${
+                      className={`cursor-pointer transition-all transform hover:scale-[1.02] ${
                         isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
-                        isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-4 ring-blue-300' : 
-                        'bg-white hover:shadow-lg border-2 border-gray-200'
+                        isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-2 ring-blue-300' : 
+                        'bg-white hover:shadow-lg border-2 border-gray-200 hover:border-blue-300'
                       }`}
                       onClick={() => {
-                        if (isPicked) {
-                          toast({
-                            title: t('itemReview') || 'Item Review',
-                            description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'}`,
-                          });
+                        // Navigate to this item
+                        if (actualItemIndex >= 0) {
+                          setManualItemIndex(actualItemIndex);
                           playSound('scan');
-                        } else {
-                          barcodeInputRef.current?.focus();
                         }
                       }}
                     >
@@ -14546,12 +14562,12 @@ export default function PickPack() {
                                 <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
                               </div>
                             ) : isCurrent ? (
-                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-gradient-to-r from-blue-50 dark:from-blue-900/300 to-indigo-50 dark:to-indigo-900/300 flex items-center justify-center text-white font-bold animate-pulse text-sm">
-                                {index + 1}
+                              <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold animate-pulse text-sm">
+                                {displayIndex + 1}
                               </div>
                             ) : (
                               <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full border-2 xl:border-3 border-gray-300 flex items-center justify-center text-xs xl:text-sm font-bold text-gray-600">
-                                {index + 1}
+                                {displayIndex + 1}
                               </div>
                             )}
                           </div>
@@ -14571,7 +14587,7 @@ export default function PickPack() {
                               <>
                                 <p className={`font-semibold text-xs xl:text-sm truncate ${
                                   isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                  isCurrent ? 'text-blue-700 dark:text-blue-200 dark:text-blue-100' : 'text-gray-800'
+                                  isCurrent ? 'text-blue-700 dark:text-blue-100' : 'text-gray-800'
                                 }`}>
                                   {item.productName}
                                 </p>
@@ -14583,7 +14599,7 @@ export default function PickPack() {
                                     📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
-                                    isPicked ? 'text-green-600 dark:text-green-400 dark:text-green-300' : 
+                                    isPicked ? 'text-green-600 dark:text-green-300' : 
                                     isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
                                   }`}>
                                     {item.pickedQuantity}/{item.quantity}
@@ -14600,34 +14616,41 @@ export default function PickPack() {
               })()}
             </div>
             
-            {/* Finish Picking Button - Separated as card below items */}
+            {/* Finish Picking Button - Separated as card below items with real-time count */}
             <div className="mt-4 xl:mt-6 pt-4 xl:pt-6 border-t-2 border-gray-200 dark:border-gray-700">
-              <Card className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-red-50 dark:to-red-900/20 border-2 border-orange-300 dark:border-orange-700 shadow-md">
-                <CardContent className="p-3 xl:p-4">
-                  <Button
-                    className="w-full h-11 xl:h-12 text-sm xl:text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
-                    onClick={async () => {
-                      // Complete picking with current progress
-                      await completePicking(true);
-                      
-                      // Clear picking state
-                      setActivePickingOrder(null);
-                      setPickingTimer(0);
-                      setManualItemIndex(0);
-                      
-                      // Return to originating tab or pending tab
-                      setSelectedTab(originatingTab || 'pending');
-                      
-                      // Scroll to top
-                      window.scrollTo(0, 0);
-                    }}
-                    data-testid="button-finish-picking"
-                  >
-                    <CheckCircle className="h-4 w-4 xl:h-5 xl:w-5 mr-2" />
-                    Finish Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
-                  </Button>
-                </CardContent>
-              </Card>
+              {(() => {
+                const realPickedCount = activePickingOrder.items.filter(item => item.pickedQuantity >= item.quantity).length;
+                const totalItemCount = activePickingOrder.items.length;
+                
+                return (
+                  <Card className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-red-50 dark:to-red-900/20 border-2 border-orange-300 dark:border-orange-700 shadow-md">
+                    <CardContent className="p-3 xl:p-4">
+                      <Button
+                        className="w-full h-11 xl:h-12 text-sm xl:text-base font-bold bg-gradient-to-r from-orange-600 dark:from-orange-500 to-red-600 dark:to-red-500 hover:from-orange-700 dark:hover:from-orange-600 hover:to-red-700 dark:hover:to-red-600 text-white shadow-lg rounded-lg"
+                        onClick={async () => {
+                          // Complete picking with current progress
+                          await completePicking(true);
+                          
+                          // Clear picking state
+                          setActivePickingOrder(null);
+                          setPickingTimer(0);
+                          setManualItemIndex(0);
+                          
+                          // Return to originating tab or pending tab
+                          setSelectedTab(originatingTab || 'pending');
+                          
+                          // Scroll to top
+                          window.scrollTo(0, 0);
+                        }}
+                        data-testid="button-finish-picking"
+                      >
+                        <CheckCircle className="h-4 w-4 xl:h-5 xl:w-5 mr-2" />
+                        Finish Picking ({realPickedCount}/{totalItemCount})
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
           </div>
           )}
@@ -14636,25 +14659,36 @@ export default function PickPack() {
             {pickingViewMode === 'card' && showMobileProgress && (
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-56 overflow-y-auto shadow-2xl z-30 animate-slide-up">
                 <div className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm">{t('orderProgress')}</span>
-                      <span className="text-xs text-gray-500">{t('swipeToView')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-gray-800 text-white text-xs px-2">
-                        {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
-                      </Badge>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 touch-manipulation"
-                        onClick={() => setShowMobileProgress(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  {(() => {
+                    const realPickedCount = activePickingOrder.items.filter(item => item.pickedQuantity >= item.quantity).length;
+                    const totalItemCount = activePickingOrder.items.length;
+                    
+                    return (
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{t('orderProgress')}</span>
+                          <span className="text-xs text-gray-500">{t('swipeToView')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={`text-xs px-2 ${
+                            realPickedCount === totalItemCount 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-gray-800 text-white'
+                          }`}>
+                            {realPickedCount}/{totalItemCount}
+                          </Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 touch-manipulation"
+                            onClick={() => setShowMobileProgress(false)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
                     {/* Consolidate service items in mobile drawer too */}
                     {(() => {
@@ -14668,10 +14702,15 @@ export default function PickPack() {
                         ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent }]
                         : productItems;
                       
-                      return displayItems.map((item: any, index) => {
+                      return displayItems.map((item: any, displayIndex) => {
                         const isServiceBill = item._isConsolidatedService;
                         const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
                         const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
+                        
+                        // Find actual index for navigation
+                        const actualItemIndex = isServiceBill 
+                          ? activePickingOrder.items.findIndex(i => i.serviceId)
+                          : activePickingOrder.items.findIndex(i => i.id === item.id);
                         
                         return (
                           <div
@@ -14682,14 +14721,10 @@ export default function PickPack() {
                               'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
                             }`}
                             onClick={() => {
-                              if (isPicked) {
-                                toast({
-                                  title: t('itemReview') || 'Item Review',
-                                  description: isServiceBill ? 'Service Bill' : `${item.productName} - ${item.pickedQuantity}/${item.quantity} ${t('picked') || 'picked'}`,
-                                });
-                                playSound('scan');
-                              } else {
-                                barcodeInputRef.current?.focus();
+                              // Navigate to this item
+                              if (actualItemIndex >= 0) {
+                                setManualItemIndex(actualItemIndex);
+                                setShowMobileProgress(false);
                                 playSound('scan');
                               }
                             }}
@@ -14699,9 +14734,9 @@ export default function PickPack() {
                                 <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                               ) : (
                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                                  isCurrent ? 'bg-blue-50 dark:bg-blue-900/300 text-white' : 'border-2 border-gray-300 text-gray-600'
+                                  isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
                                 }`}>
-                                  {index + 1}
+                                  {displayIndex + 1}
                                 </div>
                               )}
                               {!isServiceBill && (
