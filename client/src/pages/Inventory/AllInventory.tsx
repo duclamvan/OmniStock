@@ -123,7 +123,7 @@ export default function AllInventory() {
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
     queryFn: async () => {
-      const url = showArchive ? '/api/products?includeInactive=true' : '/api/products';
+      const url = showArchive ? '/api/products?includeInactive=true&includeAvailability=true' : '/api/products?includeAvailability=true';
       const response = await fetch(url, {
         credentials: 'include',
       });
