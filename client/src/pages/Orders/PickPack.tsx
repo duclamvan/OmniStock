@@ -980,8 +980,8 @@ function UnifiedDocumentsList({
 
   const orderFiles = orderFilesData || [];
 
-  // Check if packing list is included (default true for backward compatibility)
-  const shouldIncludePackingListInCount = includedDocuments?.includePackingList !== false;
+  // Check if packing list is included (only count if explicitly checked in Add Order)
+  const shouldIncludePackingListInCount = includedDocuments?.includePackingList === true;
 
   // Calculate total document count and collect all PDF URLs (MUST be before early return)
   const totalDocuments = (shouldIncludePackingListInCount ? 1 : 0) + productFiles.length + orderFiles.length;
@@ -1127,8 +1127,8 @@ function UnifiedDocumentsList({
     </div>
   );
 
-  // Check if packing list should be included (default to true for backward compatibility)
-  const shouldIncludePackingList = includedDocuments?.includePackingList !== false;
+  // Check if packing list should be included (only show if explicitly checked in Add Order)
+  const shouldIncludePackingList = includedDocuments?.includePackingList === true;
 
   return (
     <div className="space-y-2">
@@ -7320,8 +7320,8 @@ export default function PickPack() {
       missingChecks.push('Items Verification');
     }
     
-    // 2. Packing list printed (only required if included)
-    const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+    // 2. Packing list printed (only required if explicitly checked in Add Order)
+    const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList === true;
     if (shouldIncludePackingList && !printedDocuments.packingList) {
       missingChecks.push('Packing List');
     }
@@ -8036,8 +8036,8 @@ export default function PickPack() {
     })();
     
     // Packing completion check - only check what's visible in the UI
-    // Packing list only required if includedDocuments.includePackingList is not false
-    const shouldRequirePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+    // Packing list only required if explicitly checked in Add Order
+    const shouldRequirePackingList = activePackingOrder?.includedDocuments?.includePackingList === true;
     const packingListOk = !shouldRequirePackingList || printedDocuments.packingList;
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
                               packingListOk && 
@@ -8195,7 +8195,7 @@ export default function PickPack() {
                 }}
                 title={t('scrollToDocuments')}
                 className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                (activePackingOrder?.includedDocuments?.includePackingList === false || printedDocuments.packingList)
+                (activePackingOrder?.includedDocuments?.includePackingList !== true || printedDocuments.packingList)
                   ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
               }`}
@@ -13194,8 +13194,8 @@ export default function PickPack() {
                     return;
                   }
                   
-                  // Step 2: Packing list printed (only required if included in order)
-                  const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+                  // Step 2: Packing list printed (only required if explicitly checked in Add Order)
+                  const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList === true;
                   if (shouldIncludePackingList && !printedDocuments.packingList) {
                     scrollToElement('section-documents', 'Please print the packing slip to include in the shipment.');
                     return;
