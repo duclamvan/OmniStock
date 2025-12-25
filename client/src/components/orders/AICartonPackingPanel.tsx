@@ -227,7 +227,7 @@ export function AICartonPackingPanel({
                                 {item.appliedDiscountLabel && (
                                   <span className="text-[10px] text-green-600 dark:text-green-400 flex items-center gap-1">
                                     🏷️ {item.appliedDiscountLabel}
-                                    {item.discountPercentage && item.discountPercentage > 0 && (
+                                    {typeof item.discountPercentage === 'number' && item.discountPercentage > 0 && (
                                       <span className="text-green-700 dark:text-green-300">
                                         (-{item.discountPercentage < 1 
                                           ? parseFloat(item.discountPercentage.toFixed(1)) 
