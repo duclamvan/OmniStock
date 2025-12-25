@@ -12044,6 +12044,16 @@ export default function PickPack() {
                                                 return;
                                               }
                                               
+                                              // Mark as printed immediately when clicked (optimistic update)
+                                              const trackingNumber = label.trackingNumbers?.[0];
+                                              if (trackingNumber) {
+                                                setPrintedPPLLabels(prev => {
+                                                  const newSet = new Set(prev);
+                                                  newSet.add(trackingNumber);
+                                                  return newSet;
+                                                });
+                                              }
+                                              
                                               console.log('📄 Creating PDF blob...');
                                               const labelBlob = new Blob(
                                                 [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
@@ -12059,17 +12069,6 @@ export default function PickPack() {
                                                 printWindow.onload = () => {
                                                   console.log('✅ Print window loaded, triggering print dialog');
                                                   printWindow.print();
-                                                  // Track that this label was printed using tracking number
-                                                  const trackingNumber = label.trackingNumbers?.[0];
-                                                  if (trackingNumber) {
-                                                    setPrintedPPLLabels(prev => {
-                                                      const newSet = new Set(prev);
-                                                      newSet.add(trackingNumber);
-                                                      return newSet;
-                                                    });
-                                                  }
-                                                  // Refresh labels to ensure UI is up to date
-                                                  fetchShipmentLabels();
                                                 };
                                               } else {
                                                 console.error('❌ Failed to open print window - might be blocked by popup blocker');
@@ -12183,11 +12182,13 @@ export default function PickPack() {
                             })}
                             
                             {/* CONSOLIDATED PRINT BUTTON for multi-carton shipments */}
-                            {isMultiCartonShipment && hasLabelsWithPDF && !isCancelled && (
-                              <div className="mt-4 p-4 bg-gradient-to-r from-orange-100 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/30 border-2 border-orange-400 dark:border-orange-600 rounded-xl">
+                            {isMultiCartonShipment && hasLabelsWithPDF && !isCancelled && (() => {
+                              const allLabelsPrinted = shipmentLabelsFromDB.some(l => l.trackingNumbers?.[0] && printedPPLLabels.has(l.trackingNumbers[0]));
+                              return (
+                              <div className={`mt-4 p-4 bg-gradient-to-r ${allLabelsPrinted ? 'from-green-100 to-emerald-50 dark:from-green-900/40 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-600' : 'from-orange-100 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/30 border-2 border-orange-400 dark:border-orange-600'} rounded-xl`}>
                                 <Button
                                   size="lg"
-                                  className="w-full h-14 text-lg font-bold bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 text-white shadow-lg"
+                                  className={`w-full h-14 text-lg font-bold ${allLabelsPrinted ? 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600' : 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600'} text-white shadow-lg`}
                                   onClick={async () => {
                                     try {
                                       // Find the first label with PDF data (all labels in batch share the same PDF)
@@ -12201,6 +12202,18 @@ export default function PickPack() {
                                         return;
                                       }
                                       
+                                      // Mark all labels as printed immediately (optimistic update)
+                                      shipmentLabelsFromDB.forEach(lbl => {
+                                        const trackingNumber = lbl.trackingNumbers?.[0];
+                                        if (trackingNumber) {
+                                          setPrintedPPLLabels(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(trackingNumber);
+                                            return newSet;
+                                          });
+                                        }
+                                      });
+                                      
                                       console.log('🖨️ Printing all labels from batch PDF...');
                                       const labelBlob = new Blob(
                                         [Uint8Array.from(atob(labelWithPDF.labelBase64), c => c.charCodeAt(0))],
@@ -12213,18 +12226,6 @@ export default function PickPack() {
                                       if (printWindow) {
                                         printWindow.onload = () => {
                                           printWindow.print();
-                                          // Mark all labels as printed
-                                          shipmentLabelsFromDB.forEach(label => {
-                                            const trackingNumber = label.trackingNumbers?.[0];
-                                            if (trackingNumber) {
-                                              setPrintedPPLLabels(prev => {
-                                                const newSet = new Set(prev);
-                                                newSet.add(trackingNumber);
-                                                return newSet;
-                                              });
-                                            }
-                                          });
-                                          fetchShipmentLabels();
                                         };
                                       } else {
                                         toast({
@@ -12245,14 +12246,24 @@ export default function PickPack() {
                                   }}
                                   data-testid="button-print-all-ppl-labels"
                                 >
-                                  <Printer className="h-6 w-6 mr-3" />
-                                  {t('orders:printAllLabels', 'Print All')} ({cartons.length} {t('common:labels', 'Labels')})
+                                  {shipmentLabelsFromDB.some(l => l.trackingNumbers?.[0] && printedPPLLabels.has(l.trackingNumbers[0])) ? (
+                                    <>
+                                      <CheckCircle className="h-6 w-6 mr-3" />
+                                      {t('printed')} ({cartons.length} {t('common:labels', 'Labels')})
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Printer className="h-6 w-6 mr-3" />
+                                      {t('orders:printAllLabels', 'Print All')} ({cartons.length} {t('common:labels', 'Labels')})
+                                    </>
+                                  )}
                                 </Button>
                                 <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-3">
                                   {t('orders:pplBatchPrintExplanation', 'One PDF document containing all labels will be printed')}
                                 </p>
                               </div>
-                            )}
+                              );
+                            })()}
                             
                             {/* Show orphaned labels (labels without matching cartons) */}
                             {orphanedLabels.map((label, orphanIndex) => {
@@ -12310,6 +12321,16 @@ export default function PickPack() {
                                       }`}
                                       onClick={async () => {
                                         try {
+                                          // Mark as printed immediately (optimistic update)
+                                          const trackingNumber = label.trackingNumbers?.[0];
+                                          if (trackingNumber) {
+                                            setPrintedPPLLabels(prev => {
+                                              const newSet = new Set(prev);
+                                              newSet.add(trackingNumber);
+                                              return newSet;
+                                            });
+                                          }
+                                          
                                           const labelBlob = new Blob(
                                             [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
                                             { type: 'application/pdf' }
@@ -12319,14 +12340,6 @@ export default function PickPack() {
                                           if (printWindow) {
                                             printWindow.onload = () => {
                                               printWindow.print();
-                                              const trackingNumber = label.trackingNumbers?.[0];
-                                              if (trackingNumber) {
-                                                setPrintedPPLLabels(prev => {
-                                                  const newSet = new Set(prev);
-                                                  newSet.add(trackingNumber);
-                                                  return newSet;
-                                                });
-                                              }
                                             };
                                           }
                                           setTimeout(() => URL.revokeObjectURL(url), 1000);
