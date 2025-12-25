@@ -9306,6 +9306,9 @@ Important:
         console.log(`📦 Order ${orderId} reverted to picking: items remain picked, status set to in_progress`);
       }
       
+      // Invalidate allocation cache so products query recalculates allocations
+      storage.invalidateAllocatedQuantitiesCache();
+      
       res.json({ 
         success: true, 
         message: 'Order picking reset successfully',
