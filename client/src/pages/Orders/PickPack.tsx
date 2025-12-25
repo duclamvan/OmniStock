@@ -8036,8 +8036,11 @@ export default function PickPack() {
     })();
     
     // Packing completion check - only check what's visible in the UI
+    // Packing list only required if includedDocuments.includePackingList is not false
+    const shouldRequirePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+    const packingListOk = !shouldRequirePackingList || printedDocuments.packingList;
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
-                              printedDocuments.packingList && 
+                              packingListOk && 
                               allCartonsValid;
     
     // Stop timer when packing is complete
@@ -8184,7 +8187,7 @@ export default function PickPack() {
                 data-testid="progress-pill-items"
               />
               
-              {/* Step 2: Documents */}
+              {/* Step 2: Documents - Green if packing list not required OR if printed */}
               <button
                 type="button"
                 onClick={() => {
@@ -8192,7 +8195,7 @@ export default function PickPack() {
                 }}
                 title={t('scrollToDocuments')}
                 className={`flex-1 h-1.5 rounded-sm transition-all cursor-pointer hover:opacity-80 hover:scale-y-150 focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                printedDocuments.packingList
+                (activePackingOrder?.includedDocuments?.includePackingList === false || printedDocuments.packingList)
                   ? 'bg-green-500 dark:bg-green-600' 
                   : 'bg-gray-400/50 dark:bg-gray-600/50'
               }`}
@@ -13191,8 +13194,9 @@ export default function PickPack() {
                     return;
                   }
                   
-                  // Step 2: Packing list printed
-                  if (!printedDocuments.packingList) {
+                  // Step 2: Packing list printed (only required if included in order)
+                  const shouldIncludePackingList = activePackingOrder?.includedDocuments?.includePackingList !== false;
+                  if (shouldIncludePackingList && !printedDocuments.packingList) {
                     scrollToElement('section-documents', 'Please print the packing slip to include in the shipment.');
                     return;
                   }
