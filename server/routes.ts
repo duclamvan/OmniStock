@@ -10188,6 +10188,11 @@ Important:
         }
       });
 
+      // Invalidate allocation cache since orders are moving back to ready_to_ship (adds to allocations)
+      if (results.length > 0) {
+        storage.invalidateAllocatedQuantitiesCache();
+      }
+
       res.json({
         success: true,
         unshipped: results.length,
@@ -10266,6 +10271,11 @@ Important:
           console.error(`Error shipping order ${orderId}:`, error);
           errors.push({ id: orderId, success: false, error: error.message || 'Unknown error' });
         }
+      }
+
+      // Invalidate allocation cache since shipped orders no longer count as allocated
+      if (results.length > 0) {
+        storage.invalidateAllocatedQuantitiesCache();
       }
 
       res.json({
