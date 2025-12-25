@@ -9053,13 +9053,12 @@ Important:
     }
   });
 
-  // Reset all picking for an order - restores location quantities (only during active picking)
+  // Reset all picking for an order - restores location quantities and resets pickedQuantity
   // Supports both single-location format (pickedLocations: { itemId: locationCode })
   // and multi-location format (pickedFromLocations: { itemId: { locationCode: qty } })
   // 
-  // IMPORTANT: When reverting from packing (pickStatus === 'completed'), we do NOT restore inventory.
-  // The inventory was already deducted during picking, and we're just resetting to re-pick.
-  // The allocation will show again because pickedQuantity is reset to 0.
+  // ALWAYS restores inventory and resets pickedQuantity so items can be re-picked
+  // and will show as "allocated" in inventory until picked again.
   app.post('/api/orders/:id/reset-picking', isAuthenticated, async (req: any, res) => {
     try {
       const orderId = req.params.id;
@@ -9071,10 +9070,10 @@ Important:
         return res.status(404).json({ message: "Order not found" });
       }
       
-      // Determine if we should restore inventory:
-      // - If pickStatus is 'completed' (reverting from packing), do NOT restore inventory
-      // - If pickStatus is 'in_progress' (resetting during active picking), DO restore inventory
-      const shouldRestoreInventory = order.pickStatus !== 'completed';
+      // ALWAYS restore inventory and reset pickedQuantity when resetting picking
+      // This ensures items show as "allocated" in inventory until re-picked
+      // Whether resetting during active picking OR reverting from packing
+      const shouldRestoreInventory = true;
       
       console.log(`📦 Reset-picking: order ${orderId}, pickStatus=${order.pickStatus}, shouldRestoreInventory=${shouldRestoreInventory}`);
       
@@ -9239,16 +9238,11 @@ Important:
                   restoredQuantity += restoreQty;
                 }
               }
-            } else {
-              console.log(`📦 Reset [Revert from packing]: Skipping inventory restore for item ${item.id} - inventory already deducted, keeping pickedQuantity`);
             }
             
-            // Only reset picked quantity during active picking reset, NOT when reverting from packing
-            if (shouldRestoreInventory) {
-              await storage.updateOrderItemPickedQuantity(item.id, 0);
-              await storage.updateOrderItem(item.id, { pickedFromLocations: null });
-            }
-            // When reverting from packing, keep pickedQuantity as-is so items show as already picked
+            // Always reset picked quantity so items can be re-picked
+            await storage.updateOrderItemPickedQuantity(item.id, 0);
+            await storage.updateOrderItem(item.id, { pickedFromLocations: null });
           } catch (itemError) {
             console.error(`Error restoring stock for item ${item.id}:`, itemError);
           }
@@ -9266,45 +9260,26 @@ Important:
                 console.log(`📦 Reset [Bundle]: Restored ${restoreQty} to bundle "${bundle.name}": ${currentStock} → ${currentStock + restoreQty}`);
                 restoredQuantity += restoreQty;
               }
-            } else {
-              console.log(`📦 Reset [Revert from packing]: Skipping bundle restore for item ${item.id} - inventory already deducted, keeping pickedQuantity`);
             }
-            // Only reset picked quantity during active picking reset, NOT when reverting from packing
-            if (shouldRestoreInventory) {
-              await storage.updateOrderItemPickedQuantity(item.id, 0);
-            }
+            // Always reset picked quantity so items can be re-picked
+            await storage.updateOrderItemPickedQuantity(item.id, 0);
           } catch (bundleError) {
             console.error(`Error restoring bundle stock for item ${item.id}:`, bundleError);
           }
         } else if ((item.pickedQuantity || 0) > 0) {
-          // Service items or items without productId - only reset during active picking reset
-          if (shouldRestoreInventory) {
-            await storage.updateOrderItemPickedQuantity(item.id, 0);
-          }
+          // Service items or items without productId - always reset picked quantity
+          await storage.updateOrderItemPickedQuantity(item.id, 0);
         }
       }
       
-      // Reset order pick status
-      // If reverting from packing (items already picked), set to 'in_progress' so picking page shows items as picked
-      // If resetting during active picking, set to 'not_started'
-      if (shouldRestoreInventory) {
-        // Active picking reset - start fresh
-        await storage.updateOrder(orderId, {
-          pickStatus: 'not_started',
-          pickStartTime: null,
-          pickEndTime: null,
-          pickedBy: null
-        });
-        console.log(`📦 Order ${orderId} picking reset: ${restoredLocations} locations, ${restoredQuantity} units restored`);
-      } else {
-        // Reverting from packing - keep items as picked, set to in_progress
-        await storage.updateOrder(orderId, {
-          pickStatus: 'in_progress',
-          pickEndTime: null
-          // Keep pickStartTime and pickedBy so we know who picked it
-        });
-        console.log(`📦 Order ${orderId} reverted to picking: items remain picked, status set to in_progress`);
-      }
+      // Always reset order to 'not_started' so items need to be picked fresh
+      await storage.updateOrder(orderId, {
+        pickStatus: 'not_started',
+        pickStartTime: null,
+        pickEndTime: null,
+        pickedBy: null
+      });
+      console.log(`📦 Order ${orderId} picking reset: ${restoredLocations} locations, ${restoredQuantity} units restored`);
       
       // Invalidate allocation cache so products query recalculates allocations
       storage.invalidateAllocatedQuantitiesCache();
