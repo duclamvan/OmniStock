@@ -9053,13 +9053,30 @@ Important:
     }
   });
 
-  // Reset all picking for an order - restores location quantities
+  // Reset all picking for an order - restores location quantities (only during active picking)
   // Supports both single-location format (pickedLocations: { itemId: locationCode })
   // and multi-location format (pickedFromLocations: { itemId: { locationCode: qty } })
+  // 
+  // IMPORTANT: When reverting from packing (pickStatus === 'completed'), we do NOT restore inventory.
+  // The inventory was already deducted during picking, and we're just resetting to re-pick.
+  // The allocation will show again because pickedQuantity is reset to 0.
   app.post('/api/orders/:id/reset-picking', isAuthenticated, async (req: any, res) => {
     try {
       const orderId = req.params.id;
       const { pickedLocations, pickedFromLocations } = req.body;
+      
+      // Get the order to check its current pickStatus
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Determine if we should restore inventory:
+      // - If pickStatus is 'completed' (reverting from packing), do NOT restore inventory
+      // - If pickStatus is 'in_progress' (resetting during active picking), DO restore inventory
+      const shouldRestoreInventory = order.pickStatus !== 'completed';
+      
+      console.log(`📦 Reset-picking: order ${orderId}, pickStatus=${order.pickStatus}, shouldRestoreInventory=${shouldRestoreInventory}`);
       
       // Get order items with their picked quantities
       const orderItems = await storage.getOrderItems(orderId);
@@ -9067,7 +9084,7 @@ Important:
       let restoredLocations = 0;
       let restoredQuantity = 0;
       
-      // For each item with picked quantity > 0, restore stock
+      // For each item with picked quantity > 0
       for (const item of orderItems) {
         if ((item.pickedQuantity || 0) > 0 && item.productId) {
           try {
@@ -9093,61 +9110,114 @@ Important:
               console.log(`📦 Reset [Debug]: Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
             }
             
-            // Get product locations for the target product (master product for virtual SKUs)
-            const locations = await storage.getProductLocations(targetProductId);
+            // Only restore inventory if we're resetting during active picking (not reverting from packing)
+            if (shouldRestoreInventory) {
+              // Get product locations for the target product (master product for virtual SKUs)
+              const locations = await storage.getProductLocations(targetProductId);
             
-            // Check if we have multi-location picks for this item
-            // Priority: 1) Frontend state (pickedFromLocations), 2) Database field (item.pickedFromLocations)
-            let multiLocationPicks = pickedFromLocations?.[item.id];
-            
-            // If frontend didn't provide locations, try to read from database
-            if (!multiLocationPicks && item.pickedFromLocations) {
-              multiLocationPicks = item.pickedFromLocations as Record<string, number>;
-              console.log(`📦 Using stored pickedFromLocations for item ${item.id}:`, multiLocationPicks);
-            }
-            
-            if (multiLocationPicks && typeof multiLocationPicks === 'object') {
-              // Multi-location format: restore to each location separately
-              // pickedFromLocations stores picked quantity in VIRTUAL units (e.g., buckets for virtual SKUs)
-              // The actual stock deduction was: pickedQty * deductionRatio
-              // So restoration should be: pickedQty * deductionRatio
+              // Check if we have multi-location picks for this item
+              // Priority: 1) Frontend state (pickedFromLocations), 2) Database field (item.pickedFromLocations)
+              let multiLocationPicks = pickedFromLocations?.[item.id];
               
-              // SAFETY: Cap restoration at the recorded pickedQuantity (not order quantity, which may have changed)
-              // This ensures we never restore more than what was actually deducted
-              const maxRestorationVirtual = item.pickedQuantity || 0;
-              const maxRestorationMaster = isVirtualSku ? (maxRestorationVirtual * deductionRatio) : maxRestorationVirtual;
-              let totalRestoredForItem = 0;
+              // If frontend didn't provide locations, try to read from database
+              if (!multiLocationPicks && item.pickedFromLocations) {
+                multiLocationPicks = item.pickedFromLocations as Record<string, number>;
+                console.log(`📦 Using stored pickedFromLocations for item ${item.id}:`, multiLocationPicks);
+              }
               
-              // Calculate total virtual picks from pickedFromLocations
-              const totalVirtualPicks = Object.values(multiLocationPicks).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
-              
-              console.log(`📦 Reset [Debug]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${item.pickedQuantity}, totalVirtualPicks=${totalVirtualPicks}, maxRestoreMaster=${maxRestorationMaster}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
-              
-              for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
-                const pickedQty = Number(qty) || 0;
-                if (pickedQty <= 0) continue;
+              if (multiLocationPicks && typeof multiLocationPicks === 'object') {
+                // Multi-location format: restore to each location separately
+                // pickedFromLocations stores picked quantity in VIRTUAL units (e.g., buckets for virtual SKUs)
+                // The actual stock deduction was: pickedQty * deductionRatio
+                // So restoration should be: pickedQty * deductionRatio
                 
-                const targetLocation = locations.find(loc => 
-                  loc.locationCode.toUpperCase() === locationCode.toUpperCase()
-                );
+                // SAFETY: Cap restoration at the recorded pickedQuantity (not order quantity, which may have changed)
+                // This ensures we never restore more than what was actually deducted
+                const maxRestorationVirtual = item.pickedQuantity || 0;
+                const maxRestorationMaster = isVirtualSku ? (maxRestorationVirtual * deductionRatio) : maxRestorationVirtual;
+                let totalRestoredForItem = 0;
+                
+                // Calculate total virtual picks from pickedFromLocations
+                const totalVirtualPicks = Object.values(multiLocationPicks).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+                
+                console.log(`📦 Reset [Debug]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${item.pickedQuantity}, totalVirtualPicks=${totalVirtualPicks}, maxRestoreMaster=${maxRestorationMaster}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
+                
+                for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
+                  const pickedQty = Number(qty) || 0;
+                  if (pickedQty <= 0) continue;
+                  
+                  const targetLocation = locations.find(loc => 
+                    loc.locationCode.toUpperCase() === locationCode.toUpperCase()
+                  );
+                  
+                  if (targetLocation) {
+                    const currentQty = targetLocation.quantity || 0;
+                    
+                    // For virtual SKUs: pickedQty is in virtual units, multiply by ratio to get master units
+                    // For regular products: pickedQty is in actual pieces
+                    let restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
+                    
+                    // SAFETY CAP: Don't restore more than the maximum allowed
+                    const remainingAllowed = maxRestorationMaster - totalRestoredForItem;
+                    if (restoreQty > remainingAllowed) {
+                      console.warn(`⚠️ Safety cap: Would restore ${restoreQty} but only ${remainingAllowed} allowed. Capping.`);
+                      restoreQty = Math.max(0, remainingAllowed);
+                    }
+                    
+                    if (restoreQty <= 0) continue;
+                    
+                    const newQty = currentQty + restoreQty;
+                    
+                    await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+                    
+                    // Also restore the main product quantity
+                    const targetProduct = await storage.getProductById(targetProductId);
+                    if (targetProduct) {
+                      const currentProductQty = targetProduct.quantity || 0;
+                      const newProductQty = currentProductQty + restoreQty;
+                      await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                      
+                      if (isVirtualSku) {
+                        console.log(`📦 Reset [Virtual SKU Multi-Loc]: Restored ${pickedQty} × ${deductionRatio} = ${restoreQty} to ${locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
+                      } else {
+                        console.log(`📦 Reset [Multi-Loc]: Restored ${pickedQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                      }
+                    }
+                    
+                    totalRestoredForItem += restoreQty;
+                    restoredLocations++;
+                    restoredQuantity += restoreQty;
+                  } else {
+                    console.warn(`⚠️ Location ${locationCode} not found for product ${targetProductId}, skipping restore`);
+                  }
+                }
+              } else {
+                // Single-location format (legacy): restore to one location
+                const usedLocationCode = pickedLocations?.[item.id];
+                let targetLocation = null;
+                
+                if (usedLocationCode) {
+                  targetLocation = locations.find(loc => 
+                    loc.locationCode.toUpperCase() === usedLocationCode.toUpperCase()
+                  );
+                }
+                
+                // Fallback to primary location if the picked location wasn't provided or not found
+                if (!targetLocation) {
+                  targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
+                }
                 
                 if (targetLocation) {
                   const currentQty = targetLocation.quantity || 0;
+                  // Use pickedQuantity which is in VIRTUAL units for virtual SKUs
+                  const pickedCount = item.pickedQuantity || 0;
                   
-                  // For virtual SKUs: pickedQty is in virtual units, multiply by ratio to get master units
-                  // For regular products: pickedQty is in actual pieces
-                  let restoreQty = isVirtualSku ? (pickedQty * deductionRatio) : pickedQty;
-                  
-                  // SAFETY CAP: Don't restore more than the maximum allowed
-                  const remainingAllowed = maxRestorationMaster - totalRestoredForItem;
-                  if (restoreQty > remainingAllowed) {
-                    console.warn(`⚠️ Safety cap: Would restore ${restoreQty} but only ${remainingAllowed} allowed. Capping.`);
-                    restoreQty = Math.max(0, remainingAllowed);
-                  }
-                  
-                  if (restoreQty <= 0) continue;
-                  
+                  // For virtual SKUs: pickedQuantity is in virtual units, multiply by ratio
+                  // For regular products: pickedQuantity is in actual pieces
+                  const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
                   const newQty = currentQty + restoreQty;
+                  
+                  console.log(`📦 Reset [Debug Single-Loc]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${pickedCount}, restoreQty=${restoreQty}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                   
@@ -9159,87 +9229,44 @@ Important:
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
                     if (isVirtualSku) {
-                      console.log(`📦 Reset [Virtual SKU Multi-Loc]: Restored ${pickedQty} × ${deductionRatio} = ${restoreQty} to ${locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
+                      console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
                     } else {
-                      console.log(`📦 Reset [Multi-Loc]: Restored ${pickedQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
+                      console.log(`📦 Reset: Restored ${pickedCount} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
                     }
                   }
                   
-                  totalRestoredForItem += restoreQty;
                   restoredLocations++;
                   restoredQuantity += restoreQty;
-                } else {
-                  console.warn(`⚠️ Location ${locationCode} not found for product ${targetProductId}, skipping restore`);
                 }
               }
             } else {
-              // Single-location format (legacy): restore to one location
-              const usedLocationCode = pickedLocations?.[item.id];
-              let targetLocation = null;
-              
-              if (usedLocationCode) {
-                targetLocation = locations.find(loc => 
-                  loc.locationCode.toUpperCase() === usedLocationCode.toUpperCase()
-                );
-              }
-              
-              // Fallback to primary location if the picked location wasn't provided or not found
-              if (!targetLocation) {
-                targetLocation = locations.find(loc => loc.isPrimary) || locations[0];
-              }
-              
-              if (targetLocation) {
-                const currentQty = targetLocation.quantity || 0;
-                // Use pickedQuantity which is in VIRTUAL units for virtual SKUs
-                const pickedCount = item.pickedQuantity || 0;
-                
-                // For virtual SKUs: pickedQuantity is in virtual units, multiply by ratio
-                // For regular products: pickedQuantity is in actual pieces
-                const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
-                const newQty = currentQty + restoreQty;
-                
-                console.log(`📦 Reset [Debug Single-Loc]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${pickedCount}, restoreQty=${restoreQty}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
-                
-                await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
-                
-                // Also restore the main product quantity
-                const targetProduct = await storage.getProductById(targetProductId);
-                if (targetProduct) {
-                  const currentProductQty = targetProduct.quantity || 0;
-                  const newProductQty = currentProductQty + restoreQty;
-                  await storage.updateProduct(targetProductId, { quantity: newProductQty });
-                  
-                  if (isVirtualSku) {
-                    console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
-                  } else {
-                    console.log(`📦 Reset: Restored ${pickedCount} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
-                  }
-                }
-                
-                restoredLocations++;
-                restoredQuantity += restoreQty;
-              }
+              console.log(`📦 Reset [Revert from packing]: Skipping inventory restore for item ${item.id} - inventory already deducted during picking`);
             }
             
-            // Reset the picked quantity and clear pickedFromLocations for this item
+            // Always reset the picked quantity and clear pickedFromLocations for this item
             await storage.updateOrderItemPickedQuantity(item.id, 0);
             await storage.updateOrderItem(item.id, { pickedFromLocations: null });
           } catch (itemError) {
             console.error(`Error restoring stock for item ${item.id}:`, itemError);
           }
         } else if ((item.pickedQuantity || 0) > 0 && item.bundleId) {
-          // Bundle items - restore bundle availableStock
+          // Bundle items - restore bundle availableStock only during active picking
           try {
-            const bundle = await storage.getBundleById(item.bundleId);
-            if (bundle) {
-              const currentStock = bundle.availableStock || 0;
-              const restoreQty = item.pickedQuantity || 0;
-              await storage.updateBundle(item.bundleId, {
-                availableStock: currentStock + restoreQty
-              });
-              console.log(`📦 Reset [Bundle]: Restored ${restoreQty} to bundle "${bundle.name}": ${currentStock} → ${currentStock + restoreQty}`);
-              restoredQuantity += restoreQty;
+            if (shouldRestoreInventory) {
+              const bundle = await storage.getBundleById(item.bundleId);
+              if (bundle) {
+                const currentStock = bundle.availableStock || 0;
+                const restoreQty = item.pickedQuantity || 0;
+                await storage.updateBundle(item.bundleId, {
+                  availableStock: currentStock + restoreQty
+                });
+                console.log(`📦 Reset [Bundle]: Restored ${restoreQty} to bundle "${bundle.name}": ${currentStock} → ${currentStock + restoreQty}`);
+                restoredQuantity += restoreQty;
+              }
+            } else {
+              console.log(`📦 Reset [Revert from packing]: Skipping bundle restore for item ${item.id} - inventory already deducted during picking`);
             }
+            // Always reset picked quantity
             await storage.updateOrderItemPickedQuantity(item.id, 0);
           } catch (bundleError) {
             console.error(`Error restoring bundle stock for item ${item.id}:`, bundleError);
