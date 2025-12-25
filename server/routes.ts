@@ -13503,6 +13503,249 @@ Important:
     }
   });
 
+  // Comprehensive business reports endpoint - server-side calculation
+  app.get('/api/reports/business', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { startDate, endDate, currency = 'CZK' } = req.query;
+      const baseCurrency = (currency as string).toUpperCase();
+      
+      // Fetch exchange rates from Frankfurter API
+      let exchangeRates: { rates: Record<string, number> } = { rates: { CZK: 25, USD: 1.1 } };
+      try {
+        const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+        if (exchangeRateResponse.ok) {
+          exchangeRates = await exchangeRateResponse.json();
+        }
+      } catch (err) {
+        console.warn('Failed to fetch exchange rates, using defaults');
+      }
+
+      // Convert amount to base currency
+      const convertToBaseCurrency = (amount: number, fromCurrency: string): number => {
+        if (!amount || !fromCurrency) return 0;
+        const from = fromCurrency.toUpperCase();
+        if (from === baseCurrency) return amount;
+
+        let amountInEur = amount;
+        if (from !== 'EUR' && exchangeRates.rates && exchangeRates.rates[from]) {
+          amountInEur = amount / exchangeRates.rates[from];
+        }
+
+        if (baseCurrency === 'EUR') return amountInEur;
+        if (exchangeRates.rates && exchangeRates.rates[baseCurrency]) {
+          return amountInEur * exchangeRates.rates[baseCurrency];
+        }
+
+        return amount;
+      };
+
+      // Get all data
+      const allOrders = await storage.getOrders();
+      const allProducts = await storage.getProducts();
+      const allCustomers = await storage.getCustomers();
+      const allExpenses = await storage.getExpenses();
+      const allOrderItems = await db.select().from(orderItems);
+
+      // Parse date range
+      const start = startDate ? new Date(startDate as string) : new Date(0);
+      const end = endDate ? new Date(endDate as string) : new Date();
+      end.setHours(23, 59, 59, 999);
+
+      // Filter orders by date range - use shipped+paid for revenue calculations
+      const revenueOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt!);
+        const inDateRange = orderDate >= start && orderDate <= end;
+        const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+        return inDateRange && isCompleted;
+      });
+
+      // All orders in date range (for order count)
+      const allOrdersInRange = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt!);
+        return orderDate >= start && orderDate <= end && !order.isArchived;
+      });
+
+      // Filter expenses by date range (only paid expenses)
+      const filteredExpenses = allExpenses.filter(expense => {
+        if (expense.status !== 'paid') return false;
+        const expenseDate = new Date(expense.date!);
+        return expenseDate >= start && expenseDate <= end;
+      });
+
+      // Get order items for revenue orders
+      const revenueOrderIds = new Set(revenueOrders.map(o => o.id));
+      const filteredOrderItems = allOrderItems.filter(item => revenueOrderIds.has(item.orderId!));
+
+      // Calculate revenue (grandTotal from shipped+paid orders)
+      let totalRevenue = 0;
+      revenueOrders.forEach(order => {
+        const grandTotal = parseFloat(order.grandTotal || '0');
+        totalRevenue += convertToBaseCurrency(grandTotal, order.currency || 'CZK');
+      });
+
+      // Calculate COGS from order items using import costs
+      let totalCost = 0;
+      filteredOrderItems.forEach(item => {
+        const product = allProducts.find(p => p.id === item.productId);
+        if (product) {
+          const quantity = item.quantity || 0;
+          const costUSD = parseFloat(product.importCostUsd || '0');
+          const costEUR = parseFloat(product.importCostEur || '0');
+          const costCZK = parseFloat(product.importCostCzk || '0');
+          
+          let itemCost = 0;
+          let sourceCurrency: string = 'CZK';
+          
+          if (costUSD > 0) {
+            itemCost = costUSD * quantity;
+            sourceCurrency = 'USD';
+          } else if (costEUR > 0) {
+            itemCost = costEUR * quantity;
+            sourceCurrency = 'EUR';
+          } else if (costCZK > 0) {
+            itemCost = costCZK * quantity;
+            sourceCurrency = 'CZK';
+          }
+          
+          totalCost += convertToBaseCurrency(itemCost, sourceCurrency);
+        }
+      });
+
+      // Add expenses to total cost
+      let totalExpenses = 0;
+      filteredExpenses.forEach(expense => {
+        const amount = parseFloat(expense.amount || '0');
+        totalExpenses += convertToBaseCurrency(amount, expense.currency || 'CZK');
+      });
+      totalCost += totalExpenses;
+
+      // Calculate metrics
+      const profit = totalRevenue - totalCost;
+      const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+      const avgOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0;
+
+      // Calculate units sold
+      const totalUnitsSold = filteredOrderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+      // Top selling products
+      const productSales = new Map<string, { quantity: number; revenue: number; product: any }>();
+      filteredOrderItems.forEach(item => {
+        if (!item.productId) return;
+        const product = allProducts.find(p => p.id === item.productId);
+        if (!product) return;
+        
+        const existing = productSales.get(item.productId) || { quantity: 0, revenue: 0, product };
+        existing.quantity += item.quantity || 0;
+        const order = revenueOrders.find(o => o.id === item.orderId);
+        if (order) {
+          const itemRevenue = parseFloat(item.totalPrice || '0');
+          existing.revenue += convertToBaseCurrency(itemRevenue, order.currency || 'CZK');
+        }
+        productSales.set(item.productId, existing);
+      });
+      
+      const topProducts = Array.from(productSales.values())
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10)
+        .map(item => ({
+          product: { id: item.product.id, name: item.product.name, sku: item.product.sku },
+          quantity: item.quantity,
+          revenue: item.revenue
+        }));
+
+      // Top customers
+      const customerOrders = new Map<string, { orderCount: number; totalSpent: number; customer: any }>();
+      revenueOrders.forEach(order => {
+        if (!order.customerId) return;
+        const customer = allCustomers.find(c => c.id === order.customerId);
+        if (!customer) return;
+        
+        const existing = customerOrders.get(order.customerId) || { orderCount: 0, totalSpent: 0, customer };
+        existing.orderCount += 1;
+        existing.totalSpent += convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
+        customerOrders.set(order.customerId, existing);
+      });
+      
+      const topCustomers = Array.from(customerOrders.values())
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 10)
+        .map(item => ({
+          customer: { id: item.customer.id, name: item.customer.name },
+          orderCount: item.orderCount,
+          totalSpent: item.totalSpent
+        }));
+
+      // Active customers (customers with orders in date range)
+      const activeCustomerIds = new Set(allOrdersInRange.filter(o => o.customerId).map(o => o.customerId));
+      const activeCustomers = activeCustomerIds.size;
+
+      // Inventory insights
+      const lowStockThreshold = 10;
+      const lowStockProducts = allProducts.filter(p => (p.quantity || 0) > 0 && (p.quantity || 0) < (p.minQuantity || lowStockThreshold));
+      const outOfStockProducts = allProducts.filter(p => (p.quantity || 0) <= 0);
+      const totalStock = allProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+      
+      // Calculate stock value in base currency
+      let totalStockValue = 0;
+      allProducts.forEach(product => {
+        const qty = product.quantity || 0;
+        const priceUSD = parseFloat(product.importCostUsd || '0');
+        const priceEUR = parseFloat(product.importCostEur || '0');
+        const priceCZK = parseFloat(product.importCostCzk || product.sellingPriceCzk || '0');
+        
+        if (priceUSD > 0) {
+          totalStockValue += convertToBaseCurrency(priceUSD * qty, 'USD');
+        } else if (priceEUR > 0) {
+          totalStockValue += convertToBaseCurrency(priceEUR * qty, 'EUR');
+        } else if (priceCZK > 0) {
+          totalStockValue += convertToBaseCurrency(priceCZK * qty, 'CZK');
+        }
+      });
+
+      res.json({
+        financial: {
+          totalRevenue,
+          totalCost,
+          profit,
+          profitMargin,
+          avgOrderValue,
+          totalOrders: allOrdersInRange.length,
+          revenueOrderCount: revenueOrders.length
+        },
+        sales: {
+          totalUnitsSold,
+          topProducts
+        },
+        customers: {
+          activeCustomers,
+          totalCustomers: allCustomers.length,
+          topCustomers
+        },
+        inventory: {
+          totalStock,
+          totalValue: totalStockValue,
+          lowStockCount: lowStockProducts.length,
+          outOfStockCount: outOfStockProducts.length,
+          lowStockProducts: lowStockProducts.slice(0, 10).map(p => ({
+            id: p.id,
+            name: p.name,
+            quantity: p.quantity,
+            minQuantity: p.minQuantity || lowStockThreshold
+          }))
+        },
+        meta: {
+          currency: baseCurrency,
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          generatedAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error("Error generating business reports:", error);
+      res.status(500).json({ message: "Failed to generate business reports" });
+    }
+  });
+
   app.get('/api/reports/financial-summary', requireRole(['administrator']), async (req, res) => {
     try {
       const { year, month, baseCurrency = 'CZK' } = req.query;

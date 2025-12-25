@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { formatCompactNumber, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { formatCompactNumber } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -54,11 +55,91 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CNY: '¥',
 };
 
+interface BusinessReportData {
+  financial: {
+    totalRevenue: number;
+    totalCost: number;
+    profit: number;
+    profitMargin: number;
+    avgOrderValue: number;
+    totalOrders: number;
+  };
+  sales: {
+    totalUnitsSold: number;
+    topProducts: Array<{
+      product: { id: number; name: string; sku: string };
+      quantity: number;
+      revenue: number;
+    }>;
+  };
+  customers: {
+    activeCustomers: number;
+    topCustomers: Array<{
+      customer: { id: number; name: string };
+      orderCount: number;
+      totalSpent: number;
+    }>;
+  };
+  inventory: {
+    totalStock: number;
+    totalValue: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+    lowStockProducts: Array<{ id: number; name: string; quantity: number }>;
+    productCount: number;
+  };
+}
+
+function MetricCardSkeleton() {
+  return (
+    <Card className="border-slate-200 dark:border-slate-800">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-8 w-32" />
+          </div>
+          <Skeleton className="h-12 w-12 rounded-xl" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ListCardSkeleton() {
+  return (
+    <Card className="border-slate-200 dark:border-slate-800">
+      <CardHeader>
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-60 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900">
+              <div className="flex items-center gap-3 flex-1">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <div className="text-right">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-3 w-12 mt-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Reports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
-  const { t: tCommon } = useTranslation('common');
-  const { formatCurrency, settings } = useLocalization();
+  const { formatCurrency } = useLocalization();
   const [dateRange, setDateRange] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -74,36 +155,6 @@ export default function Reports() {
     return `${symbol}${compactValue}`;
   };
 
-  // Fetch all necessary data
-  const { data: products = [] } = useQuery({ queryKey: ['/api/products'] });
-  const { data: orders = [] } = useQuery({ queryKey: ['/api/orders'] });
-  const { data: customers = [] } = useQuery({ queryKey: ['/api/customers'] });
-  const { data: orderItems = [] } = useQuery({
-    queryKey: ['/api/order-items/all'],
-    queryFn: async () => {
-      const response = await fetch('/api/order-items/all', { credentials: 'include' });
-      if (!response.ok) return [];
-      return response.json();
-    },
-  });
-  const { data: expenses = [] } = useQuery({ queryKey: ['/api/expenses'] });
-  
-  // Fetch live exchange rates from Frankfurter API
-  const { data: exchangeRates } = useQuery({
-    queryKey: ['/api/exchange-rates'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
-        if (!response.ok) return { rates: { CZK: 25, USD: 1.1 } };
-        return response.json();
-      } catch {
-        return { rates: { CZK: 25, USD: 1.1 } };
-      }
-    },
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
-  });
-
-  // Calculate date range
   const getDateRange = () => {
     const now = new Date();
     switch (dateRange) {
@@ -132,244 +183,78 @@ export default function Reports() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
-  // Filter orders by date range AND shipped/paid status for accurate revenue
-  const filteredOrders = useMemo(() => {
-    return (orders as any[]).filter((order: any) => {
-      const orderDate = new Date(order.createdAt);
-      const inDateRange = orderDate >= startDate && orderDate <= endDate;
-      // Only include shipped and paid orders for revenue calculation (consistent with Dashboard)
-      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
-      return inDateRange && isCompleted;
-    });
-  }, [orders, startDate, endDate]);
-  
-  // All orders in date range (for order count metrics)
-  const allOrdersInRange = useMemo(() => {
-    return (orders as any[]).filter((order: any) => {
-      const orderDate = new Date(order.createdAt);
-      return orderDate >= startDate && orderDate <= endDate;
-    });
-  }, [orders, startDate, endDate]);
+  const { data: reportData, isLoading } = useQuery<BusinessReportData>({
+    queryKey: ['/api/reports/business', startDate.toISOString(), endDate.toISOString(), displayCurrency],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        currency: displayCurrency,
+      });
+      const response = await fetch(`/api/reports/business?${params}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch report data');
+      return response.json();
+    },
+  });
 
-  // Filter order items by date range (only items from filtered orders)
-  const filteredOrderItems = useMemo(() => {
-    const filteredOrderIds = new Set(filteredOrders.map((order: any) => order.id));
-    return (orderItems as any[]).filter((item: any) => filteredOrderIds.has(item.orderId));
-  }, [orderItems, filteredOrders]);
-
-  // Filter expenses by date range
-  const filteredExpenses = useMemo(() => {
-    return (expenses as any[]).filter((expense: any) => {
-      const expenseDate = new Date(expense.createdAt || expense.date);
-      return expenseDate >= startDate && expenseDate <= endDate;
-    });
-  }, [expenses, startDate, endDate]);
-
-  // Helper function to convert amounts to display currency
-  const toDisplayCurrency = (amount: number, fromCurrency: string): number => {
-    if (fromCurrency === displayCurrency) return amount;
-    return convertCurrency(amount, fromCurrency as Currency, displayCurrency);
+  const financial = reportData?.financial ?? {
+    totalRevenue: 0,
+    totalCost: 0,
+    profit: 0,
+    profitMargin: 0,
+    avgOrderValue: 0,
+    totalOrders: 0,
   };
 
-  // Calculate financial metrics - all values converted to display currency
-  const financialMetrics = useMemo(() => {
-    let totalRevenue = 0;
-    let totalCost = 0;
+  const sales = reportData?.sales ?? {
+    totalUnitsSold: 0,
+    topProducts: [],
+  };
 
-    // Calculate revenue from orders, converting to display currency
-    filteredOrders.forEach((order: any) => {
-      const revenue = parseFloat(order.grandTotal || '0');
-      const orderCurrency = order.currency || 'CZK';
-      totalRevenue += convertCurrency(revenue, orderCurrency as Currency, displayCurrency);
-    });
+  const customers = reportData?.customers ?? {
+    activeCustomers: 0,
+    topCustomers: [],
+  };
 
-    // Calculate product costs - use single authoritative cost source (prefer USD > EUR > CZK)
-    filteredOrderItems.forEach((item: any) => {
-      const product = (products as any[]).find((p: any) => p.id === item.productId);
-      if (product) {
-        const quantity = item.quantity || 0;
-        const costUSD = parseFloat(product.importCostUsd || '0');
-        const costEUR = parseFloat(product.importCostEur || '0');
-        const costCZK = parseFloat(product.importCostCzk || '0');
-        
-        // Use priority: USD > EUR > CZK (choose first non-zero value)
-        let itemCost = 0;
-        let sourceCurrency: 'USD' | 'EUR' | 'CZK' = 'CZK';
-        
-        if (costUSD > 0) {
-          itemCost = costUSD * quantity;
-          sourceCurrency = 'USD';
-        } else if (costEUR > 0) {
-          itemCost = costEUR * quantity;
-          sourceCurrency = 'EUR';
-        } else if (costCZK > 0) {
-          itemCost = costCZK * quantity;
-          sourceCurrency = 'CZK';
-        }
-        
-        totalCost += convertCurrency(itemCost, sourceCurrency, displayCurrency);
-      }
-    });
+  const inventory = reportData?.inventory ?? {
+    totalStock: 0,
+    totalValue: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    lowStockProducts: [],
+    productCount: 0,
+  };
 
-    // Add expenses, converting to display currency
-    filteredExpenses.forEach((expense: any) => {
-      const amount = parseFloat(expense.amount || '0');
-      const expenseCurrency = expense.currency || 'CZK';
-      totalCost += convertCurrency(amount, expenseCurrency as Currency, displayCurrency);
-    });
-
-    const profit = totalRevenue - totalCost;
-    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
-
-    // Calculate average order value in display currency
-    const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
-
-    return {
-      totalRevenue,
-      totalCost,
-      profit,
-      profitMargin,
-      avgOrderValue,
-      totalOrders: filteredOrders.length,
-      totalOrdersInRange: allOrdersInRange.length,
-    };
-  }, [filteredOrders, filteredOrderItems, filteredExpenses, products, allOrdersInRange, displayCurrency]);
-
-  // Calculate product performance - convert revenue to display currency
-  const productPerformance = useMemo(() => {
-    const productSales: { [key: string]: { product: any; quantity: number; revenue: number; originalCurrency: string } } = {};
-
-    filteredOrderItems.forEach((item: any) => {
-      const product = (products as any[]).find((p: any) => p.id === item.productId);
-      if (product) {
-        if (!productSales[product.id]) {
-          productSales[product.id] = { product, quantity: 0, revenue: 0, originalCurrency: 'CZK' };
-        }
-        productSales[product.id].quantity += item.quantity || 0;
-        
-        // Get the order to find the currency
-        const order = filteredOrders.find((o: any) => o.id === item.orderId);
-        const itemCurrency = order?.currency || 'CZK';
-        const itemRevenue = parseFloat(item.total || '0');
-        
-        // Convert to display currency
-        productSales[product.id].revenue += convertCurrency(itemRevenue, itemCurrency as Currency, displayCurrency);
-      }
-    });
-
-    const sortedProducts = Object.values(productSales).sort((a, b) => b.quantity - a.quantity);
-    const topProducts = sortedProducts.slice(0, 10);
-    const slowMovers = sortedProducts.slice(-10).reverse();
-
-    const totalUnitsSold = sortedProducts.reduce((sum, p) => sum + p.quantity, 0);
-    const totalRevenue = sortedProducts.reduce((sum, p) => sum + p.revenue, 0);
-
-    return {
-      topProducts,
-      slowMovers,
-      totalUnitsSold,
-      totalRevenue,
-      totalProductsSold: sortedProducts.length,
-    };
-  }, [filteredOrderItems, products, filteredOrders, displayCurrency]);
-
-  // Customer analytics - convert to display currency
-  const customerAnalytics = useMemo(() => {
-    const customerOrders: { [key: string]: { customer: any; orderCount: number; totalSpent: number } } = {};
-
-    filteredOrders.forEach((order: any) => {
-      if (order.customerId) {
-        const customer = (customers as any[]).find((c: any) => c.id === order.customerId);
-        if (customer) {
-          if (!customerOrders[customer.id]) {
-            customerOrders[customer.id] = { customer, orderCount: 0, totalSpent: 0 };
-          }
-          customerOrders[customer.id].orderCount += 1;
-          
-          const orderAmount = parseFloat(order.grandTotal || '0');
-          const orderCurrency = order.currency || 'CZK';
-          // Convert to display currency
-          customerOrders[customer.id].totalSpent += convertCurrency(orderAmount, orderCurrency as Currency, displayCurrency);
-        }
-      }
-    });
-
-    const sortedCustomers = Object.values(customerOrders).sort((a, b) => b.totalSpent - a.totalSpent);
-    const topCustomers = sortedCustomers.slice(0, 10);
-
-    return {
-      topCustomers,
-      totalCustomers: (customers as any[]).length,
-      activeCustomers: sortedCustomers.length,
-      avgOrdersPerCustomer: sortedCustomers.length > 0 ? filteredOrders.length / sortedCustomers.length : 0,
-    };
-  }, [filteredOrders, customers, displayCurrency]);
-
-  // Inventory insights - convert to display currency
-  const inventoryInsights = useMemo(() => {
-    const totalStock = (products as any[]).reduce((sum, p) => sum + (p.quantity || 0), 0);
-    const totalValue = (products as any[]).reduce((sum, p) => {
-      const qty = p.quantity || 0;
-      // Use price based on display currency
-      let price = 0;
-      if (displayCurrency === 'CZK') {
-        price = parseFloat(p.priceCzk || '0');
-      } else if (displayCurrency === 'EUR') {
-        price = parseFloat(p.priceEur || '0');
-      } else if (displayCurrency === 'USD') {
-        // Convert from CZK to USD if no USD price
-        price = convertCurrency(parseFloat(p.priceCzk || '0'), 'CZK', 'USD');
-      }
-      return sum + (qty * price);
-    }, 0);
-
-    const lowStockProducts = (products as any[]).filter((p: any) => 
-      p.quantity > 0 && p.quantity <= (p.lowStockAlert || 5)
-    );
-
-    const outOfStock = (products as any[]).filter((p: any) => p.quantity === 0);
-
-    return {
-      totalStock,
-      totalValue,
-      lowStockCount: lowStockProducts.length,
-      outOfStockCount: outOfStock.length,
-      lowStockProducts: lowStockProducts.slice(0, 10),
-      outOfStockProducts: outOfStock.slice(0, 10),
-    };
-  }, [products, displayCurrency]);
-
-  // Export handlers - use display currency
   const handleExportXLSX = () => {
     try {
       const exportData = [
         {
           [t('metric')]: `${t('totalRevenue')} (${displayCurrency})`,
-          [t('value')]: formatCurrency(financialMetrics.totalRevenue, displayCurrency),
+          [t('value')]: formatCurrency(financial.totalRevenue, displayCurrency),
         },
         {
           [t('metric')]: `${t('totalCost')} (${displayCurrency})`,
-          [t('value')]: formatCurrency(financialMetrics.totalCost, displayCurrency),
+          [t('value')]: formatCurrency(financial.totalCost, displayCurrency),
         },
         {
           [t('metric')]: `${t('profit')} (${displayCurrency})`,
-          [t('value')]: formatCurrency(financialMetrics.profit, displayCurrency),
+          [t('value')]: formatCurrency(financial.profit, displayCurrency),
         },
         {
           [t('metric')]: t('profitMargin'),
-          [t('value')]: `${financialMetrics.profitMargin.toFixed(2)}%`,
+          [t('value')]: `${financial.profitMargin.toFixed(2)}%`,
         },
         {
           [t('metric')]: t('totalOrders'),
-          [t('value')]: financialMetrics.totalOrders,
+          [t('value')]: financial.totalOrders,
         },
         {
           [t('metric')]: t('unitsSold'),
-          [t('value')]: productPerformance.totalUnitsSold,
+          [t('value')]: sales.totalUnitsSold,
         },
         {
           [t('metric')]: t('activeCustomers'),
-          [t('value')]: customerAnalytics.activeCustomers,
+          [t('value')]: customers.activeCustomers,
         },
       ];
 
@@ -392,13 +277,13 @@ export default function Reports() {
   const handleExportPDF = () => {
     try {
       const exportData = [
-        { metric: `${t('totalRevenue')} (${displayCurrency})`, value: formatCurrency(financialMetrics.totalRevenue, displayCurrency) },
-        { metric: `${t('totalCost')} (${displayCurrency})`, value: formatCurrency(financialMetrics.totalCost, displayCurrency) },
-        { metric: `${t('profit')} (${displayCurrency})`, value: formatCurrency(financialMetrics.profit, displayCurrency) },
-        { metric: t('profitMargin'), value: `${financialMetrics.profitMargin.toFixed(2)}%` },
-        { metric: t('totalOrders'), value: financialMetrics.totalOrders.toString() },
-        { metric: t('unitsSold'), value: productPerformance.totalUnitsSold.toString() },
-        { metric: t('activeCustomers'), value: customerAnalytics.activeCustomers.toString() },
+        { metric: `${t('totalRevenue')} (${displayCurrency})`, value: formatCurrency(financial.totalRevenue, displayCurrency) },
+        { metric: `${t('totalCost')} (${displayCurrency})`, value: formatCurrency(financial.totalCost, displayCurrency) },
+        { metric: `${t('profit')} (${displayCurrency})`, value: formatCurrency(financial.profit, displayCurrency) },
+        { metric: t('profitMargin'), value: `${financial.profitMargin.toFixed(2)}%` },
+        { metric: t('totalOrders'), value: financial.totalOrders.toString() },
+        { metric: t('unitsSold'), value: sales.totalUnitsSold.toString() },
+        { metric: t('activeCustomers'), value: customers.activeCustomers.toString() },
       ];
 
       const columns: PDFColumn[] = [
@@ -427,10 +312,10 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight" data-testid="heading-reports">
             {t('businessReports')}
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1" data-testid="text-reports-description">
             {t('comprehensiveAnalytics')}
           </p>
         </div>
@@ -446,14 +331,14 @@ export default function Reports() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('allTime')}</SelectItem>
-              <SelectItem value="today">{t('today')}</SelectItem>
-              <SelectItem value="week">{t('last7Days')}</SelectItem>
-              <SelectItem value="month">{t('last30Days')}</SelectItem>
-              <SelectItem value="thisMonth">{t('thisMonth')}</SelectItem>
-              <SelectItem value="year">{t('thisYear')}</SelectItem>
-              <SelectItem value="lastYear">{t('lastYear')}</SelectItem>
-              <SelectItem value="custom">{t('customPeriod')}</SelectItem>
+              <SelectItem value="all" data-testid="option-all-time">{t('allTime')}</SelectItem>
+              <SelectItem value="today" data-testid="option-today">{t('today')}</SelectItem>
+              <SelectItem value="week" data-testid="option-week">{t('last7Days')}</SelectItem>
+              <SelectItem value="month" data-testid="option-month">{t('last30Days')}</SelectItem>
+              <SelectItem value="thisMonth" data-testid="option-this-month">{t('thisMonth')}</SelectItem>
+              <SelectItem value="year" data-testid="option-year">{t('thisYear')}</SelectItem>
+              <SelectItem value="lastYear" data-testid="option-last-year">{t('lastYear')}</SelectItem>
+              <SelectItem value="custom" data-testid="option-custom">{t('customPeriod')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={displayCurrency} onValueChange={(value) => setDisplayCurrency(value as 'CZK' | 'EUR' | 'USD')}>
@@ -462,9 +347,9 @@ export default function Reports() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CZK">CZK</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="CZK" data-testid="option-czk">CZK</SelectItem>
+              <SelectItem value="EUR" data-testid="option-eur">EUR</SelectItem>
+              <SelectItem value="USD" data-testid="option-usd">USD</SelectItem>
             </SelectContent>
           </Select>
           {dateRange === 'custom' && (
@@ -488,6 +373,7 @@ export default function Reports() {
                         selected={customStartDate}
                         onSelect={setCustomStartDate}
                         disabled={(date) => customEndDate ? date > customEndDate : false}
+                        data-testid="calendar-start-date"
                       />
                     </div>
                     <div className="space-y-2">
@@ -497,6 +383,7 @@ export default function Reports() {
                         selected={customEndDate}
                         onSelect={setCustomEndDate}
                         disabled={(date) => customStartDate ? date < customStartDate : false}
+                        data-testid="calendar-end-date"
                       />
                     </div>
                   </div>
@@ -537,246 +424,379 @@ export default function Reports() {
 
       {/* Financial Overview */}
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2" data-testid="section-financial-overview">
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
           {t('financialOverview')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Total Revenue */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('revenue')} ({displayCurrency})
-                  </p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue">
-                          {formatCompactCurrency(financialMetrics.totalRevenue, displayCurrency)}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.totalRevenue, displayCurrency)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                  <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </>
+          ) : (
+            <>
+              {/* Total Revenue */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-revenue">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('revenue')} ({displayCurrency})
+                      </p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-revenue">
+                              {formatCompactCurrency(financial.totalRevenue, displayCurrency)}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono">{formatCurrency(financial.totalRevenue, displayCurrency)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                      <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Total Cost */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('totalCost')} ({displayCurrency})
-                  </p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-cost">
-                          {formatCompactCurrency(financialMetrics.totalCost, displayCurrency)}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.totalCost, displayCurrency)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="flex-shrink-0 p-2 sm:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                  <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Total Cost */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-cost">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('totalCost')} ({displayCurrency})
+                      </p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help" data-testid="stat-cost">
+                              {formatCompactCurrency(financial.totalCost, displayCurrency)}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono">{formatCurrency(financial.totalCost, displayCurrency)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex-shrink-0 p-2 sm:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                      <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Profit */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('profitEst')} ({displayCurrency})
-                  </p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financialMetrics.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
-                          {formatCompactCurrency(financialMetrics.profit, displayCurrency)}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-mono">{formatCurrency(financialMetrics.profit, displayCurrency)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className={`flex-shrink-0 p-3 rounded-xl ${financialMetrics.profit >= 0 ? 'bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'}`}>
-                  {financialMetrics.profit >= 0 ? (
-                    <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                  ) : (
-                    <TrendingDown className="h-6 w-6 text-red-600 dark:text-red-400" />
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Profit */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-profit">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('profitEst')} ({displayCurrency})
+                      </p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className={`text-xl sm:text-2xl font-bold truncate cursor-help ${financial.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`} data-testid="stat-profit">
+                              {formatCompactCurrency(financial.profit, displayCurrency)}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono">{formatCurrency(financial.profit, displayCurrency)}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className={`flex-shrink-0 p-3 rounded-xl ${financial.profit >= 0 ? 'bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950' : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950 dark:to-orange-950'}`}>
+                      {financial.profit >= 0 ? (
+                        <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <TrendingDown className="h-6 w-6 text-red-600 dark:text-red-400" />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Profit Margin */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('profitMargin')}
-                  </p>
-                  <p className={`text-xl sm:text-2xl font-bold truncate ${financialMetrics.profitMargin >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} data-testid="stat-margin">
-                    {financialMetrics.profitMargin.toFixed(1)}%
-                  </p>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
-                  <Target className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Profit Margin */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-margin">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('profitMargin')}
+                      </p>
+                      <p className={`text-xl sm:text-2xl font-bold truncate ${financial.profitMargin >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} data-testid="stat-margin">
+                        {financial.profitMargin.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+                      <Target className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </div>
 
       {/* Sales & Orders Overview */}
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
+        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2" data-testid="section-sales-orders">
           <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600 dark:text-cyan-400" />
           {t('salesAndOrders')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Total Orders */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('totalOrders')}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
-                    {formatCompactNumber(financialMetrics.totalOrders)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
-                  <ShoppingCart className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </>
+          ) : (
+            <>
+              {/* Total Orders */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-total-orders">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('totalOrders')}
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-orders">
+                        {formatCompactNumber(financial.totalOrders)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
+                      <ShoppingCart className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Units Sold */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('unitsSold')}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
-                    {formatCompactNumber(productPerformance.totalUnitsSold)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
-                  <Package className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Units Sold */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-units-sold">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('unitsSold')}
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-units-sold">
+                        {formatCompactNumber(sales.totalUnitsSold)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+                      <Package className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Avg Order Value */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('avgOrder')} ({displayCurrency})
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order">
-                    {formatCompactCurrency(financialMetrics.avgOrderValue, displayCurrency)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-                  <Activity className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Avg Order Value */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-avg-order">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('avgOrder')} ({displayCurrency})
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-avg-order">
+                        {formatCompactCurrency(financial.avgOrderValue, displayCurrency)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+                      <Activity className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Active Customers */}
-          <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {t('activeCustomers')}
-                  </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
-                    {formatCompactNumber(customerAnalytics.activeCustomers)}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950 dark:to-purple-950">
-                  <Users className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Active Customers */}
+              <Card className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid="card-active-customers">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        {t('activeCustomers')}
+                      </p>
+                      <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-active-customers">
+                        {formatCompactNumber(customers.activeCustomers)}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950 dark:to-purple-950">
+                      <Users className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </div>
 
       {/* Product Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Top Selling Products */}
-        <Card className="border-slate-200 dark:border-slate-800">
+        {isLoading ? (
+          <>
+            <ListCardSkeleton />
+            <ListCardSkeleton />
+          </>
+        ) : (
+          <>
+            {/* Top Selling Products */}
+            <Card className="border-slate-200 dark:border-slate-800" data-testid="card-top-products">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-500" />
+                  {t('topSellingProducts')}
+                </CardTitle>
+                <CardDescription>
+                  {t('topSellingProductsDesc')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {sales.topProducts.length === 0 ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4" data-testid="text-no-sales">
+                      {t('noSalesDataAvailable')}
+                    </p>
+                  ) : (
+                    sales.topProducts.map((item, index) => (
+                      <div key={item.product.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-testid={`row-top-product-${item.product.id}`}>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Badge variant="secondary" className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full">
+                            {index + 1}
+                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-900 dark:text-slate-100 truncate" data-testid={`text-product-name-${item.product.id}`}>
+                              {item.product.name}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400" data-testid={`text-product-sku-${item.product.id}`}>
+                              SKU: {item.product.sku}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-emerald-600 dark:text-emerald-400" data-testid={`text-product-quantity-${item.product.id}`}>
+                            {item.quantity} {t('units')}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400" data-testid={`text-product-revenue-${item.product.id}`}>
+                            {formatCurrency(item.revenue, displayCurrency)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Inventory Alerts */}
+            <Card className="border-slate-200 dark:border-slate-800" data-testid="card-inventory-alerts">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  {t('inventoryAlerts')}
+                </CardTitle>
+                <CardDescription>
+                  {t('lowStockAndOutOfStock')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Summary */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="card-low-stock-count">
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('lowStock')}</p>
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400" data-testid="stat-low-stock">
+                        {inventory.lowStockCount}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" data-testid="card-out-of-stock-count">
+                      <p className="text-xs text-red-700 dark:text-red-300 mb-1">{t('outOfStock')}</p>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="stat-out-of-stock">
+                        {inventory.outOfStockCount}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Low Stock List */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('lowStockItems')}</p>
+                    {inventory.lowStockProducts.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-2" data-testid="text-well-stocked">
+                        {t('allProductsWellStocked')}
+                      </p>
+                    ) : (
+                      inventory.lowStockProducts.slice(0, 5).map((product) => (
+                        <div key={product.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-900" data-testid={`row-low-stock-${product.id}`}>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1" data-testid={`text-low-stock-name-${product.id}`}>
+                            {product.name}
+                          </p>
+                          <Badge variant="outline" className="text-amber-600 border-amber-600 shrink-0" data-testid={`badge-low-stock-qty-${product.id}`}>
+                            {product.quantity} {t('left')}
+                          </Badge>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      {/* Top Customers */}
+      {isLoading ? (
+        <ListCardSkeleton />
+      ) : (
+        <Card className="border-slate-200 dark:border-slate-800" data-testid="card-top-customers">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-amber-500" />
-              {t('topSellingProducts')}
+              <Users className="h-5 w-5 text-violet-500" />
+              {t('topCustomers')}
             </CardTitle>
             <CardDescription>
-              {t('topSellingProductsDesc')}
+              {t('highestValueCustomers')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {productPerformance.topProducts.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                  {t('noSalesDataAvailable')}
+              {customers.topCustomers.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4" data-testid="text-no-customers">
+                  {t('noCustomerDataAvailable')}
                 </p>
               ) : (
-                productPerformance.topProducts.map((item, index) => (
-                  <div key={item.product.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                customers.topCustomers.map((item, index) => (
+                  <div key={item.customer.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-testid={`row-top-customer-${item.customer.id}`}>
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Badge variant="secondary" className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full">
                         {index + 1}
                       </Badge>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                          {item.product.name}
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate" data-testid={`text-customer-name-${item.customer.id}`}>
+                          {item.customer.name}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          SKU: {item.product.sku}
+                        <p className="text-xs text-slate-500 dark:text-slate-400" data-testid={`text-customer-orders-${item.customer.id}`}>
+                          {item.orderCount} {t('ordersLowercase')}
                         </p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {item.quantity} {t('units')}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {formatCurrency(item.revenue, displayCurrency)}
+                      <p className="font-bold text-violet-600 dark:text-violet-400" data-testid={`text-customer-spent-${item.customer.id}`}>
+                        {formatCurrency(item.totalSpent, displayCurrency)}
                       </p>
                     </div>
                   </div>
@@ -785,161 +805,73 @@ export default function Reports() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Inventory Alerts */}
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              {t('inventoryAlerts')}
-            </CardTitle>
-            <CardDescription>
-              {t('lowStockAndOutOfStock')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs text-amber-700 dark:text-amber-300 mb-1">{t('lowStock')}</p>
-                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                    {inventoryInsights.lowStockCount}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-                  <p className="text-xs text-red-700 dark:text-red-300 mb-1">{t('outOfStock')}</p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {inventoryInsights.outOfStockCount}
-                  </p>
-                </div>
-              </div>
-
-              {/* Low Stock List */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('lowStockItems')}</p>
-                {inventoryInsights.lowStockProducts.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-2">
-                    {t('allProductsWellStocked')}
-                  </p>
-                ) : (
-                  inventoryInsights.lowStockProducts.slice(0, 5).map((product: any) => (
-                    <div key={product.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">
-                        {product.name}
-                      </p>
-                      <Badge variant="outline" className="text-amber-600 border-amber-600 shrink-0">
-                        {product.quantity} {t('left')}
-                      </Badge>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top Customers */}
-      <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-violet-500" />
-            {t('topCustomers')}
-          </CardTitle>
-          <CardDescription>
-            {t('highestValueCustomers')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {customerAnalytics.topCustomers.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                {t('noCustomerDataAvailable')}
-              </p>
-            ) : (
-              customerAnalytics.topCustomers.map((item, index) => (
-                <div key={item.customer.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Badge variant="secondary" className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full">
-                      {index + 1}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                        {item.customer.name}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {item.orderCount} {t('ordersLowercase')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-violet-600 dark:text-violet-400">
-                      {formatCurrency(item.totalSpent, displayCurrency)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      )}
 
       {/* Inventory Value Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950">
-                <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('totalInventory')}
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactNumber(inventoryInsights.totalStock)} {t('units')}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <>
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </>
+        ) : (
+          <>
+            <Card className="border-slate-200 dark:border-slate-800" data-testid="card-total-inventory">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950">
+                    <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {t('totalInventory')}
+                    </p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-total-inventory">
+                      {formatCompactNumber(inventory.totalStock)} {t('units')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
-                <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('stockValue')} ({displayCurrency})
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactCurrency(inventoryInsights.totalValue, displayCurrency)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-slate-200 dark:border-slate-800" data-testid="card-stock-value">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950">
+                    <Coins className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {t('stockValue')} ({displayCurrency})
+                    </p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-stock-value">
+                      {formatCompactCurrency(inventory.totalValue, displayCurrency)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
-                <PieChart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {t('productVarieties')}
-                </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {formatCompactNumber((products as any[]).length)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-slate-200 dark:border-slate-800" data-testid="card-product-varieties">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+                    <PieChart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {t('productVarieties')}
+                    </p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100" data-testid="stat-product-varieties">
+                      {formatCompactNumber(inventory.productCount)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );
