@@ -7703,12 +7703,12 @@ export default function PickPack() {
       return false;
     });
     
-    // Sort all tabs by latest to newest (most recent first)
+    // Sort all tabs by oldest to newest (oldest first)
     if (status === 'pending' || status === 'picking' || status === 'packing') {
       return filtered.sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA; // Latest first (descending)
+        return timeA - timeB; // Oldest first (ascending)
       });
     }
     
