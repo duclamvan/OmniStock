@@ -8978,16 +8978,16 @@ export default function PickPack() {
             </AccordionItem>
           </Accordion>
 
-          {/* Packing Materials Section */}
-          <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-700 dark:from-slate-800 to-slate-800 dark:to-slate-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                {t('packingMaterials')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              {orderPackingMaterials.length > 0 ? (
+          {/* Packing Materials Section - Hidden when empty for performance */}
+          {orderPackingMaterials.length > 0 && (
+            <Card className="shadow-sm border-2 border-slate-300 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-slate-700 dark:from-slate-800 to-slate-800 dark:to-slate-900 text-white px-4 py-3 rounded-t-lg -mt-0.5">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  {t('packingMaterials')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
                 <div className="space-y-3">
                   {orderPackingMaterials.map((material) => (
                     <div 
@@ -9031,15 +9031,11 @@ export default function PickPack() {
                         />
                       </div>
                     </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
-                    {t('noPackingMaterialsSpecified')}
-                  </div>
-                )}
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Multi-Carton Packing Section */}
           <Card className="shadow-sm border-2 border-purple-300 dark:border-purple-700 overflow-hidden" id="checklist-cartons">
