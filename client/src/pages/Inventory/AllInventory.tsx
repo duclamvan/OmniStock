@@ -1946,43 +1946,42 @@ export default function AllInventory() {
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-                <div className="px-4 sm:px-0 pb-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-mobile-lg font-semibold">
-                        {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
-                      </h2>
-                      {selectedRows.size > 0 && (
-                        <>
-                          <div className="h-6 w-px bg-gray-300" />
-                          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-800">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{t('inventory:selected')}</span>
-                            <Badge variant="secondary" className="text-xs h-5 px-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                              {selectedRows.size}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {actions.map((action, index) => {
-                              if (action.type === "button") {
-                                return (
-                                  <Button
-                                    key={index}
-                                    size="sm"
-                                    variant={action.variant || "ghost"}
-                                    onClick={() => action.action(selectedItems)}
-                                    className="h-7 px-3 text-xs"
-                                  >
-                                    {action.label}
-                                  </Button>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                <div className="px-4 sm:px-0 pb-3 space-y-2">
+                  {/* Row 1: Title and Selection Count */}
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-mobile-lg font-semibold">
+                      {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
+                    </h2>
+                    {selectedRows.size > 0 && (
+                      <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800">
+                        <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                          {selectedRows.size} {t('inventory:selected')}
+                        </span>
+                      </div>
+                    )}
                   </div>
+                  
+                  {/* Row 2: Action Buttons (only when items selected) */}
+                  {selectedRows.size > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {actions.map((action, index) => {
+                        if (action.type === "button") {
+                          return (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant={action.variant || "outline"}
+                              onClick={() => action.action(selectedItems)}
+                              className="h-9 px-4 text-sm"
+                            >
+                              {action.label}
+                            </Button>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             />
