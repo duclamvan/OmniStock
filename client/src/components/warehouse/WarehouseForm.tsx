@@ -694,11 +694,17 @@ export function WarehouseForm({
                   className="w-full h-12 text-base"
                   disabled={isSubmitting}
                 >
-                  <Save className="h-5 w-5 mr-2" />
-                  {isSubmitting 
-                    ? (mode === 'add' ? t('warehouse:creating') : t('warehouse:updating'))
-                    : (mode === 'add' ? t('warehouse:createWarehouse') : t('warehouse:updateWarehouse'))
-                  }
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      {mode === 'add' ? t('warehouse:creating') : t('warehouse:updating')}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5 mr-2" />
+                      {mode === 'add' ? t('warehouse:createWarehouse') : t('warehouse:updateWarehouse')}
+                    </>
+                  )}
                 </Button>
                 
                 <Button 

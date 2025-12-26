@@ -81,7 +81,8 @@ import {
   Weight,
   Edit,
   ListPlus,
-  Layers
+  Layers,
+  Loader2
 } from "lucide-react";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
@@ -4379,8 +4380,17 @@ export default function ProductForm() {
                 disabled={isPending}
                 data-testid="button-save-product"
               >
-                <Save className="h-4 w-4 mr-1 md:mr-2" />
-                {isPending ? (isEditMode ? t('products:submit.updating') : t('products:submit.creating')) : submitButtonText}
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 md:mr-2 animate-spin" />
+                    {isEditMode ? t('products:submit.updating') : t('products:submit.creating')}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-1 md:mr-2" />
+                    {submitButtonText}
+                  </>
+                )}
               </Button>
               <Button 
                 type="button" 
