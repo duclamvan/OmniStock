@@ -2304,15 +2304,32 @@ function MultiLocationPicker({
     });
   }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantData, totalPicked, currentItem.variantId]);
 
-  // Auto-select first location with stock if none selected
+  // Auto-select location: for variants always auto-select primary; for regular items select if none chosen
   useEffect(() => {
-    if (!selectedLocationCode && locationOptions.length > 0) {
+    if (locationOptions.length === 0) return;
+    
+    // For variants: always auto-select the primary/first location (since all locations share variant stock)
+    // This provides a seamless picking experience for variants
+    if (isVariant && variantData) {
+      const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
       const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
-      if (firstWithStock) {
-        setSelectedLocationCode(firstWithStock.locationCode);
+      const toSelect = primaryLoc || firstWithStock || locationOptions[0];
+      if (toSelect && selectedLocationCode !== toSelect.locationCode) {
+        setSelectedLocationCode(toSelect.locationCode);
+      }
+      return;
+    }
+    
+    // For regular items: auto-select primary or first with stock if none selected
+    if (!selectedLocationCode) {
+      const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
+      const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
+      const toSelect = primaryLoc || firstWithStock;
+      if (toSelect) {
+        setSelectedLocationCode(toSelect.locationCode);
       }
     }
-  }, [locationOptions, selectedLocationCode]);
+  }, [locationOptions, selectedLocationCode, isVariant, variantData]);
 
   // Get currently selected location data
   const selectedLocation = locationOptions.find(loc => loc.locationCode === selectedLocationCode);
