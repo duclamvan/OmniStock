@@ -1441,6 +1441,7 @@ export default function AddOrder() {
   // Auto-calculate shipping cost when shipping method or customer country changes
   const watchedShippingMethod = form.watch('shippingMethod');
   const watchedCurrency = form.watch('currency');
+  const watchedPaymentMethod = form.watch('paymentMethod');
 
   // Calculate total weight of order items for weight-based shipping rates
   const calculateOrderWeight = () => {
@@ -1470,21 +1471,29 @@ export default function AddOrder() {
     }, 0);
   }, [orderItems]);
 
+  // Track previous payment method for detecting changes
+  const previousPaymentMethodRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!watchedShippingMethod) return;
 
     // If user manually edited shipping cost, don't auto-recalculate
-    // Only reset the flag when carrier changes (user might want new carrier's default)
+    // Reset the flag when carrier OR payment method changes (user might want new default)
     const previousCarrier = previousCarrierRef.current;
     const carrierChanged = previousCarrier !== watchedShippingMethod;
+    const currentPaymentMethod = form.getValues('paymentMethod');
+    const paymentMethodChanged = previousPaymentMethodRef.current !== null && previousPaymentMethodRef.current !== currentPaymentMethod;
     
-    // Reset manual edit flag when carrier changes so new default can be applied
-    if (carrierChanged) {
+    // Reset manual edit flag when carrier or payment method changes so new default can be applied
+    if (carrierChanged || paymentMethodChanged) {
       shippingCostManuallyEditedRef.current = false;
     }
     
-    // If manually edited and carrier didn't change, skip auto-calculation
-    if (shippingCostManuallyEditedRef.current && !carrierChanged) {
+    // Update previous payment method ref
+    previousPaymentMethodRef.current = currentPaymentMethod;
+    
+    // If manually edited and neither carrier nor payment changed, skip auto-calculation
+    if (shippingCostManuallyEditedRef.current && !carrierChanged && !paymentMethodChanged) {
       return;
     }
 
@@ -1577,11 +1586,10 @@ export default function AddOrder() {
 
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', finalShippingCost);
-  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.pplDefaultShippingPriceWithDobirka, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice, form.watch('paymentMethod')]);
+  }, [watchedShippingMethod, watchedPaymentMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.pplDefaultShippingPriceWithDobirka, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice]);
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)
-  const watchedPaymentMethod = form.watch('paymentMethod');
   const watchedDiscountValue = form.watch('discountValue');
   const watchedDiscountType = form.watch('discountType');
   const watchedShippingCostValue = form.watch('shippingCost');
