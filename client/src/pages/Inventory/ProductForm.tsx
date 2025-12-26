@@ -260,6 +260,7 @@ export default function ProductForm() {
     name: string;
     barcode: string;
     quantity: number;
+    allocatedQuantity?: number;
     locationCode: string;
     priceUsd: string;
     priceCzk: string;
@@ -949,6 +950,7 @@ export default function ProductForm() {
         name: v.name,
         barcode: v.barcode || '',
         quantity: v.quantity || 0,
+        allocatedQuantity: v.allocatedQuantity || 0,
         priceUsd: v.priceUsd ? String(v.priceUsd) : '',
         priceCzk: v.priceCzk ? String(v.priceCzk) : '',
         priceEur: v.priceEur ? String(v.priceEur) : '',
