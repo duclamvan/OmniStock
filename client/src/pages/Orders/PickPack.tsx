@@ -2192,8 +2192,32 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    // For variants: show all parent locations that have physical stock
-    // The variant's total quantity determines overall availability
+    // For variants with their own locationCode: create a synthetic location from variant data
+    // This is the new variant quantity tracking system
+    if (isVariant && variantData && variantData.locationCode) {
+      const variantLocationCode = variantData.locationCode;
+      const variantQty = variantData.quantity || 0;
+      const pickedFromHere = itemPicks[variantLocationCode] || 0;
+      const availableVirtual = Math.max(0, variantQty - totalPicked);
+      
+      // Only show if variant has stock or items were picked from here
+      if (variantQty > 0 || pickedFromHere > 0) {
+        return [{
+          id: `variant-${currentItem.variantId}`,
+          locationCode: variantLocationCode,
+          quantity: variantQty,
+          isPrimary: true,
+          masterQty: variantQty,
+          virtualQty: variantQty,
+          pickedFromHere,
+          availableVirtual,
+        }];
+      }
+      // Variant has locationCode but no stock
+      return [];
+    }
+    
+    // For variants without locationCode OR regular products: use parent locations
     const baseLocations = [...productLocations]
       .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
       .sort((a, b) => {
@@ -2237,7 +2261,7 @@ function MultiLocationPicker({
         availableVirtual: Math.max(0, availableVirtual),
       };
     });
-  }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty]);
+  }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantData, totalPicked, currentItem.variantId]);
 
   // Auto-select first location with stock if none selected
   useEffect(() => {
