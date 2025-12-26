@@ -2090,6 +2090,8 @@ const imports = {
   locationDeleted: 'Đã xóa vị trí',
   failedToUpdateLocation: 'Cập nhật vị trí thất bại',
   failedToDeleteLocation: 'Xóa vị trí thất bại',
+  stock: 'Tồn kho',
+  toAdd: 'Thêm',
   
 } as const;
 

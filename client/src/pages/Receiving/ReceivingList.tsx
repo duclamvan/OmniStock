@@ -2723,84 +2723,99 @@ function QuickStorageSheet({
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">
-                                    {/* SAVED LOCATIONS - Compact rows */}
+                                    {/* SAVED LOCATIONS - Compact rows with stock below */}
                                     {item.existingLocations?.map((loc: any, locIdx: number) => (
                                       <div 
                                         key={`saved-${loc.id || locIdx}`}
-                                        className="p-2.5 flex items-center gap-2 bg-green-50 dark:bg-green-950/20"
+                                        className="p-2.5 bg-green-50 dark:bg-green-950/20"
                                       >
-                                        <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                        <span className="font-mono text-sm font-medium flex-1 truncate">{loc.locationCode}</span>
-                                        
-                                        <Input
-                                          type="number"
-                                          defaultValue={loc.quantity || 0}
-                                          onBlur={async (e) => {
-                                            e.stopPropagation();
-                                            const newQty = parseInt(e.target.value) || 0;
-                                            if (newQty === loc.quantity) return;
-                                            
-                                            const qtyDiff = newQty - (loc.quantity || 0);
-                                            
-                                            if (item.productId && loc.id) {
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                              <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                            </div>
+                                            <div className="ml-5 mt-0.5">
+                                              <span className="text-xs text-green-600 dark:text-green-400">{t('stock')}: <span className="font-bold">{loc.quantity || 0}</span></span>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('toAdd')}:</span>
+                                            <Input
+                                              type="number"
+                                              defaultValue=""
+                                              onBlur={async (e) => {
+                                                e.stopPropagation();
+                                                const addQty = parseInt(e.target.value) || 0;
+                                                if (addQty === 0) return;
+                                                
+                                                const newQty = (loc.quantity || 0) + addQty;
+                                                
+                                                if (item.productId && loc.id) {
+                                                  try {
+                                                    await updateLocationMutation.mutateAsync({
+                                                      productId: String(item.productId),
+                                                      locationId: String(loc.id),
+                                                      quantity: newQty,
+                                                      receiptItemId: String(item.receiptItemId)
+                                                    });
+                                                    
+                                                    const updatedItems = [...items];
+                                                    updatedItems[index].existingLocations[locIdx].quantity = newQty;
+                                                    updatedItems[index].assignedQuantity += addQty;
+                                                    setItems(updatedItems);
+                                                    
+                                                    e.target.value = '';
+                                                    
+                                                    toast({
+                                                      title: t('locationUpdated'),
+                                                      duration: 2000
+                                                    });
+                                                  } catch (error) {
+                                                    e.target.value = '';
+                                                  }
+                                                }
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="w-14 h-8 text-center text-sm font-bold rounded-lg border-green-300 dark:border-green-700"
+                                              min="0"
+                                              placeholder="0"
+                                              data-testid={`input-add-qty-${locIdx}`}
+                                            />
+                                          </div>
+                                          
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              if (!item.productId || !loc.id) return;
+                                              
                                               try {
-                                                await updateLocationMutation.mutateAsync({
+                                                await deleteLocationMutation.mutateAsync({
                                                   productId: String(item.productId),
                                                   locationId: String(loc.id),
-                                                  quantity: newQty,
                                                   receiptItemId: String(item.receiptItemId)
                                                 });
                                                 
                                                 const updatedItems = [...items];
-                                                updatedItems[index].existingLocations[locIdx].quantity = newQty;
-                                                updatedItems[index].assignedQuantity += qtyDiff;
+                                                const deletedQty = loc.quantity || 0;
+                                                updatedItems[index].existingLocations = updatedItems[index].existingLocations.filter(
+                                                  (_: any, i: number) => i !== locIdx
+                                                );
+                                                updatedItems[index].assignedQuantity -= deletedQty;
                                                 setItems(updatedItems);
-                                                
-                                                toast({
-                                                  title: t('locationUpdated'),
-                                                  duration: 2000
-                                                });
                                               } catch (error) {
-                                                e.target.value = String(loc.quantity || 0);
+                                                console.error('Failed to delete location:', error);
                                               }
-                                            }
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="w-16 h-9 text-center text-base font-bold rounded-lg border-green-300 dark:border-green-700"
-                                          min="0"
-                                          data-testid={`input-saved-qty-${locIdx}`}
-                                        />
-                                        
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (!item.productId || !loc.id) return;
-                                            
-                                            try {
-                                              await deleteLocationMutation.mutateAsync({
-                                                productId: String(item.productId),
-                                                locationId: String(loc.id),
-                                                receiptItemId: String(item.receiptItemId)
-                                              });
-                                              
-                                              const updatedItems = [...items];
-                                              const deletedQty = loc.quantity || 0;
-                                              updatedItems[index].existingLocations = updatedItems[index].existingLocations.filter(
-                                                (_: any, i: number) => i !== locIdx
-                                              );
-                                              updatedItems[index].assignedQuantity -= deletedQty;
-                                              setItems(updatedItems);
-                                            } catch (error) {
-                                              console.error('Failed to delete location:', error);
-                                            }
-                                          }}
-                                          disabled={deleteLocationMutation.isPending}
-                                          className="h-9 w-9 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
+                                            }}
+                                            disabled={deleteLocationMutation.isPending}
+                                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     ))}
                                     

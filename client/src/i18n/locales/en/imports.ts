@@ -2149,6 +2149,8 @@ const imports = {
   locationDeleted: 'Location removed',
   failedToUpdateLocation: 'Failed to update location',
   failedToDeleteLocation: 'Failed to remove location',
+  stock: 'Stock',
+  toAdd: 'To add',
   
 } as const;
 
