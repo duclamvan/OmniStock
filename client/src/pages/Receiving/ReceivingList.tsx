@@ -69,7 +69,8 @@ import {
   Image as ImageIcon,
   ClipboardList,
   Barcode,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -2774,73 +2775,83 @@ function QuickStorageSheet({
                                               </div>
                                             </div>
                                             
-                                            <div className="flex items-center gap-1">
-                                              <Input
-                                                type="number"
-                                                value={pendingAdd || ''}
-                                                onChange={(e) => {
-                                                  e.stopPropagation();
-                                                  const newVal = parseInt(e.target.value) || 0;
-                                                  // Calculate max allowed based on remaining
-                                                  const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
-                                                  const otherPendingExisting = Object.entries(item.pendingExistingAdds || {})
-                                                    .filter(([id]) => id !== locId)
-                                                    .reduce((sum, [, qty]) => sum + (qty || 0), 0);
-                                                  const pendingNewLocs = item.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
-                                                  const maxAllowed = Math.max(0, item.receivedQuantity - currentStoredQty - otherPendingExisting - pendingNewLocs);
-                                                  const clampedVal = Math.min(Math.max(0, newVal), maxAllowed);
-                                                  
-                                                  setItems(prevItems => {
-                                                    const updated = [...prevItems];
-                                                    updated[index].pendingExistingAdds = {
-                                                      ...updated[index].pendingExistingAdds,
-                                                      [locId]: clampedVal
-                                                    };
-                                                    return updated;
-                                                  });
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className={`w-16 h-9 text-center text-sm font-bold rounded-lg ${pendingAdd > 0 ? 'border-blue-400 dark:border-blue-600 bg-white dark:bg-gray-900' : 'border-green-300 dark:border-green-700'}`}
-                                                min="0"
-                                                placeholder="0"
-                                                data-testid={`input-add-qty-${locIdx}`}
-                                              />
-                                            </div>
-                                            
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={async (e) => {
+                                            <Input
+                                              type="number"
+                                              value={pendingAdd || ''}
+                                              onChange={(e) => {
                                                 e.stopPropagation();
-                                                if (!item.productId || !loc.id) return;
+                                                const newVal = parseInt(e.target.value) || 0;
+                                                // Calculate max allowed based on remaining
+                                                const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                                                const otherPendingExisting = Object.entries(item.pendingExistingAdds || {})
+                                                  .filter(([id]) => id !== locId)
+                                                  .reduce((sum, [, qty]) => sum + (qty || 0), 0);
+                                                const pendingNewLocs = item.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                                                const maxAllowed = Math.max(0, item.receivedQuantity - currentStoredQty - otherPendingExisting - pendingNewLocs);
+                                                const clampedVal = Math.min(Math.max(0, newVal), maxAllowed);
                                                 
-                                                try {
-                                                  await deleteLocationMutation.mutateAsync({
-                                                    productId: String(item.productId),
-                                                    locationId: String(loc.id),
-                                                    receiptItemId: String(item.receiptItemId)
-                                                  });
-                                                  
-                                                  setItems(prevItems => {
-                                                    const updated = [...prevItems];
-                                                    const deletedQty = loc.quantity || 0;
-                                                    updated[index].existingLocations = updated[index].existingLocations.filter(
-                                                      (_: any, i: number) => i !== locIdx
-                                                    );
-                                                    updated[index].assignedQuantity -= deletedQty;
-                                                    // Also remove from pending
-                                                    delete updated[index].pendingExistingAdds[locId];
-                                                    return updated;
-                                                  });
-                                                } catch (error) {
-                                                  console.error('Failed to delete location:', error);
-                                                }
+                                                setItems(prevItems => {
+                                                  const updated = [...prevItems];
+                                                  updated[index].pendingExistingAdds = {
+                                                    ...updated[index].pendingExistingAdds,
+                                                    [locId]: clampedVal
+                                                  };
+                                                  return updated;
+                                                });
                                               }}
-                                              disabled={deleteLocationMutation.isPending}
-                                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
-                                            >
-                                              <X className="h-4 w-4" />
-                                            </Button>
+                                              onClick={(e) => e.stopPropagation()}
+                                              className={`w-20 h-9 text-center text-base font-bold rounded-lg ${pendingAdd > 0 ? 'border-blue-400 dark:border-blue-600 bg-white dark:bg-gray-900' : 'border-green-300 dark:border-green-700'}`}
+                                              min="0"
+                                              placeholder="0"
+                                              data-testid={`input-add-qty-${locIdx}`}
+                                            />
+                                            
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  className="h-8 w-8 p-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                                                >
+                                                  <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end" className="w-40">
+                                                <DropdownMenuItem
+                                                  onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (!item.productId || !loc.id) return;
+                                                    
+                                                    try {
+                                                      await deleteLocationMutation.mutateAsync({
+                                                        productId: String(item.productId),
+                                                        locationId: String(loc.id),
+                                                        receiptItemId: String(item.receiptItemId)
+                                                      });
+                                                      
+                                                      setItems(prevItems => {
+                                                        const updated = [...prevItems];
+                                                        const deletedQty = loc.quantity || 0;
+                                                        updated[index].existingLocations = updated[index].existingLocations.filter(
+                                                          (_: any, i: number) => i !== locIdx
+                                                        );
+                                                        updated[index].assignedQuantity -= deletedQty;
+                                                        delete updated[index].pendingExistingAdds[locId];
+                                                        return updated;
+                                                      });
+                                                    } catch (error) {
+                                                      console.error('Failed to delete location:', error);
+                                                    }
+                                                  }}
+                                                  disabled={deleteLocationMutation.isPending}
+                                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2" />
+                                                  {t('common:delete')}
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
                                           </div>
                                         </div>
                                       );
@@ -2876,23 +2887,36 @@ function QuickStorageSheet({
                                             });
                                           }}
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-16 h-9 text-center text-base font-bold rounded-lg"
+                                          className="w-20 h-9 text-center text-base font-bold rounded-lg"
                                           min="0"
                                           placeholder="0"
                                           data-testid={`input-qty-${locIndex}`}
                                         />
                                         
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveLocation(locIndex);
-                                          }}
-                                          className="h-9 w-9 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="h-8 w-8 p-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                                            >
+                                              <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-40">
+                                            <DropdownMenuItem
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveLocation(locIndex);
+                                              }}
+                                              className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
+                                            >
+                                              <X className="h-4 w-4 mr-2" />
+                                              {t('common:remove')}
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       </div>
                                     ))}
                                     
