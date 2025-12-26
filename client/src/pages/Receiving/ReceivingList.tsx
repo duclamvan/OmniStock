@@ -1987,25 +1987,37 @@ function QuickStorageSheet({
   // Fetch inventory locations for all products that have productId
   useEffect(() => {
     const fetchInventoryLocations = async () => {
-      const productIds = items
+      // Filter items with productId that we haven't fetched yet
+      const productIdsToFetch = items
         .filter(item => item.productId && !inventoryLocations.has(String(item.productId)))
         .map(item => String(item.productId));
       
-      if (productIds.length === 0) return;
+      // Remove duplicates
+      const uniqueProductIds = [...new Set(productIdsToFetch)];
       
-      for (const productId of productIds) {
+      if (uniqueProductIds.length === 0) {
+        console.log('[Storage] No new product IDs to fetch locations for');
+        return;
+      }
+      
+      console.log('[Storage] Fetching inventory locations for products:', uniqueProductIds);
+      
+      for (const productId of uniqueProductIds) {
         try {
           const response = await fetch(`/api/products/${productId}/locations`, { credentials: 'include' });
           if (response.ok) {
             const locations = await response.json();
+            console.log(`[Storage] Fetched ${locations.length} locations for product ${productId}`);
             setInventoryLocations(prev => {
               const newMap = new Map(prev);
               newMap.set(productId, locations);
               return newMap;
             });
+          } else {
+            console.error(`[Storage] Failed to fetch locations for product ${productId}: ${response.status}`);
           }
         } catch (error) {
-          console.error(`Failed to fetch locations for product ${productId}:`, error);
+          console.error(`[Storage] Error fetching locations for product ${productId}:`, error);
         }
       }
     };
@@ -2013,7 +2025,7 @@ function QuickStorageSheet({
     if (items.length > 0 && open) {
       fetchInventoryLocations();
     }
-  }, [items.length, open]);
+  }, [items, open]); // Use items array directly to trigger on any item change
   
   // Fetch AI suggestions for items without existing locations (with batching and caching)
   useEffect(() => {
