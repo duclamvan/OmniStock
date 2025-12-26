@@ -2192,19 +2192,43 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    // For variants with their own locationCode: create a synthetic location from variant data
-    // This is the new variant quantity tracking system
-    if (isVariant && variantData && variantData.locationCode) {
-      const variantLocationCode = variantData.locationCode;
+    // For variants: create a picking location based on variant's stock
+    if (isVariant && variantData) {
       const variantQty = variantData.quantity || 0;
-      const pickedFromHere = itemPicks[variantLocationCode] || 0;
-      const availableVirtual = Math.max(0, variantQty - totalPicked);
       
-      // Only show if variant has stock or items were picked from here
-      if (variantQty > 0 || pickedFromHere > 0) {
+      // If variant has its own locationCode, use it
+      if (variantData.locationCode) {
+        const variantLocationCode = variantData.locationCode;
+        const pickedFromHere = itemPicks[variantLocationCode] || 0;
+        const availableVirtual = Math.max(0, variantQty - totalPicked);
+        
+        if (variantQty > 0 || pickedFromHere > 0) {
+          return [{
+            id: `variant-${currentItem.variantId}`,
+            locationCode: variantLocationCode,
+            quantity: variantQty,
+            isPrimary: true,
+            masterQty: variantQty,
+            virtualQty: variantQty,
+            pickedFromHere,
+            availableVirtual,
+          }];
+        }
+        return [];
+      }
+      
+      // Variant without locationCode: create a "VARIANT" picking location using variant quantity
+      // This allows picking variants even when parent product has no locations with stock
+      if (variantQty > 0 || totalPicked > 0) {
+        const pickedFromHere = Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
+        const availableVirtual = Math.max(0, variantQty - totalPicked);
+        
+        // Use a synthetic location code based on variant name for display
+        const syntheticLocationCode = `VARIANT-STOCK`;
+        
         return [{
           id: `variant-${currentItem.variantId}`,
-          locationCode: variantLocationCode,
+          locationCode: syntheticLocationCode,
           quantity: variantQty,
           isPrimary: true,
           masterQty: variantQty,
@@ -2213,11 +2237,10 @@ function MultiLocationPicker({
           availableVirtual,
         }];
       }
-      // Variant has locationCode but no stock
       return [];
     }
     
-    // For variants without locationCode OR regular products: use parent locations
+    // For regular products and virtual products: use parent locations
     const baseLocations = [...productLocations]
       .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
       .sort((a, b) => {
