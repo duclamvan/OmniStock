@@ -61,6 +61,7 @@ import {
   MoveRight,
   ArrowUpDown,
   AlertTriangle,
+  Layers,
 } from "lucide-react";
 import {
   getLocationTypeIcon,
@@ -129,10 +130,43 @@ export default function ProductLocations({
     enabled: !!productId,
   });
 
+  // Fetch product variants to calculate location quantities
+  const { data: variants = [] } = useQuery<Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    locationCode?: string | null;
+  }>>({
+    queryKey: [`/api/products/${productId}/variants`],
+    enabled: !!productId,
+  });
+
+  // Check if product has variants
+  const hasVariants = variants.length > 0;
+
+  // Calculate variant quantities per location code
+  const variantQuantitiesByLocation = hasVariants 
+    ? variants.reduce((acc, variant) => {
+        const locCode = variant.locationCode || '';
+        if (locCode) {
+          acc[locCode] = (acc[locCode] || 0) + (variant.quantity || 0);
+        }
+        return acc;
+      }, {} as Record<string, number>)
+    : {};
+
   // Sort locations alphabetically by locationCode
   const locations = [...rawLocations].sort((a, b) => 
     a.locationCode.localeCompare(b.locationCode, undefined, { numeric: true, sensitivity: 'base' })
   );
+
+  // Get display quantity for a location (variant quantity sum for products with variants, else actual quantity)
+  const getDisplayQuantity = (location: ProductLocation): number => {
+    if (hasVariants) {
+      return variantQuantitiesByLocation[location.locationCode] || 0;
+    }
+    return location.quantity;
+  };
 
   // Add location mutation
   const addLocationMutation = useMutation({
@@ -656,11 +690,14 @@ export default function ProductLocations({
                           {getLocationTypeLabel(location.locationType)}
                         </Badge>
                       </div>
-                      <div>
+                      <div className="flex items-center gap-1">
                         <span className="text-slate-500 dark:text-slate-400">{t('common:quantity')}:</span>
                         <span className="ml-2 font-medium" data-testid={`text-quantity-${location.id}`}>
-                          {location.quantity}
+                          {getDisplayQuantity(location)}
                         </span>
+                        {hasVariants && (
+                          <Layers className="h-3 w-3 text-violet-500 ml-1" title={t('common:fromVariants', 'From variants')} />
+                        )}
                       </div>
                     </div>
                     
@@ -718,9 +755,14 @@ export default function ProductLocations({
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium" data-testid={`text-quantity-${location.id}`}>
-                            {location.quantity}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium" data-testid={`text-quantity-${location.id}`}>
+                              {getDisplayQuantity(location)}
+                            </span>
+                            {hasVariants && (
+                              <Layers className="h-3 w-3 text-violet-500" title={t('common:fromVariants', 'From variants')} />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {location.isPrimary && (

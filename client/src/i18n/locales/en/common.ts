@@ -149,6 +149,7 @@ const common = {
   total: 'Total',
   subtotal: 'Subtotal',
   quantity: 'Quantity',
+  fromVariants: 'From variants',
   price: 'Price',
   amount: 'Amount',
   discount: 'Discount',

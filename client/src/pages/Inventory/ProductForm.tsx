@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -959,6 +959,22 @@ export default function ProductForm() {
       setVariants(mappedVariants);
     }
   }, [productVariants, variantsLoaded, isEditMode]);
+
+  // Calculate whether product has variants (for quantity display logic)
+  const hasVariants = variants.length > 0;
+  
+  // Calculate sum of all variant quantities
+  const variantsTotalQuantity = useMemo(() => {
+    if (!hasVariants) return 0;
+    return variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+  }, [variants, hasVariants]);
+
+  // Sync product quantity with sum of variant quantities when variants exist
+  useEffect(() => {
+    if (hasVariants && variantsTotalQuantity !== form.getValues('quantity')) {
+      form.setValue('quantity', variantsTotalQuantity);
+    }
+  }, [variantsTotalQuantity, hasVariants, form]);
 
   // Auto-sync quantity with warehouse locations
   useEffect(() => {
@@ -2363,13 +2379,33 @@ export default function ProductForm() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="quantity" className="text-sm font-medium">{t('products:formLabels.quantity')}</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        {...form.register('quantity')}
-                        data-testid="input-quantity"
-                        className="mt-1"
-                      />
+                      {hasVariants ? (
+                        <div className="mt-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={variantsTotalQuantity}
+                              readOnly
+                              disabled
+                              data-testid="input-quantity"
+                              className="bg-slate-100 dark:bg-slate-700 cursor-not-allowed"
+                            />
+                            <Layers className="h-4 w-4 text-violet-500 shrink-0" />
+                          </div>
+                          <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">
+                            {t('products:formLabels.quantityFromVariants', 'Sum of {{count}} variant quantities', { count: variants.length })}
+                          </p>
+                        </div>
+                      ) : (
+                        <Input
+                          type="number"
+                          min="0"
+                          {...form.register('quantity')}
+                          data-testid="input-quantity"
+                          className="mt-1"
+                        />
+                      )}
                     </div>
 
                     <div>

@@ -149,6 +149,7 @@ const common = {
   total: 'Tổng cộng',
   subtotal: 'Tạm tính',
   quantity: 'Số lượng',
+  fromVariants: 'Từ biến thể',
   price: 'Đơn giá',
   amount: 'Thành tiền',
   discount: 'Giảm giá',
