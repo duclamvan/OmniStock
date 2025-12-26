@@ -10591,7 +10591,7 @@ Important:
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
               console.log(`🔄 [Soft Delete DEBUG] Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
             } else {
-              console.log(`🔄 [Soft Delete DEBUG] Regular product (not virtual): productId=${item.productId}`);
+              console.log(`🔄 [Soft Delete DEBUG] Regular product (not virtual): productId=${item.productId}, variantId=${item.variantId || 'none'}`);
             }
             
             // Get product locations for the target product
@@ -10642,6 +10642,7 @@ Important:
               
               // Also restore variant quantity if this item has a variant
               if (item.variantId && !isVirtualSku) {
+                console.log(`🔄 [Soft Delete DEBUG] Attempting variant restoration for variantId=${item.variantId}`);
                 try {
                   const variant = await storage.getProductVariant(item.variantId);
                   if (variant) {
@@ -10650,10 +10651,14 @@ Important:
                     const newVariantQty = currentVariantQty + restoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
                     console.log(`🔄 [Soft Delete Variant Multi-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  } else {
+                    console.log(`🔄 [Soft Delete DEBUG] Variant not found: ${item.variantId}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
                 }
+              } else if (item.variantId && isVirtualSku) {
+                console.log(`🔄 [Soft Delete DEBUG] Skipping variant restore for virtual SKU: variantId=${item.variantId}`);
               }
             } else {
               // Fallback: restore to primary location or first location
@@ -10692,6 +10697,7 @@ Important:
               
               // Also restore variant quantity if this item has a variant
               if (item.variantId && !isVirtualSku) {
+                console.log(`🔄 [Soft Delete DEBUG] Attempting variant restoration (single-loc) for variantId=${item.variantId}`);
                 try {
                   const variant = await storage.getProductVariant(item.variantId);
                   if (variant) {
@@ -10700,10 +10706,14 @@ Important:
                     const newVariantQty = currentVariantQty + variantRestoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
                     console.log(`🔄 [Soft Delete Variant Single-Loc]: Restored ${variantRestoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  } else {
+                    console.log(`🔄 [Soft Delete DEBUG] Variant not found (single-loc): ${item.variantId}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
                 }
+              } else if (item.variantId && isVirtualSku) {
+                console.log(`🔄 [Soft Delete DEBUG] Skipping variant restore (single-loc) for virtual SKU: variantId=${item.variantId}`);
               }
             }
           }
