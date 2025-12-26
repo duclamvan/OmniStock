@@ -2575,7 +2575,7 @@ function MultiLocationPicker({
                   <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
                     {totalPicked}
                   </span>
-                  <span className="text-xl text-gray-400 dark:text-gray-500 font-medium">
+                  <span className="text-xl text-gray-900 dark:text-gray-100 font-bold">
                     / {currentItem.quantity}
                   </span>
                 </div>
