@@ -2191,6 +2191,20 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
+    // DEBUG: Log variant data to trace stock issues
+    if (isVariant) {
+      console.log('[MultiLocationPicker DEBUG]', {
+        itemId: currentItem.id,
+        productName: currentItem.productName,
+        variantId: currentItem.variantId,
+        isVariant,
+        variantQuantity,
+        variantLocationCode,
+        productLocationsCount: productLocations.length,
+        productLocations: productLocations.map(l => ({ code: l.locationCode, qty: l.quantity })),
+      });
+    }
+    
     // For variants WITH their own locationCode: use variant's location directly
     if (isVariant && variantQuantity !== undefined && variantLocationCode) {
       const variantQty = variantQuantity;
