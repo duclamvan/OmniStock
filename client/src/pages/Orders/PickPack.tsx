@@ -2192,43 +2192,17 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    // For variants: create a picking location based on variant's stock
-    if (isVariant && variantData) {
+    // For variants WITH their own locationCode: use variant's location directly
+    if (isVariant && variantData && variantData.locationCode) {
       const variantQty = variantData.quantity || 0;
+      const variantLocationCode = variantData.locationCode;
+      const pickedFromHere = itemPicks[variantLocationCode] || 0;
+      const availableVirtual = Math.max(0, variantQty - totalPicked);
       
-      // If variant has its own locationCode, use it
-      if (variantData.locationCode) {
-        const variantLocationCode = variantData.locationCode;
-        const pickedFromHere = itemPicks[variantLocationCode] || 0;
-        const availableVirtual = Math.max(0, variantQty - totalPicked);
-        
-        if (variantQty > 0 || pickedFromHere > 0) {
-          return [{
-            id: `variant-${currentItem.variantId}`,
-            locationCode: variantLocationCode,
-            quantity: variantQty,
-            isPrimary: true,
-            masterQty: variantQty,
-            virtualQty: variantQty,
-            pickedFromHere,
-            availableVirtual,
-          }];
-        }
-        return [];
-      }
-      
-      // Variant without locationCode: create a "VARIANT" picking location using variant quantity
-      // This allows picking variants even when parent product has no locations with stock
-      if (variantQty > 0 || totalPicked > 0) {
-        const pickedFromHere = Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
-        const availableVirtual = Math.max(0, variantQty - totalPicked);
-        
-        // Use a synthetic location code based on variant name for display
-        const syntheticLocationCode = `VARIANT-STOCK`;
-        
+      if (variantQty > 0 || pickedFromHere > 0) {
         return [{
           id: `variant-${currentItem.variantId}`,
-          locationCode: syntheticLocationCode,
+          locationCode: variantLocationCode,
           quantity: variantQty,
           isPrimary: true,
           masterQty: variantQty,
@@ -2240,7 +2214,58 @@ function MultiLocationPicker({
       return [];
     }
     
-    // For regular products and virtual products: use parent locations
+    // For variants WITHOUT locationCode: use PARENT locations but with VARIANT quantity
+    // This shows the picker WHERE to pick from (parent locations) but HOW MUCH is based on variant stock
+    if (isVariant && variantData && !variantData.locationCode) {
+      const variantQty = variantData.quantity || 0;
+      
+      // If variant has no stock, show out of stock
+      if (variantQty <= 0 && totalPicked <= 0) {
+        return [];
+      }
+      
+      // Use parent product locations - don't filter by location quantity since we use variant qty
+      const parentLocations = [...productLocations].sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return a.locationCode.localeCompare(b.locationCode);
+      });
+      
+      // If parent has no locations defined, create a default "WAREHOUSE" location
+      if (parentLocations.length === 0) {
+        const pickedFromHere = Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
+        const availableVirtual = Math.max(0, variantQty - totalPicked);
+        return [{
+          id: `variant-default-${currentItem.variantId}`,
+          locationCode: 'WAREHOUSE',
+          quantity: variantQty,
+          isPrimary: true,
+          masterQty: variantQty,
+          virtualQty: variantQty,
+          pickedFromHere,
+          availableVirtual,
+        }];
+      }
+      
+      // Map parent locations but use variant quantity for availability
+      // For variants, all locations share the same variant stock pool
+      return parentLocations.map((loc, index) => {
+        const pickedFromHere = itemPicks[loc.locationCode] || 0;
+        // Variant's remaining stock is shared across all locations
+        const variantRemaining = Math.max(0, variantQty - totalPicked);
+        
+        return {
+          ...loc,
+          id: loc.id || `variant-loc-${index}`,
+          masterQty: variantQty,
+          virtualQty: variantQty, // Show total variant stock
+          pickedFromHere,
+          availableVirtual: variantRemaining, // Available = variant stock minus all picks
+        };
+      });
+    }
+    
+    // For regular products and virtual products: use parent locations with their own stock
     const baseLocations = [...productLocations]
       .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
       .sort((a, b) => {
@@ -2262,13 +2287,6 @@ function MultiLocationPicker({
         masterQty = locationStock;
         virtualQty = Math.floor(locationStock / deductionRatio);
         availableVirtual = virtualQty - pickedFromHere;
-      } else if (isVariant && variantAvailableQty !== null) {
-        // Variants: each location shows the variant's remaining available quantity
-        // (capped by the location's physical stock for picking purposes)
-        masterQty = locationStock;
-        // Show min of location stock and variant's remaining available
-        virtualQty = Math.min(locationStock, variantAvailableQty + pickedFromHere);
-        availableVirtual = Math.min(locationStock - pickedFromHere, variantAvailableQty);
       } else {
         // Regular products: use location stock directly
         masterQty = locationStock;
