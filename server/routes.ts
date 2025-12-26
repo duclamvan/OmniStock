@@ -6008,6 +6008,27 @@ Important:
     }
   });
 
+  // GET single variant by ID (for picking workflow to check variant stock)
+  app.get('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const variant = await storage.getProductVariant(req.params.id);
+      if (!variant) {
+        return res.status(404).json({ message: "Variant not found" });
+      }
+      // Verify variant belongs to the specified product
+      if (variant.productId !== req.params.productId) {
+        return res.status(404).json({ message: "Variant not found for this product" });
+      }
+      // Filter financial data based on user role
+      const userRole = req.user?.role || 'warehouse_operator';
+      const filtered = filterFinancialData([variant], userRole);
+      res.json(filtered[0]);
+    } catch (error) {
+      console.error("Error fetching product variant:", error);
+      res.status(500).json({ message: "Failed to fetch product variant" });
+    }
+  });
+
   app.patch('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;

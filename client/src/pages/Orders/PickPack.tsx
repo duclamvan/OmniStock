@@ -134,7 +134,8 @@ import {
   Target,
   Lock,
   Sparkles,
-  Scale
+  Scale,
+  Layers
 } from "lucide-react";
 
 interface BundleItem {
@@ -190,6 +191,16 @@ interface ProductLocation {
   quantity: number | null;
   isPrimary: boolean | null;
   notes?: string | null;
+}
+
+// Product variant type for fetching variant stock
+interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  barcode?: string | null;
+  quantity: number;
+  locationCode?: string | null;
 }
 
 interface OrderItem {
@@ -2116,8 +2127,9 @@ function useItemStockAvailability(productId: string | null | undefined, selected
 }
 
 // Component: Simplified dropdown-based location picker
-// Works for both regular products and virtual products
+// Works for both regular products, virtual products, and product variants
 // Uses dropdown selection instead of complex grid - optimized for warehouse employees
+// For variants: Uses variant's own quantity but parent product's locations
 function MultiLocationPicker({
   currentItem,
   pickedFromLocations,
@@ -2134,17 +2146,31 @@ function MultiLocationPicker({
   // For virtual products, check the master product's stock
   const isVirtual = currentItem.isVirtual && currentItem.masterProductId;
   const deductionRatio = currentItem.inventoryDeductionRatio || 1;
-  const productIdToCheck = isVirtual ? currentItem.masterProductId : currentItem.productId;
+  
+  // For variants (not virtual): use parent product's locations but variant's quantity
+  const isVariant = !isVirtual && !!currentItem.variantId;
+  
+  // Locations always come from parent product (or master product for virtual SKUs)
+  const productIdForLocations = isVirtual ? currentItem.masterProductId : currentItem.productId;
 
   // State for currently selected location in dropdown
   const [selectedLocationCode, setSelectedLocationCode] = useState<string>('');
 
-  // Fetch product locations
-  const { data: productLocations = [], isLoading } = useQuery<ProductLocation[]>({
-    queryKey: ['/api/products', productIdToCheck, 'locations'],
-    enabled: !!productIdToCheck,
+  // Fetch product locations (from parent product)
+  const { data: productLocations = [], isLoading: locationsLoading } = useQuery<ProductLocation[]>({
+    queryKey: ['/api/products', productIdForLocations, 'locations'],
+    enabled: !!productIdForLocations,
     staleTime: 5000,
   });
+
+  // Fetch variant data if this is a variant item (to get variant's own quantity)
+  const { data: variantData, isLoading: variantLoading } = useQuery<ProductVariant>({
+    queryKey: ['/api/products', currentItem.productId, 'variants', currentItem.variantId],
+    enabled: isVariant && !!currentItem.variantId && !!currentItem.productId,
+    staleTime: 5000,
+  });
+
+  const isLoading = locationsLoading || (isVariant && variantLoading);
 
   // Get picked quantities for this item
   const itemPicks = pickedFromLocations[currentItem.id] || {};
@@ -2157,30 +2183,61 @@ function MultiLocationPicker({
   // Calculate remaining to pick
   const remainingToPick = Math.max(0, currentItem.quantity - totalPicked);
 
-  // Transform locations with virtual quantity conversion
+  // For variants: the available quantity is the variant's own stock
+  // This is the total available across all locations for this variant
+  const variantAvailableQty = useMemo(() => {
+    if (!isVariant || !variantData) return null;
+    return Math.max(0, (variantData.quantity || 0) - totalPicked);
+  }, [isVariant, variantData, totalPicked]);
+
+  // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    return [...productLocations]
+    // For variants: show all parent locations that have physical stock
+    // The variant's total quantity determines overall availability
+    const baseLocations = [...productLocations]
       .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
       .sort((a, b) => {
         if (a.isPrimary && !b.isPrimary) return -1;
         if (!a.isPrimary && b.isPrimary) return 1;
         return a.locationCode.localeCompare(b.locationCode);
-      })
-      .map(loc => {
-        const masterQty = loc.quantity || 0;
-        // For virtual products, convert master quantity to virtual quantity
-        const virtualQty = isVirtual ? Math.floor(masterQty / deductionRatio) : masterQty;
-        const pickedFromHere = itemPicks[loc.locationCode] || 0;
-        
-        return {
-          ...loc,
-          masterQty,
-          virtualQty,
-          pickedFromHere,
-          availableVirtual: virtualQty - pickedFromHere,
-        };
       });
-  }, [productLocations, itemPicks, isVirtual, deductionRatio]);
+
+    return baseLocations.map(loc => {
+      const locationStock = loc.quantity || 0;
+      const pickedFromHere = itemPicks[loc.locationCode] || 0;
+      
+      let masterQty: number;
+      let virtualQty: number;
+      let availableVirtual: number;
+
+      if (isVirtual) {
+        // Virtual products: convert master quantity using deduction ratio
+        masterQty = locationStock;
+        virtualQty = Math.floor(locationStock / deductionRatio);
+        availableVirtual = virtualQty - pickedFromHere;
+      } else if (isVariant && variantAvailableQty !== null) {
+        // Variants: each location shows the variant's remaining available quantity
+        // (capped by the location's physical stock for picking purposes)
+        masterQty = locationStock;
+        // Show min of location stock and variant's remaining available
+        virtualQty = Math.min(locationStock, variantAvailableQty + pickedFromHere);
+        availableVirtual = Math.min(locationStock - pickedFromHere, variantAvailableQty);
+      } else {
+        // Regular products: use location stock directly
+        masterQty = locationStock;
+        virtualQty = locationStock;
+        availableVirtual = locationStock - pickedFromHere;
+      }
+      
+      return {
+        ...loc,
+        masterQty,
+        virtualQty,
+        pickedFromHere,
+        availableVirtual: Math.max(0, availableVirtual),
+      };
+    });
+  }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty]);
 
   // Auto-select first location with stock if none selected
   useEffect(() => {
@@ -2342,6 +2399,21 @@ function MultiLocationPicker({
             <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
               📦 1 {currentItem.productName?.split(' ')[0] || 'unit'} = {deductionRatio}x {currentItem.masterProductName || 'pieces'}
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Variant Badge - shows variant name and available stock */}
+      {isVariant && variantData && (
+        <div className="bg-violet-50 dark:bg-violet-900/30 border-2 border-violet-300 dark:border-violet-700 rounded-lg p-3">
+          <div className="flex items-center justify-center gap-2">
+            <Layers className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <span className="text-sm font-bold text-violet-700 dark:text-violet-300">
+              🏷️ {t('variant', 'Variant')}: {currentItem.variantName || variantData.name}
+            </span>
+            <Badge className="bg-violet-600 text-white text-xs">
+              {variantData.quantity} {t('available', 'available')}
+            </Badge>
           </div>
         </div>
       )}
