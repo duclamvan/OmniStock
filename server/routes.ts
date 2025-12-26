@@ -10557,10 +10557,8 @@ Important:
       // If pickStatus is 'pending' or empty, no inventory was ever deducted
       const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress';
       
-      console.log(`🔄 [Soft Delete DEBUG] Order ${order.orderId}: pickStatus=${order.pickStatus}, shouldRestoreInventory=${shouldRestoreInventory}`);
-      
       if (!shouldRestoreInventory) {
-        console.log(`🔄 [Soft Delete] Order ${order.orderId} was never picked (pickStatus: ${order.pickStatus}), no inventory to restore`);
+        console.log(`🔄 [Soft Delete] Order ${order.orderId} was never picked, no inventory to restore`);
       }
       
       // Restore inventory for each item (add quantities back to specific locations)
@@ -10582,16 +10580,12 @@ Important:
               isVirtualSku = true;
               targetProductId = item.masterProductId;
               deductionRatio = parseFloat(item.inventoryDeductionRatio || '1');
-              console.log(`🔄 [Soft Delete DEBUG] Virtual SKU from ORDER ITEM: isVirtual=${item.isVirtual}, masterProductId=${item.masterProductId}, ratio=${deductionRatio}`);
             }
             // Fallback to product fields for legacy orders
             else if (product.isVirtual && product.masterProductId) {
               isVirtualSku = true;
               targetProductId = product.masterProductId;
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
-              console.log(`🔄 [Soft Delete DEBUG] Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
-            } else {
-              console.log(`🔄 [Soft Delete DEBUG] Regular product (not virtual): productId=${item.productId}, variantId=${item.variantId || 'none'}`);
             }
             
             // Get product locations for the target product
@@ -10599,8 +10593,6 @@ Important:
             
             // Check if we have stored pickedFromLocations data
             const multiLocationPicks = item.pickedFromLocations as Record<string, number> | null;
-            
-            console.log(`🔄 [Soft Delete DEBUG] Item ${item.id?.slice(-6)}: pickedFromLocations=${JSON.stringify(multiLocationPicks)}, pickedQuantity=${item.pickedQuantity}, quantity=${item.quantity}`);
             
             if (multiLocationPicks && typeof multiLocationPicks === 'object' && Object.keys(multiLocationPicks).length > 0) {
               // Multi-location format: restore to each location separately
@@ -10642,7 +10634,6 @@ Important:
               
               // Also restore variant quantity if this item has a variant
               if (item.variantId && !isVirtualSku) {
-                console.log(`🔄 [Soft Delete DEBUG] Attempting variant restoration for variantId=${item.variantId}`);
                 try {
                   const variant = await storage.getProductVariant(item.variantId);
                   if (variant) {
@@ -10650,15 +10641,11 @@ Important:
                     const restoreQty = item.pickedQuantity || 0;
                     const newVariantQty = currentVariantQty + restoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Soft Delete Variant Multi-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
-                  } else {
-                    console.log(`🔄 [Soft Delete DEBUG] Variant not found: ${item.variantId}`);
+                    console.log(`🔄 [Soft Delete] Restored ${restoreQty}x variant "${variant.name}": ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
                 }
-              } else if (item.variantId && isVirtualSku) {
-                console.log(`🔄 [Soft Delete DEBUG] Skipping variant restore for virtual SKU: variantId=${item.variantId}`);
               }
             } else {
               // Fallback: restore to primary location or first location
@@ -10668,7 +10655,6 @@ Important:
               
               // Skip if nothing was picked
               if (pickedCount <= 0) {
-                console.log(`🔄 [Soft Delete Fallback] Item ${item.id?.slice(-6)} has pickedQuantity=0, skipping restore`);
                 continue;
               }
               
@@ -10697,7 +10683,6 @@ Important:
               
               // Also restore variant quantity if this item has a variant
               if (item.variantId && !isVirtualSku) {
-                console.log(`🔄 [Soft Delete DEBUG] Attempting variant restoration (single-loc) for variantId=${item.variantId}`);
                 try {
                   const variant = await storage.getProductVariant(item.variantId);
                   if (variant) {
@@ -10705,15 +10690,11 @@ Important:
                     const variantRestoreQty = item.pickedQuantity || 0;
                     const newVariantQty = currentVariantQty + variantRestoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Soft Delete Variant Single-Loc]: Restored ${variantRestoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
-                  } else {
-                    console.log(`🔄 [Soft Delete DEBUG] Variant not found (single-loc): ${item.variantId}`);
+                    console.log(`🔄 [Soft Delete] Restored ${variantRestoreQty}x variant "${variant.name}": ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
                 }
-              } else if (item.variantId && isVirtualSku) {
-                console.log(`🔄 [Soft Delete DEBUG] Skipping variant restore (single-loc) for virtual SKU: variantId=${item.variantId}`);
               }
             }
           }
