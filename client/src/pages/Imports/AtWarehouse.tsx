@@ -3593,17 +3593,11 @@ export default function AtWarehouse() {
                                       <div className="space-y-1">
                                         {consolidationItems[consolidation.id]?.length > 0 ? (
                                           consolidationItems[consolidation.id].map((item: any) => (
-                                            <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
-                                              <div className="flex-1 min-w-0">
-                                                <div className="font-medium truncate">{item.name}</div>
-                                                <div className="text-muted-foreground text-xs">
-                                                  {t('qty')}: {item.quantity}
-                                                </div>
-                                              </div>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                                            <div key={item.id} className="flex items-center gap-1 text-xs py-0.5">
+                                              <span className="truncate flex-1">{item.name}</span>
+                                              <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
+                                              <button
+                                                className="p-0.5 hover:text-destructive shrink-0 opacity-50 hover:opacity-100"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   removeItemFromConsolidationMutation.mutate({
@@ -3611,10 +3605,9 @@ export default function AtWarehouse() {
                                                     itemId: item.id
                                                   });
                                                 }}
-                                                title={t('removeFromConsolidation')}
                                               >
                                                 <X className="h-3 w-3" />
-                                              </Button>
+                                              </button>
                                             </div>
                                           ))
                                         ) : (
