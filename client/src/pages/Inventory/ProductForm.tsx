@@ -277,6 +277,8 @@ export default function ProductForm() {
   const [seriesImportCostUsd, setSeriesImportCostUsd] = useState("");
   const [seriesImportCostCzk, setSeriesImportCostCzk] = useState("");
   const [seriesImportCostEur, setSeriesImportCostEur] = useState("");
+  const [seriesLocationCode, setSeriesLocationCode] = useState("");
+  const [seriesLocationPattern, setSeriesLocationPattern] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
   const [isBulkScanDialogOpen, setIsBulkScanDialogOpen] = useState(false);
@@ -1623,14 +1625,41 @@ export default function ProductForm() {
         return;
       }
       
+      // Get parent product's warehouse location as fallback
+      const parentLocation = form.getValues('warehouseLocation')?.trim().toUpperCase() || "";
+      
       const newVariantsArray = [];
       for (let i = start; i <= end; i++) {
+        // Determine location code for this variant
+        let variantLocationCode = "";
+        if (seriesLocationPattern.trim()) {
+          // Use location pattern if provided (e.g., WH1-A<1-10>-R1 becomes WH1-A1-R1, WH1-A2-R1, etc.)
+          const locationMatch = seriesLocationPattern.match(/<(\d+)-(\d+)>/);
+          if (locationMatch) {
+            const locStart = parseInt(locationMatch[1]);
+            const locEnd = parseInt(locationMatch[2]);
+            const locRange = locEnd - locStart + 1;
+            // Calculate the corresponding location number based on variant index
+            const locIndex = ((i - start) % locRange) + locStart;
+            variantLocationCode = seriesLocationPattern.replace(/<\d+-\d+>/, String(locIndex)).toUpperCase();
+          } else {
+            // No pattern found, use as static location
+            variantLocationCode = seriesLocationPattern.toUpperCase();
+          }
+        } else if (seriesLocationCode.trim()) {
+          // Use single location code for all variants
+          variantLocationCode = seriesLocationCode.toUpperCase();
+        } else if (parentLocation) {
+          // Fall back to parent product's warehouse location
+          variantLocationCode = parentLocation;
+        }
+        
         newVariantsArray.push({
           id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
           name: `${baseName} ${i}`,
           barcode: "",
           quantity: seriesQuantity,
-          locationCode: "",
+          locationCode: variantLocationCode,
           priceUsd: "",
           priceCzk: seriesPriceCzk,
           priceEur: seriesPriceEur,
@@ -1648,6 +1677,8 @@ export default function ProductForm() {
       setSeriesImportCostUsd("");
       setSeriesImportCostCzk("");
       setSeriesImportCostEur("");
+      setSeriesLocationCode("");
+      setSeriesLocationPattern("");
       setIsSeriesDialogOpen(false);
       toast({
         title: t('common:success'),
@@ -3445,6 +3476,30 @@ export default function ProductForm() {
                                 data-testid="input-series-quantity"
                               />
                             </div>
+                            <div>
+                              <Label htmlFor="series-location-code">{t('products:variants.seriesLocationCode')}</Label>
+                              <Input
+                                id="series-location-code"
+                                value={seriesLocationCode}
+                                onChange={(e) => setSeriesLocationCode(e.target.value)}
+                                placeholder={t('products:variants.seriesLocationCodePlaceholder')}
+                                data-testid="input-series-location-code"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="series-location-pattern">{t('products:variants.seriesLocationPattern')}</Label>
+                            <Input
+                              id="series-location-pattern"
+                              value={seriesLocationPattern}
+                              onChange={(e) => setSeriesLocationPattern(e.target.value)}
+                              placeholder={t('products:variants.seriesLocationPatternPlaceholder')}
+                              data-testid="input-series-location-pattern"
+                            />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {t('products:variants.seriesLocationPatternHelp')}
+                            </p>
                           </div>
                           
                           <Separator />
