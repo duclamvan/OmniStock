@@ -2547,19 +2547,6 @@ function MultiLocationPicker({
 
         {/* Main Content */}
         <div className="p-4 space-y-4">
-          {/* Big "Pcs to Pick" Display */}
-          <div className="text-center">
-            <p className="text-5xl sm:text-6xl font-black text-gray-900 dark:text-gray-100">
-              {remainingToPick}
-              <span className="text-2xl sm:text-3xl text-gray-400 dark:text-gray-500 font-medium ml-2">
-                {isVirtual ? t('unitsToPick', 'pcs to pick') : t('pcsToPick', 'pcs to pick')}
-              </span>
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('pickedCount', '{{picked}} of {{total}} picked', { picked: totalPicked, total: currentItem.quantity })}
-            </p>
-          </div>
-
           {/* Progress Bar */}
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
@@ -2575,7 +2562,7 @@ function MultiLocationPicker({
           {/* Pick Controls - Only show if items remaining */}
           {remainingToPick > 0 && selectedLocation && (
             <div className="space-y-3">
-              {/* Quantity Controls Row */}
+              {/* Quantity Controls Row - Use variant quantity for variants, otherwise location quantity */}
               <div className="flex items-center gap-2">
                 <Button
                   size="lg"
@@ -2589,10 +2576,10 @@ function MultiLocationPicker({
 
                 <div className="flex-1 flex items-center justify-center gap-1 bg-gray-50 dark:bg-gray-900/30 rounded-xl py-3">
                   <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
-                    {selectedLocation.pickedFromHere}
+                    {totalPicked}
                   </span>
                   <span className="text-xl text-gray-400 dark:text-gray-500 font-medium">
-                    / {selectedLocation.virtualQty}
+                    / {currentItem.quantity}
                   </span>
                 </div>
 
