@@ -8258,12 +8258,20 @@ Important:
       const productIds = new Set<string>();
       const variantRequests = new Map<string, Set<string>>(); // productId -> variantIds
 
-      // First pass: identify bundles in use AND collect product IDs from all order items
+      // First pass: identify bundles in use AND collect product/variant IDs from all order items
       for (const items of allOrderItemsArrays) {
         for (const item of items) {
           // Collect product ID from every order item
           if (item.productId) {
             productIds.add(item.productId);
+            
+            // Collect variant IDs from order items for picking
+            if (item.variantId) {
+              if (!variantRequests.has(item.productId)) {
+                variantRequests.set(item.productId, new Set());
+              }
+              variantRequests.get(item.productId)!.add(item.variantId);
+            }
           }
 
           // Check if this is a bundle
@@ -8412,9 +8420,25 @@ Important:
             });
           }
 
+          // Enrich variant items with variant quantity for picking
+          let variantQuantity: number | undefined;
+          let variantLocationCode: string | null = null;
+          if (item.variantId && item.productId) {
+            const productVariants = variantsMap.get(item.productId);
+            if (productVariants) {
+              const variant = productVariants.get(item.variantId);
+              if (variant) {
+                variantQuantity = variant.quantity || 0;
+                variantLocationCode = variant.locationCode || null;
+              }
+            }
+          }
+
           return {
             ...item,
-            image: imageUrl
+            image: imageUrl,
+            variantQuantity,  // Add variant's own stock quantity for picking
+            variantLocationCode  // Add variant's location if it has one
           };
         });
 
@@ -8442,8 +8466,19 @@ Important:
               inventoryDeductionRatio: virtualItem.inventoryDeductionRatio
             });
           } else {
-            console.log('[PickPack RESPONSE DEBUG] No virtual items found in first order. First item keys:', 
-              firstOrder.items[0] ? Object.keys(firstOrder.items[0]).slice(0, 15) : 'no items');
+            // Debug variant items
+            const variantItems = firstOrder.items.filter((i: any) => i.variantId);
+            if (variantItems.length > 0) {
+              console.log('[PickPack DEBUG] Variant items found:', variantItems.map((i: any) => ({
+                id: i.id?.slice(-6),
+                productName: i.productName,
+                variantId: i.variantId,
+                productId: i.productId
+              })));
+            } else {
+              console.log('[PickPack RESPONSE DEBUG] No virtual items found in first order. First item variantIds:', 
+                firstOrder.items.map((i: any) => ({ id: i.id?.slice(-6), variantId: i.variantId })));
+            }
           }
         }
       }

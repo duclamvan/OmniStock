@@ -208,6 +208,8 @@ interface OrderItem {
   productId?: string | null;
   variantId?: string | null;
   variantName?: string | null;
+  variantQuantity?: number;  // Variant's stock quantity (from backend)
+  variantLocationCode?: string | null;  // Variant's location (from backend)
   serviceId?: string | null;
   bundleId?: string | null;
   productName: string;
@@ -2148,7 +2150,10 @@ function MultiLocationPicker({
   const deductionRatio = currentItem.inventoryDeductionRatio || 1;
   
   // For variants (not virtual): use parent product's locations but variant's quantity
+  // variantQuantity is now provided directly from the pick-pack API response
   const isVariant = !isVirtual && !!currentItem.variantId;
+  const variantQuantity = currentItem.variantQuantity;
+  const variantLocationCode = currentItem.variantLocationCode;
   
   // Locations always come from parent product (or master product for virtual SKUs)
   const productIdForLocations = isVirtual ? currentItem.masterProductId : currentItem.productId;
@@ -2163,14 +2168,8 @@ function MultiLocationPicker({
     staleTime: 5000,
   });
 
-  // Fetch variant data if this is a variant item (to get variant's own quantity)
-  const { data: variantData, isLoading: variantLoading } = useQuery<ProductVariant>({
-    queryKey: ['/api/products', currentItem.productId, 'variants', currentItem.variantId],
-    enabled: isVariant && !!currentItem.variantId && !!currentItem.productId,
-    staleTime: 5000,
-  });
-
-  const isLoading = locationsLoading || (isVariant && variantLoading);
+  // No need to fetch variant data separately - it's included in the pick-pack response
+  const isLoading = locationsLoading;
 
   // Get picked quantities for this item
   const itemPicks = pickedFromLocations[currentItem.id] || {};
@@ -2183,19 +2182,18 @@ function MultiLocationPicker({
   // Calculate remaining to pick
   const remainingToPick = Math.max(0, currentItem.quantity - totalPicked);
 
-  // For variants: the available quantity is the variant's own stock
+  // For variants: the available quantity is the variant's own stock (from API response)
   // This is the total available across all locations for this variant
   const variantAvailableQty = useMemo(() => {
-    if (!isVariant || !variantData) return null;
-    return Math.max(0, (variantData.quantity || 0) - totalPicked);
-  }, [isVariant, variantData, totalPicked]);
+    if (!isVariant || variantQuantity === undefined) return null;
+    return Math.max(0, variantQuantity - totalPicked);
+  }, [isVariant, variantQuantity, totalPicked]);
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
     // For variants WITH their own locationCode: use variant's location directly
-    if (isVariant && variantData && variantData.locationCode) {
-      const variantQty = variantData.quantity || 0;
-      const variantLocationCode = variantData.locationCode;
+    if (isVariant && variantQuantity !== undefined && variantLocationCode) {
+      const variantQty = variantQuantity;
       const pickedFromHere = itemPicks[variantLocationCode] || 0;
       const availableVirtual = Math.max(0, variantQty - totalPicked);
       
@@ -2216,8 +2214,8 @@ function MultiLocationPicker({
     
     // For variants WITHOUT locationCode: use PARENT locations but with VARIANT quantity
     // This shows the picker WHERE to pick from (parent locations) but HOW MUCH is based on variant stock
-    if (isVariant && variantData && !variantData.locationCode) {
-      const variantQty = variantData.quantity || 0;
+    if (isVariant && variantQuantity !== undefined && !variantLocationCode) {
+      const variantQty = variantQuantity;
       
       // If variant has no stock, show out of stock
       if (variantQty <= 0 && totalPicked <= 0) {
@@ -2266,9 +2264,9 @@ function MultiLocationPicker({
       });
     }
     
-    // If this is a variant item but variant data hasn't loaded yet, return empty
-    // This ensures we don't show parent product's quantity while waiting for variant data
-    if (isVariant && !variantData) {
+    // If this is a variant item but variant quantity not provided, return empty
+    // This ensures we don't show parent product's quantity incorrectly
+    if (isVariant && variantQuantity === undefined) {
       return [];
     }
     
@@ -2309,7 +2307,7 @@ function MultiLocationPicker({
         availableVirtual: Math.max(0, availableVirtual),
       };
     });
-  }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantData, totalPicked, currentItem.variantId]);
+  }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantQuantity, variantLocationCode, totalPicked, currentItem.variantId]);
 
   // Auto-select location: always auto-select primary/first location for seamless picking
   useEffect(() => {
@@ -2480,15 +2478,15 @@ function MultiLocationPicker({
       )}
 
       {/* Variant Badge - shows variant name and available stock */}
-      {isVariant && variantData && (
+      {isVariant && variantQuantity !== undefined && (
         <div className="bg-violet-50 dark:bg-violet-900/30 border-2 border-violet-300 dark:border-violet-700 rounded-lg p-3">
           <div className="flex items-center justify-center gap-2">
             <Layers className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             <span className="text-sm font-bold text-violet-700 dark:text-violet-300">
-              🏷️ {t('variant', 'Variant')}: {currentItem.variantName || variantData.name}
+              🏷️ {t('variant', 'Variant')}: {currentItem.variantName || currentItem.productName}
             </span>
             <Badge className="bg-violet-600 text-white text-xs">
-              {variantData.quantity} {t('available', 'available')}
+              {variantQuantity} {t('available', 'available')}
             </Badge>
           </div>
         </div>
