@@ -2257,6 +2257,7 @@ function MultiLocationPicker({
         return {
           ...loc,
           id: loc.id || `variant-loc-${index}`,
+          quantity: variantQty, // Override parent quantity with variant quantity
           masterQty: variantQty,
           virtualQty: variantQty, // Show total variant stock
           pickedFromHere,
@@ -2304,32 +2305,19 @@ function MultiLocationPicker({
     });
   }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantData, totalPicked, currentItem.variantId]);
 
-  // Auto-select location: for variants always auto-select primary; for regular items select if none chosen
+  // Auto-select location: always auto-select primary/first location for seamless picking
   useEffect(() => {
     if (locationOptions.length === 0) return;
     
-    // For variants: always auto-select the primary/first location (since all locations share variant stock)
-    // This provides a seamless picking experience for variants
-    if (isVariant && variantData) {
-      const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
-      const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
-      const toSelect = primaryLoc || firstWithStock || locationOptions[0];
-      if (toSelect && selectedLocationCode !== toSelect.locationCode) {
-        setSelectedLocationCode(toSelect.locationCode);
-      }
-      return;
-    }
+    // Always auto-select the primary/first location with stock
+    const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
+    const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
+    const toSelect = primaryLoc || firstWithStock || locationOptions[0];
     
-    // For regular items: auto-select primary or first with stock if none selected
-    if (!selectedLocationCode) {
-      const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
-      const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
-      const toSelect = primaryLoc || firstWithStock;
-      if (toSelect) {
-        setSelectedLocationCode(toSelect.locationCode);
-      }
+    if (toSelect && selectedLocationCode !== toSelect.locationCode) {
+      setSelectedLocationCode(toSelect.locationCode);
     }
-  }, [locationOptions, selectedLocationCode, isVariant, variantData]);
+  }, [locationOptions, selectedLocationCode]);
 
   // Get currently selected location data
   const selectedLocation = locationOptions.find(loc => loc.locationCode === selectedLocationCode);
