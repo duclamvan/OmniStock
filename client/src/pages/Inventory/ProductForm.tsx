@@ -428,7 +428,7 @@ export default function ProductForm() {
   const buildDefaultValues = useCallback(() => {
     const defaults: any = {
       quantity: 0,
-      lowStockAlert: lowStockThreshold || 45,
+      lowStockAlert: 50,
       lowStockAlertType: 'percentage' as const,
       maxStockLevel: 100,
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
