@@ -8473,7 +8473,9 @@ Important:
                 id: i.id?.slice(-6),
                 productName: i.productName,
                 variantId: i.variantId,
-                productId: i.productId
+                productId: i.productId,
+                variantQuantity: i.variantQuantity,
+                variantLocationCode: i.variantLocationCode
               })));
             } else {
               console.log('[PickPack RESPONSE DEBUG] No virtual items found in first order. First item variantIds:', 
