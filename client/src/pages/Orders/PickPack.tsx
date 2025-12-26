@@ -2266,6 +2266,12 @@ function MultiLocationPicker({
       });
     }
     
+    // If this is a variant item but variant data hasn't loaded yet, return empty
+    // This ensures we don't show parent product's quantity while waiting for variant data
+    if (isVariant && !variantData) {
+      return [];
+    }
+    
     // For regular products and virtual products: use parent locations with their own stock
     const baseLocations = [...productLocations]
       .filter(loc => (loc.quantity || 0) > 0 || (itemPicks[loc.locationCode] || 0) > 0)
