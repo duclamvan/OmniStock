@@ -1725,6 +1725,22 @@ interface LocationSuggestion {
   reasoning?: string;
 }
 
+// Helper function to extract the quantity stored for a specific receipt item from the notes field
+// Notes format: "RI:{receiptItemId}:Q{qty}" e.g., "RI:123:Q30"
+function getReceivingQtyFromNotes(notes: string | undefined, receiptItemId: number | string): number {
+  if (!notes) return 0;
+  const pattern = new RegExp(`RI:${receiptItemId}:Q(\\d+)`);
+  const match = notes.match(pattern);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+// Helper function to calculate total quantity stored for this receiving session
+function calculateStoredQtyForReceiving(existingLocations: LocationAssignment[], receiptItemId: number | string): number {
+  return (existingLocations || []).reduce((sum, loc) => {
+    return sum + getReceivingQtyFromNotes(loc.notes, receiptItemId);
+  }, 0);
+}
+
 // Helper function to build all location suggestions with quantities
 function buildLocationSuggestions(
   item: StorageItem,
@@ -2233,11 +2249,11 @@ function QuickStorageSheet({
     }
   });
   
-  // Calculate progress using actual saved location quantities (not stale assignedQuantity)
+  // Calculate progress using quantities stored for THIS receiving session only (from notes tags)
   const totalItems = items.length;
   const completedItems = items.filter(item => {
-    const savedQty = (item.existingLocations || []).reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
-    return savedQty >= item.receivedQuantity;
+    const storedQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+    return storedQty >= item.receivedQuantity;
   }).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
   
@@ -2501,11 +2517,11 @@ function QuickStorageSheet({
                   <AnimatePresence mode="wait">
                     {items.map((item, index) => {
                       const isSelected = index === selectedItemIndex;
-                      // Calculate from actual location quantities for accuracy
-                      const existingLocationQty = (item.existingLocations || []).reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+                      // Calculate from quantities stored for THIS receiving session only (from notes tags)
+                      const storedQtyForReceiving = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
                       const pendingLocationQty = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                      const itemRemainingQty = Math.max(0, item.receivedQuantity - existingLocationQty - pendingLocationQty);
-                      const isFullyStored = existingLocationQty + pendingLocationQty >= item.receivedQuantity;
+                      const itemRemainingQty = Math.max(0, item.receivedQuantity - storedQtyForReceiving - pendingLocationQty);
+                      const isFullyStored = storedQtyForReceiving + pendingLocationQty >= item.receivedQuantity;
 
                       return (
                         <motion.div
@@ -2641,7 +2657,7 @@ function QuickStorageSheet({
                                     />
                                   </div>
                                   <p className="text-xs text-muted-foreground mt-1.5 text-center">
-                                    {Math.min(existingLocationQty + pendingLocationQty, item.receivedQuantity)} / {item.receivedQuantity} {t('stored')}
+                                    {storedQtyForReceiving + pendingLocationQty} / {item.receivedQuantity} {t('stored')}
                                   </p>
                                 </div>
 
@@ -2766,14 +2782,12 @@ function QuickStorageSheet({
                                                     updatedItems[index].assignedQuantity += addQty;
                                                     setItems(updatedItems);
                                                     
-                                                    e.target.value = '';
-                                                    
                                                     toast({
                                                       title: t('locationUpdated'),
                                                       duration: 2000
                                                     });
                                                   } catch (error) {
-                                                    e.target.value = '';
+                                                    // Keep the value in input on error
                                                   }
                                                 }
                                               }}
@@ -2837,11 +2851,11 @@ function QuickStorageSheet({
                                             setItems(prevItems => {
                                               const updated = [...prevItems];
                                               const currentItem = updated[index];
-                                              const freshExistingQty = (currentItem.existingLocations || [])
-                                                .reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
+                                              // Use receiving-specific quantity from notes tags
+                                              const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
                                               const freshPendingQty = currentItem.locations
                                                 .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
-                                              const freshRemaining = currentItem.receivedQuantity - freshExistingQty - freshPendingQty;
+                                              const freshRemaining = currentItem.receivedQuantity - freshStoredQty - freshPendingQty;
                                               const maxAllowed = Math.max(0, freshRemaining);
                                               updated[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
                                               return updated;
@@ -2890,11 +2904,11 @@ function QuickStorageSheet({
                                             const updated = [...prevItems];
                                             const currentItem = updated[index];
                                             const lastIndex = currentItem.locations.length - 1;
-                                            const freshExistingQty = (currentItem.existingLocations || [])
-                                              .reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
+                                            // Use receiving-specific quantity from notes tags
+                                            const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
                                             const freshPendingQty = currentItem.locations
                                               .reduce((sum, l, i) => sum + (i === lastIndex ? 0 : (l.quantity || 0)), 0);
-                                            const freshRemaining = Math.max(0, currentItem.receivedQuantity - freshExistingQty - freshPendingQty);
+                                            const freshRemaining = Math.max(0, currentItem.receivedQuantity - freshStoredQty - freshPendingQty);
                                             updated[index].locations[lastIndex].quantity = freshRemaining;
                                             return updated;
                                           });
@@ -2953,7 +2967,8 @@ function QuickStorageSheet({
                                                     locationCode: loc.locationCode,
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,
-                                                    isPrimary: loc.isPrimary
+                                                    isPrimary: loc.isPrimary,
+                                                    notes: loc.notes // Include notes for receiving tracking
                                                   }));
                                                   updated[index].locations = []; // Clear pending
                                                   return updated;
@@ -2971,8 +2986,9 @@ function QuickStorageSheet({
                                             
                                             // Check if fully stored and play appropriate sound
                                             const totalSaved = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                                            const currentExisting = (item.existingLocations || []).reduce((sum: number, l: any) => sum + (l.quantity || 0), 0);
-                                            const isFullyAssigned = currentExisting + totalSaved >= item.receivedQuantity;
+                                            // Use receiving-specific quantity from existing locations
+                                            const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                                            const isFullyAssigned = currentStoredQty + totalSaved >= item.receivedQuantity;
                                             
                                             if (isFullyAssigned) {
                                               if (index < items.length - 1) {
