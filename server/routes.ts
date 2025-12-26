@@ -8770,7 +8770,7 @@ Important:
   // Update picked quantity for an order item and reduce stock from location
   app.patch('/api/orders/:id/items/:itemId/pick', isAuthenticated, async (req: any, res) => {
     try {
-      const { pickedQuantity, locationCode, qtyChange, productId, bulkUnitQty, pickedFromLocations } = req.body;
+      const { pickedQuantity, locationCode, qtyChange, productId, variantId, bulkUnitQty, pickedFromLocations } = req.body;
       
       // Update the order item's picked quantity
       const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
@@ -8892,6 +8892,21 @@ Important:
           console.error('Error reducing location stock:', locationError);
           // Don't fail the pick operation if stock reduction fails
         }
+        
+        // Also deduct from variant quantity if this is a variant item
+        if (variantId && !isVirtualSku) {
+          try {
+            const variant = await storage.getProductVariant(variantId);
+            if (variant) {
+              const currentVariantQty = variant.quantity || 0;
+              const newVariantQty = Math.max(0, currentVariantQty - qtyChange);
+              await storage.updateProductVariant(variantId, { quantity: newVariantQty });
+              console.log(`📦 [Variant] Picked ${qtyChange}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+            }
+          } catch (variantError) {
+            console.error('Error deducting variant quantity:', variantError);
+          }
+        }
       } else if (targetProductId && actualQtyChange < 0) {
         // If quantity decreased (unpicking), restore stock to location
         try {
@@ -8934,6 +8949,22 @@ Important:
           }
         } catch (locationError) {
           console.error('Error restoring location stock:', locationError);
+        }
+        
+        // Also restore variant quantity if this is a variant item
+        if (variantId && !isVirtualSku) {
+          try {
+            const variant = await storage.getProductVariant(variantId);
+            if (variant) {
+              const currentVariantQty = variant.quantity || 0;
+              const restoreQty = Math.abs(qtyChange);
+              const newVariantQty = currentVariantQty + restoreQty;
+              await storage.updateProductVariant(variantId, { quantity: newVariantQty });
+              console.log(`📦 [Variant] Unpicked ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+            }
+          } catch (variantError) {
+            console.error('Error restoring variant quantity:', variantError);
+          }
         }
       }
       
@@ -9190,6 +9221,22 @@ Important:
                     console.warn(`⚠️ Location ${locationCode} not found for product ${targetProductId}, skipping restore`);
                   }
                 }
+                
+                // Also restore variant quantity if this item has a variant
+                if (item.variantId && !isVirtualSku) {
+                  try {
+                    const variant = await storage.getProductVariant(item.variantId);
+                    if (variant) {
+                      const currentVariantQty = variant.quantity || 0;
+                      const restoreQty = item.pickedQuantity || 0;
+                      const newVariantQty = currentVariantQty + restoreQty;
+                      await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                      console.log(`📦 Reset [Variant Multi-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                    }
+                  } catch (variantError) {
+                    console.error('Error restoring variant quantity during reset:', variantError);
+                  }
+                }
               } else {
                 // Single-location format (legacy): restore to one location
                 const usedLocationCode = pickedLocations?.[item.id];
@@ -9236,6 +9283,22 @@ Important:
                   
                   restoredLocations++;
                   restoredQuantity += restoreQty;
+                }
+                
+                // Also restore variant quantity if this item has a variant
+                if (item.variantId && !isVirtualSku) {
+                  try {
+                    const variant = await storage.getProductVariant(item.variantId);
+                    if (variant) {
+                      const currentVariantQty = variant.quantity || 0;
+                      const restoreQty = item.pickedQuantity || 0;
+                      const newVariantQty = currentVariantQty + restoreQty;
+                      await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                      console.log(`📦 Reset [Variant Single-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                    }
+                  } catch (variantError) {
+                    console.error('Error restoring variant quantity during reset:', variantError);
+                  }
                 }
               }
             }
@@ -10482,6 +10545,22 @@ Important:
                   console.warn(`⚠️ [Soft Delete] Location ${locationCode} not found for product ${targetProductId}`);
                 }
               }
+              
+              // Also restore variant quantity if this item has a variant
+              if (item.variantId && !isVirtualSku) {
+                try {
+                  const variant = await storage.getProductVariant(item.variantId);
+                  if (variant) {
+                    const currentVariantQty = variant.quantity || 0;
+                    const restoreQty = item.pickedQuantity || 0;
+                    const newVariantQty = currentVariantQty + restoreQty;
+                    await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                    console.log(`🔄 [Soft Delete Variant Multi-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  }
+                } catch (variantError) {
+                  console.error('Error restoring variant quantity during soft delete:', variantError);
+                }
+              }
             } else {
               // Fallback: restore to primary location or first location
               // CRITICAL: Only restore what was actually picked - do NOT fall back to item.quantity
@@ -10515,6 +10594,22 @@ Important:
                   quantity: currentProductQty + restoreQty
                 });
                 totalRestoredQuantity += restoreQty;
+              }
+              
+              // Also restore variant quantity if this item has a variant
+              if (item.variantId && !isVirtualSku) {
+                try {
+                  const variant = await storage.getProductVariant(item.variantId);
+                  if (variant) {
+                    const currentVariantQty = variant.quantity || 0;
+                    const variantRestoreQty = item.pickedQuantity || 0;
+                    const newVariantQty = currentVariantQty + variantRestoreQty;
+                    await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                    console.log(`🔄 [Soft Delete Variant Single-Loc]: Restored ${variantRestoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  }
+                } catch (variantError) {
+                  console.error('Error restoring variant quantity during soft delete:', variantError);
+                }
               }
             }
           }
@@ -10636,6 +10731,22 @@ Important:
                   console.warn(`⚠️ [Restore] Location ${locationCode} not found for product ${targetProductId}`);
                 }
               }
+              
+              // Also deduct from variant quantity if this item has a variant
+              if (item.variantId && !isVirtualSku) {
+                try {
+                  const variant = await storage.getProductVariant(item.variantId);
+                  if (variant) {
+                    const currentVariantQty = variant.quantity || 0;
+                    const deductQty = item.pickedQuantity || 0;
+                    const newVariantQty = Math.max(0, currentVariantQty - deductQty);
+                    await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                    console.log(`🔄 [Restore Variant Multi-Loc]: Deducted ${deductQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  }
+                } catch (variantError) {
+                  console.error('Error deducting variant quantity during restore:', variantError);
+                }
+              }
             } else {
               // Fallback: deduct from primary location or first location
               // CRITICAL: Only deduct what was actually picked - do NOT fall back to item.quantity
@@ -10668,6 +10779,22 @@ Important:
                   quantity: Math.max(0, currentProductQty - deductQty)
                 });
                 totalDeductedQuantity += deductQty;
+              }
+              
+              // Also deduct from variant quantity if this item has a variant
+              if (item.variantId && !isVirtualSku) {
+                try {
+                  const variant = await storage.getProductVariant(item.variantId);
+                  if (variant) {
+                    const currentVariantQty = variant.quantity || 0;
+                    const variantDeductQty = item.pickedQuantity || 0;
+                    const newVariantQty = Math.max(0, currentVariantQty - variantDeductQty);
+                    await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
+                    console.log(`🔄 [Restore Variant Single-Loc]: Deducted ${variantDeductQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
+                  }
+                } catch (variantError) {
+                  console.error('Error deducting variant quantity during restore:', variantError);
+                }
               }
             }
           }

@@ -195,6 +195,8 @@ interface ProductLocation {
 interface OrderItem {
   id: string;
   productId?: string | null;
+  variantId?: string | null;
+  variantName?: string | null;
   serviceId?: string | null;
   bundleId?: string | null;
   productName: string;
@@ -6915,6 +6917,7 @@ export default function PickPack() {
           locationCode: selectedLocation,
           qtyChange: qtyChange, // How much to reduce from location (positive = reduce, negative = restore)
           productId: item?.productId,
+          variantId: item?.variantId,
           bulkUnitQty: bulkUnitQty
         }).catch(error => {
           console.error('Error saving picked quantity:', error);
@@ -6926,6 +6929,7 @@ export default function PickPack() {
             locationCode: selectedLocation,
             qtyChange: qtyChange,
             productId: item?.productId,
+            variantId: item?.variantId,
             bulkUnitQty: bulkUnitQty
           });
         });
@@ -6938,6 +6942,7 @@ export default function PickPack() {
           locationCode: selectedLocation,
           qtyChange: qtyChange,
           productId: item?.productId,
+          variantId: item?.variantId,
           bulkUnitQty: bulkUnitQty
         });
         playSound('success'); // Provide feedback that action was queued
