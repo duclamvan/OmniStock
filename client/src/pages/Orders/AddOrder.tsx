@@ -7957,6 +7957,7 @@ export default function AddOrder() {
                             ...prev,
                             [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
                           }))}
+                          onFocus={(e) => e.target.select()}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
