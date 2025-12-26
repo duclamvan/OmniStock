@@ -813,6 +813,7 @@ export const productVariants = pgTable("product_variants", {
   name: varchar("name").notNull(),
   barcode: varchar("barcode"),
   quantity: integer("quantity").default(0),
+  locationCode: varchar("location_code"), // Optional - uses parent product's location if empty
   importCostUsd: decimal("import_cost_usd", { precision: 10, scale: 2 }),
   importCostCzk: decimal("import_cost_czk", { precision: 10, scale: 2 }),
   importCostEur: decimal("import_cost_eur", { precision: 10, scale: 2 }),

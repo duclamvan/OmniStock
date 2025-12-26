@@ -259,6 +259,7 @@ export default function ProductForm() {
     name: string;
     barcode: string;
     quantity: number;
+    locationCode: string;
     priceUsd: string;
     priceCzk: string;
     priceEur: string;
@@ -285,6 +286,7 @@ export default function ProductForm() {
     name: "",
     barcode: "",
     quantity: 0,
+    locationCode: "",
     priceUsd: "",
     priceCzk: "",
     priceEur: "",
@@ -1576,6 +1578,7 @@ export default function ProductForm() {
         name: "",
         barcode: "",
         quantity: 0,
+        locationCode: "",
         priceUsd: "",
         priceCzk: "",
         priceEur: "",
@@ -1627,6 +1630,7 @@ export default function ProductForm() {
           name: `${baseName} ${i}`,
           barcode: "",
           quantity: seriesQuantity,
+          locationCode: "",
           priceUsd: "",
           priceCzk: seriesPriceCzk,
           priceEur: seriesPriceEur,
@@ -3249,6 +3253,20 @@ export default function ProductForm() {
                               placeholder={t('products:enterQuantity')}
                               data-testid="input-variant-quantity"
                             />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="variant-location-code">{t('products:variants.locationCode')}</Label>
+                            <Input
+                              id="variant-location-code"
+                              value={newVariant.locationCode}
+                              onChange={(e) => setNewVariant((prev) => ({ ...prev, locationCode: e.target.value }))}
+                              placeholder={t('products:variants.locationCodePlaceholder')}
+                              data-testid="input-variant-location-code"
+                            />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {t('products:variants.locationCodeHelper')}
+                            </p>
                           </div>
                           
                           <Separator />
