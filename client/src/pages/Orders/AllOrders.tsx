@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
+import { useLongPress } from "@/hooks/useLongPress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -146,6 +148,165 @@ function useDailyHighScores(statistics: {
   }, [statistics, dateKey]);
 
   return highScores;
+}
+
+// Mobile Order Card with long-press selection support
+interface MobileOrderCardProps {
+  order: any;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onLongPress: () => void;
+  onClick: () => void;
+  onToggleSelection: () => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  formatCurrency: (amount: number, currency: string) => string;
+  formatDate: (date: string | Date) => string;
+  getStatusBadge: (status: string) => React.ReactNode;
+  getPaymentStatusBadge: (status: string) => React.ReactNode;
+  calculateOrderProfit: (order: any) => number;
+  canAccessFinancialData: boolean;
+  visibleColumns: Record<string, boolean>;
+  t: (key: string) => string;
+}
+
+function MobileOrderCard({
+  order,
+  isSelectionMode,
+  isSelected,
+  onLongPress,
+  onClick,
+  onToggleSelection,
+  isExpanded,
+  onToggleExpand,
+  formatCurrency,
+  formatDate,
+  getStatusBadge,
+  getPaymentStatusBadge,
+  calculateOrderProfit,
+  canAccessFinancialData,
+  visibleColumns,
+  t
+}: MobileOrderCardProps) {
+  const longPressHandlers = useLongPress({
+    onLongPress: () => {
+      if (!isSelectionMode) {
+        onLongPress();
+      }
+    },
+    onClick: () => {
+      onClick();
+    },
+    delay: 500,
+    shouldPreventDefault: true
+  });
+
+  return (
+    <div 
+      className={cn(
+        "bg-white dark:bg-slate-900 rounded-lg border p-2.5 transition-all",
+        isSelectionMode && isSelected 
+          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" 
+          : "border-gray-100 dark:border-slate-800"
+      )}
+      {...longPressHandlers}
+      data-testid={`card-order-${order.id}`}
+    >
+      {/* Row 1: Checkbox (if selection mode) + Order ID + Status + Total */}
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {isSelectionMode && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelection()}
+              onClick={(e) => e.stopPropagation()}
+              className="h-5 w-5 flex-shrink-0"
+              data-testid={`checkbox-order-${order.id}`}
+            />
+          )}
+          <span className="font-bold text-sm text-black dark:text-white">{order.orderId}</span>
+          {getStatusBadge(order.orderStatus)}
+          {getPaymentStatusBadge(order.paymentStatus)}
+        </div>
+        <span className="font-bold text-sm text-black dark:text-white flex-shrink-0">
+          {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
+        </span>
+      </div>
+      
+      {/* Row 2: Customer + Date */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
+          {order.customer?.name || t('orders:walkInCustomer')}
+        </span>
+        <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+          {formatDate(order.createdAt)}
+        </span>
+      </div>
+      
+      {/* Row 3: Tracking + Profit + Biller (additional details) */}
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-slate-800">
+        {/* Tracking Info */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {(order.orderStatus === 'shipped' || order.orderStatus === 'delivered') ? (
+            <div className="flex items-center gap-1.5">
+              <TrackingStatusBadge 
+                orderId={order.id} 
+                orderStatus={order.orderStatus}
+              />
+              {order.trackingNumber && (
+                <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[80px]" title={order.trackingNumber}>
+                  {order.trackingNumber}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </div>
+        
+        {/* Profit (if user has access) */}
+        {canAccessFinancialData && visibleColumns.profit && (
+          <span className={cn(
+            "text-[10px] font-medium",
+            calculateOrderProfit(order) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          )}>
+            {formatCurrency(calculateOrderProfit(order), order.currency)}
+          </span>
+        )}
+        
+        {/* Biller */}
+        {visibleColumns.biller && (
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[60px]">
+            {order.biller?.firstName || order.biller?.email || 'N/A'}
+          </span>
+        )}
+        
+        {/* Expand/Collapse arrow for items */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand();
+          }}
+          className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0"
+          data-testid={`button-expand-items-${order.id}`}
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+        
+      {/* Order Items Summary - Only show when expanded */}
+      {isExpanded && (
+        <OrderItemsLoader 
+          orderId={order.id} 
+          currency={order.currency}
+          variant="mobile"
+          maxItems={3}
+          expanded={true}
+          onToggleExpand={onToggleExpand}
+        />
+      )}
+    </div>
+  );
 }
 
 export default function AllOrders({ filter }: AllOrdersProps) {
@@ -296,6 +457,29 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   // Expanded items state for mobile view (track which orders have expanded item lists)
   const [expandedItemsOrders, setExpandedItemsOrders] = useState<Set<string>>(new Set());
+
+  // Mobile selection mode state
+  const [mobileSelectionMode, setMobileSelectionMode] = useState(false);
+  const [mobileSelectedOrders, setMobileSelectedOrders] = useState<Set<string>>(new Set());
+
+  // Exit mobile selection mode
+  const exitMobileSelectionMode = useCallback(() => {
+    setMobileSelectionMode(false);
+    setMobileSelectedOrders(new Set());
+  }, []);
+
+  // Toggle mobile selection for an order
+  const toggleMobileSelection = useCallback((orderId: string) => {
+    setMobileSelectedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Toggle expanded items for an order
   const toggleExpandedItems = (orderId: string) => {
@@ -708,6 +892,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     
     return filtered;
   }, [orders, searchQuery, statusFilter, paymentFilter, dateRangePreset, getDateRangeFromPreset]);
+
+  // Select all/deselect all for mobile (must be after filteredOrders is defined)
+  const toggleMobileSelectAll = useCallback(() => {
+    if (!filteredOrders) return;
+    if (mobileSelectedOrders.size === filteredOrders.length) {
+      setMobileSelectedOrders(new Set());
+    } else {
+      setMobileSelectedOrders(new Set(filteredOrders.map((o: any) => o.id)));
+    }
+  }, [filteredOrders, mobileSelectedOrders.size]);
   
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -1863,100 +2057,111 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
           {/* Mobile Card View - Compact with all column details */}
           <div className="sm:hidden space-y-1.5 px-2 py-2">
-            {filteredOrders?.map((order: any) => (
-              <div 
-                key={order.id} 
-                className="bg-white dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800 p-2.5"
-                onClick={() => {
-                  sessionStorage.setItem('orderDetailsReferrer', location);
-                  navigate(`/orders/${order.id}`);
-                }}
-              >
-                {/* Row 1: Order ID + Status + Total */}
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-bold text-sm text-black dark:text-white">{order.orderId}</span>
-                    {getStatusBadge(order.orderStatus)}
-                    {getPaymentStatusBadge(order.paymentStatus)}
-                  </div>
-                  <span className="font-bold text-sm text-black dark:text-white flex-shrink-0">
-                    {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
-                  </span>
-                </div>
-                
-                {/* Row 2: Customer + Date */}
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
-                    {order.customer?.name || t('orders:walkInCustomer')}
-                  </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    {formatDate(order.createdAt)}
-                  </span>
-                </div>
-                
-                {/* Row 3: Tracking + Profit + Biller (additional details) */}
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-slate-800">
-                  {/* Tracking Info */}
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {(order.orderStatus === 'shipped' || order.orderStatus === 'delivered') ? (
-                      <div className="flex items-center gap-1.5">
-                        <TrackingStatusBadge 
-                          orderId={order.id} 
-                          orderStatus={order.orderStatus}
-                        />
-                        {order.trackingNumber && (
-                          <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[80px]" title={order.trackingNumber}>
-                            {order.trackingNumber}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground">—</span>
-                    )}
-                  </div>
-                  
-                  {/* Profit (if user has access) */}
-                  {canAccessFinancialData && visibleColumns.profit && (
-                    <span className={cn(
-                      "text-[10px] font-medium",
-                      calculateOrderProfit(order) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                    )}>
-                      {formatCurrency(calculateOrderProfit(order), order.currency)}
-                    </span>
-                  )}
-                  
-                  {/* Biller */}
-                  {visibleColumns.biller && (
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[60px]">
-                      {order.biller?.firstName || order.biller?.email || 'N/A'}
-                    </span>
-                  )}
-                  
-                  {/* Expand/Collapse arrow for items */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleExpandedItems(order.id);
-                    }}
-                    className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                    data-testid={`button-expand-items-${order.id}`}
+            {/* Mobile Selection Mode Header */}
+            {mobileSelectionMode && (
+              <div className="sticky top-0 z-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2 mb-2 flex items-center justify-between gap-2 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={exitMobileSelectionMode}
+                    data-testid="button-exit-selection"
                   >
-                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedItemsOrders.has(order.id) ? 'rotate-180' : ''}`} />
-                  </button>
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {mobileSelectedOrders.size} {t('orders:selected')}
+                  </span>
                 </div>
-                  
-                {/* Order Items Summary - Only show when expanded */}
-                {expandedItemsOrders.has(order.id) && (
-                  <OrderItemsLoader 
-                    orderId={order.id} 
-                    currency={order.currency}
-                    variant="mobile"
-                    maxItems={3}
-                    expanded={true}
-                    onToggleExpand={() => toggleExpandedItems(order.id)}
-                  />
-                )}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={toggleMobileSelectAll}
+                    data-testid="button-select-all-mobile"
+                  >
+                    {mobileSelectedOrders.size === filteredOrders?.length ? t('common:deselectAll') : t('common:selectAll')}
+                  </Button>
+                </div>
               </div>
+            )}
+            
+            {/* Mobile Bulk Actions Bar */}
+            {mobileSelectionMode && mobileSelectedOrders.size > 0 && (
+              <div className="sticky top-12 z-10 bg-white dark:bg-slate-900 rounded-lg p-2 mb-2 flex items-center gap-2 border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                <Select
+                  onValueChange={(value) => {
+                    const selectedItems = filteredOrders?.filter((o: any) => mobileSelectedOrders.has(o.id)) || [];
+                    updateOrderMutation.mutate({ 
+                      id: selectedItems[0]?.id, 
+                      updates: { orderStatus: value } 
+                    });
+                    selectedItems.slice(1).forEach((item: any) => {
+                      updateOrderMutation.mutate({ id: item.id, updates: { orderStatus: value } });
+                    });
+                    exitMobileSelectionMode();
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                    <SelectValue placeholder={t('orders:changeStatus')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">{t('orders:pending')}</SelectItem>
+                    <SelectItem value="processing">{t('orders:processing')}</SelectItem>
+                    <SelectItem value="shipped">{t('orders:shipped')}</SelectItem>
+                    <SelectItem value="delivered">{t('orders:delivered')}</SelectItem>
+                    <SelectItem value="cancelled">{t('orders:cancelled')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-8 text-xs flex-shrink-0"
+                  onClick={() => {
+                    const ids = Array.from(mobileSelectedOrders);
+                    deleteOrderMutation.mutate(ids);
+                    exitMobileSelectionMode();
+                  }}
+                  data-testid="button-bulk-delete-mobile"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  {t('common:delete')}
+                </Button>
+              </div>
+            )}
+            
+            {filteredOrders?.map((order: any) => (
+              <MobileOrderCard
+                key={order.id}
+                order={order}
+                isSelectionMode={mobileSelectionMode}
+                isSelected={mobileSelectedOrders.has(order.id)}
+                onLongPress={() => {
+                  setMobileSelectionMode(true);
+                  setMobileSelectedOrders(new Set([order.id]));
+                }}
+                onClick={() => {
+                  if (mobileSelectionMode) {
+                    toggleMobileSelection(order.id);
+                  } else {
+                    sessionStorage.setItem('orderDetailsReferrer', location);
+                    navigate(`/orders/${order.id}`);
+                  }
+                }}
+                onToggleSelection={() => toggleMobileSelection(order.id)}
+                isExpanded={expandedItemsOrders.has(order.id)}
+                onToggleExpand={() => toggleExpandedItems(order.id)}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+                getStatusBadge={getStatusBadge}
+                getPaymentStatusBadge={getPaymentStatusBadge}
+                calculateOrderProfit={calculateOrderProfit}
+                canAccessFinancialData={canAccessFinancialData}
+                visibleColumns={visibleColumns}
+                t={t}
+              />
             ))}
           </div>
 
