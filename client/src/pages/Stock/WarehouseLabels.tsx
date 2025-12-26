@@ -429,15 +429,13 @@ export default function WarehouseLabels() {
     try {
       const selectedProducts = allProducts.filter((p: any) => selectedProductIds.has(p.id));
       
-      // Build list of items to print (products + their variants if enabled)
+      // Build list of items to print (products or their variants if enabled)
       const itemsToPrint: any[] = [];
       
       for (const product of selectedProducts) {
-        // Add the parent product
-        itemsToPrint.push(product);
-        
-        // Add variants if enabled for this product
+        // Check if variants are enabled for this product
         if (includeVariantsFor.has(product.id)) {
+          // Only print variants, skip parent product
           const variants = variantsMap.get(product.id) || [];
           for (const variant of variants) {
             itemsToPrint.push({
@@ -450,6 +448,9 @@ export default function WarehouseLabels() {
               variantName: variant.name,
             });
           }
+        } else {
+          // Add the parent product only
+          itemsToPrint.push(product);
         }
         
         try {
@@ -517,15 +518,13 @@ export default function WarehouseLabels() {
     const failedProducts: string[] = [];
 
     try {
-      // Build list of items to print (products + their variants if enabled)
+      // Build list of items to print (products or their variants if enabled)
       const itemsToPrint: any[] = [];
       
       for (const product of allProducts) {
-        // Add the parent product
-        itemsToPrint.push(product);
-        
-        // Add variants if enabled for this product
+        // Check if variants are enabled for this product
         if (includeVariantsFor.has(product.id)) {
+          // Only print variants, skip parent product
           const variants = variantsMap.get(product.id) || [];
           for (const variant of variants) {
             itemsToPrint.push({
@@ -538,6 +537,9 @@ export default function WarehouseLabels() {
               variantName: variant.name,
             });
           }
+        } else {
+          // Add the parent product only
+          itemsToPrint.push(product);
         }
         
         try {
