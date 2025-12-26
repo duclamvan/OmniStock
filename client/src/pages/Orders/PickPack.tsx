@@ -2309,19 +2309,31 @@ function MultiLocationPicker({
     });
   }, [productLocations, itemPicks, isVirtual, isVariant, deductionRatio, variantAvailableQty, variantQuantity, variantLocationCode, totalPicked, currentItem.variantId]);
 
-  // Auto-select location: always auto-select primary/first location for seamless picking
+  // Track item ID to detect when we switch to a different item
+  const prevItemIdRef = useRef<string | null>(null);
+  
+  // Auto-select location ONLY when:
+  // 1. No location is currently selected (initial mount), OR
+  // 2. Item changes to a different item (new item being picked)
+  // Do NOT reset if user manually selected a different location
   useEffect(() => {
     if (locationOptions.length === 0) return;
     
-    // Always auto-select the primary/first location with stock
-    const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
-    const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
-    const toSelect = primaryLoc || firstWithStock || locationOptions[0];
+    const isNewItem = prevItemIdRef.current !== currentItem.id;
+    const noSelection = !selectedLocationCode;
     
-    if (toSelect && selectedLocationCode !== toSelect.locationCode) {
-      setSelectedLocationCode(toSelect.locationCode);
+    // Only auto-select on first mount or when switching to new item
+    if (noSelection || isNewItem) {
+      const primaryLoc = locationOptions.find(loc => loc.isPrimary && loc.availableVirtual > 0);
+      const firstWithStock = locationOptions.find(loc => loc.availableVirtual > 0);
+      const toSelect = primaryLoc || firstWithStock || locationOptions[0];
+      
+      if (toSelect) {
+        setSelectedLocationCode(toSelect.locationCode);
+      }
+      prevItemIdRef.current = currentItem.id;
     }
-  }, [locationOptions, selectedLocationCode]);
+  }, [locationOptions, currentItem.id, selectedLocationCode]);
 
   // Get currently selected location data
   const selectedLocation = locationOptions.find(loc => loc.locationCode === selectedLocationCode);
