@@ -14301,10 +14301,13 @@ export default function PickPack() {
                             </h2>
                             <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
                               <div className="flex items-center gap-1">
+                                <span className="font-bold text-gray-900">({currentItem.quantity}x)</span>
+                              </div>
+                              <div className="flex items-center gap-1">
                                 <Hash className="h-4 w-4 text-gray-400" />
                                 <span className="font-mono">{currentItem.sku}</span>
                               </div>
-                              {currentItem.barcode && (
+                              {currentItem.barcode && currentItem.barcode !== currentItem.sku && (
                                 <div className="flex items-center gap-1">
                                   <ScanLine className="h-4 w-4 text-gray-400" />
                                   <span className="font-mono">{currentItem.barcode}</span>
