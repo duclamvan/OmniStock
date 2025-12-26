@@ -1714,6 +1714,8 @@ interface StorageItem {
   assignedQuantity: number;
   locations: LocationAssignment[];
   existingLocations: LocationAssignment[];
+  // Track pending additions to existing locations: { locationId: quantity }
+  pendingExistingAdds: Record<string, number>;
 }
 
 // Enhanced location suggestion with quantity info
@@ -1994,7 +1996,8 @@ function QuickStorageSheet({
         receivedQuantity: item.receivedQuantity || item.quantity || 0,
         assignedQuantity: item.assignedQuantity || 0,
         locations: item.locations || [],
-        existingLocations: item.existingLocations || item.product?.locations || []
+        existingLocations: item.existingLocations || item.product?.locations || [],
+        pendingExistingAdds: {} // Initialize empty pending adds
       }));
       setItems(storageItems);
     }
@@ -2250,10 +2253,13 @@ function QuickStorageSheet({
   });
   
   // Calculate progress using quantities stored for THIS receiving session only (from notes tags)
+  // Also include pending additions that haven't been saved yet
   const totalItems = items.length;
   const completedItems = items.filter(item => {
     const storedQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
-    return storedQty >= item.receivedQuantity;
+    const pendingExisting = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+    const pendingNew = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+    return storedQty + pendingExisting + pendingNew >= item.receivedQuantity;
   }).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
   
@@ -2519,9 +2525,14 @@ function QuickStorageSheet({
                       const isSelected = index === selectedItemIndex;
                       // Calculate from quantities stored for THIS receiving session only (from notes tags)
                       const storedQtyForReceiving = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                      // Sum pending additions to existing locations
+                      const pendingExistingQty = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+                      // Sum pending new locations
                       const pendingLocationQty = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                      const itemRemainingQty = Math.max(0, item.receivedQuantity - storedQtyForReceiving - pendingLocationQty);
-                      const isFullyStored = storedQtyForReceiving + pendingLocationQty >= item.receivedQuantity;
+                      // Total pending = pending existing + pending new
+                      const totalPendingQty = pendingExistingQty + pendingLocationQty;
+                      const itemRemainingQty = Math.max(0, item.receivedQuantity - storedQtyForReceiving - totalPendingQty);
+                      const isFullyStored = storedQtyForReceiving + totalPendingQty >= item.receivedQuantity;
 
                       return (
                         <motion.div
@@ -2657,7 +2668,7 @@ function QuickStorageSheet({
                                     />
                                   </div>
                                   <p className="text-xs text-muted-foreground mt-1.5 text-center">
-                                    {storedQtyForReceiving + pendingLocationQty} / {item.receivedQuantity} {t('stored')}
+                                    {storedQtyForReceiving + totalPendingQty} / {item.receivedQuantity} {t('stored')}
                                   </p>
                                 </div>
 
@@ -2739,99 +2750,101 @@ function QuickStorageSheet({
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">
-                                    {/* SAVED LOCATIONS - Compact rows with stock below */}
-                                    {item.existingLocations?.map((loc: any, locIdx: number) => (
-                                      <div 
-                                        key={`saved-${loc.id || locIdx}`}
-                                        className="p-2.5 bg-green-50 dark:bg-green-950/20"
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                              <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                              <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                    {/* SAVED LOCATIONS - Compact rows with controlled "To add" input */}
+                                    {item.existingLocations?.map((loc: any, locIdx: number) => {
+                                      const locId = String(loc.id || locIdx);
+                                      const pendingAdd = item.pendingExistingAdds?.[locId] || 0;
+                                      
+                                      return (
+                                        <div 
+                                          key={`saved-${locId}`}
+                                          className={`p-2.5 ${pendingAdd > 0 ? 'bg-blue-50 dark:bg-blue-950/20' : 'bg-green-50 dark:bg-green-950/20'}`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-1.5">
+                                                <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                                <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                              </div>
+                                              <div className="ml-5 mt-0.5 flex items-center gap-2">
+                                                <span className="text-xs text-green-600 dark:text-green-400">{t('stock')}: <span className="font-bold">{loc.quantity || 0}</span></span>
+                                                {pendingAdd > 0 && (
+                                                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">+{pendingAdd}</span>
+                                                )}
+                                              </div>
                                             </div>
-                                            <div className="ml-5 mt-0.5">
-                                              <span className="text-xs text-green-600 dark:text-green-400">{t('stock')}: <span className="font-bold">{loc.quantity || 0}</span></span>
+                                            
+                                            <div className="flex items-center gap-1">
+                                              <Input
+                                                type="number"
+                                                value={pendingAdd || ''}
+                                                onChange={(e) => {
+                                                  e.stopPropagation();
+                                                  const newVal = parseInt(e.target.value) || 0;
+                                                  // Calculate max allowed based on remaining
+                                                  const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                                                  const otherPendingExisting = Object.entries(item.pendingExistingAdds || {})
+                                                    .filter(([id]) => id !== locId)
+                                                    .reduce((sum, [, qty]) => sum + (qty || 0), 0);
+                                                  const pendingNewLocs = item.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                                                  const maxAllowed = Math.max(0, item.receivedQuantity - currentStoredQty - otherPendingExisting - pendingNewLocs);
+                                                  const clampedVal = Math.min(Math.max(0, newVal), maxAllowed);
+                                                  
+                                                  setItems(prevItems => {
+                                                    const updated = [...prevItems];
+                                                    updated[index].pendingExistingAdds = {
+                                                      ...updated[index].pendingExistingAdds,
+                                                      [locId]: clampedVal
+                                                    };
+                                                    return updated;
+                                                  });
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`w-16 h-9 text-center text-sm font-bold rounded-lg ${pendingAdd > 0 ? 'border-blue-400 dark:border-blue-600 bg-white dark:bg-gray-900' : 'border-green-300 dark:border-green-700'}`}
+                                                min="0"
+                                                placeholder="0"
+                                                data-testid={`input-add-qty-${locIdx}`}
+                                              />
                                             </div>
-                                          </div>
-                                          
-                                          <div className="flex items-center gap-1">
-                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('toAdd')}:</span>
-                                            <Input
-                                              type="number"
-                                              defaultValue=""
-                                              onBlur={async (e) => {
+                                            
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={async (e) => {
                                                 e.stopPropagation();
-                                                const addQty = parseInt(e.target.value) || 0;
-                                                if (addQty === 0) return;
+                                                if (!item.productId || !loc.id) return;
                                                 
-                                                const newQty = (loc.quantity || 0) + addQty;
-                                                
-                                                if (item.productId && loc.id) {
-                                                  try {
-                                                    await updateLocationMutation.mutateAsync({
-                                                      productId: String(item.productId),
-                                                      locationId: String(loc.id),
-                                                      quantity: newQty,
-                                                      receiptItemId: String(item.receiptItemId)
-                                                    });
-                                                    
-                                                    const updatedItems = [...items];
-                                                    updatedItems[index].existingLocations[locIdx].quantity = newQty;
-                                                    updatedItems[index].assignedQuantity += addQty;
-                                                    setItems(updatedItems);
-                                                    
-                                                    toast({
-                                                      title: t('locationUpdated'),
-                                                      duration: 2000
-                                                    });
-                                                  } catch (error) {
-                                                    // Keep the value in input on error
-                                                  }
+                                                try {
+                                                  await deleteLocationMutation.mutateAsync({
+                                                    productId: String(item.productId),
+                                                    locationId: String(loc.id),
+                                                    receiptItemId: String(item.receiptItemId)
+                                                  });
+                                                  
+                                                  setItems(prevItems => {
+                                                    const updated = [...prevItems];
+                                                    const deletedQty = loc.quantity || 0;
+                                                    updated[index].existingLocations = updated[index].existingLocations.filter(
+                                                      (_: any, i: number) => i !== locIdx
+                                                    );
+                                                    updated[index].assignedQuantity -= deletedQty;
+                                                    // Also remove from pending
+                                                    delete updated[index].pendingExistingAdds[locId];
+                                                    return updated;
+                                                  });
+                                                } catch (error) {
+                                                  console.error('Failed to delete location:', error);
                                                 }
                                               }}
-                                              onClick={(e) => e.stopPropagation()}
-                                              className="w-14 h-8 text-center text-sm font-bold rounded-lg border-green-300 dark:border-green-700"
-                                              min="0"
-                                              placeholder="0"
-                                              data-testid={`input-add-qty-${locIdx}`}
-                                            />
+                                              disabled={deleteLocationMutation.isPending}
+                                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
                                           </div>
-                                          
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={async (e) => {
-                                              e.stopPropagation();
-                                              if (!item.productId || !loc.id) return;
-                                              
-                                              try {
-                                                await deleteLocationMutation.mutateAsync({
-                                                  productId: String(item.productId),
-                                                  locationId: String(loc.id),
-                                                  receiptItemId: String(item.receiptItemId)
-                                                });
-                                                
-                                                const updatedItems = [...items];
-                                                const deletedQty = loc.quantity || 0;
-                                                updatedItems[index].existingLocations = updatedItems[index].existingLocations.filter(
-                                                  (_: any, i: number) => i !== locIdx
-                                                );
-                                                updatedItems[index].assignedQuantity -= deletedQty;
-                                                setItems(updatedItems);
-                                              } catch (error) {
-                                                console.error('Failed to delete location:', error);
-                                              }
-                                            }}
-                                            disabled={deleteLocationMutation.isPending}
-                                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg"
-                                          >
-                                            <X className="h-4 w-4" />
-                                          </Button>
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                     
                                     {/* PENDING LOCATIONS - Compact rows */}
                                     {item.locations.map((loc, locIndex) => (
@@ -2853,9 +2866,10 @@ function QuickStorageSheet({
                                               const currentItem = updated[index];
                                               // Use receiving-specific quantity from notes tags
                                               const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
-                                              const freshPendingQty = currentItem.locations
+                                              const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+                                              const freshPendingNew = currentItem.locations
                                                 .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
-                                              const freshRemaining = currentItem.receivedQuantity - freshStoredQty - freshPendingQty;
+                                              const freshRemaining = currentItem.receivedQuantity - freshStoredQty - freshPendingExisting - freshPendingNew;
                                               const maxAllowed = Math.max(0, freshRemaining);
                                               updated[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
                                               return updated;
@@ -2892,129 +2906,164 @@ function QuickStorageSheet({
                                   </div>
                                 </div>
 
-                                {/* ACTION BUTTONS - Compact */}
-                                {item.locations.length > 0 && (
-                                  <div className="flex gap-2">
-                                    {itemRemainingQty > 0 && (
-                                      <Button
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setItems(prevItems => {
-                                            const updated = [...prevItems];
-                                            const currentItem = updated[index];
-                                            const lastIndex = currentItem.locations.length - 1;
-                                            // Use receiving-specific quantity from notes tags
-                                            const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
-                                            const freshPendingQty = currentItem.locations
-                                              .reduce((sum, l, i) => sum + (i === lastIndex ? 0 : (l.quantity || 0)), 0);
-                                            const freshRemaining = Math.max(0, currentItem.receivedQuantity - freshStoredQty - freshPendingQty);
-                                            updated[index].locations[lastIndex].quantity = freshRemaining;
-                                            return updated;
-                                          });
-                                        }}
-                                        className="flex-1 h-10 rounded-lg text-sm"
-                                      >
-                                        <Plus className="h-4 w-4 mr-1" />
-                                        {t('fillAll')} ({itemRemainingQty})
-                                      </Button>
-                                    )}
-                                    
-                                    {item.locations.some(loc => (loc.quantity || 0) > 0) && (
-                                      <Button
-                                        className="flex-1 h-10 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
-                                          if (locationsToSave.length === 0) return;
-                                          
-                                          let savedCount = 0;
-                                          
-                                          for (const loc of locationsToSave) {
-                                            if (item.productId && loc.quantity > 0) {
-                                              try {
-                                                await storeLocationMutation.mutateAsync({
-                                                  productId: String(item.productId),
-                                                  locationCode: loc.locationCode,
-                                                  locationType: loc.locationType,
-                                                  quantity: loc.quantity,
-                                                  isPrimary: loc.isPrimary,
-                                                  receiptItemId: item.receiptItemId
-                                                });
-                                                savedCount++;
-                                              } catch (error) {
-                                                console.error('Failed to save location:', error);
-                                              }
-                                            }
-                                          }
-                                          
-                                          if (savedCount > 0) {
-                                            // Refetch product locations from server to get authoritative data
-                                            try {
-                                              const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
-                                              if (locResponse.ok) {
-                                                const serverLocations = await locResponse.json();
-                                                // Filter to only locations for this receipt item (tagged with RI:{receiptItemId})
-                                                const relevantLocations = serverLocations.filter((loc: any) => 
-                                                  loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
-                                                  !loc.notes?.includes('RI:')
-                                                );
-                                                
-                                                setItems(prevItems => {
-                                                  const updated = [...prevItems];
-                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => ({
-                                                    id: loc.id,
+                                {/* ACTION BUTTONS - Show when there are pending quantities to save */}
+                                {(() => {
+                                  const hasPendingNew = item.locations.some(loc => (loc.quantity || 0) > 0);
+                                  const hasPendingExisting = Object.values(item.pendingExistingAdds || {}).some(qty => (qty || 0) > 0);
+                                  const showButtons = hasPendingNew || hasPendingExisting || item.locations.length > 0;
+                                  
+                                  if (!showButtons) return null;
+                                  
+                                  return (
+                                    <div className="flex gap-2">
+                                      {itemRemainingQty > 0 && item.locations.length > 0 && (
+                                        <Button
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              const currentItem = updated[index];
+                                              const lastIndex = currentItem.locations.length - 1;
+                                              const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                              const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+                                              const freshPendingNew = currentItem.locations
+                                                .reduce((sum, l, i) => sum + (i === lastIndex ? 0 : (l.quantity || 0)), 0);
+                                              const freshRemaining = Math.max(0, currentItem.receivedQuantity - freshStoredQty - freshPendingExisting - freshPendingNew);
+                                              updated[index].locations[lastIndex].quantity = freshRemaining;
+                                              return updated;
+                                            });
+                                          }}
+                                          className="flex-1 h-10 rounded-lg text-sm"
+                                        >
+                                          <Plus className="h-4 w-4 mr-1" />
+                                          {t('fillAll')} ({itemRemainingQty})
+                                        </Button>
+                                      )}
+                                      
+                                      {(hasPendingNew || hasPendingExisting) && (
+                                        <Button
+                                          className="flex-1 h-10 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            let savedCount = 0;
+                                            let totalSavedQty = 0;
+                                            
+                                            // Save pending new locations
+                                            const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
+                                            for (const loc of locationsToSave) {
+                                              if (item.productId && loc.quantity > 0) {
+                                                try {
+                                                  await storeLocationMutation.mutateAsync({
+                                                    productId: String(item.productId),
                                                     locationCode: loc.locationCode,
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,
                                                     isPrimary: loc.isPrimary,
-                                                    notes: loc.notes // Include notes for receiving tracking
-                                                  }));
-                                                  updated[index].locations = []; // Clear pending
+                                                    receiptItemId: item.receiptItemId
+                                                  });
+                                                  savedCount++;
+                                                  totalSavedQty += loc.quantity;
+                                                } catch (error) {
+                                                  console.error('Failed to save location:', error);
+                                                }
+                                              }
+                                            }
+                                            
+                                            // Save pending additions to existing locations
+                                            const pendingAdds = Object.entries(item.pendingExistingAdds || {});
+                                            for (const [locId, addQty] of pendingAdds) {
+                                              if (addQty > 0 && item.productId) {
+                                                const existingLoc = item.existingLocations.find((l: any) => String(l.id) === locId);
+                                                if (existingLoc) {
+                                                  const newQty = (existingLoc.quantity || 0) + addQty;
+                                                  try {
+                                                    await updateLocationMutation.mutateAsync({
+                                                      productId: String(item.productId),
+                                                      locationId: locId,
+                                                      quantity: newQty,
+                                                      receiptItemId: String(item.receiptItemId)
+                                                    });
+                                                    savedCount++;
+                                                    totalSavedQty += addQty;
+                                                  } catch (error) {
+                                                    console.error('Failed to update location:', error);
+                                                  }
+                                                }
+                                              }
+                                            }
+                                            
+                                            if (savedCount > 0) {
+                                              // Refetch product locations from server
+                                              try {
+                                                const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
+                                                if (locResponse.ok) {
+                                                  const serverLocations = await locResponse.json();
+                                                  const relevantLocations = serverLocations.filter((loc: any) => 
+                                                    loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
+                                                    !loc.notes?.includes('RI:')
+                                                  );
+                                                  
+                                                  setItems(prevItems => {
+                                                    const updated = [...prevItems];
+                                                    updated[index].existingLocations = relevantLocations.map((loc: any) => ({
+                                                      id: loc.id,
+                                                      locationCode: loc.locationCode,
+                                                      locationType: loc.locationType,
+                                                      quantity: loc.quantity,
+                                                      isPrimary: loc.isPrimary,
+                                                      notes: loc.notes
+                                                    }));
+                                                    updated[index].locations = [];
+                                                    updated[index].pendingExistingAdds = {}; // Clear pending
+                                                    return updated;
+                                                  });
+                                                }
+                                              } catch (err) {
+                                                console.error('Failed to refetch locations:', err);
+                                                setItems(prevItems => {
+                                                  const updated = [...prevItems];
+                                                  updated[index].locations = [];
+                                                  updated[index].pendingExistingAdds = {};
                                                   return updated;
                                                 });
                                               }
-                                            } catch (err) {
-                                              console.error('Failed to refetch locations:', err);
-                                              // Fallback: just clear pending
-                                              setItems(prevItems => {
-                                                const updated = [...prevItems];
-                                                updated[index].locations = [];
-                                                return updated;
+                                              
+                                              // Check if fully stored
+                                              const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                                              const isFullyAssigned = currentStoredQty + totalSavedQty >= item.receivedQuantity;
+                                              
+                                              if (isFullyAssigned) {
+                                                if (index < items.length - 1) {
+                                                  setSelectedItemIndex(index + 1);
+                                                }
+                                                await soundEffects.playCompletionSound();
+                                              } else {
+                                                await soundEffects.playSuccessBeep();
+                                              }
+                                              
+                                              toast({
+                                                title: t('locationUpdated'),
+                                                description: `${totalSavedQty} ${t('common:items')}`,
+                                                duration: 2000
                                               });
                                             }
                                             
-                                            // Check if fully stored and play appropriate sound
-                                            const totalSaved = locationsToSave.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                                            // Use receiving-specific quantity from existing locations
-                                            const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
-                                            const isFullyAssigned = currentStoredQty + totalSaved >= item.receivedQuantity;
-                                            
-                                            if (isFullyAssigned) {
-                                              if (index < items.length - 1) {
-                                                setSelectedItemIndex(index + 1);
-                                              }
-                                              await soundEffects.playCompletionSound();
-                                            } else {
-                                              await soundEffects.playSuccessBeep();
-                                            }
-                                          }
-                                          
-                                          // Auto-focus input for next location
-                                          setTimeout(() => locationInputRef.current?.focus(), 100);
-                                        }}
-                                        disabled={storeLocationMutation.isPending}
-                                      >
-                                        {storeLocationMutation.isPending ? (
-                                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                        ) : (
-                                          <Check className="h-4 w-4 mr-1" />
-                                        )}
-                                        {t('saveLocations')}
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
+                                            setTimeout(() => locationInputRef.current?.focus(), 100);
+                                          }}
+                                          disabled={storeLocationMutation.isPending || updateLocationMutation.isPending}
+                                        >
+                                          {(storeLocationMutation.isPending || updateLocationMutation.isPending) ? (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                          ) : (
+                                            <Check className="h-4 w-4 mr-1" />
+                                          )}
+                                          {t('saveLocations')} ({pendingExistingQty + pendingLocationQty})
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
 
                                 {/* Product Details - Inline link */}
                                 <button
