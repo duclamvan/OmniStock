@@ -5639,45 +5639,49 @@ router.get("/shipments/:id", async (req, res) => {
               trackingNumber: customItems.trackingNumber,
               unitPrice: customItems.unitPrice,
               notes: customItems.notes,
-              orderNumber: customItems.orderNumber
+              orderNumber: customItems.orderNumber,
+              imageUrl: customItems.imageUrl,
+              sku: customItems.sku,
+              dimensions: customItems.dimensions
             })
             .from(customItems)
             .where(eq(customItems.id, consItem.itemId));
           
           if (customItem) {
-            // Try to find a matching product by name or SKU
-            let imageUrl = null;
-            let sku = null;
+            // Use values directly from customItems first
+            let imageUrl = customItem.imageUrl;
+            let sku = customItem.sku;
             
-            // Extract SKU from notes or orderNumber if available
-            const skuMatch = (customItem.notes || '').match(/sku[:\s]*([A-Z0-9-]+)/i) || 
-                           (customItem.orderNumber || '').match(/sku[:\s]*([A-Z0-9-]+)/i);
-            if (skuMatch) {
-              sku = skuMatch[1];
-            }
-            
-            // Try to find product image by name or SKU
-            if (sku) {
-              const [product] = await db
-                .select({ imageUrl: products.imageUrl, sku: products.sku })
-                .from(products)
-                .where(eq(products.sku, sku));
+            // If no imageUrl or sku, try to find from products table as fallback
+            if (!imageUrl || !sku) {
+              // Extract SKU from notes or orderNumber if available
+              const skuMatch = (customItem.notes || '').match(/sku[:\s]*([A-Z0-9-]+)/i) || 
+                             (customItem.orderNumber || '').match(/sku[:\s]*([A-Z0-9-]+)/i);
+              const extractedSku = skuMatch ? skuMatch[1] : sku;
               
-              if (product) {
-                imageUrl = product.imageUrl;
-                sku = product.sku;
-              }
-            } else {
-              // Try fuzzy match by name
-              const [product] = await db
-                .select({ imageUrl: products.imageUrl, sku: products.sku })
-                .from(products)
-                .where(like(products.name, `%${customItem.name.substring(0, 20)}%`))
-                .limit(1);
-              
-              if (product) {
-                imageUrl = product.imageUrl;
-                sku = product.sku;
+              // Try to find product image by name or SKU
+              if (extractedSku) {
+                const [product] = await db
+                  .select({ imageUrl: products.imageUrl, sku: products.sku })
+                  .from(products)
+                  .where(eq(products.sku, extractedSku));
+                
+                if (product) {
+                  if (!imageUrl) imageUrl = product.imageUrl;
+                  if (!sku) sku = product.sku;
+                }
+              } else if (!imageUrl) {
+                // Try fuzzy match by name only if we still need imageUrl
+                const [product] = await db
+                  .select({ imageUrl: products.imageUrl, sku: products.sku })
+                  .from(products)
+                  .where(like(products.name, `%${customItem.name.substring(0, 20)}%`))
+                  .limit(1);
+                
+                if (product) {
+                  if (!imageUrl) imageUrl = product.imageUrl;
+                  if (!sku) sku = product.sku;
+                }
               }
             }
             
