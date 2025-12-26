@@ -474,7 +474,8 @@ export class OrderDatabaseStorage implements IOrderStorage {
     return await db
       .select()
       .from(productVariants)
-      .where(eq(productVariants.productId, productId));
+      .where(eq(productVariants.productId, productId))
+      .orderBy(asc(productVariants.createdAt));
   }
 
   async createProductVariant(variant: InsertProductVariant): Promise<ProductVariant> {

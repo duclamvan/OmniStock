@@ -2516,7 +2516,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(productVariants)
         .where(eq(productVariants.productId, productId))
-        .orderBy(asc(productVariants.name));
+        .orderBy(asc(productVariants.createdAt));
       return variants;
     } catch (error) {
       console.error('Error fetching product variants:', error);
