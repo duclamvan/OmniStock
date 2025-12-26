@@ -1865,6 +1865,7 @@ function QuickStorageSheet({
   const [showScanner, setShowScanner] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
+  const [inventoryLocations, setInventoryLocations] = useState<Map<string, any[]>>(new Map());
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -1982,6 +1983,37 @@ function QuickStorageSheet({
       setItems(storageItems);
     }
   }, [receiptData]);
+  
+  // Fetch inventory locations for all products that have productId
+  useEffect(() => {
+    const fetchInventoryLocations = async () => {
+      const productIds = items
+        .filter(item => item.productId && !inventoryLocations.has(String(item.productId)))
+        .map(item => String(item.productId));
+      
+      if (productIds.length === 0) return;
+      
+      for (const productId of productIds) {
+        try {
+          const response = await fetch(`/api/products/${productId}/locations`, { credentials: 'include' });
+          if (response.ok) {
+            const locations = await response.json();
+            setInventoryLocations(prev => {
+              const newMap = new Map(prev);
+              newMap.set(productId, locations);
+              return newMap;
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch locations for product ${productId}:`, error);
+        }
+      }
+    };
+    
+    if (items.length > 0 && open) {
+      fetchInventoryLocations();
+    }
+  }, [items.length, open]);
   
   // Fetch AI suggestions for items without existing locations (with batching and caching)
   useEffect(() => {
@@ -2809,8 +2841,41 @@ function QuickStorageSheet({
                                       </div>
                                     ))}
                                     
+                                    {/* INVENTORY LOCATIONS - Show where product exists in warehouse */}
+                                    {item.productId && inventoryLocations.get(String(item.productId))?.length > 0 && (
+                                      <>
+                                        <div className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-700">
+                                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                                            <Package className="h-3 w-3" />
+                                            {t('currentInventoryLocations')}
+                                          </span>
+                                        </div>
+                                        {inventoryLocations.get(String(item.productId))?.map((loc: any, locIdx: number) => (
+                                          <div 
+                                            key={`inv-${loc.id || locIdx}`}
+                                            className="p-2.5 flex items-center gap-2 bg-blue-50/50 dark:bg-blue-950/10 hover:bg-blue-100/50 dark:hover:bg-blue-900/20 cursor-pointer"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              // Use this location as suggestion
+                                              setLocationInput(loc.locationCode);
+                                              locationInputRef.current?.focus();
+                                            }}
+                                          >
+                                            <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                            <span className="font-mono text-sm font-medium flex-1 truncate">{loc.locationCode}</span>
+                                            {loc.isPrimary && (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">
+                                                Primary
+                                              </Badge>
+                                            )}
+                                            <Badge variant="secondary" className="text-xs">{loc.quantity}</Badge>
+                                          </div>
+                                        ))}
+                                      </>
+                                    )}
+                                    
                                     {/* Empty state - Compact */}
-                                    {(!item.existingLocations || item.existingLocations.length === 0) && item.locations.length === 0 && (
+                                    {(!item.existingLocations || item.existingLocations.length === 0) && item.locations.length === 0 && (!item.productId || !inventoryLocations.get(String(item.productId))?.length) && (
                                       <div className="p-4 text-center text-muted-foreground text-sm">
                                         <MapPin className="h-6 w-6 mx-auto mb-1 opacity-30" />
                                         <p>{t('noLocationsYet')}</p>
