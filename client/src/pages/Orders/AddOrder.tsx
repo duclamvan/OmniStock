@@ -1562,6 +1562,7 @@ export default function AddOrder() {
     const pplRates = shippingSettings?.pplShippingRates;
     const paymentMethod = form.getValues('paymentMethod');
 
+    // Calculate shipping cost (for weight-based rates or country-specific rates)
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
       selectedCustomer.country,
@@ -1569,8 +1570,13 @@ export default function AddOrder() {
       { weight: orderWeight, pplRates, paymentMethod }
     );
 
+    // Priority: Use settings default price if configured, otherwise use calculated cost
+    // This ensures the settings default overrides hardcoded fallbacks in calculateShippingCost
+    const settingsDefaultPrice = newCarrierDefaultPrice;
+    const finalShippingCost = settingsDefaultPrice > 0 ? settingsDefaultPrice : calculatedCost;
+
     form.setValue('actualShippingCost', calculatedCost);
-    form.setValue('shippingCost', calculatedCost);
+    form.setValue('shippingCost', finalShippingCost);
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.pplDefaultShippingPriceWithDobirka, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice, form.watch('paymentMethod')]);
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
