@@ -77,7 +77,7 @@ export function MobileHeader({
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const { toast } = useToast();
   const { generalSettings } = useSettings();
-  const { i18n, t } = useTranslation();
+  const { i18n, t } = useTranslation(['common', 'inventory']);
   const { user } = useAuth();
   
   // Language toggle mutation
@@ -372,7 +372,7 @@ export function MobileHeader({
                                     ? "font-semibold text-blue-900 dark:text-blue-100" 
                                     : "font-medium text-gray-900 dark:text-gray-100"
                                 )}>
-                                  {group.title}
+                                  {t(`inventory:${group.title}`, { defaultValue: group.title })}
                                 </p>
                                 {group.count > 1 && (
                                   <span className={cn(
