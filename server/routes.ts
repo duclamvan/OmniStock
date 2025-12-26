@@ -8409,17 +8409,6 @@ Important:
             };
           }
 
-          // Debug: log virtual SKU fields
-          if (item.isVirtual || item.masterProductId) {
-            console.log(`[PickPack DEBUG] Virtual SKU item:`, {
-              id: item.id,
-              productName: item.productName,
-              isVirtual: item.isVirtual,
-              masterProductId: item.masterProductId,
-              inventoryDeductionRatio: item.inventoryDeductionRatio
-            });
-          }
-
           // Enrich variant items with variant quantity for picking
           let variantQuantity: number | undefined;
           let variantLocationCode: string | null = null;
@@ -8452,38 +8441,6 @@ Important:
       // Filter financial data based on user role
       const userRole = req.user?.role || 'warehouse_operator';
       const filtered = filterFinancialData(ordersWithItems, userRole);
-      
-      // DEBUG: Check if virtual SKU fields survived filtering
-      if (Array.isArray(filtered) && filtered.length > 0) {
-        const firstOrder = filtered[0];
-        if (firstOrder.items && firstOrder.items.length > 0) {
-          const virtualItem = firstOrder.items.find((i: any) => i.isVirtual);
-          if (virtualItem) {
-            console.log('[PickPack RESPONSE DEBUG] Virtual SKU after filter:', {
-              id: virtualItem.id?.slice(-6),
-              isVirtual: virtualItem.isVirtual,
-              masterProductId: virtualItem.masterProductId,
-              inventoryDeductionRatio: virtualItem.inventoryDeductionRatio
-            });
-          } else {
-            // Debug variant items
-            const variantItems = firstOrder.items.filter((i: any) => i.variantId);
-            if (variantItems.length > 0) {
-              console.log('[PickPack DEBUG] Variant items found:', variantItems.map((i: any) => ({
-                id: i.id?.slice(-6),
-                productName: i.productName,
-                variantId: i.variantId,
-                productId: i.productId,
-                variantQuantity: i.variantQuantity,
-                variantLocationCode: i.variantLocationCode
-              })));
-            } else {
-              console.log('[PickPack RESPONSE DEBUG] No virtual items found in first order. First item variantIds:', 
-                firstOrder.items.map((i: any) => ({ id: i.id?.slice(-6), variantId: i.variantId })));
-            }
-          }
-        }
-      }
       
       res.json(filtered);
     } catch (error) {

@@ -2155,18 +2155,6 @@ function MultiLocationPicker({
   const variantQuantity = currentItem.variantQuantity;
   const variantLocationCode = currentItem.variantLocationCode;
   
-  // DEBUG: Log on every render to trace variant detection
-  console.log('[MultiLocationPicker RENDER]', {
-    itemId: currentItem.id,
-    productName: currentItem.productName,
-    variantId: currentItem.variantId,
-    isVirtual,
-    isVariant,
-    variantQuantity,
-    variantLocationCode,
-    hasVariantId: !!currentItem.variantId,
-  });
-  
   // Locations always come from parent product (or master product for virtual SKUs)
   const productIdForLocations = isVirtual ? currentItem.masterProductId : currentItem.productId;
 
@@ -2203,20 +2191,6 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    // DEBUG: Log variant data to trace stock issues
-    if (isVariant) {
-      console.log('[MultiLocationPicker DEBUG]', {
-        itemId: currentItem.id,
-        productName: currentItem.productName,
-        variantId: currentItem.variantId,
-        isVariant,
-        variantQuantity,
-        variantLocationCode,
-        productLocationsCount: productLocations.length,
-        productLocations: productLocations.map(l => ({ code: l.locationCode, qty: l.quantity })),
-      });
-    }
-    
     // For variants WITH their own locationCode: use variant's location directly
     if (isVariant && variantQuantity !== undefined && variantLocationCode) {
       const variantQty = variantQuantity;
@@ -2511,21 +2485,6 @@ function MultiLocationPicker({
             <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
               📦 1 {currentItem.productName?.split(' ')[0] || 'unit'} = {deductionRatio}x {currentItem.masterProductName || 'pieces'}
             </span>
-          </div>
-        </div>
-      )}
-
-      {/* Variant Badge - shows variant name and available stock */}
-      {isVariant && variantQuantity !== undefined && (
-        <div className="bg-violet-50 dark:bg-violet-900/30 border-2 border-violet-300 dark:border-violet-700 rounded-lg p-3">
-          <div className="flex items-center justify-center gap-2">
-            <Layers className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-            <span className="text-sm font-bold text-violet-700 dark:text-violet-300">
-              🏷️ {t('variant', 'Variant')}: {currentItem.variantName || currentItem.productName}
-            </span>
-            <Badge className="bg-violet-600 text-white text-xs">
-              {variantQuantity} {t('available', 'available')}
-            </Badge>
           </div>
         </div>
       )}
