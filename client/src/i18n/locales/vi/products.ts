@@ -422,7 +422,9 @@ const products = {
     addSeriesDescription: 'Tạo nhiều biến thể sử dụng mẫu như "Kích thước <1-10>"',
     seriesPattern: 'Mẫu loạt',
     seriesPatternPlaceholder: 'vd: Kích thước <1-10> hoặc Màu <1-5>',
-    seriesPatternHelp: 'Sử dụng <bắt đầu-kết thúc> để tạo loạt số',
+    seriesPatternHelp: 'Sử dụng <bắt đầu-kết thúc> để tạo loạt số (tối đa 200)',
+    seriesRangeTooLarge: 'Phạm vi quá lớn: {{count}} biến thể vượt quá tối đa {{max}}',
+    seriesWillCreate: 'Sẽ tạo {{count}} biến thể',
     quantityPerVariant: 'Số lượng mỗi biến thể',
     variantPriceOptional: 'Giá biến thể (Tùy chọn)',
     variantPriceHelper: 'Để trống để sử dụng giá mặc định của sản phẩm. Nhập giá bằng bất kỳ loại tiền nào - các loại khác tự động chuyển đổi.',
@@ -665,6 +667,9 @@ const products = {
     variantUpdatedError: 'Cập nhật biến thể thất bại',
     variantDeleted: 'Xóa biến thể thành công',
     variantDeletedError: 'Xóa biến thể thất bại',
+    seriesRangeTooLarge: 'Phạm vi quá lớn: {{count}} biến thể vượt quá tối đa {{max}}',
+    seriesCreated: 'Đã tạo {{count}} biến thể thành công',
+    enterSeriesPattern: 'Vui lòng nhập mẫu loạt hợp lệ',
   },
   
   // Supplier Details Labels (for ProductForm)

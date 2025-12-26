@@ -1609,11 +1609,12 @@ export default function ProductForm() {
       const start = parseInt(match[1]);
       const end = parseInt(match[2]);
       const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
+      const count = end - start + 1;
       
-      if (end - start > 200) {
+      if (count > 200) {
         toast({
           title: t('common:error'),
-          description: t('products:toasts.seriesRangeTooLarge'),
+          description: t('products:toasts.seriesRangeTooLarge', { count, max: 200 }),
           variant: "destructive",
         });
         return;
@@ -3387,6 +3388,30 @@ export default function ProductForm() {
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                               {t('products:variants.seriesPatternHelp')}
                             </p>
+                            {/* Real-time range validation */}
+                            {(() => {
+                              const match = seriesInput.match(/<(\d+)-(\d+)>/);
+                              if (match) {
+                                const start = parseInt(match[1]);
+                                const end = parseInt(match[2]);
+                                const count = end - start + 1;
+                                if (count > 200) {
+                                  return (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                                      {t('products:variants.seriesRangeTooLarge', { count, max: 200 })}
+                                    </p>
+                                  );
+                                }
+                                if (count > 0) {
+                                  return (
+                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                      {t('products:variants.seriesWillCreate', { count })}
+                                    </p>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4">
@@ -3503,7 +3528,16 @@ export default function ProductForm() {
                           
                           <Button 
                             onClick={addVariantSeries} 
-                            disabled={!seriesInput.trim()} 
+                            disabled={(() => {
+                              if (!seriesInput.trim()) return true;
+                              const match = seriesInput.match(/<(\d+)-(\d+)>/);
+                              if (match) {
+                                const start = parseInt(match[1]);
+                                const end = parseInt(match[2]);
+                                if (end - start + 1 > 200) return true;
+                              }
+                              return false;
+                            })()} 
                             className="w-full"
                             data-testid="button-save-series"
                           >

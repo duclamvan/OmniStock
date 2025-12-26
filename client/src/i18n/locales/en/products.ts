@@ -315,7 +315,9 @@ const products = {
     addSeriesDescription: 'Create multiple variants using a pattern like "Size <1-10>"',
     seriesPattern: 'Series Pattern',
     seriesPatternPlaceholder: 'e.g., Size <1-10> or Color <1-5>',
-    seriesPatternHelp: 'Use <start-end> to generate a numbered series',
+    seriesPatternHelp: 'Use <start-end> to generate a numbered series (max 200)',
+    seriesRangeTooLarge: 'Range too large: {{count}} variants exceeds maximum of {{max}}',
+    seriesWillCreate: 'Will create {{count}} variants',
     quantityPerVariant: 'Quantity per Variant',
     variantPriceOptional: 'Variant Price (Optional)',
     variantPriceHelper: "Leave blank to use product's default price. Enter value in any currency - others auto-convert.",
@@ -558,6 +560,9 @@ const products = {
     variantUpdatedError: 'Failed to update variant',
     variantDeleted: 'Variant deleted successfully',
     variantDeletedError: 'Failed to delete variant',
+    seriesRangeTooLarge: 'Range too large: {{count}} variants exceeds maximum of {{max}}',
+    seriesCreated: '{{count}} variants created successfully',
+    enterSeriesPattern: 'Please enter a valid series pattern',
   },
   
   // Supplier Details Labels (for ProductForm)
