@@ -2155,6 +2155,18 @@ function MultiLocationPicker({
   const variantQuantity = currentItem.variantQuantity;
   const variantLocationCode = currentItem.variantLocationCode;
   
+  // DEBUG: Log on every render to trace variant detection
+  console.log('[MultiLocationPicker RENDER]', {
+    itemId: currentItem.id,
+    productName: currentItem.productName,
+    variantId: currentItem.variantId,
+    isVirtual,
+    isVariant,
+    variantQuantity,
+    variantLocationCode,
+    hasVariantId: !!currentItem.variantId,
+  });
+  
   // Locations always come from parent product (or master product for virtual SKUs)
   const productIdForLocations = isVirtual ? currentItem.masterProductId : currentItem.productId;
 
@@ -5787,6 +5799,11 @@ export default function PickPack() {
           masterProductId: item.masterProductId || null,
           masterProductName: item.masterProductName || null,
           inventoryDeductionRatio: item.inventoryDeductionRatio ? Number(item.inventoryDeductionRatio) : null,
+          // Variant fields - for products with variants
+          variantId: item.variantId || null,
+          variantName: item.variantName || null,
+          variantQuantity: item.variantQuantity,  // Variant's stock quantity from backend
+          variantLocationCode: item.variantLocationCode || null,  // Variant's location
           // Include pricing information from backend
           price: item.price || item.appliedPrice || item.unitPrice,
           unitPrice: item.unitPrice,
