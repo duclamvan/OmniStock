@@ -4820,7 +4820,7 @@ export default function ReceivingList() {
                       <span className="hidden sm:inline">{t('archived')}</span>
                       <span className="sm:hidden">{t('archived')}</span>
                       <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {archivedShipments.length}
+                        {(archivedShipments as any[]).reduce((sum, group) => sum + (group.count || group.shipments?.length || 0), 0)}
                       </Badge>
                     </TabsTrigger>
                   </TabsList>
@@ -4942,8 +4942,17 @@ export default function ReceivingList() {
                         description={t('archivedShipmentsStoredHere')}
                       />
                     ) : (
-                      archivedShipments.map((shipment: any) => (
-                        <ArchivedShipmentCard key={shipment.id} shipment={shipment} />
+                      (archivedShipments as any[]).map((weekGroup: any) => (
+                        <div key={weekGroup.week} className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+                            <Calendar className="h-4 w-4" />
+                            <span className="font-medium">{weekGroup.week}</span>
+                            <span>({weekGroup.count || weekGroup.shipments?.length || 0} {t('shipments')})</span>
+                          </div>
+                          {weekGroup.shipments?.map((shipment: any) => (
+                            <ArchivedShipmentCard key={shipment.id} shipment={shipment} />
+                          ))}
+                        </div>
                       ))
                     )}
                   </TabsContent>

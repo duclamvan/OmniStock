@@ -8242,9 +8242,10 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       consolidationItem: ri.itemType === 'consolidation' ? consolidationItemsMap[ri.itemId] || null : null
     }));
     
-    // Collect all product IDs from receipt items AND all SKUs for fallback lookup
+    // Collect all product IDs from receipt items AND all SKUs/names for fallback lookup
     const productIds: string[] = [];
     const skusToLookup: string[] = [];
+    const namesToLookup: string[] = [];
     
     receiptItemsWithDetails.forEach(row => {
       // Collect product IDs where available
@@ -8267,15 +8268,25 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           skusToLookup.push(underlyingPurchaseItem.sku);
         }
       }
+      
+      // Collect names for fallback name-based lookup (when SKU is missing)
+      if (row.customItem?.name) {
+        namesToLookup.push(row.customItem.name);
+      }
+      if (row.purchaseItem?.name) {
+        namesToLookup.push(row.purchaseItem.name);
+      }
     });
     
     // Remove duplicates
     const uniqueProductIds = [...new Set(productIds)];
     const uniqueSkus = [...new Set(skusToLookup.filter(s => s))];
+    const uniqueNames = [...new Set(namesToLookup.filter(n => n))];
     
     // Fetch product details and locations in parallel if we have product IDs
     let productsMap: Record<string, any> = {};
     let productsBySkuMap: Record<string, any> = {};
+    let productsByNameMap: Record<string, any> = {};
     let locationsMap: Record<string, any[]> = {};
     
     // First, look up products by SKU to get product IDs for items without direct productId
@@ -8298,6 +8309,31 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           // Also add to productsMap by ID for later lookup
           productsMap[p.id] = p;
           // Add to productIds for location lookup
+          if (!uniqueProductIds.includes(p.id)) {
+            uniqueProductIds.push(p.id);
+          }
+        }
+      });
+    }
+    
+    // Also look up products by exact name as fallback (for items without SKU)
+    if (uniqueNames.length > 0) {
+      const productsByName = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          sku: products.sku,
+          imageUrl: products.imageUrl,
+          categoryId: products.categoryId
+        })
+        .from(products)
+        .where(inArray(products.name, uniqueNames));
+      
+      // Build name-to-product map
+      productsByName.forEach(p => { 
+        if (p.name) {
+          productsByNameMap[p.name] = p;
+          productsMap[p.id] = p;
           if (!uniqueProductIds.includes(p.id)) {
             uniqueProductIds.push(p.id);
           }
@@ -8389,6 +8425,22 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           if (product) {
             productId = product.id;
           }
+        }
+      }
+      
+      // Priority 5: Look up by custom item's name (exact match fallback)
+      if (!productId && row.customItem?.name) {
+        product = productsByNameMap[row.customItem.name];
+        if (product) {
+          productId = product.id;
+        }
+      }
+      
+      // Priority 6: Look up by purchase item's name (exact match fallback)
+      if (!productId && row.purchaseItem?.name) {
+        product = productsByNameMap[row.purchaseItem.name];
+        if (product) {
+          productId = product.id;
         }
       }
       
