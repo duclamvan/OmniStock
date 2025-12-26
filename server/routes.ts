@@ -5971,9 +5971,27 @@ Important:
   app.get('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
       const variants = await storage.getProductVariants(req.params.productId);
+      
+      // Get allocated quantities to calculate availability for each variant (same as parent products)
+      const allocatedMap = await storage.getAllocatedQuantities();
+      
+      // Enrich variants with allocation info (same as parent products)
+      const enrichedVariants = variants.map((variant: any) => {
+        const variantKey = `product:${variant.productId}:variant:${variant.id}`;
+        const allocated = allocatedMap.get(variantKey) || 0;
+        const onHand = variant.quantity || 0;
+        const available = Math.max(0, onHand - allocated);
+        
+        return {
+          ...variant,
+          allocatedQuantity: allocated,
+          availableQuantity: available
+        };
+      });
+      
       // Filter financial data based on user role
       const userRole = req.user?.role || 'warehouse_operator';
-      const filtered = filterFinancialData(variants, userRole);
+      const filtered = filterFinancialData(enrichedVariants, userRole);
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching product variants:", error);

@@ -3958,15 +3958,22 @@ export default function ProductForm() {
                                 />
                               </TableCell>
                               <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={variant.quantity}
-                                  onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
-                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                  style={{ MozAppearance: 'textfield' } as any}
-                                  data-testid={`input-variant-quantity-${variant.id}`}
-                                />
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={variant.quantity}
+                                    onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
+                                    className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                    style={{ MozAppearance: 'textfield' } as any}
+                                    data-testid={`input-variant-quantity-${variant.id}`}
+                                  />
+                                  {(variant.allocatedQuantity ?? 0) > 0 && (
+                                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                                      ({variant.allocatedQuantity} {t('products:allocated', 'allocated')})
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="text-right">
                                 <Input
