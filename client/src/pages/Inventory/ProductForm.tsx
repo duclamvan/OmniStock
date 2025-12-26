@@ -282,6 +282,10 @@ export default function ProductForm() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
   const [isBulkScanDialogOpen, setIsBulkScanDialogOpen] = useState(false);
+  const [isBulkImportDialogOpen, setIsBulkImportDialogOpen] = useState(false);
+  const [bulkImportText, setBulkImportText] = useState("");
+  const [bulkImportQuantity, setBulkImportQuantity] = useState(0);
+  const [bulkImportLocationCode, setBulkImportLocationCode] = useState("");
   const [bulkBarcodes, setBulkBarcodes] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [newVariant, setNewVariant] = useState({
@@ -1691,6 +1695,81 @@ export default function ProductForm() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleBulkImportVariants = () => {
+    if (!bulkImportText.trim()) {
+      toast({
+        title: t('common:error'),
+        description: t('products:toasts.enterVariantNames'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get parent product's warehouse location as fallback
+    const parentLocation = form.getValues('warehouseLocation')?.trim().toUpperCase() || "";
+    const locationToUse = bulkImportLocationCode.trim().toUpperCase() || parentLocation;
+
+    // Parse the input - supports CSV format (name,quantity,locationCode) or simple text (one name per line)
+    const lines = bulkImportText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    if (lines.length > 500) {
+      toast({
+        title: t('common:error'),
+        description: t('products:toasts.bulkImportTooMany', { count: lines.length, max: 500 }),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newVariantsArray: typeof variants = [];
+    
+    for (const line of lines) {
+      // Check if it's CSV format (contains comma or tab)
+      const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      
+      const name = parts[0]?.trim();
+      if (!name) continue;
+      
+      // Parse optional columns: name, quantity, locationCode, barcode
+      const qty = parts[1] ? parseInt(parts[1].trim()) || bulkImportQuantity : bulkImportQuantity;
+      const loc = parts[2]?.trim().toUpperCase() || locationToUse;
+      const barcode = parts[3]?.trim() || "";
+      
+      newVariantsArray.push({
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name,
+        barcode,
+        quantity: qty,
+        locationCode: loc,
+        priceUsd: "",
+        priceCzk: "",
+        priceEur: "",
+        importCostUsd: "",
+        importCostCzk: "",
+        importCostEur: "",
+      });
+    }
+
+    if (newVariantsArray.length === 0) {
+      toast({
+        title: t('common:error'),
+        description: t('products:toasts.noValidVariants'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setVariants([...variants, ...newVariantsArray]);
+    setBulkImportText("");
+    setBulkImportQuantity(0);
+    setBulkImportLocationCode("");
+    setIsBulkImportDialogOpen(false);
+    toast({
+      title: t('common:success'),
+      description: t('products:toasts.variantsImported', { count: newVariantsArray.length }),
+    });
   };
 
   const handleBulkBarcodeAssign = () => {
@@ -3615,6 +3694,81 @@ export default function ProductForm() {
                             data-testid="button-save-series"
                           >
                             {t('products:variants.addVariantSeriesButton')}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Dialog open={isBulkImportDialogOpen} onOpenChange={setIsBulkImportDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" data-testid="button-bulk-import">
+                          <Upload className="h-4 w-4 mr-2" />
+                          {t('products:variants.bulkImportButton')}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px]">
+                        <DialogHeader>
+                          <DialogTitle>{t('products:variants.bulkImportTitle')}</DialogTitle>
+                          <DialogDescription>
+                            {t('products:variants.bulkImportDescription')}
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="bulk-import-text">{t('products:variants.bulkImportLabel')}</Label>
+                            <Textarea
+                              id="bulk-import-text"
+                              value={bulkImportText}
+                              onChange={(e) => setBulkImportText(e.target.value)}
+                              placeholder={t('products:variants.bulkImportPlaceholder')}
+                              className="min-h-[200px] font-mono text-sm"
+                              data-testid="textarea-bulk-import"
+                            />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {t('products:variants.bulkImportHelp')}
+                            </p>
+                            {bulkImportText.trim() && (
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                {t('products:variants.bulkImportCount', { 
+                                  count: bulkImportText.split('\n').filter(line => line.trim()).length 
+                                })}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="bulk-import-quantity">{t('products:variants.bulkImportDefaultQuantity')}</Label>
+                              <Input
+                                id="bulk-import-quantity"
+                                type="number"
+                                min="0"
+                                value={bulkImportQuantity}
+                                onChange={(e) => setBulkImportQuantity(parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                data-testid="input-bulk-import-quantity"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="bulk-import-location">{t('products:variants.bulkImportDefaultLocation')}</Label>
+                              <Input
+                                id="bulk-import-location"
+                                value={bulkImportLocationCode}
+                                onChange={(e) => setBulkImportLocationCode(e.target.value)}
+                                placeholder={t('products:variants.seriesLocationCodePlaceholder')}
+                                data-testid="input-bulk-import-location"
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={handleBulkImportVariants} 
+                            disabled={!bulkImportText.trim()} 
+                            className="w-full"
+                            data-testid="button-save-bulk-import"
+                          >
+                            {t('products:variants.bulkImportSubmit')}
                           </Button>
                         </div>
                       </DialogContent>
