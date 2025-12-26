@@ -969,7 +969,7 @@ export default function WarehouseLabels() {
                         {product.vietnameseName || product.name}
                       </span>
                       {product.vietnameseName && product.vietnameseName !== product.name && (
-                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400 truncate">
                           ({product.name})
                         </span>
                       )}
