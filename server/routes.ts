@@ -5793,6 +5793,7 @@ Important:
             name: variant.name,
             barcode: variant.barcode || null,
             quantity: variant.quantity || 0,
+            locationCode: variant.locationCode || null,
             importCostUsd: variant.importCostUsd || null,
             importCostCzk: variant.importCostCzk || null,
             importCostEur: variant.importCostEur || null,
@@ -5801,10 +5802,70 @@ Important:
 
           // Create new variant if ID starts with "temp-" or doesn't exist
           if (!variant.id || variant.id.startsWith('temp-')) {
-            await storage.createProductVariant(variantData);
+            const createdVariant = await storage.createProductVariant(variantData);
+            
+            // If variant has a location code and quantity, create or update product location
+            if (variant.locationCode && variant.quantity > 0) {
+              try {
+                const locationCode = variant.locationCode.toUpperCase();
+                const existingLocations = await storage.getProductLocations(productId);
+                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode);
+                
+                if (existingLoc) {
+                  // Add to existing location quantity
+                  await storage.updateProductLocation(existingLoc.id, {
+                    quantity: (existingLoc.quantity || 0) + variant.quantity,
+                    notes: existingLoc.notes ? `${existingLoc.notes}, Variant: ${variant.name}` : `Variant: ${variant.name}`,
+                  });
+                  console.log(`📍 Added ${variant.quantity} to location ${locationCode} for variant "${variant.name}"`);
+                } else {
+                  // Create new location
+                  await storage.createProductLocation({
+                    productId,
+                    locationCode,
+                    quantity: variant.quantity,
+                    isPrimary: false,
+                    notes: `Variant: ${variant.name}`,
+                  });
+                  console.log(`📍 Created location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
+                }
+              } catch (locError) {
+                console.error(`Failed to create/update location for variant ${variant.name}:`, locError);
+              }
+            }
           } else {
             // Update existing variant
             await storage.updateProductVariant(variant.id, variantData);
+            
+            // If variant has a location code and quantity, create or update product location
+            if (variant.locationCode && variant.quantity > 0) {
+              try {
+                const locationCode = variant.locationCode.toUpperCase();
+                const existingLocations = await storage.getProductLocations(productId);
+                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode);
+                
+                if (existingLoc) {
+                  // Update existing location (use variant quantity as the location quantity)
+                  await storage.updateProductLocation(existingLoc.id, {
+                    quantity: variant.quantity,
+                    notes: `Variant: ${variant.name}`,
+                  });
+                  console.log(`📍 Updated location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
+                } else {
+                  // Create new location
+                  await storage.createProductLocation({
+                    productId,
+                    locationCode,
+                    quantity: variant.quantity,
+                    isPrimary: false,
+                    notes: `Variant: ${variant.name}`,
+                  });
+                  console.log(`📍 Created location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
+                }
+              } catch (locError) {
+                console.error(`Failed to update/create location for variant ${variant.name}:`, locError);
+              }
+            }
           }
         }
       }
