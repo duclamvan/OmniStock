@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueries } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { LabelContent, type LabelProduct } from "@/components/warehouse/WarehouseLabelPreview";
 import { generateProductQRUrl } from "@shared/qrUtils";
@@ -24,6 +26,7 @@ import {
   Hash,
   FileText,
   Loader2,
+  Layers,
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
@@ -52,6 +55,15 @@ interface WarehouseLabel {
   createdAt: string;
 }
 
+interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  barcode: string | null;
+  quantity: number;
+  locationCode: string | null;
+}
+
 export default function WarehouseLabels() {
   const { t } = useTranslation(["inventory", "common"]);
   const { toast } = useToast();
@@ -60,6 +72,7 @@ export default function WarehouseLabels() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<"saved" | "all">("all");
+  const [includeVariantsFor, setIncludeVariantsFor] = useState<Set<string>>(new Set());
 
   const { data: labels = [], isLoading } = useQuery<WarehouseLabel[]>({
     queryKey: ["/api/warehouse-labels"],
@@ -69,8 +82,47 @@ export default function WarehouseLabels() {
     queryKey: ["/api/products"],
   });
 
+  // Fetch variants for all products to determine which have variants
+  const variantQueries = useQueries({
+    queries: allProducts.map((product: any) => ({
+      queryKey: ["/api/products", product.id, "variants"],
+      queryFn: async () => {
+        const response = await fetch(`/api/products/${product.id}/variants`, {
+          credentials: "include",
+        });
+        if (!response.ok) return [];
+        return response.json();
+      },
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      enabled: !!product.id,
+    })),
+  });
+
+  // Build a map of productId -> variants
+  const variantsMap = useMemo(() => {
+    const map = new Map<string, ProductVariant[]>();
+    allProducts.forEach((product: any, index: number) => {
+      const query = variantQueries[index];
+      if (query?.data && Array.isArray(query.data) && query.data.length > 0) {
+        map.set(product.id, query.data);
+      }
+    });
+    return map;
+  }, [allProducts, variantQueries]);
+
   const [generatingAll, setGeneratingAll] = useState(false);
   const [printingSelected, setPrintingSelected] = useState(false);
+
+  const toggleIncludeVariants = (productId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newSet = new Set(includeVariantsFor);
+    if (newSet.has(productId)) {
+      newSet.delete(productId);
+    } else {
+      newSet.add(productId);
+    }
+    setIncludeVariantsFor(newSet);
+  };
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -377,7 +429,29 @@ export default function WarehouseLabels() {
     try {
       const selectedProducts = allProducts.filter((p: any) => selectedProductIds.has(p.id));
       
+      // Build list of items to print (products + their variants if enabled)
+      const itemsToPrint: any[] = [];
+      
       for (const product of selectedProducts) {
+        // Add the parent product
+        itemsToPrint.push(product);
+        
+        // Add variants if enabled for this product
+        if (includeVariantsFor.has(product.id)) {
+          const variants = variantsMap.get(product.id) || [];
+          for (const variant of variants) {
+            itemsToPrint.push({
+              ...product,
+              id: variant.id,
+              name: `${product.name} - ${variant.name}`,
+              vietnameseName: product.vietnameseName ? `${product.vietnameseName} - ${variant.name}` : `${product.name} - ${variant.name}`,
+              sku: variant.barcode || product.sku,
+              isVariant: true,
+              variantName: variant.name,
+            });
+          }
+        }
+        
         try {
           await apiRequest("POST", "/api/warehouse-labels", {
             productId: product.id,
@@ -397,7 +471,7 @@ export default function WarehouseLabels() {
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
       
       // Still print labels even if some failed to save
-      await printProductLabels(selectedProducts, `Labels - ${selectedProducts.length} Products`);
+      await printProductLabels(itemsToPrint, `Labels - ${itemsToPrint.length} Items`);
       
       if (failedProducts.length > 0) {
         toast({
@@ -443,7 +517,29 @@ export default function WarehouseLabels() {
     const failedProducts: string[] = [];
 
     try {
+      // Build list of items to print (products + their variants if enabled)
+      const itemsToPrint: any[] = [];
+      
       for (const product of allProducts) {
+        // Add the parent product
+        itemsToPrint.push(product);
+        
+        // Add variants if enabled for this product
+        if (includeVariantsFor.has(product.id)) {
+          const variants = variantsMap.get(product.id) || [];
+          for (const variant of variants) {
+            itemsToPrint.push({
+              ...product,
+              id: variant.id,
+              name: `${product.name} - ${variant.name}`,
+              vietnameseName: product.vietnameseName ? `${product.vietnameseName} - ${variant.name}` : `${product.name} - ${variant.name}`,
+              sku: variant.barcode || product.sku,
+              isVariant: true,
+              variantName: variant.name,
+            });
+          }
+        }
+        
         try {
           await apiRequest("POST", "/api/warehouse-labels", {
             productId: product.id,
@@ -463,7 +559,7 @@ export default function WarehouseLabels() {
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
       
       // Still print labels even if some failed to save
-      await printProductLabels(allProducts, "All Product Labels");
+      await printProductLabels(itemsToPrint, "All Product Labels");
 
       if (failedProducts.length > 0) {
         toast({
@@ -478,7 +574,7 @@ export default function WarehouseLabels() {
       } else {
         toast({
           title: t("common:success"),
-          description: t("inventory:allLabelsGenerated", { count: allProducts.length }),
+          description: t("inventory:allLabelsGenerated", { count: itemsToPrint.length }),
         });
       }
     } catch (error: any) {
@@ -903,6 +999,39 @@ export default function WarehouseLabels() {
                         </span>
                       )}
                     </div>
+
+                    {/* Variants toggle - only show for products with variants */}
+                    {variantsMap.has(product.id) && (
+                      <div 
+                        className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Switch
+                          id={`include-variants-${product.id}`}
+                          checked={includeVariantsFor.has(product.id)}
+                          onCheckedChange={() => {
+                            const newSet = new Set(includeVariantsFor);
+                            if (newSet.has(product.id)) {
+                              newSet.delete(product.id);
+                            } else {
+                              newSet.add(product.id);
+                            }
+                            setIncludeVariantsFor(newSet);
+                          }}
+                          data-testid={`switch-include-variants-${product.id}`}
+                        />
+                        <Label 
+                          htmlFor={`include-variants-${product.id}`}
+                          className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer flex items-center gap-1"
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          {t("inventory:includeVariants")}
+                          <Badge variant="secondary" className="ml-1 text-xs">
+                            {variantsMap.get(product.id)?.length || 0}
+                          </Badge>
+                        </Label>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

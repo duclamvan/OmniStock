@@ -767,6 +767,7 @@ const inventory = {
   labelsPrintedWithErrors: 'Đã in nhãn nhưng có lỗi',
   labelsSaveFailedSome: 'Đã lưu {{saved}} nhãn, {{failed}} không lưu được ({{products}})',
   noProductsInStock: 'Không có sản phẩm trong kho',
+  includeVariants: 'Bao gồm biến thể',
   labelsDeleted: 'Đã xóa nhãn thành công',
   labelsDeleteError: 'Không thể xóa nhãn',
   noLabelsFound: 'Không tìm thấy nhãn phù hợp',

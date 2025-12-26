@@ -673,6 +673,7 @@ const inventory = {
   labelsPrintedWithErrors: 'Labels printed with some errors',
   labelsSaveFailedSome: 'Saved {{saved}} labels, {{failed}} failed to save ({{products}})',
   noProductsInStock: 'No products in stock',
+  includeVariants: 'Include variants',
   labelsDeleted: 'Labels deleted successfully',
   labelsDeleteError: 'Failed to delete labels',
   noLabelsFound: 'No labels match your search',
