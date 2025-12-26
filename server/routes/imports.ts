@@ -792,7 +792,7 @@ router.post("/purchases/unpack", async (req, res) => {
       .from(purchaseItems)
       .where(eq(purchaseItems.purchaseId, purchaseId));
 
-    // Create custom items from purchase items, preserving all purchase order data
+    // Create custom items from purchase items, preserving ALL purchase order and item data
     const customItemsCreated = [];
     for (const item of items) {
       const customItem = {
@@ -811,8 +811,10 @@ router.post("/purchases/unpack", async (req, res) => {
         classification: null,
         purchaseOrderId: purchase.id, // Link back to original purchase order for cost/supplier lookup
         imageUrl: item.imageUrl || null, // Preserve item image
+        sku: item.sku || null, // Preserve SKU for product linking
         isPackage: false, // Individual unpacked item, not a package
         orderItems: [{
+          // COMPLETE item data preservation
           originalItemId: item.id,
           sku: item.sku,
           name: item.name,
@@ -820,10 +822,37 @@ router.post("/purchases/unpack", async (req, res) => {
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
           weight: item.weight,
+          weightUnit: item.weightUnit,
+          costWithShipping: item.costWithShipping,
+          dimensions: item.dimensions,
           hsCode: item.hsCode,
+          dutyRatePercent: item.dutyRatePercent,
+          unitGrossWeightKg: item.unitGrossWeightKg,
+          unitLengthCm: item.unitLengthCm,
+          unitWidthCm: item.unitWidthCm,
+          unitHeightCm: item.unitHeightCm,
           landingCostUnitBase: item.landingCostUnitBase,
+          unitType: item.unitType,
+          unitName: item.unitName,
+          quantityInSellingUnits: item.quantityInSellingUnits,
+          processingTimeDays: item.processingTimeDays,
+          warehouseLocation: item.warehouseLocation,
           imageUrl: item.imageUrl,
-        }], // Store original item data for reference
+          notes: item.notes,
+          // PARENT purchase order data for cost calculations
+          parentPurchase: {
+            id: purchase.id,
+            supplier: purchase.supplier,
+            trackingNumber: purchase.trackingNumber,
+            paymentCurrency: purchase.paymentCurrency,
+            purchaseCurrency: purchase.purchaseCurrency,
+            exchangeRate: purchase.exchangeRate,
+            shippingCost: purchase.shippingCost,
+            shippingCurrency: purchase.shippingCurrency,
+            totalCost: purchase.totalCost,
+            totalPaid: purchase.totalPaid,
+          }
+        }], // Store complete original item + parent data for reference
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -1441,6 +1470,9 @@ router.get("/consolidations", async (req, res) => {
             orderNumber: customItems.orderNumber,
             trackingNumber: customItems.trackingNumber,
             addedAt: consolidationItems.createdAt,
+            imageUrl: customItems.imageUrl,
+            sku: customItems.sku,
+            dimensions: customItems.dimensions,
           })
           .from(consolidationItems)
           .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
@@ -1673,6 +1705,9 @@ router.get("/consolidations/:id/items", async (req, res) => {
         orderNumber: customItems.orderNumber,
         trackingNumber: customItems.trackingNumber,
         orderItems: customItems.orderItems,
+        imageUrl: customItems.imageUrl, // Direct imageUrl field
+        sku: customItems.sku, // SKU for product linking
+        dimensions: customItems.dimensions,
         addedAt: consolidationItems.createdAt,
       })
       .from(consolidationItems)
@@ -1680,10 +1715,11 @@ router.get("/consolidations/:id/items", async (req, res) => {
       .where(eq(consolidationItems.consolidationId, consolidationId))
       .orderBy(consolidationItems.createdAt);
     
-    // Enhance items with imageUrl from orderItems if available
+    // Enhance items - use direct imageUrl, fallback to orderItems if needed
     const enhancedItems = items.map(item => {
-      let imageUrl = null;
-      if (item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
+      let imageUrl = item.imageUrl;
+      // Fallback to orderItems if direct imageUrl not available
+      if (!imageUrl && item.orderItems && Array.isArray(item.orderItems) && item.orderItems.length > 0) {
         const firstItemWithImage = (item.orderItems as any[]).find(oi => oi.imageUrl);
         if (firstItemWithImage?.imageUrl) {
           imageUrl = firstItemWithImage.imageUrl;
@@ -2177,7 +2213,10 @@ router.get("/shipments/pending", async (req, res) => {
             name: customItems.name,
             quantity: customItems.quantity,
             weight: customItems.weight,
-            unitPrice: customItems.unitPrice
+            unitPrice: customItems.unitPrice,
+            imageUrl: customItems.imageUrl,
+            sku: customItems.sku,
+            dimensions: customItems.dimensions
           })
           .from(consolidationItems)
           .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
@@ -2253,7 +2292,10 @@ router.get("/shipments/search", async (req, res) => {
               quantity: customItems.quantity,
               weight: customItems.weight,
               trackingNumber: customItems.trackingNumber,
-              unitPrice: customItems.unitPrice
+              unitPrice: customItems.unitPrice,
+              imageUrl: customItems.imageUrl,
+              sku: customItems.sku,
+              dimensions: customItems.dimensions
             })
             .from(consolidationItems)
             .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
@@ -2342,7 +2384,10 @@ router.get("/shipments/archived", async (req, res) => {
               quantity: customItems.quantity,
               weight: customItems.weight,
               trackingNumber: customItems.trackingNumber,
-              unitPrice: customItems.unitPrice
+              unitPrice: customItems.unitPrice,
+              imageUrl: customItems.imageUrl,
+              sku: customItems.sku,
+              dimensions: customItems.dimensions
             })
             .from(consolidationItems)
             .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
@@ -2480,7 +2525,10 @@ router.get("/shipments", async (req, res) => {
               quantity: customItems.quantity,
               weight: customItems.weight,
               trackingNumber: customItems.trackingNumber,
-              unitPrice: customItems.unitPrice
+              unitPrice: customItems.unitPrice,
+              imageUrl: customItems.imageUrl,
+              sku: customItems.sku,
+              dimensions: customItems.dimensions
             })
             .from(consolidationItems)
             .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
@@ -3520,6 +3568,9 @@ router.put("/shipments/:id", async (req, res) => {
       weight: string | null;
       trackingNumber: string | null;
       unitPrice: string | null;
+      imageUrl: string | null;
+      sku: string | null;
+      dimensions: string | null;
     }> = [];
     
     if (updated.consolidationId) {
@@ -3530,7 +3581,10 @@ router.put("/shipments/:id", async (req, res) => {
           quantity: customItems.quantity,
           weight: customItems.weight,
           trackingNumber: customItems.trackingNumber,
-          unitPrice: customItems.unitPrice
+          unitPrice: customItems.unitPrice,
+          imageUrl: customItems.imageUrl,
+          sku: customItems.sku,
+          dimensions: customItems.dimensions
         })
         .from(consolidationItems)
         .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
