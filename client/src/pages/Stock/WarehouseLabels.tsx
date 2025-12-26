@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LabelContent, type LabelProduct } from "@/components/warehouse/WarehouseLabelPreview";
 import { generateProductQRUrl } from "@shared/qrUtils";
+import QRCode from "qrcode";
 import {
   ArrowLeft,
   Printer,
@@ -159,7 +160,7 @@ export default function WarehouseLabels() {
     }
   };
 
-  const printProductLabels = (products: any[], title: string) => {
+  const printProductLabels = async (products: any[], title: string) => {
     const printWindow = window.open("", "_blank", "width=600,height=800");
     if (!printWindow) {
       toast({
@@ -170,21 +171,37 @@ export default function WarehouseLabels() {
       return;
     }
 
-    const labelsHtml = products
-      .map((product: any) => {
+    // Generate QR codes for all products in parallel
+    const labelsWithQR = await Promise.all(
+      products.map(async (product: any) => {
         const productCode = product.sku || product.barcode || product.id;
+        const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
         const vietnameseName = product.vietnameseName || product.name;
         const priceEur = product.priceEur ? Number(product.priceEur) : null;
         const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
 
+        // Generate actual QR code SVG
+        let qrSvg = "";
+        try {
+          qrSvg = await QRCode.toString(qrUrl, { 
+            type: "svg",
+            margin: 0,
+            width: 72,
+            errorCorrectionLevel: "M"
+          });
+        } catch (err) {
+          console.error("Failed to generate QR code for", productCode, err);
+          // Fallback to placeholder if QR generation fails
+          qrSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="72" height="72">
+            <rect width="45" height="45" fill="white"/>
+            <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
+          </svg>`;
+        }
+
         return `
           <div class="label-container">
             <div class="qr-section">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="90" height="90">
-                <rect width="45" height="45" fill="white"/>
-                <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
-                <text x="22.5" y="30" text-anchor="middle" font-size="4">${productCode}</text>
-              </svg>
+              ${qrSvg}
             </div>
             <div class="name-section">
               <div class="vn-name">${vietnameseName}</div>
@@ -199,7 +216,9 @@ export default function WarehouseLabels() {
           </div>
         `;
       })
-      .join("");
+    );
+
+    const labelsHtml = labelsWithQR.join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -211,6 +230,13 @@ export default function WarehouseLabels() {
           @page {
             size: 100mm 30mm;
             margin: 0;
+          }
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
           }
           * {
             margin: 0;
@@ -226,7 +252,7 @@ export default function WarehouseLabels() {
             display: flex;
             flex-direction: row;
             align-items: stretch;
-            background: white;
+            background: white !important;
             color: black;
             overflow: hidden;
             border: 2pt solid black;
@@ -298,14 +324,14 @@ export default function WarehouseLabels() {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: black;
+            background: black !important;
           }
           .price-czk-row {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            background: white !important;
             border-top: 1pt solid black;
           }
           .price-eur {
@@ -371,7 +397,7 @@ export default function WarehouseLabels() {
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
       
       // Still print labels even if some failed to save
-      printProductLabels(selectedProducts, `Labels - ${selectedProducts.length} Products`);
+      await printProductLabels(selectedProducts, `Labels - ${selectedProducts.length} Products`);
       
       if (failedProducts.length > 0) {
         toast({
@@ -437,7 +463,7 @@ export default function WarehouseLabels() {
       queryClient.invalidateQueries({ queryKey: ["/api/warehouse-labels"] });
       
       // Still print labels even if some failed to save
-      printProductLabels(allProducts, "All Product Labels");
+      await printProductLabels(allProducts, "All Product Labels");
 
       if (failedProducts.length > 0) {
         toast({
@@ -485,22 +511,36 @@ export default function WarehouseLabels() {
       return;
     }
 
-    const labelsHtml = selectedLabels
-      .map((label) => {
+    // Generate QR codes for all labels in parallel
+    const labelsWithQR = await Promise.all(
+      selectedLabels.map(async (label) => {
         const productCode = label.sku || label.productId;
         const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
         const vietnameseName = label.vietnameseName || label.productName;
         const priceEur = label.priceEur ? Number(label.priceEur) : null;
         const priceCzk = label.priceCzk ? Number(label.priceCzk) : null;
 
+        // Generate actual QR code SVG
+        let qrSvg = "";
+        try {
+          qrSvg = await QRCode.toString(qrUrl, { 
+            type: "svg",
+            margin: 0,
+            width: 72,
+            errorCorrectionLevel: "M"
+          });
+        } catch (err) {
+          console.error("Failed to generate QR code for", productCode, err);
+          qrSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="72" height="72">
+            <rect width="45" height="45" fill="white"/>
+            <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
+          </svg>`;
+        }
+
         return `
           <div class="label-container">
             <div class="qr-section">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="90" height="90">
-                <rect width="45" height="45" fill="white"/>
-                <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
-                <text x="22.5" y="30" text-anchor="middle" font-size="4">${productCode}</text>
-              </svg>
+              ${qrSvg}
             </div>
             <div class="name-section">
               <div class="vn-name">${vietnameseName}</div>
@@ -515,7 +555,9 @@ export default function WarehouseLabels() {
           </div>
         `;
       })
-      .join("");
+    );
+
+    const labelsHtml = labelsWithQR.join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -527,6 +569,13 @@ export default function WarehouseLabels() {
           @page {
             size: 100mm 30mm;
             margin: 0;
+          }
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
           }
           * {
             margin: 0;
@@ -542,7 +591,7 @@ export default function WarehouseLabels() {
             display: flex;
             flex-direction: row;
             align-items: stretch;
-            background: white;
+            background: white !important;
             color: black;
             overflow: hidden;
             border: 2pt solid black;
@@ -614,14 +663,14 @@ export default function WarehouseLabels() {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: black;
+            background: black !important;
           }
           .price-czk-row {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            background: white !important;
             border-top: 1pt solid black;
           }
           .price-eur {
