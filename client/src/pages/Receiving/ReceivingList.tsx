@@ -2641,7 +2641,7 @@ function QuickStorageSheet({
                                     />
                                   </div>
                                   <p className="text-xs text-muted-foreground mt-1.5 text-center">
-                                    {existingLocationQty + pendingLocationQty} / {item.receivedQuantity} {t('stored')}
+                                    {Math.min(existingLocationQty + pendingLocationQty, item.receivedQuantity)} / {item.receivedQuantity} {t('stored')}
                                   </p>
                                 </div>
 
