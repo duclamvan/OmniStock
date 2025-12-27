@@ -787,6 +787,9 @@ const inventory = {
   showArrowsUp: 'Hiển thị mũi tên lên (hướng trên)',
   showArrowsDown: 'Hiển thị mũi tên xuống (hướng dưới)',
   showBulkInfo: 'Hiển thị thông tin đóng gói',
+  customTextBelow: 'Văn bản tùy chỉnh bên dưới giá',
+  customTextPlaceholder: 'ví dụ: 12/thùng, 6/gói',
+  customTextHint: 'Tự động điền từ thông tin đóng gói. Để trống để dùng mặc định, hoặc nhập văn bản tùy chỉnh.',
   selectedProducts: '{{count}} sản phẩm đã chọn',
   printLabels: 'In nhãn',
   

@@ -693,6 +693,9 @@ const inventory = {
   showArrowsUp: 'Show arrows up (top orientation)',
   showArrowsDown: 'Show arrows down (bottom orientation)',
   showBulkInfo: 'Show packaging unit info',
+  customTextBelow: 'Custom text below prices',
+  customTextPlaceholder: 'e.g., 12/box, 6/pack',
+  customTextHint: 'Auto-filled from product packaging info. Leave empty to use product default, or enter custom text.',
   selectedProducts: '{{count}} product(s) selected',
   printLabels: 'Print Labels',
   

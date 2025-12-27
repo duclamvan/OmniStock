@@ -140,7 +140,22 @@ export default function WarehouseLabels() {
     showArrowsUp: false,
     showArrowsDown: false,
     showBulkInfo: true,
+    customText: '',
   });
+
+  // Auto-fill custom text when opening dialog with single product
+  const openCustomPrintDialog = () => {
+    if (selectedProductIds.size === 1) {
+      const productId = Array.from(selectedProductIds)[0];
+      const product = allProducts.find((p: any) => p.id === productId);
+      // Always refresh customText with current product's bulk info (other options persist)
+      const bulkUnitName = product?.bulkUnitName || '';
+      const bulkUnitQty = product?.bulkUnitQty || 0;
+      const autoText = (bulkUnitName && bulkUnitQty > 0) ? `${bulkUnitQty}/${bulkUnitName}` : '';
+      setCustomPrintOptions(prev => ({ ...prev, customText: autoText }));
+      setShowCustomPrintDialog(true);
+    }
+  };
 
   const toggleIncludeVariants = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -275,10 +290,11 @@ export default function WarehouseLabels() {
     showArrowsUp?: boolean;
     showArrowsDown?: boolean;
     showBulkInfo?: boolean;
+    customText?: string;
   }
 
   const printProductLabels = async (products: any[], title: string, options: PrintOptions = {}) => {
-    const { showArrowsUp = false, showArrowsDown = false, showBulkInfo = true } = options;
+    const { showArrowsUp = false, showArrowsDown = false, showBulkInfo = true, customText = '' } = options;
     
     const printWindow = window.open("", "_blank", "width=600,height=800");
     if (!printWindow) {
@@ -303,10 +319,12 @@ export default function WarehouseLabels() {
         const priceEur = product.priceEur ? Number(product.priceEur) : null;
         const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
         
-        // Get bulk info
+        // Get bulk info - use customText if provided, otherwise use product bulk info
         const bulkUnitName = product.bulkUnitName || '';
         const bulkUnitQty = product.bulkUnitQty || 0;
-        const hasBulkInfo = showBulkInfo && bulkUnitName && bulkUnitQty > 0;
+        const productBulkText = (bulkUnitName && bulkUnitQty > 0) ? `${bulkUnitQty}/${bulkUnitName}` : '';
+        const displayText = customText || productBulkText;
+        const hasBulkInfo = showBulkInfo && displayText;
 
         // Generate actual QR code SVG
         let qrSvg = "";
@@ -342,14 +360,14 @@ export default function WarehouseLabels() {
                   <div class="price-eur-row">
                     <div class="price-content">
                       <span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      ${hasBulkInfo ? `<span class="bulk-info-eur">${bulkUnitQty}/${bulkUnitName}</span>` : ''}
+                      ${hasBulkInfo ? `<span class="bulk-info-eur">${displayText}</span>` : ''}
                     </div>
                   </div>` : ""}
                 ${priceCzk !== null ? `
                   <div class="price-czk-row">
                     <div class="price-content">
                       <span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span>
-                      ${hasBulkInfo ? `<span class="bulk-info-czk">${bulkUnitQty}/${bulkUnitName}</span>` : ''}
+                      ${hasBulkInfo ? `<span class="bulk-info-czk">${displayText}</span>` : ''}
                     </div>
                   </div>` : ""}
                 ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
@@ -1080,16 +1098,18 @@ export default function WarehouseLabels() {
                 )}
                 {t("inventory:printSelected")}
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setShowCustomPrintDialog(true)}
-                className="gap-2"
-                data-testid="btn-custom-print"
-              >
-                <Settings2 className="h-4 w-4" />
-                {t("inventory:customPrint")}
-              </Button>
+              {selectedProductIds.size === 1 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={openCustomPrintDialog}
+                  className="gap-2"
+                  data-testid="btn-custom-print"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  {t("inventory:customPrint")}
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -1266,6 +1286,24 @@ export default function WarehouseLabels() {
                 }
                 data-testid="switch-bulk-info"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="custom-text" className="text-sm">
+                {t("inventory:customTextBelow")}
+              </Label>
+              <Input
+                id="custom-text"
+                value={customPrintOptions.customText}
+                onChange={(e) => 
+                  setCustomPrintOptions(prev => ({ ...prev, customText: e.target.value }))
+                }
+                placeholder={t("inventory:customTextPlaceholder")}
+                data-testid="input-custom-text"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("inventory:customTextHint")}
+              </p>
             </div>
 
             <div className="pt-2 border-t">
