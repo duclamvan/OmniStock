@@ -123,3 +123,36 @@ The standalone functions in `@/lib/currencyUtils.ts` (like `formatCurrency`, `fo
 
 ### Settings Context
 The `useSettings()` hook from `@/contexts/SettingsContext` also provides basic formatting helpers (`formatCurrency`, `formatDate`, `formatNumber`) but `useLocalization()` is more comprehensive with timezone support and time formatting.
+
+### Decimal Input Support (Internationalization)
+All decimal input fields support both `.` (period) and `,` (comma) as decimal separators to accommodate European and US number formats. Users can type either separator and it will be automatically converted.
+
+**Usage:**
+
+For new decimal inputs, use the `DecimalInput` component:
+```typescript
+import { DecimalInput } from "@/components/ui/decimal-input";
+
+<DecimalInput
+  value={price}
+  onChange={(val) => setPrice(val)}
+  step="0.01"
+  className="..."
+/>
+```
+
+For existing inputs in forms/tables, add the keydown handler:
+```typescript
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
+
+<Input
+  type="number"
+  step="0.01"
+  onKeyDown={handleDecimalKeyDown}
+  onChange={(e) => setValue(parseDecimal(e.target.value))}
+/>
+```
+
+**Key files:**
+- `client/src/lib/utils.ts` - Contains `parseDecimal()` and `handleDecimalKeyDown()` utilities
+- `client/src/components/ui/decimal-input.tsx` - Reusable DecimalInput component

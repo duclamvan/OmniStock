@@ -77,6 +77,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { soundEffects } from "@/utils/soundEffects";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { ScanFeedback } from "@/components/ScanFeedback";
@@ -3583,8 +3584,8 @@ function ShipmentReportDialog({
   
   const formatPrice = (price: string | null | undefined, currency: string) => {
     if (!price) return '-';
-    const num = parseFloat(price);
-    if (isNaN(num)) return '-';
+    const num = parseDecimal(price);
+    if (isNaN(num) || num === 0) return '-';
     return `${num.toFixed(2)} ${currency}`;
   };
   

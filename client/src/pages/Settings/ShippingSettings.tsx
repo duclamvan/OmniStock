@@ -19,6 +19,7 @@ import { Truck, Save, Loader2, Package, Tag, Bell, DollarSign, Globe, Check } fr
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { useSettingsAutosave } from "@/hooks/useSettingsAutosave";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 
 const normalizeCarrier = (value: string): string => {
   const map: Record<string, string> = {
@@ -397,6 +398,7 @@ export default function ShippingSettings() {
                               field.onChange(e);
                               markPendingChange('ppl_max_package_weight_kg');
                             }}
+                            onKeyDown={handleDecimalKeyDown}
                             onBlur={handleTextBlur('ppl_max_package_weight_kg')}
                             type="number"
                             min="0"
@@ -543,7 +545,8 @@ export default function ShippingSettings() {
                                       <Input
                                         type="number"
                                         value={rate?.ratePerKg || 0}
-                                        onChange={(e) => updateCountryRate(code, 'ratePerKg', parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => updateCountryRate(code, 'ratePerKg', parseDecimal(e.target.value))}
+                                        onKeyDown={handleDecimalKeyDown}
                                         onBlur={handleTextBlur('ppl_shipping_rates')}
                                         className="w-20"
                                         min="0"
@@ -582,7 +585,8 @@ export default function ShippingSettings() {
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.cash?.fee || 0}
-                                    onChange={(e) => updateCodFee('cash', 'fee', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('cash', 'fee', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
@@ -599,7 +603,8 @@ export default function ShippingSettings() {
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.fee || 0}
-                                    onChange={(e) => updateCodFee('card', 'fee', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('card', 'fee', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
@@ -613,7 +618,8 @@ export default function ShippingSettings() {
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.percentFee || 0}
-                                    onChange={(e) => updateCodFee('card', 'percentFee', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('card', 'percentFee', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-16"
                                     min="0"
@@ -626,7 +632,8 @@ export default function ShippingSettings() {
                                   <Input
                                     type="number"
                                     value={parsedRates.codFees?.card?.thresholdCzk || 0}
-                                    onChange={(e) => updateCodFee('card', 'thresholdCzk', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => updateCodFee('card', 'thresholdCzk', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
                                     className="w-24"
                                     min="0"
@@ -747,6 +754,7 @@ export default function ShippingSettings() {
                                 field.onChange(e);
                                 markPendingChange('gls_max_package_weight_kg');
                               }}
+                              onKeyDown={handleDecimalKeyDown}
                               onBlur={handleTextBlur('gls_max_package_weight_kg')}
                               type="number"
                               min="0"
@@ -822,7 +830,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates.paketXS || 4.59}
-                                  onChange={(e) => updateRate('paketXS', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate('paketXS', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
@@ -838,7 +847,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates.paketS || 5.19}
-                                  onChange={(e) => updateRate('paketS', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate('paketS', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
@@ -854,7 +864,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates.paketM || 0}
-                                  onChange={(e) => updateRate('paketM', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate('paketM', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
@@ -870,7 +881,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates.paketL || 0}
-                                  onChange={(e) => updateRate('paketL', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate('paketL', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('gls_shipping_rates')}
                                   className="w-24"
                                   min="0"
@@ -999,6 +1011,7 @@ export default function ShippingSettings() {
                             field.onChange(e);
                             markPendingChange('gls_default_shipping_price');
                           }}
+                          onKeyDown={handleDecimalKeyDown}
                           onBlur={handleTextBlur('gls_default_shipping_price')}
                           type="number"
                           min="0"
@@ -1079,7 +1092,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates[pkg.key]?.price ?? pkg.defaultPrice}
-                                  onChange={(e) => updateRate(pkg.key, 'price', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate(pkg.key, 'price', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('dhl_shipping_rates')}
                                   className="w-20 h-8 text-sm"
                                   min="0"
@@ -1093,7 +1107,8 @@ export default function ShippingSettings() {
                                 <Input
                                   type="number"
                                   value={parsedRates[pkg.key]?.maxWeight ?? pkg.defaultWeight}
-                                  onChange={(e) => updateRate(pkg.key, 'maxWeight', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => updateRate(pkg.key, 'maxWeight', parseDecimal(e.target.value))}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onBlur={handleTextBlur('dhl_shipping_rates')}
                                   className="w-16 h-8 text-sm"
                                   min="0"
@@ -1126,7 +1141,8 @@ export default function ShippingSettings() {
                               <Input
                                 type="number"
                                 value={parsedRates.nachnahme?.fee ?? 8.99}
-                                onChange={(e) => updateRate('nachnahme', 'fee', parseFloat(e.target.value) || 0)}
+                                onChange={(e) => updateRate('nachnahme', 'fee', parseDecimal(e.target.value))}
+                                onKeyDown={handleDecimalKeyDown}
                                 onBlur={handleTextBlur('dhl_shipping_rates')}
                                 className="w-20 h-8 text-sm"
                                 min="0"
@@ -1254,6 +1270,7 @@ export default function ShippingSettings() {
                             field.onChange(e);
                             markPendingChange('dhl_default_shipping_price');
                           }}
+                          onKeyDown={handleDecimalKeyDown}
                           onBlur={handleTextBlur('dhl_default_shipping_price')}
                           type="number"
                           min="0"
@@ -1520,6 +1537,7 @@ export default function ShippingSettings() {
                                 field.onChange(e);
                                 markPendingChange('default_shipping_cost_eur');
                               }}
+                              onKeyDown={handleDecimalKeyDown}
                               onBlur={handleTextBlur('default_shipping_cost_eur')}
                               type="number"
                               min="0"
@@ -1547,6 +1565,7 @@ export default function ShippingSettings() {
                                 field.onChange(e);
                                 markPendingChange('free_shipping_threshold_eur');
                               }}
+                              onKeyDown={handleDecimalKeyDown}
                               onBlur={handleTextBlur('free_shipping_threshold_eur')}
                               type="number"
                               min="0"
@@ -1582,6 +1601,7 @@ export default function ShippingSettings() {
                                 field.onChange(e);
                                 markPendingChange('default_shipping_cost_czk');
                               }}
+                              onKeyDown={handleDecimalKeyDown}
                               onBlur={handleTextBlur('default_shipping_cost_czk')}
                               type="number"
                               min="0"
@@ -1609,6 +1629,7 @@ export default function ShippingSettings() {
                                 field.onChange(e);
                                 markPendingChange('free_shipping_threshold_czk');
                               }}
+                              onKeyDown={handleDecimalKeyDown}
                               onBlur={handleTextBlur('free_shipping_threshold_czk')}
                               type="number"
                               min="0"

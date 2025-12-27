@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { handleDecimalKeyDown } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -717,6 +718,7 @@ export default function AddPackingMaterial() {
                                   className="h-11 text-center" 
                                   placeholder="0" 
                                   inputMode="decimal"
+                                  onKeyDown={handleDecimalKeyDown}
                                   {...field} 
                                   value={field.value || ""} 
                                   data-testid="input-length" 
@@ -738,6 +740,7 @@ export default function AddPackingMaterial() {
                                   className="h-11 text-center" 
                                   placeholder="0" 
                                   inputMode="decimal"
+                                  onKeyDown={handleDecimalKeyDown}
                                   {...field} 
                                   value={field.value || ""} 
                                   data-testid="input-width" 
@@ -759,6 +762,7 @@ export default function AddPackingMaterial() {
                                   className="h-11 text-center" 
                                   placeholder="0" 
                                   inputMode="decimal"
+                                  onKeyDown={handleDecimalKeyDown}
                                   {...field} 
                                   value={field.value || ""} 
                                   data-testid="input-height" 
@@ -812,6 +816,7 @@ export default function AddPackingMaterial() {
                                   className="h-11" 
                                   placeholder="0.0" 
                                   inputMode="decimal"
+                                  onKeyDown={handleDecimalKeyDown}
                                   {...field} 
                                   value={field.value || ""} 
                                   data-testid="input-weight-value" 
@@ -875,6 +880,7 @@ export default function AddPackingMaterial() {
                               className="h-11" 
                               placeholder="0.00" 
                               inputMode="decimal"
+                              onKeyDown={handleDecimalKeyDown}
                               {...field} 
                               data-testid="input-cost" 
                             />

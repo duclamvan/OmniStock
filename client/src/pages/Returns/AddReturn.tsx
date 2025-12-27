@@ -47,7 +47,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -949,6 +949,7 @@ export default function AddReturn() {
                                   {...form.register(`items.${index}.price`)}
                                   placeholder={t('inventory:pricePlaceholder')}
                                   className="h-10"
+                                  onKeyDown={handleDecimalKeyDown}
                                   data-testid={`input-price-${index}`}
                                 />
                               </div>

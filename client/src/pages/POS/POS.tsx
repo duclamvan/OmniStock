@@ -53,7 +53,7 @@ import {
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, handleDecimalKeyDown, parseDecimal } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product, Customer, Category } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
@@ -538,8 +538,8 @@ export default function POS() {
   };
 
   const addCustomItem = () => {
-    const price = parseFloat(customItemPrice) || 0;
-    const cost = parseFloat(customItemCost) || 0;
+    const price = parseDecimal(customItemPrice) || 0;
+    const cost = parseDecimal(customItemCost) || 0;
     const profit = price - cost;
     
     if (!customItemName.trim() || price <= 0) {
@@ -639,7 +639,7 @@ export default function POS() {
       });
       setLastSaleId(data.id);
       
-      const cashReceivedNum = parseFloat(cashReceived) || 0;
+      const cashReceivedNum = parseDecimal(cashReceived) || 0;
       const newReceiptData: ReceiptData = {
         orderId: data.orderId || data.id,
         items: [...cart],
@@ -711,7 +711,7 @@ export default function POS() {
   };
 
   const handleCashPayment = () => {
-    const cashAmount = parseFloat(cashReceived) || 0;
+    const cashAmount = parseDecimal(cashReceived) || 0;
     if (cashAmount < total) {
       toast({
         title: 'Insufficient Amount',
@@ -724,7 +724,7 @@ export default function POS() {
   };
 
   const handleApplyDiscount = () => {
-    const inputValue = parseFloat(discountInput) || 0;
+    const inputValue = parseDecimal(discountInput) || 0;
     let discountAmount: number;
     
     if (discountType === 'percentage') {
@@ -1568,7 +1568,8 @@ export default function POS() {
                   onChange={(e) => setCashReceived(e.target.value)}
                   onFocus={(e) => e.target.select()}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && parseFloat(cashReceived || '0') >= total && !createOrderMutation.isPending) {
+                    handleDecimalKeyDown(e);
+                    if (e.key === 'Enter' && parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
                       e.preventDefault();
                       handleCashPayment();
                     }
@@ -1584,30 +1585,30 @@ export default function POS() {
             {/* Change Section - Always visible */}
             <div className={cn(
               "rounded-xl p-4 text-center transition-colors",
-              parseFloat(cashReceived || '0') >= total 
+              parseDecimal(cashReceived || '0') >= total 
                 ? "bg-green-100 dark:bg-green-900/30 border-2 border-green-500" 
-                : parseFloat(cashReceived || '0') > 0 
+                : parseDecimal(cashReceived || '0') > 0 
                   ? "bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700"
                   : "bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700"
             )}>
               <p className="text-sm font-medium text-muted-foreground mb-1">
-                {parseFloat(cashReceived || '0') >= total 
+                {parseDecimal(cashReceived || '0') >= total 
                   ? `${t('pos:changeToGive', 'Change to Give')} / Tiền thối`
                   : `${t('pos:stillOwed', 'Still Owed')} / Còn thiếu`
                 }
               </p>
               <p className={cn(
                 "text-4xl font-bold tabular-nums",
-                parseFloat(cashReceived || '0') >= total 
+                parseDecimal(cashReceived || '0') >= total 
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
               )}>
-                {parseFloat(cashReceived || '0') >= total 
-                  ? `${(parseFloat(cashReceived || '0') - total).toFixed(2)} ${currencySymbol}`
-                  : `${(total - parseFloat(cashReceived || '0')).toFixed(2)} ${currencySymbol}`
+                {parseDecimal(cashReceived || '0') >= total 
+                  ? `${(parseDecimal(cashReceived || '0') - total).toFixed(2)} ${currencySymbol}`
+                  : `${(total - parseDecimal(cashReceived || '0')).toFixed(2)} ${currencySymbol}`
                 }
               </p>
-              {parseFloat(cashReceived || '0') > 0 && parseFloat(cashReceived || '0') < total && (
+              {parseDecimal(cashReceived || '0') > 0 && parseDecimal(cashReceived || '0') < total && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-1">
                   {t('pos:needMoreMoney', 'Need more money!')}
                 </p>
@@ -1621,7 +1622,7 @@ export default function POS() {
               size="lg"
               className="w-full h-16 text-xl font-bold bg-green-600 hover:bg-green-700"
               onClick={handleCashPayment}
-              disabled={createOrderMutation.isPending || parseFloat(cashReceived || '0') < total}
+              disabled={createOrderMutation.isPending || parseDecimal(cashReceived || '0') < total}
               data-testid="button-confirm-cash"
             >
               {createOrderMutation.isPending ? (
@@ -2017,6 +2018,7 @@ export default function POS() {
                 type="number"
                 value={discountInput}
                 onChange={(e) => setDiscountInput(e.target.value)}
+                onKeyDown={handleDecimalKeyDown}
                 placeholder={discountType === 'percentage' ? 'Enter percentage (e.g., 10)' : `Enter amount (e.g., 5.00)`}
                 className="h-14 text-xl text-center pr-12"
                 autoFocus
@@ -2060,14 +2062,14 @@ export default function POS() {
             </div>
             
             {/* Discount Preview */}
-            {discountInput && parseFloat(discountInput) > 0 && (
+            {discountInput && parseDecimal(discountInput) > 0 && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-green-700 dark:text-green-300">Discount:</span>
                   <span className="font-bold text-green-700 dark:text-green-300 tabular-nums">
                     -{discountType === 'percentage' 
-                      ? ((subtotal * parseFloat(discountInput)) / 100).toFixed(2)
-                      : parseFloat(discountInput).toFixed(2)
+                      ? ((subtotal * parseDecimal(discountInput)) / 100).toFixed(2)
+                      : parseDecimal(discountInput).toFixed(2)
                     } {currencySymbol}
                   </span>
                 </div>
@@ -2075,8 +2077,8 @@ export default function POS() {
                   <span className="text-green-700 dark:text-green-300">New Total:</span>
                   <span className="font-bold text-lg text-green-700 dark:text-green-300 tabular-nums">
                     {discountType === 'percentage'
-                      ? (subtotal - (subtotal * parseFloat(discountInput)) / 100).toFixed(2)
-                      : (subtotal - parseFloat(discountInput)).toFixed(2)
+                      ? (subtotal - (subtotal * parseDecimal(discountInput)) / 100).toFixed(2)
+                      : (subtotal - parseDecimal(discountInput)).toFixed(2)
                     } {currencySymbol}
                   </span>
                 </div>
@@ -2093,7 +2095,7 @@ export default function POS() {
               <X className="h-4 w-4 mr-1" />
               Remove
             </Button>
-            <Button onClick={handleApplyDiscount} data-testid="button-apply-discount" disabled={!discountInput || parseFloat(discountInput) <= 0}>
+            <Button onClick={handleApplyDiscount} data-testid="button-apply-discount" disabled={!discountInput || parseDecimal(discountInput) <= 0}>
               <Check className="h-4 w-4 mr-1" />
               Apply Discount
             </Button>
@@ -2136,6 +2138,7 @@ export default function POS() {
                   placeholder="0.00"
                   value={customItemPrice}
                   onChange={(e) => setCustomItemPrice(e.target.value)}
+                  onKeyDown={handleDecimalKeyDown}
                   data-testid="input-custom-item-price"
                 />
               </div>
@@ -2149,6 +2152,7 @@ export default function POS() {
                   placeholder="0.00"
                   value={customItemCost}
                   onChange={(e) => setCustomItemCost(e.target.value)}
+                  onKeyDown={handleDecimalKeyDown}
                   data-testid="input-custom-item-cost"
                 />
               </div>
@@ -2161,18 +2165,18 @@ export default function POS() {
                   <span className="text-sm text-muted-foreground">{t('pos:estimatedProfit', 'Estimated Profit')}:</span>
                   <span className={cn(
                     "font-bold",
-                    (parseFloat(customItemPrice) - (parseFloat(customItemCost) || 0)) >= 0 
+                    (parseDecimal(customItemPrice) - (parseDecimal(customItemCost) || 0)) >= 0 
                       ? "text-green-600" 
                       : "text-red-600"
                   )}>
-                    {((parseFloat(customItemPrice) || 0) - (parseFloat(customItemCost) || 0)).toFixed(2)} {currencySymbol}
+                    {((parseDecimal(customItemPrice) || 0) - (parseDecimal(customItemCost) || 0)).toFixed(2)} {currencySymbol}
                   </span>
                 </div>
-                {customItemCost && parseFloat(customItemPrice) > 0 && (
+                {customItemCost && parseDecimal(customItemPrice) > 0 && (
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-muted-foreground">{t('pos:margin', 'Margin')}:</span>
                     <span className="text-sm">
-                      {(((parseFloat(customItemPrice) - parseFloat(customItemCost)) / parseFloat(customItemPrice)) * 100).toFixed(1)}%
+                      {(((parseDecimal(customItemPrice) - parseDecimal(customItemCost)) / parseDecimal(customItemPrice)) * 100).toFixed(1)}%
                     </span>
                   </div>
                 )}
@@ -2194,7 +2198,7 @@ export default function POS() {
             </Button>
             <Button 
               onClick={addCustomItem}
-              disabled={!customItemName.trim() || !customItemPrice || parseFloat(customItemPrice) <= 0}
+              disabled={!customItemName.trim() || !customItemPrice || parseDecimal(customItemPrice) <= 0}
               className="bg-amber-600 hover:bg-amber-700"
               data-testid="button-add-custom-item"
             >

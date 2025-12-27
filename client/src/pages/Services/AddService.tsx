@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { insertServiceSchema } from "@shared/schema";
 import { formatCzechDate } from "@/lib/dateUtils";
@@ -255,7 +255,7 @@ export default function AddService() {
   }, [serviceItems]);
 
   const totalCost = useMemo(() => {
-    const serviceCostValue = parseFloat(form.watch('serviceCost') || '0');
+    const serviceCostValue = parseDecimal(form.watch('serviceCost') || '0');
     return serviceCostValue + partsCost;
   }, [form.watch('serviceCost'), partsCost]);
 
@@ -288,7 +288,7 @@ export default function AddService() {
     const serviceData = {
       ...data,
       serviceDate: data.serviceDate ? data.serviceDate.toISOString() : null,
-      serviceCost: parseFloat(data.serviceCost || '0').toString(),
+      serviceCost: parseDecimal(data.serviceCost || '0').toString(),
       partsCost: partsCost.toString(),
       totalCost: totalCost.toString(),
       items: serviceItems,
@@ -422,7 +422,7 @@ export default function AddService() {
     if (field === 'quantity' || field === 'unitPrice') {
       const quantity = field === 'quantity' ? value : updated[index].quantity;
       const unitPrice = field === 'unitPrice' ? value : updated[index].unitPrice;
-      updated[index].totalPrice = (quantity * parseFloat(unitPrice || '0')).toFixed(2);
+      updated[index].totalPrice = (quantity * parseDecimal(unitPrice || '0')).toFixed(2);
     }
     
     setServiceItems(updated);
@@ -826,6 +826,7 @@ export default function AddService() {
                         step="0.01"
                         placeholder="0.00"
                         {...form.register("serviceCost")}
+                        onKeyDown={handleDecimalKeyDown}
                         data-testid="input-service-cost"
                         className="text-base font-medium"
                       />
@@ -966,6 +967,7 @@ export default function AddService() {
                                   placeholder="0.00"
                                   value={item.unitPrice}
                                   onChange={(e) => updateServiceItem(index, 'unitPrice', e.target.value)}
+                                  onKeyDown={handleDecimalKeyDown}
                                   data-testid={`input-unit-price-${index}`}
                                 />
                               </div>

@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { offlineQueue } from "@/lib/offlineQueue";
@@ -706,7 +707,7 @@ const CartonCard = memo(({
                       const newWeight = e.target.value;
                       setLocalWeight(newWeight);
                       
-                      if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                      if (isGLS && newWeight && parseDecimal(newWeight) > 40) {
                         e.target.classList.add('border-red-500', 'dark:border-red-600');
                       } else {
                         e.target.classList.remove('border-red-500', 'dark:border-red-600');
@@ -715,7 +716,7 @@ const CartonCard = memo(({
                     onBlur={(e) => {
                       const newWeight = e.target.value;
                       
-                      if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                      if (isGLS && newWeight && parseDecimal(newWeight) > 40) {
                         toast({
                           title: t('weightLimitExceeded'),
                           description: t('weightLimitExceededDesc'),
@@ -727,10 +728,11 @@ const CartonCard = memo(({
                       saveWeight(newWeight);
                     }}
                     onKeyDown={(e) => {
+                      handleDecimalKeyDown(e);
                       if (e.key === 'Enter') {
                         const newWeight = localWeight;
                         
-                        if (isGLS && newWeight && parseFloat(newWeight) > 40) {
+                        if (isGLS && newWeight && parseDecimal(newWeight) > 40) {
                           toast({
                             title: t('weightLimitExceeded'),
                             description: t('glsWeightLimitDesc'),
@@ -744,13 +746,13 @@ const CartonCard = memo(({
                       }
                     }}
                     className={`text-center text-xl font-bold text-purple-800 dark:text-purple-200 border-2 border-purple-300 dark:border-purple-700 focus:border-purple-500 ${
-                      isGLS && localWeight && parseFloat(localWeight) > 40 ? 'border-red-500 dark:border-red-600 focus:border-red-500 dark:focus:border-red-600' : ''
+                      isGLS && localWeight && parseDecimal(localWeight) > 40 ? 'border-red-500 dark:border-red-600 focus:border-red-500 dark:focus:border-red-600' : ''
                     }`}
                     data-testid={`weight-input-${index + 1}`}
                   />
                   <span className="text-xl font-bold text-purple-800 dark:text-purple-200">kg</span>
                 </div>
-                {localWeight && parseFloat(localWeight) > 40 && (
+                {localWeight && parseDecimal(localWeight) > 40 && (
                   <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-semibold">
                     <AlertCircle className="h-3 w-3" />
                     {t('exceedsGls40kgLimit')}
@@ -788,6 +790,7 @@ const CartonCard = memo(({
                   saveWeight(e.target.value);
                 }}
                 onKeyDown={(e) => {
+                  handleDecimalKeyDown(e);
                   if (e.key === 'Enter') {
                     saveWeight(localWeight);
                     e.currentTarget.blur();

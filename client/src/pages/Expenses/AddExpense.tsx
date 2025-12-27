@@ -42,8 +42,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn, handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { formatCzechDate } from "@/lib/dateUtils";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { useSettings } from "@/contexts/SettingsContext";
 
 export default function AddExpense() {
@@ -453,12 +454,12 @@ export default function AddExpense() {
                             <Label htmlFor="amount" className="text-sm font-medium mb-2">
                               {t('amount')} *
                             </Label>
-                            <Input
+                            <DecimalInput
                               id="amount"
-                              type="number"
                               step="0.01"
                               placeholder="0.00"
-                              {...form.register("amount")}
+                              value={form.watch("amount") ?? ""}
+                              onChange={(value) => form.setValue("amount", value)}
                               data-testid="input-amount"
                               className={cn(
                                 "text-base font-medium",

@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Product, ProductVariant } from '@shared/schema';
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 
 interface CustomerPrice {
   id: string;
@@ -191,7 +192,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
         
         headers.forEach((header, index) => {
           if (header === 'price') {
-            price[header] = parseFloat(values[index]);
+            price[header] = parseDecimal(values[index]);
           } else if (header === 'isActive') {
             price[header] = values[index].toLowerCase() === 'true';
           } else {
@@ -508,7 +509,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                         <FormItem>
                           <FormLabel>{t('customers.price')}</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" {...field} />
+                            <Input type="number" step="0.01" onKeyDown={handleDecimalKeyDown} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

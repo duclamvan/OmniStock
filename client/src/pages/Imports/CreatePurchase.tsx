@@ -9,6 +9,8 @@ import { formatCurrency } from "@/lib/currencyUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -2091,18 +2093,15 @@ export default function CreatePurchase() {
                       )}
                     </div>
                     <div className="relative">
-                      <Input
+                      <DecimalInput
                         id="total-paid"
-                        type="number"
                         value={totalPaid}
-                        onChange={(e) => {
-                          setTotalPaid(parseFloat(e.target.value) || 0);
+                        onChange={(val) => {
+                          setTotalPaid(val);
                           setTotalPaidManuallySet(true);
                         }}
-                        onFocus={(e) => e.target.select()}
                         placeholder="0.00"
                         className={cn("pl-8", totalPaidManuallySet && "border-amber-400")}
-                        step="0.01"
                         min="0"
                         data-testid="input-total-paid"
                       />
@@ -2458,13 +2457,10 @@ export default function CreatePurchase() {
                     <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
-                      <Input
+                      <DecimalInput
                         id="shipping"
-                        type="number"
-                        step="0.01"
                         value={shippingCost}
-                        onChange={(e) => handleShippingCostChange(parseFloat(e.target.value) || 0)}
-                        onFocus={(e) => e.target.select()}
+                        onChange={(val) => handleShippingCostChange(val)}
                         className="pl-10"
                         placeholder="0.00"
                         data-testid="input-shipping"
@@ -2857,13 +2853,10 @@ export default function CreatePurchase() {
                   )}
                   <div className="space-y-1">
                     <Label htmlFor="unitPrice" className="text-xs">{t('cost')} ({purchaseCurrency}) *</Label>
-                    <Input
+                    <DecimalInput
                       id="unitPrice"
-                      type="number"
-                      step="0.01"
-                      value={currentItem.unitPrice}
-                      onChange={(e) => setCurrentItem({...currentItem, unitPrice: parseFloat(e.target.value) || 0})}
-                      onFocus={(e) => e.target.select()}
+                      value={currentItem.unitPrice || 0}
+                      onChange={(val) => setCurrentItem({...currentItem, unitPrice: val})}
                       className="h-9"
                       data-testid="input-unit-price"
                     />
@@ -2926,13 +2919,10 @@ export default function CreatePurchase() {
                   <div className="space-y-1">
                     <Label htmlFor="weight" className="text-xs">{t('weight')}</Label>
                     <div className="flex gap-1">
-                      <Input
+                      <DecimalInput
                         id="weight"
-                        type="number"
-                        step="0.01"
-                        value={currentItem.weight}
-                        onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
-                        onFocus={(e) => e.target.select()}
+                        value={currentItem.weight || 0}
+                        onChange={(val) => setCurrentItem({...currentItem, weight: val})}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -3263,9 +3253,10 @@ export default function CreatePurchase() {
                                     value={variant.unitPrice}
                                     onChange={(e) => {
                                       setVariants(variants.map(v => 
-                                        v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
+                                        v.id === variant.id ? {...v, unitPrice: parseDecimal(e.target.value)} : v
                                       ));
                                     }}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onFocus={(e) => e.target.select()}
                                     className="h-6 w-16 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
@@ -3279,9 +3270,10 @@ export default function CreatePurchase() {
                                     value={variant.weight}
                                     onChange={(e) => {
                                       setVariants(variants.map(v => 
-                                        v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
+                                        v.id === variant.id ? {...v, weight: parseDecimal(e.target.value)} : v
                                       ));
                                     }}
+                                    onKeyDown={handleDecimalKeyDown}
                                     onFocus={(e) => e.target.select()}
                                     className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
@@ -3568,11 +3560,13 @@ export default function CreatePurchase() {
                                       type="number"
                                       value={item.unitPrice}
                                       onChange={(e) => {
+                                        const newPrice = parseDecimal(e.target.value);
                                         const updatedItems = items.map(i => 
-                                          i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                          i.id === item.id ? {...i, unitPrice: newPrice, totalPrice: i.quantity * newPrice} : i
                                         );
                                         updateItemsWithShipping(updatedItems);
                                       }}
+                                      onKeyDown={handleDecimalKeyDown}
                                       onFocus={(e) => e.target.select()}
                                       className="h-7 w-20 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       step="0.01"
@@ -3591,10 +3585,11 @@ export default function CreatePurchase() {
                                       value={item.weight}
                                       onChange={(e) => {
                                         const updatedItems = items.map(i => 
-                                          i.id === item.id ? {...i, weight: parseFloat(e.target.value) || 0} : i
+                                          i.id === item.id ? {...i, weight: parseDecimal(e.target.value)} : i
                                         );
                                         setItems(updatedItems);
                                       }}
+                                      onKeyDown={handleDecimalKeyDown}
                                       onFocus={(e) => e.target.select()}
                                       className="h-7 w-16 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       step="0.01"
@@ -3815,10 +3810,11 @@ export default function CreatePurchase() {
                                   value={item.weight}
                                   onChange={(e) => {
                                     const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, weight: parseFloat(e.target.value) || 0} : i
+                                      i.id === item.id ? {...i, weight: parseDecimal(e.target.value)} : i
                                     );
                                     setItems(updatedItems);
                                   }}
+                                  onKeyDown={handleDecimalKeyDown}
                                   onFocus={(e) => e.target.select()}
                                   className="h-7 w-16 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   step="0.01"
@@ -3861,11 +3857,13 @@ export default function CreatePurchase() {
                                 type="number"
                                 value={item.unitPrice}
                                 onChange={(e) => {
+                                  const newPrice = parseDecimal(e.target.value);
                                   const updatedItems = items.map(i => 
-                                    i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                    i.id === item.id ? {...i, unitPrice: newPrice, totalPrice: i.quantity * newPrice} : i
                                   );
                                   updateItemsWithShipping(updatedItems);
                                 }}
+                                onKeyDown={handleDecimalKeyDown}
                                 onFocus={(e) => e.target.select()}
                                 className="h-7 w-20 text-sm text-right border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 step="0.01"
@@ -4724,12 +4722,9 @@ export default function CreatePurchase() {
               </div>
               <div className="space-y-2">
                 <Label>{t('unitPrice')}</Label>
-                <Input
-                  type="number"
+                <DecimalInput
                   value={newVariant.unitPrice}
-                  onChange={(e) => setNewVariant({...newVariant, unitPrice: parseFloat(e.target.value) || 0})}
-                  onFocus={(e) => e.target.select()}
-                  step="0.01"
+                  onChange={(val) => setNewVariant({...newVariant, unitPrice: val})}
                   min="0"
                 />
               </div>
@@ -4737,12 +4732,9 @@ export default function CreatePurchase() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('weight')}</Label>
-                <Input
-                  type="number"
+                <DecimalInput
                   value={newVariant.weight}
-                  onChange={(e) => setNewVariant({...newVariant, weight: parseFloat(e.target.value) || 0})}
-                  onFocus={(e) => e.target.select()}
-                  step="0.01"
+                  onChange={(val) => setNewVariant({...newVariant, weight: val})}
                   min="0"
                 />
               </div>
@@ -4801,24 +4793,18 @@ export default function CreatePurchase() {
               </div>
               <div className="space-y-2">
                 <Label>{t('unitPrice')}</Label>
-                <Input
-                  type="number"
+                <DecimalInput
                   value={seriesUnitPrice}
-                  onChange={(e) => setSeriesUnitPrice(parseFloat(e.target.value) || 0)}
-                  onFocus={(e) => e.target.select()}
-                  step="0.01"
+                  onChange={(val) => setSeriesUnitPrice(val)}
                   min="0"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label>{t('weightPerVariant')}</Label>
-              <Input
-                type="number"
+              <DecimalInput
                 value={seriesWeight}
-                onChange={(e) => setSeriesWeight(parseFloat(e.target.value) || 0)}
-                onFocus={(e) => e.target.select()}
-                step="0.01"
+                onChange={(val) => setSeriesWeight(val)}
                 min="0"
               />
             </div>

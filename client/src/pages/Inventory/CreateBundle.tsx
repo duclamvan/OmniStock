@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { handleDecimalKeyDown, parseDecimal } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, ProductBundle } from '@shared/schema';
 import { normalizeForSKU } from '@/lib/vietnameseSearch';
@@ -602,13 +603,13 @@ export default function CreateBundle() {
         description: data.description || null,
         sku: data.sku || null,
         priceCzk: data.pricingMode === 'manual' && data.priceCzk 
-          ? parseFloat(data.priceCzk) 
+          ? parseDecimal(data.priceCzk) 
           : discountedPrices.czk,
         priceEur: data.pricingMode === 'manual' && data.priceEur 
-          ? parseFloat(data.priceEur) 
+          ? parseDecimal(data.priceEur) 
           : discountedPrices.eur,
         discountPercentage: data.pricingMode === 'percentage' 
-          ? parseFloat(data.discountPercentage || '0') 
+          ? parseDecimal(data.discountPercentage || '0') 
           : 0,
         notes: data.notes || null,
         imageUrl: data.imageUrl || null,
@@ -862,23 +863,23 @@ export default function CreateBundle() {
   const calculateDiscountedPrice = (baseCzk: number, baseEur: number) => {
     switch (formData.pricingMode) {
       case 'percentage': {
-        const discount = parseFloat(formData.discountPercentage || '0');
+        const discount = parseDecimal(formData.discountPercentage || '0');
         return {
           czk: baseCzk * (1 - discount / 100),
           eur: baseEur * (1 - discount / 100)
         };
       }
       case 'fixed': {
-        const fixedCzk = parseFloat(formData.discountFixedCzk || '0');
-        const fixedEur = parseFloat(formData.discountFixedEur || '0');
+        const fixedCzk = parseDecimal(formData.discountFixedCzk || '0');
+        const fixedEur = parseDecimal(formData.discountFixedEur || '0');
         return {
           czk: Math.max(0, baseCzk - fixedCzk),
           eur: Math.max(0, baseEur - fixedEur)
         };
       }
       case 'per_item': {
-        const perItemCzk = parseFloat(formData.perItemDiscountCzk || '0');
-        const perItemEur = parseFloat(formData.perItemDiscountEur || '0');
+        const perItemCzk = parseDecimal(formData.perItemDiscountCzk || '0');
+        const perItemEur = parseDecimal(formData.perItemDiscountEur || '0');
         const totalItems = formData.items.reduce((sum, item) => {
           const variantCount = item.variantIds?.length || 1;
           return sum + (item.quantity * variantCount);
@@ -889,8 +890,8 @@ export default function CreateBundle() {
         };
       }
       case 'set_per_item': {
-        const setPriceCzk = parseFloat(formData.setPerItemPriceCzk || '0');
-        const setPriceEur = parseFloat(formData.setPerItemPriceEur || '0');
+        const setPriceCzk = parseDecimal(formData.setPerItemPriceCzk || '0');
+        const setPriceEur = parseDecimal(formData.setPerItemPriceEur || '0');
         const totalItems = formData.items.reduce((sum, item) => {
           const variantCount = item.variantIds?.length || 1;
           return sum + (item.quantity * variantCount);
@@ -901,8 +902,8 @@ export default function CreateBundle() {
         };
       }
       case 'manual': {
-        const manualCzk = parseFloat(formData.priceCzk || '0');
-        const manualEur = parseFloat(formData.priceEur || '0');
+        const manualCzk = parseDecimal(formData.priceCzk || '0');
+        const manualEur = parseDecimal(formData.priceEur || '0');
         return {
           czk: manualCzk || baseCzk,
           eur: manualEur || baseEur
@@ -1291,6 +1292,7 @@ export default function CreateBundle() {
                     step="0.01"
                     value={formData.discountPercentage}
                     onChange={(e) => setFormData(prev => ({ ...prev, discountPercentage: e.target.value }))}
+                    onKeyDown={handleDecimalKeyDown}
                     placeholder="0"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -1310,6 +1312,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.discountFixedCzk}
                       onChange={(e) => setFormData(prev => ({ ...prev, discountFixedCzk: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1322,6 +1325,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.discountFixedEur}
                       onChange={(e) => setFormData(prev => ({ ...prev, discountFixedEur: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1342,6 +1346,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.perItemDiscountCzk}
                       onChange={(e) => setFormData(prev => ({ ...prev, perItemDiscountCzk: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1354,6 +1359,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.perItemDiscountEur}
                       onChange={(e) => setFormData(prev => ({ ...prev, perItemDiscountEur: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1374,6 +1380,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.setPerItemPriceCzk}
                       onChange={(e) => setFormData(prev => ({ ...prev, setPerItemPriceCzk: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1386,6 +1393,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.setPerItemPriceEur}
                       onChange={(e) => setFormData(prev => ({ ...prev, setPerItemPriceEur: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder="0"
                     />
                   </div>
@@ -1416,6 +1424,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.priceCzk}
                       onChange={(e) => setFormData(prev => ({ ...prev, priceCzk: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder={totals.totalCzk.toFixed(2)}
                     />
                   </div>
@@ -1428,6 +1437,7 @@ export default function CreateBundle() {
                       step="0.01"
                       value={formData.priceEur}
                       onChange={(e) => setFormData(prev => ({ ...prev, priceEur: e.target.value }))}
+                      onKeyDown={handleDecimalKeyDown}
                       placeholder={totals.totalEur.toFixed(2)}
                     />
                   </div>

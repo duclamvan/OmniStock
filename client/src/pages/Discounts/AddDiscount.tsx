@@ -29,7 +29,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
@@ -625,11 +626,12 @@ export default function AddDiscount() {
               <div>
                 <Label>{t('discounts:discountPercentage')} {t('discounts:required')}</Label>
                 <div className="flex items-center gap-2 mt-2">
-                  <Input 
-                    type="number"
+                  <DecimalInput 
                     min="1"
                     max="100"
-                    {...form.register("percentage", { valueAsNumber: true })}
+                    step="0.01"
+                    value={form.watch('percentage') || ''}
+                    onChange={(value) => form.setValue('percentage', value)}
                     placeholder={t('discounts:placeholderPercentage')}
                     className="max-w-[120px]"
                     data-testid="input-percentage"
@@ -654,9 +656,10 @@ export default function AddDiscount() {
                         min="0.01"
                         step="0.01"
                         value={form.watch('fixedAmount') || ''}
+                        onKeyDown={handleDecimalKeyDown}
                         onChange={(e) => {
-                          const czkValue = parseFloat(e.target.value);
-                          if (!isNaN(czkValue)) {
+                          const czkValue = parseDecimal(e.target.value);
+                          if (czkValue > 0) {
                             form.setValue('fixedAmount', czkValue);
                             
                             if (czkTimeoutRef.current) {
@@ -686,9 +689,10 @@ export default function AddDiscount() {
                         min="0.01"
                         step="0.01"
                         value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? ((form.watch('fixedAmount') ?? 0) / 25).toFixed(2) : '')}
+                        onKeyDown={handleDecimalKeyDown}
                         onChange={(e) => {
-                          const eurValue = parseFloat(e.target.value);
-                          if (!isNaN(eurValue)) {
+                          const eurValue = parseDecimal(e.target.value);
+                          if (eurValue > 0) {
                             form.setValue('fixedAmountEur', eurValue);
                             
                             if (eurTimeoutRef.current) {

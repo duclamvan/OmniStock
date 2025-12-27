@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -582,13 +584,13 @@ export default function ProductForm() {
 
         switch (sourceCurrency) {
           case 'USD':
-            sourceValue = parseFloat(seriesImportCostUsd) || 0;
+            sourceValue = parseDecimal(seriesImportCostUsd) || 0;
             break;
           case 'CZK':
-            sourceValue = parseFloat(seriesImportCostCzk) || 0;
+            sourceValue = parseDecimal(seriesImportCostCzk) || 0;
             break;
           case 'EUR':
-            sourceValue = parseFloat(seriesImportCostEur) || 0;
+            sourceValue = parseDecimal(seriesImportCostEur) || 0;
             break;
         }
 
@@ -680,13 +682,13 @@ export default function ProductForm() {
 
         switch (sourceCurrency) {
           case 'USD':
-            sourceValue = parseFloat(newVariant.importCostUsd) || 0;
+            sourceValue = parseDecimal(newVariant.importCostUsd) || 0;
             break;
           case 'CZK':
-            sourceValue = parseFloat(newVariant.importCostCzk) || 0;
+            sourceValue = parseDecimal(newVariant.importCostCzk) || 0;
             break;
           case 'EUR':
-            sourceValue = parseFloat(newVariant.importCostEur) || 0;
+            sourceValue = parseDecimal(newVariant.importCostEur) || 0;
             break;
         }
 
@@ -734,10 +736,10 @@ export default function ProductForm() {
 
         switch (sourceCurrency) {
           case 'CZK':
-            sourceValue = parseFloat(newVariant.priceCzk) || 0;
+            sourceValue = parseDecimal(newVariant.priceCzk) || 0;
             break;
           case 'EUR':
-            sourceValue = parseFloat(newVariant.priceEur) || 0;
+            sourceValue = parseDecimal(newVariant.priceEur) || 0;
             break;
         }
 
@@ -781,10 +783,10 @@ export default function ProductForm() {
 
         switch (sourceCurrency) {
           case 'CZK':
-            sourceValue = parseFloat(seriesPriceCzk) || 0;
+            sourceValue = parseDecimal(seriesPriceCzk) || 0;
             break;
           case 'EUR':
-            sourceValue = parseFloat(seriesPriceEur) || 0;
+            sourceValue = parseDecimal(seriesPriceEur) || 0;
             break;
         }
 
@@ -2572,12 +2574,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-czk"
                           className="mt-1"
+                          onKeyDown={handleDecimalKeyDown}
                           onChange={(e) => {
                             salesPriceManualRef.current.czk = true;
                             form.register('priceCzk').onChange(e);
                           }}
                           onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = parseDecimal(e.target.value);
                             if (value && value > 0 && !salesPriceManualRef.current.eur) {
                               form.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                             }
@@ -2595,12 +2598,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-price-eur"
                           className="mt-1"
+                          onKeyDown={handleDecimalKeyDown}
                           onChange={(e) => {
                             salesPriceManualRef.current.eur = true;
                             form.register('priceEur').onChange(e);
                           }}
                           onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = parseDecimal(e.target.value);
                             if (value && value > 0 && !salesPriceManualRef.current.czk) {
                               form.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                             }
@@ -2627,12 +2631,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-wholesale-price-czk"
                           className="mt-1"
+                          onKeyDown={handleDecimalKeyDown}
                           onChange={(e) => {
                             wholesalePriceManualRef.current.czk = true;
                             form.register('wholesalePriceCzk').onChange(e);
                           }}
                           onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = parseDecimal(e.target.value);
                             if (value && value > 0 && !wholesalePriceManualRef.current.eur) {
                               form.setValue('wholesalePriceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
                             }
@@ -2650,12 +2655,13 @@ export default function ProductForm() {
                           placeholder="0.00"
                           data-testid="input-wholesale-price-eur"
                           className="mt-1"
+                          onKeyDown={handleDecimalKeyDown}
                           onChange={(e) => {
                             wholesalePriceManualRef.current.eur = true;
                             form.register('wholesalePriceEur').onChange(e);
                           }}
                           onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = parseDecimal(e.target.value);
                             if (value && value > 0 && !wholesalePriceManualRef.current.czk) {
                               form.setValue('wholesalePriceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
                             }
@@ -2683,9 +2689,10 @@ export default function ProductForm() {
                             placeholder="0.00"
                             data-testid="input-cost-usd"
                             className="mt-1"
+                            onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'usd') return;
-                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'usd';
                                 form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
@@ -2708,9 +2715,10 @@ export default function ProductForm() {
                             placeholder="0.00"
                             data-testid="input-cost-czk"
                             className="mt-1"
+                            onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'czk') return;
-                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'czk';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
@@ -2733,9 +2741,10 @@ export default function ProductForm() {
                             placeholder="0.00"
                             data-testid="input-cost-eur"
                             className="mt-1"
+                            onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'eur') return;
-                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'eur';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
@@ -2760,7 +2769,7 @@ export default function ProductForm() {
                             className="mt-1"
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'vnd') return;
-                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'vnd';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
@@ -2783,9 +2792,10 @@ export default function ProductForm() {
                             placeholder="0.00"
                             data-testid="input-cost-cny"
                             className="mt-1"
+                            onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'cny') return;
-                              const value = parseFloat((e.target as HTMLInputElement).value);
+                              const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'cny';
                                 form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
@@ -3477,6 +3487,7 @@ export default function ProductForm() {
                                   onChange={(e) => setNewVariant((prev) => ({ ...prev, priceCzk: e.target.value }))}
                                   placeholder={t('products:variants.optional')}
                                   data-testid="input-variant-price-czk"
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </div>
                               <div>
@@ -3490,6 +3501,7 @@ export default function ProductForm() {
                                   onChange={(e) => setNewVariant((prev) => ({ ...prev, priceEur: e.target.value }))}
                                   placeholder={t('products:variants.optional')}
                                   data-testid="input-variant-price-eur"
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </div>
                             </div>
@@ -3519,6 +3531,7 @@ export default function ProductForm() {
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-usd"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                   <div>
@@ -3532,6 +3545,7 @@ export default function ProductForm() {
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-czk"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                   <div>
@@ -3545,6 +3559,7 @@ export default function ProductForm() {
                                       onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-variant-cost-eur"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                 </div>
@@ -3679,6 +3694,7 @@ export default function ProductForm() {
                                   onChange={(e) => setSeriesPriceCzk(e.target.value)}
                                   placeholder={t('products:variants.optional')}
                                   data-testid="input-series-price-czk"
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </div>
                               <div>
@@ -3692,6 +3708,7 @@ export default function ProductForm() {
                                   onChange={(e) => setSeriesPriceEur(e.target.value)}
                                   placeholder={t('products:variants.optional')}
                                   data-testid="input-series-price-eur"
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </div>
                             </div>
@@ -3721,6 +3738,7 @@ export default function ProductForm() {
                                       onChange={(e) => setSeriesImportCostUsd(e.target.value)}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-usd"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                   <div>
@@ -3734,6 +3752,7 @@ export default function ProductForm() {
                                       onChange={(e) => setSeriesImportCostCzk(e.target.value)}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-czk"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                   <div>
@@ -3747,6 +3766,7 @@ export default function ProductForm() {
                                       onChange={(e) => setSeriesImportCostEur(e.target.value)}
                                       placeholder={t('products:variants.optional')}
                                       data-testid="input-series-cost-eur"
+                                      onKeyDown={handleDecimalKeyDown}
                                     />
                                   </div>
                                 </div>
@@ -4036,6 +4056,7 @@ export default function ProductForm() {
                                   style={{ MozAppearance: 'textfield' } as any}
                                   placeholder="0.00"
                                   data-testid={`input-variant-price-czk-${variant.id}`}
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </TableCell>
                               <TableCell className="text-right">
@@ -4049,6 +4070,7 @@ export default function ProductForm() {
                                   style={{ MozAppearance: 'textfield' } as any}
                                   placeholder="0.00"
                                   data-testid={`input-variant-price-eur-${variant.id}`}
+                                  onKeyDown={handleDecimalKeyDown}
                                 />
                               </TableCell>
                               {canAccessFinancialData && (
@@ -4063,6 +4085,7 @@ export default function ProductForm() {
                                     style={{ MozAppearance: 'textfield' } as any}
                                     placeholder="0.00"
                                     data-testid={`input-variant-cost-usd-${variant.id}`}
+                                    onKeyDown={handleDecimalKeyDown}
                                   />
                                 </TableCell>
                               )}
@@ -4078,6 +4101,7 @@ export default function ProductForm() {
                                     style={{ MozAppearance: 'textfield' } as any}
                                     placeholder="0.00"
                                     data-testid={`input-variant-cost-czk-${variant.id}`}
+                                    onKeyDown={handleDecimalKeyDown}
                                   />
                                 </TableCell>
                               )}
@@ -4093,6 +4117,7 @@ export default function ProductForm() {
                                     style={{ MozAppearance: 'textfield' } as any}
                                     placeholder="0.00"
                                     data-testid={`input-variant-cost-eur-${variant.id}`}
+                                    onKeyDown={handleDecimalKeyDown}
                                   />
                                 </TableCell>
                               )}
@@ -4253,6 +4278,7 @@ export default function ProductForm() {
                               placeholder="17"
                               className="mt-1"
                               data-testid="input-deduction-ratio"
+                              onKeyDown={handleDecimalKeyDown}
                             />
                             <p className="text-xs text-muted-foreground mt-1">{t('products:virtualSku.deductionRatioHelp', 'How many master units to deduct per 1 virtual SKU sold (e.g., 17 jars per bucket)')}</p>
                           </div>
@@ -4301,19 +4327,19 @@ export default function ProductForm() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
                         <Label htmlFor="length" className="text-sm font-medium">{t('products:packing.lengthCm')}</Label>
-                        <Input type="number" step="0.1" min="0" {...form.register('length')} placeholder="0.0" data-testid="input-length" className="mt-1" />
+                        <Input type="number" step="0.1" min="0" {...form.register('length')} placeholder="0.0" data-testid="input-length" className="mt-1" onKeyDown={handleDecimalKeyDown} />
                       </div>
                       <div>
                         <Label htmlFor="width" className="text-sm font-medium">{t('products:packing.widthCm')}</Label>
-                        <Input type="number" step="0.1" min="0" {...form.register('width')} placeholder="0.0" data-testid="input-width" className="mt-1" />
+                        <Input type="number" step="0.1" min="0" {...form.register('width')} placeholder="0.0" data-testid="input-width" className="mt-1" onKeyDown={handleDecimalKeyDown} />
                       </div>
                       <div>
                         <Label htmlFor="height" className="text-sm font-medium">{t('products:packing.heightCm')}</Label>
-                        <Input type="number" step="0.1" min="0" {...form.register('height')} placeholder="0.0" data-testid="input-height" className="mt-1" />
+                        <Input type="number" step="0.1" min="0" {...form.register('height')} placeholder="0.0" data-testid="input-height" className="mt-1" onKeyDown={handleDecimalKeyDown} />
                       </div>
                       <div>
                         <Label htmlFor="weight" className="text-sm font-medium">{t('products:packing.weightKg')}</Label>
-                        <Input type="number" step="0.001" min="0" {...form.register('weight')} placeholder="0.000" data-testid="input-weight" className="mt-1" />
+                        <Input type="number" step="0.001" min="0" {...form.register('weight')} placeholder="0.000" data-testid="input-weight" className="mt-1" onKeyDown={handleDecimalKeyDown} />
                       </div>
                     </div>
                   </div>

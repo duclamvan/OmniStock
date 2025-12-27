@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -353,6 +354,7 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="30"
                             data-testid="input-default_markup_percentage"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_markup_percentage');
@@ -381,6 +383,7 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="10"
                             data-testid="input-minimum_margin_percentage"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('minimum_margin_percentage');
@@ -444,6 +447,7 @@ export default function FinancialSettings() {
                             step="0.01"
                             placeholder="21"
                             data-testid="input-default_vat_rate"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_vat_rate');
@@ -564,6 +568,7 @@ export default function FinancialSettings() {
                             step="0.01"
                             placeholder="21" 
                             data-testid="input-default_tax_rate_czk"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_tax_rate_czk');
@@ -593,6 +598,7 @@ export default function FinancialSettings() {
                             step="0.01"
                             placeholder="19" 
                             data-testid="input-default_tax_rate_eur"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_tax_rate_eur');
@@ -972,6 +978,7 @@ export default function FinancialSettings() {
                             step="0.1"
                             placeholder="0"
                             data-testid="input-late_payment_fee_percentage"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('late_payment_fee_percentage');

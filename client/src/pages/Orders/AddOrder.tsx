@@ -10,6 +10,8 @@ import { FixedSizeList as List } from "react-window";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { MathInput } from "@/components/ui/math-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -6607,12 +6609,11 @@ export default function AddOrder() {
                           <SelectItem value="rate">{t('orders:percentage')}</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <DecimalInput
                         min="0"
                         placeholder={form.watch('discountType') === 'rate' ? '0-100' : '0'}
-                        {...form.register('discountValue', { valueAsNumber: true })}
+                        value={form.watch('discountValue') || 0}
+                        onChange={(value) => form.setValue('discountValue', value)}
                         className="flex-1"
                       />
                       {form.watch('discountType') === 'rate' && (
@@ -6674,17 +6675,14 @@ export default function AddOrder() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
               <div className="col-span-2 sm:col-span-1">
                 <Label htmlFor="shippingCost" className="text-xs sm:text-sm">{t('orders:shippingCost')}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...form.register('shippingCost', { valueAsNumber: true })}
-                  onChange={(e) => {
-                    // Mark as manually edited to prevent auto-recalculation
+                <DecimalInput
+                  value={form.watch('shippingCost') || 0}
+                  onChange={(value) => {
                     shippingCostManuallyEditedRef.current = true;
-                    // Trigger form update
-                    form.setValue('shippingCost', parseFloat(e.target.value) || 0);
+                    form.setValue('shippingCost', value);
                   }}
                   onKeyDown={(e) => {
+                    handleDecimalKeyDown(e);
                     if (e.key === 'Enter' || e.key === 'Tab') {
                       e.preventDefault();
                       submitButtonRef.current?.click();
@@ -6733,10 +6731,9 @@ export default function AddOrder() {
 
               <div>
                 <Label htmlFor="actualShippingCost" className="text-xs sm:text-sm">{t('orders:actualShippingCost')}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...form.register('actualShippingCost', { valueAsNumber: true })}
+                <DecimalInput
+                  value={form.watch('actualShippingCost') || 0}
+                  onChange={(value) => form.setValue('actualShippingCost', value)}
                   className="mt-1 h-10 sm:h-9"
                   data-testid="input-actual-shipping-cost"
                 />
@@ -6745,10 +6742,9 @@ export default function AddOrder() {
 
               <div>
                 <Label htmlFor="adjustment" className="text-xs sm:text-sm">{t('orders:adjustment')}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...form.register('adjustment', { valueAsNumber: true })}
+                <DecimalInput
+                  value={form.watch('adjustment') || 0}
+                  onChange={(value) => form.setValue('adjustment', value)}
                   className="mt-1 h-10 sm:h-9"
                   data-testid="input-adjustment"
                 />
@@ -6766,12 +6762,11 @@ export default function AddOrder() {
                     <Label htmlFor="codAmount" className="text-xs sm:text-sm">
                       {form.watch('shippingMethod') === 'DHL DE' ? 'Nachnahme (COD)' : 'Dobírka Amount (COD)'}
                     </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <DecimalInput
                       min="0"
                       placeholder="0.00"
-                      {...form.register('codAmount', { valueAsNumber: true })}
+                      value={form.watch('codAmount') || 0}
+                      onChange={(value) => form.setValue('codAmount', value)}
                       className="mt-1 h-10 sm:h-9"
                       data-testid="input-dobirka-amount"
                     />
@@ -6903,11 +6898,10 @@ export default function AddOrder() {
 
                       <div>
                         <Label htmlFor="taxRate" className="text-xs sm:text-sm">Tax Rate (%)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <DecimalInput
                           max="100"
-                          {...form.register('taxRate', { valueAsNumber: true })}
+                          value={form.watch('taxRate') || 0}
+                          onChange={(value) => form.setValue('taxRate', value)}
                           placeholder="21"
                           className="h-10 sm:h-9 text-sm"
                         />
@@ -6979,11 +6973,10 @@ export default function AddOrder() {
 
                       <div>
                         <Label htmlFor="taxRate">Tax Rate (%)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <DecimalInput
                           max="100"
-                          {...form.register('taxRate', { valueAsNumber: true })}
+                          value={form.watch('taxRate') || 0}
+                          onChange={(value) => form.setValue('taxRate', value)}
                           placeholder="20"
                         />
                       </div>

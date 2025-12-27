@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2, ClipboardCheck, Warehouse, ShieldCheck, Ruler, Image, Check, RotateCcw, Plus, Trash2, Edit2, Save, X, AlertTriangle } from "lucide-react";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 import { useSettings, DEFAULT_RETURN_TYPES, ReturnTypeConfig, DEFAULT_BULK_UNITS, BulkUnitConfig } from "@/contexts/SettingsContext";
 import { useQuery } from "@tanstack/react-query";
 import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
@@ -691,6 +692,7 @@ export default function InventorySettings() {
                             min="0"
                             placeholder={t('settings:lowStockThresholdPlaceholder', 'e.g., 10')} 
                             data-testid="input-low_stock_threshold"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('low_stock_threshold');
@@ -719,6 +721,7 @@ export default function InventorySettings() {
                             max="100"
                             placeholder={t('settings:defaultLowStockPercentagePlaceholder', 'e.g. 45')} 
                             data-testid="input-default_low_stock_percentage"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_low_stock_percentage');
@@ -746,6 +749,7 @@ export default function InventorySettings() {
                             min="0"
                             placeholder={t('settings:defaultLowStockAmountPlaceholder', 'e.g. 50')} 
                             data-testid="input-default_low_stock_amount"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('default_low_stock_amount');
@@ -773,6 +777,7 @@ export default function InventorySettings() {
                             min="0"
                             placeholder={t('settings:autoReorderPointPlaceholder', 'e.g., 20')} 
                             data-testid="input-auto_reorder_point"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('auto_reorder_point');
@@ -800,6 +805,7 @@ export default function InventorySettings() {
                             min="0"
                             placeholder={t('settings:safetyStockLevelPlaceholder', 'e.g., 5')} 
                             data-testid="input-safety_stock_level"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('safety_stock_level');
@@ -1180,6 +1186,7 @@ export default function InventorySettings() {
                             max="100"
                             placeholder="10" 
                             data-testid="input-qc_sampling_rate"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('qc_sampling_rate');

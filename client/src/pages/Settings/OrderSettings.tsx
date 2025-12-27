@@ -18,6 +18,7 @@ import ServiceSettings from "./ServiceSettings";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { useSettingsAutosave, SaveStatus } from "@/hooks/useSettingsAutosave";
+import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
 
 const formSchema = z.object({
   // Order Defaults
@@ -941,6 +942,7 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-minimum_order_value"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('minimum_order_value');
@@ -1309,6 +1311,7 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-cod_fee_percentage"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('cod_fee_percentage');
@@ -1336,6 +1339,7 @@ export default function OrderSettings() {
                             {...field}
                             value={field.value ?? ''}
                             data-testid="input-cod_fee_fixed_amount"
+                            onKeyDown={handleDecimalKeyDown}
                             onChange={(e) => {
                               field.onChange(e);
                               markPendingChange('cod_fee_fixed_amount');
