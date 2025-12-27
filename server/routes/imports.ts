@@ -6451,25 +6451,17 @@ router.get("/receipts/:id", async (req, res) => {
       .where(eq(landedCosts.receiptId, receiptId));
 
     // Fetch landing cost allocation per item if shipment has costs
+    // Uses COMPREHENSIVE COST AGGREGATION: Collect ALL costs from entire workflow
     let itemsWithLandingCosts = itemsWithDetails;
     if (shipment) {
       try {
-        // Get shipment costs
-        const costs = await db
-          .select()
-          .from(shipmentCosts)
-          .where(eq(shipmentCosts.shipmentId, shipment.id));
+        // Use aggregated costs from all sources (shipmentCosts + PO shipping + duty rates)
+        const aggregatedCosts = await aggregateAllUpstreamCosts(shipment.id);
+        const costsByType = aggregatedCosts.costsByType;
         
-        if (costs.length > 0) {
-          // Calculate total costs by type
-          const costsByType = costs.reduce((acc, cost) => {
-            if (!acc[cost.type]) {
-              acc[cost.type] = 0;
-            }
-            acc[cost.type] += Number(cost.amountBase || 0);
-            return acc;
-          }, {} as Record<string, number>);
-
+        const hasCosts = Object.values(costsByType).some(v => v > 0);
+        
+        if (hasCosts) {
           // Get allocation breakdown
           const allocations = await getItemAllocationBreakdown(shipment.id, costsByType);
           
@@ -11510,20 +11502,10 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
     // Get shipment metrics for preview
     const metrics = await landingCostService.getShipmentMetrics(shipmentId);
     
-    // Fetch costs for preview
-    const costs = await db
-      .select()
-      .from(shipmentCosts)
-      .where(eq(shipmentCosts.shipmentId, shipmentId));
-    
-    // Calculate total costs by type
-    const costsByType = costs.reduce((acc, cost) => {
-      if (!acc[cost.type]) {
-        acc[cost.type] = 0;
-      }
-      acc[cost.type] += Number(cost.amountBase || 0);
-      return acc;
-    }, {} as Record<string, number>);
+    // COMPREHENSIVE COST AGGREGATION: Collect ALL costs from entire workflow
+    // This includes: shipmentCosts + PO shipping + per-item duty rates + consolidation costs
+    const aggregatedCosts = await aggregateAllUpstreamCosts(shipmentId);
+    const costsByType = aggregatedCosts.costsByType;
 
     // Get item allocation breakdown
     const items = await getItemAllocationBreakdown(shipmentId, costsByType);
@@ -11551,7 +11533,11 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
         other: costsByType['OTHER'] || 0,
         total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
       },
-      message: "This is a preview using auto-selected weight-based allocation. Use /calculate-landing-costs to save allocations."
+      // Include cost breakdown for transparency
+      costSources: aggregatedCosts.costBreakdown,
+      costWarnings: aggregatedCosts.warnings,
+      currencyNotes: aggregatedCosts.currencyNotes,
+      message: "Preview includes costs from: shipment costs, PO shipping, per-item duty rates. Use /calculate-landing-costs to save allocations."
     };
     
     // Filter financial data based on user role
@@ -11591,20 +11577,10 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
     // Get shipment metrics for preview
     const metrics = await landingCostService.getShipmentMetrics(shipmentId);
     
-    // Fetch costs for preview
-    const costs = await db
-      .select()
-      .from(shipmentCosts)
-      .where(eq(shipmentCosts.shipmentId, shipmentId));
-    
-    // Calculate total costs by type
-    const costsByType = costs.reduce((acc, cost) => {
-      if (!acc[cost.type]) {
-        acc[cost.type] = 0;
-      }
-      acc[cost.type] += Number(cost.amountBase || 0);
-      return acc;
-    }, {} as Record<string, number>);
+    // COMPREHENSIVE COST AGGREGATION: Collect ALL costs from entire workflow
+    // This includes: shipmentCosts + PO shipping + per-item duty rates + consolidation costs
+    const aggregatedCosts = await aggregateAllUpstreamCosts(shipmentId);
+    const costsByType = aggregatedCosts.costsByType;
 
     // Get item allocation breakdown using specified method
     const items = await getItemAllocationBreakdownWithMethod(shipmentId, costsByType, method);
@@ -11632,7 +11608,11 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
         other: costsByType['OTHER'] || 0,
         total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
       },
-      message: `Preview using ${method} allocation method. Use /calculate-landing-costs to save allocations.`
+      // Include cost breakdown for transparency
+      costSources: aggregatedCosts.costBreakdown,
+      costWarnings: aggregatedCosts.warnings,
+      currencyNotes: aggregatedCosts.currencyNotes,
+      message: `Preview using ${method} allocation. Includes costs from: shipment costs, PO shipping, per-item duty rates.`
     };
     
     // Filter financial data based on user role
@@ -11705,8 +11685,257 @@ router.patch("/shipments/:id/allocation-method", async (req, res) => {
   }
 });
 
+// ============================================================================
+// COMPREHENSIVE COST AGGREGATION
+// ============================================================================
+// This function collects ALL costs from the entire import workflow:
+// 1. shipmentCosts table (manually entered costs at shipment level)
+// 2. importPurchases.shippingCost (PO-level shipping costs)
+// 3. purchaseItems.dutyRatePercent (per-item duty rates applied to item values)
+// 4. consolidation-level costs (if any)
+// 
+// All costs are normalized to EUR (base currency) for consistent allocation
+
+interface AggregatedCostResult {
+  costsByType: Record<string, number>;
+  costBreakdown: {
+    shipmentCosts: Record<string, number>;
+    poShippingCosts: number;
+    itemDutyCosts: number;
+    consolidationCosts: number;
+  };
+  warnings: string[];
+  currencyNotes: string[];
+}
+
+// Default exchange rates for fallback (to EUR)
+const DEFAULT_FX_RATES: Record<string, number> = {
+  'EUR': 1.0,
+  'USD': 0.92,
+  'CZK': 0.04,
+  'CNY': 0.13,
+  'VND': 0.000038,
+  'GBP': 1.17
+};
+
+async function aggregateAllUpstreamCosts(shipmentId: string): Promise<AggregatedCostResult> {
+  const warnings: string[] = [];
+  const currencyNotes: string[] = [];
+  
+  // Initialize cost buckets
+  const costsByType: Record<string, number> = {
+    'FREIGHT': 0,
+    'DUTY': 0,
+    'BROKERAGE': 0,
+    'INSURANCE': 0,
+    'PACKAGING': 0,
+    'OTHER': 0
+  };
+  
+  const costBreakdown = {
+    shipmentCosts: {} as Record<string, number>,
+    poShippingCosts: 0,
+    itemDutyCosts: 0,
+    consolidationCosts: 0
+  };
+  
+  try {
+    // 1. Get shipment and consolidation info
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment?.consolidationId) {
+      warnings.push('No consolidation found for shipment');
+      return { costsByType, costBreakdown, warnings, currencyNotes };
+    }
+    
+    // 2. Collect costs from shipmentCosts table (existing manual costs)
+    const shipmentCostsData = await db
+      .select()
+      .from(shipmentCosts)
+      .where(eq(shipmentCosts.shipmentId, shipmentId));
+    
+    for (const cost of shipmentCostsData) {
+      const amountEUR = Number(cost.amountBase || 0);
+      const costType = cost.type || 'OTHER';
+      
+      costsByType[costType] = (costsByType[costType] || 0) + amountEUR;
+      costBreakdown.shipmentCosts[costType] = (costBreakdown.shipmentCosts[costType] || 0) + amountEUR;
+    }
+    
+    // 3. Get all custom items in the consolidation
+    const consolidationItemsData = await db
+      .select({
+        item: customItems
+      })
+      .from(consolidationItems)
+      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+    
+    // 4. Trace items back to purchase orders to collect PO-level shipping costs
+    const purchaseOrderIds = new Set<string>();
+    const itemValuesByPO: Record<string, number> = {};
+    const allPurchaseItemIds: string[] = [];
+    
+    for (const row of consolidationItemsData) {
+      const item = row.item;
+      const itemValue = Number(item.unitPrice || 0) * item.quantity;
+      
+      if (item.purchaseOrderId) {
+        purchaseOrderIds.add(item.purchaseOrderId);
+        itemValuesByPO[item.purchaseOrderId] = (itemValuesByPO[item.purchaseOrderId] || 0) + itemValue;
+      }
+      
+      // Collect purchaseItemIds for batch query (avoid N+1)
+      if (item.orderItems) {
+        try {
+          const orderItemsArray = typeof item.orderItems === 'string' 
+            ? JSON.parse(item.orderItems) 
+            : item.orderItems;
+          if (Array.isArray(orderItemsArray)) {
+            for (const oi of orderItemsArray) {
+              if (oi.purchaseItemId) allPurchaseItemIds.push(oi.purchaseItemId);
+            }
+          }
+        } catch (e) { /* ignore parse errors */ }
+      }
+    }
+    
+    // 5. Fetch ALL purchase orders at once (batch query)
+    const poMap: Record<string, typeof importPurchases.$inferSelect> = {};
+    if (purchaseOrderIds.size > 0) {
+      const purchaseOrdersData = await db
+        .select()
+        .from(importPurchases)
+        .where(inArray(importPurchases.id, Array.from(purchaseOrderIds)));
+      
+      for (const po of purchaseOrdersData) {
+        poMap[po.id] = po;
+        
+        const poShippingCost = Number(po.shippingCost || 0);
+        if (poShippingCost > 0) {
+          // Use stored exchange rate if available, fallback to defaults
+          const currency = po.shippingCurrency || 'USD';
+          let amountEUR = poShippingCost;
+          
+          if (currency !== 'EUR') {
+            // Prefer stored exchangeRate, fallback to default
+            const fxRate = Number(po.exchangeRate) > 0 
+              ? Number(po.exchangeRate) 
+              : (DEFAULT_FX_RATES[currency] || 1);
+            amountEUR = poShippingCost * fxRate;
+            currencyNotes.push(`PO ${po.id.slice(-6)}: ${poShippingCost} ${currency} → ${amountEUR.toFixed(2)} EUR (rate: ${fxRate})`);
+          }
+          
+          // Calculate proportion using purchaseTotal (excludes shipping) not totalCost (includes shipping)
+          const poValueInShipment = itemValuesByPO[po.id] || 0;
+          // Use purchaseTotal to avoid double-counting shipping in the proportion
+          const poSubtotal = Number(po.purchaseTotal || 0) || poValueInShipment;
+          const proportion = poSubtotal > 0 ? poValueInShipment / poSubtotal : 1;
+          
+          // Only allocate the proportion of shipping that corresponds to items in this shipment
+          const allocatedShippingEUR = amountEUR * Math.min(proportion, 1); // Cap at 100%
+          
+          costsByType['FREIGHT'] += allocatedShippingEUR;
+          costBreakdown.poShippingCosts += allocatedShippingEUR;
+          
+          if (proportion < 1) {
+            currencyNotes.push(`PO ${po.id.slice(-6)}: Allocated ${(proportion * 100).toFixed(1)}% of shipping (${allocatedShippingEUR.toFixed(2)} EUR)`);
+          }
+        }
+      }
+    }
+    
+    // 6. Batch fetch all purchaseItems at once to avoid N+1 queries
+    const purchaseItemsMap: Record<string, typeof purchaseItems.$inferSelect> = {};
+    if (allPurchaseItemIds.length > 0) {
+      const uniquePurchaseItemIds = [...new Set(allPurchaseItemIds)];
+      const purchaseItemsData = await db
+        .select()
+        .from(purchaseItems)
+        .where(inArray(purchaseItems.id, uniquePurchaseItemIds));
+      
+      for (const pi of purchaseItemsData) {
+        purchaseItemsMap[pi.id] = pi;
+      }
+    }
+    
+    // 7. Calculate per-item duty costs using pre-fetched data (no N+1)
+    for (const row of consolidationItemsData) {
+      const item = row.item;
+      
+      // Parse orderItems to find linked purchaseItems with duty rates
+      let orderItemsArray: any[] = [];
+      if (item.orderItems) {
+        try {
+          if (typeof item.orderItems === 'string') {
+            orderItemsArray = JSON.parse(item.orderItems);
+          } else if (Array.isArray(item.orderItems)) {
+            orderItemsArray = item.orderItems;
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+      
+      for (const oi of orderItemsArray) {
+        if (!oi.purchaseItemId) continue;
+        
+        const pi = purchaseItemsMap[oi.purchaseItemId];
+        if (!pi) continue;
+        
+        const dutyRatePercent = Number(pi.dutyRatePercent || 0);
+        if (dutyRatePercent > 0) {
+          const qty = oi.quantity || pi.quantity || 1;
+          const piValue = Number(pi.unitPrice || 0) * qty;
+          
+          // Calculate duty based on item value and rate
+          const dutyAmount = piValue * (dutyRatePercent / 100);
+          
+          // Use parent PO from pre-fetched map
+          const parentPO = poMap[pi.purchaseId];
+          const currency = parentPO?.purchaseCurrency || 'USD';
+          let dutyEUR = dutyAmount;
+          
+          if (currency !== 'EUR') {
+            // Use stored exchangeRate if available
+            const fxRate = parentPO && Number(parentPO.exchangeRate) > 0
+              ? Number(parentPO.exchangeRate)
+              : (DEFAULT_FX_RATES[currency] || 1);
+            dutyEUR = dutyAmount * fxRate;
+          }
+          
+          costsByType['DUTY'] += dutyEUR;
+          costBreakdown.itemDutyCosts += dutyEUR;
+          
+          currencyNotes.push(`Item ${pi.name?.slice(0, 20) || pi.sku || 'unknown'}: ${dutyRatePercent}% duty = ${dutyEUR.toFixed(2)} EUR`);
+        }
+      }
+    }
+    
+    // 8. Check consolidation for any associated costs (future enhancement)
+    // Currently consolidations don't have direct cost fields, but this is where we'd add them
+    
+    console.log('[LandingCost] Aggregated costs from all sources:', {
+      shipmentId,
+      costsByType,
+      breakdown: costBreakdown,
+      warnings: warnings.length,
+      currencyNotes: currencyNotes.length
+    });
+    
+  } catch (error) {
+    console.error('[LandingCost] Error aggregating upstream costs:', error);
+    warnings.push(`Error collecting upstream costs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+  
+  return { costsByType, costBreakdown, warnings, currencyNotes };
+}
+
 // Helper function to get detailed allocation breakdown per item
-async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
+async function getItemAllocationBreakdown(shipmentId: string | number, costsByType: Record<string, number>): Promise<any[]> {
   try {
     // Get consolidation ID
     const [shipment] = await db
@@ -11884,7 +12113,7 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
 
 // Enhanced helper function that uses specific allocation methods from LandingCostService
 async function getItemAllocationBreakdownWithMethod(
-  shipmentId: number, 
+  shipmentId: string | number, 
   costsByType: Record<string, number>, 
   method: string
 ): Promise<any[]> {
