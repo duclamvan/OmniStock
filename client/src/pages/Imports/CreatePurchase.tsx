@@ -2914,7 +2914,7 @@ export default function CreatePurchase() {
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantPrice') || 'Price'}:</Label>
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantCost') || 'Cost'}:</Label>
                           <DecimalInput
                             className="h-8 w-24"
                             value={allocation.unitPrice}
@@ -2923,10 +2923,10 @@ export default function CreatePurchase() {
                                 prev.map((a, i) => i === idx ? { ...a, unitPrice: val } : a)
                               );
                             }}
-                            data-testid={`input-variant-price-${idx}`}
+                            data-testid={`input-variant-cost-${idx}`}
                           />
                         </div>
-                        <span className="text-xs text-muted-foreground min-w-[60px] text-right">
+                        <span className="text-xs text-muted-foreground min-w-[70px] text-right">
                           = {formatCurrency(allocation.quantity * allocation.unitPrice, purchaseCurrency)}
                         </span>
                       </div>

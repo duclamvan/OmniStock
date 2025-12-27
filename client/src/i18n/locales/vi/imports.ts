@@ -2124,6 +2124,7 @@ const imports = {
   variantAllocations: 'Phân bổ biến thể',
   variantQty: 'SL',
   variantPrice: 'Giá',
+  variantCost: 'Giá nhập',
   variantTotalQuantity: 'Tổng',
   variantTotalValue: 'Tổng giá trị',
   pleaseAllocateVariantQuantities: 'Vui lòng phân bổ số lượng cho ít nhất một biến thể',

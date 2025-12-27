@@ -2172,6 +2172,7 @@ const imports = {
   variantAllocations: 'Variant Allocations',
   variantQty: 'Qty',
   variantPrice: 'Price',
+  variantCost: 'Cost',
   variantTotalQuantity: 'Total',
   variantTotalValue: 'Total Value',
   pleaseAllocateVariantQuantities: 'Please allocate quantities to at least one variant',
