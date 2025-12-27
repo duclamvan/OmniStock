@@ -1702,6 +1702,8 @@ interface LocationAssignment {
   isPrimary: boolean;
   notes?: string;
   isNew?: boolean;
+  variantId?: string; // For variant-specific location tracking
+  variantName?: string; // Display name for variant
 }
 
 // Variant allocation for products with variants
@@ -2237,15 +2239,16 @@ function QuickStorageSheet({
   
   // Store location mutation
   const storeLocationMutation = useMutation({
-    mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary, receiptItemId }: {
+    mutationFn: async ({ productId, locationCode, locationType, quantity, isPrimary, receiptItemId, variantId }: {
       productId: string;
       locationCode: string;
       locationType: string;
       quantity: number;
       isPrimary: boolean;
       receiptItemId?: number | string;
+      variantId?: string; // For variant-specific location tracking
     }) => {
-      return apiRequest('POST', `/api/products/${productId}/locations`, { locationCode, locationType, quantity, isPrimary, receiptItemId });
+      return apiRequest('POST', `/api/products/${productId}/locations`, { locationCode, locationType, quantity, isPrimary, receiptItemId, variantId });
     },
     onSuccess: (data, variables) => {
       // Force immediate refetch to sync cache and UI
@@ -2431,17 +2434,55 @@ function QuickStorageSheet({
     const currentRemaining = currentItem ? 
       Math.max(0, currentItem.receivedQuantity - existingQty - pendingQty) : 0;
     
-    // Add new location to current item - auto-fill quantity with remaining (for ALL locations)
-    const newLocation: LocationAssignment = {
-      id: `new-${Date.now()}`,
-      locationCode: trimmedValue,
-      locationType,
-      quantity: currentRemaining > 0 ? currentRemaining : 0,
-      isPrimary: isFirstLocation
-    };
-    
     const updatedItems = [...items];
-    updatedItems[selectedItemIndex].locations.push(newLocation);
+    
+    // Check if this is a multi-variant item
+    const hasMultipleVariants = currentItem?.variantAllocations && currentItem.variantAllocations.length > 1;
+    
+    if (hasMultipleVariants && currentItem.variantAllocations) {
+      // For multi-variant items, create a separate location entry for each variant
+      // Only add entries for variants with remaining quantity (subtract stored + pending)
+      let addedFirst = false;
+      currentItem.variantAllocations.forEach((variant) => {
+        // Calculate remaining for this specific variant
+        const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+          return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        }, 0) || 0;
+        const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
+          return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        }, 0) || 0;
+        const variantRemaining = Math.max(0, variant.quantity - existingForVariant - pendingForVariant);
+        
+        // Only add if there's remaining quantity for this variant
+        if (variantRemaining > 0) {
+          const newLocation: LocationAssignment = {
+            id: `new-${Date.now()}-${variant.variantId}`,
+            locationCode: trimmedValue,
+            locationType,
+            quantity: variantRemaining,
+            isPrimary: !addedFirst && isFirstLocation, // First variant in first location is primary
+            variantId: variant.variantId,
+            variantName: variant.variantName
+          };
+          updatedItems[selectedItemIndex].locations.push(newLocation);
+          addedFirst = true;
+        }
+      });
+    } else {
+      // Single variant or no variants - use original logic
+      const newLocation: LocationAssignment = {
+        id: `new-${Date.now()}`,
+        locationCode: trimmedValue,
+        locationType,
+        quantity: currentRemaining > 0 ? currentRemaining : 0,
+        isPrimary: isFirstLocation,
+        // Include single variant ID if exists
+        variantId: currentItem?.variantAllocations?.[0]?.variantId,
+        variantName: currentItem?.variantAllocations?.[0]?.variantName
+      };
+      updatedItems[selectedItemIndex].locations.push(newLocation);
+    }
+    
     setItems(updatedItems);
     
     // Play success sound and show feedback
@@ -2519,7 +2560,8 @@ function QuickStorageSheet({
           locationCode: location.locationCode,
           locationType: location.locationType,
           quantity: assignedQty,
-          isPrimary: location.isPrimary
+          isPrimary: location.isPrimary,
+          variantId: location.variantId
         });
         
         // Only update local state after successful mutation
@@ -3090,62 +3132,68 @@ function QuickStorageSheet({
                                     {item.locations.map((loc, locIndex) => (
                                       <div 
                                         key={loc.id}
-                                        className="p-2.5 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/20"
+                                        className="p-2.5 bg-amber-50 dark:bg-amber-950/20"
                                       >
-                                        <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                                        <span className="font-mono text-sm font-medium flex-1 truncate">{loc.locationCode}</span>
-                                        
-                                        <Input
-                                          type="number"
-                                          value={loc.quantity || ''}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            const newQty = parseInt(e.target.value) || 0;
-                                            setItems(prevItems => {
-                                              const updated = [...prevItems];
-                                              const currentItem = updated[index];
-                                              // Use receiving-specific quantity from notes tags
-                                              const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
-                                              const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
-                                              const freshPendingNew = currentItem.locations
-                                                .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
-                                              const freshRemaining = currentItem.receivedQuantity - freshStoredQty - freshPendingExisting - freshPendingNew;
-                                              const maxAllowed = Math.max(0, freshRemaining);
-                                              updated[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
-                                              return updated;
-                                            });
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="w-20 h-9 text-center text-base font-bold rounded-lg"
-                                          min="0"
-                                          placeholder="0"
-                                          data-testid={`input-qty-${locIndex}`}
-                                        />
-                                        
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={(e) => e.stopPropagation()}
-                                              className="h-8 w-8 p-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                                            >
-                                              <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" className="w-40">
-                                            <DropdownMenuItem
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveLocation(locIndex);
-                                              }}
-                                              className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
-                                            >
-                                              <X className="h-4 w-4 mr-2" />
-                                              {t('common:remove')}
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                          <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                          {loc.variantName && (
+                                            <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200 flex-shrink-0">
+                                              {loc.variantName}
+                                            </Badge>
+                                          )}
+                                          <div className="flex-1" />
+                                          <Input
+                                            type="number"
+                                            value={loc.quantity || ''}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              const newQty = parseInt(e.target.value) || 0;
+                                              setItems(prevItems => {
+                                                const updated = [...prevItems];
+                                                const currentItem = updated[index];
+                                                // Use receiving-specific quantity from notes tags
+                                                const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+                                                const freshPendingNew = currentItem.locations
+                                                  .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
+                                                const freshRemaining = currentItem.receivedQuantity - freshStoredQty - freshPendingExisting - freshPendingNew;
+                                                const maxAllowed = Math.max(0, freshRemaining);
+                                                updated[index].locations[locIndex].quantity = Math.min(newQty, maxAllowed);
+                                                return updated;
+                                              });
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-20 h-9 text-center text-base font-bold rounded-lg"
+                                            min="0"
+                                            placeholder="0"
+                                            data-testid={`input-qty-${locIndex}`}
+                                          />
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="h-8 w-8 p-0 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                                              >
+                                                <MoreVertical className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-40">
+                                              <DropdownMenuItem
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRemoveLocation(locIndex);
+                                                }}
+                                                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
+                                              >
+                                                <X className="h-4 w-4 mr-2" />
+                                                {t('common:remove')}
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </div>
                                       </div>
                                     ))}
                                     
@@ -3213,7 +3261,8 @@ function QuickStorageSheet({
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,
                                                     isPrimary: loc.isPrimary,
-                                                    receiptItemId: item.receiptItemId
+                                                    receiptItemId: item.receiptItemId,
+                                                    variantId: loc.variantId
                                                   });
                                                   savedCount++;
                                                   totalSavedQty += loc.quantity;
