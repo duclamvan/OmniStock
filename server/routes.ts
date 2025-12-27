@@ -12021,6 +12021,7 @@ Important:
           orderStatus: orders.orderStatus,
           pickStatus: orders.pickStatus,
           packStatus: orders.packStatus,
+          fulfillmentStage: orders.fulfillmentStage,
           customerId: orders.customerId,
           createdAt: orders.createdAt,
           grandTotal: orders.grandTotal,
@@ -12054,18 +12055,39 @@ Important:
         )
         .orderBy(desc(orders.createdAt));
       
-      // Categorize orders by status
+      // Helper function to determine effective status (same logic as storage.getPickPackStatus)
+      const getEffectiveStatus = (o: any): string => {
+        // If fulfillmentStage is set (new architecture), use it
+        if (o.fulfillmentStage) {
+          if (o.fulfillmentStage === 'picking') return 'picking';
+          if (o.fulfillmentStage === 'packing') return 'packing';
+          if (o.fulfillmentStage === 'ready') return 'ready_to_ship';
+        }
+        // Backward compatibility: fall back to old pick/pack status logic
+        if (o.packStatus === 'completed' && o.pickStatus === 'completed') {
+          return 'ready_to_ship';
+        }
+        if (o.packStatus === 'in_progress' || o.orderStatus === 'packing') {
+          return 'packing';
+        }
+        if (o.pickStatus === 'in_progress' || o.orderStatus === 'picking') {
+          return 'picking';
+        }
+        return 'to_fulfill';
+      };
+
+      // Categorize orders by effective status (matching Pick & Pack page logic)
       const pendingOrders = ordersToPickPackRaw.filter(o => 
-        o.orderStatus === 'to_fulfill' && (!o.pickStatus || o.pickStatus === 'not_started')
+        getEffectiveStatus(o) === 'to_fulfill'
       );
       const pickingOrders = ordersToPickPackRaw.filter(o => 
-        o.pickStatus === 'in_progress'
+        getEffectiveStatus(o) === 'picking'
       );
       const packingOrders = ordersToPickPackRaw.filter(o => 
-        o.pickStatus === 'completed' && (!o.packStatus || o.packStatus === 'not_started' || o.packStatus === 'in_progress')
+        getEffectiveStatus(o) === 'packing'
       );
       const readyOrders = ordersToPickPackRaw.filter(o => 
-        o.packStatus === 'completed'
+        getEffectiveStatus(o) === 'ready_to_ship'
       );
 
       // Get order IDs for item count query (only pending + picking = "to pick")

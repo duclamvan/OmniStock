@@ -1957,6 +1957,12 @@ function QuickStorageSheet({
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
   const [inventoryLocations, setInventoryLocations] = useState<Map<string, any[]>>(new Map());
   
+  // Bulk allocation state for multi-variant items
+  const [showBulkAllocation, setShowBulkAllocation] = useState(false);
+  const [bulkLocationPrefix, setBulkLocationPrefix] = useState("WH1-A1-R");
+  const [bulkStartRack, setBulkStartRack] = useState(1);
+  const [bulkItemsPerRack, setBulkItemsPerRack] = useState(50);
+  
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
@@ -2497,6 +2503,164 @@ function QuickStorageSheet({
     // setLocationInput(""); - Removed to allow faster multi-location entry
   };
   
+  // Handle bulk allocation for multi-variant items (e.g., 300-500 gel polishes across racks)
+  const handleBulkAllocation = async () => {
+    if (!currentItem) return;
+    
+    const hasVariants = currentItem.variantAllocations && currentItem.variantAllocations.length > 0;
+    if (!hasVariants) {
+      toast({
+        title: t('common:error'),
+        description: 'Bulk allocation is only for items with variants',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate inputs
+    if (!bulkLocationPrefix || bulkStartRack < 1 || bulkItemsPerRack < 1) {
+      toast({
+        title: t('common:error'),
+        description: 'Please enter valid location prefix, start rack, and items per rack',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const updatedItems = [...items];
+    let currentRack = bulkStartRack;
+    let currentRackCount = 0;
+    const rackAllocations: { rack: number; variants: { name: string; qty: number }[] }[] = [];
+    let currentRackVariants: { name: string; qty: number }[] = [];
+    
+    // Distribute variants across racks
+    currentItem.variantAllocations!.forEach((variant) => {
+      // Calculate remaining for this variant
+      const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+      }, 0) || 0;
+      const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
+        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+      }, 0) || 0;
+      const variantRemaining = Math.max(0, variant.quantity - existingForVariant - pendingForVariant);
+      
+      if (variantRemaining <= 0) return;
+      
+      let remainingToAllocate = variantRemaining;
+      
+      while (remainingToAllocate > 0) {
+        const spaceInRack = bulkItemsPerRack - currentRackCount;
+        const allocateNow = Math.min(remainingToAllocate, spaceInRack);
+        
+        if (allocateNow > 0) {
+          const locationCode = `${bulkLocationPrefix}${currentRack}`;
+          
+          // Add location assignment
+          const newLocation: LocationAssignment = {
+            id: `bulk-${Date.now()}-${variant.variantId}-${currentRack}`,
+            locationCode,
+            locationType: 'warehouse',
+            quantity: allocateNow,
+            isPrimary: currentRack === bulkStartRack && currentRackCount === 0,
+            variantId: variant.variantId,
+            variantName: variant.variantName
+          };
+          updatedItems[selectedItemIndex].locations.push(newLocation);
+          
+          currentRackCount += allocateNow;
+          remainingToAllocate -= allocateNow;
+          currentRackVariants.push({ name: variant.variantName || 'Unknown', qty: allocateNow });
+        }
+        
+        // Move to next rack if current is full
+        if (currentRackCount >= bulkItemsPerRack) {
+          rackAllocations.push({ rack: currentRack, variants: [...currentRackVariants] });
+          currentRack++;
+          currentRackCount = 0;
+          currentRackVariants = [];
+        }
+      }
+    });
+    
+    // Save last rack if it has items
+    if (currentRackVariants.length > 0) {
+      rackAllocations.push({ rack: currentRack, variants: currentRackVariants });
+    }
+    
+    setItems(updatedItems);
+    setShowBulkAllocation(false);
+    
+    await soundEffects.playSuccessBeep();
+    const totalRacks = rackAllocations.length;
+    const fullRacks = rackAllocations.filter(r => r.variants.reduce((sum, v) => sum + v.qty, 0) >= bulkItemsPerRack).length;
+    toast({
+      title: t('common:success'),
+      description: `Allocated to ${totalRacks} racks (${fullRacks} full, ${totalRacks - fullRacks} partial)`,
+    });
+  };
+  
+  // Calculate bulk allocation preview
+  const getBulkAllocationPreview = () => {
+    if (!currentItem?.variantAllocations) return { racks: [], totalItems: 0, totalRacks: 0 };
+    
+    const racks: { rack: number; items: number; isFull: boolean; variants: string[] }[] = [];
+    let currentRack = bulkStartRack;
+    let currentRackCount = 0;
+    let currentRackVariants: string[] = [];
+    let totalItems = 0;
+    
+    currentItem.variantAllocations.forEach((variant) => {
+      const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+      }, 0) || 0;
+      const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
+        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+      }, 0) || 0;
+      const variantRemaining = Math.max(0, variant.quantity - existingForVariant - pendingForVariant);
+      
+      if (variantRemaining <= 0) return;
+      
+      let remainingToAllocate = variantRemaining;
+      totalItems += variantRemaining;
+      
+      while (remainingToAllocate > 0) {
+        const spaceInRack = bulkItemsPerRack - currentRackCount;
+        const allocateNow = Math.min(remainingToAllocate, spaceInRack);
+        
+        if (allocateNow > 0) {
+          currentRackCount += allocateNow;
+          remainingToAllocate -= allocateNow;
+          if (!currentRackVariants.includes(variant.variantName || 'Unknown')) {
+            currentRackVariants.push(variant.variantName || 'Unknown');
+          }
+        }
+        
+        if (currentRackCount >= bulkItemsPerRack) {
+          racks.push({
+            rack: currentRack,
+            items: currentRackCount,
+            isFull: true,
+            variants: [...currentRackVariants]
+          });
+          currentRack++;
+          currentRackCount = 0;
+          currentRackVariants = [];
+        }
+      }
+    });
+    
+    if (currentRackCount > 0) {
+      racks.push({
+        rack: currentRack,
+        items: currentRackCount,
+        isFull: false,
+        variants: currentRackVariants
+      });
+    }
+    
+    return { racks, totalItems, totalRacks: racks.length };
+  };
+  
   // Handle quantity assignment
   const handleQuantityAssign = async (locationIndex: number) => {
     if (!currentItem) return;
@@ -2929,6 +3093,22 @@ function QuickStorageSheet({
                                 {/* ADD LOCATION - Simplified for mobile */}
                                 {itemRemainingQty > 0 && (
                                   <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                                    {/* Bulk Allocate Button for multi-variant items */}
+                                    {item.variantAllocations && item.variantAllocations.length > 1 && (
+                                      <Button
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowBulkAllocation(true);
+                                        }}
+                                        className="w-full mb-2 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 font-medium"
+                                        data-testid="button-bulk-allocate"
+                                      >
+                                        <Layers className="h-4 w-4 mr-2" />
+                                        {t('imports:bulkAllocate', 'Bulk Allocate to Racks')} ({item.variantAllocations.length} variants)
+                                      </Button>
+                                    )}
+                                    
                                     <div className="flex gap-2 mb-1">
                                       <Input
                                         ref={locationInputRef}
