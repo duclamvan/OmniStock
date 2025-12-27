@@ -1912,9 +1912,9 @@ function getLocationHint(input: string): { hint: string; complete: boolean; disp
   if (segmentCount === 1) {
     return { hint: '-A_', complete: false, displayInput: input };
   } else if (segmentCount === 2) {
-    return { hint: ' ✓ (-R?)', complete: true, displayInput: input };
+    return { hint: '-R_', complete: true, displayInput: input };
   } else if (segmentCount === 3) {
-    return { hint: ' ✓ (-L?)', complete: true, displayInput: input };
+    return { hint: '-L_', complete: true, displayInput: input };
   } else if (segmentCount >= 4) {
     return { hint: '', complete: true, displayInput: input };
   }
