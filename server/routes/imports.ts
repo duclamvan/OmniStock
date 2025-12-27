@@ -8373,8 +8373,12 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         productIds.push(row.receiptItem.productId as string);
       }
       
+      // Also collect productId from purchase items (for variant products, this is the parent product ID)
+      if (row.purchaseItem?.productId) {
+        productIds.push(row.purchaseItem.productId as string);
+      }
+      
       // Also collect SKUs from receipt items and purchase items for fallback lookup
-      // (purchase_items table doesn't have productId column, only SKU)
       if (row.receiptItem.sku) {
         skusToLookup.push(row.receiptItem.sku);
       }
@@ -8521,7 +8525,13 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         product = productsMap[productId] || null;
       }
       
-      // Priority 2: Look up by receipt item's SKU
+      // Priority 2: Purchase item's own productId (for variant products, this is the parent product ID)
+      if (!productId && row.purchaseItem?.productId) {
+        productId = row.purchaseItem.productId as string;
+        product = productsMap[productId] || null;
+      }
+      
+      // Priority 3: Look up by receipt item's SKU
       if (!productId && row.receiptItem.sku) {
         product = productsBySkuMap[row.receiptItem.sku];
         if (product) {
@@ -8529,7 +8539,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         }
       }
       
-      // Priority 3: Look up by purchase item's SKU
+      // Priority 4: Look up by purchase item's SKU
       if (!productId && row.purchaseItem?.sku) {
         product = productsBySkuMap[row.purchaseItem.sku];
         if (product) {
@@ -8537,7 +8547,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         }
       }
       
-      // Priority 4: Consolidation item's underlying purchase item's SKU
+      // Priority 5: Consolidation item's underlying purchase item's SKU
       if (!productId && row.consolidationItem?.itemType === 'purchase') {
         underlyingPurchaseItem = consolidationPurchaseItemsMap[row.consolidationItem.itemId];
         if (underlyingPurchaseItem?.sku) {
@@ -8548,7 +8558,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         }
       }
       
-      // Priority 5: Look up by custom item's name (exact match fallback)
+      // Priority 6: Look up by custom item's name (exact match fallback)
       if (!productId && row.customItem?.name) {
         product = productsByNameMap[row.customItem.name];
         if (product) {
@@ -8556,7 +8566,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         }
       }
       
-      // Priority 6: Look up by purchase item's name (exact match fallback)
+      // Priority 7: Look up by purchase item's name (exact match fallback)
       if (!productId && row.purchaseItem?.name) {
         product = productsByNameMap[row.purchaseItem.name];
         if (product) {
