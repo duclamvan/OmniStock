@@ -27,7 +27,16 @@ import {
   FileText,
   Loader2,
   Layers,
+  ArrowUpDown,
+  SortAsc,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -73,6 +82,7 @@ export default function WarehouseLabels() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<"saved" | "all">("all");
   const [includeVariantsFor, setIncludeVariantsFor] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "abc" | "variants">("newest");
 
   const { data: labels = [], isLoading } = useQuery<WarehouseLabel[]>({
     queryKey: ["/api/warehouse-labels"],
@@ -166,15 +176,45 @@ export default function WarehouseLabels() {
   }, [labels, searchQuery]);
 
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return allProducts;
-    const query = searchQuery.toLowerCase();
-    return allProducts.filter(
-      (product: any) =>
-        product.name?.toLowerCase().includes(query) ||
-        (product.vietnameseName?.toLowerCase().includes(query)) ||
-        (product.sku?.toLowerCase().includes(query))
-    );
-  }, [allProducts, searchQuery]);
+    let products = allProducts;
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      products = products.filter(
+        (product: any) =>
+          product.name?.toLowerCase().includes(query) ||
+          (product.vietnameseName?.toLowerCase().includes(query)) ||
+          (product.sku?.toLowerCase().includes(query))
+      );
+    }
+    
+    // Sort products
+    return [...products].sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "newest":
+          // Sort by ID descending (higher ID = newer)
+          return Number(b.id) - Number(a.id);
+        case "oldest":
+          // Sort by ID ascending (lower ID = older)
+          return Number(a.id) - Number(b.id);
+        case "abc":
+          // Sort alphabetically by Vietnamese name or name
+          const nameA = (a.vietnameseName || a.name || "").toLowerCase();
+          const nameB = (b.vietnameseName || b.name || "").toLowerCase();
+          return nameA.localeCompare(nameB, "vi");
+        case "variants":
+          // Products with variants first
+          const hasVariantsA = variantsMap.has(a.id) ? 1 : 0;
+          const hasVariantsB = variantsMap.has(b.id) ? 1 : 0;
+          if (hasVariantsB !== hasVariantsA) return hasVariantsB - hasVariantsA;
+          // Secondary sort by ID descending (newest)
+          return Number(b.id) - Number(a.id);
+        default:
+          return 0;
+      }
+    });
+  }, [allProducts, searchQuery, sortBy, variantsMap]);
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -859,15 +899,29 @@ export default function WarehouseLabels() {
           </div>
         </div>
 
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder={t("inventory:searchLabels")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-            data-testid="input-search-labels"
-          />
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder={t("inventory:searchLabels")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-labels"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <SelectTrigger className="w-[140px]" data-testid="select-sort">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t("inventory:sortNewest")}</SelectItem>
+              <SelectItem value="oldest">{t("inventory:sortOldest")}</SelectItem>
+              <SelectItem value="abc">{t("inventory:sortAbc")}</SelectItem>
+              <SelectItem value="variants">{t("inventory:sortVariants")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">

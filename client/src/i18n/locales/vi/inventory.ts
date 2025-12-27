@@ -778,6 +778,10 @@ const inventory = {
   printedTimes: 'Đã in {{count}} lần',
   popupBlocked: 'Popup bị chặn. Vui lòng cho phép popup để in nhãn.',
   manageLabels: 'Quản lý nhãn',
+  sortNewest: 'Mới nhất',
+  sortOldest: 'Cũ nhất',
+  sortAbc: 'A-Z',
+  sortVariants: 'Có biến thể',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',

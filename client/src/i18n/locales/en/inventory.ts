@@ -684,6 +684,10 @@ const inventory = {
   printedTimes: 'Printed {{count}}x',
   popupBlocked: 'Pop-up blocked. Please allow pop-ups to print labels.',
   manageLabels: 'Manage Labels',
+  sortNewest: 'Newest',
+  sortOldest: 'Oldest',
+  sortAbc: 'A-Z',
+  sortVariants: 'With Variants',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',
