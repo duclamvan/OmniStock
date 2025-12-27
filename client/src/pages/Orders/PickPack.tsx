@@ -47,6 +47,9 @@ import { LayoutGrid, List } from "lucide-react";
 import { CartonTypeAutocomplete } from "@/components/orders/CartonTypeAutocomplete";
 import { usePackingOptimization } from "@/hooks/usePackingOptimization";
 import { useSettings } from "@/contexts/SettingsContext";
+import { ScanFeedbackDialog, ScanResultType } from "@/components/scanning/ScanFeedbackDialog";
+import { CameraScannerDialog } from "@/components/scanning/CameraScannerDialog";
+import { isWarehouseLocationQR, parseWarehouseLocationQR, isProductBarcode } from "@shared/qrUtils";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
@@ -136,7 +139,9 @@ import {
   Lock,
   Sparkles,
   Scale,
-  Layers
+  Layers,
+  Camera,
+  MapPinCheck
 } from "lucide-react";
 
 interface BundleItem {
@@ -2982,6 +2987,16 @@ export default function PickPack() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const overviewBarcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Camera scanner and scan feedback state
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState<{
+    open: boolean;
+    type: ScanResultType;
+    title: string;
+    message: string;
+  }>({ open: false, type: 'success', title: '', message: '' });
+  const [verifiedLocation, setVerifiedLocation] = useState<string | null>(null);
   
   // Get user info for preference storage
   const { user } = useAuth();
@@ -6642,20 +6657,132 @@ export default function PickPack() {
     };
   }, [activePackingOrder, selectedTab, verifiedItems]);
 
+  // Show scan feedback helper
+  const showScanFeedback = (type: ScanResultType, title: string, message: string) => {
+    setScanFeedback({ open: true, type, title, message });
+  };
+
   // Process barcode input from continuous scanner (PICKING MODE)
+  // Supports both warehouse location QR codes (validation only) and product barcodes (increment quantity)
   const processBarcodeInput = (barcode: string) => {
     if (!activePickingOrder || !barcode.trim()) return;
 
+    const cleanBarcode = barcode.trim();
+
+    // Check if this is a warehouse location QR code
+    if (isWarehouseLocationQR(cleanBarcode)) {
+      const locationInfo = parseWarehouseLocationQR(cleanBarcode);
+      
+      if (locationInfo) {
+        const { locationCode } = locationInfo;
+        
+        // Check if the current item's location matches the scanned location
+        if (currentItem) {
+          const itemLocation = currentItem.warehouseLocation || '';
+          const locationMatches = itemLocation.toLowerCase().includes(locationCode.toLowerCase()) ||
+                                  locationCode.toLowerCase().includes(itemLocation.toLowerCase()) ||
+                                  itemLocation.toLowerCase() === locationCode.toLowerCase();
+          
+          if (locationMatches) {
+            // Location verified - show success feedback
+            setVerifiedLocation(locationCode);
+            playSound('scan');
+            showScanFeedback(
+              'location_verified',
+              t('locationVerified') || 'Location Verified',
+              `${t('correctLocation') || 'Correct location'}: ${locationCode}`
+            );
+          } else {
+            // Wrong location - show warning
+            playSound('error');
+            showScanFeedback(
+              'warning',
+              t('wrongLocation') || 'Wrong Location',
+              `${t('expectedLocation') || 'Expected'}: ${itemLocation || t('unassigned') || 'Unassigned'}\n${t('scannedLocation') || 'Scanned'}: ${locationCode}`
+            );
+          }
+        } else {
+          // No current item - just show location info
+          setVerifiedLocation(locationCode);
+          playSound('scan');
+          showScanFeedback(
+            'location_verified',
+            t('locationScanned') || 'Location Scanned',
+            locationCode
+          );
+        }
+      }
+      
+      setBarcodeInput('');
+      return;
+    }
+
+    // This is a product barcode - find matching item
     const item = activePickingOrder.items.find(i => 
-      i.barcode === barcode || i.sku === barcode
+      i.barcode === cleanBarcode || 
+      i.sku === cleanBarcode ||
+      i.barcode?.replace(/\s/g, '') === cleanBarcode ||
+      i.sku?.replace(/\s/g, '') === cleanBarcode
     );
 
     if (item) {
+      // Check if item is already fully picked
+      if (item.pickedQuantity >= item.quantity) {
+        playSound('error');
+        showScanFeedback(
+          'warning',
+          t('itemAlreadyPicked') || 'Already Picked',
+          `${item.productName} (${item.pickedQuantity}/${item.quantity})`
+        );
+        setBarcodeInput('');
+        return;
+      }
+      
+      // Optionally validate location if we have a verified location
+      if (verifiedLocation && currentItem && item.id !== currentItem.id) {
+        const itemLocation = item.warehouseLocation || '';
+        if (!itemLocation.toLowerCase().includes(verifiedLocation.toLowerCase())) {
+          playSound('error');
+          showScanFeedback(
+            'warning',
+            t('itemNotInLocation') || 'Wrong Item for Location',
+            `${t('scanningFrom') || 'Scanning from'}: ${verifiedLocation}\n${t('itemLocation') || 'Item location'}: ${itemLocation || t('unassigned') || 'Unassigned'}`
+          );
+          setBarcodeInput('');
+          return;
+        }
+      }
+
+      // Increment quantity by 1
       const newQty = Math.min(item.pickedQuantity + 1, item.quantity);
       updatePickedItem(item.id, newQty);
       playSound('scan');
+      
+      // Navigate to the scanned item
+      const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+      if (itemIndex >= 0 && itemIndex !== manualItemIndex) {
+        setManualItemIndex(itemIndex);
+      }
+      
+      // Show success feedback
+      showScanFeedback(
+        'success',
+        t('itemPicked') || 'Item Picked',
+        `${item.productName}\n${t('quantity') || 'Qty'}: ${newQty}/${item.quantity}`
+      );
+      
+      // Clear verified location after successful pick (user moves to next pick)
+      if (newQty >= item.quantity) {
+        setVerifiedLocation(null);
+      }
     } else {
+      // No matching item found
       playSound('error');
+      showScanFeedback(
+        'error',
+        t('itemNotFound') || 'Item Not Found',
+        `${t('scannedCode') || 'Code'}: ${cleanBarcode.length > 20 ? cleanBarcode.substring(0, 20) + '...' : cleanBarcode}`
+      );
     }
 
     setBarcodeInput('');
@@ -7790,23 +7917,21 @@ export default function PickPack() {
     });
   };
 
-  // Handle barcode scanning
+  // Handle barcode scanning (uses unified processBarcodeInput)
   const handleBarcodeScan = () => {
     if (!barcodeInput || !activePickingOrder) return;
-
-    const item = activePickingOrder.items.find(i => 
-      i.barcode === barcodeInput || i.sku === barcodeInput
-    );
-
-    if (item) {
-      const newQty = Math.min(item.pickedQuantity + 1, item.quantity);
-      updatePickedItem(item.id, newQty);
-      playSound('scan');
-    } else {
-      playSound('error');
-    }
-    setBarcodeInput('');
+    processBarcodeInput(barcodeInput);
     barcodeInputRef.current?.focus();
+  };
+  
+  // Handle camera scan result
+  const handleCameraScan = (code: string, format: string) => {
+    console.log('Camera scan result:', { code, format });
+    if (activePickingOrder) {
+      processBarcodeInput(code);
+    } else if (activePackingOrder) {
+      processPackingBarcodeInput(code);
+    }
   };
 
   const handleOverviewBarcodeScan = () => {
@@ -14529,15 +14654,35 @@ export default function PickPack() {
                   
                   {/* Barcode Scanner - Fixed to Bottom - Mobile Optimized */}
                   {scanningEnabled && (
-                    <div className="sticky bottom-0 bg-white border-t-2 border-gray-300 shadow-lg">
+                    <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t-2 border-gray-300 dark:border-gray-700 shadow-lg">
+                      {/* Verified Location Indicator */}
+                      {verifiedLocation && (
+                        <div className="px-3 pt-2">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm">
+                            <MapPinCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-blue-700 dark:text-blue-300 font-medium">
+                              {t('atLocation') || 'At location'}: <span className="font-mono font-bold">{verifiedLocation}</span>
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                              onClick={() => setVerifiedLocation(null)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="p-3 lg:p-4">
                         <div className="flex gap-2 lg:gap-3">
                           <div className="relative flex-1">
                             <Input
                               ref={barcodeInputRef}
-                              placeholder={t('readyToScan')}
+                              placeholder={t('readyToScan') || 'Ready to scan...'}
                               value={barcodeInput}
-                              className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 border-2 border-gray-300 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
+                              className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
                               readOnly
                             />
                           </div>
@@ -14547,7 +14692,15 @@ export default function PickPack() {
                             data-testid="button-barcode-scan"
                           >
                             <ScanLine className="h-5 w-5 lg:h-6 lg:w-6 sm:mr-2" />
-                            <span className="hidden sm:inline text-base">Scan</span>
+                            <span className="hidden sm:inline text-base">{t('scan') || 'Scan'}</span>
+                          </Button>
+                          <Button 
+                            onClick={() => setShowCameraScanner(true)}
+                            className="h-12 lg:h-14 min-w-[48px] px-3 bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600 active:bg-purple-800 dark:active:bg-purple-900 text-white font-bold shadow-md touch-manipulation rounded-lg"
+                            data-testid="button-camera-scan"
+                            title={t('openCameraScanner') || 'Open camera scanner'}
+                          >
+                            <Camera className="h-5 w-5 lg:h-6 lg:w-6" />
                           </Button>
                         </div>
                       </div>
@@ -17497,6 +17650,23 @@ export default function PickPack() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Camera Scanner Dialog */}
+      <CameraScannerDialog
+        open={showCameraScanner}
+        onOpenChange={setShowCameraScanner}
+        onScan={handleCameraScan}
+        title={t('scanBarcodeOrQR') || 'Scan Barcode or QR Code'}
+      />
+      
+      {/* Scan Feedback Dialog */}
+      <ScanFeedbackDialog
+        open={scanFeedback.open}
+        onOpenChange={(open) => setScanFeedback(prev => ({ ...prev, open }))}
+        type={scanFeedback.type}
+        title={scanFeedback.title}
+        message={scanFeedback.message}
+      />
 
       {/* Undo Bar - Fixed at bottom */}
       {showUndoPopup && pendingShipments && (
