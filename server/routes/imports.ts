@@ -900,6 +900,71 @@ router.post("/purchases/unpack", async (req, res) => {
   }
 });
 
+// Repack purchase order (undo unpack) - deletes custom items and resets status
+router.post("/purchases/repack", async (req, res) => {
+  try {
+    const { purchaseId } = req.body;
+    
+    if (!purchaseId) {
+      return res.status(400).json({ message: "Purchase ID is required" });
+    }
+
+    // Get the purchase order
+    const [purchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId));
+    
+    if (!purchase) {
+      return res.status(404).json({ message: "Purchase order not found" });
+    }
+
+    // Find all custom items created from this purchase order
+    const itemsToDelete = await db
+      .select()
+      .from(customItems)
+      .where(eq(customItems.purchaseOrderId, purchaseId));
+    
+    // Check if any items have been moved to consolidation
+    const itemIds = itemsToDelete.map(item => item.id);
+    if (itemIds.length > 0) {
+      const consolidatedItems = await db
+        .select()
+        .from(consolidationItems)
+        .where(inArray(consolidationItems.itemId, itemIds));
+      
+      if (consolidatedItems.length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot undo unpack - some items have already been moved to consolidation" 
+        });
+      }
+    }
+    
+    // Delete the custom items
+    if (itemIds.length > 0) {
+      await db.delete(customItems).where(inArray(customItems.id, itemIds));
+    }
+
+    // Reset purchase order status to 'at_warehouse'
+    await db
+      .update(importPurchases)
+      .set({ 
+        status: 'at_warehouse',
+        updatedAt: new Date()
+      })
+      .where(eq(importPurchases.id, purchaseId));
+
+    res.json({
+      success: true,
+      message: "Purchase order repacked successfully",
+      itemsDeleted: itemIds.length
+    });
+  } catch (error) {
+    console.error("Error repacking purchase order:", error);
+    res.status(500).json({ message: "Failed to repack purchase order" });
+  }
+});
+
 // Get single purchase with items
 router.get("/purchases/:id", async (req: any, res) => {
   try {

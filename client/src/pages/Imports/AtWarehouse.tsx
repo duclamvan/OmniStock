@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
@@ -772,17 +772,47 @@ export default function AtWarehouse() {
   const [warehouseComboOpen, setWarehouseComboOpen] = useState(false);
   const [isAdditionalDetailsOpen, setIsAdditionalDetailsOpen] = useState(false);
   const [consolidationShippingMethod, setConsolidationShippingMethod] = useState<string>("");
+  
+  // Active tab state for controlled tabs
+  const [activeTab, setActiveTab] = useState<string>("incoming");
+  
+  // Undo unpack state
+  const [undoUnpackInfo, setUndoUnpackInfo] = useState<{ purchaseId: number; supplierName: string; itemCount: number } | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [undoSecondsLeft, setUndoSecondsLeft] = useState(60);
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
       return apiRequest('POST', '/api/imports/purchases/unpack', { purchaseId });
     },
-    onSuccess: () => {
-      toast({
-        title: t('success'),
-        description: t('orderUnpackedSuccessfully'),
-      });
+    onSuccess: (_, purchaseId) => {
+      // Find the order that was unpacked to get supplier name and item count
+      const unpackedOrder = atWarehouseOrders.find(o => o.id === purchaseId);
+      
+      // Switch to items tab
+      setActiveTab("items");
+      
+      // Set undo info and start 60 second timer
+      if (unpackedOrder) {
+        setUndoUnpackInfo({
+          purchaseId,
+          supplierName: unpackedOrder.supplier,
+          itemCount: unpackedOrder.items?.length || 0
+        });
+        setUndoSecondsLeft(60);
+        
+        // Clear any existing timeout
+        if (undoTimeoutRef.current) {
+          clearTimeout(undoTimeoutRef.current);
+        }
+        
+        // Set timeout to clear undo info after 60 seconds
+        undoTimeoutRef.current = setTimeout(() => {
+          setUndoUnpackInfo(null);
+        }, 60000);
+      }
+      
       setShowUnpackDialog(false);
       setSelectedOrder(null);
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
@@ -797,6 +827,59 @@ export default function AtWarehouse() {
       });
     },
   });
+  
+  // Undo unpack mutation (repack)
+  const undoUnpackMutation = useMutation({
+    mutationFn: async (purchaseId: number) => {
+      return apiRequest('POST', '/api/imports/purchases/repack', { purchaseId });
+    },
+    onSuccess: () => {
+      toast({
+        title: t('success'),
+        description: t('unpackUndone'),
+      });
+      setUndoUnpackInfo(null);
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+      setActiveTab("incoming");
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('error'),
+        description: error.message || t('failedToUndoUnpack'),
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Countdown effect for undo timer
+  useEffect(() => {
+    if (undoUnpackInfo && undoSecondsLeft > 0) {
+      const interval = setInterval(() => {
+        setUndoSecondsLeft(prev => {
+          if (prev <= 1) {
+            setUndoUnpackInfo(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [undoUnpackInfo, undoSecondsLeft]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Receive without unpacking mutation
   const receiveMutation = useMutation({
@@ -2204,7 +2287,7 @@ export default function AtWarehouse() {
       {/* Main Content */}
       <div className="px-2 md:px-3 space-y-2">
       {/* Main Tabs */}
-      <Tabs defaultValue="incoming" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="incoming">
             {t('incomingOrders')} ({filteredOrders.length})
@@ -2213,6 +2296,38 @@ export default function AtWarehouse() {
             {t('allItems')} ({allItems.length})
           </TabsTrigger>
         </TabsList>
+        
+        {/* Undo Unpack Bar */}
+        {undoUnpackInfo && (
+          <div className="mt-2 flex items-center justify-between gap-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <PackageOpen className="h-4 w-4" />
+              <span>
+                {t('unpackedOrderFromSupplier', { supplier: undoUnpackInfo.supplierName, count: undoUnpackInfo.itemCount })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-amber-600 dark:text-amber-400 tabular-nums">
+                {undoSecondsLeft}s
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => undoUnpackMutation.mutate(undoUnpackInfo.purchaseId)}
+                disabled={undoUnpackMutation.isPending}
+                className="h-7 px-3 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                data-testid="button-undo-unpack"
+              >
+                {undoUnpackMutation.isPending ? (
+                  <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <X className="h-3 w-3 mr-1" />
+                )}
+                {t('undo')}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Incoming Orders Tab */}
         <TabsContent value="incoming" className="space-y-4">

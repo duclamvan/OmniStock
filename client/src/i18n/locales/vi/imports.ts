@@ -1780,6 +1780,9 @@ const imports = {
   itemRemoveFailed: 'Không thể xóa sản phẩm',
   unpackFailed: 'Không thể mở kiện sản phẩm',
   itemsUnpacked: 'Đã mở kiện thành công {{count}} sản phẩm',
+  undo: 'Hoàn tác',
+  unpackUndone: 'Đã hoàn tác mở kiện',
+  failedToUndoUnpack: 'Không thể hoàn tác mở kiện',
   deletePurchaseAction: 'Xóa đơn nhập',
   enterConsolidationNamePlaceholder: 'Nhập tên consolidation',
   
