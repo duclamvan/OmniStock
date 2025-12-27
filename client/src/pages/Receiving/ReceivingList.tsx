@@ -2936,14 +2936,7 @@ function QuickStorageSheet({
                                     {locationInput && (
                                       <div className="mb-2 text-center">
                                         {(() => {
-                                          const { hint, complete, displayInput } = getLocationHint(locationInput);
-                                          if (complete) {
-                                            return (
-                                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                                ✓ {t('common:ready')}
-                                              </span>
-                                            );
-                                          }
+                                          const { hint, displayInput } = getLocationHint(locationInput);
                                           return (
                                             <span className="text-xs text-muted-foreground font-mono">
                                               <span className="text-foreground">{displayInput}</span>
