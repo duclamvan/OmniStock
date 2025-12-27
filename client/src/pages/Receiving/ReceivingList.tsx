@@ -2790,7 +2790,7 @@ function QuickStorageSheet({
                                 {/* PRODUCT DETAILS - Collapsible section for variants and order items */}
                                 {((item.variantAllocations && item.variantAllocations.length > 0) || 
                                   (item.orderItems && item.orderItems.length > 0)) && (
-                                  <details className="rounded-lg border dark:border-gray-800 overflow-hidden group">
+                                  <details open className="rounded-lg border dark:border-gray-800 overflow-hidden group">
                                     <summary className="bg-purple-50 dark:bg-purple-950/30 px-3 py-2 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors flex items-center gap-2">
                                       <ChevronRight className="h-4 w-4 text-purple-600 dark:text-purple-400 transition-transform group-open:rotate-90" />
                                       <Layers className="h-4 w-4 text-purple-600 dark:text-purple-400" />
