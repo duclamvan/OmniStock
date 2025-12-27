@@ -72,6 +72,15 @@ interface LocationAssignment {
   isPrimary: boolean;
   notes?: string;
   isNew?: boolean;
+  variantId?: string; // For variant-specific location tracking
+  variantName?: string; // Display name for variant
+}
+
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  unitPrice?: number;
 }
 
 interface StorageItem {
@@ -92,6 +101,7 @@ interface StorageItem {
   landingCostUnitBase?: string;
   hasCompleteLandingCost?: boolean;
   purchaseItemId?: string;
+  variantAllocations?: VariantAllocation[]; // Multi-variant item support
 }
 
 interface ReceiptWithItems {
@@ -459,7 +469,8 @@ export default function ItemsToStore() {
             description: item.description,
             landingCostUnitBase: item.landingCostUnitBase,
             hasCompleteLandingCost: item.hasCompleteLandingCost,
-            purchaseItemId: item.purchaseItemId
+            purchaseItemId: item.purchaseItemId,
+            variantAllocations: item.variantAllocations || undefined
           });
         });
       });
@@ -915,24 +926,55 @@ export default function ItemsToStore() {
     
     if (globalIndex < 0) return;
 
-    // Create new locations from session
-    sessionsLocations.forEach(sessionLoc => {
-      // Determine location type based on prefix
+    // Check if this is a multi-variant item
+    const hasMultipleVariants = currentItem.variantAllocations && currentItem.variantAllocations.length > 1;
+
+    // For multi-variant items, we only use the FIRST session location (all variants go to same location)
+    // This prevents quantity duplication when multiple locations are scanned
+    if (hasMultipleVariants && currentItem.variantAllocations) {
+      // Use only the first location for multi-variant items
+      const primarySessionLoc = sessionsLocations[0];
+      if (!primarySessionLoc) return;
+
       let locationType: LocationAssignment['locationType'] = 'warehouse';
-      if (sessionLoc.code.startsWith('DS')) locationType = 'display';
-      else if (sessionLoc.code.startsWith('PL')) locationType = 'pallet';
+      if (primarySessionLoc.code.startsWith('DS')) locationType = 'display';
+      else if (primarySessionLoc.code.startsWith('PL')) locationType = 'pallet';
 
-      const newLocation: LocationAssignment = {
-        id: `new-${Date.now()}-${Math.random()}`,
-        locationCode: sessionLoc.code,
-        locationType,
-        quantity: sessionLoc.quantity,
-        isPrimary: sessionLoc.isPrimary,
-        isNew: true
-      };
+      // Create a separate location entry for each variant, all going to the same location
+      currentItem.variantAllocations.forEach((variant, idx) => {
+        const newLocation: LocationAssignment = {
+          id: `new-${Date.now()}-${Math.random()}-${variant.variantId}`,
+          locationCode: primarySessionLoc.code,
+          locationType,
+          quantity: variant.quantity,
+          isPrimary: idx === 0 && primarySessionLoc.isPrimary,
+          isNew: true,
+          variantId: variant.variantId,
+          variantName: variant.variantName
+        };
+        updatedItems[globalIndex].newLocations.push(newLocation);
+      });
+    } else {
+      // Single variant or no variants - use original logic (can have multiple locations)
+      sessionsLocations.forEach(sessionLoc => {
+        let locationType: LocationAssignment['locationType'] = 'warehouse';
+        if (sessionLoc.code.startsWith('DS')) locationType = 'display';
+        else if (sessionLoc.code.startsWith('PL')) locationType = 'pallet';
 
-      updatedItems[globalIndex].newLocations.push(newLocation);
-    });
+        const newLocation: LocationAssignment = {
+          id: `new-${Date.now()}-${Math.random()}`,
+          locationCode: sessionLoc.code,
+          locationType,
+          quantity: sessionLoc.quantity,
+          isPrimary: sessionLoc.isPrimary,
+          isNew: true,
+          // Include single variant ID if exists
+          variantId: currentItem.variantAllocations?.[0]?.variantId,
+          variantName: currentItem.variantAllocations?.[0]?.variantName
+        };
+        updatedItems[globalIndex].newLocations.push(newLocation);
+      });
+    }
 
     // Update assigned quantity
     const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
@@ -1116,7 +1158,8 @@ export default function ItemsToStore() {
             locationType: loc.locationType,
             quantity: loc.quantity,
             isPrimary: loc.isPrimary,
-            notes: loc.notes
+            notes: loc.notes,
+            variantId: loc.variantId || null // Include variantId for variant-specific tracking
           }))
         }));
 
@@ -1569,29 +1612,36 @@ export default function ItemsToStore() {
                       {item.newLocations.length > 0 && (
                         <div className="space-y-2">
                           {item.newLocations.map((loc, locIndex) => (
-                            <div key={loc.id} className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800 flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                              <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
-                              <input
-                                type="number"
-                                value={loc.quantity}
-                                onChange={(e) => handleQuantityUpdate(locIndex, parseInt(e.target.value) || 0)}
-                                className="w-16 px-2 py-1 text-sm border rounded ml-auto"
-                                min="0"
-                                max={remainingQuantity + loc.quantity}
-                              />
-                              <button
-                                onClick={() => togglePrimaryLocation(locIndex)}
-                                className={`p-1 ${loc.isPrimary ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
-                              >
-                                <Star className="h-4 w-4" fill={loc.isPrimary ? 'currentColor' : 'none'} />
-                              </button>
-                              <button
-                                onClick={() => removeLocation(locIndex)}
-                                className="p-1 text-red-500 dark:text-red-400"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                            <div key={loc.id} className="bg-white dark:bg-gray-950 rounded-lg p-3 border dark:border-gray-800">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
+                                {loc.variantName && (
+                                  <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200">
+                                    {loc.variantName}
+                                  </Badge>
+                                )}
+                                <input
+                                  type="number"
+                                  value={loc.quantity}
+                                  onChange={(e) => handleQuantityUpdate(locIndex, parseInt(e.target.value) || 0)}
+                                  className="w-16 px-2 py-1 text-sm border rounded ml-auto"
+                                  min="0"
+                                  max={remainingQuantity + loc.quantity}
+                                />
+                                <button
+                                  onClick={() => togglePrimaryLocation(locIndex)}
+                                  className={`p-1 ${loc.isPrimary ? 'text-yellow-500 dark:text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                                >
+                                  <Star className="h-4 w-4" fill={loc.isPrimary ? 'currentColor' : 'none'} />
+                                </button>
+                                <button
+                                  onClick={() => removeLocation(locIndex)}
+                                  className="p-1 text-red-500 dark:text-red-400"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1736,6 +1786,29 @@ export default function ItemsToStore() {
                   </div>
                 </div>
 
+                {/* Multi-Variant Indicator */}
+                {currentItem.variantAllocations && currentItem.variantAllocations.length > 1 && (
+                  <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                        Multi-Variant Item - All variants will be stored together
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {currentItem.variantAllocations.map((variant, idx) => (
+                        <Badge 
+                          key={variant.variantId || idx}
+                          variant="secondary" 
+                          className="text-xs bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200"
+                        >
+                          {variant.variantName}: {variant.quantity}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Suggested Location - Compact */}
                 {getSuggestedLocation(currentItem) ? (
                   <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 rounded-lg px-3 py-2">
@@ -1780,6 +1853,7 @@ export default function ItemsToStore() {
                   {sessionsLocations.map((loc, idx) => {
                     const totalAllocated = sessionsLocations.reduce((sum, l, i) => i !== idx ? sum + l.quantity : sum, 0);
                     const maxQuantity = currentItem ? currentItem.receivedQuantity - totalAllocated - totalAssigned : 0;
+                    const isMultiVariant = currentItem?.variantAllocations && currentItem.variantAllocations.length > 1;
                     
                     return (
                       <div key={idx} className="bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg p-2.5">
@@ -1827,74 +1901,83 @@ export default function ItemsToStore() {
                             </div>
                           </div>
                           
-                          {/* Quantity Row */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">Quantity:</span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 w-6 p-0"
-                                onClick={() => {
-                                  const newQty = Math.max(1, loc.quantity - 1);
-                                  setSessionsLocations(prev => 
-                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
-                                  );
-                                }}
-                                disabled={loc.quantity <= 1}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              
-                              <input
-                                type="number"
-                                value={loc.quantity}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0;
-                                  const newQty = Math.min(Math.max(1, val), maxQuantity);
-                                  setSessionsLocations(prev => 
-                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
-                                  );
-                                }}
-                                className="w-16 h-6 text-center text-sm border rounded px-1"
-                                min={1}
-                                max={maxQuantity}
-                              />
-                              
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 w-6 p-0"
-                                onClick={() => {
-                                  const newQty = Math.min(maxQuantity, loc.quantity + 1);
-                                  setSessionsLocations(prev => 
-                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
-                                  );
-                                }}
-                                disabled={loc.quantity >= maxQuantity}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                              
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => {
-                                  setSessionsLocations(prev => 
-                                    prev.map((l, i) => i === idx ? { ...l, quantity: maxQuantity } : l)
-                                  );
-                                  soundEffects.playSuccessBeep();
-                                }}
-                                disabled={loc.quantity === maxQuantity}
-                              >
-                                Max
-                              </Button>
+                          {/* Quantity Row - Hidden for multi-variant items (quantities are auto-distributed) */}
+                          {isMultiVariant ? (
+                            <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 rounded px-2 py-1.5">
+                              <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                              <span className="text-xs text-purple-700 dark:text-purple-300">
+                                Auto-distributed: {currentItem.variantAllocations?.reduce((sum, v) => sum + v.quantity, 0)} units across {currentItem.variantAllocations?.length} variants
+                              </span>
                             </div>
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              (max: {maxQuantity})
-                            </span>
-                          </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Quantity:</span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const newQty = Math.max(1, loc.quantity - 1);
+                                    setSessionsLocations(prev => 
+                                      prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                    );
+                                  }}
+                                  disabled={loc.quantity <= 1}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                
+                                <input
+                                  type="number"
+                                  value={loc.quantity}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    const newQty = Math.min(Math.max(1, val), maxQuantity);
+                                    setSessionsLocations(prev => 
+                                      prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                    );
+                                  }}
+                                  className="w-16 h-6 text-center text-sm border rounded px-1"
+                                  min={1}
+                                  max={maxQuantity}
+                                />
+                                
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const newQty = Math.min(maxQuantity, loc.quantity + 1);
+                                    setSessionsLocations(prev => 
+                                      prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                    );
+                                  }}
+                                  disabled={loc.quantity >= maxQuantity}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => {
+                                    setSessionsLocations(prev => 
+                                      prev.map((l, i) => i === idx ? { ...l, quantity: maxQuantity } : l)
+                                    );
+                                    soundEffects.playSuccessBeep();
+                                  }}
+                                  disabled={loc.quantity === maxQuantity}
+                                >
+                                  Max
+                                </Button>
+                              </div>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                (max: {maxQuantity})
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

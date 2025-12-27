@@ -10406,20 +10406,49 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         // Process each location for this item
         for (const loc of (itemLocations || [])) {
           const { locationCode, locationType, quantity, isPrimary, notes } = loc;
+          // Normalize variantId: treat both undefined and null as "no variant"
+          const variantId = loc.variantId ?? null;
           
-          // Create the receipt item tracking tag with quantity
-          const receiptItemTag = `RI:${receiptItemId}:Q${quantity}`;
+          // Validate that variantId belongs to productId before accepting it
+          if (variantId && productId) {
+            const [variant] = await tx
+              .select({ id: productVariants.id, productId: productVariants.productId })
+              .from(productVariants)
+              .where(eq(productVariants.id, variantId));
+            
+            if (!variant) {
+              console.warn(`Variant ${variantId} not found, ignoring variant assignment`);
+              // Skip this invalid variant assignment, treat as no variant
+              continue;
+            }
+            
+            if (variant.productId !== productId) {
+              console.warn(`Variant ${variantId} belongs to product ${variant.productId}, not ${productId}. Ignoring variant assignment.`);
+              // Skip this invalid variant assignment
+              continue;
+            }
+          }
+          
+          // Create the receipt item tracking tag with quantity (and variant if applicable)
+          const receiptItemTag = variantId 
+            ? `RI:${receiptItemId}:V${variantId}:Q${quantity}`
+            : `RI:${receiptItemId}:Q${quantity}`;
           
           // If product exists, update or create product location
           if (productId) {
-            // Check if location already exists for this product
+            // Check if location already exists for this product (and variant if specified)
+            // For variant-aware storage, we match by productId + variantId + locationCode
+            // Consistent null-handling: both undefined and null are treated as "no variant"
             const [existingLocation] = await tx
               .select()
               .from(productLocations)
               .where(
                 and(
                   eq(productLocations.productId, productId),
-                  eq(productLocations.locationCode, locationCode)
+                  eq(productLocations.locationCode, locationCode),
+                  variantId 
+                    ? eq(productLocations.variantId, variantId)
+                    : sql`(${productLocations.variantId} IS NULL OR ${productLocations.variantId} = '')`
                 )
               );
             
@@ -10454,6 +10483,7 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 .insert(productLocations)
                 .values({
                   productId,
+                  variantId: variantId || null, // Include variantId for variant-specific tracking
                   locationCode,
                   locationType: locationType || 'warehouse',
                   quantity,
