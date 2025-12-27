@@ -2122,10 +2122,10 @@ const imports = {
   
   // Variant-aware import workflow
   variantAllocations: 'Phân bổ biến thể',
-  totalQuantity: 'Tổng',
-  totalValue: 'Tổng giá trị',
-  qty: 'SL',
-  price: 'Giá',
+  variantQty: 'SL',
+  variantPrice: 'Giá',
+  variantTotalQuantity: 'Tổng',
+  variantTotalValue: 'Tổng giá trị',
   pleaseAllocateVariantQuantities: 'Vui lòng phân bổ số lượng cho ít nhất một biến thể',
   productHasVariants: 'Sản phẩm này có biến thể - phân bổ số lượng bên dưới',
   withVariants: 'có biến thể',

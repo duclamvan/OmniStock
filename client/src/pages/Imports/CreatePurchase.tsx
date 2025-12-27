@@ -2888,7 +2888,7 @@ export default function CreatePurchase() {
                     <Package className="h-4 w-4" />
                     {t('variantAllocations') || 'Variant Allocations'}
                     <span className="text-xs font-normal text-purple-600 dark:text-purple-400">
-                      ({t('totalQuantity') || 'Total'}: {currentItemVariantAllocations.reduce((sum, a) => sum + a.quantity, 0)})
+                      ({t('variantTotalQuantity') || 'Total'}: {currentItemVariantAllocations.reduce((sum, a) => sum + a.quantity, 0)})
                     </span>
                   </h4>
                   <div className="grid gap-2">
@@ -2896,7 +2896,7 @@ export default function CreatePurchase() {
                       <div key={allocation.variantId} className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded border">
                         <span className="text-sm font-medium flex-1 min-w-0 truncate">{allocation.variantName}</span>
                         <div className="flex items-center gap-1.5">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('qty') || 'Qty'}:</Label>
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantQty') || 'Qty'}:</Label>
                           <Input
                             type="number"
                             min="0"
@@ -2914,7 +2914,7 @@ export default function CreatePurchase() {
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('price') || 'Price'}:</Label>
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantPrice') || 'Price'}:</Label>
                           <DecimalInput
                             className="h-8 w-24"
                             value={allocation.unitPrice}
@@ -2934,7 +2934,7 @@ export default function CreatePurchase() {
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-700">
                     <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                      {t('totalValue') || 'Total Value'}:
+                      {t('variantTotalValue') || 'Total Value'}:
                     </span>
                     <span className="text-sm font-bold text-purple-800 dark:text-purple-200">
                       {formatCurrency(

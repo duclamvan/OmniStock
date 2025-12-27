@@ -2170,10 +2170,10 @@ const imports = {
   
   // Variant-aware import workflow
   variantAllocations: 'Variant Allocations',
-  totalQuantity: 'Total',
-  totalValue: 'Total Value',
-  qty: 'Qty',
-  price: 'Price',
+  variantQty: 'Qty',
+  variantPrice: 'Price',
+  variantTotalQuantity: 'Total',
+  variantTotalValue: 'Total Value',
   pleaseAllocateVariantQuantities: 'Please allocate quantities to at least one variant',
   productHasVariants: 'This product has variants - allocate quantities below',
   withVariants: 'with variants',
