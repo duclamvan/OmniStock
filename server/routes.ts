@@ -2055,13 +2055,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-      // Low stock count - supports both percentage and amount types
+      // Low stock count - supports none, percentage, and amount types
       const allProducts = await storage.getProducts();
       const lowStockProducts = allProducts.filter(p => {
         if (!p.isActive) return false;
         const quantity = p.quantity || 0;
         const alertType = p.lowStockAlertType || 'percentage';
         const alertValue = p.lowStockAlert || 45;
+        
+        // Skip products with 'none' alert type
+        if (alertType === 'none') return false;
         
         if (alertType === 'percentage') {
           const maxStock = p.maxStockLevel || 100;
@@ -2148,11 +2151,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalUnits += qty;
       });
 
-      // Low stock products - supports both percentage and amount types
+      // Low stock products - supports none, percentage, and amount types
       const lowStockProducts = activeProducts.filter(p => {
         const quantity = p.quantity || 0;
         const alertType = p.lowStockAlertType || 'percentage';
         const alertValue = p.lowStockAlert || 45;
+        
+        // Skip products with 'none' alert type
+        if (alertType === 'none') return false;
         
         if (alertType === 'percentage') {
           const maxStock = p.maxStockLevel || 100;
@@ -2181,12 +2187,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const alertValue = p.lowStockAlert || 45;
         const maxStock = p.maxStockLevel || 100;
         
+        // Products with 'none' alert type are considered healthy (no low stock check)
         let isLow = false;
-        if (alertType === 'percentage') {
-          const threshold = Math.ceil((maxStock * alertValue) / 100);
-          isLow = quantity <= threshold;
-        } else {
-          isLow = quantity <= alertValue;
+        if (alertType !== 'none') {
+          if (alertType === 'percentage') {
+            const threshold = Math.ceil((maxStock * alertValue) / 100);
+            isLow = quantity <= threshold;
+          } else {
+            isLow = quantity <= alertValue;
+          }
         }
         
         const isOver = maxStock > 0 && quantity > maxStock;

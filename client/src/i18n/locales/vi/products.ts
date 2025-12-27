@@ -627,6 +627,7 @@ const products = {
     lowStockAlert: 'Cảnh báo tồn kho thấp',
     lowStockAlertSettings: 'Cài đặt cảnh báo tồn kho thấp',
     alertType: 'Loại cảnh báo',
+    alertTypeNone: 'Không (Tắt cảnh báo)',
     alertTypePercentage: 'Phần trăm (%)',
     alertTypeAmount: 'Số lượng cố định',
     alertThresholdPercent: 'Ngưỡng (%)',

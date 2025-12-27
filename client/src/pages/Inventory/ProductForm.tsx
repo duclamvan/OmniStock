@@ -2445,49 +2445,54 @@ export default function ProductForm() {
                       <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">{t('products:formLabels.lowStockAlertSettings')}</Label>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={form.watch('lowStockAlertType') === 'none' ? '' : 'grid grid-cols-2 gap-3'}>
                       <div>
                         <Label htmlFor="lowStockAlertType" className="text-xs text-amber-700 dark:text-amber-300">{t('products:formLabels.alertType')}</Label>
                         <Select
                           value={form.watch('lowStockAlertType') || 'percentage'}
-                          onValueChange={(value: 'percentage' | 'amount') => form.setValue('lowStockAlertType', value)}
+                          onValueChange={(value: 'none' | 'percentage' | 'amount') => form.setValue('lowStockAlertType', value)}
                         >
                           <SelectTrigger className="mt-1" data-testid="select-alert-type">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">{t('products:formLabels.alertTypeNone')}</SelectItem>
                             <SelectItem value="percentage">{t('products:formLabels.alertTypePercentage')}</SelectItem>
                             <SelectItem value="amount">{t('products:formLabels.alertTypeAmount')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label htmlFor="lowStockAlert" className="text-xs text-amber-700 dark:text-amber-300">
-                          {form.watch('lowStockAlertType') === 'percentage' 
-                            ? t('products:formLabels.alertThresholdPercent', 'Threshold (%)') 
-                            : t('products:formLabels.alertThresholdUnits', 'Threshold (Units)')}
-                        </Label>
-                        <div className="relative mt-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={form.watch('lowStockAlertType') === 'percentage' ? 100 : undefined}
-                            {...form.register('lowStockAlert')}
-                            data-testid="input-low-stock"
-                          />
-                          {form.watch('lowStockAlertType') === 'percentage' ? (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                          ) : (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{t('products:formLabels.units', 'units')}</span>
-                          )}
+                      {form.watch('lowStockAlertType') !== 'none' && (
+                        <div>
+                          <Label htmlFor="lowStockAlert" className="text-xs text-amber-700 dark:text-amber-300">
+                            {form.watch('lowStockAlertType') === 'percentage' 
+                              ? t('products:formLabels.alertThresholdPercent', 'Threshold (%)') 
+                              : t('products:formLabels.alertThresholdUnits', 'Threshold (Units)')}
+                          </Label>
+                          <div className="relative mt-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={form.watch('lowStockAlertType') === 'percentage' ? 100 : undefined}
+                              {...form.register('lowStockAlert')}
+                              data-testid="input-low-stock"
+                            />
+                            {form.watch('lowStockAlertType') === 'percentage' ? (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                            ) : (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{t('products:formLabels.units', 'units')}</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      {form.watch('lowStockAlertType') === 'percentage' 
-                        ? t('products:formLabels.percentageAlertHint', 'Alert when stock falls below this percentage of max stock')
-                        : t('products:formLabels.amountAlertHint', 'Alert when stock falls below this number of units')}
-                    </p>
+                    {form.watch('lowStockAlertType') !== 'none' && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        {form.watch('lowStockAlertType') === 'percentage' 
+                          ? t('products:formLabels.percentageAlertHint', 'Alert when stock falls below this percentage of max stock')
+                          : t('products:formLabels.amountAlertHint', 'Alert when stock falls below this number of units')}
+                      </p>
+                    )}
                   </div>
 
                   <div>

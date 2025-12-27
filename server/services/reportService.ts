@@ -149,12 +149,15 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
     ));
   
   const allProducts = await db.select().from(products);
-  // Support both percentage and amount-based low stock alerts
+  // Support none, percentage, and amount-based low stock alerts
   const lowStockProducts = allProducts.filter(p => {
     const quantity = p.quantity || 0;
     if (quantity === 0) return false; // Skip out of stock for this metric
     const alertType = p.lowStockAlertType || 'percentage';
     const alertValue = p.lowStockAlert || 45;
+    
+    // Skip products with 'none' alert type
+    if (alertType === 'none') return false;
     
     if (alertType === 'percentage') {
       const maxStock = p.maxStockLevel || 100;
@@ -313,6 +316,9 @@ export async function getLowStockAlerts(): Promise<Array<{ id: string; name: str
       const alertType = p.lowStockAlertType || 'percentage';
       const alertValue = p.lowStockAlert || 45;
       
+      // Skip products with 'none' alert type
+      if (alertType === 'none') return false;
+      
       if (alertType === 'percentage') {
         const maxStock = p.maxStockLevel || 100;
         const threshold = Math.ceil((maxStock * alertValue) / 100);
@@ -407,6 +413,9 @@ export async function generateHTMLReport(timeframe: 'daily' | 'weekly' | 'monthl
     const quantity = p.quantity || 0;
     const alertType = p.lowStockAlertType || 'percentage';
     const alertValue = p.lowStockAlert || 45;
+    
+    // Skip products with 'none' alert type
+    if (alertType === 'none') return false;
     
     if (alertType === 'percentage') {
       const maxStock = p.maxStockLevel || 100;

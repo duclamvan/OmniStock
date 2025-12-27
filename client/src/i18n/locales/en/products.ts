@@ -520,6 +520,7 @@ const products = {
     lowStockAlert: 'Low Stock Alert',
     lowStockAlertSettings: 'Low Stock Alert Settings',
     alertType: 'Alert Type',
+    alertTypeNone: 'None (No Alerts)',
     alertTypePercentage: 'Percentage (%)',
     alertTypeAmount: 'Fixed Amount',
     alertThresholdPercent: 'Threshold (%)',

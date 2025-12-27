@@ -2399,6 +2399,11 @@ export class DatabaseStorage implements IStorage {
         const alertType = p.lowStockAlertType || 'percentage';
         const alertValue = p.lowStockAlert || 45;
         
+        // Skip products with 'none' alert type
+        if (alertType === 'none') {
+          return false;
+        }
+        
         if (alertType === 'percentage') {
           // Calculate threshold based on percentage of max stock level
           const maxStock = p.maxStockLevel || 100; // Default to 100 if not set
