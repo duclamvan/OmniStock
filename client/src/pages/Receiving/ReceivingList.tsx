@@ -1888,6 +1888,7 @@ function formatLocationCode(input: string): string {
 }
 
 // Get the next expected section hint based on current location code input
+// Minimum valid: WH1-A1 (2 segments). Optional: R and L sections
 function getLocationHint(input: string): { hint: string; complete: boolean; displayInput: string } {
   const segments = input.split('-').filter(Boolean);
   const segmentCount = segments.length;
@@ -1896,9 +1897,6 @@ function getLocationHint(input: string): { hint: string; complete: boolean; disp
   const lastSegment = segments[segmentCount - 1] || '';
   const hasNumber = /\d/.test(lastSegment);
   const hasLetters = /[A-Z]/.test(lastSegment);
-  
-  // Section labels based on position
-  const sectionLabels = ['WH', 'A', 'R', 'L'];
   
   if (segmentCount === 0 || !input) {
     return { hint: 'WH_', complete: false, displayInput: '' };
@@ -1909,13 +1907,14 @@ function getLocationHint(input: string): { hint: string; complete: boolean; disp
     return { hint: '_', complete: false, displayInput: input };
   }
   
-  // Current segment is complete, hint for next section
+  // Current segment is complete - mark as valid if at least WH-A (2 segments)
+  // Show optional hints for additional sections
   if (segmentCount === 1) {
     return { hint: '-A_', complete: false, displayInput: input };
   } else if (segmentCount === 2) {
-    return { hint: '-R_', complete: false, displayInput: input };
+    return { hint: ' ✓ (-R?)', complete: true, displayInput: input };
   } else if (segmentCount === 3) {
-    return { hint: '-L_', complete: false, displayInput: input };
+    return { hint: ' ✓ (-L?)', complete: true, displayInput: input };
   } else if (segmentCount >= 4) {
     return { hint: '', complete: true, displayInput: input };
   }

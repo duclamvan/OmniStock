@@ -158,12 +158,12 @@ export function validatePalletLocationCode(code: string): boolean {
 
 /**
  * Validate a location code format (any format)
- * Supports both full format (WH1-A01-R02-L03) and short format (WH1-A1-R2-L3)
+ * Supports partial formats: WH1-A1, WH1-A1-R1, WH1-A1-R1-L1
  */
 export function validateLocationCode(code: string): boolean {
   return validateShelfLocationCode(code) || 
          validatePalletLocationCode(code) ||
-         /^[A-Za-z0-9]+-[A-Z]\d+-R\d+-L\d+$/.test(code); // Standard format (1+ digits)
+         /^[A-Za-z0-9]+-[A-Z]\d+(-R\d+)?(-L\d+)?$/.test(code); // Partial format (R and L optional)
 }
 
 /**
