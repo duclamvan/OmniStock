@@ -1871,10 +1871,48 @@ function generateSuggestedLocationWithAI(
 }
 
 // Format location code with automatic dashing (e.g., wh1a01 → WH1-A01)
+// Accepts short formats like WH1-A1 (without leading zeros)
 function formatLocationCode(input: string): string {
-  const cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const segments = cleaned.match(/[A-Z]+\d*/g) || [];
+  const cleaned = input.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  // Allow manual dashes - split by dash first, then format each segment
+  const parts = cleaned.split('-').filter(Boolean);
+  const segments: string[] = [];
+  
+  for (const part of parts) {
+    // Match letter(s) followed by optional number(s) within each dash-separated part
+    const matches = part.match(/[A-Z]+\d*/g) || [];
+    segments.push(...matches);
+  }
+  
   return segments.join('-');
+}
+
+// Get the next expected section hint based on current location code input
+function getLocationHint(input: string): { hint: string; complete: boolean } {
+  const segments = input.split('-').filter(Boolean);
+  const segmentCount = segments.length;
+  
+  // Check if current segment is complete (has letters and at least one number)
+  const lastSegment = segments[segmentCount - 1] || '';
+  const hasNumber = /\d/.test(lastSegment);
+  
+  if (segmentCount === 0 || !input) {
+    return { hint: 'WH_', complete: false };
+  } else if (segmentCount === 1) {
+    if (!hasNumber) return { hint: 'WH_', complete: false };
+    return { hint: '-A_', complete: false };
+  } else if (segmentCount === 2) {
+    if (!hasNumber) return { hint: '-A_', complete: false };
+    return { hint: '-R_', complete: false };
+  } else if (segmentCount === 3) {
+    if (!hasNumber) return { hint: '-R_', complete: false };
+    return { hint: '-L_', complete: false };
+  } else if (segmentCount >= 4) {
+    if (!hasNumber) return { hint: '-L_', complete: false };
+    return { hint: '', complete: true };
+  }
+  
+  return { hint: '', complete: true };
 }
 
 // Get AI reasoning for suggested location
@@ -2840,7 +2878,7 @@ function QuickStorageSheet({
                                 {/* ADD LOCATION - Simplified for mobile */}
                                 {itemRemainingQty > 0 && (
                                   <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
-                                    <div className="flex gap-2 mb-2">
+                                    <div className="flex gap-2 mb-1">
                                       <Input
                                         ref={locationInputRef}
                                         value={locationInput}
@@ -2853,7 +2891,7 @@ function QuickStorageSheet({
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        placeholder="WH1-A01-R02-L03"
+                                        placeholder="WH1-A1-R1-L1"
                                         className="flex-1 h-12 text-base font-mono font-bold text-center border-2 rounded-lg bg-white dark:bg-gray-950"
                                         data-testid="input-location-manual"
                                       />
@@ -2886,6 +2924,31 @@ function QuickStorageSheet({
                                         </Button>
                                       )}
                                     </div>
+                                    
+                                    {/* Location Format Guide */}
+                                    {locationInput && (
+                                      <div className="mb-2 text-center">
+                                        {(() => {
+                                          const { hint, complete } = getLocationHint(locationInput);
+                                          if (complete) {
+                                            return (
+                                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                                ✓ {t('common:ready')}
+                                              </span>
+                                            );
+                                          }
+                                          return (
+                                            <span className="text-xs text-muted-foreground font-mono">
+                                              {locationInput}
+                                              <span className="text-blue-500 dark:text-blue-400 animate-pulse">{hint}</span>
+                                              <span className="ml-2 text-[10px] text-muted-foreground/60">
+                                                (WH→A→R→L)
+                                              </span>
+                                            </span>
+                                          );
+                                        })()}
+                                      </div>
+                                    )}
                                     
                                     {/* Camera Preview - Compact */}
                                     {barcodeScanner.scanningEnabled && barcodeScanner.isActive && (
