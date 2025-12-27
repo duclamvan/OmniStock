@@ -532,6 +532,8 @@ const imports = {
   seriesPatternExample: 'vd: Size <1-10>',
   seriesPatternHelp: 'Sử dụng <bắt đầu-kết thúc> cho chuỗi số, vd "Size <36-45>"',
   createSeries: 'Tạo chuỗi',
+  fillDown: 'Điền xuống tất cả hàng bên dưới',
+  filledDownCount: 'Đã điền {{count}} ô bên dưới',
   
   // CreatePurchase - Validation
   validationError: 'Lỗi xác thực',

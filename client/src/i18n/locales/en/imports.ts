@@ -526,6 +526,8 @@ const imports = {
   seriesPatternExample: 'e.g. Size <1-10>',
   seriesPatternHelp: 'Use <start-end> for numbered series, e.g. "Size <36-45>"',
   createSeries: 'Create Series',
+  fillDown: 'Fill down to all rows below',
+  filledDownCount: 'Filled {{count}} cells below',
   
   // CreatePurchase - Validation
   validationError: 'Validation Error',

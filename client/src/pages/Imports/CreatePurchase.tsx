@@ -1687,6 +1687,27 @@ export default function CreatePurchase() {
     setVariants(variants.filter(v => v.id !== variantId));
   };
   
+  // Fill down value from current row to all rows below
+  const fillDownVariantValue = (variantId: string, field: 'quantity' | 'unitPrice' | 'weight' | 'sku' | 'barcode') => {
+    const variantIndex = variants.findIndex(v => v.id === variantId);
+    if (variantIndex === -1 || variantIndex === variants.length - 1) return;
+    
+    const sourceValue = variants[variantIndex][field];
+    const updatedVariants = variants.map((v, index) => {
+      if (index > variantIndex) {
+        return { ...v, [field]: sourceValue };
+      }
+      return v;
+    });
+    
+    setVariants(updatedVariants);
+    const filledCount = variants.length - variantIndex - 1;
+    toast({
+      title: t('success'),
+      description: t('filledDownCount', { count: filledCount }),
+    });
+  };
+  
   // Toggle select all variants
   const toggleSelectAllVariants = () => {
     if (selectedVariants.length === variants.length) {
@@ -3312,53 +3333,96 @@ export default function CreatePurchase() {
                                   />
                                 </TableCell>
                                 <TableCell className="p-2">
-                                  <Input
-                                    type="number"
-                                    value={variant.quantity}
-                                    onChange={(e) => {
-                                      setVariants(variants.map(v => 
-                                        v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
-                                      ));
-                                    }}
-                                    onFocus={(e) => e.target.select()}
-                                    className="h-6 w-14 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    min="0"
-                                    data-testid={`input-variant-qty-${variant.id}`}
-                                  />
+                                  <div className="flex items-center gap-0.5 group">
+                                    <Input
+                                      type="number"
+                                      value={variant.quantity}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
+                                        ));
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      className="h-6 w-12 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      min="0"
+                                      data-testid={`input-variant-qty-${variant.id}`}
+                                    />
+                                    {variants.indexOf(variant) < variants.length - 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => fillDownVariantValue(variant.id, 'quantity')}
+                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title={t('fillDown')}
+                                      >
+                                        <ChevronDown className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="p-2">
-                                  <Input
-                                    type="number"
-                                    value={variant.unitPrice}
-                                    onChange={(e) => {
-                                      setVariants(variants.map(v => 
-                                        v.id === variant.id ? {...v, unitPrice: parseDecimal(e.target.value)} : v
-                                      ));
-                                    }}
-                                    onKeyDown={handleDecimalKeyDown}
-                                    onFocus={(e) => e.target.select()}
-                                    className="h-6 w-16 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    step="0.01"
-                                    min="0"
-                                    data-testid={`input-variant-price-${variant.id}`}
-                                  />
+                                  <div className="flex items-center gap-0.5 group">
+                                    <Input
+                                      type="number"
+                                      value={variant.unitPrice}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, unitPrice: parseDecimal(e.target.value)} : v
+                                        ));
+                                      }}
+                                      onKeyDown={handleDecimalKeyDown}
+                                      onFocus={(e) => e.target.select()}
+                                      className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                      data-testid={`input-variant-price-${variant.id}`}
+                                    />
+                                    {variants.indexOf(variant) < variants.length - 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => fillDownVariantValue(variant.id, 'unitPrice')}
+                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title={t('fillDown')}
+                                      >
+                                        <ChevronDown className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="p-2">
-                                  <Input
-                                    type="number"
-                                    value={variant.weight}
-                                    onChange={(e) => {
-                                      setVariants(variants.map(v => 
-                                        v.id === variant.id ? {...v, weight: parseDecimal(e.target.value)} : v
-                                      ));
-                                    }}
-                                    onKeyDown={handleDecimalKeyDown}
-                                    onFocus={(e) => e.target.select()}
-                                    className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    step="0.01"
-                                    min="0"
-                                    data-testid={`input-variant-weight-${variant.id}`}
-                                  />
+                                  <div className="flex items-center gap-0.5 group">
+                                    <Input
+                                      type="number"
+                                      value={variant.weight ?? ''}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, weight: e.target.value ? parseDecimal(e.target.value) : undefined} : v
+                                        ));
+                                      }}
+                                      onKeyDown={handleDecimalKeyDown}
+                                      onFocus={(e) => e.target.select()}
+                                      className="h-6 w-12 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                      placeholder="-"
+                                      data-testid={`input-variant-weight-${variant.id}`}
+                                    />
+                                    {variants.indexOf(variant) < variants.length - 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => fillDownVariantValue(variant.id, 'weight')}
+                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title={t('fillDown')}
+                                      >
+                                        <ChevronDown className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="p-2">
                                   <Button
