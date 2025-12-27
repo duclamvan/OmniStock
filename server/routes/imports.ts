@@ -792,15 +792,32 @@ router.post("/purchases/unpack", async (req, res) => {
       .from(purchaseItems)
       .where(eq(purchaseItems.purchaseId, purchaseId));
 
+    // Calculate per-unit cost from purchase order if individual items don't have prices
+    // This ensures cost data is preserved even when items only have quantity, not individual pricing
+    const purchaseTotalPaid = parseFloat(purchase.totalPaid || purchase.totalCost || '0');
+    const purchaseShippingCost = parseFloat(purchase.shippingCost || '0');
+    const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const purchaseSubtotal = purchaseTotalPaid - purchaseShippingCost;
+    
+    // Calculate fallback unit price: (totalPaid - shipping) / total quantity
+    // This is used when individual items don't have their own unitPrice
+    const fallbackUnitPrice = totalQuantity > 0 ? (purchaseSubtotal / totalQuantity) : 0;
+    
+    console.log(`[Unpack] PO ${purchase.id}: totalPaid=${purchaseTotalPaid}, shipping=${purchaseShippingCost}, items=${items.length}, totalQty=${totalQuantity}, fallbackUnitPrice=${fallbackUnitPrice.toFixed(4)}`);
+
     // Create custom items from purchase items, preserving ALL purchase order and item data
     const customItemsCreated = [];
     for (const item of items) {
+      // Use item's own unitPrice if available, otherwise calculate from purchase order total
+      const itemUnitPrice = parseFloat(item.unitPrice || '0');
+      const effectiveUnitPrice = itemUnitPrice > 0 ? itemUnitPrice : fallbackUnitPrice;
+      
       const customItem = {
         name: item.name,
         source: purchase.supplier || 'Unknown', // Use supplier name as source
         orderNumber: `PO-${purchase.id.substring(0, 8).toUpperCase()}`, // Short PO ID for display
         quantity: item.quantity,
-        unitPrice: item.unitPrice || '0',
+        unitPrice: effectiveUnitPrice.toString(), // Use calculated price if item has no individual price
         weight: item.weight || '0',
         dimensions: item.dimensions ? JSON.stringify(item.dimensions) : null,
         trackingNumber: item.trackingNumber || purchase.trackingNumber,
