@@ -4427,6 +4427,118 @@ export default function CreatePurchase() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Quick Entry Section */}
+            <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">{t('quickEntry')}</Label>
+                <span className="text-xs text-muted-foreground">{t('quickEntryHelp')}</span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={t('quickEntryPlaceholder')}
+                  className="flex-1 font-mono text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const input = (e.target as HTMLInputElement).value;
+                      if (!input.trim()) return;
+                      
+                      const newQuantities: {[key: string]: number} = {};
+                      const newSelections: string[] = [...selectedExistingVariants];
+                      
+                      const segments = input.split(',').map(s => s.trim()).filter(Boolean);
+                      for (const segment of segments) {
+                        const match = segment.match(/^(\d+)\s*(?:[-–]\s*(\d+)\s*(?:pcs|lo|ks|pc)?)?$/i);
+                        if (match) {
+                          const variantNumber = match[1];
+                          const quantity = match[2] ? parseInt(match[2]) : 1;
+                          
+                          const variant = existingVariants.find(v => {
+                            const name = v.name?.toString() || '';
+                            const barcode = v.barcode?.toString() || '';
+                            const nameNumbers = name.match(/\d+/g);
+                            return (
+                              name === variantNumber ||
+                              barcode === variantNumber ||
+                              (nameNumbers && nameNumbers.includes(variantNumber))
+                            );
+                          });
+                          
+                          if (variant) {
+                            newQuantities[variant.id] = (newQuantities[variant.id] || 0) + quantity;
+                            if (!newSelections.includes(variant.id)) {
+                              newSelections.push(variant.id);
+                            }
+                          }
+                        }
+                      }
+                      
+                      if (Object.keys(newQuantities).length > 0) {
+                        setExistingVariantQuantities(prev => ({ ...prev, ...newQuantities }));
+                        setSelectedExistingVariants(newSelections);
+                        (e.target as HTMLInputElement).value = '';
+                        toast({
+                          title: t('success'),
+                          description: t('variantsAddedFromQuickEntry', { count: Object.keys(newQuantities).length }),
+                        });
+                      }
+                    }
+                  }}
+                  data-testid="input-quick-variant-entry"
+                />
+              </div>
+            </div>
+            
+            {/* Set Quantity for All */}
+            <div className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30">
+              <Label className="text-sm font-medium whitespace-nowrap">{t('setQuantityForAll')}</Label>
+              <Input
+                type="number"
+                placeholder="1"
+                className="w-20 h-8 text-center"
+                min="1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const qty = parseInt((e.target as HTMLInputElement).value) || 1;
+                    const allQuantities: {[key: string]: number} = {};
+                    existingVariants.forEach(v => {
+                      allQuantities[v.id] = qty;
+                    });
+                    setExistingVariantQuantities(allQuantities);
+                    setSelectedExistingVariants(existingVariants.map(v => v.id));
+                    toast({
+                      title: t('success'),
+                      description: t('quantitySetForAll', { qty, count: existingVariants.length }),
+                    });
+                  }
+                }}
+                data-testid="input-quantity-for-all"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const input = document.querySelector('[data-testid="input-quantity-for-all"]') as HTMLInputElement;
+                  const qty = parseInt(input?.value) || 1;
+                  const allQuantities: {[key: string]: number} = {};
+                  existingVariants.forEach(v => {
+                    allQuantities[v.id] = qty;
+                  });
+                  setExistingVariantQuantities(allQuantities);
+                  setSelectedExistingVariants(existingVariants.map(v => v.id));
+                  toast({
+                    title: t('success'),
+                    description: t('quantitySetForAll', { qty, count: existingVariants.length }),
+                  });
+                }}
+                data-testid="button-apply-quantity-all"
+              >
+                {t('applyToAll')}
+              </Button>
+            </div>
+            
             {/* Select All */}
             <div className="flex items-center justify-between border-b pb-2">
               <div className="flex items-center space-x-2">

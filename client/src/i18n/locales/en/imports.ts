@@ -2119,7 +2119,6 @@ const imports = {
   selectVariantsToAdd: 'Select which variants of {{name}} to add to this purchase',
   variantsAvailable: 'variants available',
   variantsAddedCount: '{{count}} variants added to list',
-  selectAll: 'Select All',
   selectedCount: '{{count}} selected',
   addSelected: 'Add Selected',
   lastCost: 'Last cost',
@@ -2161,6 +2160,15 @@ const imports = {
   failedToDeleteLocation: 'Failed to remove location',
   stock: 'Stock',
   toAdd: 'To add',
+  
+  // Quick entry for variants
+  quickEntry: 'Quick Entry',
+  quickEntryHelp: '(e.g. 1-5, 2-3, 5)',
+  quickEntryPlaceholder: 'Type: 1-5, 2-3, 5 then Enter (variant-qty)',
+  variantsAddedFromQuickEntry: '{{count}} variants added from quick entry',
+  setQuantityForAll: 'Quantity for all:',
+  applyToAll: 'Apply to All',
+  quantitySetForAll: 'Set qty {{qty}} for {{count}} variants',
   
   // Barcode paste feature
   pasteBarcodeList: 'Paste Barcode List',

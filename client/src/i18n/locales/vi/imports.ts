@@ -2060,7 +2060,6 @@ const imports = {
   selectVariantsToAdd: 'Chọn biến thể của {{name}} để thêm vào đơn mua hàng',
   variantsAvailable: 'biến thể có sẵn',
   variantsAddedCount: 'Đã thêm {{count}} biến thể vào danh sách',
-  selectAll: 'Chọn tất cả',
   selectedCount: 'Đã chọn {{count}}',
   addSelected: 'Thêm đã chọn',
   lastCost: 'Giá gần nhất',
@@ -2102,6 +2101,15 @@ const imports = {
   failedToDeleteLocation: 'Xóa vị trí thất bại',
   stock: 'Tồn kho',
   toAdd: 'Thêm',
+  
+  // Quick entry for variants
+  quickEntry: 'Nhập nhanh',
+  quickEntryHelp: '(VD: 1-5, 2-3, 5)',
+  quickEntryPlaceholder: 'Nhập: 1-5, 2-3, 5 rồi Enter (biến thể-số lượng)',
+  variantsAddedFromQuickEntry: 'Đã thêm {{count}} biến thể từ nhập nhanh',
+  setQuantityForAll: 'Số lượng cho tất cả:',
+  applyToAll: 'Áp dụng tất cả',
+  quantitySetForAll: 'Đã đặt SL {{qty}} cho {{count}} biến thể',
   
   // Barcode paste feature
   pasteBarcodeList: 'Dán danh sách mã vạch',
