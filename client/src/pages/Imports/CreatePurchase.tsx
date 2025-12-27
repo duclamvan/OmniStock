@@ -3273,12 +3273,14 @@ export default function CreatePurchase() {
                         <Table className="min-w-[650px] text-sm">
                           <TableHeader>
                             <TableRow className="h-8">
-                              <TableHead className="w-8 p-2">
-                                <Checkbox
-                                  checked={selectedVariants.length === variants.length && variants.length > 0}
-                                  onCheckedChange={toggleSelectAllVariants}
-                                  className="h-3 w-3"
-                                />
+                              <TableHead className="w-8 p-2 align-middle">
+                                <div className="flex items-center justify-center">
+                                  <Checkbox
+                                    checked={selectedVariants.length === variants.length && variants.length > 0}
+                                    onCheckedChange={toggleSelectAllVariants}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                </div>
                               </TableHead>
                               <TableHead className="min-w-[100px] p-2">{t('variantName')}</TableHead>
                               <TableHead className="min-w-[120px] p-2">{t('sku')}</TableHead>
@@ -3292,18 +3294,20 @@ export default function CreatePurchase() {
                           <TableBody>
                             {variants.map((variant) => (
                               <TableRow key={variant.id} className="h-8">
-                                <TableCell className="p-2">
-                                  <Checkbox
-                                    checked={selectedVariants.includes(variant.id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedVariants([...selectedVariants, variant.id]);
-                                      } else {
-                                        setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
-                                      }
-                                    }}
-                                    className="h-3 w-3"
-                                  />
+                                <TableCell className="p-2 align-middle">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      checked={selectedVariants.includes(variant.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedVariants([...selectedVariants, variant.id]);
+                                        } else {
+                                          setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                        }
+                                      }}
+                                      className="h-3.5 w-3.5"
+                                    />
+                                  </div>
                                 </TableCell>
                                 <TableCell className="font-medium p-2 text-sm">{variant.name}</TableCell>
                                 <TableCell className="p-2">
