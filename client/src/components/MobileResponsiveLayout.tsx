@@ -851,16 +851,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   </Badge>
                 )}
                 {/* Number badges for warehouse operations */}
-                {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
-                    {toFulfillCount}
-                  </Badge>
-                )}
-                {item.href === "/receiving" && receivingTodayCount > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
-                    {receivingTodayCount}
-                  </Badge>
-                )}
                 {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
                   <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
                     {pendingStockAdjustmentsCount}
@@ -939,16 +929,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
                     {/* Number badges for collapsed sidebar */}
-                    {item.href === "/orders/pick-pack" && toFulfillCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
-                        {toFulfillCount > 9 ? '9+' : toFulfillCount}
-                      </span>
-                    )}
-                    {item.href === "/receiving" && receivingTodayCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
-                        {receivingTodayCount > 9 ? '9+' : receivingTodayCount}
-                      </span>
-                    )}
                     {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
                       <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
                         {pendingStockAdjustmentsCount > 9 ? '9+' : pendingStockAdjustmentsCount}
