@@ -88,12 +88,13 @@ const statusLabelKeys: Record<PurchaseStatus, string> = {
   delivered: 'received'
 };
 
-const getNextStatuses = (currentStatus: PurchaseStatus): PurchaseStatus[] => {
+const getNextStatuses = (currentStatus: PurchaseStatus, useConsolidation: boolean = true): PurchaseStatus[] => {
   switch (currentStatus) {
     case 'pending':
       return ['processing'];
     case 'processing':
-      return ['at_warehouse', 'shipped'];
+      // Only show 'at_warehouse' (Consolidation) if consolidation is enabled on the purchase
+      return useConsolidation ? ['at_warehouse', 'shipped'] : ['shipped'];
     case 'at_warehouse':
       return ['shipped'];
     case 'shipped':
@@ -953,7 +954,7 @@ export default function SupplierProcessing() {
                         {/* Actions */}
                         <div className="flex items-center gap-2 pt-2 border-t">
                           {/* Next Status Button */}
-                          {getNextStatuses(purchase.status as PurchaseStatus).length > 0 && (
+                          {getNextStatuses(purchase.status as PurchaseStatus, purchase.consolidation === 'Yes').length > 0 && (
                             <Select
                               value=""
                               onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
@@ -964,7 +965,7 @@ export default function SupplierProcessing() {
                                 <span>{t('moveTo')}</span>
                               </SelectTrigger>
                               <SelectContent>
-                                {getNextStatuses(purchase.status as PurchaseStatus).map((nextStatus) => (
+                                {getNextStatuses(purchase.status as PurchaseStatus, purchase.consolidation === 'Yes').map((nextStatus) => (
                                   <SelectItem key={nextStatus} value={nextStatus}>
                                     {t(statusLabelKeys[nextStatus])}
                                   </SelectItem>
@@ -1069,7 +1070,7 @@ export default function SupplierProcessing() {
                 <div className="hidden sm:block space-y-3">
                   {filteredPurchases.map((purchase) => {
                     const isExpanded = expandedPurchases.has(purchase.id);
-                    const nextStatuses = getNextStatuses(purchase.status as PurchaseStatus);
+                    const nextStatuses = getNextStatuses(purchase.status as PurchaseStatus, purchase.consolidation === 'Yes');
                     
                     return (
                       <Card key={purchase.id} className="border hover:shadow-md transition-shadow">
