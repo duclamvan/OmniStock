@@ -18,7 +18,7 @@ export function CameraScannerDialog({
   onScan,
   title
 }: CameraScannerDialogProps) {
-  const { t } = useTranslation('pickPack');
+  const { t } = useTranslation('orders');
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,7 +197,7 @@ export function CameraScannerDialog({
         <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
           <div className="flex justify-between items-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('supportedFormats') || 'Supports: QR, EAN-13, EAN-8, Code 128, Code 39'}
+              {t('scannerSupportedFormats') || 'Supports: QR, EAN-13, EAN-8, Code 128, Code 39'}
             </p>
             <Button
               variant="outline"

@@ -1101,6 +1101,33 @@ const orders = {
   manualEntry: 'Nhập thủ công',
   barcodeScanner: 'Máy quét mã vạch',
   scanBarcodeToVerifyItems: 'Quét mã vạch để xác minh sản phẩm...',
+  scanBarcodeOrQR: 'Quét mã vạch hoặc mã QR',
+  openCameraScanner: 'Mở camera quét',
+  
+  // Camera Scanner
+  startingCamera: 'Đang khởi động camera...',
+  cameraPermissionDenied: 'Quyền camera bị từ chối. Vui lòng cho phép truy cập camera.',
+  noCameraFound: 'Không tìm thấy camera trên thiết bị này.',
+  cameraInUse: 'Camera đang được sử dụng.',
+  cameraError: 'Không thể khởi động camera',
+  positionBarcodeInFrame: 'Đặt mã vạch trong khung hình',
+  scannerSupportedFormats: 'Hỗ trợ: QR, EAN-13, EAN-8, Code 128, Code 39',
+  
+  // Scan Feedback
+  locationVerified: 'Vị trí đã xác nhận',
+  correctLocation: 'Vị trí đúng',
+  wrongLocation: 'Vị trí sai',
+  expectedLocation: 'Mong đợi',
+  scannedLocation: 'Đã quét',
+  locationScanned: 'Đã quét vị trí',
+  itemPicked: 'Đã lấy sản phẩm',
+  itemNotFound: 'Không tìm thấy sản phẩm',
+  scannedCode: 'Mã',
+  itemNotInLocation: 'Sản phẩm sai vị trí',
+  scanningFrom: 'Đang quét từ',
+  itemLocation: 'Vị trí sản phẩm',
+  unassigned: 'Chưa gán',
+  atLocation: 'Tại vị trí',
   
   // Product Info
   productName: 'Tên sản phẩm',

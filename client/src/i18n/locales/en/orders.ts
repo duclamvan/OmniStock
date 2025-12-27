@@ -1097,6 +1097,33 @@ const orders = {
   manualEntry: 'Manual Entry',
   barcodeScanner: 'Barcode Scanner',
   scanBarcodeToVerifyItems: 'Scan barcode to verify items...',
+  scanBarcodeOrQR: 'Scan Barcode or QR Code',
+  openCameraScanner: 'Open camera scanner',
+  
+  // Camera Scanner
+  startingCamera: 'Starting camera...',
+  cameraPermissionDenied: 'Camera permission denied. Please allow camera access.',
+  noCameraFound: 'No camera found on this device.',
+  cameraInUse: 'Camera is already in use.',
+  cameraError: 'Failed to start camera',
+  positionBarcodeInFrame: 'Position barcode in frame',
+  scannerSupportedFormats: 'Supports: QR, EAN-13, EAN-8, Code 128, Code 39',
+  
+  // Scan Feedback
+  locationVerified: 'Location Verified',
+  correctLocation: 'Correct location',
+  wrongLocation: 'Wrong Location',
+  expectedLocation: 'Expected',
+  scannedLocation: 'Scanned',
+  locationScanned: 'Location Scanned',
+  itemPicked: 'Item Picked',
+  itemNotFound: 'Item Not Found',
+  scannedCode: 'Code',
+  itemNotInLocation: 'Wrong Item for Location',
+  scanningFrom: 'Scanning from',
+  itemLocation: 'Item location',
+  unassigned: 'Unassigned',
+  atLocation: 'At location',
   
   // Product Info
   productName: 'Product Name',
