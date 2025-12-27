@@ -1888,31 +1888,39 @@ function formatLocationCode(input: string): string {
 }
 
 // Get the next expected section hint based on current location code input
-function getLocationHint(input: string): { hint: string; complete: boolean } {
+function getLocationHint(input: string): { hint: string; complete: boolean; displayInput: string } {
   const segments = input.split('-').filter(Boolean);
   const segmentCount = segments.length;
   
   // Check if current segment is complete (has letters and at least one number)
   const lastSegment = segments[segmentCount - 1] || '';
   const hasNumber = /\d/.test(lastSegment);
+  const hasLetters = /[A-Z]/.test(lastSegment);
+  
+  // Section labels based on position
+  const sectionLabels = ['WH', 'A', 'R', 'L'];
   
   if (segmentCount === 0 || !input) {
-    return { hint: 'WH_', complete: false };
-  } else if (segmentCount === 1) {
-    if (!hasNumber) return { hint: 'WH_', complete: false };
-    return { hint: '-A_', complete: false };
-  } else if (segmentCount === 2) {
-    if (!hasNumber) return { hint: '-A_', complete: false };
-    return { hint: '-R_', complete: false };
-  } else if (segmentCount === 3) {
-    if (!hasNumber) return { hint: '-R_', complete: false };
-    return { hint: '-L_', complete: false };
-  } else if (segmentCount >= 4) {
-    if (!hasNumber) return { hint: '-L_', complete: false };
-    return { hint: '', complete: true };
+    return { hint: 'WH_', complete: false, displayInput: '' };
   }
   
-  return { hint: '', complete: true };
+  // If current segment doesn't have a number yet, hint to add number
+  if (hasLetters && !hasNumber) {
+    return { hint: '_', complete: false, displayInput: input };
+  }
+  
+  // Current segment is complete, hint for next section
+  if (segmentCount === 1) {
+    return { hint: '-A_', complete: false, displayInput: input };
+  } else if (segmentCount === 2) {
+    return { hint: '-R_', complete: false, displayInput: input };
+  } else if (segmentCount === 3) {
+    return { hint: '-L_', complete: false, displayInput: input };
+  } else if (segmentCount >= 4) {
+    return { hint: '', complete: true, displayInput: input };
+  }
+  
+  return { hint: '', complete: true, displayInput: input };
 }
 
 // Get AI reasoning for suggested location
@@ -2929,7 +2937,7 @@ function QuickStorageSheet({
                                     {locationInput && (
                                       <div className="mb-2 text-center">
                                         {(() => {
-                                          const { hint, complete } = getLocationHint(locationInput);
+                                          const { hint, complete, displayInput } = getLocationHint(locationInput);
                                           if (complete) {
                                             return (
                                               <span className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -2939,7 +2947,7 @@ function QuickStorageSheet({
                                           }
                                           return (
                                             <span className="text-xs text-muted-foreground font-mono">
-                                              {locationInput}
+                                              <span className="text-foreground">{displayInput}</span>
                                               <span className="text-blue-500 dark:text-blue-400 animate-pulse">{hint}</span>
                                               <span className="ml-2 text-[10px] text-muted-foreground/60">
                                                 (WH→A→R→L)
