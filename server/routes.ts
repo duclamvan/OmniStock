@@ -45,6 +45,7 @@ import {
   products,
   productBundles,
   productLocations,
+  productVariants,
   purchaseItems,
   importPurchases,
   shipments,
@@ -9981,12 +9982,26 @@ Important:
             }
           }
           
+          // Fetch variant SKU if variantId is provided
+          let variantSku: string | null = null;
+          if (item.variantId) {
+            try {
+              const variant = await db.select().from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
+              if (variant.length > 0 && variant[0].sku) {
+                variantSku = variant[0].sku;
+              }
+            } catch (err) {
+              console.error('Failed to fetch variant SKU:', err);
+            }
+          }
+
           const orderItem = {
             orderId: order.id,
             productId: item.productId,
             serviceId: item.serviceId,
             bundleId: item.bundleId || null,
             variantId: item.variantId || null,
+            variantSku: variantSku,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity || 1,

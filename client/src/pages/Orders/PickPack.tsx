@@ -204,6 +204,7 @@ interface ProductVariant {
   id: string;
   productId: string;
   name: string;
+  sku?: string | null;
   barcode?: string | null;
   quantity: number;
   locationCode?: string | null;
@@ -214,12 +215,14 @@ interface OrderItem {
   productId?: string | null;
   variantId?: string | null;
   variantName?: string | null;
+  variantSku?: string | null;  // Variant's SKU (from backend)
+  parentSku?: string | null;   // Parent product's SKU for reference
   variantQuantity?: number;  // Variant's stock quantity (from backend)
   variantLocationCode?: string | null;  // Variant's location (from backend)
   serviceId?: string | null;
   bundleId?: string | null;
   productName: string;
-  sku: string;
+  sku: string; // Display SKU - uses variantSku if available, otherwise parent sku
   quantity: number;
   pickedQuantity: number;
   packedQuantity: number;
@@ -5759,12 +5762,14 @@ export default function PickPack() {
           serviceId: item.serviceId,
           bundleId: item.bundleId,
           productName: item.productName,
-          sku: item.sku,
+          sku: item.variantSku || item.sku, // Use variant SKU if available, otherwise parent SKU
+          parentSku: item.sku, // Keep parent SKU for reference
+          variantSku: item.variantSku || null, // Explicit variant SKU field
           quantity: item.quantity,
           pickedQuantity: item.pickedQuantity || 0,
           packedQuantity: item.packedQuantity || 0,
           warehouseLocation: item.warehouseLocation || null,
-          barcode: item.barcode || item.sku || null,
+          barcode: item.barcode || item.variantSku || item.sku || null, // Include variantSku in barcode matching
           image: item.image || null, // No mock images - use default icons based on type
           isBundle: item.isBundle || false,
           bundleItems: item.bundleItems || undefined,
