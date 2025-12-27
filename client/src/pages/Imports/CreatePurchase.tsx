@@ -936,11 +936,14 @@ export default function CreatePurchase() {
         const variantsData = await response.json();
         setExistingVariants(variantsData || []);
         
-        // Auto-initialize variant allocations if product has variants
+        // Auto-populate variants table if product has variants
         if (variantsData && variantsData.length > 0) {
-          const allocations: VariantAllocation[] = variantsData.map((v: any) => ({
-            variantId: v.id,
-            variantName: v.name,
+          const parentSku = product.sku || '';
+          const loadedVariants = variantsData.map((v: any) => ({
+            id: nanoid(),
+            name: v.name,
+            sku: v.sku || (parentSku ? generateVariantSku(parentSku, v.name) : ''),
+            barcode: v.barcode || '',
             quantity: 0, // User will fill in quantities
             unitPrice: (() => {
               // Get import cost in purchase currency
@@ -949,23 +952,23 @@ export default function CreatePurchase() {
               if (purchaseCurrency === 'EUR' && v.importCostEur) return parseFloat(v.importCostEur);
               if (v.importCostUsd) return parseFloat(v.importCostUsd);
               return product.price || 0;
-            })()
+            })(),
+            weight: product.weight || 0,
+            dimensions: product.dimensions || ''
           }));
-          setCurrentItemVariantAllocations(allocations);
-          setShowVariantAllocations(true);
+          setVariants(loadedVariants);
+          setShowVariants(true);
+          setShowVariantAllocations(false);
         } else {
-          setCurrentItemVariantAllocations([]);
           setShowVariantAllocations(false);
         }
       } else {
         setExistingVariants([]);
-        setCurrentItemVariantAllocations([]);
         setShowVariantAllocations(false);
       }
     } catch (error) {
       console.error('Error fetching variants:', error);
       setExistingVariants([]);
-      setCurrentItemVariantAllocations([]);
       setShowVariantAllocations(false);
     } finally {
       setLoadingExistingVariants(false);
@@ -2881,72 +2884,7 @@ export default function CreatePurchase() {
               
               <Separator />
               
-              {/* Variant Allocations Section - shown when product has variants */}
-              {showVariantAllocations && currentItemVariantAllocations.length > 0 && (
-                <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <h4 className="text-sm font-medium flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                    <Package className="h-4 w-4" />
-                    {t('variantAllocations') || 'Variant Allocations'}
-                    <span className="text-xs font-normal text-purple-600 dark:text-purple-400">
-                      ({t('variantTotalQuantity') || 'Total'}: {currentItemVariantAllocations.reduce((sum, a) => sum + a.quantity, 0)})
-                    </span>
-                  </h4>
-                  <div className="grid gap-2">
-                    {currentItemVariantAllocations.map((allocation, idx) => (
-                      <div key={allocation.variantId} className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded border">
-                        <span className="text-sm font-medium flex-1 min-w-0 truncate">{allocation.variantName}</span>
-                        <div className="flex items-center gap-1.5">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantQty') || 'Qty'}:</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="h-8 w-20"
-                            value={allocation.quantity || ''}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const newQty = parseInt(e.target.value) || 0;
-                              setCurrentItemVariantAllocations(prev => 
-                                prev.map((a, i) => i === idx ? { ...a, quantity: newQty } : a)
-                              );
-                            }}
-                            onFocus={(e) => e.target.select()}
-                            data-testid={`input-variant-qty-${idx}`}
-                          />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('variantCost') || 'Cost'}:</Label>
-                          <DecimalInput
-                            className="h-8 w-24"
-                            value={allocation.unitPrice}
-                            onChange={(val) => {
-                              setCurrentItemVariantAllocations(prev => 
-                                prev.map((a, i) => i === idx ? { ...a, unitPrice: val } : a)
-                              );
-                            }}
-                            data-testid={`input-variant-cost-${idx}`}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground min-w-[70px] text-right">
-                          = {formatCurrency(allocation.quantity * allocation.unitPrice, purchaseCurrency)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-700">
-                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                      {t('variantTotalValue') || 'Total Value'}:
-                    </span>
-                    <span className="text-sm font-bold text-purple-800 dark:text-purple-200">
-                      {formatCurrency(
-                        currentItemVariantAllocations.reduce((sum, a) => sum + (a.quantity * a.unitPrice), 0),
-                        purchaseCurrency
-                      )}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Quantity & Pricing Section - hidden when variant allocations are shown */}
+              {/* Quantity & Pricing Section */}
               {!showVariantAllocations && (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium flex items-center gap-2">
@@ -3235,20 +3173,6 @@ export default function CreatePurchase() {
                       </p>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {/* Load from existing product variants */}
-                      {selectedProduct && existingVariants.length > 0 && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="default"
-                          onClick={() => setExistingVariantsDialogOpen(true)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                          data-testid="button-load-existing-variants"
-                        >
-                          <Package className="h-4 w-4 mr-1" />
-                          {t('loadFromProduct')} ({existingVariants.length})
-                        </Button>
-                      )}
                       {selectedProduct && loadingExistingVariants && (
                         <Button type="button" size="sm" variant="outline" disabled>
                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -3322,7 +3246,7 @@ export default function CreatePurchase() {
                               <TableHead className="min-w-[120px] p-2">{t('sku')}</TableHead>
                               <TableHead className="min-w-[100px] p-2">{t('barcode')}</TableHead>
                               <TableHead className="text-center w-14 p-2">{t('qty')}</TableHead>
-                              <TableHead className="text-right w-16 p-2">{t('price')}</TableHead>
+                              <TableHead className="text-right w-16 p-2">{t('cost')}</TableHead>
                               <TableHead className="text-right w-14 p-2">{t('weight')}</TableHead>
                               <TableHead className="w-8 p-2"></TableHead>
                             </TableRow>
