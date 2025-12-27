@@ -67,6 +67,14 @@ import {
 import { Link } from "wouter";
 import { format } from "date-fns";
 
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  unitPrice?: number;
+  receivedQuantity?: number;
+}
+
 interface ReceivingItem {
   id: string;
   itemId?: number; // Add itemId field for API calls (references shipment item)
@@ -81,6 +89,8 @@ interface ReceivingItem {
   imageUrl?: string;
   warehouseLocations?: string[]; // Array of warehouse bin location codes
   isNewProduct?: boolean; // Flag to indicate if product is new (not in inventory)
+  variantAllocations?: VariantAllocation[]; // For products with variants
+  orderItems?: any[]; // Original order items data from purchase order
 }
 
 // Helper function to generate warehouse location with proper formatting
@@ -513,21 +523,53 @@ export default function StartReceiving() {
       // This ensures items are restored when a shipment is moved back to receiving
       if (shipment.items && shipment.items.length > 0 && receivingItems.length === 0) {
         console.log('Initializing items from shipment.items:', shipment.items.length, 'items');
-        const items = shipment.items.map((item: any, index: number) => ({
-          id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
-          itemId: item.id, // Add itemId field for API calls
-          productId: item.productId?.toString() || item.id?.toString(),
-          name: item.name || item.productName || `Item ${index + 1}`,
-          sku: item.sku || '',
-          expectedQty: item.quantity || 1,
-          receivedQty: 0,
-          status: 'pending' as const,
-          notes: '',
-          checked: false,
-          imageUrl: item.imageUrl || '',
-          warehouseLocations: [] as string[], // Will be populated after initialization
-          isNewProduct: false // Will be determined when fetching locations
-        }));
+        const items = shipment.items.map((item: any, index: number) => {
+          // Parse variant allocations if available
+          let variantAllocations: VariantAllocation[] | undefined;
+          if (item.variantAllocations) {
+            try {
+              variantAllocations = typeof item.variantAllocations === 'string' 
+                ? JSON.parse(item.variantAllocations) 
+                : item.variantAllocations;
+            } catch (e) {
+              console.warn('Failed to parse variantAllocations:', e);
+            }
+          }
+          
+          // Parse order items if available (from custom items created from PO unpack)
+          let orderItems: any[] | undefined;
+          if (item.orderItems) {
+            try {
+              orderItems = typeof item.orderItems === 'string' 
+                ? JSON.parse(item.orderItems) 
+                : item.orderItems;
+            } catch (e) {
+              console.warn('Failed to parse orderItems:', e);
+            }
+          }
+          
+          // Calculate total quantity from variants if available
+          const totalVariantQty = variantAllocations?.reduce((sum, v) => sum + (v.quantity || 0), 0) || 0;
+          const expectedQty = totalVariantQty > 0 ? totalVariantQty : (item.quantity || 1);
+          
+          return {
+            id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
+            itemId: item.id, // Add itemId field for API calls
+            productId: item.productId?.toString() || item.id?.toString(),
+            name: item.name || item.productName || `Item ${index + 1}`,
+            sku: item.sku || '',
+            expectedQty,
+            receivedQty: 0,
+            status: 'pending' as const,
+            notes: '',
+            checked: false,
+            imageUrl: item.imageUrl || '',
+            warehouseLocations: [] as string[], // Will be populated after initialization
+            isNewProduct: false, // Will be determined when fetching locations
+            variantAllocations,
+            orderItems
+          };
+        });
         setReceivingItems(items);
       }
     }
@@ -2478,6 +2520,66 @@ export default function StartReceiving() {
                                       SKU: {item.sku}
                                     </p>
                                   )}
+                                  
+                                  {/* Variants Display - Show detailed breakdown for products with variants */}
+                                  {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                    <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+                                          {item.variantAllocations.length} Variants • {item.expectedQty} Total Units
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1">
+                                        {item.variantAllocations.map((variant, vIndex) => (
+                                          <div 
+                                            key={variant.variantId || vIndex}
+                                            className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                          >
+                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                              {variant.variantName || `Variant ${vIndex + 1}`}
+                                            </span>
+                                            <span className="font-mono font-bold text-purple-600 dark:text-purple-400 ml-2">
+                                              ×{variant.quantity}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Order Items Display - For custom items from unpacked POs */}
+                                  {!item.variantAllocations?.length && item.orderItems && item.orderItems.length > 1 && (
+                                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <Package className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                          {item.orderItems.length} Items in Package
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        {item.orderItems.slice(0, 5).map((orderItem: any, oIndex: number) => (
+                                          <div 
+                                            key={orderItem.originalItemId || oIndex}
+                                            className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-blue-100 dark:border-blue-800"
+                                          >
+                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                              {orderItem.name || orderItem.sku || `Item ${oIndex + 1}`}
+                                            </span>
+                                            <span className="font-mono font-bold text-blue-600 dark:text-blue-400 ml-2">
+                                              ×{orderItem.quantity || 1}
+                                            </span>
+                                          </div>
+                                        ))}
+                                        {item.orderItems.length > 5 && (
+                                          <div className="text-xs text-blue-500 dark:text-blue-400 text-center py-1">
+                                            +{item.orderItems.length - 5} more items
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
                                   {/* Warehouse Locations Display */}
                                   <div className="mt-1">
                                     {item.isNewProduct ? (
