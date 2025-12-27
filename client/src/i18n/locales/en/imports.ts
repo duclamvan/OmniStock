@@ -2162,6 +2162,15 @@ const imports = {
   stock: 'Stock',
   toAdd: 'To add',
   
+  // Barcode paste feature
+  pasteBarcodeList: 'Paste Barcode List',
+  pasteBarcodeListDescription: 'Paste barcodes (one per line) to apply to {{count}} variants in order',
+  pasteBarcodeListPlaceholder: 'Paste barcodes here, one per line...\n\nExample:\n1234567890123\n1234567890124\n1234567890125',
+  barcodesInList: '{{count}} barcodes in list',
+  applyBarcodes: 'Apply Barcodes',
+  noBarcodesPasted: 'No barcodes pasted',
+  barcodesApplied: '{{count}} barcodes applied to variants',
+  
 } as const;
 
 export default imports;

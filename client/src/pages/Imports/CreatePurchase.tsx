@@ -33,7 +33,7 @@ import {
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
   Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, Upload, ImageIcon, Settings, Scale,
-  Barcode, MapPin
+  Barcode, MapPin, ClipboardPaste
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -409,6 +409,10 @@ export default function CreatePurchase() {
   const [selectedExistingVariants, setSelectedExistingVariants] = useState<string[]>([]);
   const [existingVariantQuantities, setExistingVariantQuantities] = useState<{[id: string]: number}>({});
   const [loadingExistingVariants, setLoadingExistingVariants] = useState(false);
+  
+  // Barcode paste dialog state
+  const [barcodePasteDialogOpen, setBarcodePasteDialogOpen] = useState(false);
+  const [barcodePasteText, setBarcodePasteText] = useState("");
   
   // Purchase creation state  
   const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
@@ -1606,6 +1610,38 @@ export default function CreatePurchase() {
   const bulkDeleteVariants = () => {
     setVariants(variants.filter(v => !selectedVariants.includes(v.id)));
     setSelectedVariants([]);
+  };
+  
+  // Apply barcodes from pasted list to variants
+  const applyBarcodesToVariants = () => {
+    const barcodes = barcodePasteText
+      .split('\n')
+      .map(b => b.trim())
+      .filter(b => b.length > 0);
+    
+    if (barcodes.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('noBarcodesPasted'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const updatedVariants = variants.map((variant, index) => ({
+      ...variant,
+      barcode: barcodes[index] || variant.barcode
+    }));
+    
+    setVariants(updatedVariants);
+    setBarcodePasteDialogOpen(false);
+    setBarcodePasteText("");
+    
+    const appliedCount = Math.min(barcodes.length, variants.length);
+    toast({
+      title: t('success'),
+      description: t('barcodesApplied', { count: appliedCount }),
+    });
   };
   
   // Add all variants as items
@@ -3125,6 +3161,16 @@ export default function CreatePurchase() {
                             {selectedVariants.length > 0 ? `${selectedVariants.length} ${t('selected')}` : `${variants.length} ${t('variants')}`}
                           </span>
                         </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBarcodePasteDialogOpen(true)}
+                          data-testid="button-paste-barcodes"
+                        >
+                          <ClipboardPaste className="h-4 w-4 mr-1" />
+                          {t('pasteBarcodeList')}
+                        </Button>
                         {selectedVariants.length > 0 && (
                           <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -4676,6 +4722,49 @@ export default function CreatePurchase() {
         </DialogContent>
       </Dialog>
 
+      {/* Paste Barcode List Dialog */}
+      <Dialog open={barcodePasteDialogOpen} onOpenChange={setBarcodePasteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('pasteBarcodeList')}</DialogTitle>
+            <DialogDescription>
+              {t('pasteBarcodeListDescription', { count: variants.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={barcodePasteText}
+              onChange={(e) => setBarcodePasteText(e.target.value)}
+              placeholder={t('pasteBarcodeListPlaceholder')}
+              className="min-h-[200px] font-mono text-sm"
+              data-testid="textarea-paste-barcodes"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('barcodesInList', { count: barcodePasteText.split('\n').filter(b => b.trim()).length })}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setBarcodePasteDialogOpen(false);
+                setBarcodePasteText("");
+              }}
+            >
+              {t('cancel')}
+            </Button>
+            <Button 
+              onClick={applyBarcodesToVariants}
+              disabled={!barcodePasteText.trim()}
+              data-testid="button-apply-barcodes"
+            >
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              {t('applyBarcodes')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* New Category Dialog */}
       <Dialog open={newCategoryDialogOpen} onOpenChange={setNewCategoryDialogOpen}>
         <DialogContent>

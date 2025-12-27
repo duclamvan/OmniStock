@@ -2103,6 +2103,15 @@ const imports = {
   stock: 'Tồn kho',
   toAdd: 'Thêm',
   
+  // Barcode paste feature
+  pasteBarcodeList: 'Dán danh sách mã vạch',
+  pasteBarcodeListDescription: 'Dán mã vạch (mỗi dòng một mã) để áp dụng cho {{count}} biến thể theo thứ tự',
+  pasteBarcodeListPlaceholder: 'Dán mã vạch vào đây, mỗi dòng một mã...\n\nVí dụ:\n1234567890123\n1234567890124\n1234567890125',
+  barcodesInList: '{{count}} mã vạch trong danh sách',
+  applyBarcodes: 'Áp dụng mã vạch',
+  noBarcodesPasted: 'Chưa dán mã vạch nào',
+  barcodesApplied: 'Đã áp dụng {{count}} mã vạch cho các biến thể',
+  
 } as const;
 
 export default imports;
