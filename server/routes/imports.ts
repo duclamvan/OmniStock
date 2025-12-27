@@ -6914,12 +6914,20 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
             const usdToVnd = eurToVnd / eurToUsd;
             const usdToCny = eurToCny / eurToUsd;
             
-            // Get purchase order for currency info
+            // Get purchase order ID - either from purchase items or from custom items (unpacked)
+            let purchaseOrderId: string | null = null;
             if (item.itemType === 'purchase' && originalItem.purchaseId) {
+              purchaseOrderId = originalItem.purchaseId;
+            } else if (item.itemType === 'custom' && originalItem.purchaseOrderId) {
+              // Custom items from unpacked purchase orders have purchaseOrderId
+              purchaseOrderId = originalItem.purchaseOrderId;
+            }
+            
+            if (purchaseOrderId) {
               const [purchase] = await tx
                 .select()
                 .from(importPurchases)
-                .where(eq(importPurchases.id, originalItem.purchaseId));
+                .where(eq(importPurchases.id, purchaseOrderId));
               
               if (purchase) {
                 const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
@@ -7467,12 +7475,20 @@ router.post("/receipts/approve/:id", async (req, res) => {
           const usdToVnd = eurToVnd / eurToUsd;
           const usdToCny = eurToCny / eurToUsd;
           
-          // Get purchase order for currency info
+          // Get purchase order ID - either from purchase items or from custom items (unpacked)
+          let purchaseOrderId: string | null = null;
           if (item.itemType === 'purchase' && originalItem.purchaseId) {
+            purchaseOrderId = originalItem.purchaseId;
+          } else if (item.itemType === 'custom' && originalItem.purchaseOrderId) {
+            // Custom items from unpacked purchase orders have purchaseOrderId
+            purchaseOrderId = originalItem.purchaseOrderId;
+          }
+          
+          if (purchaseOrderId) {
             const [purchase] = await tx
               .select()
               .from(importPurchases)
-              .where(eq(importPurchases.id, originalItem.purchaseId));
+              .where(eq(importPurchases.id, purchaseOrderId));
             
             if (purchase) {
               const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
@@ -10595,14 +10611,24 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             const usdToVnd = eurToVnd / eurToUsd;
             const usdToCny = eurToCny / eurToUsd;
             
+            // Get purchase order ID - either from purchase items or from custom items (unpacked)
+            let purchaseOrderId: string | null = null;
             if (firstItem.itemType === 'purchase' && originalItem?.purchaseId) {
+              purchaseOrderId = originalItem.purchaseId;
+            } else if (firstItem.itemType === 'custom' && originalItem?.purchaseOrderId) {
+              // Custom items from unpacked purchase orders have purchaseOrderId
+              purchaseOrderId = originalItem.purchaseOrderId;
+            }
+            
+            if (purchaseOrderId) {
               const [purchase] = await tx
                 .select()
                 .from(importPurchases)
-                .where(eq(importPurchases.id, originalItem.purchaseId));
+                .where(eq(importPurchases.id, purchaseOrderId));
               
               if (purchase) {
                 const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+                console.log(`[addInventoryOnCompletion] Found purchase order ${purchaseOrderId}, currency: ${currency}, unitCost: ${unitCost}`);
                 
                 if (currency === 'CZK') {
                   newCostCzk = unitCost;
@@ -10636,9 +10662,18 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                   newCostVnd = unitCost * usdToVnd;
                   newCostCny = unitCost * usdToCny;
                 }
+              } else {
+                // Purchase order not found - use USD as default
+                console.warn(`[addInventoryOnCompletion] Purchase order ${purchaseOrderId} not found, using USD default`);
+                newCostUsd = unitCost;
+                newCostEur = unitCost * usdToEur;
+                newCostCzk = unitCost * usdToCzk;
+                newCostVnd = unitCost * usdToVnd;
+                newCostCny = unitCost * usdToCny;
               }
             } else {
-              // Default conversion from USD for non-purchase items
+              // No purchase order link - default conversion from USD
+              console.log(`[addInventoryOnCompletion] No purchase order link found, using USD default for unitCost: ${unitCost}`);
               newCostUsd = unitCost;
               newCostEur = unitCost * usdToEur;
               newCostCzk = unitCost * usdToCzk;
