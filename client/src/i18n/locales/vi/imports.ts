@@ -2120,6 +2120,16 @@ const imports = {
   noBarcodesPasted: 'Chưa dán mã vạch nào',
   barcodesApplied: 'Đã áp dụng {{count}} mã vạch cho các biến thể',
   
+  // Variant-aware import workflow
+  variantAllocations: 'Phân bổ biến thể',
+  totalQuantity: 'Tổng',
+  totalValue: 'Tổng giá trị',
+  qty: 'SL',
+  price: 'Giá',
+  pleaseAllocateVariantQuantities: 'Vui lòng phân bổ số lượng cho ít nhất một biến thể',
+  productHasVariants: 'Sản phẩm này có biến thể - phân bổ số lượng bên dưới',
+  withVariants: 'có biến thể',
+  
 } as const;
 
 export default imports;

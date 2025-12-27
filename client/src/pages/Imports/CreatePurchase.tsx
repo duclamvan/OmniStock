@@ -54,6 +54,14 @@ const convertWeightToKg = (weight: number, unit: 'mg' | 'g' | 'kg' | 'oz' | 'lb'
   }
 };
 
+// Variant allocation for products with variants
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 interface PurchaseItem {
   id: string;
   name: string;
@@ -82,6 +90,8 @@ interface PurchaseItem {
   sellingUnitName?: string;
   bulkUnitName?: string | null;
   bulkUnitQty?: number | null;
+  hasVariants?: boolean;
+  variantAllocations?: VariantAllocation[];
 }
 
 interface Supplier {
@@ -411,6 +421,10 @@ export default function CreatePurchase() {
   const [selectedExistingVariants, setSelectedExistingVariants] = useState<string[]>([]);
   const [existingVariantQuantities, setExistingVariantQuantities] = useState<{[id: string]: number}>({});
   const [loadingExistingVariants, setLoadingExistingVariants] = useState(false);
+  
+  // Variant-aware import: store variant allocations on current item
+  const [currentItemVariantAllocations, setCurrentItemVariantAllocations] = useState<VariantAllocation[]>([]);
+  const [showVariantAllocations, setShowVariantAllocations] = useState(false);
   
   // Barcode paste dialog state
   const [barcodePasteDialogOpen, setBarcodePasteDialogOpen] = useState(false);
@@ -921,12 +935,38 @@ export default function CreatePurchase() {
       if (response.ok) {
         const variantsData = await response.json();
         setExistingVariants(variantsData || []);
+        
+        // Auto-initialize variant allocations if product has variants
+        if (variantsData && variantsData.length > 0) {
+          const allocations: VariantAllocation[] = variantsData.map((v: any) => ({
+            variantId: v.id,
+            variantName: v.name,
+            quantity: 0, // User will fill in quantities
+            unitPrice: (() => {
+              // Get import cost in purchase currency
+              if (purchaseCurrency === 'USD' && v.importCostUsd) return parseFloat(v.importCostUsd);
+              if (purchaseCurrency === 'CZK' && v.importCostCzk) return parseFloat(v.importCostCzk);
+              if (purchaseCurrency === 'EUR' && v.importCostEur) return parseFloat(v.importCostEur);
+              if (v.importCostUsd) return parseFloat(v.importCostUsd);
+              return product.price || 0;
+            })()
+          }));
+          setCurrentItemVariantAllocations(allocations);
+          setShowVariantAllocations(true);
+        } else {
+          setCurrentItemVariantAllocations([]);
+          setShowVariantAllocations(false);
+        }
       } else {
         setExistingVariants([]);
+        setCurrentItemVariantAllocations([]);
+        setShowVariantAllocations(false);
       }
     } catch (error) {
       console.error('Error fetching variants:', error);
       setExistingVariants([]);
+      setCurrentItemVariantAllocations([]);
+      setShowVariantAllocations(false);
     } finally {
       setLoadingExistingVariants(false);
     }
@@ -1336,7 +1376,22 @@ export default function CreatePurchase() {
   }, [isEditMode, existingPurchase, dataLoaded]);
 
   const addItem = () => {
-    if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
+    // For products with variants, check that at least one variant has quantity > 0
+    const hasVariantAllocations = showVariantAllocations && currentItemVariantAllocations.length > 0;
+    const activeAllocations = hasVariantAllocations 
+      ? currentItemVariantAllocations.filter(a => a.quantity > 0)
+      : [];
+    
+    if (hasVariantAllocations && activeAllocations.length === 0) {
+      toast({ 
+        title: t('validationError'), 
+        description: t('pleaseAllocateVariantQuantities') || 'Please allocate quantities to at least one variant', 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    if (!currentItem.name || (!hasVariantAllocations && (!currentItem.quantity || currentItem.unitPrice === undefined))) {
       toast({ 
         title: t('validationError'), 
         description: t('pleaseFillItemFields'), 
@@ -1345,8 +1400,18 @@ export default function CreatePurchase() {
       return;
     }
 
+    // Calculate quantity - for variant products, sum of variant allocations
+    let quantity = currentItem.quantity || 1;
+    let unitPrice = currentItem.unitPrice || 0;
+    
+    if (hasVariantAllocations) {
+      quantity = activeAllocations.reduce((sum, a) => sum + a.quantity, 0);
+      // Calculate weighted average unit price
+      const totalValue = activeAllocations.reduce((sum, a) => sum + (a.quantity * a.unitPrice), 0);
+      unitPrice = quantity > 0 ? totalValue / quantity : 0;
+    }
+    
     // Calculate quantity in selling units based on unit type
-    const quantity = currentItem.quantity || 1;
     const unitType = currentItem.unitType || 'selling';
     let quantityInSellingUnits = quantity;
     
@@ -1361,13 +1426,13 @@ export default function CreatePurchase() {
       category: currentItem.category || "",
       categoryId: currentItem.categoryId,
       barcode: currentItem.barcode || "",
-      quantity: currentItem.quantity || 1,
-      unitPrice: currentItem.unitPrice || 0,
+      quantity: quantity,
+      unitPrice: unitPrice,
       weight: currentItem.weight || 0,
       weightUnit: currentItem.weightUnit || 'kg',
       dimensions: currentItem.dimensions || "",
       notes: currentItem.notes || "",
-      totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
+      totalPrice: quantity * unitPrice,
       costWithShipping: 0,
       productId: selectedProduct?.id,
       imageUrl: productImagePreview || selectedProduct?.imageUrl,
@@ -1378,7 +1443,9 @@ export default function CreatePurchase() {
       cartons: currentItem.cartons,
       sellingUnitName: selectedProduct?.sellingUnitName || 'piece',
       bulkUnitName: selectedProduct?.bulkUnitName,
-      bulkUnitQty: selectedProduct?.bulkUnitQty
+      bulkUnitQty: selectedProduct?.bulkUnitQty,
+      hasVariants: hasVariantAllocations,
+      variantAllocations: hasVariantAllocations ? activeAllocations : undefined
     };
 
     const updatedItems = [...items, newItem];
@@ -1388,6 +1455,8 @@ export default function CreatePurchase() {
     setSelectedProduct(null);
     setProductImageFile(null);
     setProductImagePreview(null);
+    setCurrentItemVariantAllocations([]);
+    setShowVariantAllocations(false);
     setCurrentItem({
       name: "",
       sku: "",
@@ -1835,7 +1904,9 @@ export default function CreatePurchase() {
         processingTimeDays: item.processingTimeDays,
         unitType: item.unitType || 'selling',
         quantityInSellingUnits: item.quantityInSellingUnits || item.quantity,
-        imageUrl: item.imageUrl || null
+        imageUrl: item.imageUrl || null,
+        productId: item.productId || null,
+        variantAllocations: item.variantAllocations || null
       }))
     };
 
@@ -2810,7 +2881,73 @@ export default function CreatePurchase() {
               
               <Separator />
               
-              {/* Quantity & Pricing Section */}
+              {/* Variant Allocations Section - shown when product has variants */}
+              {showVariantAllocations && currentItemVariantAllocations.length > 0 && (
+                <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <h4 className="text-sm font-medium flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                    <Package className="h-4 w-4" />
+                    {t('variantAllocations') || 'Variant Allocations'}
+                    <span className="text-xs font-normal text-purple-600 dark:text-purple-400">
+                      ({t('totalQuantity') || 'Total'}: {currentItemVariantAllocations.reduce((sum, a) => sum + a.quantity, 0)})
+                    </span>
+                  </h4>
+                  <div className="grid gap-2">
+                    {currentItemVariantAllocations.map((allocation, idx) => (
+                      <div key={allocation.variantId} className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded border">
+                        <span className="text-sm font-medium flex-1 min-w-0 truncate">{allocation.variantName}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('qty') || 'Qty'}:</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            className="h-8 w-20"
+                            value={allocation.quantity || ''}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const newQty = parseInt(e.target.value) || 0;
+                              setCurrentItemVariantAllocations(prev => 
+                                prev.map((a, i) => i === idx ? { ...a, quantity: newQty } : a)
+                              );
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            data-testid={`input-variant-qty-${idx}`}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('price') || 'Price'}:</Label>
+                          <DecimalInput
+                            className="h-8 w-24"
+                            value={allocation.unitPrice}
+                            onChange={(val) => {
+                              setCurrentItemVariantAllocations(prev => 
+                                prev.map((a, i) => i === idx ? { ...a, unitPrice: val } : a)
+                              );
+                            }}
+                            data-testid={`input-variant-price-${idx}`}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground min-w-[60px] text-right">
+                          = {formatCurrency(allocation.quantity * allocation.unitPrice, purchaseCurrency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-700">
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                      {t('totalValue') || 'Total Value'}:
+                    </span>
+                    <span className="text-sm font-bold text-purple-800 dark:text-purple-200">
+                      {formatCurrency(
+                        currentItemVariantAllocations.reduce((sum, a) => sum + (a.quantity * a.unitPrice), 0),
+                        purchaseCurrency
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Quantity & Pricing Section - hidden when variant allocations are shown */}
+              {!showVariantAllocations && (
               <div className="space-y-3">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-muted-foreground" />
@@ -2908,6 +3045,7 @@ export default function CreatePurchase() {
                   </div>
                 )}
               </div>
+              )}
               
               {/* Physical Properties Section */}
               <div className="space-y-3">

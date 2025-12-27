@@ -2167,6 +2167,16 @@ const imports = {
   quickEntryPlaceholder: 'Type: 1-5, 2-3, 5 then Enter (variant-qty)',
   variantsAddedFromQuickEntry: '{{count}} variants added from quick entry',
   setQuantityForAll: 'Quantity for all:',
+  
+  // Variant-aware import workflow
+  variantAllocations: 'Variant Allocations',
+  totalQuantity: 'Total',
+  totalValue: 'Total Value',
+  qty: 'Qty',
+  price: 'Price',
+  pleaseAllocateVariantQuantities: 'Please allocate quantities to at least one variant',
+  productHasVariants: 'This product has variants - allocate quantities below',
+  withVariants: 'with variants',
   applyToAll: 'Apply to All',
   quantitySetForAll: 'Set qty {{qty}} for {{count}} variants',
   
