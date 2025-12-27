@@ -817,6 +817,7 @@ export const productVariants = pgTable("product_variants", {
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
+  sku: varchar("sku"), // Variant-specific SKU (different from parent product)
   barcode: varchar("barcode"),
   quantity: integer("quantity").default(0),
   locationCode: varchar("location_code"), // Optional - uses parent product's location if empty
@@ -1022,6 +1023,7 @@ export const orderItems = pgTable("order_items", {
   tax: decimal("tax", { precision: 10, scale: 2 }),
   total: decimal("total", { precision: 10, scale: 2 }),
   variantId: varchar("variant_id"),
+  variantSku: varchar("variant_sku"), // Snapshot of variant's SKU at order time
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
   appliedPrice: decimal("applied_price", { precision: 10, scale: 2 }),
   currency: varchar("currency"),
