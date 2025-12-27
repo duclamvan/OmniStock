@@ -6000,23 +6000,51 @@ router.post("/receipts", async (req, res) => {
     }
 
     // Create receipt items
-    const receiptItemsData = itemsToReceive.map(item => ({
-      receiptId: receipt.id,
-      itemId: item.id,
-      itemType: item.itemType,
-      productId: (item as any).productId || null, // Link to products table if available
-      sku: (item as any).sku || null, // Store SKU for easier product matching
-      expectedQuantity: item.quantity || 1,
-      receivedQuantity: 0, // Will be updated during verification
-      damagedQuantity: 0,
-      missingQuantity: 0,
-      warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
-      condition: 'pending',
-      // Copy variant allocations from purchase item for variant-aware receiving
-      variantAllocations: (item as any).variantAllocations || null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
+    const receiptItemsData = itemsToReceive.map(item => {
+      // Check if this is a package custom item with order_items
+      // If so, convert order_items to variantAllocations format for variant-aware storage
+      let variantAllocations = (item as any).variantAllocations || null;
+      
+      if (item.itemType === 'custom' && (item as any).isPackage && (item as any).orderItems) {
+        const orderItems = typeof (item as any).orderItems === 'string' 
+          ? JSON.parse((item as any).orderItems) 
+          : (item as any).orderItems;
+        
+        if (Array.isArray(orderItems) && orderItems.length > 0) {
+          // Convert order_items to variantAllocations format
+          // Each order item becomes a "variant" for storage distribution
+          // Mark as package items with explicit flag to differentiate from real variants
+          variantAllocations = orderItems.map((oi: any) => ({
+            variantId: oi.id || oi.productId, // Use order item id as variant identifier
+            variantName: oi.name || oi.sku || 'Unknown',
+            quantity: oi.quantity || oi.quantityInSellingUnits || 1,
+            unitPrice: parseFloat(oi.unitPrice || '0'),
+            sku: oi.sku || null,
+            productId: oi.productId || null,
+            isPackageItem: true // Explicit flag to identify package-derived allocations
+          }));
+          console.log(`[Receiving] Package custom item ${item.id} has ${orderItems.length} order items, converted to variantAllocations`);
+        }
+      }
+      
+      return {
+        receiptId: receipt.id,
+        itemId: item.id,
+        itemType: item.itemType,
+        productId: (item as any).productId || null, // Link to products table if available
+        sku: (item as any).sku || null, // Store SKU for easier product matching
+        expectedQuantity: item.quantity || 1,
+        receivedQuantity: 0, // Will be updated during verification
+        damagedQuantity: 0,
+        missingQuantity: 0,
+        warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
+        condition: 'pending',
+        // Copy variant allocations from purchase item for variant-aware receiving
+        variantAllocations,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    });
 
     if (receiptItemsData.length > 0) {
       await db.insert(receiptItems).values(receiptItemsData);
@@ -8809,6 +8837,10 @@ router.post("/receipts/auto-save", async (req, res) => {
           let productId: string | null = null;
           let itemSku: string | null = null;
           
+          // Check if this is a package custom item with order_items
+          // If so, convert order_items to variantAllocations format for variant-aware storage
+          let variantAllocations = (item as any).variantAllocations || null;
+          
           if (item.itemType === 'custom' && item.orderItems) {
             try {
               const orderItems = typeof item.orderItems === 'string' 
@@ -8817,6 +8849,20 @@ router.post("/receipts/auto-save", async (req, res) => {
               if (Array.isArray(orderItems) && orderItems[0]?.sku) {
                 itemSku = orderItems[0].sku;
                 productId = productsBySkuMap[itemSku] || null;
+                
+                // If this is a package, convert order_items to variantAllocations
+                if ((item as any).isPackage && orderItems.length > 0) {
+                  variantAllocations = orderItems.map((oi: any) => ({
+                    variantId: oi.id || oi.productId,
+                    variantName: oi.name || oi.sku || 'Unknown',
+                    quantity: oi.quantity || oi.quantityInSellingUnits || 1,
+                    unitPrice: parseFloat(oi.unitPrice || '0'),
+                    sku: oi.sku || null,
+                    productId: oi.productId || null,
+                    isPackageItem: true // Explicit flag to identify package-derived allocations
+                  }));
+                  console.log(`[Receiving] Package custom item ${item.id} has ${orderItems.length} order items, converted to variantAllocations`);
+                }
               }
             } catch (e) { /* ignore parse errors */ }
           } else if (item.sku) {
@@ -8838,7 +8884,7 @@ router.post("/receipts/auto-save", async (req, res) => {
             condition: 'pending',
             status: 'pending',
             // Copy variant allocations for variant-aware receiving
-            variantAllocations: (item as any).variantAllocations || null,
+            variantAllocations,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -10619,11 +10665,51 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             console.log(`Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
             
             let parentProductId: string | null = null;
+            let processedAsPackageItems = false;
             
             for (const va of variantAllocations) {
               if (!va.variantId || va.quantity <= 0) continue;
               
-              // Look up the variant to get its productId
+              // Check if this is a package order item (has isPackageItem flag) vs actual product variant
+              const vaExt = va as any;
+              if (vaExt.isPackageItem && vaExt.sku) {
+                // This is a package order item - look up product by SKU and add inventory
+                const [productBySku] = await tx
+                  .select({ id: products.id, quantity: products.quantity })
+                  .from(products)
+                  .where(eq(products.sku, vaExt.sku));
+                
+                if (productBySku) {
+                  // Add quantity to this product
+                  await tx
+                    .update(products)
+                    .set({
+                      quantity: sql`COALESCE(${products.quantity}, 0) + ${va.quantity}`,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(products.id, productBySku.id));
+                  
+                  console.log(`[Package Item] Added ${va.quantity} to product ${vaExt.sku} (${productBySku.id})`);
+                  
+                  // Also add to productQuantities for landed cost calculation
+                  const existing = productQuantities.get(productBySku.id);
+                  if (existing) {
+                    existing.quantity += va.quantity;
+                    existing.items.push(item);
+                  } else {
+                    productQuantities.set(productBySku.id, {
+                      quantity: va.quantity,
+                      items: [item]
+                    });
+                  }
+                  processedAsPackageItems = true;
+                } else {
+                  console.warn(`[Package Item] Product not found for SKU ${vaExt.sku}, skipping inventory addition`);
+                }
+                continue;
+              }
+              
+              // Look up the variant to get its productId (for actual product variants)
               const [variant] = await tx
                 .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
                 .from(productVariants)
@@ -10666,8 +10752,10 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               }
             }
             
-            // Skip the normal productId resolution since we already have parentProductId
-            continue;
+            // Skip the normal productId resolution if we processed variants or package items
+            if (parentProductId || processedAsPackageItems) {
+              continue;
+            }
           }
           
           // Resolve productId from receipt item or via SKU lookup
