@@ -6670,7 +6670,19 @@ export default function PickPack() {
   // Process barcode input from continuous scanner (PICKING MODE)
   // Supports both warehouse location QR codes (validation only) and product barcodes (increment quantity)
   const processBarcodeInput = (barcode: string) => {
-    if (!activePickingOrder || !barcode.trim()) return;
+    if (!barcode.trim()) return;
+    
+    // Show feedback if no active picking order
+    if (!activePickingOrder) {
+      playSound('error');
+      showScanFeedback(
+        'warning',
+        t('noActiveOrder') || 'No Active Order',
+        t('startPickingFirst') || 'Start picking an order first to scan items'
+      );
+      setBarcodeInput('');
+      return;
+    }
 
     const cleanBarcode = barcode.trim();
 

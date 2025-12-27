@@ -289,7 +289,6 @@ const inventory = {
   export: 'Xuất',
   exportExcel: 'Xuất Excel',
   exportPDF: 'Xuất PDF',
-  selectedProducts: 'Sản phẩm đã chọn',
   selectedProductsReport: 'Báo cáo sản phẩm đã chọn',
   
   // Import/Export Menu

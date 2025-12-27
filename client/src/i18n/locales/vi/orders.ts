@@ -1128,6 +1128,8 @@ const orders = {
   itemLocation: 'Vị trí sản phẩm',
   unassigned: 'Chưa gán',
   atLocation: 'Tại vị trí',
+  noActiveOrder: 'Chưa có đơn hàng',
+  startPickingFirst: 'Bắt đầu lấy hàng từ một đơn trước khi quét sản phẩm',
   
   // Product Info
   productName: 'Tên sản phẩm',

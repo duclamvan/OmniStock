@@ -1124,6 +1124,8 @@ const orders = {
   itemLocation: 'Item location',
   unassigned: 'Unassigned',
   atLocation: 'At location',
+  noActiveOrder: 'No Active Order',
+  startPickingFirst: 'Start picking an order first to scan items',
   
   // Product Info
   productName: 'Product Name',
