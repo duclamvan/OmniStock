@@ -11870,7 +11870,8 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
         otherAllocated,
         totalAllocated,
         landingCostPerUnit,
-        warnings: []
+        warnings: [],
+        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined
       });
     }
 
@@ -12100,7 +12101,8 @@ async function getItemAllocationBreakdownWithMethod(
         totalAllocated,
         landingCostPerUnit,
         allocationMethod: method,
-        warnings: []
+        warnings: [],
+        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined
       });
     }
 

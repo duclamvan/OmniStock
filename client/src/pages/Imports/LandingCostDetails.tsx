@@ -62,6 +62,16 @@ interface Shipment {
   notes?: string;
 }
 
+interface OrderItem {
+  id?: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  unitPrice?: string;
+  imageUrl?: string;
+  createdAt?: string;
+}
+
 interface LandingCostItem {
   purchaseItemId: number;
   sku: string;
@@ -77,6 +87,7 @@ interface LandingCostItem {
   packagingAllocated: number;
   otherAllocated: number;
   imageUrl?: string;
+  orderItems?: OrderItem[];
 }
 
 interface LandingCostPreview {
@@ -739,6 +750,272 @@ export default function LandingCostDetails() {
             ) : (
               <div className="space-y-3">
                 {landingCostPreview.items.map((item, index) => {
+                  const hasPackageContents = item.orderItems && item.orderItems.length > 0;
+                  
+                  if (hasPackageContents) {
+                    const sortedOrderItems = [...item.orderItems!].sort((a, b) => {
+                      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                      return dateA - dateB;
+                    });
+                    
+                    const costPerUnit = item.landingCostPerUnit;
+                    const totalUnitsInPackage = sortedOrderItems.reduce((sum, oi) => sum + (oi.quantity || 1), 0);
+                    
+                    return (
+                      <div 
+                        key={index}
+                        className="border-2 border-blue-300 dark:border-blue-700 rounded-lg overflow-hidden"
+                        data-testid={`package-${item.sku || index}`}
+                      >
+                        <div className="bg-blue-50 dark:bg-blue-950/30 px-3 py-2 border-b border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2">
+                            <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="font-semibold text-sm text-blue-800 dark:text-blue-300">
+                              {item.name}
+                            </span>
+                            <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300">
+                              {sortedOrderItems.length} items in package
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {sortedOrderItems.map((orderItem, oIndex) => {
+                            const subItemProduct = productsBySKU[orderItem.sku];
+                            const subItemCurrentPriceEUR = subItemProduct ? parseFloat(subItemProduct.priceEur || subItemProduct.price || '0') : 0;
+                            const subItemCurrentPriceCZK = subItemProduct ? (parseFloat(subItemProduct.priceCzk || '0') || convertCurrency(subItemCurrentPriceEUR, 'EUR', 'CZK')) : 0;
+                            
+                            const subItemPriceUpdate = priceUpdates[orderItem.sku];
+                            const subItemDisplayPriceEUR = subItemPriceUpdate?.priceEUR ?? subItemCurrentPriceEUR;
+                            const subItemDisplayPriceCZK = subItemPriceUpdate?.priceCZK ?? subItemCurrentPriceCZK;
+                            const subItemHasChanges = subItemPriceUpdate?.hasChanged ?? false;
+                            const subItemIsSaved = savedItems.has(orderItem.sku);
+                            
+                            const subItemUnitPrice = parseFloat(orderItem.unitPrice || '0');
+                            const subItemPurchasePriceCZK = convertCurrency(subItemUnitPrice, 'EUR', 'CZK');
+                            const subItemLandingCost = costPerUnit;
+                            const subItemLandingCostCZK = convertCurrency(subItemLandingCost, 'EUR', 'CZK');
+                            
+                            const subItemMargin = subItemDisplayPriceEUR > 0 
+                              ? ((subItemDisplayPriceEUR - subItemLandingCost) / subItemDisplayPriceEUR * 100)
+                              : 0;
+
+                            return (
+                              <div 
+                                key={orderItem.id || oIndex}
+                                className={`p-3 transition-all ${
+                                  subItemHasChanges 
+                                    ? 'bg-amber-50/50 dark:bg-amber-950/20' 
+                                    : subItemIsSaved
+                                    ? 'bg-green-50/50 dark:bg-green-950/20'
+                                    : 'bg-white dark:bg-gray-900'
+                                }`}
+                                data-testid={`item-${orderItem.sku}`}
+                              >
+                                <div className="flex items-start gap-3 mb-3">
+                                  <Checkbox
+                                    checked={selectedItems.has(orderItem.sku)}
+                                    onCheckedChange={(checked) => {
+                                      const newSelected = new Set(selectedItems);
+                                      if (checked) {
+                                        newSelected.add(orderItem.sku);
+                                      } else {
+                                        newSelected.delete(orderItem.sku);
+                                      }
+                                      setSelectedItems(newSelected);
+                                    }}
+                                    disabled={!!subItemProduct}
+                                    data-testid={`checkbox-item-${orderItem.sku}`}
+                                    className="mt-1"
+                                  />
+                                  {orderItem.imageUrl ? (
+                                    <img src={orderItem.imageUrl} alt="" className="w-10 h-10 object-cover rounded border flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                      <Package className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-sm">{orderItem.name}</h4>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                      {orderItem.sku && (
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                          {orderItem.sku}
+                                        </Badge>
+                                      )}
+                                      <span className="text-xs text-muted-foreground">
+                                        {t('qty') || 'Qty'}: <strong>{orderItem.quantity}</strong>
+                                      </span>
+                                      {!subItemProduct ? (
+                                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                                          <AlertCircle className="h-3 w-3 mr-1" />
+                                          {t('notInInventory') || 'Not in Inventory'}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400">
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          {t('inInventory') || 'In Inventory'}
+                                        </Badge>
+                                      )}
+                                      {subItemHasChanges && (
+                                        <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                          {t('unsaved') || 'Unsaved'}
+                                        </Badge>
+                                      )}
+                                      {subItemIsSaved && !subItemHasChanges && (
+                                        <Badge variant="outline" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          {t('saved') || 'Saved'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                      {t('purchasePrice') || 'Purchase Price'}
+                                    </Label>
+                                    <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                                      {formatCurrency(subItemUnitPrice, 'EUR')}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {formatCurrency(subItemPurchasePriceCZK, 'CZK')}
+                                    </p>
+                                  </div>
+
+                                  <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-2">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                      {t('landedCost') || 'Landed Cost'}
+                                    </Label>
+                                    <p className="text-sm font-bold text-purple-700 dark:text-purple-400">
+                                      {formatCurrency(subItemLandingCost, 'EUR')}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {formatCurrency(subItemLandingCostCZK, 'CZK')}
+                                    </p>
+                                  </div>
+
+                                  <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                      {t('sellingPrice') || 'Selling Price'}
+                                    </Label>
+                                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                                      {subItemDisplayPriceEUR > 0 ? formatCurrency(subItemDisplayPriceEUR, 'EUR') : '---'}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {subItemDisplayPriceCZK > 0 ? formatCurrency(subItemDisplayPriceCZK, 'CZK') : '---'}
+                                    </p>
+                                  </div>
+
+                                  <div className={`rounded-lg p-2 ${
+                                    subItemMargin >= 30 
+                                      ? 'bg-green-50 dark:bg-green-950/30' 
+                                      : subItemMargin >= 15 
+                                      ? 'bg-amber-50 dark:bg-amber-950/30'
+                                      : 'bg-red-50 dark:bg-red-950/30'
+                                  }`}>
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                      {t('margin') || 'Margin'}
+                                    </Label>
+                                    <p className={`text-sm font-bold ${
+                                      subItemMargin >= 30 
+                                        ? 'text-green-700 dark:text-green-400' 
+                                        : subItemMargin >= 15 
+                                        ? 'text-amber-700 dark:text-amber-400'
+                                        : 'text-red-700 dark:text-red-400'
+                                    }`}>
+                                      {subItemDisplayPriceEUR > 0 ? `${subItemMargin.toFixed(1)}%` : '---'}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {subItemDisplayPriceEUR > 0 
+                                        ? `+${formatCurrency(subItemDisplayPriceEUR - subItemLandingCost, 'EUR')}`
+                                        : t('setPrice') || 'Set price'
+                                      }
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="border-t pt-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                      <DollarSign className="h-3 w-3" />
+                                      {t('setSellingPrice') || 'Set Selling Price'}
+                                    </Label>
+                                    {subItemProduct && (
+                                      <Button
+                                        size="sm"
+                                        variant={subItemHasChanges ? "default" : "outline"}
+                                        onClick={() => handleSaveSinglePrice(orderItem.sku)}
+                                        disabled={!subItemHasChanges || savePriceMutation.isPending}
+                                        className="h-7 text-xs"
+                                        data-testid={`button-save-price-${orderItem.sku}`}
+                                      >
+                                        {savePriceMutation.isPending ? (
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                        ) : (
+                                          <Save className="h-3 w-3 mr-1" />
+                                        )}
+                                        {t('save') || 'Save'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                      <Label htmlFor={`price-eur-${orderItem.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
+                                        {t('priceEUR') || 'Price EUR'}
+                                        {savingItems.has(orderItem.sku) && (
+                                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                        )}
+                                        {savedItems.has(orderItem.sku) && !subItemHasChanges && (
+                                          <CheckCircle className="h-3 w-3 text-green-500" />
+                                        )}
+                                      </Label>
+                                      <MathInput
+                                        id={`price-eur-${orderItem.sku}`}
+                                        min={0}
+                                        step={0.01}
+                                        value={subItemDisplayPriceEUR}
+                                        onChange={(val) => handlePriceChange(orderItem.sku, subItemProduct?.id || 0, 'EUR', val)}
+                                        onBlur={() => handlePriceBlur(orderItem.sku)}
+                                        className="mt-1"
+                                        data-testid={`input-price-eur-${orderItem.sku}`}
+                                      />
+                                    </div>
+                                    <div className="relative">
+                                      <Label htmlFor={`price-czk-${orderItem.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
+                                        {t('priceCZK') || 'Price CZK'}
+                                        {savingItems.has(orderItem.sku) && (
+                                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                        )}
+                                        {savedItems.has(orderItem.sku) && !subItemHasChanges && (
+                                          <CheckCircle className="h-3 w-3 text-green-500" />
+                                        )}
+                                      </Label>
+                                      <MathInput
+                                        id={`price-czk-${orderItem.sku}`}
+                                        min={0}
+                                        step={1}
+                                        isInteger={true}
+                                        value={Math.round(subItemDisplayPriceCZK)}
+                                        onChange={(val) => handlePriceChange(orderItem.sku, subItemProduct?.id || 0, 'CZK', val)}
+                                        onBlur={() => handlePriceBlur(orderItem.sku)}
+                                        className="mt-1"
+                                        data-testid={`input-price-czk-${orderItem.sku}`}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+                  
                   const product = productsBySKU[item.sku];
                   const currentPriceEUR = product ? parseFloat(product.priceEur || product.price || '0') : 0;
                   const currentPriceCZK = product ? (parseFloat(product.priceCzk || '0') || convertCurrency(currentPriceEUR, 'EUR', 'CZK')) : 0;
