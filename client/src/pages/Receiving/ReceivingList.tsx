@@ -1969,8 +1969,8 @@ function QuickStorageSheet({
     const uppercaseValue = scannedValue.toUpperCase();
     setLocationInput(uppercaseValue);
     
-    // Validate location format directly (no synthetic keyboard events)
-    if (!/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/.test(uppercaseValue)) {
+    // Validate location format - accepts 2-4 segments (WH1-A1, WH1-A1-R1, WH1-A1-R1-L1)
+    if (!/^[A-Z0-9]+-[A-Z]\d+(-R\d+)?(-L\d+)?$/.test(uppercaseValue)) {
       await soundEffects.playErrorBeep();
       setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
@@ -2394,7 +2394,8 @@ function QuickStorageSheet({
     
     // Validate location code format (e.g., WH1-A01-R02-L03 or WH1-A01-R02-L03-B3)
     // Accepts 4 parts (warehouse-aisle-rack-level) or 5 parts (with optional bin)
-    const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+(-[A-Z0-9]+)?$/;
+    // Accepts 2-4 segments: WH1-A1, WH1-A1-R1, WH1-A1-R1-L1 (with optional 5th segment)
+    const locationPattern = /^[A-Z0-9]+-[A-Z]\d+(-R\d+)?(-L\d+)?(-[A-Z0-9]+)?$/;
     if (!locationPattern.test(trimmedValue)) {
       await soundEffects.playErrorBeep();
       setScanFeedback({ type: 'error', message: t('invalidLocationFormat') });
@@ -2485,7 +2486,8 @@ function QuickStorageSheet({
     const location = currentItem.locations[locationIndex];
     
     // Validate location format (4 or 5 parts with optional bin)
-    if (!location.locationCode || !/^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+(-[A-Z0-9]+)?$/.test(location.locationCode)) {
+    // Accepts 2-4 segments: WH1-A1, WH1-A1-R1, WH1-A1-R1-L1 (with optional 5th segment)
+    if (!location.locationCode || !/^[A-Z0-9]+-[A-Z]\d+(-R\d+)?(-L\d+)?(-[A-Z0-9]+)?$/.test(location.locationCode)) {
       await soundEffects.playErrorBeep();
       toast({
         title: t('invalidLocationFormat'),
