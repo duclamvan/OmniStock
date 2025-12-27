@@ -2584,7 +2584,15 @@ export default function StartReceiving() {
                                         </span>
                                       </div>
                                       <div className="space-y-1 max-h-24 overflow-y-auto">
-                                        {item.orderItems.slice(0, 5).map((orderItem: any, oIndex: number) => (
+                                        {[...item.orderItems]
+                                          .sort((a: any, b: any) => {
+                                            // Sort by createdAt ascending (oldest first, newest at bottom)
+                                            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                                            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                                            return dateA - dateB;
+                                          })
+                                          .slice(0, 5)
+                                          .map((orderItem: any, oIndex: number) => (
                                           <div 
                                             key={orderItem.originalItemId || oIndex}
                                             className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-blue-100 dark:border-blue-800"
