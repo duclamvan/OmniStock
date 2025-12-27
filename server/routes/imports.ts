@@ -5716,7 +5716,7 @@ router.get("/shipments/:id", async (req, res) => {
       // Process each item based on its type
       for (const consItem of consolidationItemsList) {
         if (consItem.itemType === 'custom') {
-          // Get custom item details
+          // Get custom item details with order items (for unpacked PO packages)
           const [customItem] = await db
             .select({
               id: customItems.id,
@@ -5729,7 +5729,8 @@ router.get("/shipments/:id", async (req, res) => {
               orderNumber: customItems.orderNumber,
               imageUrl: customItems.imageUrl,
               sku: customItems.sku,
-              dimensions: customItems.dimensions
+              dimensions: customItems.dimensions,
+              orderItems: customItems.orderItems
             })
             .from(customItems)
             .where(eq(customItems.id, consItem.itemId));
@@ -5779,7 +5780,7 @@ router.get("/shipments/:id", async (req, res) => {
             });
           }
         } else if (consItem.itemType === 'purchase') {
-          // Get purchase item details with image
+          // Get purchase item details with image and variant allocations
           const [purchaseItem] = await db
             .select({
               id: purchaseItems.id,
@@ -5790,7 +5791,9 @@ router.get("/shipments/:id", async (req, res) => {
               trackingNumber: purchaseItems.trackingNumber,
               unitPrice: purchaseItems.unitPrice,
               imageUrl: purchaseItems.imageUrl,
-              notes: purchaseItems.notes
+              notes: purchaseItems.notes,
+              variantAllocations: purchaseItems.variantAllocations,
+              productId: purchaseItems.productId
             })
             .from(purchaseItems)
             .where(eq(purchaseItems.id, consItem.itemId));
@@ -5825,7 +5828,7 @@ router.get("/shipments/:id", async (req, res) => {
       if (poMatch) {
         const purchaseId = parseInt(poMatch[1]);
         
-        // Get items from purchaseItems table
+        // Get items from purchaseItems table with variant allocations
         const purchaseItemsList = await db
           .select({
             id: purchaseItems.id,
@@ -5836,7 +5839,9 @@ router.get("/shipments/:id", async (req, res) => {
             trackingNumber: purchaseItems.trackingNumber,
             unitPrice: purchaseItems.unitPrice,
             imageUrl: purchaseItems.imageUrl,
-            notes: purchaseItems.notes
+            notes: purchaseItems.notes,
+            variantAllocations: purchaseItems.variantAllocations,
+            productId: purchaseItems.productId
           })
           .from(purchaseItems)
           .where(eq(purchaseItems.purchaseId, purchaseId));
