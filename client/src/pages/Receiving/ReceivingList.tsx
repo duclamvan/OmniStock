@@ -1704,6 +1704,23 @@ interface LocationAssignment {
   isNew?: boolean;
 }
 
+// Variant allocation for products with variants
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  unitPrice?: number;
+}
+
+// Order item from unpacked PO package
+interface OrderItem {
+  name: string;
+  sku?: string;
+  quantity: number;
+  unitPrice?: number;
+  imageUrl?: string;
+}
+
 interface StorageItem {
   receiptItemId: number;
   productId?: number | string;
@@ -1718,6 +1735,12 @@ interface StorageItem {
   existingLocations: LocationAssignment[];
   // Track pending additions to existing locations: { locationId: quantity }
   pendingExistingAdds: Record<string, number>;
+  // Variant allocations for products with variants
+  variantAllocations?: VariantAllocation[];
+  // Order items from unpacked PO package
+  orderItems?: OrderItem[];
+  // PO number for unpacked packages
+  orderNumber?: string;
 }
 
 // Enhanced location suggestion with quantity info
@@ -1987,20 +2010,52 @@ function QuickStorageSheet({
   useEffect(() => {
     const receiptItems = receiptData?.shipment?.items || receiptData?.items;
     if (receiptItems) {
-      const storageItems: StorageItem[] = receiptItems.map((item: any) => ({
-        receiptItemId: item.id,
-        productId: item.productId,
-        productName: item.productName || item.description || `Item #${item.id}`,
-        sku: item.sku,
-        barcode: item.barcode,
-        imageUrl: item.imageUrl || item.product?.imageUrl,
-        description: item.description,
-        receivedQuantity: item.receivedQuantity || item.quantity || 0,
-        assignedQuantity: item.assignedQuantity || 0,
-        locations: item.locations || [],
-        existingLocations: item.existingLocations || item.product?.locations || [],
-        pendingExistingAdds: {} // Initialize empty pending adds
-      }));
+      const storageItems: StorageItem[] = receiptItems.map((item: any) => {
+        // Parse variantAllocations if it's a string
+        let variantAllocations: VariantAllocation[] | undefined;
+        if (item.variantAllocations) {
+          try {
+            variantAllocations = typeof item.variantAllocations === 'string'
+              ? JSON.parse(item.variantAllocations)
+              : item.variantAllocations;
+          } catch (e) {
+            console.warn('Failed to parse variantAllocations:', e);
+          }
+        }
+        
+        // Parse orderItems if it's a string
+        let orderItems: OrderItem[] | undefined;
+        if (item.orderItems) {
+          try {
+            orderItems = typeof item.orderItems === 'string'
+              ? JSON.parse(item.orderItems)
+              : item.orderItems;
+          } catch (e) {
+            console.warn('Failed to parse orderItems:', e);
+          }
+        }
+        
+        // Get orderNumber from customItem if available
+        const orderNumber = item.customItem?.orderNumber || item.orderNumber;
+        
+        return {
+          receiptItemId: item.id,
+          productId: item.productId,
+          productName: item.productName || item.description || `Item #${item.id}`,
+          sku: item.sku,
+          barcode: item.barcode,
+          imageUrl: item.imageUrl || item.product?.imageUrl,
+          description: item.description,
+          receivedQuantity: item.receivedQuantity || item.quantity || 0,
+          assignedQuantity: item.assignedQuantity || 0,
+          locations: item.locations || [],
+          existingLocations: item.existingLocations || item.product?.locations || [],
+          pendingExistingAdds: {}, // Initialize empty pending adds
+          variantAllocations,
+          orderItems,
+          orderNumber
+        };
+      });
       setItems(storageItems);
     }
   }, [receiptData]);
@@ -2598,6 +2653,19 @@ function QuickStorageSheet({
                                   }`}>
                                     {itemRemainingQty === 0 ? '✓' : `${itemRemainingQty} left`}
                                   </span>
+                                  {/* Variants/Package indicator */}
+                                  {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium flex items-center gap-0.5">
+                                      <Layers className="h-2.5 w-2.5" />
+                                      {item.variantAllocations.length}
+                                    </span>
+                                  )}
+                                  {item.orderItems && item.orderItems.length > 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium flex items-center gap-0.5">
+                                      <Package className="h-2.5 w-2.5" />
+                                      {item.orderItems.length}
+                                    </span>
+                                  )}
                                 </div>
                                 
                                 {/* Warehouse Locations - Inline compact */}
@@ -2673,6 +2741,101 @@ function QuickStorageSheet({
                                     {storedQtyForReceiving + totalPendingQty} / {item.receivedQuantity} {t('stored')}
                                   </p>
                                 </div>
+
+                                {/* PRODUCT DETAILS - Collapsible section for variants and order items */}
+                                {((item.variantAllocations && item.variantAllocations.length > 0) || 
+                                  (item.orderItems && item.orderItems.length > 0)) && (
+                                  <details className="rounded-lg border dark:border-gray-800 overflow-hidden group">
+                                    <summary className="bg-purple-50 dark:bg-purple-950/30 px-3 py-2 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors flex items-center gap-2">
+                                      <ChevronRight className="h-4 w-4 text-purple-600 dark:text-purple-400 transition-transform group-open:rotate-90" />
+                                      <Layers className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                      <span className="font-medium text-sm text-purple-700 dark:text-purple-300">
+                                        {t('common:productDetails')}
+                                      </span>
+                                      {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                        <Badge variant="secondary" className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                                          {item.variantAllocations.length} {t('common:variants')}
+                                        </Badge>
+                                      )}
+                                      {item.orderItems && item.orderItems.length > 0 && (
+                                        <Badge variant="secondary" className="ml-auto text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                                          {item.orderNumber ? `PO ${item.orderNumber.slice(-8)}` : `${item.orderItems.length} items`}
+                                        </Badge>
+                                      )}
+                                    </summary>
+                                    
+                                    <div className="p-3 space-y-3 bg-white dark:bg-gray-950">
+                                      {/* Variant Allocations */}
+                                      {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2 text-xs font-medium text-purple-600 dark:text-purple-400">
+                                            <Tag className="h-3 w-3" />
+                                            <span>{t('common:variants')} ({item.variantAllocations.length})</span>
+                                          </div>
+                                          <div className="space-y-1.5">
+                                            {item.variantAllocations.map((variant, vIdx) => (
+                                              <div 
+                                                key={vIdx}
+                                                className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800"
+                                              >
+                                                <span className="text-sm font-medium truncate">{variant.variantName}</span>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                  <Badge className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs">
+                                                    x{variant.quantity}
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Order Items from Unpacked PO */}
+                                      {item.orderItems && item.orderItems.length > 0 && (
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400">
+                                            <Package className="h-3 w-3" />
+                                            <span>{t('imports:packageContents')} ({item.orderItems.length})</span>
+                                            {item.orderNumber && (
+                                              <Badge variant="outline" className="text-[10px] ml-auto">
+                                                {item.orderNumber}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                            {item.orderItems.map((orderItem, oIdx) => (
+                                              <div 
+                                                key={oIdx}
+                                                className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800"
+                                              >
+                                                {orderItem.imageUrl ? (
+                                                  <img 
+                                                    src={orderItem.imageUrl} 
+                                                    alt={orderItem.name}
+                                                    className="w-8 h-8 rounded object-contain bg-white dark:bg-gray-900 flex-shrink-0"
+                                                  />
+                                                ) : (
+                                                  <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                                    <Package className="h-4 w-4 text-blue-400" />
+                                                  </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="text-sm font-medium truncate">{orderItem.name}</p>
+                                                  {orderItem.sku && (
+                                                    <p className="text-[10px] text-muted-foreground font-mono">{orderItem.sku}</p>
+                                                  )}
+                                                </div>
+                                                <Badge className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs flex-shrink-0">
+                                                  x{orderItem.quantity}
+                                                </Badge>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </details>
+                                )}
 
                                 {/* ADD LOCATION - Simplified for mobile */}
                                 {itemRemainingQty > 0 && (
