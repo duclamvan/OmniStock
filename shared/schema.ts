@@ -1070,6 +1070,8 @@ export const productLocations = pgTable("product_locations", {
   productId: varchar("product_id")
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
+  variantId: varchar("variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }), // Optional - for variant-specific location tracking
   locationType: text("location_type").notNull().default("warehouse"), // display, warehouse, pallet, other
   locationCode: varchar("location_code").notNull(), // WH1-A01-R02-L03 format
   quantity: integer("quantity").notNull().default(0),
@@ -2156,14 +2158,15 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
     locationCode: z
       .string()
       .regex(
-        /^[A-Za-z0-9]+(-[A-Za-z0-9]+){2,5}$/,
+        /^[A-Za-z0-9]+(-[A-Za-z0-9]+){1,5}$/,
         {
           message:
-            "Location code must have 3-6 segments separated by dashes (e.g., WH1-A01-R02-L03 or WH1-A01-R02-L03-B2)",
+            "Location code must have 2-6 segments separated by dashes (e.g., WH1-A1 or WH1-A01-R02-L03-B2)",
         }
       ),
     locationType: z.enum(["display", "warehouse", "pallet", "other"]),
     quantity: z.number().int().min(0, "Quantity must be non-negative"),
+    variantId: z.string().optional().nullable(),
   });
 
 export const insertStockAdjustmentRequestSchema = createInsertSchema(
