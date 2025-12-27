@@ -782,6 +782,13 @@ const inventory = {
   sortOldest: 'Cũ nhất',
   sortAbc: 'A-Z',
   sortVariants: 'Có biến thể',
+  customPrint: 'In tùy chỉnh',
+  customPrintDesc: 'Tùy chỉnh in nhãn với mũi tên hướng và thông tin đóng gói',
+  showArrowsUp: 'Hiển thị mũi tên lên (hướng trên)',
+  showArrowsDown: 'Hiển thị mũi tên xuống (hướng dưới)',
+  showBulkInfo: 'Hiển thị thông tin đóng gói',
+  selectedProducts: '{{count}} sản phẩm đã chọn',
+  printLabels: 'In nhãn',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',

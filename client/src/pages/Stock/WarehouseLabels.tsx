@@ -29,6 +29,10 @@ import {
   Layers,
   ArrowUpDown,
   SortAsc,
+  Settings2,
+  ArrowUp,
+  ArrowDown,
+  Package,
 } from "lucide-react";
 import {
   Select,
@@ -49,6 +53,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface WarehouseLabel {
   id: string;
@@ -122,6 +134,13 @@ export default function WarehouseLabels() {
 
   const [generatingAll, setGeneratingAll] = useState(false);
   const [printingSelected, setPrintingSelected] = useState(false);
+  const [printingCustom, setPrintingCustom] = useState(false);
+  const [showCustomPrintDialog, setShowCustomPrintDialog] = useState(false);
+  const [customPrintOptions, setCustomPrintOptions] = useState({
+    showArrowsUp: false,
+    showArrowsDown: false,
+    showBulkInfo: true,
+  });
 
   const toggleIncludeVariants = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -252,7 +271,15 @@ export default function WarehouseLabels() {
     }
   };
 
-  const printProductLabels = async (products: any[], title: string) => {
+  interface PrintOptions {
+    showArrowsUp?: boolean;
+    showArrowsDown?: boolean;
+    showBulkInfo?: boolean;
+  }
+
+  const printProductLabels = async (products: any[], title: string, options: PrintOptions = {}) => {
+    const { showArrowsUp = false, showArrowsDown = false, showBulkInfo = true } = options;
+    
     const printWindow = window.open("", "_blank", "width=600,height=800");
     if (!printWindow) {
       toast({
@@ -263,6 +290,10 @@ export default function WarehouseLabels() {
       return;
     }
 
+    // Generate arrows HTML
+    const arrowsUpHtml = showArrowsUp ? '<div class="arrows-row arrows-up">▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲</div>' : '';
+    const arrowsDownHtml = showArrowsDown ? '<div class="arrows-row arrows-down">▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼</div>' : '';
+
     // Generate QR codes for all products in parallel
     const labelsWithQR = await Promise.all(
       products.map(async (product: any) => {
@@ -271,6 +302,11 @@ export default function WarehouseLabels() {
         const vietnameseName = product.vietnameseName || product.name;
         const priceEur = product.priceEur ? Number(product.priceEur) : null;
         const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
+        
+        // Get bulk info
+        const bulkUnitName = product.bulkUnitName || '';
+        const bulkUnitQty = product.bulkUnitQty || 0;
+        const hasBulkInfo = showBulkInfo && bulkUnitName && bulkUnitQty > 0;
 
         // Generate actual QR code SVG
         let qrSvg = "";
@@ -283,7 +319,6 @@ export default function WarehouseLabels() {
           });
         } catch (err) {
           console.error("Failed to generate QR code for", productCode, err);
-          // Fallback to placeholder if QR generation fails
           qrSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="72" height="72">
             <rect width="45" height="45" fill="white"/>
             <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
@@ -291,26 +326,48 @@ export default function WarehouseLabels() {
         }
 
         return `
-          <div class="label-container">
-            <div class="qr-section">
-              ${qrSvg}
+          <div class="label-wrapper">
+            ${arrowsUpHtml}
+            <div class="label-container">
+              <div class="qr-section">
+                ${qrSvg}
+              </div>
+              <div class="name-section">
+                <div class="vn-name">${vietnameseName}</div>
+                <div class="en-name">${product.name}</div>
+                ${product.sku ? `<div class="sku">${product.sku}</div>` : ""}
+              </div>
+              <div class="price-section">
+                ${priceEur !== null ? `
+                  <div class="price-eur-row">
+                    <div class="price-content">
+                      <span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      ${hasBulkInfo ? `<span class="bulk-info-eur">${bulkUnitQty}/${bulkUnitName}</span>` : ''}
+                    </div>
+                  </div>` : ""}
+                ${priceCzk !== null ? `
+                  <div class="price-czk-row">
+                    <div class="price-content">
+                      <span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span>
+                      ${hasBulkInfo ? `<span class="bulk-info-czk">${bulkUnitQty}/${bulkUnitName}</span>` : ''}
+                    </div>
+                  </div>` : ""}
+                ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
+              </div>
             </div>
-            <div class="name-section">
-              <div class="vn-name">${vietnameseName}</div>
-              <div class="en-name">${product.name}</div>
-              ${product.sku ? `<div class="sku">${product.sku}</div>` : ""}
-            </div>
-            <div class="price-section">
-              ${priceEur !== null ? `<div class="price-eur-row"><span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
-              ${priceCzk !== null ? `<div class="price-czk-row"><span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
-              ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
-            </div>
+            ${arrowsDownHtml}
           </div>
         `;
       })
     );
 
     const labelsHtml = labelsWithQR.join("");
+    
+    // Calculate label height based on arrows
+    const hasArrows = showArrowsUp || showArrowsDown;
+    const arrowHeight = 4; // mm per arrow row
+    const baseHeight = 30;
+    const totalHeight = baseHeight + (showArrowsUp ? arrowHeight : 0) + (showArrowsDown ? arrowHeight : 0);
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -320,7 +377,7 @@ export default function WarehouseLabels() {
         <title>${title}</title>
         <style>
           @page {
-            size: 100mm 30mm;
+            size: 100mm ${totalHeight}mm;
             margin: 0;
           }
           @media print {
@@ -338,6 +395,34 @@ export default function WarehouseLabels() {
           body {
             font-family: Arial, Helvetica, sans-serif;
           }
+          .label-wrapper {
+            width: 100mm;
+            display: flex;
+            flex-direction: column;
+            page-break-after: always;
+          }
+          .label-wrapper:last-child {
+            page-break-after: auto;
+          }
+          .arrows-row {
+            width: 100%;
+            height: ${arrowHeight}mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10pt;
+            letter-spacing: -1pt;
+            overflow: hidden;
+            background: #fff1f1 !important;
+            border: 1pt solid #ef4444;
+            border-bottom: none;
+            color: #ef4444;
+            font-weight: bold;
+          }
+          .arrows-down {
+            border-top: none;
+            border-bottom: 1pt solid #ef4444;
+          }
           .label-container {
             width: 100mm;
             height: 30mm;
@@ -348,10 +433,6 @@ export default function WarehouseLabels() {
             color: black;
             overflow: hidden;
             border: 2pt solid black;
-            page-break-after: always;
-          }
-          .label-container:last-child {
-            page-break-after: auto;
           }
           .qr-section {
             flex-shrink: 0;
@@ -426,6 +507,13 @@ export default function WarehouseLabels() {
             background: white !important;
             border-top: 1pt solid black;
           }
+          .price-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
           .price-eur {
             font-weight: 900;
             font-size: 14pt;
@@ -439,6 +527,16 @@ export default function WarehouseLabels() {
             line-height: 1;
             color: black;
             letter-spacing: -0.3pt;
+          }
+          .bulk-info-eur {
+            font-size: 6pt;
+            color: #ccc;
+            margin-top: 0.5mm;
+          }
+          .bulk-info-czk {
+            font-size: 6pt;
+            color: #666;
+            margin-top: 0.5mm;
           }
           .price-na {
             font-size: 10pt;
@@ -982,6 +1080,16 @@ export default function WarehouseLabels() {
                 )}
                 {t("inventory:printSelected")}
               </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowCustomPrintDialog(true)}
+                className="gap-2"
+                data-testid="btn-custom-print"
+              >
+                <Settings2 className="h-4 w-4" />
+                {t("inventory:customPrint")}
+              </Button>
             </>
           )}
         </div>
@@ -1095,6 +1203,140 @@ export default function WarehouseLabels() {
           ))
         )}
       </div>
+
+      <Dialog open={showCustomPrintDialog} onOpenChange={setShowCustomPrintDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              {t("inventory:customPrint")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("inventory:customPrintDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowUp className="h-4 w-4 text-red-500" />
+                <Label htmlFor="arrows-up" className="text-sm">
+                  {t("inventory:showArrowsUp")}
+                </Label>
+              </div>
+              <Switch
+                id="arrows-up"
+                checked={customPrintOptions.showArrowsUp}
+                onCheckedChange={(checked) => 
+                  setCustomPrintOptions(prev => ({ ...prev, showArrowsUp: checked }))
+                }
+                data-testid="switch-arrows-up"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowDown className="h-4 w-4 text-red-500" />
+                <Label htmlFor="arrows-down" className="text-sm">
+                  {t("inventory:showArrowsDown")}
+                </Label>
+              </div>
+              <Switch
+                id="arrows-down"
+                checked={customPrintOptions.showArrowsDown}
+                onCheckedChange={(checked) => 
+                  setCustomPrintOptions(prev => ({ ...prev, showArrowsDown: checked }))
+                }
+                data-testid="switch-arrows-down"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-blue-500" />
+                <Label htmlFor="bulk-info" className="text-sm">
+                  {t("inventory:showBulkInfo")}
+                </Label>
+              </div>
+              <Switch
+                id="bulk-info"
+                checked={customPrintOptions.showBulkInfo}
+                onCheckedChange={(checked) => 
+                  setCustomPrintOptions(prev => ({ ...prev, showBulkInfo: checked }))
+                }
+                data-testid="switch-bulk-info"
+              />
+            </div>
+
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                {t("inventory:selectedProducts", { count: selectedProductIds.size })}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomPrintDialog(false)}>
+              {t("common:cancel")}
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowCustomPrintDialog(false);
+                setPrintingCustom(true);
+                try {
+                  const selectedProducts = allProducts.filter((p: any) => selectedProductIds.has(p.id));
+                  const itemsToPrint: any[] = [];
+                  
+                  for (const product of selectedProducts) {
+                    if (includeVariantsFor.has(product.id)) {
+                      const variants = variantsMap.get(product.id) || [];
+                      for (const variant of variants) {
+                        itemsToPrint.push({
+                          ...product,
+                          id: variant.id,
+                          name: `${product.name} - ${variant.name}`,
+                          vietnameseName: product.vietnameseName ? `${product.vietnameseName} - ${variant.name}` : `${product.name} - ${variant.name}`,
+                          sku: variant.barcode || product.sku,
+                          isVariant: true,
+                          variantName: variant.name,
+                        });
+                      }
+                    } else {
+                      itemsToPrint.push(product);
+                    }
+                  }
+
+                  await printProductLabels(itemsToPrint, `Custom Labels - ${itemsToPrint.length} Items`, customPrintOptions);
+                  
+                  toast({
+                    title: t("common:success"),
+                    description: t("inventory:labelsPrinted", { count: itemsToPrint.length }),
+                  });
+                } catch (error: any) {
+                  console.error("Failed to print labels:", error);
+                  toast({
+                    title: t("common:error"),
+                    description: t("inventory:generateLabelsError"),
+                    variant: "destructive",
+                  });
+                } finally {
+                  setPrintingCustom(false);
+                }
+              }}
+              className="gap-2 bg-green-600 hover:bg-green-700"
+              disabled={printingCustom}
+              data-testid="btn-print-custom"
+            >
+              {printingCustom ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4" />
+              )}
+              {t("inventory:printLabels")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>

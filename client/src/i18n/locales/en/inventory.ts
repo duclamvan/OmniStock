@@ -688,6 +688,13 @@ const inventory = {
   sortOldest: 'Oldest',
   sortAbc: 'A-Z',
   sortVariants: 'With Variants',
+  customPrint: 'Custom Print',
+  customPrintDesc: 'Customize label printing with orientation arrows and packaging info',
+  showArrowsUp: 'Show arrows up (top orientation)',
+  showArrowsDown: 'Show arrows down (bottom orientation)',
+  showBulkInfo: 'Show packaging unit info',
+  selectedProducts: '{{count}} product(s) selected',
+  printLabels: 'Print Labels',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',
