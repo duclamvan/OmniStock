@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { generateVariantSku } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -370,6 +371,7 @@ export default function CreatePurchase() {
     id: string;
     name: string;
     sku: string;
+    barcode: string;
     quantity: number;
     unitPrice: number;
     weight: number;
@@ -395,6 +397,7 @@ export default function CreatePurchase() {
   const [existingVariants, setExistingVariants] = useState<Array<{
     id: string;
     name: string;
+    sku?: string;
     barcode?: string;
     quantity?: number;
     locationCode?: string;
@@ -404,6 +407,7 @@ export default function CreatePurchase() {
   }>>([]);
   const [existingVariantsDialogOpen, setExistingVariantsDialogOpen] = useState(false);
   const [selectedExistingVariants, setSelectedExistingVariants] = useState<string[]>([]);
+  const [existingVariantQuantities, setExistingVariantQuantities] = useState<{[id: string]: number}>({});
   const [loadingExistingVariants, setLoadingExistingVariants] = useState(false);
   
   // Purchase creation state  
@@ -925,11 +929,14 @@ export default function CreatePurchase() {
   // Add existing variants to the variants list
   const addExistingVariantsToList = () => {
     const selectedItems = existingVariants.filter(v => selectedExistingVariants.includes(v.id));
+    const parentSku = currentItem.sku || selectedProduct?.sku || '';
+    
     const newVariants = selectedItems.map(variant => ({
       id: nanoid(),
       name: variant.name,
-      sku: '', // Will be auto-generated or entered manually
-      quantity: currentItem.quantity || 1,
+      sku: variant.sku || (parentSku ? generateVariantSku(parentSku, variant.name) : ''),
+      barcode: variant.barcode || '',
+      quantity: existingVariantQuantities[variant.id] || 1,
       unitPrice: (() => {
         // Get import cost in purchase currency
         if (purchaseCurrency === 'USD' && variant.importCostUsd) return parseFloat(variant.importCostUsd);
@@ -946,6 +953,7 @@ export default function CreatePurchase() {
     setVariants([...variants, ...newVariants]);
     setExistingVariantsDialogOpen(false);
     setSelectedExistingVariants([]);
+    setExistingVariantQuantities({});
     setShowVariants(true);
     
     toast({
@@ -1492,10 +1500,13 @@ export default function CreatePurchase() {
   // Add single variant
   const addVariant = () => {
     if (newVariant.name.trim() && currentItem.name) {
+      const parentSku = currentItem.sku || selectedProduct?.sku || '';
       const variantWithId = {
         ...newVariant,
         id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: newVariant.name.trim(),
+        sku: newVariant.sku || (parentSku ? generateVariantSku(parentSku, newVariant.name.trim()) : ''),
+        barcode: '',
       };
       setVariants([...variants, variantWithId]);
       setNewVariant({
@@ -1541,12 +1552,15 @@ export default function CreatePurchase() {
         return;
       }
       
+      const parentSku = currentItem.sku || selectedProduct?.sku || '';
       const newVariantsArray = [];
       for (let i = start; i <= end; i++) {
+        const variantName = `${baseName} ${i}`;
         newVariantsArray.push({
           id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
-          name: `${baseName} ${i}`,
-          sku: "",
+          name: variantName,
+          sku: parentSku ? generateVariantSku(parentSku, variantName) : '',
+          barcode: '',
           quantity: seriesQuantity,
           unitPrice: seriesUnitPrice,
           weight: seriesWeight,
@@ -3120,7 +3134,7 @@ export default function CreatePurchase() {
                       </div>
                       
                       <div className="border rounded-lg overflow-x-auto">
-                        <Table className="min-w-[550px] text-sm">
+                        <Table className="min-w-[650px] text-sm">
                           <TableHeader>
                             <TableRow className="h-8">
                               <TableHead className="w-8 p-2">
@@ -3130,11 +3144,12 @@ export default function CreatePurchase() {
                                   className="h-3 w-3"
                                 />
                               </TableHead>
-                              <TableHead className="w-24 p-2">{t('variantName')}</TableHead>
-                              <TableHead className="w-16 p-2">{t('sku')}</TableHead>
-                              <TableHead className="text-center w-12 p-2">{t('qty')}</TableHead>
+                              <TableHead className="min-w-[100px] p-2">{t('variantName')}</TableHead>
+                              <TableHead className="min-w-[120px] p-2">{t('sku')}</TableHead>
+                              <TableHead className="min-w-[100px] p-2">{t('barcode')}</TableHead>
+                              <TableHead className="text-center w-14 p-2">{t('qty')}</TableHead>
                               <TableHead className="text-right w-16 p-2">{t('price')}</TableHead>
-                              <TableHead className="text-right w-16 p-2">{t('weight')}</TableHead>
+                              <TableHead className="text-right w-14 p-2">{t('weight')}</TableHead>
                               <TableHead className="w-8 p-2"></TableHead>
                             </TableRow>
                           </TableHeader>
@@ -3163,8 +3178,22 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, sku: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-6 w-full max-w-14 text-xs"
-                                    placeholder="SKU"
+                                    className="h-6 w-full text-xs"
+                                    placeholder={t('sku')}
+                                    data-testid={`input-variant-sku-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell className="p-2">
+                                  <Input
+                                    value={variant.barcode}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, barcode: e.target.value} : v
+                                      ));
+                                    }}
+                                    className="h-6 w-full text-xs"
+                                    placeholder={t('barcode')}
+                                    data-testid={`input-variant-barcode-${variant.id}`}
                                   />
                                 </TableCell>
                                 <TableCell className="p-2">
@@ -3177,8 +3206,9 @@ export default function CreatePurchase() {
                                       ));
                                     }}
                                     onFocus={(e) => e.target.select()}
-                                    className="h-6 w-12 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="h-6 w-14 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     min="0"
+                                    data-testid={`input-variant-qty-${variant.id}`}
                                   />
                                 </TableCell>
                                 <TableCell className="p-2">
@@ -3191,9 +3221,10 @@ export default function CreatePurchase() {
                                       ));
                                     }}
                                     onFocus={(e) => e.target.select()}
-                                    className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="h-6 w-16 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
+                                    data-testid={`input-variant-price-${variant.id}`}
                                   />
                                 </TableCell>
                                 <TableCell className="p-2">
@@ -3209,6 +3240,7 @@ export default function CreatePurchase() {
                                     className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
+                                    data-testid={`input-variant-weight-${variant.id}`}
                                   />
                                 </TableCell>
                                 <TableCell className="p-2">
@@ -3218,6 +3250,7 @@ export default function CreatePurchase() {
                                     size="sm"
                                     onClick={() => removeVariant(variant.id)}
                                     className="h-6 w-6 p-1"
+                                    data-testid={`button-remove-variant-${variant.id}`}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -4378,32 +4411,46 @@ export default function CreatePurchase() {
                 <div 
                   key={variant.id}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
                     selectedExistingVariants.includes(variant.id) 
                       ? "bg-primary/10 border-primary" 
                       : "hover:bg-muted/50"
                   )}
-                  onClick={() => {
-                    if (selectedExistingVariants.includes(variant.id)) {
-                      setSelectedExistingVariants(selectedExistingVariants.filter(id => id !== variant.id));
-                    } else {
-                      setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
-                    }
-                  }}
                 >
                   <Checkbox
                     checked={selectedExistingVariants.includes(variant.id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
+                        if (!existingVariantQuantities[variant.id]) {
+                          setExistingVariantQuantities(prev => ({ ...prev, [variant.id]: 1 }));
+                        }
                       } else {
                         setSelectedExistingVariants(selectedExistingVariants.filter(id => id !== variant.id));
                       }
                     }}
+                    data-testid={`checkbox-existing-variant-${variant.id}`}
                   />
-                  <div className="flex-1 min-w-0">
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => {
+                      if (selectedExistingVariants.includes(variant.id)) {
+                        setSelectedExistingVariants(selectedExistingVariants.filter(id => id !== variant.id));
+                      } else {
+                        setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
+                        if (!existingVariantQuantities[variant.id]) {
+                          setExistingVariantQuantities(prev => ({ ...prev, [variant.id]: 1 }));
+                        }
+                      }
+                    }}
+                  >
                     <div className="font-medium text-sm">{variant.name}</div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
+                      {variant.sku && (
+                        <span className="bg-muted px-1.5 py-0.5 rounded">
+                          {variant.sku}
+                        </span>
+                      )}
                       {variant.barcode && (
                         <span className="flex items-center gap-1">
                           <Barcode className="h-3 w-3" />
@@ -4426,6 +4473,28 @@ export default function CreatePurchase() {
                       </span>
                     </div>
                   </div>
+                  
+                  {/* Quantity Input */}
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('qty')}:</Label>
+                    <Input
+                      type="number"
+                      value={existingVariantQuantities[variant.id] || 1}
+                      onChange={(e) => {
+                        const qty = parseInt(e.target.value) || 1;
+                        setExistingVariantQuantities(prev => ({ ...prev, [variant.id]: qty }));
+                        if (!selectedExistingVariants.includes(variant.id) && qty > 0) {
+                          setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
+                        }
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-7 w-16 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      min="1"
+                      data-testid={`input-existing-variant-qty-${variant.id}`}
+                    />
+                  </div>
+                  
                   {(variant.importCostUsd || variant.importCostEur || variant.importCostCzk) && (
                     <div className="text-right">
                       <div className="text-sm font-medium text-green-600">

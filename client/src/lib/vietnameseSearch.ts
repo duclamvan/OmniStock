@@ -38,6 +38,20 @@ export function normalizeForSKU(text: string): string {
     .replace(/[^A-Z0-9]/g, '');
 }
 
+export function generateVariantSku(parentSku: string, variantName: string): string {
+  if (!parentSku) return '';
+  if (!variantName) return parentSku;
+  
+  const sanitizedVariant = removeDiacritics(variantName.trim())
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9]/g, '');
+  
+  if (!sanitizedVariant) return parentSku;
+  
+  return `${parentSku}-${sanitizedVariant}`;
+}
+
 export function createVietnameseSearchMatcher(searchTerm: string) {
   const normalizedSearch = removeDiacritics(searchTerm.toLowerCase()).trim();
   
