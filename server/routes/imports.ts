@@ -5927,6 +5927,8 @@ router.post("/receipts", async (req, res) => {
       missingQuantity: 0,
       warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
       condition: 'pending',
+      // Copy variant allocations from purchase item for variant-aware receiving
+      variantAllocations: (item as any).variantAllocations || null,
       createdAt: new Date(),
       updatedAt: new Date()
     }));
@@ -6014,6 +6016,8 @@ router.post("/receipts/:receiptId/sync-items", async (req, res) => {
               missingQuantity: 0,
               warehouseLocation: item.warehouseLocation || null,
               condition: 'pending',
+              // Copy variant allocations for variant-aware receiving
+              variantAllocations: (item as any).variantAllocations || null,
               createdAt: new Date(),
               updatedAt: new Date()
             });
@@ -6489,6 +6493,8 @@ router.put("/receipts/:id", async (req, res) => {
         missingQuantity: item.missingQuantity || 0,
         status: item.status || 'pending',
         notes: item.notes || "",
+        // Preserve variant allocations from frontend
+        variantAllocations: item.variantAllocations || null,
         createdAt: new Date(),
         updatedAt: new Date()
       }));
@@ -8736,6 +8742,8 @@ router.post("/receipts/auto-save", async (req, res) => {
             warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
             condition: 'pending',
             status: 'pending',
+            // Copy variant allocations for variant-aware receiving
+            variantAllocations: (item as any).variantAllocations || null,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -8804,6 +8812,8 @@ router.post("/receipts/auto-save", async (req, res) => {
           missingQuantity: item.missingQuantity || 0,
           status: item.status || 'pending',
           notes: item.notes || "",
+          // Preserve variant allocations from frontend
+          variantAllocations: item.variantAllocations || null,
           createdAt: new Date(),
           updatedAt: new Date()
         };

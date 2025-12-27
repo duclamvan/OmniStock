@@ -377,6 +377,7 @@ export const receiptItems = pgTable("receipt_items", {
   notes: text("notes"),
   photos: jsonb("photos"), // Array of photo URLs for damages
   verifiedAt: timestamp("verified_at"),
+  variantAllocations: jsonb("variant_allocations"), // For products with variants: [{variantId, variantName, quantity, unitPrice, receivedQuantity}]
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
