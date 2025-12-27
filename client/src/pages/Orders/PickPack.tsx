@@ -14682,8 +14682,15 @@ export default function PickPack() {
                               ref={barcodeInputRef}
                               placeholder={t('readyToScan') || 'Ready to scan...'}
                               value={barcodeInput}
-                              className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 placeholder:text-gray-400 font-mono cursor-default rounded-lg touch-manipulation"
-                              readOnly
+                              onChange={(e) => setBarcodeInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && barcodeInput.trim()) {
+                                  e.preventDefault();
+                                  processBarcodeInput(barcodeInput);
+                                }
+                              }}
+                              className="text-base lg:text-lg h-12 lg:h-14 bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 placeholder:text-gray-400 font-mono rounded-lg touch-manipulation"
+                              data-testid="input-barcode-scan"
                             />
                           </div>
                           <Button 
