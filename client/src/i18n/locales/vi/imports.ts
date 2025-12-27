@@ -2055,6 +2055,16 @@ const imports = {
   addVariantsAsItems: 'Thêm {{count}} biến thể làm sản phẩm',
   variants: 'biến thể',
   variantName: 'Tên biến thể',
+  loadFromProduct: 'Tải từ sản phẩm',
+  selectExistingVariants: 'Chọn biến thể có sẵn',
+  selectVariantsToAdd: 'Chọn biến thể của {{name}} để thêm vào đơn mua hàng',
+  variantsAvailable: 'biến thể có sẵn',
+  variantsAddedCount: 'Đã thêm {{count}} biến thể vào danh sách',
+  selectAll: 'Chọn tất cả',
+  selectedCount: 'Đã chọn {{count}}',
+  addSelected: 'Thêm đã chọn',
+  lastCost: 'Giá gần nhất',
+  loading: 'Đang tải...',
   
   // Consolidation Actions
   addToConsolidation: 'Thêm vào lô hàng',

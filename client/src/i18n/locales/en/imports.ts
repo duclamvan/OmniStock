@@ -2114,6 +2114,16 @@ const imports = {
   addVariantsAsItems: 'Add {{count}} variants as items',
   variants: 'variants',
   variantName: 'Variant Name',
+  loadFromProduct: 'Load from Product',
+  selectExistingVariants: 'Select Existing Variants',
+  selectVariantsToAdd: 'Select which variants of {{name}} to add to this purchase',
+  variantsAvailable: 'variants available',
+  variantsAddedCount: '{{count}} variants added to list',
+  selectAll: 'Select All',
+  selectedCount: '{{count}} selected',
+  addSelected: 'Add Selected',
+  lastCost: 'Last cost',
+  loading: 'Loading...',
   
   // Consolidation Actions
   addToConsolidation: 'Add to Consolidation',

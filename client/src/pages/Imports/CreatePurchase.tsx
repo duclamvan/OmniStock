@@ -31,7 +31,8 @@ import {
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, Upload, ImageIcon, Settings, Scale
+  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, Upload, ImageIcon, Settings, Scale,
+  Barcode, MapPin
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -389,6 +390,21 @@ export default function CreatePurchase() {
   const [seriesUnitPrice, setSeriesUnitPrice] = useState(0);
   const [seriesWeight, setSeriesWeight] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  
+  // Existing product variants state (for selecting from parent product)
+  const [existingVariants, setExistingVariants] = useState<Array<{
+    id: string;
+    name: string;
+    barcode?: string;
+    quantity?: number;
+    locationCode?: string;
+    importCostUsd?: string;
+    importCostCzk?: string;
+    importCostEur?: string;
+  }>>([]);
+  const [existingVariantsDialogOpen, setExistingVariantsDialogOpen] = useState(false);
+  const [selectedExistingVariants, setSelectedExistingVariants] = useState<string[]>([]);
+  const [loadingExistingVariants, setLoadingExistingVariants] = useState(false);
   
   // Purchase creation state  
   const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
@@ -885,6 +901,57 @@ export default function CreatePurchase() {
     setProductImageFile(null);
     setProductImagePreview(null);
     setProductDropdownOpen(false);
+    
+    // Fetch existing variants for this product
+    setLoadingExistingVariants(true);
+    try {
+      const response = await fetch(`/api/products/${product.id}/variants`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const variantsData = await response.json();
+        setExistingVariants(variantsData || []);
+      } else {
+        setExistingVariants([]);
+      }
+    } catch (error) {
+      console.error('Error fetching variants:', error);
+      setExistingVariants([]);
+    } finally {
+      setLoadingExistingVariants(false);
+    }
+  };
+  
+  // Add existing variants to the variants list
+  const addExistingVariantsToList = () => {
+    const selectedItems = existingVariants.filter(v => selectedExistingVariants.includes(v.id));
+    const newVariants = selectedItems.map(variant => ({
+      id: nanoid(),
+      name: variant.name,
+      sku: '', // Will be auto-generated or entered manually
+      quantity: currentItem.quantity || 1,
+      unitPrice: (() => {
+        // Get import cost in purchase currency
+        if (purchaseCurrency === 'USD' && variant.importCostUsd) return parseFloat(variant.importCostUsd);
+        if (purchaseCurrency === 'CZK' && variant.importCostCzk) return parseFloat(variant.importCostCzk);
+        if (purchaseCurrency === 'EUR' && variant.importCostEur) return parseFloat(variant.importCostEur);
+        // Fallback to any available cost
+        if (variant.importCostUsd) return parseFloat(variant.importCostUsd);
+        return currentItem.unitPrice || 0;
+      })(),
+      weight: currentItem.weight || 0,
+      dimensions: currentItem.dimensions || ''
+    }));
+    
+    setVariants([...variants, ...newVariants]);
+    setExistingVariantsDialogOpen(false);
+    setSelectedExistingVariants([]);
+    setShowVariants(true);
+    
+    toast({
+      title: t('success'),
+      description: t('variantsAddedCount', { count: newVariants.length })
+    });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2989,7 +3056,27 @@ export default function CreatePurchase() {
                         {t('addVariantsOf')} {currentItem.name}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {/* Load from existing product variants */}
+                      {selectedProduct && existingVariants.length > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="default"
+                          onClick={() => setExistingVariantsDialogOpen(true)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          data-testid="button-load-existing-variants"
+                        >
+                          <Package className="h-4 w-4 mr-1" />
+                          {t('loadFromProduct')} ({existingVariants.length})
+                        </Button>
+                      )}
+                      {selectedProduct && loadingExistingVariants && (
+                        <Button type="button" size="sm" variant="outline" disabled>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          {t('loading')}
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         size="sm"
@@ -4246,6 +4333,126 @@ export default function CreatePurchase() {
               }
             }}>
               {t('addCurrency')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Select Existing Variants Dialog */}
+      <Dialog open={existingVariantsDialogOpen} onOpenChange={setExistingVariantsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('selectExistingVariants')}</DialogTitle>
+            <DialogDescription>
+              {t('selectVariantsToAdd', { name: selectedProduct?.name || currentItem.name })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Select All */}
+            <div className="flex items-center justify-between border-b pb-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={selectedExistingVariants.length === existingVariants.length && existingVariants.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedExistingVariants(existingVariants.map(v => v.id));
+                    } else {
+                      setSelectedExistingVariants([]);
+                    }
+                  }}
+                />
+                <span className="text-sm font-medium">
+                  {selectedExistingVariants.length > 0 
+                    ? t('selectedCount', { count: selectedExistingVariants.length })
+                    : t('selectAll')}
+                </span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {existingVariants.length} {t('variantsAvailable')}
+              </span>
+            </div>
+            
+            {/* Variants List */}
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {existingVariants.map((variant) => (
+                <div 
+                  key={variant.id}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    selectedExistingVariants.includes(variant.id) 
+                      ? "bg-primary/10 border-primary" 
+                      : "hover:bg-muted/50"
+                  )}
+                  onClick={() => {
+                    if (selectedExistingVariants.includes(variant.id)) {
+                      setSelectedExistingVariants(selectedExistingVariants.filter(id => id !== variant.id));
+                    } else {
+                      setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
+                    }
+                  }}
+                >
+                  <Checkbox
+                    checked={selectedExistingVariants.includes(variant.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedExistingVariants([...selectedExistingVariants, variant.id]);
+                      } else {
+                        setSelectedExistingVariants(selectedExistingVariants.filter(id => id !== variant.id));
+                      }
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{variant.name}</div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      {variant.barcode && (
+                        <span className="flex items-center gap-1">
+                          <Barcode className="h-3 w-3" />
+                          {variant.barcode}
+                        </span>
+                      )}
+                      {variant.locationCode && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {variant.locationCode}
+                        </span>
+                      )}
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded",
+                        (variant.quantity || 0) > 10 ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" :
+                        (variant.quantity || 0) > 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
+                        "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                      )}>
+                        {t('inStock')}: {variant.quantity || 0}
+                      </span>
+                    </div>
+                  </div>
+                  {(variant.importCostUsd || variant.importCostEur || variant.importCostCzk) && (
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-green-600">
+                        {variant.importCostUsd && `$${parseFloat(variant.importCostUsd).toFixed(2)}`}
+                        {!variant.importCostUsd && variant.importCostEur && `€${parseFloat(variant.importCostEur).toFixed(2)}`}
+                        {!variant.importCostUsd && !variant.importCostEur && variant.importCostCzk && `${parseFloat(variant.importCostCzk).toFixed(0)} CZK`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{t('lastCost')}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setExistingVariantsDialogOpen(false);
+              setSelectedExistingVariants([]);
+            }}>
+              {t('cancel')}
+            </Button>
+            <Button 
+              onClick={addExistingVariantsToList}
+              disabled={selectedExistingVariants.length === 0}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t('addSelected')} ({selectedExistingVariants.length})
             </Button>
           </DialogFooter>
         </DialogContent>
