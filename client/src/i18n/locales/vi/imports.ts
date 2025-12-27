@@ -518,6 +518,21 @@ const imports = {
   variantNameRequired: 'Yêu cầu tên biến thể',
   seriesInputRequired: 'Yêu cầu nhập chuỗi',
   
+  // Variant Dialog - New Keys
+  variantImage: 'Thêm ảnh',
+  inheritsFromParent: 'Kế thừa từ sản phẩm gốc',
+  unitPriceLabel: 'Đơn giá',
+  seriesInheritsParent: 'Trọng lượng và kích thước sẽ kế thừa từ sản phẩm gốc',
+  addProductVariant: 'Thêm biến thể sản phẩm',
+  addVariantFor: 'Thêm biến thể cho',
+  createMultipleVariants: 'Tạo nhiều biến thể cho {{name}}',
+  variantNameExample: 'vd: Đỏ, Nhỏ, 100ml',
+  quantityPerVariant: 'SL/biến thể',
+  seriesPattern: 'Mẫu chuỗi',
+  seriesPatternExample: 'vd: Size <1-10>',
+  seriesPatternHelp: 'Sử dụng <bắt đầu-kết thúc> cho chuỗi số, vd "Size <36-45>"',
+  createSeries: 'Tạo chuỗi',
+  
   // CreatePurchase - Validation
   validationError: 'Lỗi xác thực',
   pleaseFillAllFields: 'Vui lòng điền đầy đủ các trường bắt buộc',

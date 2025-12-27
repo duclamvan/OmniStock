@@ -512,6 +512,21 @@ const imports = {
   variantNameRequired: 'Variant name is required',
   seriesInputRequired: 'Series input is required',
   
+  // Variant Dialog - New Keys
+  variantImage: 'Add Image',
+  inheritsFromParent: 'Inherits from parent',
+  unitPriceLabel: 'Unit Price',
+  seriesInheritsParent: 'Weight and dimensions will inherit from the parent product',
+  addProductVariant: 'Add Product Variant',
+  addVariantFor: 'Add a variant for',
+  createMultipleVariants: 'Create multiple variants for {{name}}',
+  variantNameExample: 'e.g. Red, Small, 100ml',
+  quantityPerVariant: 'Qty per Variant',
+  seriesPattern: 'Series Pattern',
+  seriesPatternExample: 'e.g. Size <1-10>',
+  seriesPatternHelp: 'Use <start-end> for numbered series, e.g. "Size <36-45>"',
+  createSeries: 'Create Series',
+  
   // CreatePurchase - Validation
   validationError: 'Validation Error',
   pleaseFillAllFields: 'Please fill in all required fields',

@@ -386,8 +386,11 @@ export default function CreatePurchase() {
     barcode: string;
     quantity: number;
     unitPrice: number;
-    weight: number;
-    dimensions: string;
+    weight?: number;
+    weightUnit?: string;
+    dimensions?: string;
+    dimensionsUnit?: string;
+    imageUrl?: string;
   }>>([]);
   const [variantDialogOpen, setVariantDialogOpen] = useState(false);
   const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
@@ -396,13 +399,15 @@ export default function CreatePurchase() {
     sku: "",
     quantity: 1,
     unitPrice: 0,
-    weight: 0,
-    dimensions: ""
+    weight: undefined as number | undefined,
+    weightUnit: undefined as string | undefined,
+    dimensions: undefined as string | undefined,
+    dimensionsUnit: undefined as string | undefined,
+    imageUrl: undefined as string | undefined
   });
   const [seriesInput, setSeriesInput] = useState("");
   const [seriesQuantity, setSeriesQuantity] = useState(1);
   const [seriesUnitPrice, setSeriesUnitPrice] = useState(0);
-  const [seriesWeight, setSeriesWeight] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   
   // Existing product variants state (for selecting from parent product)
@@ -1580,20 +1585,31 @@ export default function CreatePurchase() {
     if (newVariant.name.trim() && currentItem.name) {
       const parentSku = currentItem.sku || selectedProduct?.sku || '';
       const variantWithId = {
-        ...newVariant,
         id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: newVariant.name.trim(),
         sku: newVariant.sku || (parentSku ? generateVariantSku(parentSku, newVariant.name.trim()) : ''),
         barcode: '',
+        quantity: newVariant.quantity,
+        unitPrice: newVariant.unitPrice,
+        // Optional fields - inherit from parent if not set
+        weight: newVariant.weight,
+        weightUnit: newVariant.weightUnit,
+        dimensions: newVariant.dimensions,
+        dimensionsUnit: newVariant.dimensionsUnit,
+        imageUrl: newVariant.imageUrl
       };
       setVariants([...variants, variantWithId]);
+      // Reset form with undefined optional values (will inherit from parent)
       setNewVariant({
         name: "",
         sku: "",
         quantity: 1,
         unitPrice: currentItem.unitPrice || 0,
-        weight: currentItem.weight || 0,
-        dimensions: currentItem.dimensions || ""
+        weight: undefined,
+        weightUnit: undefined,
+        dimensions: undefined,
+        dimensionsUnit: undefined,
+        imageUrl: undefined
       });
       setVariantDialogOpen(false);
       toast({
@@ -1641,8 +1657,9 @@ export default function CreatePurchase() {
           barcode: '',
           quantity: seriesQuantity,
           unitPrice: seriesUnitPrice,
-          weight: seriesWeight,
-          dimensions: ""
+          // Weight inherits from parent, no override in series
+          weight: undefined,
+          dimensions: undefined
         });
       }
       
@@ -1651,7 +1668,6 @@ export default function CreatePurchase() {
       setSeriesInput("");
       setSeriesQuantity(1);
       setSeriesUnitPrice(currentItem.unitPrice || 0);
-      setSeriesWeight(currentItem.weight || 0);
       setSeriesDialogOpen(false);
       toast({
         title: t('success'),
@@ -1738,12 +1754,13 @@ export default function CreatePurchase() {
       barcode: currentItem.barcode || "",
       quantity: variant.quantity,
       unitPrice: variant.unitPrice,
-      weight: variant.weight,
-      dimensions: variant.dimensions,
+      // Use variant weight/dimensions if set, otherwise inherit from parent
+      weight: variant.weight ?? currentItem.weight ?? 0,
+      dimensions: variant.dimensions ?? currentItem.dimensions ?? "",
       notes: currentItem.notes || "",
       // Include product image for variants
       productId: selectedProduct?.id,
-      imageUrl: productImagePreview || selectedProduct?.imageUrl,
+      imageUrl: variant.imageUrl || productImagePreview || selectedProduct?.imageUrl,
       imageFile: productImageFile,
       totalPrice: variant.quantity * variant.unitPrice,
       costWithShipping: 0,
@@ -4747,7 +4764,7 @@ export default function CreatePurchase() {
 
       {/* Add Single Variant Dialog */}
       <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t('addProductVariant')}</DialogTitle>
             <DialogDescription>
@@ -4755,12 +4772,46 @@ export default function CreatePurchase() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Variant Image Upload */}
+            <div className="flex justify-center">
+              <div 
+                className="w-24 h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-muted/40 transition-all overflow-hidden"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setNewVariant({...newVariant, imageUrl: reader.result as string});
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  };
+                  input.click();
+                }}
+                data-testid="variant-image-upload"
+              >
+                {newVariant.imageUrl ? (
+                  <img src={newVariant.imageUrl} alt="Variant" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">{t('variantImage')}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label>{t('variantName')} *</Label>
               <Input
                 value={newVariant.name}
                 onChange={(e) => setNewVariant({...newVariant, name: e.target.value})}
                 placeholder={t('variantNameExample')}
+                data-testid="input-new-variant-name"
               />
             </div>
             <div className="space-y-2">
@@ -4769,6 +4820,7 @@ export default function CreatePurchase() {
                 value={newVariant.sku}
                 onChange={(e) => setNewVariant({...newVariant, sku: e.target.value})}
                 placeholder={t('optionalSKU')}
+                data-testid="input-new-variant-sku"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -4780,6 +4832,7 @@ export default function CreatePurchase() {
                   onChange={(e) => setNewVariant({...newVariant, quantity: parseInt(e.target.value) || 1})}
                   onFocus={(e) => e.target.select()}
                   min="1"
+                  data-testid="input-new-variant-qty"
                 />
               </div>
               <div className="space-y-2">
@@ -4788,25 +4841,69 @@ export default function CreatePurchase() {
                   value={newVariant.unitPrice}
                   onChange={(val) => setNewVariant({...newVariant, unitPrice: val})}
                   min="0"
+                  data-testid="input-new-variant-price"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('weight')}</Label>
+            
+            {/* Weight with unit (optional - inherits from parent if empty) */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                {t('weight')}
+                <span className="text-xs text-muted-foreground">({t('optional')})</span>
+              </Label>
+              <div className="flex gap-2">
                 <DecimalInput
-                  value={newVariant.weight}
-                  onChange={(val) => setNewVariant({...newVariant, weight: val})}
+                  value={newVariant.weight ?? ''}
+                  onChange={(val) => setNewVariant({...newVariant, weight: val || undefined})}
+                  placeholder={t('inheritsFromParent')}
+                  className="flex-1"
                   min="0"
+                  data-testid="input-new-variant-weight"
                 />
+                <Select
+                  value={newVariant.weightUnit || 'kg'}
+                  onValueChange={(value) => setNewVariant({...newVariant, weightUnit: value})}
+                >
+                  <SelectTrigger className="w-[70px]" data-testid="select-new-variant-weight-unit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mg">mg</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                    <SelectItem value="kg">kg</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t('dimensions')}</Label>
+            </div>
+            
+            {/* Dimensions with unit (optional - inherits from parent if empty) */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                {t('dimensions')}
+                <span className="text-xs text-muted-foreground">({t('optional')})</span>
+              </Label>
+              <div className="flex gap-2">
                 <Input
-                  value={newVariant.dimensions}
-                  onChange={(e) => setNewVariant({...newVariant, dimensions: e.target.value})}
+                  value={newVariant.dimensions || ''}
+                  onChange={(e) => setNewVariant({...newVariant, dimensions: e.target.value || undefined})}
                   placeholder={t('dimensionsPlaceholder')}
+                  className="flex-1"
+                  data-testid="input-new-variant-dimensions"
                 />
+                <Select
+                  value={newVariant.dimensionsUnit || 'cm'}
+                  onValueChange={(value) => setNewVariant({...newVariant, dimensionsUnit: value})}
+                >
+                  <SelectTrigger className="w-[70px]" data-testid="select-new-variant-dimensions-unit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mm">mm</SelectItem>
+                    <SelectItem value="cm">cm</SelectItem>
+                    <SelectItem value="m">m</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -4814,7 +4911,7 @@ export default function CreatePurchase() {
             <Button variant="outline" onClick={() => setVariantDialogOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button onClick={addVariant}>
+            <Button onClick={addVariant} disabled={!newVariant.name.trim()}>
               {t('addVariant')}
             </Button>
           </DialogFooter>
@@ -4823,7 +4920,7 @@ export default function CreatePurchase() {
       
       {/* Add Series Dialog */}
       <Dialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t('addVariantSeries')}</DialogTitle>
             <DialogDescription>
@@ -4837,6 +4934,7 @@ export default function CreatePurchase() {
                 value={seriesInput}
                 onChange={(e) => setSeriesInput(e.target.value)}
                 placeholder={t('seriesPatternExample')}
+                data-testid="input-series-pattern"
               />
               <p className="text-xs text-muted-foreground">
                 {t('seriesPatternHelp')}
@@ -4851,31 +4949,28 @@ export default function CreatePurchase() {
                   onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 1)}
                   onFocus={(e) => e.target.select()}
                   min="1"
+                  data-testid="input-series-quantity"
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('unitPrice')}</Label>
+                <Label>{t('unitPriceLabel')}</Label>
                 <DecimalInput
                   value={seriesUnitPrice}
                   onChange={(val) => setSeriesUnitPrice(val)}
                   min="0"
+                  data-testid="input-series-unit-price"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('weightPerVariant')}</Label>
-              <DecimalInput
-                value={seriesWeight}
-                onChange={(val) => setSeriesWeight(val)}
-                min="0"
-              />
-            </div>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+              {t('seriesInheritsParent')}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSeriesDialogOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button onClick={addVariantSeries}>
+            <Button onClick={addVariantSeries} disabled={!seriesInput.trim()}>
               {t('createSeries')}
             </Button>
           </DialogFooter>
