@@ -170,6 +170,7 @@ export const purchaseItems = pgTable("purchase_items", {
   // Variant support - link to parent product and store variant allocations
   productId: varchar("product_id"), // Links to parent product for variant-aware items
   variantAllocations: jsonb("variant_allocations"), // Array of {variantId, variantName, quantity, unitPrice} for variant products
+  sortOrder: integer("sort_order").notNull().default(0), // For preserving insertion order in UI
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

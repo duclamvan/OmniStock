@@ -568,7 +568,8 @@ router.get("/purchases", async (req, res) => {
     const allItems = await db
       .select()
       .from(purchaseItems)
-      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+      .where(inArray(purchaseItems.purchaseId, purchaseIds))
+      .orderBy(purchaseItems.sortOrder);
     
     // Group items by purchaseId in memory
     const itemsByPurchaseId: Record<number, typeof allItems> = {};
@@ -614,7 +615,8 @@ router.get("/purchases/at-warehouse", async (req, res) => {
     const allItems = await db
       .select()
       .from(purchaseItems)
-      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+      .where(inArray(purchaseItems.purchaseId, purchaseIds))
+      .orderBy(purchaseItems.sortOrder);
     
     // Group items by purchaseId in memory
     const itemsByPurchaseId: Record<number, typeof allItems> = {};
@@ -982,7 +984,8 @@ router.get("/purchases/:id", async (req: any, res) => {
     const items = await db
       .select()
       .from(purchaseItems)
-      .where(eq(purchaseItems.purchaseId, purchaseId));
+      .where(eq(purchaseItems.purchaseId, purchaseId))
+      .orderBy(purchaseItems.sortOrder);
     
     const purchaseWithItems = { ...purchase, items };
     
@@ -1030,7 +1033,7 @@ router.post("/purchases", async (req, res) => {
     
     // Create purchase items
     if (items.length > 0) {
-      const purchaseItemsData = items.map((item: any) => ({
+      const purchaseItemsData = items.map((item: any, index: number) => ({
         purchaseId: purchase.id,
         name: item.name,
         sku: item.sku || null,
@@ -1048,6 +1051,7 @@ router.post("/purchases", async (req, res) => {
         imageUrl: item.imageUrl || null,
         productId: item.productId || null,
         variantAllocations: item.variantAllocations || null,
+        sortOrder: index, // Preserve insertion order
         createdAt: new Date(),
         updatedAt: new Date()
       }));
@@ -1094,7 +1098,8 @@ router.post("/purchases", async (req, res) => {
     const createdItems = await db
       .select()
       .from(purchaseItems)
-      .where(eq(purchaseItems.purchaseId, purchase.id));
+      .where(eq(purchaseItems.purchaseId, purchase.id))
+      .orderBy(purchaseItems.sortOrder);
     
     res.json({ ...purchase, items: createdItems });
   } catch (error) {
@@ -1107,6 +1112,14 @@ router.post("/purchases", async (req, res) => {
 router.post("/purchases/:id/items", async (req, res) => {
   try {
     const purchaseId = req.params.id;
+    
+    // Get max sortOrder for this purchase to append at the end
+    const [maxOrder] = await db
+      .select({ maxSort: sql<number>`COALESCE(MAX(sort_order), -1)` })
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+    const nextSortOrder = (maxOrder?.maxSort ?? -1) + 1;
+    
     const itemData = {
       purchaseId,
       name: req.body.name,
@@ -1116,6 +1129,7 @@ router.post("/purchases/:id/items", async (req, res) => {
       weight: req.body.weight || 0,
       dimensions: req.body.dimensions || null,
       notes: req.body.notes || null,
+      sortOrder: nextSortOrder,
       createdAt: new Date()
     };
     
