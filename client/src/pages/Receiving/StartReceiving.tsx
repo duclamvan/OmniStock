@@ -451,6 +451,30 @@ export default function StartReceiving() {
             }
           }
           
+          // Parse variant allocations if available
+          let variantAllocations: VariantAllocation[] | undefined;
+          if (item.variantAllocations) {
+            try {
+              variantAllocations = typeof item.variantAllocations === 'string' 
+                ? JSON.parse(item.variantAllocations) 
+                : item.variantAllocations;
+            } catch (e) {
+              console.warn('Failed to parse variantAllocations:', e);
+            }
+          }
+          
+          // Parse order items if available (from custom items created from PO unpack)
+          let orderItems: any[] | undefined;
+          if (item.orderItems) {
+            try {
+              orderItems = typeof item.orderItems === 'string' 
+                ? JSON.parse(item.orderItems) 
+                : item.orderItems;
+            } catch (e) {
+              console.warn('Failed to parse orderItems:', e);
+            }
+          }
+          
           return {
             id: itemId,
             itemId: item.itemId || item.id,
@@ -464,7 +488,9 @@ export default function StartReceiving() {
             checked: receivedQty > 0,
             imageUrl: item.imageUrl || '',
             warehouseLocations: [] as string[],
-            isNewProduct: false
+            isNewProduct: false,
+            variantAllocations,
+            orderItems
           };
         });
         setReceivingItems(items);
@@ -2549,7 +2575,7 @@ export default function StartReceiving() {
                                   )}
                                   
                                   {/* Order Items Display - For custom items from unpacked POs */}
-                                  {!item.variantAllocations?.length && item.orderItems && item.orderItems.length > 1 && (
+                                  {!item.variantAllocations?.length && item.orderItems && item.orderItems.length > 0 && (
                                     <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                       <div className="flex items-center gap-1.5 mb-1.5">
                                         <Package className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />

@@ -8569,6 +8569,12 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       const imageUrl = product?.imageUrl || underlyingPurchaseItem?.imageUrl || row.purchaseItem?.imageUrl || null;
       const existingLocations = productId ? (locationsMap[productId] || []) : [];
       
+      // Get variantAllocations from purchase item (if it has variants)
+      const variantAllocations = row.purchaseItem?.variantAllocations || underlyingPurchaseItem?.variantAllocations || null;
+      
+      // Get orderItems from custom item (for unpacked PO packages)
+      const orderItems = row.customItem?.orderItems || null;
+      
       return {
         ...row.receiptItem,
         productId,
@@ -8577,6 +8583,8 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
         sku,
         imageUrl,
         existingLocations,
+        variantAllocations, // Include at top level for frontend
+        orderItems, // Include at top level for frontend
         purchaseItem: row.purchaseItem || underlyingPurchaseItem,
         customItem: row.customItem,
         consolidationItem: row.consolidationItem
