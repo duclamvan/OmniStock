@@ -120,7 +120,8 @@ export function parseLocationCode(code: string): LocationParts | PalletLocationP
   if (palletMatch) return palletMatch;
   
   // Try old format for backward compatibility - supports alphanumeric warehouse codes
-  const oldPattern = /^([A-Za-z0-9]+)-([A-Z]\d{2})-([R]\d{2})-([L]\d{2})$/;
+  // Also supports short format with 1+ digits (e.g., WH1-A1-R2-L3)
+  const oldPattern = /^([A-Za-z0-9]+)-([A-Z]\d+)-([R]\d+)-([L]\d+)$/;
   const oldMatch = code.match(oldPattern);
   
   if (!oldMatch) return null;
@@ -157,11 +158,12 @@ export function validatePalletLocationCode(code: string): boolean {
 
 /**
  * Validate a location code format (any format)
+ * Supports both full format (WH1-A01-R02-L03) and short format (WH1-A1-R2-L3)
  */
 export function validateLocationCode(code: string): boolean {
   return validateShelfLocationCode(code) || 
          validatePalletLocationCode(code) ||
-         /^[A-Za-z0-9]+-[A-Z]\d{2}-R\d{2}-L\d{2}$/.test(code); // Old format
+         /^[A-Za-z0-9]+-[A-Z]\d+-R\d+-L\d+$/.test(code); // Standard format (1+ digits)
 }
 
 /**
