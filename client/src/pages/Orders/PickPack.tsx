@@ -15895,6 +15895,28 @@ export default function PickPack() {
                             o.status === 'to_fulfill'
                           ).length;
                           const hasOrders = ordersToPickCount > 0;
+                          const pickingOrders = getOrdersByStatus('picking');
+                          const hasInProgressPicking = pickingOrders.length > 0;
+                          
+                          // If no pending orders but there's an in-progress picking order, show Continue button
+                          if (!hasOrders && hasInProgressPicking) {
+                            return (
+                              <Button 
+                                className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25" 
+                                size="lg"
+                                onClick={() => {
+                                  const orderToContinue = pickingOrders[0];
+                                  if (orderToContinue) {
+                                    startPicking(orderToContinue);
+                                  }
+                                }}
+                                data-testid="button-continue-picking"
+                              >
+                                <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                                {t('continuePicking', 'Continue Picking')} ({pickingOrders.length})
+                              </Button>
+                            );
+                          }
                           
                           return (
                             <Button 
