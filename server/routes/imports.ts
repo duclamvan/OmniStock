@@ -19,6 +19,7 @@ import {
   landedCosts,
   products,
   productLocations,
+  productVariants,
   aiLocationSuggestions,
   shipmentCosts,
   shipmentCartons,
@@ -10474,11 +10475,76 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         // This ensures products.quantity matches sum(productLocations.quantity)
         const productQuantities = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
         
+        // Track parent products that need quantity recalculation after variant processing
+        const parentProductsNeedingUpdate = new Set<string>();
+        
         for (const item of allReceiptItems) {
           // Skip items with no assigned quantity (not stored in any location)
           // Use assignedQuantity first, fall back to receivedQuantity for backwards compatibility
           const quantityToAdd = item.assignedQuantity || item.receivedQuantity || 0;
           if (quantityToAdd <= 0) continue;
+          
+          // ================================================================
+          // VARIANT ALLOCATION HANDLING
+          // Check if this receipt item has variant allocations - process variants AND continue
+          // to add to productQuantities for landed cost calculation
+          // ================================================================
+          const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number}> | null;
+          
+          if (variantAllocations && variantAllocations.length > 0) {
+            console.log(`Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
+            
+            let parentProductId: string | null = null;
+            
+            for (const va of variantAllocations) {
+              if (!va.variantId || va.quantity <= 0) continue;
+              
+              // Look up the variant to get its productId
+              const [variant] = await tx
+                .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
+                .from(productVariants)
+                .where(eq(productVariants.id, va.variantId));
+              
+              if (!variant) {
+                console.warn(`Variant not found for ID ${va.variantId}, skipping`);
+                continue;
+              }
+              
+              // Update variant quantity
+              await tx
+                .update(productVariants)
+                .set({
+                  quantity: sql`COALESCE(${productVariants.quantity}, 0) + ${va.quantity}`,
+                  updatedAt: new Date()
+                })
+                .where(eq(productVariants.id, va.variantId));
+              
+              console.log(`Added ${va.quantity} to variant ${va.variantName} (${va.variantId}), parent product: ${variant.productId}`);
+              
+              // Track parent product for quantity update (all variants share same parent)
+              parentProductId = variant.productId;
+              parentProductsNeedingUpdate.add(variant.productId);
+            }
+            
+            // IMPORTANT: Do NOT skip - continue to add this item to productQuantities 
+            // so that landed cost calculation runs for the parent product
+            // We'll handle the parent quantity update later from variant sums
+            if (parentProductId) {
+              const existing = productQuantities.get(parentProductId);
+              if (existing) {
+                existing.quantity += quantityToAdd;
+                existing.items.push(item);
+              } else {
+                productQuantities.set(parentProductId, {
+                  quantity: quantityToAdd,
+                  items: [item]
+                });
+              }
+            }
+            
+            // Skip the normal productId resolution since we already have parentProductId
+            continue;
+          }
           
           // Resolve productId from receipt item or via SKU lookup
           let productId = item.productId;
@@ -10722,11 +10788,14 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
               : newCostCny;
             
-            // Update product with new quantity and costs for ALL currencies
+            // Update product with costs for ALL currencies
+            // NOTE: For variant parents, skip quantity update here - it will be set from sum of variants later
+            const isVariantParent = parentProductsNeedingUpdate.has(productId);
             await tx
               .update(products)
               .set({
-                quantity: totalQuantity,
+                // Only update quantity if this is NOT a variant parent - variant parents get quantity from sum of variants
+                ...(isVariantParent ? {} : { quantity: totalQuantity }),
                 importCostUsd: avgCostUsd.toFixed(2),
                 importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
                 importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
@@ -10754,6 +10823,38 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             console.log(`Inventory added for product ${productId}: +${data.quantity} units, landed cost: ${avgLandedCosts.avgLatestLandingCost.toFixed(4)}`);
           } catch (error) {
             console.error(`Failed to add inventory for product ${productId}:`, error);
+          }
+        }
+        
+        // ================================================================
+        // UPDATE PARENT PRODUCT QUANTITIES FOR VARIANT PRODUCTS
+        // After processing all variant allocations, update parent products
+        // to have quantity equal to sum of all their variants
+        // ================================================================
+        for (const parentProductId of parentProductsNeedingUpdate) {
+          try {
+            // Get sum of all variant quantities for this parent product
+            const variantSums = await tx
+              .select({
+                totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`
+              })
+              .from(productVariants)
+              .where(eq(productVariants.productId, parentProductId));
+            
+            const totalVariantQuantity = variantSums[0]?.totalQuantity || 0;
+            
+            // Update parent product quantity to match sum of variants
+            await tx
+              .update(products)
+              .set({
+                quantity: totalVariantQuantity,
+                updatedAt: new Date()
+              })
+              .where(eq(products.id, parentProductId));
+            
+            console.log(`Updated parent product ${parentProductId} quantity to ${totalVariantQuantity} (sum of variants)`);
+          } catch (error) {
+            console.error(`Failed to update parent product ${parentProductId} quantity:`, error);
           }
         }
         } // End of else block (not already stored)
