@@ -6261,19 +6261,28 @@ router.post("/receipts/:receiptId/sync-items", async (req, res) => {
       await db.insert(receiptItems).values(itemsToAdd);
     }
     
-    // Update existing items with latest quantity info from consolidation
+    // Update existing items with latest quantity and variantAllocations from consolidation
     let updatedCount = 0;
     for (const ci of consolidationItemList) {
       const existingItem = existingReceiptItems.find(ri => ri.itemId === ci.itemId);
       if (existingItem) {
-        // Get the source item to check quantity
+        // Get the source item to check quantity and variantAllocations
         let sourceQuantity = 1;
+        let sourceVariantAllocations: any = null;
+        let sourceProductId: string | null = null;
+        let sourceSku: string | null = null;
+        
         if (ci.itemType === 'purchase') {
           const [item] = await db
             .select()
             .from(purchaseItems)
             .where(eq(purchaseItems.id, ci.itemId));
-          if (item) sourceQuantity = item.quantity || 1;
+          if (item) {
+            sourceQuantity = item.quantity || 1;
+            sourceVariantAllocations = (item as any).variantAllocations || null;
+            sourceProductId = (item as any).productId || null;
+            sourceSku = item.sku || null;
+          }
         } else if (ci.itemType === 'custom') {
           const [item] = await db
             .select()
@@ -6282,14 +6291,35 @@ router.post("/receipts/:receiptId/sync-items", async (req, res) => {
           if (item) sourceQuantity = item.quantity || 1;
         }
         
-        // Update expected quantity if it changed
+        // Build update object with changed fields
+        const updateFields: any = {};
+        
         if (existingItem.expectedQuantity !== sourceQuantity) {
+          updateFields.expectedQuantity = sourceQuantity;
+        }
+        
+        // Also sync variantAllocations if they were missing or changed
+        const existingAllocations = (existingItem as any).variantAllocations;
+        if (!existingAllocations && sourceVariantAllocations) {
+          updateFields.variantAllocations = sourceVariantAllocations;
+        }
+        
+        // Sync productId if missing
+        if (!existingItem.productId && sourceProductId) {
+          updateFields.productId = sourceProductId;
+        }
+        
+        // Sync SKU if missing
+        if (!existingItem.sku && sourceSku) {
+          updateFields.sku = sourceSku;
+        }
+        
+        // Only update if there are changes
+        if (Object.keys(updateFields).length > 0) {
+          updateFields.updatedAt = new Date();
           await db
             .update(receiptItems)
-            .set({ 
-              expectedQuantity: sourceQuantity,
-              updatedAt: new Date()
-            })
+            .set(updateFields)
             .where(eq(receiptItems.id, existingItem.id));
           updatedCount++;
         }
