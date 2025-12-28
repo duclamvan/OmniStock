@@ -73,6 +73,7 @@ import {
   Trash2
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -1446,7 +1447,7 @@ function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCan
 // SHIPMENT CARD COMPONENTS
 // ============================================================================
 
-function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
+function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; isAdministrator: boolean }) {
   const { t } = useTranslation(['imports']);
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -1574,18 +1575,20 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={deleteShipmentMutation.isPending}
-                    className="text-red-600 dark:text-red-400"
-                    data-testid={`menu-item-delete-${shipment.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common:delete')}
-                  </DropdownMenuItem>
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(true);
+                      }}
+                      disabled={deleteShipmentMutation.isPending}
+                      className="text-red-600 dark:text-red-400"
+                      data-testid={`menu-item-delete-${shipment.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('common:delete')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1593,33 +1596,35 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
         </CardContent>
       )}
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
-              {t('common:cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteShipmentMutation.mutate()}
-              disabled={deleteShipmentMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-            >
-              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {isAdministrator && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('confirmDeleteDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+                {t('common:cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteShipmentMutation.mutate()}
+                disabled={deleteShipmentMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }
 
-function ReceivingShipmentCard({ shipment }: { shipment: any }) {
+function ReceivingShipmentCard({ shipment, isAdministrator }: { shipment: any; isAdministrator: boolean }) {
   const { t } = useTranslation(['imports']);
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -1741,18 +1746,20 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
                     <RotateCcw className="h-4 w-4 mr-2" />
                     {t('moveBackToReceive')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={deleteShipmentMutation.isPending}
-                    className="text-red-600 dark:text-red-400"
-                    data-testid={`menu-item-delete-${shipment.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common:delete')}
-                  </DropdownMenuItem>
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(true);
+                      }}
+                      disabled={deleteShipmentMutation.isPending}
+                      className="text-red-600 dark:text-red-400"
+                      data-testid={`menu-item-delete-${shipment.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('common:delete')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1813,28 +1820,30 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
         </CardContent>
       )}
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
-              {t('common:cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteShipmentMutation.mutate()}
-              disabled={deleteShipmentMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-            >
-              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {isAdministrator && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('confirmDeleteDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+                {t('common:cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteShipmentMutation.mutate()}
+                disabled={deleteShipmentMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }
@@ -4042,7 +4051,7 @@ function QuickStorageSheet({
   );
 }
 
-function StorageShipmentCard({ shipment }: { shipment: any }) {
+function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isAdministrator: boolean }) {
   const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -4227,18 +4236,20 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
                     <Undo2 className="h-4 w-4 mr-2" />
                     {moveToReceiveMutation.isPending ? t('common:loading') : t('moveToReceive')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={deleteShipmentMutation.isPending}
-                    className="text-red-600 dark:text-red-400"
-                    data-testid={`menu-item-delete-${shipment.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common:delete')}
-                  </DropdownMenuItem>
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(true);
+                      }}
+                      disabled={deleteShipmentMutation.isPending}
+                      className="text-red-600 dark:text-red-400"
+                      data-testid={`menu-item-delete-${shipment.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('common:delete')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -4252,28 +4263,30 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
         onOpenChange={setShowQuickStorage}
       />
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
-              {t('common:cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteShipmentMutation.mutate()}
-              disabled={deleteShipmentMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-            >
-              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {isAdministrator && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('confirmDeleteDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+                {t('common:cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteShipmentMutation.mutate()}
+                disabled={deleteShipmentMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }
@@ -4975,7 +4988,7 @@ function ShipmentReportDialog({
   );
 }
 
-function CompletedShipmentCard({ shipment }: { shipment: any }) {
+function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; isAdministrator: boolean }) {
   const { t } = useTranslation(['imports']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -5181,18 +5194,20 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                     <Undo2 className="h-4 w-4 mr-2" />
                     {t('sendBackToReceive')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={deleteShipmentMutation.isPending}
-                    className="text-red-600 dark:text-red-400"
-                    data-testid={`menu-item-delete-${shipment.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common:delete')}
-                  </DropdownMenuItem>
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(true);
+                      }}
+                      disabled={deleteShipmentMutation.isPending}
+                      className="text-red-600 dark:text-red-400"
+                      data-testid={`menu-item-delete-${shipment.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('common:delete')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -5206,28 +5221,30 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
         onOpenChange={setShowReport}
       />
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
-              {t('common:cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteShipmentMutation.mutate()}
-              disabled={deleteShipmentMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-            >
-              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {isAdministrator && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('confirmDeleteDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+                {t('common:cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteShipmentMutation.mutate()}
+                disabled={deleteShipmentMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       
       <AlertDialog open={showRevertConfirm} onOpenChange={setShowRevertConfirm}>
         <AlertDialogContent>
@@ -5260,7 +5277,7 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
   );
 }
 
-function ArchivedShipmentCard({ shipment }: { shipment: any }) {
+function ArchivedShipmentCard({ shipment, isAdministrator }: { shipment: any; isAdministrator: boolean }) {
   const { t } = useTranslation(['imports']);
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -5387,18 +5404,20 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(true);
-                    }}
-                    disabled={deleteShipmentMutation.isPending}
-                    className="text-red-600 dark:text-red-400"
-                    data-testid={`menu-item-delete-${shipment.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t('common:delete')}
-                  </DropdownMenuItem>
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(true);
+                      }}
+                      disabled={deleteShipmentMutation.isPending}
+                      className="text-red-600 dark:text-red-400"
+                      data-testid={`menu-item-delete-${shipment.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t('common:delete')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -5412,28 +5431,30 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
         onOpenChange={setShowReport}
       />
       
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('confirmDeleteDescription')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
-              {t('common:cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteShipmentMutation.mutate()}
-              disabled={deleteShipmentMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-            >
-              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {isAdministrator && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('confirmDeleteDescription')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+                {t('common:cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteShipmentMutation.mutate()}
+                disabled={deleteShipmentMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }
@@ -5487,6 +5508,7 @@ export default function ReceivingList() {
   const { t } = useTranslation(['imports']);
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const { isAdministrator } = useAuth();
   
   // Parse URL parameters for tab selection
   const urlParams = new URLSearchParams(window.location.search);
@@ -5876,7 +5898,7 @@ export default function ReceivingList() {
                       />
                     ) : (
                       toReceiveShipments.map((shipment: any) => (
-                        <ToReceiveShipmentCard key={shipment.id} shipment={shipment} />
+                        <ToReceiveShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                       ))
                     )}
                   </TabsContent>
@@ -5910,7 +5932,7 @@ export default function ReceivingList() {
                       />
                     ) : (
                       receivingShipments.map((shipment: any) => (
-                        <ReceivingShipmentCard key={shipment.id} shipment={shipment} />
+                        <ReceivingShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                       ))
                     )}
                   </TabsContent>
@@ -5931,7 +5953,7 @@ export default function ReceivingList() {
                       />
                     ) : (
                       storageShipments.map((shipment: any) => (
-                        <StorageShipmentCard key={shipment.id} shipment={shipment} />
+                        <StorageShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                       ))
                     )}
                   </TabsContent>
@@ -5952,7 +5974,7 @@ export default function ReceivingList() {
                       />
                     ) : (
                       completedShipments.map((shipment: any) => (
-                        <CompletedShipmentCard key={shipment.id} shipment={shipment} />
+                        <CompletedShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                       ))
                     )}
                   </TabsContent>
@@ -5980,7 +6002,7 @@ export default function ReceivingList() {
                             <span>({weekGroup.count || weekGroup.shipments?.length || 0} {t('shipments')})</span>
                           </div>
                           {weekGroup.shipments?.map((shipment: any) => (
-                            <ArchivedShipmentCard key={shipment.id} shipment={shipment} />
+                            <ArchivedShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                           ))}
                         </div>
                       ))
