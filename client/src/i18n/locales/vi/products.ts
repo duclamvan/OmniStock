@@ -703,6 +703,15 @@ const products = {
     enterAtLeastOneBarcode: 'Vui lòng nhập ít nhất một mã vạch',
     barcodesAssigned: 'Đã gán {{count}} mã vạch thành công',
     barcodesNotAssigned: '{{count}} mã vạch không thể gán (không có biến thể phù hợp)',
+    skuGenerated: 'Đã tạo mã SKU',
+    skuGeneratedDescription: 'Mã SKU: {{sku}}',
+    scannerReady: 'Máy quét sẵn sàng',
+    scannerReadyDescription: 'Đưa mã vạch trước camera',
+    imageDownloaded: 'Đã tải hình ảnh',
+    imageDownloadedDescription: 'Hình ảnh {{type}} đã lưu vào tải xuống',
+    downloadFailed: 'Tải xuống thất bại',
+    downloadFailedDescription: 'Không thể tải xuống hình ảnh',
+    variantAddedImageFailed: 'Đã thêm biến thể nhưng tải hình ảnh thất bại',
   },
   
   // Supplier Details Labels (for ProductForm)

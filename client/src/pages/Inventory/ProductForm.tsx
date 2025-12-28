@@ -1498,11 +1498,7 @@ export default function ProductForm() {
       ? categoryWords.map((w: string) => normalizeForSKU(w).charAt(0)).join('').toUpperCase()
       : normalizeForSKU(categoryName).slice(0, 3).toUpperCase() || t('products:defaults.categoryFallback');
     
-    // 2. Supplier Part (2 chars) - optional
-    const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
-    const supplierPart = supplierName ? normalizeForSKU(supplierName).slice(0, 2) : '';
-    
-    // 3. Product Name Part (4-6 chars) - prefer English name (used for SKU readability)
+    // 2. Product Name Part (4-6 chars) - prefer English name (used for SKU readability)
     const productText = name || vietnameseName || 'ITEM';
     const words = productText.split(/\s+/).filter(w => w.length > 0);
     let productPart = '';
@@ -1523,16 +1519,8 @@ export default function ProductForm() {
       productPart = t('products:defaults.productPartFallback');
     }
     
-    // Construct base SKU with available parts (no suffix initially)
-    let skuParts = [categoryPart];
-    
-    if (supplierPart) {
-      skuParts.push(supplierPart);
-    }
-    
-    skuParts.push(productPart);
-    
-    let baseSKU = skuParts.join('-');
+    // Construct base SKU: Category + Product Name
+    let baseSKU = `${categoryPart}-${productPart}`;
     
     // Check if this SKU already exists in the product list
     const existingSkus = allProducts

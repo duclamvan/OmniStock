@@ -596,6 +596,15 @@ const products = {
     enterAtLeastOneBarcode: 'Please enter at least one barcode',
     barcodesAssigned: '{{count}} barcode(s) assigned successfully',
     barcodesNotAssigned: '{{count}} barcode(s) could not be assigned (no matching variants)',
+    skuGenerated: 'SKU Generated',
+    skuGeneratedDescription: 'Generated SKU: {{sku}}',
+    scannerReady: 'Scanner Ready',
+    scannerReadyDescription: 'Position barcode in front of camera',
+    imageDownloaded: 'Image Downloaded',
+    imageDownloadedDescription: '{{type}} image saved to downloads',
+    downloadFailed: 'Download Failed',
+    downloadFailedDescription: 'Could not download the image',
+    variantAddedImageFailed: 'Variant added but image upload failed',
   },
   
   // Supplier Details Labels (for ProductForm)
