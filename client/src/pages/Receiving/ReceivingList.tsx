@@ -2122,9 +2122,20 @@ function QuickStorageSheet({
   
   // Bulk allocation state for multi-variant items
   const [showBulkAllocation, setShowBulkAllocation] = useState(false);
-  const [bulkLocationPrefix, setBulkLocationPrefix] = useState("WH1-A1-R");
+  const [bulkWarehouse, setBulkWarehouse] = useState("WH1");
+  const [bulkStartAisle, setBulkStartAisle] = useState("A");
+  const [bulkEndAisle, setBulkEndAisle] = useState("A");
   const [bulkStartRack, setBulkStartRack] = useState(1);
-  const [bulkItemsPerRack, setBulkItemsPerRack] = useState(50);
+  const [bulkEndRack, setBulkEndRack] = useState(10);
+  const [bulkStartLevel, setBulkStartLevel] = useState(1);
+  const [bulkEndLevel, setBulkEndLevel] = useState(4);
+  const [bulkBinsPerLevel, setBulkBinsPerLevel] = useState(0); // 0 = no bins, just level
+  const [bulkItemsPerLocation, setBulkItemsPerLocation] = useState(50);
+  const [bulkFillOrder, setBulkFillOrder] = useState<'rack-first' | 'level-first'>('level-first');
+  
+  // Derived: build location prefix for preview
+  const bulkLocationPrefix = `${bulkWarehouse}-${bulkStartAisle}`;
+  const bulkItemsPerRack = bulkItemsPerLocation; // Legacy compatibility
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -2666,6 +2677,68 @@ function QuickStorageSheet({
     // setLocationInput(""); - Removed to allow faster multi-location entry
   };
   
+  // Generate all location codes based on bulk allocation settings
+  const generateBulkLocations = useCallback(() => {
+    const locations: string[] = [];
+    
+    // Validate inputs - ensure valid ranges
+    if (!bulkWarehouse || !bulkStartAisle || !bulkEndAisle) return locations;
+    
+    const aisleStart = bulkStartAisle.toUpperCase().charCodeAt(0);
+    const aisleEnd = bulkEndAisle.toUpperCase().charCodeAt(0);
+    
+    // Ensure valid letter range (A-Z only)
+    if (aisleStart < 65 || aisleStart > 90 || aisleEnd < 65 || aisleEnd > 90) return locations;
+    
+    // Handle reversed ranges by swapping
+    const effectiveAisleStart = Math.min(aisleStart, aisleEnd);
+    const effectiveAisleEnd = Math.max(aisleStart, aisleEnd);
+    const effectiveRackStart = Math.min(bulkStartRack, bulkEndRack);
+    const effectiveRackEnd = Math.max(bulkStartRack, bulkEndRack);
+    const effectiveLevelStart = Math.min(bulkStartLevel, bulkEndLevel);
+    const effectiveLevelEnd = Math.max(bulkStartLevel, bulkEndLevel);
+    
+    // Ensure positive values
+    if (effectiveRackStart < 1 || effectiveLevelStart < 1) return locations;
+    
+    // Generate locations based on fill order
+    if (bulkFillOrder === 'level-first') {
+      // Fill all levels in a rack before moving to next rack (good for picking efficiency)
+      for (let aisleCode = effectiveAisleStart; aisleCode <= effectiveAisleEnd; aisleCode++) {
+        const aisle = String.fromCharCode(aisleCode);
+        for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
+          for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
+            if (bulkBinsPerLevel > 0) {
+              for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
+                locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}-B${bin}`);
+              }
+            } else {
+              locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}`);
+            }
+          }
+        }
+      }
+    } else {
+      // Fill same level across all racks before moving to next level (good for forklift efficiency)
+      for (let aisleCode = effectiveAisleStart; aisleCode <= effectiveAisleEnd; aisleCode++) {
+        const aisle = String.fromCharCode(aisleCode);
+        for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
+          for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
+            if (bulkBinsPerLevel > 0) {
+              for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
+                locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}-B${bin}`);
+              }
+            } else {
+              locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}`);
+            }
+          }
+        }
+      }
+    }
+    
+    return locations;
+  }, [bulkWarehouse, bulkStartAisle, bulkEndAisle, bulkStartRack, bulkEndRack, bulkStartLevel, bulkEndLevel, bulkBinsPerLevel, bulkFillOrder]);
+  
   // Handle bulk allocation for multi-variant items (e.g., 300-500 gel polishes across racks)
   const handleBulkAllocation = async () => {
     if (!currentItem) return;
@@ -2681,22 +2754,32 @@ function QuickStorageSheet({
     }
     
     // Validate inputs
-    if (!bulkLocationPrefix || bulkStartRack < 1 || bulkItemsPerRack < 1) {
+    if (!bulkWarehouse || bulkItemsPerLocation < 1) {
       toast({
         title: t('common:error'),
-        description: 'Please enter valid location prefix, start rack, and items per rack',
+        description: 'Please enter valid warehouse and items per location',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const allLocations = generateBulkLocations();
+    if (allLocations.length === 0) {
+      toast({
+        title: t('common:error'),
+        description: 'No locations to allocate. Check your range settings.',
         variant: "destructive",
       });
       return;
     }
     
     const updatedItems = [...items];
-    let currentRack = bulkStartRack;
-    let currentRackCount = 0;
-    const rackAllocations: { rack: number; variants: { name: string; qty: number }[] }[] = [];
-    let currentRackVariants: { name: string; qty: number }[] = [];
+    let locationIndex = 0;
+    let currentLocationCount = 0;
+    const locationAllocations: { code: string; variants: { name: string; qty: number }[] }[] = [];
+    let currentLocationVariants: { name: string; qty: number }[] = [];
     
-    // Distribute variants across racks
+    // Distribute variants across locations
     currentItem.variantAllocations!.forEach((variant) => {
       // Calculate remaining for this variant
       const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
@@ -2711,65 +2794,66 @@ function QuickStorageSheet({
       
       let remainingToAllocate = variantRemaining;
       
-      while (remainingToAllocate > 0) {
-        const spaceInRack = bulkItemsPerRack - currentRackCount;
-        const allocateNow = Math.min(remainingToAllocate, spaceInRack);
+      while (remainingToAllocate > 0 && locationIndex < allLocations.length) {
+        const spaceInLocation = bulkItemsPerLocation - currentLocationCount;
+        const allocateNow = Math.min(remainingToAllocate, spaceInLocation);
         
         if (allocateNow > 0) {
-          const locationCode = `${bulkLocationPrefix}${currentRack}`;
+          const locationCode = allLocations[locationIndex];
           
           // Add location assignment
           const newLocation: LocationAssignment = {
-            id: `bulk-${Date.now()}-${variant.variantId}-${currentRack}`,
+            id: `bulk-${Date.now()}-${variant.variantId}-${locationIndex}`,
             locationCode,
             locationType: 'warehouse',
             quantity: allocateNow,
-            isPrimary: currentRack === bulkStartRack && currentRackCount === 0,
+            isPrimary: locationIndex === 0 && currentLocationCount === 0,
             variantId: variant.variantId,
             variantName: variant.variantName
           };
           updatedItems[selectedItemIndex].locations.push(newLocation);
           
-          currentRackCount += allocateNow;
+          currentLocationCount += allocateNow;
           remainingToAllocate -= allocateNow;
-          currentRackVariants.push({ name: variant.variantName || 'Unknown', qty: allocateNow });
+          currentLocationVariants.push({ name: variant.variantName || 'Unknown', qty: allocateNow });
         }
         
-        // Move to next rack if current is full
-        if (currentRackCount >= bulkItemsPerRack) {
-          rackAllocations.push({ rack: currentRack, variants: [...currentRackVariants] });
-          currentRack++;
-          currentRackCount = 0;
-          currentRackVariants = [];
+        // Move to next location if current is full
+        if (currentLocationCount >= bulkItemsPerLocation) {
+          locationAllocations.push({ code: allLocations[locationIndex], variants: [...currentLocationVariants] });
+          locationIndex++;
+          currentLocationCount = 0;
+          currentLocationVariants = [];
         }
       }
     });
     
-    // Save last rack if it has items
-    if (currentRackVariants.length > 0) {
-      rackAllocations.push({ rack: currentRack, variants: currentRackVariants });
+    // Save last location if it has items
+    if (currentLocationVariants.length > 0 && locationIndex < allLocations.length) {
+      locationAllocations.push({ code: allLocations[locationIndex], variants: currentLocationVariants });
     }
     
     setItems(updatedItems);
     setShowBulkAllocation(false);
     
     await soundEffects.playSuccessBeep();
-    const totalRacks = rackAllocations.length;
-    const fullRacks = rackAllocations.filter(r => r.variants.reduce((sum, v) => sum + v.qty, 0) >= bulkItemsPerRack).length;
+    const totalLocations = locationAllocations.length;
+    const fullLocations = locationAllocations.filter(l => l.variants.reduce((sum, v) => sum + v.qty, 0) >= bulkItemsPerLocation).length;
     toast({
       title: t('common:success'),
-      description: `Allocated to ${totalRacks} racks (${fullRacks} full, ${totalRacks - fullRacks} partial)`,
+      description: `Allocated to ${totalLocations} locations (${fullLocations} full, ${totalLocations - fullLocations} partial)`,
     });
   };
   
   // Calculate bulk allocation preview
   const getBulkAllocationPreview = () => {
-    if (!currentItem?.variantAllocations) return { racks: [], totalItems: 0, totalRacks: 0 };
+    if (!currentItem?.variantAllocations) return { locations: [], totalItems: 0, totalLocations: 0, availableLocations: 0 };
     
-    const racks: { rack: number; items: number; isFull: boolean; variants: string[] }[] = [];
-    let currentRack = bulkStartRack;
-    let currentRackCount = 0;
-    let currentRackVariants: string[] = [];
+    const allLocations = generateBulkLocations();
+    const locations: { code: string; items: number; isFull: boolean; variants: string[] }[] = [];
+    let locationIndex = 0;
+    let currentLocationCount = 0;
+    let currentLocationVariants: string[] = [];
     let totalItems = 0;
     
     currentItem.variantAllocations.forEach((variant) => {
@@ -2786,42 +2870,42 @@ function QuickStorageSheet({
       let remainingToAllocate = variantRemaining;
       totalItems += variantRemaining;
       
-      while (remainingToAllocate > 0) {
-        const spaceInRack = bulkItemsPerRack - currentRackCount;
-        const allocateNow = Math.min(remainingToAllocate, spaceInRack);
+      while (remainingToAllocate > 0 && locationIndex < allLocations.length) {
+        const spaceInLocation = bulkItemsPerLocation - currentLocationCount;
+        const allocateNow = Math.min(remainingToAllocate, spaceInLocation);
         
         if (allocateNow > 0) {
-          currentRackCount += allocateNow;
+          currentLocationCount += allocateNow;
           remainingToAllocate -= allocateNow;
-          if (!currentRackVariants.includes(variant.variantName || 'Unknown')) {
-            currentRackVariants.push(variant.variantName || 'Unknown');
+          if (!currentLocationVariants.includes(variant.variantName || 'Unknown')) {
+            currentLocationVariants.push(variant.variantName || 'Unknown');
           }
         }
         
-        if (currentRackCount >= bulkItemsPerRack) {
-          racks.push({
-            rack: currentRack,
-            items: currentRackCount,
+        if (currentLocationCount >= bulkItemsPerLocation) {
+          locations.push({
+            code: allLocations[locationIndex],
+            items: currentLocationCount,
             isFull: true,
-            variants: [...currentRackVariants]
+            variants: [...currentLocationVariants]
           });
-          currentRack++;
-          currentRackCount = 0;
-          currentRackVariants = [];
+          locationIndex++;
+          currentLocationCount = 0;
+          currentLocationVariants = [];
         }
       }
     });
     
-    if (currentRackCount > 0) {
-      racks.push({
-        rack: currentRack,
-        items: currentRackCount,
+    if (currentLocationCount > 0 && locationIndex < allLocations.length) {
+      locations.push({
+        code: allLocations[locationIndex],
+        items: currentLocationCount,
         isFull: false,
-        variants: currentRackVariants
+        variants: currentLocationVariants
       });
     }
     
-    return { racks, totalItems, totalRacks: racks.length };
+    return { locations, totalItems, totalLocations: locations.length, availableLocations: allLocations.length };
   };
   
   // Handle quantity assignment
@@ -3919,61 +4003,180 @@ function QuickStorageSheet({
 
         {/* Bulk Allocation Dialog */}
         <Dialog open={showBulkAllocation} onOpenChange={setShowBulkAllocation}>
-          <DialogContent className="max-w-md" data-testid="dialog-bulk-allocation">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-bulk-allocation">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Layers className="h-5 w-5 text-purple-600" />
-                {t('imports:bulkAllocate', 'Bulk Allocate to Racks')}
+                {t('imports:bulkAllocate', 'Bulk Allocate to Locations')}
               </DialogTitle>
               <DialogDescription>
-                {t('imports:bulkAllocateDesc', 'Automatically distribute {{count}} variants across multiple rack locations', { count: items[selectedItemIndex]?.variantAllocations?.length || 0 })}
+                {t('imports:bulkAllocateDesc', 'Automatically distribute {{count}} variants across warehouse locations', { count: items[selectedItemIndex]?.variantAllocations?.length || 0 })}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Location Prefix */}
+              {/* Warehouse */}
               <div className="space-y-2">
-                <Label htmlFor="bulk-prefix">{t('imports:locationPrefix', 'Location Prefix')}</Label>
+                <Label htmlFor="bulk-warehouse">{t('imports:warehouse', 'Warehouse')}</Label>
                 <Input
-                  id="bulk-prefix"
-                  value={bulkLocationPrefix}
-                  onChange={(e) => setBulkLocationPrefix(e.target.value.toUpperCase())}
-                  placeholder="WH1-A1-R"
+                  id="bulk-warehouse"
+                  value={bulkWarehouse}
+                  onChange={(e) => setBulkWarehouse(e.target.value.toUpperCase())}
+                  placeholder="WH1"
                   className="font-mono"
-                  data-testid="input-bulk-prefix"
+                  data-testid="input-bulk-warehouse"
                 />
+              </div>
+
+              {/* Aisle Range */}
+              <div className="space-y-2">
+                <Label>{t('imports:aisleRange', 'Aisle Range')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      value={bulkStartAisle}
+                      onChange={(e) => setBulkStartAisle(e.target.value.toUpperCase().slice(0, 1))}
+                      placeholder="A"
+                      maxLength={1}
+                      className="font-mono"
+                      data-testid="input-bulk-start-aisle"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
+                  </div>
+                  <div>
+                    <Input
+                      value={bulkEndAisle}
+                      onChange={(e) => setBulkEndAisle(e.target.value.toUpperCase().slice(0, 1))}
+                      placeholder="A"
+                      maxLength={1}
+                      className="font-mono"
+                      data-testid="input-bulk-end-aisle"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rack Range */}
+              <div className="space-y-2">
+                <Label>{t('imports:rackRange', 'Rack Range')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkStartRack}
+                      onChange={(e) => setBulkStartRack(parseInt(e.target.value) || 1)}
+                      className="font-mono"
+                      data-testid="input-bulk-start-rack"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
+                  </div>
+                  <div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkEndRack}
+                      onChange={(e) => setBulkEndRack(parseInt(e.target.value) || 1)}
+                      className="font-mono"
+                      data-testid="input-bulk-end-rack"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Level Range */}
+              <div className="space-y-2">
+                <Label>{t('imports:levelRange', 'Level Range')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkStartLevel}
+                      onChange={(e) => setBulkStartLevel(parseInt(e.target.value) || 1)}
+                      className="font-mono"
+                      data-testid="input-bulk-start-level"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
+                  </div>
+                  <div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkEndLevel}
+                      onChange={(e) => setBulkEndLevel(parseInt(e.target.value) || 1)}
+                      className="font-mono"
+                      data-testid="input-bulk-end-level"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bins per Level and Items per Location */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-bins">{t('imports:binsPerLevel', 'Bins per Level')}</Label>
+                  <Input
+                    id="bulk-bins"
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={bulkBinsPerLevel}
+                    onChange={(e) => setBulkBinsPerLevel(parseInt(e.target.value) || 0)}
+                    className="font-mono"
+                    data-testid="input-bulk-bins"
+                  />
+                  <p className="text-xs text-muted-foreground">{t('imports:binsHint', '0 = no bins')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-per-location">{t('imports:itemsPerLocation', 'Items per Location')}</Label>
+                  <Input
+                    id="bulk-per-location"
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={bulkItemsPerLocation}
+                    onChange={(e) => setBulkItemsPerLocation(parseInt(e.target.value) || 50)}
+                    className="font-mono"
+                    data-testid="input-bulk-per-location"
+                  />
+                </div>
+              </div>
+
+              {/* Fill Order Strategy */}
+              <div className="space-y-2">
+                <Label>{t('imports:fillOrder', 'Fill Order Strategy')}</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={bulkFillOrder === 'level-first' ? 'default' : 'outline'}
+                    onClick={() => setBulkFillOrder('level-first')}
+                    className={bulkFillOrder === 'level-first' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                    data-testid="button-fill-level-first"
+                  >
+                    {t('imports:levelFirst', 'Level-first')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={bulkFillOrder === 'rack-first' ? 'default' : 'outline'}
+                    onClick={() => setBulkFillOrder('rack-first')}
+                    className={bulkFillOrder === 'rack-first' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                    data-testid="button-fill-rack-first"
+                  >
+                    {t('imports:rackFirst', 'Rack-first')}
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {t('imports:locationPrefixHint', 'e.g., WH1-A1-R for racks R1, R2, R3...')}
+                  {bulkFillOrder === 'level-first' 
+                    ? t('imports:levelFirstHint', 'Fill all levels in a rack before moving to next rack (best for picking)')
+                    : t('imports:rackFirstHint', 'Fill same level across racks before moving to next level (best for forklift)')
+                  }
                 </p>
-              </div>
-
-              {/* Start Rack Number */}
-              <div className="space-y-2">
-                <Label htmlFor="bulk-start">{t('imports:startRackNumber', 'Start Rack Number')}</Label>
-                <Input
-                  id="bulk-start"
-                  type="number"
-                  min={1}
-                  value={bulkStartRack}
-                  onChange={(e) => setBulkStartRack(parseInt(e.target.value) || 1)}
-                  className="font-mono"
-                  data-testid="input-bulk-start"
-                />
-              </div>
-
-              {/* Items Per Rack */}
-              <div className="space-y-2">
-                <Label htmlFor="bulk-per-rack">{t('imports:itemsPerRack', 'Variants Per Rack')}</Label>
-                <Input
-                  id="bulk-per-rack"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={bulkItemsPerRack}
-                  onChange={(e) => setBulkItemsPerRack(parseInt(e.target.value) || 50)}
-                  className="font-mono"
-                  data-testid="input-bulk-per-rack"
-                />
               </div>
 
               {/* Preview */}
@@ -3985,19 +4188,19 @@ function QuickStorageSheet({
                 <div className="space-y-1 text-xs">
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    return preview.racks.slice(0, 5).map((rack, idx) => (
+                    return preview.locations.slice(0, 6).map((loc, idx) => (
                       <div key={idx} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
-                        <span className="font-mono font-medium">{bulkLocationPrefix}{rack.rack}</span>
-                        <Badge variant="secondary" className="text-xs">{rack.items} items</Badge>
+                        <span className="font-mono font-medium text-xs">{loc.code}</span>
+                        <Badge variant="secondary" className="text-xs">{loc.items} items</Badge>
                       </div>
                     ));
                   })()}
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    if (preview.racks.length > 5) {
+                    if (preview.locations.length > 6) {
                       return (
                         <p className="text-center text-muted-foreground pt-1">
-                          +{preview.racks.length - 5} more racks...
+                          +{preview.locations.length - 6} more locations...
                         </p>
                       );
                     }
@@ -4005,10 +4208,24 @@ function QuickStorageSheet({
                   })()}
                   {(() => {
                     const preview = getBulkAllocationPreview();
+                    const needsMore = preview.totalItems > 0 && preview.totalLocations >= preview.availableLocations && preview.locations.length > 0 && preview.locations[preview.locations.length - 1]?.items < bulkItemsPerLocation === false;
                     return (
-                      <p className="text-center text-muted-foreground pt-2 font-medium">
-                        Total: {preview.totalItems} items across {preview.totalRacks} racks
-                      </p>
+                      <div className="pt-2 space-y-1">
+                        <p className="text-center text-muted-foreground font-medium">
+                          {t('imports:totalSummary', 'Total: {{items}} items across {{locations}} locations', { 
+                            items: preview.totalItems, 
+                            locations: preview.totalLocations 
+                          })}
+                        </p>
+                        <p className="text-center text-muted-foreground text-xs">
+                          {t('imports:availableLocations', '{{count}} locations available in range', { count: preview.availableLocations })}
+                        </p>
+                        {preview.totalLocations > preview.availableLocations && (
+                          <p className="text-center text-orange-600 dark:text-orange-400 text-xs font-medium">
+                            {t('imports:needMoreLocations', 'Need more locations! Expand range or add bins.')}
+                          </p>
+                        )}
+                      </div>
                     );
                   })()}
                 </div>
@@ -4026,12 +4243,12 @@ function QuickStorageSheet({
               <Button
                 onClick={handleBulkAllocation}
                 disabled={
-                  !bulkLocationPrefix || 
-                  bulkStartRack < 1 || 
-                  bulkItemsPerRack < 1 || 
+                  !bulkWarehouse || 
+                  bulkItemsPerLocation < 1 || 
                   isSubmitting || 
                   !items[selectedItemIndex]?.variantAllocations || 
-                  items[selectedItemIndex]?.variantAllocations.length < 2
+                  items[selectedItemIndex]?.variantAllocations.length < 2 ||
+                  getBulkAllocationPreview().availableLocations === 0
                 }
                 className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
                 data-testid="button-apply-bulk"
