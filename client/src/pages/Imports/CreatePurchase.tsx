@@ -3567,7 +3567,7 @@ export default function CreatePurchase() {
                           data-testid="button-delete-selected"
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
-                          {t('deleteSelected')}
+                          {t('deleteSelected', { count: selectedItems.length })}
                         </Button>
                       </div>
                     </div>
