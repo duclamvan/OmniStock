@@ -2136,6 +2136,8 @@ function QuickStorageSheet({
     { id: '1', aisle: 1, rackStart: 1, rackEnd: 10, levels: 4, binsPerLevel: 0 }
   ]);
   const [bulkItemsPerLocation, setBulkItemsPerLocation] = useState(50);
+  const [bulkFillDirection, setBulkFillDirection] = useState<'bottom-up' | 'top-down'>('bottom-up');
+  const [bulkLastItemsLevel, setBulkLastItemsLevel] = useState<number | null>(null);
   
   // Helper to add new aisle config (copies from last aisle)
   const addAisleConfig = () => {
@@ -2716,8 +2718,13 @@ function QuickStorageSheet({
       const levels = Math.max(1, config.levels);
       const bins = config.binsPerLevel > 0 ? config.binsPerLevel : 0;
       
-      // Rack-first ordering: fill all racks on level 1, then level 2, etc.
-      for (let level = 1; level <= levels; level++) {
+      // Determine level order based on fill direction
+      const levelOrder = bulkFillDirection === 'top-down' 
+        ? Array.from({ length: levels }, (_, i) => levels - i) // Top first: 5,4,3,2,1
+        : Array.from({ length: levels }, (_, i) => i + 1);     // Bottom first: 1,2,3,4,5
+      
+      // Rack-first ordering: fill all racks on level X, then next level, etc.
+      for (const level of levelOrder) {
         for (let rack = rackStart; rack <= rackEnd; rack++) {
           if (bins > 0) {
             for (let bin = 1; bin <= bins; bin++) {
@@ -2731,7 +2738,12 @@ function QuickStorageSheet({
     }
     
     return locations;
-  }, [bulkWarehouse, bulkAisleConfigs]);
+  }, [bulkWarehouse, bulkAisleConfigs, bulkFillDirection]);
+  
+  // Get max levels from all aisle configs
+  const getMaxLevels = useCallback(() => {
+    return Math.max(...bulkAisleConfigs.map(c => c.levels), 1);
+  }, [bulkAisleConfigs]);
   
   // Handle bulk allocation for multi-variant items (e.g., 300-500 gel polishes across racks)
   const handleBulkAllocation = async () => {
@@ -4196,8 +4208,81 @@ function QuickStorageSheet({
                   ))}
                 </div>
                 
-                <p className="text-[10px] text-muted-foreground">
-                  {t('imports:rackFirstHint', 'Items fill across racks on level 1, then level 2, etc. (forklift-friendly)')}
+              </div>
+              
+              {/* Fill Direction & Last Level Options */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Fill Direction */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      {bulkFillDirection === 'bottom-up' ? (
+                        <ArrowUp className="h-3 w-3 text-blue-500" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3 text-orange-500" />
+                      )}
+                      {t('imports:fillDirection', 'Fill Direction')}
+                    </Label>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={bulkFillDirection === 'bottom-up' ? 'default' : 'outline'}
+                        onClick={() => setBulkFillDirection('bottom-up')}
+                        className={`flex-1 h-7 text-[10px] ${bulkFillDirection === 'bottom-up' ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
+                        data-testid="button-fill-bottom-up"
+                      >
+                        <ArrowUp className="h-3 w-3 mr-0.5" />
+                        L1→L{getMaxLevels()}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={bulkFillDirection === 'top-down' ? 'default' : 'outline'}
+                        onClick={() => setBulkFillDirection('top-down')}
+                        className={`flex-1 h-7 text-[10px] ${bulkFillDirection === 'top-down' ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
+                        data-testid="button-fill-top-down"
+                      >
+                        <ArrowDown className="h-3 w-3 mr-0.5" />
+                        L{getMaxLevels()}→L1
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Last Items Level */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">{t('imports:lastItemsLevel', 'Last Items Level')}</Label>
+                    <Select
+                      value={bulkLastItemsLevel?.toString() || 'auto'}
+                      onValueChange={(val) => setBulkLastItemsLevel(val === 'auto' ? null : parseInt(val))}
+                    >
+                      <SelectTrigger className="h-7 text-xs" data-testid="select-last-level">
+                        <SelectValue placeholder="Auto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">
+                          <span className="flex items-center gap-1">
+                            <Layers className="h-3 w-3" />
+                            {t('imports:autoLevel', 'Auto (sequential)')}
+                          </span>
+                        </SelectItem>
+                        {Array.from({ length: getMaxLevels() }, (_, i) => i + 1).map(level => (
+                          <SelectItem key={level} value={level.toString()}>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {t('imports:levelN', 'Level {{n}}', { n: level })}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  {bulkFillDirection === 'bottom-up' 
+                    ? t('imports:bottomUpHint', 'Fills racks on L1 first, then L2, etc. (forklift-friendly)')
+                    : t('imports:topDownHint', 'Fills racks on top level first, then down (gravity flow)')
+                  }
                 </p>
               </div>
 
@@ -4208,25 +4293,87 @@ function QuickStorageSheet({
                   {t('imports:allocationPreview', 'Allocation Preview')}
                 </p>
                 <div className="space-y-1 text-xs">
+                  {/* Smart preview with first, pattern, and last */}
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    return preview.locations.slice(0, 4).map((loc, idx) => (
-                      <div key={idx} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
-                        <span className="font-mono font-medium text-xs">{loc.code}</span>
-                        <Badge variant="secondary" className="text-xs">{loc.items}</Badge>
-                      </div>
-                    ));
-                  })()}
-                  {(() => {
-                    const preview = getBulkAllocationPreview();
-                    if (preview.locations.length > 4) {
+                    const locs = preview.locations;
+                    const total = locs.length;
+                    
+                    if (total === 0) {
                       return (
-                        <p className="text-center text-muted-foreground text-[10px] pt-1">
-                          +{preview.locations.length - 4} {t('imports:moreLocations', 'more locations')}...
+                        <p className="text-center text-muted-foreground py-2">
+                          {t('imports:noLocationsGenerated', 'No locations to preview')}
                         </p>
                       );
                     }
-                    return null;
+                    
+                    // Extract unique levels from locations for pattern display
+                    const extractLevel = (code: string) => {
+                      const match = code.match(/-L(\d+)/);
+                      return match ? parseInt(match[1]) : 0;
+                    };
+                    const uniqueLevels = Array.from(new Set(locs.map(l => extractLevel(l.code)))).sort((a, b) => 
+                      bulkFillDirection === 'top-down' ? b - a : a - b
+                    );
+                    
+                    // Show first 2, pattern indicator, last 2
+                    const showStart = locs.slice(0, 2);
+                    const showEnd = total > 4 ? locs.slice(-2) : [];
+                    const middleCount = total > 4 ? total - 4 : 0;
+                    
+                    return (
+                      <>
+                        {/* First locations */}
+                        {showStart.map((loc, idx) => (
+                          <div key={`start-${idx}`} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700">
+                            <span className="flex items-center gap-1.5">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${loc.isFull ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                {loc.isFull ? '●' : '◐'}
+                              </span>
+                              <span className="font-mono font-medium text-xs">{loc.code}</span>
+                            </span>
+                            <Badge variant="secondary" className={`text-xs ${loc.isFull ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                              {loc.items}
+                            </Badge>
+                          </div>
+                        ))}
+                        
+                        {/* Pattern indicator for middle section */}
+                        {middleCount > 0 && (
+                          <div className="flex items-center justify-center gap-2 py-2 border-b border-purple-200 dark:border-purple-700">
+                            <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                              <span className="text-[10px] font-mono">···</span>
+                              <span className="text-[10px] font-medium">+{middleCount}</span>
+                              <span className="text-[10px] font-mono">···</span>
+                            </div>
+                            <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                              {uniqueLevels.slice(0, 5).map((level, i) => (
+                                <span key={level} className="flex items-center">
+                                  {i > 0 && <span className="mx-0.5">→</span>}
+                                  <span className="font-mono bg-gray-200 dark:bg-gray-700 rounded px-1">L{level}</span>
+                                </span>
+                              ))}
+                              {uniqueLevels.length > 5 && <span>...</span>}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Last locations */}
+                        {showEnd.map((loc, idx) => (
+                          <div key={`end-${idx}`} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
+                            <span className="flex items-center gap-1.5">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${loc.isFull ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                {loc.isFull ? '●' : '◐'}
+                              </span>
+                              <span className="font-mono font-medium text-xs">{loc.code}</span>
+                            </span>
+                            <Badge variant="secondary" className={`text-xs ${loc.isFull ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                              {loc.items}
+                            </Badge>
+                          </div>
+                        ))}
+                      </>
+                    );
                   })()}
                   
                   {/* Summary */}
