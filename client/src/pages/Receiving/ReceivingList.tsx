@@ -2138,6 +2138,14 @@ function QuickStorageSheet({
     binsPerLevel: number;
   }
   
+  interface BulkAllocationSettings {
+    warehouse: string;
+    aisleConfigs: AisleConfig[];
+    itemsPerLocation: number;
+    fillDirection: 'bottom-up' | 'top-down';
+    lastItemsLevel: number | null;
+  }
+  
   const [showBulkAllocation, setShowBulkAllocation] = useState(false);
   const [bulkWarehouse, setBulkWarehouse] = useState("WH1");
   const [bulkAisleConfigs, setBulkAisleConfigs] = useState<AisleConfig[]>([
@@ -2146,6 +2154,39 @@ function QuickStorageSheet({
   const [bulkItemsPerLocation, setBulkItemsPerLocation] = useState(50);
   const [bulkFillDirection, setBulkFillDirection] = useState<'bottom-up' | 'top-down'>('bottom-up');
   const [bulkLastItemsLevel, setBulkLastItemsLevel] = useState<number | null>(null);
+  
+  // Cache for bulk allocation settings per item (persists across modal opens/closes)
+  const bulkSettingsCache = useRef<Map<string | number, BulkAllocationSettings>>(new Map());
+  
+  // Get current item key for bulk allocation caching
+  const bulkItemKey = items[selectedItemIndex]?.receiptItemId;
+  
+  // Restore bulk allocation settings when modal opens
+  useEffect(() => {
+    if (showBulkAllocation && bulkItemKey) {
+      const cached = bulkSettingsCache.current.get(bulkItemKey);
+      if (cached) {
+        setBulkWarehouse(cached.warehouse);
+        setBulkAisleConfigs(cached.aisleConfigs);
+        setBulkItemsPerLocation(cached.itemsPerLocation);
+        setBulkFillDirection(cached.fillDirection);
+        setBulkLastItemsLevel(cached.lastItemsLevel);
+      }
+    }
+  }, [showBulkAllocation, bulkItemKey]);
+  
+  // Save bulk allocation settings when they change (while modal is open)
+  useEffect(() => {
+    if (showBulkAllocation && bulkItemKey) {
+      bulkSettingsCache.current.set(bulkItemKey, {
+        warehouse: bulkWarehouse,
+        aisleConfigs: bulkAisleConfigs,
+        itemsPerLocation: bulkItemsPerLocation,
+        fillDirection: bulkFillDirection,
+        lastItemsLevel: bulkLastItemsLevel
+      });
+    }
+  }, [showBulkAllocation, bulkItemKey, bulkWarehouse, bulkAisleConfigs, bulkItemsPerLocation, bulkFillDirection, bulkLastItemsLevel]);
   
   // Helper to add new aisle config (copies from last aisle)
   const addAisleConfig = () => {
