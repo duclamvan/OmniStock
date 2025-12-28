@@ -911,6 +911,21 @@ export default function CreatePurchase() {
             }
           }
           
+          // Parse variantAllocations from JSON if needed
+          let variantAllocations: VariantAllocation[] | undefined;
+          const itemAny = item as any;
+          if (itemAny.variantAllocations) {
+            try {
+              variantAllocations = typeof itemAny.variantAllocations === 'string' 
+                ? JSON.parse(itemAny.variantAllocations)
+                : itemAny.variantAllocations;
+            } catch (e) {
+              console.warn('Failed to parse variantAllocations:', e);
+            }
+          }
+          
+          const hasVariants = variantAllocations && variantAllocations.length > 0;
+          
           return {
             id: item.id,
             name: item.name,
@@ -928,7 +943,10 @@ export default function CreatePurchase() {
             binLocation: item.warehouseLocation || 'TBA',
             unitType: (item.unitType as 'selling' | 'bulk') || 'selling',
             quantityInSellingUnits: item.quantityInSellingUnits,
-            processingTimeDays: item.processingTimeDays
+            processingTimeDays: item.processingTimeDays,
+            productId: itemAny.productId?.toString(),
+            hasVariants: hasVariants,
+            variantAllocations: variantAllocations
           };
         });
         setItems(mappedItems);
