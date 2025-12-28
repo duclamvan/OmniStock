@@ -6290,6 +6290,8 @@ Important:
       res.status(201).json(location);
     } catch (error: any) {
       console.error("Error creating product location:", error);
+      console.error("Error details - name:", error.name, "message:", error.message, "code:", error.code);
+      console.error("Request body:", JSON.stringify(req.body, null, 2));
       if (error.name === 'ZodError') {
         return res.status(400).json({ 
           message: "Validation error", 
@@ -6299,7 +6301,7 @@ Important:
       if (error.message?.includes('Location code already exists')) {
         return res.status(409).json({ message: error.message });
       }
-      res.status(500).json({ message: "Failed to create product location" });
+      res.status(500).json({ message: "Failed to create product location", error: error.message });
     }
   });
 
