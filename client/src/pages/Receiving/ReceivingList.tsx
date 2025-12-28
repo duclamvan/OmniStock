@@ -2702,6 +2702,7 @@ function QuickStorageSheet({
     if (effectiveRackStart < 1 || effectiveLevelStart < 1) return locations;
     
     // Generate locations based on fill order
+    // Location format: WH1-A-R1-L1-B1 (Warehouse-Aisle-Rack-Level-Bin)
     if (bulkFillOrder === 'level-first') {
       // Fill all levels in a rack before moving to next rack (good for picking efficiency)
       for (let aisleCode = effectiveAisleStart; aisleCode <= effectiveAisleEnd; aisleCode++) {
@@ -2710,10 +2711,10 @@ function QuickStorageSheet({
           for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
             if (bulkBinsPerLevel > 0) {
               for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}-B${bin}`);
+                locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}-B${bin}`);
               }
             } else {
-              locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}`);
+              locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}`);
             }
           }
         }
@@ -2726,10 +2727,10 @@ function QuickStorageSheet({
           for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
             if (bulkBinsPerLevel > 0) {
               for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}-B${bin}`);
+                locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}-B${bin}`);
               }
             } else {
-              locations.push(`${bulkWarehouse}-${aisle}${rack}-L${level}`);
+              locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}`);
             }
           }
         }
