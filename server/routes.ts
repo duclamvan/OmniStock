@@ -6321,6 +6321,26 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
 
+      // First, aggregate locations by code to avoid duplicate key issues
+      const aggregatedLocations = new Map<string, { quantity: number; locationType: string; isPrimary: boolean; variantId?: string }>();
+      for (const locData of locations) {
+        const code = locData.locationCode;
+        const qty = locData.quantity || 0;
+        if (qty <= 0) continue;
+        
+        const existing = aggregatedLocations.get(code);
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          aggregatedLocations.set(code, {
+            quantity: qty,
+            locationType: locData.locationType || 'bin',
+            isPrimary: locData.isPrimary ?? false,
+            variantId: locData.variantId
+          });
+        }
+      }
+      
       // Get existing locations for this product
       const existingLocations = await storage.getProductLocations(productId);
       const existingMap = new Map(existingLocations.map(loc => [loc.locationCode, loc]));
@@ -6330,13 +6350,9 @@ Important:
       let totalQuantity = 0;
       const results: any[] = [];
       
-      // Process each location
-      for (const locData of locations) {
-        const locationCode = locData.locationCode;
-        const quantity = locData.quantity || 0;
-        
-        if (quantity <= 0) continue;
-        
+      // Process each aggregated location
+      for (const [locationCode, locData] of aggregatedLocations.entries()) {
+        const quantity = locData.quantity;
         totalQuantity += quantity;
         
         const existing = existingMap.get(locationCode);
@@ -6364,7 +6380,7 @@ Important:
             locationType: locData.locationType || 'bin',
             quantity,
             isPrimary: locData.isPrimary ?? false,
-            notes: locData.notes || (receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined),
+            notes: receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined,
             variantId: validVariantId
           });
           existingMap.set(locationCode, created);
