@@ -527,6 +527,621 @@ function calculateWeightedAverageLandedCost(
   };
 }
 
+// ============================================================================
+// FINALIZE RECEIVING INVENTORY HELPER
+// ============================================================================
+// This helper function processes inventory additions and landed cost calculations
+// when receiving is completed. It handles variant allocations, weighted average
+// cost calculations, and parent product updates.
+
+interface FinalizeReceivingResult {
+  success: boolean;
+  alreadyProcessed: boolean;
+  productsUpdated: number;
+  variantsUpdated: number;
+  parentProductsUpdated: number;
+  error?: string;
+}
+
+/**
+ * Finalize receiving inventory: add quantities and calculate weighted average costs.
+ * This function is called when all items in a receipt have been assigned to locations.
+ * 
+ * Features:
+ * - Idempotency guard: skips if receipt already stored
+ * - Variant allocation processing with per-variant cost distribution
+ * - Multi-currency weighted average cost calculation (EUR, USD, CZK, VND, CNY)
+ * - Parent product cost recalculation from variant aggregates
+ * - Cost history tracking for both variants and parent products
+ * 
+ * @param tx - Database transaction
+ * @param receiptId - Receipt ID to finalize
+ * @param shipmentId - Associated shipment ID
+ * @returns FinalizeReceivingResult with success status and counts
+ */
+async function finalizeReceivingInventory(
+  tx: any,
+  receiptId: number,
+  shipmentId: number
+): Promise<FinalizeReceivingResult> {
+  const result: FinalizeReceivingResult = {
+    success: false,
+    alreadyProcessed: false,
+    productsUpdated: 0,
+    variantsUpdated: 0,
+    parentProductsUpdated: 0
+  };
+  
+  try {
+    // Get receipt to check status
+    const [receipt] = await tx
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      result.error = `Receipt ${receiptId} not found`;
+      return result;
+    }
+    
+    // IDEMPOTENCY GUARD: Check if this receipt was already marked as stored
+    if (receipt.status === 'stored') {
+      console.log(`Receipt ${receiptId} was already stored, skipping inventory addition to prevent duplicates`);
+      result.alreadyProcessed = true;
+      result.success = true;
+      return result;
+    }
+    
+    // Get all receipt items
+    const allReceiptItems = await tx
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+    
+    // ================================================================
+    // EXCHANGE RATE SETUP
+    // Get exchange rates from shipment or use defaults
+    // ================================================================
+    let eurToUsd = 1.08;
+    let eurToCzk = 25.2;
+    let eurToVnd = 27000;
+    let eurToCny = 7.8;
+    
+    if (shipmentId) {
+      const [shipment] = await tx
+        .select({ exchangeRates: shipments.exchangeRates })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (shipment?.exchangeRates) {
+        const rates = typeof shipment.exchangeRates === 'string' 
+          ? JSON.parse(shipment.exchangeRates) 
+          : shipment.exchangeRates;
+        if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
+        if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
+        if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
+        if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
+      }
+    }
+    
+    const usdToEur = 1 / eurToUsd;
+    const usdToCzk = eurToCzk / eurToUsd;
+    const usdToVnd = eurToVnd / eurToUsd;
+    const usdToCny = eurToCny / eurToUsd;
+    
+    // Aggregate quantities by productId
+    const productQuantities = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
+    
+    // Track parent products that need quantity recalculation after variant processing
+    const parentProductsNeedingUpdate = new Set<string>();
+    
+    for (const item of allReceiptItems) {
+      const quantityToAdd = item.assignedQuantity || item.receivedQuantity || 0;
+      if (quantityToAdd <= 0) continue;
+      
+      // ================================================================
+      // VARIANT ALLOCATION HANDLING
+      // ================================================================
+      const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number}> | null;
+      
+      if (variantAllocations && variantAllocations.length > 0) {
+        console.log(`[finalizeReceivingInventory] Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
+        
+        let parentProductId: string | null = null;
+        let processedAsPackageItems = false;
+        
+        // Get landed cost info for variant distribution
+        let perUnitLandedCostEur = 0;
+        const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
+        
+        if (item.itemType === 'custom' && shipmentId) {
+          const allocations = await tx
+            .select({ amountAllocatedBase: costAllocations.amountAllocatedBase })
+            .from(costAllocations)
+            .where(
+              and(
+                eq(costAllocations.shipmentId, shipmentId),
+                eq(costAllocations.customItemId, item.itemId)
+              )
+            );
+          
+          const totalAllocatedCostEur = allocations.reduce((sum: number, alloc: any) => {
+            return sum + parseFloat(alloc.amountAllocatedBase || '0');
+          }, 0);
+          
+          perUnitLandedCostEur = totalVariantQuantity > 0 
+            ? totalAllocatedCostEur / totalVariantQuantity 
+            : 0;
+          
+          console.log(`[Variant Costs] Custom item ${item.id}: total allocated = ${totalAllocatedCostEur.toFixed(2)} EUR, per-unit = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+        } else if (item.itemType === 'purchase') {
+          const [purchaseItem] = await tx
+            .select({ landingCostUnitBase: purchaseItems.landingCostUnitBase })
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, item.itemId));
+          
+          if (purchaseItem?.landingCostUnitBase) {
+            perUnitLandedCostEur = parseFloat(purchaseItem.landingCostUnitBase);
+            console.log(`[Variant Costs] Purchase item ${item.id}: landingCostUnitBase = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+          }
+        }
+        
+        for (const va of variantAllocations) {
+          if (!va.variantId || va.quantity <= 0) continue;
+          
+          // Check if this is a package order item
+          const vaExt = va as any;
+          if (vaExt.isPackageItem && vaExt.sku) {
+            const [productBySku] = await tx
+              .select({ id: products.id, quantity: products.quantity })
+              .from(products)
+              .where(eq(products.sku, vaExt.sku));
+            
+            if (productBySku) {
+              await tx
+                .update(products)
+                .set({
+                  quantity: sql`COALESCE(${products.quantity}, 0) + ${va.quantity}`,
+                  updatedAt: new Date()
+                })
+                .where(eq(products.id, productBySku.id));
+              
+              console.log(`[Package Item] Added ${va.quantity} to product ${vaExt.sku} (${productBySku.id})`);
+              
+              const existing = productQuantities.get(productBySku.id);
+              if (existing) {
+                existing.quantity += va.quantity;
+                existing.items.push(item);
+              } else {
+                productQuantities.set(productBySku.id, {
+                  quantity: va.quantity,
+                  items: [item]
+                });
+              }
+              processedAsPackageItems = true;
+            } else {
+              console.warn(`[Package Item] Product not found for SKU ${vaExt.sku}, skipping inventory addition`);
+            }
+            continue;
+          }
+          
+          // Look up the variant
+          const [variant] = await tx
+            .select({ 
+              id: productVariants.id, 
+              productId: productVariants.productId, 
+              quantity: productVariants.quantity,
+              importCostUsd: productVariants.importCostUsd,
+              importCostCzk: productVariants.importCostCzk,
+              importCostEur: productVariants.importCostEur
+            })
+            .from(productVariants)
+            .where(eq(productVariants.id, va.variantId));
+          
+          if (!variant) {
+            console.warn(`Variant not found for ID ${va.variantId}, skipping`);
+            continue;
+          }
+          
+          // ================================================================
+          // CALCULATE PER-VARIANT LANDED COST (ALL 5 CURRENCIES)
+          // ================================================================
+          const variantUnitPrice = parseFloat(String(va.unitPrice || 0));
+          
+          let variantLandedCostEur: number;
+          if (item.itemType === 'purchase' && perUnitLandedCostEur > 0) {
+            variantLandedCostEur = perUnitLandedCostEur;
+          } else {
+            variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
+          }
+          
+          // Convert to ALL currencies (VND and CNY added per requirements)
+          const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
+          const variantLandedCostCzk = variantLandedCostEur * eurToCzk;
+          const variantLandedCostVnd = variantLandedCostEur * eurToVnd;
+          const variantLandedCostCny = variantLandedCostEur * eurToCny;
+          
+          // Calculate weighted average cost for this variant
+          // Guard against null/undefined values with != null checks
+          const existingQty = variant.quantity || 0;
+          const existingCostEur = variant.importCostEur != null ? parseFloat(String(variant.importCostEur)) : 0;
+          const existingCostUsd = variant.importCostUsd != null ? parseFloat(String(variant.importCostUsd)) : 0;
+          const existingCostCzk = variant.importCostCzk != null ? parseFloat(String(variant.importCostCzk)) : 0;
+          
+          const newTotalQty = existingQty + va.quantity;
+          
+          // Weighted average: (old_qty * old_cost + new_qty * new_cost) / total_qty
+          const avgCostEur = newTotalQty > 0 
+            ? ((existingQty * existingCostEur) + (va.quantity * variantLandedCostEur)) / newTotalQty 
+            : variantLandedCostEur;
+          const avgCostUsd = newTotalQty > 0 
+            ? ((existingQty * existingCostUsd) + (va.quantity * variantLandedCostUsd)) / newTotalQty 
+            : variantLandedCostUsd;
+          const avgCostCzk = newTotalQty > 0 
+            ? ((existingQty * existingCostCzk) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
+            : variantLandedCostCzk;
+          
+          // Update variant quantity AND cost fields
+          // Note: productVariants schema only has EUR, USD, CZK - not VND/CNY
+          await tx
+            .update(productVariants)
+            .set({
+              quantity: sql`COALESCE(${productVariants.quantity}, 0) + ${va.quantity}`,
+              importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+              importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+              updatedAt: new Date()
+            })
+            .where(eq(productVariants.id, va.variantId));
+          
+          result.variantsUpdated++;
+          
+          console.log(`[Variant] Added ${va.quantity} to ${va.variantName} (${va.variantId}), ` +
+            `landed cost: EUR=${variantLandedCostEur.toFixed(2)}, USD=${variantLandedCostUsd.toFixed(2)}, ` +
+            `CZK=${variantLandedCostCzk.toFixed(2)}, VND=${variantLandedCostVnd.toFixed(0)}, CNY=${variantLandedCostCny.toFixed(2)}, ` +
+            `avg cost: ${avgCostEur.toFixed(2)} EUR`);
+          
+          parentProductId = variant.productId;
+          parentProductsNeedingUpdate.add(variant.productId);
+        }
+        
+        if (parentProductId || processedAsPackageItems) {
+          continue;
+        }
+      }
+      
+      // Resolve productId from receipt item or via SKU lookup
+      let productId = item.productId;
+      
+      if (!productId && item.sku) {
+        const [existingProduct] = await tx
+          .select({ id: products.id })
+          .from(products)
+          .where(eq(products.sku, item.sku));
+        
+        if (existingProduct) {
+          productId = existingProduct.id;
+        }
+      }
+      
+      if (!productId) {
+        let originalItem: any = null;
+        
+        if (item.itemType === 'purchase') {
+          [originalItem] = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, item.itemId));
+        } else if (item.itemType === 'custom') {
+          [originalItem] = await tx
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, item.itemId));
+        }
+        
+        if (originalItem?.sku) {
+          const [existingProduct] = await tx
+            .select({ id: products.id })
+            .from(products)
+            .where(eq(products.sku, originalItem.sku));
+          
+          if (existingProduct) {
+            productId = existingProduct.id;
+          }
+        }
+      }
+      
+      if (!productId) {
+        console.warn(`Cannot add inventory: No productId found for receipt item ${item.id}`);
+        continue;
+      }
+      
+      const existing = productQuantities.get(productId);
+      if (existing) {
+        existing.quantity += quantityToAdd;
+        existing.items.push(item);
+      } else {
+        productQuantities.set(productId, {
+          quantity: quantityToAdd,
+          items: [item]
+        });
+      }
+    }
+    
+    // ================================================================
+    // PROCESS EACH PRODUCT: ADD INVENTORY AND CALCULATE COSTS
+    // ================================================================
+    for (const [productId, data] of productQuantities) {
+      try {
+        const [existingProduct] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, productId));
+        
+        if (!existingProduct) {
+          console.warn(`Product not found for ID ${productId}, skipping inventory addition`);
+          continue;
+        }
+        
+        const firstItem = data.items[0];
+        let unitCost = 0;
+        let originalItem: any = null;
+        
+        if (firstItem.itemType === 'purchase') {
+          [originalItem] = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, firstItem.itemId));
+          if (originalItem) {
+            unitCost = parseFloat(originalItem.unitPrice || '0');
+          }
+        } else if (firstItem.itemType === 'custom') {
+          [originalItem] = await tx
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, firstItem.itemId));
+          if (originalItem) {
+            unitCost = parseFloat(originalItem.unitPrice || '0');
+          }
+        }
+        
+        // Get landed cost data
+        const landedCostData = await getLandedCostForItem(
+          tx,
+          firstItem.itemType || 'purchase',
+          firstItem.itemId,
+          shipmentId,
+          data.quantity,
+          unitCost,
+          firstItem.itemType === 'purchase' ? originalItem?.purchaseId : undefined
+        );
+        
+        const avgLandedCosts = calculateWeightedAverageLandedCost(
+          existingProduct,
+          data.quantity,
+          landedCostData
+        );
+        
+        // Calculate weighted average import costs for ALL currencies
+        const oldQuantity = existingProduct.quantity || 0;
+        const newQuantity = data.quantity;
+        const totalQuantity = oldQuantity + newQuantity;
+        
+        const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
+        const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
+        const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
+        const oldCostVnd = parseFloat(existingProduct.importCostVnd || '0');
+        const oldCostCny = parseFloat(existingProduct.importCostCny || '0');
+        
+        // Determine new costs based on purchase currency
+        let newCostUsd = unitCost;
+        let newCostCzk = 0;
+        let newCostEur = 0;
+        let newCostVnd = 0;
+        let newCostCny = 0;
+        
+        let purchaseOrderId: string | null = null;
+        if (firstItem.itemType === 'purchase' && originalItem?.purchaseId) {
+          purchaseOrderId = originalItem.purchaseId;
+        } else if (firstItem.itemType === 'custom' && originalItem?.purchaseOrderId) {
+          purchaseOrderId = originalItem.purchaseOrderId;
+        }
+        
+        if (purchaseOrderId) {
+          const [purchase] = await tx
+            .select()
+            .from(importPurchases)
+            .where(eq(importPurchases.id, purchaseOrderId));
+          
+          if (purchase) {
+            const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+            console.log(`[finalizeReceivingInventory] Found purchase order ${purchaseOrderId}, currency: ${currency}, unitCost: ${unitCost}`);
+            
+            if (currency === 'CZK') {
+              newCostCzk = unitCost;
+              newCostUsd = unitCost / eurToCzk * eurToUsd;
+              newCostEur = unitCost / eurToCzk;
+              newCostVnd = unitCost / eurToCzk * eurToVnd;
+              newCostCny = unitCost / eurToCzk * eurToCny;
+            } else if (currency === 'EUR') {
+              newCostEur = unitCost;
+              newCostUsd = unitCost * eurToUsd;
+              newCostCzk = unitCost * eurToCzk;
+              newCostVnd = unitCost * eurToVnd;
+              newCostCny = unitCost * eurToCny;
+            } else if (currency === 'VND') {
+              newCostVnd = unitCost;
+              newCostUsd = unitCost / eurToVnd * eurToUsd;
+              newCostEur = unitCost / eurToVnd;
+              newCostCzk = unitCost / eurToVnd * eurToCzk;
+              newCostCny = unitCost / eurToVnd * eurToCny;
+            } else if (currency === 'CNY') {
+              newCostCny = unitCost;
+              newCostUsd = unitCost / eurToCny * eurToUsd;
+              newCostEur = unitCost / eurToCny;
+              newCostCzk = unitCost / eurToCny * eurToCzk;
+              newCostVnd = unitCost / eurToCny * eurToVnd;
+            } else {
+              newCostUsd = unitCost;
+              newCostEur = unitCost * usdToEur;
+              newCostCzk = unitCost * usdToCzk;
+              newCostVnd = unitCost * usdToVnd;
+              newCostCny = unitCost * usdToCny;
+            }
+          } else {
+            console.warn(`[finalizeReceivingInventory] Purchase order ${purchaseOrderId} not found, using USD default`);
+            newCostUsd = unitCost;
+            newCostEur = unitCost * usdToEur;
+            newCostCzk = unitCost * usdToCzk;
+            newCostVnd = unitCost * usdToVnd;
+            newCostCny = unitCost * usdToCny;
+          }
+        } else {
+          console.log(`[finalizeReceivingInventory] No purchase order link found, using USD default for unitCost: ${unitCost}`);
+          newCostUsd = unitCost;
+          newCostEur = unitCost * usdToEur;
+          newCostCzk = unitCost * usdToCzk;
+          newCostVnd = unitCost * usdToVnd;
+          newCostCny = unitCost * usdToCny;
+        }
+        
+        // Derive missing historical costs
+        const derivedOldCosts = deriveHistoricalImportCosts(
+          oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
+          eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
+        );
+        
+        // Calculate weighted averages
+        const avgCostUsd = totalQuantity > 0 
+          ? ((oldQuantity * derivedOldCosts.derivedUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+          : newCostUsd;
+        const avgCostCzk = totalQuantity > 0
+          ? ((oldQuantity * derivedOldCosts.derivedCzk) + (newQuantity * newCostCzk)) / totalQuantity
+          : newCostCzk;
+        const avgCostEur = totalQuantity > 0
+          ? ((oldQuantity * derivedOldCosts.derivedEur) + (newQuantity * newCostEur)) / totalQuantity
+          : newCostEur;
+        const avgCostVnd = totalQuantity > 0
+          ? ((oldQuantity * derivedOldCosts.derivedVnd) + (newQuantity * newCostVnd)) / totalQuantity
+          : newCostVnd;
+        const avgCostCny = totalQuantity > 0
+          ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
+          : newCostCny;
+        
+        // Update product
+        const isVariantParent = parentProductsNeedingUpdate.has(productId);
+        await tx
+          .update(products)
+          .set({
+            ...(isVariantParent ? {} : { quantity: totalQuantity }),
+            importCostUsd: avgCostUsd.toFixed(2),
+            importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+            importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+            importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+            importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
+            latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
+            landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
+            landingCostUsd: avgLandedCosts.avgLandingCostUsd > 0 ? avgLandedCosts.avgLandingCostUsd.toFixed(4) : null,
+            landingCostCzk: avgLandedCosts.avgLandingCostCzk > 0 ? avgLandedCosts.avgLandingCostCzk.toFixed(4) : null,
+            landingCostVnd: avgLandedCosts.avgLandingCostVnd > 0 ? avgLandedCosts.avgLandingCostVnd.toFixed(4) : null,
+            landingCostCny: avgLandedCosts.avgLandingCostCny > 0 ? avgLandedCosts.avgLandingCostCny.toFixed(4) : null,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, productId));
+        
+        // Record cost history
+        await tx.insert(productCostHistory).values({
+          productId: productId,
+          customItemId: firstItem.itemType === 'custom' ? firstItem.itemId : null,
+          landingCostUnitBase: avgLandedCosts.avgLatestLandingCost.toFixed(4),
+          method: 'weighted_average',
+          computedAt: new Date()
+        });
+        
+        result.productsUpdated++;
+        console.log(`Inventory added for product ${productId}: +${data.quantity} units, landed cost: ${avgLandedCosts.avgLatestLandingCost.toFixed(4)}`);
+      } catch (error) {
+        console.error(`Failed to add inventory for product ${productId}:`, error);
+      }
+    }
+    
+    // ================================================================
+    // UPDATE PARENT PRODUCT QUANTITIES AND COSTS FOR VARIANT PRODUCTS
+    // ================================================================
+    for (const parentProductId of parentProductsNeedingUpdate) {
+      try {
+        // Get sum of all variant quantities and weighted cost totals (VND and CNY added)
+        const variantData = await tx
+          .select({
+            totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`,
+            totalCostValueEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostEur}::numeric, 0)), 0)`,
+            totalCostValueUsd: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostUsd}::numeric, 0)), 0)`,
+            totalCostValueCzk: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostCzk}::numeric, 0)), 0)`
+          })
+          .from(productVariants)
+          .where(eq(productVariants.productId, parentProductId));
+        
+        const totalVariantQuantity = Number(variantData[0]?.totalQuantity) || 0;
+        const totalCostValueEur = Number(variantData[0]?.totalCostValueEur) || 0;
+        const totalCostValueUsd = Number(variantData[0]?.totalCostValueUsd) || 0;
+        const totalCostValueCzk = Number(variantData[0]?.totalCostValueCzk) || 0;
+        
+        // Calculate weighted average costs from variants
+        const avgCostEur = totalVariantQuantity > 0 ? totalCostValueEur / totalVariantQuantity : 0;
+        const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
+        const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
+        
+        // Derive VND and CNY from EUR using exchange rates
+        const avgCostVnd = avgCostEur * eurToVnd;
+        const avgCostCny = avgCostEur * eurToCny;
+        
+        // Update parent product
+        await tx
+          .update(products)
+          .set({
+            quantity: totalVariantQuantity,
+            importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+            importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+            importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+            importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+            importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
+            latestLandingCost: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
+            landingCostEur: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
+            landingCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(4) : null,
+            landingCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(4) : null,
+            landingCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(4) : null,
+            landingCostCny: avgCostCny > 0 ? avgCostCny.toFixed(4) : null,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, parentProductId));
+        
+        // Record cost history for parent product
+        if (avgCostEur > 0) {
+          await tx.insert(productCostHistory).values({
+            productId: parentProductId,
+            customItemId: null,
+            landingCostUnitBase: avgCostEur.toFixed(4),
+            method: 'weighted_average_from_variants',
+            computedAt: new Date()
+          });
+        }
+        
+        result.parentProductsUpdated++;
+        console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}, avgCostVnd=${avgCostVnd.toFixed(0)}, avgCostCny=${avgCostCny.toFixed(2)}`);
+      } catch (error) {
+        console.error(`Failed to update parent product ${parentProductId}:`, error);
+      }
+    }
+    
+    result.success = true;
+    return result;
+  } catch (error) {
+    console.error(`[finalizeReceivingInventory] Error processing receipt ${receiptId}:`, error);
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    return result;
+  }
+}
+
 // Get frequent suppliers
 router.get("/suppliers/frequent", async (req: any, res) => {
   try {
@@ -3285,6 +3900,146 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
   } catch (error) {
     console.error("Error updating shipment tracking:", error);
     res.status(500).json({ message: "Failed to update shipment tracking" });
+  }
+});
+
+// ============================================================================
+// UPDATE SHIPMENT RECEIVING STATUS
+// ============================================================================
+// This endpoint handles receiving completion with full inventory and landed cost calculations.
+// It validates all items are fully assigned, then finalizes inventory and costs.
+
+router.patch("/shipments/:id/receiving-status", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    const { receivingStatus } = req.body;
+    
+    // Validate request body
+    if (!receivingStatus || receivingStatus !== 'completed') {
+      return res.status(400).json({ 
+        message: "Invalid request. Expected { receivingStatus: 'completed' }" 
+      });
+    }
+    
+    // Get shipment with consolidated items
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Check if shipment is already completed
+    if (shipment.status === 'completed') {
+      return res.status(400).json({ 
+        message: "Shipment is already completed",
+        alreadyCompleted: true
+      });
+    }
+    
+    // Find receipt for this shipment
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "No receipt found for this shipment" });
+    }
+    
+    // Get all receipt items
+    const items = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receipt.id));
+    
+    // Verify all items are fully assigned (assignedQuantity >= receivedQuantity)
+    const unassignedItems = items.filter(item => {
+      const received = item.receivedQuantity || 0;
+      const assigned = item.assignedQuantity || 0;
+      return assigned < received;
+    });
+    
+    if (unassignedItems.length > 0) {
+      return res.status(400).json({ 
+        message: `Cannot complete receiving: ${unassignedItems.length} item(s) are not fully assigned to locations`,
+        unassignedItems: unassignedItems.map(item => ({
+          id: item.id,
+          sku: item.sku,
+          received: item.receivedQuantity,
+          assigned: item.assignedQuantity
+        }))
+      });
+    }
+    
+    console.log(`[receiving-status] Processing receiving completion for shipment ${shipmentId}, receipt ${receipt.id}`);
+    
+    // Use transaction for atomicity
+    const result = await db.transaction(async (tx) => {
+      // Call the finalize inventory helper
+      const inventoryResult = await finalizeReceivingInventory(tx, receipt.id, shipmentId);
+      
+      if (!inventoryResult.success) {
+        throw new Error(inventoryResult.error || 'Failed to finalize inventory');
+      }
+      
+      // Update receipt status to 'stored'
+      await tx
+        .update(receipts)
+        .set({
+          status: 'stored',
+          updatedAt: new Date()
+        })
+        .where(eq(receipts.id, receipt.id));
+      
+      // Update shipment status to 'completed'
+      await tx
+        .update(shipments)
+        .set({
+          status: 'completed',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, shipmentId));
+      
+      // Update consolidation status if linked
+      if (shipment.consolidationId) {
+        await tx
+          .update(consolidations)
+          .set({
+            status: 'completed',
+            updatedAt: new Date()
+          })
+          .where(eq(consolidations.id, shipment.consolidationId));
+        
+        // Update all related purchase orders to 'delivered' status
+        await updatePurchaseOrderStatusFromConsolidation(tx, shipment.consolidationId, 'delivered');
+      }
+      
+      return inventoryResult;
+    });
+    
+    console.log(`[receiving-status] Completed receiving for shipment ${shipmentId}: ` +
+      `${result.productsUpdated} products, ${result.variantsUpdated} variants, ` +
+      `${result.parentProductsUpdated} parent products updated`);
+    
+    res.json({
+      success: true,
+      message: "Receiving completed successfully",
+      shipmentId,
+      receiptId: receipt.id,
+      alreadyProcessed: result.alreadyProcessed,
+      productsUpdated: result.productsUpdated,
+      variantsUpdated: result.variantsUpdated,
+      parentProductsUpdated: result.parentProductsUpdated
+    });
+  } catch (error) {
+    console.error("Error updating receiving status:", error);
+    res.status(500).json({ 
+      message: "Failed to complete receiving",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -10765,598 +11520,20 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         
         // ================================================================
         // INVENTORY AND LANDED COST CALCULATION ON COMPLETION
-        // Add received quantities to products and calculate weighted average costs
-        // Only add inventory if this is the FIRST time completing (not already stored)
+        // Call the finalizeReceivingInventory helper to handle all inventory/cost updates
+        // The helper includes its own idempotency guard (checks receipt.status === 'stored')
         // ================================================================
         if (wasAlreadyStored) {
           console.log('Skipping inventory addition - receipt was already completed previously');
         } else {
-        const allReceiptItems = await tx
-          .select()
-          .from(receiptItems)
-          .where(eq(receiptItems.receiptId, receiptId));
-        
-        // Aggregate quantities by productId to handle duplicates
-        // IMPORTANT: Use assignedQuantity (what was stored in locations) instead of receivedQuantity
-        // This ensures products.quantity matches sum(productLocations.quantity)
-        const productQuantities = new Map<string, { quantity: number; items: typeof allReceiptItems }>();
-        
-        // Track parent products that need quantity recalculation after variant processing
-        const parentProductsNeedingUpdate = new Set<string>();
-        
-        for (const item of allReceiptItems) {
-          // Skip items with no assigned quantity (not stored in any location)
-          // Use assignedQuantity first, fall back to receivedQuantity for backwards compatibility
-          const quantityToAdd = item.assignedQuantity || item.receivedQuantity || 0;
-          if (quantityToAdd <= 0) continue;
+          // Call the helper to finalize inventory and calculate costs
+          const inventoryResult = await finalizeReceivingInventory(tx, receiptId, receipt.shipmentId);
           
-          // ================================================================
-          // VARIANT ALLOCATION HANDLING
-          // Check if this receipt item has variant allocations - process variants AND continue
-          // to add to productQuantities for landed cost calculation
-          // ================================================================
-          const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number}> | null;
-          
-          if (variantAllocations && variantAllocations.length > 0) {
-            console.log(`Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
-            
-            let parentProductId: string | null = null;
-            let processedAsPackageItems = false;
-            
-            // ================================================================
-            // VARIANT COST CALCULATION SETUP
-            // Get exchange rates and total allocated costs once for all variants
-            // ================================================================
-            let eurToUsd = 1.08;
-            let eurToCzk = 25.2;
-            let eurToVnd = 27000;
-            let eurToCny = 7.8;
-            
-            // Get exchange rates from shipment
-            if (receipt.shipmentId) {
-              const [shipmentForRates] = await tx
-                .select({ exchangeRates: shipments.exchangeRates })
-                .from(shipments)
-                .where(eq(shipments.id, receipt.shipmentId));
-              
-              if (shipmentForRates?.exchangeRates) {
-                const rates = typeof shipmentForRates.exchangeRates === 'string' 
-                  ? JSON.parse(shipmentForRates.exchangeRates) 
-                  : shipmentForRates.exchangeRates;
-                if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
-                if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
-                if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
-                if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
-              }
-            }
-            
-            // Get landed cost information for this item
-            // For custom items: use costAllocations table
-            // For purchase items: use landingCostUnitBase from purchaseItems
-            let perUnitLandedCostEur = 0; // This is the per-unit landed cost adder (in EUR)
-            const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
-            
-            if (item.itemType === 'custom' && receipt.shipmentId) {
-              // Get total allocated costs from costAllocations table
-              const allocations = await tx
-                .select({ amountAllocatedBase: costAllocations.amountAllocatedBase })
-                .from(costAllocations)
-                .where(
-                  and(
-                    eq(costAllocations.shipmentId, receipt.shipmentId),
-                    eq(costAllocations.customItemId, item.itemId)
-                  )
-                );
-              
-              const totalAllocatedCostEur = allocations.reduce((sum: number, alloc: any) => {
-                return sum + parseFloat(alloc.amountAllocatedBase || '0');
-              }, 0);
-              
-              // Calculate per-unit allocation for distribution across variants
-              perUnitLandedCostEur = totalVariantQuantity > 0 
-                ? totalAllocatedCostEur / totalVariantQuantity 
-                : 0;
-              
-              console.log(`[Variant Costs] Custom item ${item.id}: total allocated = ${totalAllocatedCostEur.toFixed(2)} EUR, per-unit = ${perUnitLandedCostEur.toFixed(4)} EUR`);
-            } else if (item.itemType === 'purchase') {
-              // Get landingCostUnitBase from purchaseItems table (already per-unit, in EUR)
-              const [purchaseItem] = await tx
-                .select({ landingCostUnitBase: purchaseItems.landingCostUnitBase })
-                .from(purchaseItems)
-                .where(eq(purchaseItems.id, item.itemId));
-              
-              if (purchaseItem?.landingCostUnitBase) {
-                // landingCostUnitBase is already per-unit in EUR (includes unit price + allocated costs)
-                perUnitLandedCostEur = parseFloat(purchaseItem.landingCostUnitBase);
-                console.log(`[Variant Costs] Purchase item ${item.id}: landingCostUnitBase = ${perUnitLandedCostEur.toFixed(4)} EUR`);
-              }
-            }
-            
-            for (const va of variantAllocations) {
-              if (!va.variantId || va.quantity <= 0) continue;
-              
-              // Check if this is a package order item (has isPackageItem flag) vs actual product variant
-              const vaExt = va as any;
-              if (vaExt.isPackageItem && vaExt.sku) {
-                // This is a package order item - look up product by SKU and add inventory
-                const [productBySku] = await tx
-                  .select({ id: products.id, quantity: products.quantity })
-                  .from(products)
-                  .where(eq(products.sku, vaExt.sku));
-                
-                if (productBySku) {
-                  // Add quantity to this product
-                  await tx
-                    .update(products)
-                    .set({
-                      quantity: sql`COALESCE(${products.quantity}, 0) + ${va.quantity}`,
-                      updatedAt: new Date()
-                    })
-                    .where(eq(products.id, productBySku.id));
-                  
-                  console.log(`[Package Item] Added ${va.quantity} to product ${vaExt.sku} (${productBySku.id})`);
-                  
-                  // Also add to productQuantities for landed cost calculation
-                  const existing = productQuantities.get(productBySku.id);
-                  if (existing) {
-                    existing.quantity += va.quantity;
-                    existing.items.push(item);
-                  } else {
-                    productQuantities.set(productBySku.id, {
-                      quantity: va.quantity,
-                      items: [item]
-                    });
-                  }
-                  processedAsPackageItems = true;
-                } else {
-                  console.warn(`[Package Item] Product not found for SKU ${vaExt.sku}, skipping inventory addition`);
-                }
-                continue;
-              }
-              
-              // Look up the variant to get its productId and current costs (for actual product variants)
-              const [variant] = await tx
-                .select({ 
-                  id: productVariants.id, 
-                  productId: productVariants.productId, 
-                  quantity: productVariants.quantity,
-                  importCostUsd: productVariants.importCostUsd,
-                  importCostCzk: productVariants.importCostCzk,
-                  importCostEur: productVariants.importCostEur
-                })
-                .from(productVariants)
-                .where(eq(productVariants.id, va.variantId));
-              
-              if (!variant) {
-                console.warn(`Variant not found for ID ${va.variantId}, skipping`);
-                continue;
-              }
-              
-              // ================================================================
-              // CALCULATE PER-VARIANT LANDED COST
-              // For custom items: unit price + allocated costs per unit
-              // For purchase items: use landingCostUnitBase (already includes unit price + allocations)
-              // ================================================================
-              const variantUnitPrice = parseFloat(String(va.unitPrice || 0));
-              
-              // Calculate final landed cost per unit (EUR)
-              // If perUnitLandedCostEur > 0, it comes from:
-              //   - Custom items: allocated costs per unit (add to unit price)
-              //   - Purchase items: landingCostUnitBase (already complete, use directly)
-              let variantLandedCostEur: number;
-              if (item.itemType === 'purchase' && perUnitLandedCostEur > 0) {
-                // For purchase items, landingCostUnitBase already includes unit price + allocations
-                variantLandedCostEur = perUnitLandedCostEur;
-              } else {
-                // For custom items: unit price + per-unit allocation
-                variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
-              }
-              
-              // Convert to other currencies
-              const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
-              const variantLandedCostCzk = variantLandedCostEur * eurToCzk;
-              
-              // Calculate weighted average cost for this variant
-              // Guard against null/undefined values to prevent NaN
-              const existingQty = variant.quantity || 0;
-              const existingCostEur = variant.importCostEur != null ? parseFloat(String(variant.importCostEur)) : 0;
-              const existingCostUsd = variant.importCostUsd != null ? parseFloat(String(variant.importCostUsd)) : 0;
-              const existingCostCzk = variant.importCostCzk != null ? parseFloat(String(variant.importCostCzk)) : 0;
-              
-              const newTotalQty = existingQty + va.quantity;
-              
-              // Weighted average: (old_qty * old_cost + new_qty * new_cost) / total_qty
-              const avgCostEur = newTotalQty > 0 
-                ? ((existingQty * existingCostEur) + (va.quantity * variantLandedCostEur)) / newTotalQty 
-                : variantLandedCostEur;
-              const avgCostUsd = newTotalQty > 0 
-                ? ((existingQty * existingCostUsd) + (va.quantity * variantLandedCostUsd)) / newTotalQty 
-                : variantLandedCostUsd;
-              const avgCostCzk = newTotalQty > 0 
-                ? ((existingQty * existingCostCzk) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
-                : variantLandedCostCzk;
-              
-              // Update variant quantity AND cost fields
-              await tx
-                .update(productVariants)
-                .set({
-                  quantity: sql`COALESCE(${productVariants.quantity}, 0) + ${va.quantity}`,
-                  importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
-                  importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
-                  importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
-                  updatedAt: new Date()
-                })
-                .where(eq(productVariants.id, va.variantId));
-              
-              console.log(`[Variant] Added ${va.quantity} to ${va.variantName} (${va.variantId}), ` +
-                `landed cost: ${variantLandedCostEur.toFixed(2)} EUR, avg cost: ${avgCostEur.toFixed(2)} EUR`);
-              
-              // Track parent product for quantity update (all variants share same parent)
-              parentProductId = variant.productId;
-              parentProductsNeedingUpdate.add(variant.productId);
-            }
-            
-            // IMPORTANT: When variants consume cost allocations, do NOT add to productQuantities
-            // This prevents double-counting - costs were already applied to individual variants
-            // The parent product will have its quantity updated from sum of variants
-            // and will NOT have its landed cost recalculated (which would double-count allocations)
-            
-            // Skip the normal productId resolution if we processed variants or package items
-            // Parent quantity update happens separately via parentProductsNeedingUpdate
-            if (parentProductId || processedAsPackageItems) {
-              continue;
-            }
-          }
-          
-          // Resolve productId from receipt item or via SKU lookup
-          let productId = item.productId;
-          
-          if (!productId && item.sku) {
-            const [existingProduct] = await tx
-              .select({ id: products.id })
-              .from(products)
-              .where(eq(products.sku, item.sku));
-            
-            if (existingProduct) {
-              productId = existingProduct.id;
-            }
-          }
-          
-          // If still no productId, try to find via original item SKU
-          if (!productId) {
-            let originalItem: any = null;
-            
-            if (item.itemType === 'purchase') {
-              [originalItem] = await tx
-                .select()
-                .from(purchaseItems)
-                .where(eq(purchaseItems.id, item.itemId));
-            } else if (item.itemType === 'custom') {
-              [originalItem] = await tx
-                .select()
-                .from(customItems)
-                .where(eq(customItems.id, item.itemId));
-            }
-            
-            if (originalItem?.sku) {
-              const [existingProduct] = await tx
-                .select({ id: products.id })
-                .from(products)
-                .where(eq(products.sku, originalItem.sku));
-              
-              if (existingProduct) {
-                productId = existingProduct.id;
-              }
-            }
-          }
-          
-          if (!productId) {
-            console.warn(`Cannot add inventory: No productId found for receipt item ${item.id}`);
-            continue;
-          }
-          
-          const existing = productQuantities.get(productId);
-          if (existing) {
-            existing.quantity += quantityToAdd;
-            existing.items.push(item);
+          if (inventoryResult.success) {
+            console.log(`[store-items] Inventory finalized: products=${inventoryResult.productsUpdated}, variants=${inventoryResult.variantsUpdated}, parents=${inventoryResult.parentProductsUpdated}`);
           } else {
-            productQuantities.set(productId, {
-              quantity: quantityToAdd,
-              items: [item]
-            });
+            console.error(`[store-items] Failed to finalize inventory: ${inventoryResult.error}`);
           }
-        }
-        
-        // Process each product: add inventory and calculate weighted average landed costs
-        for (const [productId, data] of productQuantities) {
-          try {
-            // Get existing product
-            const [existingProduct] = await tx
-              .select()
-              .from(products)
-              .where(eq(products.id, productId));
-            
-            if (!existingProduct) {
-              console.warn(`Product not found for ID ${productId}, skipping inventory addition`);
-              continue;
-            }
-            
-            // Get the first receipt item's original item for cost calculation
-            const firstItem = data.items[0];
-            let unitCost = 0;
-            let originalItem: any = null;
-            
-            if (firstItem.itemType === 'purchase') {
-              [originalItem] = await tx
-                .select()
-                .from(purchaseItems)
-                .where(eq(purchaseItems.id, firstItem.itemId));
-              
-              if (originalItem) {
-                unitCost = parseFloat(originalItem.unitPrice || '0');
-              }
-            } else if (firstItem.itemType === 'custom') {
-              [originalItem] = await tx
-                .select()
-                .from(customItems)
-                .where(eq(customItems.id, firstItem.itemId));
-              
-              if (originalItem) {
-                unitCost = parseFloat(originalItem.unitPrice || '0');
-              }
-            }
-            
-            // Get landed cost data for this item
-            const landedCostData = await getLandedCostForItem(
-              tx,
-              firstItem.itemType || 'purchase',
-              firstItem.itemId,
-              receipt.shipmentId,
-              data.quantity,
-              unitCost,
-              firstItem.itemType === 'purchase' ? originalItem?.purchaseId : undefined
-            );
-            
-            // Calculate weighted average landed costs
-            const avgLandedCosts = calculateWeightedAverageLandedCost(
-              existingProduct,
-              data.quantity,
-              landedCostData
-            );
-            
-            // Calculate weighted average import costs for ALL currencies (USD, CZK, EUR, VND, CNY)
-            const oldQuantity = existingProduct.quantity || 0;
-            const newQuantity = data.quantity;
-            const totalQuantity = oldQuantity + newQuantity;
-            
-            const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
-            const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
-            const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
-            const oldCostVnd = parseFloat(existingProduct.importCostVnd || '0');
-            const oldCostCny = parseFloat(existingProduct.importCostCny || '0');
-            
-            // Determine new costs based on purchase currency if available
-            // Convert to all currencies for proper weighted average calculations
-            let newCostUsd = unitCost;
-            let newCostCzk = 0;
-            let newCostEur = 0;
-            let newCostVnd = 0;
-            let newCostCny = 0;
-            
-            // Get exchange rates for conversion (approximate rates, ideally from exchange rate service)
-            const eurToUsd = 1.1;
-            const eurToCzk = 25;
-            const eurToVnd = 27000;
-            const eurToCny = 7.5;
-            const usdToEur = 1 / eurToUsd;
-            const usdToCzk = eurToCzk / eurToUsd;
-            const usdToVnd = eurToVnd / eurToUsd;
-            const usdToCny = eurToCny / eurToUsd;
-            
-            // Get purchase order ID - either from purchase items or from custom items (unpacked)
-            let purchaseOrderId: string | null = null;
-            if (firstItem.itemType === 'purchase' && originalItem?.purchaseId) {
-              purchaseOrderId = originalItem.purchaseId;
-            } else if (firstItem.itemType === 'custom' && originalItem?.purchaseOrderId) {
-              // Custom items from unpacked purchase orders have purchaseOrderId
-              purchaseOrderId = originalItem.purchaseOrderId;
-            }
-            
-            if (purchaseOrderId) {
-              const [purchase] = await tx
-                .select()
-                .from(importPurchases)
-                .where(eq(importPurchases.id, purchaseOrderId));
-              
-              if (purchase) {
-                const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
-                console.log(`[addInventoryOnCompletion] Found purchase order ${purchaseOrderId}, currency: ${currency}, unitCost: ${unitCost}`);
-                
-                if (currency === 'CZK') {
-                  newCostCzk = unitCost;
-                  newCostUsd = unitCost / eurToCzk * eurToUsd;
-                  newCostEur = unitCost / eurToCzk;
-                  newCostVnd = unitCost / eurToCzk * eurToVnd;
-                  newCostCny = unitCost / eurToCzk * eurToCny;
-                } else if (currency === 'EUR') {
-                  newCostEur = unitCost;
-                  newCostUsd = unitCost * eurToUsd;
-                  newCostCzk = unitCost * eurToCzk;
-                  newCostVnd = unitCost * eurToVnd;
-                  newCostCny = unitCost * eurToCny;
-                } else if (currency === 'VND') {
-                  newCostVnd = unitCost;
-                  newCostUsd = unitCost / eurToVnd * eurToUsd;
-                  newCostEur = unitCost / eurToVnd;
-                  newCostCzk = unitCost / eurToVnd * eurToCzk;
-                  newCostCny = unitCost / eurToVnd * eurToCny;
-                } else if (currency === 'CNY') {
-                  newCostCny = unitCost;
-                  newCostUsd = unitCost / eurToCny * eurToUsd;
-                  newCostEur = unitCost / eurToCny;
-                  newCostCzk = unitCost / eurToCny * eurToCzk;
-                  newCostVnd = unitCost / eurToCny * eurToVnd;
-                } else {
-                  // Default: USD
-                  newCostUsd = unitCost;
-                  newCostEur = unitCost * usdToEur;
-                  newCostCzk = unitCost * usdToCzk;
-                  newCostVnd = unitCost * usdToVnd;
-                  newCostCny = unitCost * usdToCny;
-                }
-              } else {
-                // Purchase order not found - use USD as default
-                console.warn(`[addInventoryOnCompletion] Purchase order ${purchaseOrderId} not found, using USD default`);
-                newCostUsd = unitCost;
-                newCostEur = unitCost * usdToEur;
-                newCostCzk = unitCost * usdToCzk;
-                newCostVnd = unitCost * usdToVnd;
-                newCostCny = unitCost * usdToCny;
-              }
-            } else {
-              // No purchase order link - default conversion from USD
-              console.log(`[addInventoryOnCompletion] No purchase order link found, using USD default for unitCost: ${unitCost}`);
-              newCostUsd = unitCost;
-              newCostEur = unitCost * usdToEur;
-              newCostCzk = unitCost * usdToCzk;
-              newCostVnd = unitCost * usdToVnd;
-              newCostCny = unitCost * usdToCny;
-            }
-            
-            // Derive missing historical costs from ANY available currency value
-            const derivedOldCosts = deriveHistoricalImportCosts(
-              oldCostUsd, oldCostEur, oldCostCzk, oldCostVnd, oldCostCny,
-              eurToUsd, usdToEur, eurToCzk, eurToVnd, eurToCny, usdToCzk, usdToVnd, usdToCny
-            );
-            
-            // Calculate weighted averages for ALL import costs using derived historical values
-            const avgCostUsd = totalQuantity > 0 
-              ? ((oldQuantity * derivedOldCosts.derivedUsd) + (newQuantity * newCostUsd)) / totalQuantity 
-              : newCostUsd;
-            
-            const avgCostCzk = totalQuantity > 0
-              ? ((oldQuantity * derivedOldCosts.derivedCzk) + (newQuantity * newCostCzk)) / totalQuantity
-              : newCostCzk;
-            
-            const avgCostEur = totalQuantity > 0
-              ? ((oldQuantity * derivedOldCosts.derivedEur) + (newQuantity * newCostEur)) / totalQuantity
-              : newCostEur;
-            
-            const avgCostVnd = totalQuantity > 0
-              ? ((oldQuantity * derivedOldCosts.derivedVnd) + (newQuantity * newCostVnd)) / totalQuantity
-              : newCostVnd;
-            
-            const avgCostCny = totalQuantity > 0
-              ? ((oldQuantity * derivedOldCosts.derivedCny) + (newQuantity * newCostCny)) / totalQuantity
-              : newCostCny;
-            
-            // Update product with costs for ALL currencies
-            // NOTE: For variant parents, skip quantity update here - it will be set from sum of variants later
-            const isVariantParent = parentProductsNeedingUpdate.has(productId);
-            await tx
-              .update(products)
-              .set({
-                // Only update quantity if this is NOT a variant parent - variant parents get quantity from sum of variants
-                ...(isVariantParent ? {} : { quantity: totalQuantity }),
-                importCostUsd: avgCostUsd.toFixed(2),
-                importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
-                importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
-                importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
-                importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
-                latestLandingCost: avgLandedCosts.avgLatestLandingCost > 0 ? avgLandedCosts.avgLatestLandingCost.toFixed(4) : null,
-                landingCostEur: avgLandedCosts.avgLandingCostEur > 0 ? avgLandedCosts.avgLandingCostEur.toFixed(4) : null,
-                landingCostUsd: avgLandedCosts.avgLandingCostUsd > 0 ? avgLandedCosts.avgLandingCostUsd.toFixed(4) : null,
-                landingCostCzk: avgLandedCosts.avgLandingCostCzk > 0 ? avgLandedCosts.avgLandingCostCzk.toFixed(4) : null,
-                landingCostVnd: avgLandedCosts.avgLandingCostVnd > 0 ? avgLandedCosts.avgLandingCostVnd.toFixed(4) : null,
-                landingCostCny: avgLandedCosts.avgLandingCostCny > 0 ? avgLandedCosts.avgLandingCostCny.toFixed(4) : null,
-                updatedAt: new Date()
-              })
-              .where(eq(products.id, productId));
-            
-            // Record cost history
-            await tx.insert(productCostHistory).values({
-              productId: productId,
-              customItemId: firstItem.itemType === 'custom' ? firstItem.itemId : null,
-              landingCostUnitBase: avgLandedCosts.avgLatestLandingCost.toFixed(4),
-              method: 'weighted_average',
-              computedAt: new Date()
-            });
-            
-            console.log(`Inventory added for product ${productId}: +${data.quantity} units, landed cost: ${avgLandedCosts.avgLatestLandingCost.toFixed(4)}`);
-          } catch (error) {
-            console.error(`Failed to add inventory for product ${productId}:`, error);
-          }
-        }
-        
-        // ================================================================
-        // UPDATE PARENT PRODUCT QUANTITIES AND COSTS FOR VARIANT PRODUCTS
-        // After processing all variant allocations, update parent products
-        // to have quantity equal to sum of variants AND calculate weighted average costs
-        // ================================================================
-        for (const parentProductId of parentProductsNeedingUpdate) {
-          try {
-            // Get sum of all variant quantities and weighted cost totals for this parent product
-            const variantData = await tx
-              .select({
-                totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`,
-                totalCostValueEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostEur}::numeric, 0)), 0)`,
-                totalCostValueUsd: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostUsd}::numeric, 0)), 0)`,
-                totalCostValueCzk: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostCzk}::numeric, 0)), 0)`
-              })
-              .from(productVariants)
-              .where(eq(productVariants.productId, parentProductId));
-            
-            const totalVariantQuantity = Number(variantData[0]?.totalQuantity) || 0;
-            const totalCostValueEur = Number(variantData[0]?.totalCostValueEur) || 0;
-            const totalCostValueUsd = Number(variantData[0]?.totalCostValueUsd) || 0;
-            const totalCostValueCzk = Number(variantData[0]?.totalCostValueCzk) || 0;
-            
-            // Calculate weighted average costs from variants
-            const avgCostEur = totalVariantQuantity > 0 ? totalCostValueEur / totalVariantQuantity : 0;
-            const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
-            const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
-            
-            // Derive VND and CNY from EUR using exchange rates
-            const avgCostVnd = avgCostEur * eurToVnd;
-            const avgCostCny = avgCostEur * eurToCny;
-            
-            // Update parent product quantity AND costs to match weighted average of variants
-            await tx
-              .update(products)
-              .set({
-                quantity: totalVariantQuantity,
-                importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
-                importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
-                importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
-                importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
-                importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
-                // Also update landed cost fields
-                latestLandingCost: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
-                landingCostEur: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
-                landingCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(4) : null,
-                landingCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(4) : null,
-                landingCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(4) : null,
-                landingCostCny: avgCostCny > 0 ? avgCostCny.toFixed(4) : null,
-                updatedAt: new Date()
-              })
-              .where(eq(products.id, parentProductId));
-            
-            // Record cost history for parent product
-            if (avgCostEur > 0) {
-              await tx.insert(productCostHistory).values({
-                productId: parentProductId,
-                customItemId: null,
-                landingCostUnitBase: avgCostEur.toFixed(4),
-                method: 'weighted_average_from_variants',
-                computedAt: new Date()
-              });
-            }
-            
-            console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}`);
-          } catch (error) {
-            console.error(`Failed to update parent product ${parentProductId}:`, error);
-          }
-        }
         } // End of else block (not already stored)
         
         if (shipment?.consolidationId) {
