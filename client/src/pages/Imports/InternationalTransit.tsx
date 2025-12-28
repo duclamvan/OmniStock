@@ -1422,20 +1422,20 @@ export default function InternationalTransit() {
                         <Input 
                           id="trackingNumber" 
                           name="trackingNumber" 
-                          defaultValue={selectedShipment?.trackingNumber || ''}
+                          defaultValue={selectedShipment ? selectedShipment.trackingNumber : ''}
                           data-testid="input-tracking-number"
                           placeholder={t('enterInternalTracking')}
                           className="h-9 text-sm"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="carrier" className="text-xs text-muted-foreground">{t('internalCarrier')}</Label>
+                        <Label htmlFor="carrier" className="text-xs text-muted-foreground">{t('internalCarrierUrlOrName')}</Label>
                         <Input 
                           id="carrier" 
                           name="carrier" 
-                          defaultValue={selectedShipment?.carrier || ''}
+                          defaultValue={selectedShipment ? selectedShipment.carrier : ''}
                           data-testid="input-carrier"
-                          placeholder={t('enterInternalCarrier')}
+                          placeholder={t('enterInternalCarrierUrlOrName')}
                           className="h-9 text-sm"
                         />
                       </div>
