@@ -1491,9 +1491,12 @@ export default function ProductForm() {
     const priceEur = form.watch('priceEur') || 0;
     const quantity = form.watch('quantity') || 0;
     
-    // 1. Category Part (3 chars)
+    // 1. Category Part - use initials of each word (e.g., "Gel Polish" -> "GP")
     const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || t('products:defaults.categoryFallback');
-    const categoryPart = normalizeForSKU(categoryName).slice(0, 3) || t('products:defaults.categoryFallback');
+    const categoryWords = categoryName.split(/\s+/).filter((w: string) => w.length > 0);
+    const categoryPart = categoryWords.length > 1
+      ? categoryWords.map((w: string) => normalizeForSKU(w).charAt(0)).join('').toUpperCase()
+      : normalizeForSKU(categoryName).slice(0, 3).toUpperCase() || t('products:defaults.categoryFallback');
     
     // 2. Supplier Part (2 chars) - optional
     const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
