@@ -1087,6 +1087,21 @@ export default function AtWarehouse() {
     }
   });
 
+  const bulkDeleteCustomItemsMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return apiRequest('POST', `/api/imports/custom-items/bulk-delete`, { ids });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      toast({ title: t('success'), description: t('itemsDeleted', { count: data.deletedCount || 0 }) });
+      setSelectedItemsForAI(new Set());
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('itemDeleteFailed'), variant: "destructive" });
+    }
+  });
+
   // Send item back to incoming orders mutation
   const sendBackToIncomingMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -3095,16 +3110,16 @@ export default function AtWarehouse() {
                                   <DropdownMenuItem
                                     onClick={() => {
                                       if (window.confirm(t('confirmDeleteSelected', { count: selectedItemsForAI.size }))) {
-                                        selectedItemsForAI.forEach(id => {
-                                          deleteCustomItemMutation.mutate(id);
-                                        });
-                                        setSelectedItemsForAI(new Set());
+                                        bulkDeleteCustomItemsMutation.mutate(Array.from(selectedItemsForAI) as string[]);
                                       }
                                     }}
                                     className="text-red-600"
+                                    disabled={bulkDeleteCustomItemsMutation.isPending}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    {t('deleteSelected', { count: selectedItemsForAI.size })}
+                                    {bulkDeleteCustomItemsMutation.isPending 
+                                      ? t('deleting') 
+                                      : t('deleteSelected', { count: selectedItemsForAI.size })}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

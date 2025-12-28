@@ -653,6 +653,8 @@ const imports = {
   itemUpdated: 'Item updated successfully',
   itemUpdateFailed: 'Failed to update item',
   itemDeleted: 'Item deleted successfully',
+  itemsDeleted: '{{count}} items deleted successfully',
+  deleting: 'Deleting...',
   itemDeleteFailed: 'Failed to delete item',
   itemUnpackFailed: 'Failed to unpack item',
   sendBackToIncoming: 'Send back to Incoming',

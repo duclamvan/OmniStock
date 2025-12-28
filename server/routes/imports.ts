@@ -2130,6 +2130,37 @@ router.delete("/custom-items/:id", async (req, res) => {
   }
 });
 
+// Bulk delete custom items
+router.post("/custom-items/bulk-delete", async (req, res) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "No item IDs provided" });
+    }
+    
+    // Delete in batches to avoid overwhelming the database
+    const batchSize = 50;
+    let deletedCount = 0;
+    
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      const result = await db
+        .delete(customItems)
+        .where(inArray(customItems.id, batch));
+      deletedCount += result.rowCount ?? 0;
+    }
+    
+    res.json({ 
+      message: `Successfully deleted ${deletedCount} items`,
+      deletedCount 
+    });
+  } catch (error) {
+    console.error("Error bulk deleting custom items:", error);
+    res.status(500).json({ message: "Failed to delete custom items" });
+  }
+});
+
 // Send custom item back to incoming orders (reverses the at-warehouse state)
 router.post("/custom-items/:id/send-back-to-incoming", async (req, res) => {
   try {

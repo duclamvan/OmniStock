@@ -660,6 +660,8 @@ const imports = {
   itemUpdated: 'Đã cập nhật sản phẩm thành công',
   itemUpdateFailed: 'Không thể cập nhật sản phẩm',
   itemDeleted: 'Đã xóa sản phẩm thành công',
+  itemsDeleted: 'Đã xóa thành công {{count}} sản phẩm',
+  deleting: 'Đang xóa...',
   itemDeleteFailed: 'Không thể xóa sản phẩm',
   itemUnpackFailed: 'Không thể mở kiện sản phẩm',
   sendBackToIncoming: 'Gửi lại về Đơn chờ',
