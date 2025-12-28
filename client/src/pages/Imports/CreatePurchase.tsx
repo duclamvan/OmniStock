@@ -4172,7 +4172,7 @@ export default function CreatePurchase() {
                             return (
                               <TableRow 
                                 key={`${item.id}-variant-${variant.variantId || vIdx}`}
-                                className="bg-purple-50/50 dark:bg-purple-950/20 border-l-4 border-l-purple-400 dark:border-l-purple-600"
+                                className="bg-purple-50/50 dark:bg-purple-950/20 !border-l-4 !border-l-purple-400 dark:!border-l-purple-600"
                               >
                                 {/* Empty checkbox column */}
                                 <TableCell className="p-2"></TableCell>
