@@ -1448,11 +1448,43 @@ function SessionFooter({ onComplete, onCancel }: { onComplete: () => void; onCan
 
 function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
+  const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
   const totalQuantity = shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/to-receive'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      toast({
+        title: t('common:deleted'),
+        description: t('shipmentDeleted'),
+      });
+      setShowDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteShipment'),
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <Card className="overflow-hidden" data-testid={`card-shipment-${shipment.id}`}>
@@ -1520,18 +1552,69 @@ function ToReceiveShipmentCard({ shipment }: { shipment: any }) {
               </div>
             )}
             
-            <Button
-              size="lg"
-              className="w-full h-12 text-base"
-              onClick={() => navigate(`/receiving/start/${shipment.id}`)}
-              data-testid={`button-start-receiving-${shipment.id}`}
-            >
-              <ScanLine className="h-5 w-5 mr-2" />
-              {t('startReceiving')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base"
+                onClick={() => navigate(`/receiving/start/${shipment.id}`)}
+                data-testid={`button-start-receiving-${shipment.id}`}
+              >
+                <ScanLine className="h-5 w-5 mr-2" />
+                {t('startReceiving')}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-3"
+                    data-testid={`button-menu-${shipment.id}`}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={deleteShipmentMutation.isPending}
+                    className="text-red-600 dark:text-red-400"
+                    data-testid={`menu-item-delete-${shipment.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common:delete')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       )}
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteShipmentMutation.mutate()}
+              disabled={deleteShipmentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+            >
+              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
@@ -1541,12 +1624,43 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Calculate based on total quantities
   const items = shipment.items || [];
   const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
   const receivedQuantity = items.reduce((sum: number, item: any) => sum + (item.receivedQuantity || 0), 0);
   const progress = totalQuantity > 0 ? Math.round((receivedQuantity / totalQuantity) * 100) : 0;
+
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receiving'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      toast({
+        title: t('common:deleted'),
+        description: t('shipmentDeleted'),
+      });
+      setShowDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteShipment'),
+        variant: "destructive",
+      });
+    },
+  });
   
   // Mutation to move shipment back to "To Receive" status
   const moveToReceiveMutation = useMutation({
@@ -1627,6 +1741,18 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
                     <RotateCcw className="h-4 w-4 mr-2" />
                     {t('moveBackToReceive')}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={deleteShipmentMutation.isPending}
+                    className="text-red-600 dark:text-red-400"
+                    data-testid={`menu-item-delete-${shipment.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common:delete')}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1686,6 +1812,29 @@ function ReceivingShipmentCard({ shipment }: { shipment: any }) {
           </div>
         </CardContent>
       )}
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteShipmentMutation.mutate()}
+              disabled={deleteShipmentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+            >
+              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
@@ -3899,6 +4048,38 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showQuickStorage, setShowQuickStorage] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: t('common:deleted'),
+        description: t('shipmentDeleted'),
+      });
+      setShowDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteShipment'),
+        variant: "destructive",
+      });
+    },
+  });
   
   // Mutation to move shipment back to "To Receive" status
   const moveToReceiveMutation = useMutation({
@@ -4046,6 +4227,18 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
                     <Undo2 className="h-4 w-4 mr-2" />
                     {moveToReceiveMutation.isPending ? t('common:loading') : t('moveToReceive')}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={deleteShipmentMutation.isPending}
+                    className="text-red-600 dark:text-red-400"
+                    data-testid={`menu-item-delete-${shipment.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common:delete')}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -4058,6 +4251,29 @@ function StorageShipmentCard({ shipment }: { shipment: any }) {
         open={showQuickStorage}
         onOpenChange={setShowQuickStorage}
       />
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteShipmentMutation.mutate()}
+              disabled={deleteShipmentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+            >
+              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
@@ -4766,8 +4982,40 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showReport, setShowReport] = useState(false);
   const [showRevertConfirm, setShowRevertConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
+
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      toast({
+        title: t('common:deleted'),
+        description: t('shipmentDeleted'),
+      });
+      setShowDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteShipment'),
+        variant: "destructive",
+      });
+    },
+  });
 
   const revertToReceiveMutation = useMutation({
     mutationFn: async () => {
@@ -4933,6 +5181,18 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
                     <Undo2 className="h-4 w-4 mr-2" />
                     {t('sendBackToReceive')}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={deleteShipmentMutation.isPending}
+                    className="text-red-600 dark:text-red-400"
+                    data-testid={`menu-item-delete-${shipment.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common:delete')}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -4945,6 +5205,29 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
         open={showReport}
         onOpenChange={setShowReport}
       />
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteShipmentMutation.mutate()}
+              disabled={deleteShipmentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+            >
+              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <AlertDialog open={showRevertConfirm} onOpenChange={setShowRevertConfirm}>
         <AlertDialogContent>
@@ -4979,10 +5262,42 @@ function CompletedShipmentCard({ shipment }: { shipment: any }) {
 
 function ArchivedShipmentCard({ shipment }: { shipment: any }) {
   const { t } = useTranslation(['imports']);
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showReport, setShowReport] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const itemCount = shipment.items?.length || 0;
+
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      toast({
+        title: t('common:deleted'),
+        description: t('shipmentDeleted'),
+      });
+      setShowDeleteConfirm(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToDeleteShipment'),
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <Card className="overflow-hidden opacity-75" data-testid={`card-shipment-${shipment.id}`}>
@@ -5046,19 +5361,47 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
               </div>
             )}
             
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full h-12 text-base"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowReport(true);
-              }}
-              data-testid={`button-view-details-${shipment.id}`}
-            >
-              <FileText className="h-5 w-5 mr-2" />
-              {t('viewReport')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 h-12 text-base"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReport(true);
+                }}
+                data-testid={`button-view-details-${shipment.id}`}
+              >
+                <FileText className="h-5 w-5 mr-2" />
+                {t('viewReport')}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-3"
+                    data-testid={`button-menu-${shipment.id}`}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={deleteShipmentMutation.isPending}
+                    className="text-red-600 dark:text-red-400"
+                    data-testid={`menu-item-delete-${shipment.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common:delete')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       )}
@@ -5068,6 +5411,29 @@ function ArchivedShipmentCard({ shipment }: { shipment: any }) {
         open={showReport}
         onOpenChange={setShowReport}
       />
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleteShipmentMutation.isPending} className="w-full sm:w-auto">
+              {t('common:cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteShipmentMutation.mutate()}
+              disabled={deleteShipmentMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+            >
+              {deleteShipmentMutation.isPending ? t('common:processing') : t('common:delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

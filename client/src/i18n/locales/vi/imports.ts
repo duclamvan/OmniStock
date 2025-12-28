@@ -1343,6 +1343,12 @@ const imports = {
   confirmRevert: 'Đồng ý, Hoàn tác',
   partiallyReceived: 'Đã nhận một phần',
   
+  // Delete Shipment
+  confirmDeleteTitle: 'Xóa lô hàng?',
+  confirmDeleteDescription: 'Thao tác này sẽ xóa vĩnh viễn lô hàng và tất cả dữ liệu liên quan bao gồm phiếu nhận và vị trí lưu kho. Hành động này không thể hoàn tác.',
+  shipmentDeleted: 'Lô hàng đã được xóa thành công',
+  failedToDeleteShipment: 'Không thể xóa lô hàng',
+  
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Trung tâm Nhận hàng',
   manageIncomingShipmentsDesc: 'Quản lý lô hàng đến và hoạt động nhận hàng',

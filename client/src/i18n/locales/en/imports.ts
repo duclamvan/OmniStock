@@ -1325,6 +1325,12 @@ const imports = {
   confirmRevert: 'Yes, Revert',
   partiallyReceived: 'Partially Received',
   
+  // Delete Shipment
+  confirmDeleteTitle: 'Delete Shipment?',
+  confirmDeleteDescription: 'This will permanently delete the shipment and all associated data including receipts and storage assignments. This action cannot be undone.',
+  shipmentDeleted: 'Shipment has been deleted successfully',
+  failedToDeleteShipment: 'Failed to delete shipment',
+  
   // ReceivingList - Page Header & Stats
   receivingCenter: 'Receiving Center',
   manageIncomingShipmentsDesc: 'Manage incoming shipments and receiving operations',
