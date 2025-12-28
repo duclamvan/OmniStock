@@ -726,6 +726,29 @@ export default function CreatePurchase() {
     }
   }, [grandTotalInPaymentCurrency, totalPaidManuallySet]);
 
+  // Recalculate costWithShipping when currencies or shipping cost changes
+  useEffect(() => {
+    if (items.length > 0) {
+      const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+      const shippingInPurchase = convertCurrency(shippingCost, shippingCurrency, purchaseCurrency);
+      const perUnitShipping = totalQty > 0 ? shippingInPurchase / totalQty : 0;
+      
+      const itemsWithShipping = items.map(item => ({
+        ...item,
+        costWithShipping: item.unitPrice + perUnitShipping
+      }));
+      
+      // Only update if values actually changed to prevent infinite loop
+      const hasChanged = items.some((item, idx) => 
+        Math.abs(item.costWithShipping - itemsWithShipping[idx].costWithShipping) > 0.0001
+      );
+      
+      if (hasChanged) {
+        setItems(itemsWithShipping);
+      }
+    }
+  }, [shippingCost, shippingCurrency, purchaseCurrency, exchangeRates]);
+
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1823,11 +1846,14 @@ export default function CreatePurchase() {
 
   const updateItemsWithShipping = (updatedItems: PurchaseItem[]) => {
     const totalQty = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-    const perItemShipping = totalQty > 0 ? shippingCost / totalQty : 0;
+    // Convert shipping to purchase currency before distributing
+    const shippingInPurchase = convertCurrency(shippingCost, shippingCurrency, purchaseCurrency);
+    const perUnitShipping = totalQty > 0 ? shippingInPurchase / totalQty : 0;
     
     const itemsWithShipping = updatedItems.map(item => ({
       ...item,
-      costWithShipping: item.unitPrice + (perItemShipping / item.quantity)
+      // costWithShipping = unit price + shipping per unit (both in purchase currency)
+      costWithShipping: item.unitPrice + perUnitShipping
     }));
     
     setItems(itemsWithShipping);
