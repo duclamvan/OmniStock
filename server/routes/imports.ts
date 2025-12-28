@@ -2166,12 +2166,12 @@ router.post("/custom-items/:id/send-back-to-incoming", async (req, res) => {
       // If no remaining items, reset purchase order status to 'at_warehouse' (before unpacking)
       if (remainingItems.length === 0) {
         await db
-          .update(purchases)
+          .update(importPurchases)
           .set({ 
             status: 'at_warehouse',
             updatedAt: new Date()
           })
-          .where(eq(purchases.id, customItem.purchaseOrderId));
+          .where(eq(importPurchases.id, customItem.purchaseOrderId));
       }
       
       res.json({ 
