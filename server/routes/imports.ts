@@ -6246,13 +6246,15 @@ router.post("/receipts/:receiptId/sync-items", async (req, res) => {
               itemId: item.id,
               itemType: 'custom',
               productId: null,
-              sku: null,
+              sku: (item as any).sku || null,
               expectedQuantity: item.quantity || 1,
               receivedQuantity: 0,
               damagedQuantity: 0,
               missingQuantity: 0,
               warehouseLocation: null,
               condition: 'pending',
+              // Copy variant allocations for variant-aware receiving
+              variantAllocations: (item as any).variantAllocations || null,
               createdAt: new Date(),
               updatedAt: new Date()
             });
@@ -6293,7 +6295,11 @@ router.post("/receipts/:receiptId/sync-items", async (req, res) => {
             .select()
             .from(customItems)
             .where(eq(customItems.id, ci.itemId));
-          if (item) sourceQuantity = item.quantity || 1;
+          if (item) {
+            sourceQuantity = item.quantity || 1;
+            sourceVariantAllocations = (item as any).variantAllocations || null;
+            sourceSku = (item as any).sku || null;
+          }
         }
         
         // Build update object with changed fields
@@ -8743,8 +8749,8 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       const imageUrl = product?.imageUrl || underlyingPurchaseItem?.imageUrl || row.purchaseItem?.imageUrl || null;
       const existingLocations = productId ? (locationsMap[productId] || []) : [];
       
-      // Get variantAllocations from purchase item (if it has variants)
-      const variantAllocations = row.purchaseItem?.variantAllocations || underlyingPurchaseItem?.variantAllocations || null;
+      // Get variantAllocations from receipt item, custom item, or purchase item (check all sources)
+      const variantAllocations = row.receiptItem?.variantAllocations || row.customItem?.variantAllocations || row.purchaseItem?.variantAllocations || underlyingPurchaseItem?.variantAllocations || null;
       
       // Get orderItems from custom item (for unpacked PO packages)
       const orderItems = row.customItem?.orderItems || null;
