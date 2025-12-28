@@ -5829,7 +5829,7 @@ router.get("/shipments/:id", async (req, res) => {
       // Process each item based on its type
       for (const consItem of consolidationItemsList) {
         if (consItem.itemType === 'custom') {
-          // Get custom item details with order items (for unpacked PO packages)
+          // Get custom item details with order items (for unpacked PO packages) and variant allocations
           const [customItem] = await db
             .select({
               id: customItems.id,
@@ -5843,7 +5843,8 @@ router.get("/shipments/:id", async (req, res) => {
               imageUrl: customItems.imageUrl,
               sku: customItems.sku,
               dimensions: customItems.dimensions,
-              orderItems: customItems.orderItems
+              orderItems: customItems.orderItems,
+              variantAllocations: customItems.variantAllocations
             })
             .from(customItems)
             .where(eq(customItems.id, consItem.itemId));
