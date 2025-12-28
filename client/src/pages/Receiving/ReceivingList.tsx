@@ -4234,21 +4234,17 @@ function QuickStorageSheet({
                     const preview = getBulkAllocationPreview();
                     const totalVariants = currentItem?.variantAllocations?.length || 0;
                     
-                    const totalItemsToAllocate = currentItem?.variantAllocations?.reduce((sum, v) => {
-                      const existingForVariant = currentItem?.existingLocations?.reduce((s: number, loc: any) => {
-                        return s + (loc.variantId === v.variantId ? (loc.quantity || 0) : 0);
-                      }, 0) || 0;
-                      const pendingForVariant = currentItem?.locations.reduce((s, loc) => {
-                        return s + (loc.variantId === v.variantId ? (loc.quantity || 0) : 0);
-                      }, 0) || 0;
-                      return sum + Math.max(0, v.quantity - existingForVariant - pendingForVariant);
-                    }, 0) || 0;
+                    // Calculate total items that need allocation (from variants)
+                    const totalItemsToAllocate = preview.totalItems;
+                    
+                    // Calculate items that will actually be allocated (sum of location items)
+                    const itemsWillBeAllocated = preview.locations.reduce((sum, loc) => sum + loc.items, 0);
                     
                     const totalLocations = generateBulkLocations().length;
                     const totalCapacity = totalLocations * bulkItemsPerLocation;
                     const capacityUsagePercent = totalCapacity > 0 ? Math.round((totalItemsToAllocate / totalCapacity) * 100) : 0;
-                    const itemsRemaining = Math.max(0, totalItemsToAllocate - preview.totalItems);
-                    const allocationComplete = itemsRemaining <= 0;
+                    const itemsRemaining = Math.max(0, totalItemsToAllocate - itemsWillBeAllocated);
+                    const allocationComplete = itemsRemaining <= 0 && totalItemsToAllocate > 0;
                     
                     return (
                       <div className="pt-2 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
