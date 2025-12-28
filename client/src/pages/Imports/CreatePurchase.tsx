@@ -3798,10 +3798,9 @@ export default function CreatePurchase() {
                         <TableHead className="w-[48px]">{t('image')}</TableHead>
                         <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
                         <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
-                        <TableHead className="w-[130px] text-center">{t('weight')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
-                        <TableHead className="w-[120px] text-right">{t('total')}</TableHead>
                         <TableHead className="w-[140px] text-right">{t('costWithShipping')}</TableHead>
+                        <TableHead className="w-[120px] text-right">{t('total')}</TableHead>
                         <TableHead className="w-[48px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -3915,55 +3914,6 @@ export default function CreatePurchase() {
                             />
                           </TableCell>
                           
-                          {/* Weight */}
-                          <TableCell className="text-center">
-                            <div className="flex flex-col items-center">
-                              <div className="flex items-center gap-0.5">
-                                <Input
-                                  type="number"
-                                  value={item.weight}
-                                  onChange={(e) => {
-                                    const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, weight: parseDecimal(e.target.value)} : i
-                                    );
-                                    setItems(updatedItems);
-                                  }}
-                                  onKeyDown={handleDecimalKeyDown}
-                                  onFocus={(e) => e.target.select()}
-                                  className="h-7 w-16 text-sm text-right border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 rounded transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  step="0.01"
-                                  min="0"
-                                  data-testid={`input-weight-${item.id}`}
-                                />
-                                <Select
-                                  value={item.weightUnit || 'kg'}
-                                  onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => {
-                                    const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, weightUnit: value} : i
-                                    );
-                                    setItems(updatedItems);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-7 w-14 text-xs border-0 bg-transparent hover:bg-muted focus:ring-0 px-1">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="mg">mg</SelectItem>
-                                    <SelectItem value="g">g</SelectItem>
-                                    <SelectItem value="kg">kg</SelectItem>
-                                    <SelectItem value="oz">oz</SelectItem>
-                                    <SelectItem value="lb">lb</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              {item.weight > 0 && item.quantity > 1 && (
-                                <span className="text-[10px] text-muted-foreground mt-0.5">
-                                  = {(item.weight * item.quantity).toFixed(2)} {item.weightUnit || 'kg'}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          
                           {/* Unit Price */}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
@@ -3987,13 +3937,6 @@ export default function CreatePurchase() {
                             </div>
                           </TableCell>
                           
-                          {/* Total */}
-                          <TableCell className="text-right">
-                            <span className="font-medium text-sm">
-                              {item.totalPrice.toFixed(2)} {purchaseCurrency}
-                            </span>
-                          </TableCell>
-                          
                           {/* Cost with Shipping */}
                           <TableCell className="text-right">
                             {(() => {
@@ -4009,6 +3952,13 @@ export default function CreatePurchase() {
                                 </div>
                               );
                             })()}
+                          </TableCell>
+                          
+                          {/* Total */}
+                          <TableCell className="text-right">
+                            <span className="font-medium text-sm">
+                              {item.totalPrice.toFixed(2)} {purchaseCurrency}
+                            </span>
                           </TableCell>
                           
                           {/* Actions */}
@@ -4077,15 +4027,12 @@ export default function CreatePurchase() {
                       <TableRow>
                         <TableCell colSpan={4} className="font-bold">{t('totals')}</TableCell>
                         <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
-                        <TableCell className="text-center font-bold">
-                          {totalWeight.toFixed(2)} kg
-                        </TableCell>
                         <TableCell></TableCell>
-                        <TableCell className="text-right font-bold">
-                          {subtotal.toFixed(2)} {purchaseCurrency}
-                        </TableCell>
                         <TableCell className="text-right font-bold text-green-600">
                           {grandTotalInPurchaseCurrency.toFixed(2)} {purchaseCurrency}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {subtotal.toFixed(2)} {purchaseCurrency}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
