@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield } from "lucide-react";
+import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield, PackageOpen } from "lucide-react";
 import GeneralSettings from "./GeneralSettings";
 import ShippingSettings from "./ShippingSettings";
 import OrderSettings from "./OrderSettings";
@@ -9,6 +9,7 @@ import FinancialSettings from "./FinancialSettings";
 import InventorySettings from "./InventorySettings";
 import SystemSettings from "./SystemSettings";
 import RolesSettings from "./RolesSettings";
+import ImportsSettings from "./ImportsSettings";
 
 export default function Settings() {
   const [location, navigate] = useLocation();
@@ -26,10 +27,14 @@ export default function Settings() {
 
       <Tabs value={tab} onValueChange={(value) => navigate(`/settings/${value}`)} className="space-y-4">
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
-          <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-7 gap-1 h-auto p-1">
+          <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-4 lg:grid-cols-8 gap-1 h-auto p-1">
             <TabsTrigger value="general" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-general">
               <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
               {t('common:general')}
+            </TabsTrigger>
+            <TabsTrigger value="imports" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-imports">
+              <PackageOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              {t('common:imports')}
             </TabsTrigger>
             <TabsTrigger value="shipping" className="gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]" data-testid="tab-shipping">
               <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -60,6 +65,10 @@ export default function Settings() {
 
         <TabsContent value="general">
           <GeneralSettings />
+        </TabsContent>
+
+        <TabsContent value="imports">
+          <ImportsSettings />
         </TabsContent>
 
         <TabsContent value="shipping">
