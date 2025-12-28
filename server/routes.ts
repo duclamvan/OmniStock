@@ -52,6 +52,7 @@ import {
   receipts,
   receiptItems,
   consolidationItems,
+  consolidations,
   customItems,
   orderItems,
   orders,

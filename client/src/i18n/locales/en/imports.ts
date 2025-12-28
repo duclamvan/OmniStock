@@ -663,7 +663,6 @@ const imports = {
   createConsolidationDesc: 'Create a new shipment consolidation for grouping items',
   consolidationCreated: 'Consolidation created successfully',
   consolidationCreateFailed: 'Failed to create consolidation',
-  consolidationDeleted: 'Consolidation deleted successfully',
   consolidationDeleteFailed: 'Failed to delete consolidation',
   itemAddedToConsolidation: 'Item added to consolidation',
   itemAddToConsolidationFailed: 'Failed to add item',

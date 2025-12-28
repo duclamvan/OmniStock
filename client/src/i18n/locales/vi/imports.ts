@@ -670,7 +670,6 @@ const imports = {
   createConsolidationDesc: 'Tạo tổng hợp lô hàng mới để nhóm các sản phẩm',
   consolidationCreated: 'Đã tạo tổng hợp thành công',
   consolidationCreateFailed: 'Không thể tạo tổng hợp',
-  consolidationDeleted: 'Đã xóa tổng hợp thành công',
   consolidationDeleteFailed: 'Không thể xóa tổng hợp',
   itemAddedToConsolidation: 'Đã thêm sản phẩm vào tổng hợp',
   itemAddToConsolidationFailed: 'Không thể thêm sản phẩm',
