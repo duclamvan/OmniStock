@@ -1672,10 +1672,10 @@ function ReceivingShipmentCard({ shipment, isAdministrator }: { shipment: any; i
     },
   });
   
-  // Mutation to move shipment back to "To Receive" status
+  // Mutation to move shipment back to "To Receive" status (from receiving status)
   const moveToReceiveMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('POST', `/api/imports/shipments/${shipment.id}/move-to-receive`);
+      return apiRequest('POST', `/api/imports/shipments/${shipment.id}/move-back-to-receive`);
     },
     onSuccess: () => {
       toast({
