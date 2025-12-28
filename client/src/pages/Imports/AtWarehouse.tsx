@@ -265,10 +265,10 @@ const ItemCard = memo(({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all ${
+          className={`border-2 rounded-xl p-4 lg:p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all min-h-[72px] ${
             selectedItemsForAI.has(item.id) 
-              ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-300' 
-              : 'hover:border-purple-200'
+              ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-400' 
+              : 'border-border hover:border-purple-200'
           }`}
           onClick={handleClick}
         >
@@ -3106,7 +3106,7 @@ export default function AtWarehouse() {
                           ref={provided.innerRef} 
                           {...provided.droppableProps}
                           data-testid="available-items-container"
-                          className="space-y-2 min-h-[400px] p-2 rounded-lg"
+                          className="space-y-3 min-h-[400px] px-1 py-2 rounded-lg"
                         >
                           {isLoadingItems ? (
                             <div className="space-y-2 animate-in fade-in-50 duration-500">
@@ -3126,7 +3126,7 @@ export default function AtWarehouse() {
                               {({ index, style, data }) => {
                                 const item = data[index];
                                 return (
-                                  <div style={style} key={item.uniqueId}>
+                                  <div style={style} key={item.uniqueId} className="px-1 pb-2">
                                     <ItemCard 
                                       item={item} 
                                       index={index}
