@@ -1332,6 +1332,7 @@ const imports = {
   completeReceipt: 'Hoàn tất phiếu nhận',
   closeCamera: 'Tắt Camera',
   startReceiving: 'Bắt đầu nhận hàng',
+  receiveNow: 'Nhận ngay',
   continueReceiving: 'Tiếp tục nhận hàng',
   
   // ReceivingList - Labels & Display

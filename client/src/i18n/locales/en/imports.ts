@@ -1314,6 +1314,7 @@ const imports = {
   completeReceipt: 'Complete Receipt',
   closeCamera: 'Close Camera',
   startReceiving: 'Start Receiving',
+  receiveNow: 'Receive Now',
   continueReceiving: 'Continue Receiving',
   
   // ReceivingList - Labels & Display

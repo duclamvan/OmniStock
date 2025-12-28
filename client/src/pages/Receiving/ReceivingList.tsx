@@ -5989,12 +5989,15 @@ export default function ReceivingList() {
                                       </Badge>
                                       <Button
                                         size="sm"
-                                        variant="outline"
-                                        className="h-7 text-xs"
-                                        onClick={() => window.location.href = '/imports/international-transit'}
-                                        data-testid={`button-view-transit-${shipment.id}`}
+                                        className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/receiving/start/${shipment.id}`);
+                                        }}
+                                        data-testid={`button-receive-now-${shipment.id}`}
                                       >
-                                        {t('viewInTransit')}
+                                        <ScanLine className="h-3 w-3 mr-1" />
+                                        {t('receiveNow')}
                                       </Button>
                                     </div>
                                   </div>
