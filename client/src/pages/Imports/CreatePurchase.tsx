@@ -835,6 +835,13 @@ export default function CreatePurchase() {
       unitName?: string;
       quantityInSellingUnits?: number;
       processingTimeDays?: number;
+      productId?: string;
+      variantAllocations?: Array<{
+        variantId?: string;
+        variantName: string;
+        quantity: number;
+        unitPrice: number;
+      }>;
     }>;
   }>({
     queryKey: ['/api/imports/purchases', purchaseId],
@@ -911,14 +918,13 @@ export default function CreatePurchase() {
             }
           }
           
-          // Parse variantAllocations from JSON if needed
+          // Parse variantAllocations - handle both object and string formats
           let variantAllocations: VariantAllocation[] | undefined;
-          const itemAny = item as any;
-          if (itemAny.variantAllocations) {
+          if (item.variantAllocations) {
             try {
-              variantAllocations = typeof itemAny.variantAllocations === 'string' 
-                ? JSON.parse(itemAny.variantAllocations)
-                : itemAny.variantAllocations;
+              variantAllocations = typeof item.variantAllocations === 'string' 
+                ? JSON.parse(item.variantAllocations as unknown as string)
+                : item.variantAllocations;
             } catch (e) {
               console.warn('Failed to parse variantAllocations:', e);
             }
@@ -944,7 +950,7 @@ export default function CreatePurchase() {
             unitType: (item.unitType as 'selling' | 'bulk') || 'selling',
             quantityInSellingUnits: item.quantityInSellingUnits,
             processingTimeDays: item.processingTimeDays,
-            productId: itemAny.productId?.toString(),
+            productId: item.productId?.toString(),
             hasVariants: hasVariants,
             variantAllocations: variantAllocations
           };
