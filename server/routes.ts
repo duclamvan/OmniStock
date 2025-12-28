@@ -19651,9 +19651,11 @@ Important rules:
         const allItemIds = allPurchaseItems.map(pi => pi.id);
         
         // Get all receipt items for these purchase items across ALL receipts
+        // Include assignedQuantity to verify items are stored (not just received)
         const allReceivedItems = await db
           .select({
             receivedQuantity: receiptItems.receivedQuantity,
+            assignedQuantity: receiptItems.assignedQuantity,
             damagedQuantity: receiptItems.damagedQuantity,
             missingQuantity: receiptItems.missingQuantity
           })
@@ -19664,15 +19666,23 @@ Important rules:
           ));
         
         let totalReceived = 0;
+        let totalStored = 0;
         let totalMissing = 0;
         
         for (const ri of allReceivedItems) {
           totalReceived += (ri.receivedQuantity || 0) + (ri.damagedQuantity || 0);
+          // Use assignedQuantity for stored count (items assigned to warehouse locations)
+          // Fall back to receivedQuantity for backwards compatibility with older items
+          totalStored += ri.assignedQuantity || ri.receivedQuantity || 0;
           totalMissing += ri.missingQuantity || 0;
         }
         
-        // Check if all items are received (no missing) and enough quantity received
-        if (totalReceived >= totalExpected && totalMissing === 0) {
+        // Check if all items are received AND stored (assigned to locations)
+        // All items must be: received (no missing) + stored (assigned to locations)
+        const allItemsReceived = totalReceived >= totalExpected && totalMissing === 0;
+        const allItemsStored = totalStored >= totalExpected;
+        
+        if (allItemsReceived && allItemsStored) {
           // Update purchase order to delivered
           const [updatedPurchase] = await db
             .update(importPurchases)
@@ -19688,7 +19698,7 @@ Important rules:
           
           if (updatedPurchase) {
             updatedPurchases.push(`Purchase #${purchaseId} marked as delivered`);
-            console.log(`Purchase #${purchaseId} automatically marked as delivered (received: ${totalReceived}/${totalExpected})`);
+            console.log(`Purchase #${purchaseId} automatically marked as delivered (received: ${totalReceived}/${totalExpected}, stored: ${totalStored}/${totalExpected})`);
           }
         }
       }
