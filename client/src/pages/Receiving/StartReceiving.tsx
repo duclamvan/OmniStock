@@ -2955,8 +2955,8 @@ export default function StartReceiving() {
                                   >
                                     <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
-                                  <span className="text-base sm:text-lg font-bold font-mono w-16 sm:w-20 text-center px-1 sm:px-2">
-                                    {item.receivedQty}/{item.expectedQty}
+                                  <span className="text-sm sm:text-base font-bold font-mono min-w-[90px] sm:min-w-[120px] text-center px-1.5 sm:px-2 whitespace-nowrap">
+                                    {item.receivedQty.toLocaleString()}/{item.expectedQty.toLocaleString()}
                                   </span>
                                   <Button
                                     variant="ghost"
