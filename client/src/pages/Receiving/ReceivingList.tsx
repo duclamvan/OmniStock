@@ -3787,6 +3787,41 @@ function QuickStorageSheet({
                                     </div>
                                   );
                                 })()}
+                                
+                                {/* Reset Locations Button */}
+                                {(() => {
+                                  const hasPendingNew = item.locations.some(loc => (loc.quantity || 0) > 0);
+                                  const hasPendingExisting = Object.values(item.pendingExistingAdds || {}).some(qty => qty > 0);
+                                  
+                                  if (hasPendingNew || hasPendingExisting) {
+                                    return (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full h-8 text-xs text-muted-foreground hover:text-red-600 hover:border-red-300"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setItems(prevItems => {
+                                            const updated = [...prevItems];
+                                            updated[index].locations = [];
+                                            updated[index].pendingExistingAdds = {};
+                                            return updated;
+                                          });
+                                          toast({
+                                            title: t('locationsReset', 'Locations Reset'),
+                                            description: t('pendingLocationsCleared', 'All pending locations have been cleared'),
+                                            duration: 2000
+                                          });
+                                        }}
+                                        data-testid="button-reset-locations"
+                                      >
+                                        <RotateCcw className="h-3 w-3 mr-1" />
+                                        {t('resetLocations', 'Reset Locations')}
+                                      </Button>
+                                    );
+                                  }
+                                  return null;
+                                })()}
 
                                 {/* Product Details - Inline link */}
                                 <button
