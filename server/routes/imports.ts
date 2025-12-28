@@ -735,6 +735,7 @@ router.post("/purchases/receive", async (req, res) => {
       orderItems: items, // Store items as JSON
       isPackage: true, // This is a bundled package containing multiple items
       imageUrl: firstImageUrl, // Use first item's image as package image
+      variantAllocations: null, // Package-level doesn't have individual variant allocations
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -833,6 +834,7 @@ router.post("/purchases/unpack", async (req, res) => {
         imageUrl: item.imageUrl || null, // Preserve item image
         sku: item.sku || null, // Preserve SKU for product linking
         isPackage: false, // Individual unpacked item, not a package
+        variantAllocations: item.variantAllocations || null, // Copy variant allocations from purchase item
         orderItems: [{
           // COMPLETE item data preservation
           originalItemId: item.id,
@@ -2036,6 +2038,7 @@ router.post("/custom-items/:id/unpack", async (req, res) => {
         purchaseOrderId: customItem.purchaseOrderId, // Preserve link to original PO
         imageUrl: orderItem.imageUrl || null, // Preserve item image
         isPackage: false, // Individual unpacked item, not a package
+        variantAllocations: orderItem.variantAllocations || null, // Copy variant allocations from order item
         orderItems: [{
           originalItemId: orderItem.originalItemId || orderItem.id,
           sku: orderItem.sku,
@@ -2047,6 +2050,7 @@ router.post("/custom-items/:id/unpack", async (req, res) => {
           hsCode: orderItem.hsCode,
           landingCostUnitBase: orderItem.landingCostUnitBase,
           imageUrl: orderItem.imageUrl,
+          variantAllocations: orderItem.variantAllocations,
         }], // Store original item data for reference
         createdAt: new Date(),
         updatedAt: new Date()

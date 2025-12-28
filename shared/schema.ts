@@ -322,6 +322,7 @@ export const customItems = pgTable("custom_items", {
   isPackage: boolean("is_package").default(false), // True if this is a bundled package, false for unpacked individual items
   imageUrl: text("image_url"), // Product image URL for visual identification
   sku: text("sku"), // SKU for linking to products
+  variantAllocations: jsonb("variant_allocations"), // For products with variants: [{variantId, variantName, quantity, unitPrice}]
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
