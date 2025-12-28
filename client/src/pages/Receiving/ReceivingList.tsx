@@ -1927,9 +1927,17 @@ function getReceivingQtyFromNotes(notes: string | undefined, receiptItemId: numb
 }
 
 // Helper function to calculate total quantity stored for this receiving session
+// Sums quantity from locations tagged for this receipt item OR untagged (legacy) locations
 function calculateStoredQtyForReceiving(existingLocations: LocationAssignment[], receiptItemId: number | string): number {
   return (existingLocations || []).reduce((sum, loc) => {
-    return sum + getReceivingQtyFromNotes(loc.notes, receiptItemId);
+    // If location has notes with this receipt item's tag, use its quantity
+    // If location has no RI tag at all, also count it (legacy/general location)
+    const hasThisTag = loc.notes?.includes(`RI:${receiptItemId}:`);
+    const hasNoRiTag = !loc.notes?.includes('RI:');
+    if (hasThisTag || hasNoRiTag) {
+      return sum + (loc.quantity || 0);
+    }
+    return sum;
   }, 0);
 }
 

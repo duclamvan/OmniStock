@@ -6358,13 +6358,15 @@ Important:
         const existing = existingMap.get(locationCode);
         
         if (existing) {
-          // Update existing - add quantity
+          // Update existing - add quantity and update notes with new total
           const newQuantity = (existing.quantity || 0) + quantity;
+          const newNotes = receiptItemId ? `RI:${receiptItemId}:Q${newQuantity}` : existing.notes;
           const updated = await storage.updateProductLocation(existing.id, {
             quantity: newQuantity,
-            isPrimary: locData.isPrimary ?? existing.isPrimary
+            isPrimary: locData.isPrimary ?? existing.isPrimary,
+            notes: newNotes
           });
-          existingMap.set(locationCode, { ...existing, quantity: newQuantity });
+          existingMap.set(locationCode, { ...existing, quantity: newQuantity, notes: newNotes });
           results.push(updated);
           updatedCount++;
         } else {
