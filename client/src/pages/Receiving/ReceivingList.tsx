@@ -5532,6 +5532,7 @@ export default function ReceivingList() {
   const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
   const [unmatchedBarcode, setUnmatchedBarcode] = useState("");
   const [filter, setFilter] = useState("all");
+  const [processingShipmentIds, setProcessingShipmentIds] = useState<Set<number>>(new Set());
   
   // Update tab when URL parameter changes
   useEffect(() => {
@@ -5987,18 +5988,26 @@ export default function ReceivingList() {
                                           : t('trackingFailed')
                                         }
                                       </Badge>
-                                      <Button
-                                        size="sm"
-                                        className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          navigate(`/receiving/start/${shipment.id}`);
-                                        }}
-                                        data-testid={`button-receive-now-${shipment.id}`}
-                                      >
-                                        <ScanLine className="h-3 w-3 mr-1" />
-                                        {t('receiveNow')}
-                                      </Button>
+                                      {processingShipmentIds.has(shipment.id) ? (
+                                        <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-100/50 text-xs animate-pulse">
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                          {t('receiving')}...
+                                        </Badge>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setProcessingShipmentIds(prev => new Set(prev).add(shipment.id));
+                                            navigate(`/receiving/start/${shipment.id}`);
+                                          }}
+                                          data-testid={`button-receive-now-${shipment.id}`}
+                                        >
+                                          <ScanLine className="h-3 w-3 mr-1" />
+                                          {t('receiveNow')}
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                 </CardContent>
