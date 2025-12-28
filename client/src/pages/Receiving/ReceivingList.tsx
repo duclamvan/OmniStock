@@ -3822,23 +3822,31 @@ function QuickStorageSheet({
                 <div className="space-y-1 text-xs">
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    return preview.slice(0, 5).map((p, idx) => (
+                    return preview.racks.slice(0, 5).map((rack, idx) => (
                       <div key={idx} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
-                        <span className="font-mono font-medium">{p.location}</span>
-                        <Badge variant="secondary" className="text-xs">{p.count} variants</Badge>
+                        <span className="font-mono font-medium">{bulkLocationPrefix}{rack.rack}</span>
+                        <Badge variant="secondary" className="text-xs">{rack.items} items</Badge>
                       </div>
                     ));
                   })()}
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    if (preview.length > 5) {
+                    if (preview.racks.length > 5) {
                       return (
                         <p className="text-center text-muted-foreground pt-1">
-                          +{preview.length - 5} more racks...
+                          +{preview.racks.length - 5} more racks...
                         </p>
                       );
                     }
                     return null;
+                  })()}
+                  {(() => {
+                    const preview = getBulkAllocationPreview();
+                    return (
+                      <p className="text-center text-muted-foreground pt-2 font-medium">
+                        Total: {preview.totalItems} items across {preview.totalRacks} racks
+                      </p>
+                    );
                   })()}
                 </div>
               </div>
