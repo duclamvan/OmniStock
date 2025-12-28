@@ -20719,6 +20719,95 @@ Important rules:
     }
   });
 
+  // Delete import shipment and all related data
+  app.delete('/api/imports/shipments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get shipment to verify it exists
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, id));
+      
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      const deletionResults = {
+        receipts: 0,
+        receiptItems: 0,
+        productLocations: 0,
+        shipment: 0
+      };
+      
+      // Step 1: Find all receipts for this shipment
+      const shipmentReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(eq(receipts.shipmentId, id));
+      
+      const receiptIds = shipmentReceipts.map(r => r.id);
+      
+      // Step 2: Delete receipt items if any receipts exist
+      if (receiptIds.length > 0) {
+        // Get all receipt items to find product locations to clean up
+        const allReceiptItems = await db
+          .select({
+            id: receiptItems.id,
+            productId: receiptItems.productId
+          })
+          .from(receiptItems)
+          .where(inArray(receiptItems.receiptId, receiptIds));
+        
+        // Delete product locations tagged with these receipt items
+        for (const item of allReceiptItems) {
+          const tagPattern = `RI:${item.id}:%`;
+          const deleted = await db
+            .delete(productLocations)
+            .where(sql`${productLocations.notes} LIKE ${tagPattern}`)
+            .returning();
+          deletionResults.productLocations += deleted.length;
+        }
+        
+        // Delete receipt items
+        const deletedItems = await db
+          .delete(receiptItems)
+          .where(inArray(receiptItems.receiptId, receiptIds))
+          .returning();
+        deletionResults.receiptItems = deletedItems.length;
+        
+        // Delete receipts
+        const deletedReceipts = await db
+          .delete(receipts)
+          .where(inArray(receipts.id, receiptIds))
+          .returning();
+        deletionResults.receipts = deletedReceipts.length;
+      }
+      
+      // Step 3: Delete the shipment itself
+      const [deletedShipment] = await db
+        .delete(shipments)
+        .where(eq(shipments.id, id))
+        .returning();
+      
+      if (deletedShipment) {
+        deletionResults.shipment = 1;
+      }
+      
+      console.log(`Shipment ${id} deleted:`, deletionResults);
+      
+      res.json({
+        success: true,
+        message: 'Shipment deleted successfully',
+        deletionResults
+      });
+    } catch (error) {
+      console.error('Error deleting shipment:', error);
+      res.status(500).json({ message: 'Failed to delete shipment' });
+    }
+  });
+
   // Get shipment report with full item details including product names
   app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
     try {
