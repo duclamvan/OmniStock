@@ -2123,8 +2123,8 @@ function QuickStorageSheet({
   // Bulk allocation state for multi-variant items
   const [showBulkAllocation, setShowBulkAllocation] = useState(false);
   const [bulkWarehouse, setBulkWarehouse] = useState("WH1");
-  const [bulkStartAisle, setBulkStartAisle] = useState("A");
-  const [bulkEndAisle, setBulkEndAisle] = useState("A");
+  const [bulkStartAisle, setBulkStartAisle] = useState(1);
+  const [bulkEndAisle, setBulkEndAisle] = useState(1);
   const [bulkStartRack, setBulkStartRack] = useState(1);
   const [bulkEndRack, setBulkEndRack] = useState(10);
   const [bulkStartLevel, setBulkStartLevel] = useState(1);
@@ -2134,7 +2134,7 @@ function QuickStorageSheet({
   const [bulkFillOrder, setBulkFillOrder] = useState<'rack-first' | 'level-first'>('level-first');
   
   // Derived: build location prefix for preview
-  const bulkLocationPrefix = `${bulkWarehouse}-${bulkStartAisle}`;
+  const bulkLocationPrefix = `${bulkWarehouse}-A${bulkStartAisle}`;
   const bulkItemsPerRack = bulkItemsPerLocation; // Legacy compatibility
   
   // Refs
@@ -2682,55 +2682,47 @@ function QuickStorageSheet({
     const locations: string[] = [];
     
     // Validate inputs - ensure valid ranges
-    if (!bulkWarehouse || !bulkStartAisle || !bulkEndAisle) return locations;
+    if (!bulkWarehouse) return locations;
     
-    const aisleStart = bulkStartAisle.toUpperCase().charCodeAt(0);
-    const aisleEnd = bulkEndAisle.toUpperCase().charCodeAt(0);
-    
-    // Ensure valid letter range (A-Z only)
-    if (aisleStart < 65 || aisleStart > 90 || aisleEnd < 65 || aisleEnd > 90) return locations;
-    
-    // Handle reversed ranges by swapping
-    const effectiveAisleStart = Math.min(aisleStart, aisleEnd);
-    const effectiveAisleEnd = Math.max(aisleStart, aisleEnd);
+    // Handle reversed ranges by swapping (all inputs are now numbers)
+    const effectiveAisleStart = Math.min(bulkStartAisle, bulkEndAisle);
+    const effectiveAisleEnd = Math.max(bulkStartAisle, bulkEndAisle);
     const effectiveRackStart = Math.min(bulkStartRack, bulkEndRack);
     const effectiveRackEnd = Math.max(bulkStartRack, bulkEndRack);
     const effectiveLevelStart = Math.min(bulkStartLevel, bulkEndLevel);
     const effectiveLevelEnd = Math.max(bulkStartLevel, bulkEndLevel);
     
     // Ensure positive values
-    if (effectiveRackStart < 1 || effectiveLevelStart < 1) return locations;
+    if (effectiveAisleStart < 1 || effectiveRackStart < 1 || effectiveLevelStart < 1) return locations;
     
     // Generate locations based on fill order
-    // Location format: WH1-A-R1-L1-B1 (Warehouse-Aisle-Rack-Level-Bin)
+    // Location format: WH1-A1-R1-L1-B1 (Warehouse-Aisle-Rack-Level-Bin)
     if (bulkFillOrder === 'level-first') {
       // Fill all levels in a rack before moving to next rack (good for picking efficiency)
-      for (let aisleCode = effectiveAisleStart; aisleCode <= effectiveAisleEnd; aisleCode++) {
-        const aisle = String.fromCharCode(aisleCode);
+      for (let aisle = effectiveAisleStart; aisle <= effectiveAisleEnd; aisle++) {
         for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
           for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
             if (bulkBinsPerLevel > 0) {
               for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}-B${bin}`);
+                locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}-B${bin}`);
               }
             } else {
-              locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}`);
+              locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}`);
             }
           }
         }
       }
     } else {
       // Fill same level across all racks before moving to next level (good for forklift efficiency)
-      for (let aisleCode = effectiveAisleStart; aisleCode <= effectiveAisleEnd; aisleCode++) {
-        const aisle = String.fromCharCode(aisleCode);
+      for (let aisle = effectiveAisleStart; aisle <= effectiveAisleEnd; aisle++) {
         for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
           for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
             if (bulkBinsPerLevel > 0) {
               for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}-B${bin}`);
+                locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}-B${bin}`);
               }
             } else {
-              locations.push(`${bulkWarehouse}-${aisle}-R${rack}-L${level}`);
+              locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}`);
             }
           }
         }
@@ -4035,10 +4027,10 @@ function QuickStorageSheet({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Input
+                      type="number"
+                      min={1}
                       value={bulkStartAisle}
-                      onChange={(e) => setBulkStartAisle(e.target.value.toUpperCase().slice(0, 1))}
-                      placeholder="A"
-                      maxLength={1}
+                      onChange={(e) => setBulkStartAisle(parseInt(e.target.value) || 1)}
                       className="font-mono"
                       data-testid="input-bulk-start-aisle"
                     />
@@ -4046,10 +4038,10 @@ function QuickStorageSheet({
                   </div>
                   <div>
                     <Input
+                      type="number"
+                      min={1}
                       value={bulkEndAisle}
-                      onChange={(e) => setBulkEndAisle(e.target.value.toUpperCase().slice(0, 1))}
-                      placeholder="A"
-                      maxLength={1}
+                      onChange={(e) => setBulkEndAisle(parseInt(e.target.value) || 1)}
                       className="font-mono"
                       data-testid="input-bulk-end-aisle"
                     />
@@ -4209,21 +4201,86 @@ function QuickStorageSheet({
                   })()}
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    const needsMore = preview.totalItems > 0 && preview.totalLocations >= preview.availableLocations && preview.locations.length > 0 && preview.locations[preview.locations.length - 1]?.items < bulkItemsPerLocation === false;
+                    const totalVariants = currentItem?.variantAllocations?.length || 0;
+                    
+                    // Calculate total items to allocate (all variants quantity)
+                    const totalItemsToAllocate = currentItem?.variantAllocations?.reduce((sum, v) => {
+                      const existingForVariant = currentItem?.existingLocations?.reduce((s: number, loc: any) => {
+                        return s + (loc.variantId === v.variantId ? (loc.quantity || 0) : 0);
+                      }, 0) || 0;
+                      const pendingForVariant = currentItem?.locations.reduce((s, loc) => {
+                        return s + (loc.variantId === v.variantId ? (loc.quantity || 0) : 0);
+                      }, 0) || 0;
+                      return sum + Math.max(0, v.quantity - existingForVariant - pendingForVariant);
+                    }, 0) || 0;
+                    
+                    const itemsAllocatedInPreview = preview.totalItems;
+                    const itemsRemaining = totalItemsToAllocate - itemsAllocatedInPreview;
+                    const allocationComplete = itemsRemaining <= 0;
+                    
+                    // Calculate location capacity
+                    const totalCapacity = preview.availableLocations * bulkItemsPerLocation;
+                    const capacityUsagePercent = totalCapacity > 0 ? Math.round((itemsAllocatedInPreview / totalCapacity) * 100) : 0;
+                    
                     return (
-                      <div className="pt-2 space-y-1">
-                        <p className="text-center text-muted-foreground font-medium">
-                          {t('imports:totalSummary', 'Total: {{items}} items across {{locations}} locations', { 
-                            items: preview.totalItems, 
-                            locations: preview.totalLocations 
-                          })}
-                        </p>
-                        <p className="text-center text-muted-foreground text-xs">
-                          {t('imports:availableLocations', '{{count}} locations available in range', { count: preview.availableLocations })}
-                        </p>
-                        {preview.totalLocations > preview.availableLocations && (
+                      <div className="pt-3 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
+                        {/* Allocation Summary Grid */}
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                          <div className="bg-white dark:bg-gray-900 rounded p-2">
+                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{totalVariants}</p>
+                            <p className="text-xs text-muted-foreground">{t('imports:variants', 'Variants')}</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-900 rounded p-2">
+                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{preview.totalLocations}</p>
+                            <p className="text-xs text-muted-foreground">{t('imports:locations', 'Locations')}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Items Allocated vs Remaining */}
+                        <div className="bg-white dark:bg-gray-900 rounded p-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-muted-foreground">{t('imports:itemsAllocated', 'Items Allocated')}</span>
+                            <span className="text-xs font-mono font-medium text-green-600 dark:text-green-400">{itemsAllocatedInPreview}</span>
+                          </div>
+                          {!allocationComplete && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-muted-foreground">{t('imports:itemsRemaining', 'Items Remaining')}</span>
+                              <span className="text-xs font-mono font-medium text-orange-600 dark:text-orange-400">{itemsRemaining}</span>
+                            </div>
+                          )}
+                          {allocationComplete && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3" />
+                                {t('imports:allItemsAllocated', 'All items allocated!')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Capacity Info */}
+                        <div className="text-center space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            {t('imports:locationCapacity', '{{available}} locations × {{perLoc}} items = {{total}} capacity', { 
+                              available: preview.availableLocations, 
+                              perLoc: bulkItemsPerLocation,
+                              total: totalCapacity
+                            })}
+                          </p>
+                          {capacityUsagePercent > 0 && (
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${capacityUsagePercent >= 100 ? 'bg-orange-500' : 'bg-purple-500'}`}
+                                style={{ width: `${Math.min(100, capacityUsagePercent)}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Warning if not enough locations */}
+                        {itemsRemaining > 0 && (
                           <p className="text-center text-orange-600 dark:text-orange-400 text-xs font-medium">
-                            {t('imports:needMoreLocations', 'Need more locations! Expand range or add bins.')}
+                            {t('imports:needMoreSpace', 'Need more locations! Expand range, add levels, or add bins.')}
                           </p>
                         )}
                       </div>
