@@ -6305,6 +6305,106 @@ Important:
     }
   });
 
+  // Batch create product locations - saves all locations in one request
+  app.post('/api/products/:id/locations/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      const { locations, receiptItemId } = req.body;
+      
+      if (!Array.isArray(locations) || locations.length === 0) {
+        return res.status(400).json({ message: "locations array is required" });
+      }
+
+      // Validate product exists
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      // Get existing locations for this product
+      const existingLocations = await storage.getProductLocations(productId);
+      const existingMap = new Map(existingLocations.map(loc => [loc.locationCode, loc]));
+      
+      let createdCount = 0;
+      let updatedCount = 0;
+      let totalQuantity = 0;
+      const results: any[] = [];
+      
+      // Process each location
+      for (const locData of locations) {
+        const locationCode = locData.locationCode;
+        const quantity = locData.quantity || 0;
+        
+        if (quantity <= 0) continue;
+        
+        totalQuantity += quantity;
+        
+        const existing = existingMap.get(locationCode);
+        
+        if (existing) {
+          // Update existing - add quantity
+          const newQuantity = (existing.quantity || 0) + quantity;
+          const updated = await storage.updateProductLocation(existing.id, {
+            quantity: newQuantity,
+            isPrimary: locData.isPrimary ?? existing.isPrimary
+          });
+          existingMap.set(locationCode, { ...existing, quantity: newQuantity });
+          results.push(updated);
+          updatedCount++;
+        } else {
+          // Create new location
+          const created = await storage.createProductLocation({
+            productId,
+            locationCode,
+            locationType: locData.locationType || 'bin',
+            quantity,
+            isPrimary: locData.isPrimary ?? false,
+            notes: locData.notes || (receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined),
+            variantId: locData.variantId
+          });
+          existingMap.set(locationCode, created);
+          results.push(created);
+          createdCount++;
+        }
+      }
+      
+      // Update receipt item's assignedQuantity if receiptItemId is provided
+      if (receiptItemId && totalQuantity > 0) {
+        try {
+          const [receiptItem] = await db.select().from(receiptItems).where(eq(receiptItems.id, receiptItemId));
+          if (receiptItem) {
+            const currentAssigned = receiptItem.assignedQuantity || 0;
+            const newAssigned = Math.min(currentAssigned + totalQuantity, receiptItem.receivedQuantity);
+            await db.update(receiptItems).set({ assignedQuantity: newAssigned }).where(eq(receiptItems.id, receiptItemId));
+          }
+        } catch (error) {
+          console.error('Failed to update receipt item assignedQuantity:', error);
+        }
+      }
+      
+      // Single activity log for the batch operation
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'product_location_batch',
+        entityId: productId,
+        description: `Batch saved ${locations.length} locations for product (${createdCount} new, ${updatedCount} updated, ${totalQuantity} total items)`,
+      });
+
+      res.status(201).json({
+        success: true,
+        created: createdCount,
+        updated: updatedCount,
+        totalLocations: results.length,
+        totalQuantity,
+        locations: results
+      });
+    } catch (error: any) {
+      console.error("Error batch creating product locations:", error);
+      res.status(500).json({ message: "Failed to batch create product locations", error: error.message });
+    }
+  });
+
   app.patch('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;

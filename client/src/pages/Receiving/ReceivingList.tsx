@@ -3680,84 +3680,80 @@ function QuickStorageSheet({
                                           className="flex-1 h-10 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
                                           onClick={async (e) => {
                                             e.stopPropagation();
-                                            let savedCount = 0;
-                                            let totalSavedQty = 0;
                                             
-                                            // Save pending new locations
+                                            if (!item.productId) return;
+                                            
+                                            // Collect ALL locations to save in one batch
+                                            const allLocationsToSave: Array<{
+                                              locationCode: string;
+                                              locationType: string;
+                                              quantity: number;
+                                              isPrimary: boolean;
+                                              variantId?: string;
+                                            }> = [];
+                                            
+                                            // Add pending new locations
                                             const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                             for (const loc of locationsToSave) {
-                                              if (item.productId && loc.quantity > 0) {
-                                                try {
-                                                  await storeLocationMutation.mutateAsync({
-                                                    productId: String(item.productId),
+                                              if (loc.quantity > 0) {
+                                                allLocationsToSave.push({
+                                                  locationCode: loc.locationCode,
+                                                  locationType: loc.locationType,
+                                                  quantity: loc.quantity,
+                                                  isPrimary: loc.isPrimary,
+                                                  variantId: loc.variantId
+                                                });
+                                              }
+                                            }
+                                            
+                                            // Add pending additions to existing locations (as updates)
+                                            const pendingAdds = Object.entries(item.pendingExistingAdds || {});
+                                            for (const [locId, addQty] of pendingAdds) {
+                                              if (addQty > 0) {
+                                                const existingLoc = item.existingLocations.find((l: any) => String(l.id) === locId);
+                                                if (existingLoc) {
+                                                  // For existing locations, we add to the batch with just the delta qty
+                                                  // The batch endpoint will add to existing
+                                                  allLocationsToSave.push({
+                                                    locationCode: existingLoc.locationCode,
+                                                    locationType: existingLoc.locationType,
+                                                    quantity: addQty,
+                                                    isPrimary: existingLoc.isPrimary
+                                                  });
+                                                }
+                                              }
+                                            }
+                                            
+                                            if (allLocationsToSave.length === 0) return;
+                                            
+                                            const totalSavedQty = allLocationsToSave.reduce((sum, loc) => sum + loc.quantity, 0);
+                                            
+                                            try {
+                                              // Single batch API call
+                                              const response = await apiRequest('POST', `/api/products/${item.productId}/locations/batch`, {
+                                                locations: allLocationsToSave,
+                                                receiptItemId: item.receiptItemId
+                                              });
+                                              
+                                              // Refetch product locations from server
+                                              const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
+                                              if (locResponse.ok) {
+                                                const serverLocations = await locResponse.json();
+                                                const relevantLocations = serverLocations.filter((loc: any) => 
+                                                  loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
+                                                  !loc.notes?.includes('RI:')
+                                                );
+                                                
+                                                setItems(prevItems => {
+                                                  const updated = [...prevItems];
+                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => ({
+                                                    id: loc.id,
                                                     locationCode: loc.locationCode,
                                                     locationType: loc.locationType,
                                                     quantity: loc.quantity,
                                                     isPrimary: loc.isPrimary,
-                                                    receiptItemId: item.receiptItemId,
-                                                    variantId: loc.variantId
-                                                  });
-                                                  savedCount++;
-                                                  totalSavedQty += loc.quantity;
-                                                } catch (error) {
-                                                  console.error('Failed to save location:', error);
-                                                }
-                                              }
-                                            }
-                                            
-                                            // Save pending additions to existing locations
-                                            const pendingAdds = Object.entries(item.pendingExistingAdds || {});
-                                            for (const [locId, addQty] of pendingAdds) {
-                                              if (addQty > 0 && item.productId) {
-                                                const existingLoc = item.existingLocations.find((l: any) => String(l.id) === locId);
-                                                if (existingLoc) {
-                                                  const newQty = (existingLoc.quantity || 0) + addQty;
-                                                  try {
-                                                    await updateLocationMutation.mutateAsync({
-                                                      productId: String(item.productId),
-                                                      locationId: locId,
-                                                      quantity: newQty,
-                                                      receiptItemId: String(item.receiptItemId)
-                                                    });
-                                                    savedCount++;
-                                                    totalSavedQty += addQty;
-                                                  } catch (error) {
-                                                    console.error('Failed to update location:', error);
-                                                  }
-                                                }
-                                              }
-                                            }
-                                            
-                                            if (savedCount > 0) {
-                                              // Refetch product locations from server
-                                              try {
-                                                const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
-                                                if (locResponse.ok) {
-                                                  const serverLocations = await locResponse.json();
-                                                  const relevantLocations = serverLocations.filter((loc: any) => 
-                                                    loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
-                                                    !loc.notes?.includes('RI:')
-                                                  );
-                                                  
-                                                  setItems(prevItems => {
-                                                    const updated = [...prevItems];
-                                                    updated[index].existingLocations = relevantLocations.map((loc: any) => ({
-                                                      id: loc.id,
-                                                      locationCode: loc.locationCode,
-                                                      locationType: loc.locationType,
-                                                      quantity: loc.quantity,
-                                                      isPrimary: loc.isPrimary,
-                                                      notes: loc.notes
-                                                    }));
-                                                    updated[index].locations = [];
-                                                    updated[index].pendingExistingAdds = {}; // Clear pending
-                                                    return updated;
-                                                  });
-                                                }
-                                              } catch (err) {
-                                                console.error('Failed to refetch locations:', err);
-                                                setItems(prevItems => {
-                                                  const updated = [...prevItems];
+                                                    notes: loc.notes
+                                                  }));
                                                   updated[index].locations = [];
                                                   updated[index].pendingExistingAdds = {};
                                                   return updated;
@@ -3777,10 +3773,20 @@ function QuickStorageSheet({
                                                 await soundEffects.playSuccessBeep();
                                               }
                                               
+                                              // Single toast for the entire batch
                                               toast({
                                                 title: t('locationUpdated'),
-                                                description: `${totalSavedQty} ${t('common:items')}`,
+                                                description: `${allLocationsToSave.length} ${t('locationsLabel', 'locations')}, ${totalSavedQty} ${t('common:items')}`,
                                                 duration: 2000
+                                              });
+                                              
+                                              queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
+                                            } catch (error) {
+                                              console.error('Failed to batch save locations:', error);
+                                              toast({
+                                                title: t('common:error'),
+                                                description: t('failedToSaveLocations', 'Failed to save locations'),
+                                                variant: 'destructive'
                                               });
                                             }
                                             
