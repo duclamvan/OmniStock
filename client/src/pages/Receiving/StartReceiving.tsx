@@ -62,7 +62,10 @@ import {
   ImagePlus,
   Trash2,
   Loader2,
-  Warehouse
+  Warehouse,
+  ChevronDown,
+  ChevronUp,
+  MapPin
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -73,6 +76,15 @@ interface VariantAllocation {
   quantity: number;
   unitPrice?: number;
   receivedQuantity?: number;
+  locationCode?: string; // Variant-specific location
+}
+
+interface ProductVariant {
+  id: string;
+  name: string;
+  sku?: string;
+  quantity: number;
+  locationCode?: string;
 }
 
 interface ReceivingItem {
@@ -91,6 +103,8 @@ interface ReceivingItem {
   isNewProduct?: boolean; // Flag to indicate if product is new (not in inventory)
   variantAllocations?: VariantAllocation[]; // For products with variants
   orderItems?: any[]; // Original order items data from purchase order
+  productVariants?: ProductVariant[]; // All variants of the product for location display
+  hasVariants?: boolean; // Flag to indicate if product has variants
 }
 
 // Helper function to generate warehouse location with proper formatting
@@ -131,6 +145,37 @@ const fetchProductLocations = async (productId: string): Promise<string[]> => {
     return locations.map((loc: any) => loc.locationCode).filter(Boolean);
   } catch (error) {
     console.info(`Product locations API call failed for product ${productId}, showing TBA:`, error.message);
+    return [];
+  }
+};
+
+// Helper function to fetch product variants with their locations
+const fetchProductVariants = async (productId: string): Promise<ProductVariant[]> => {
+  try {
+    const response = await fetch(`/api/products/${productId}/variants`);
+    if (!response.ok) {
+      return [];
+    }
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return [];
+    }
+    
+    const variants = await response.json();
+    if (!Array.isArray(variants)) {
+      return [];
+    }
+    
+    return variants.map((v: any) => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku,
+      quantity: v.quantity || 0,
+      locationCode: v.locationCode
+    }));
+  } catch (error) {
+    console.info(`Product variants API call failed for product ${productId}:`, error);
     return [];
   }
 };
@@ -235,6 +280,7 @@ export default function StartReceiving() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
   const [showSuccessCheckmark, setShowSuccessCheckmark] = useState(false);
+  const [expandedVariantLocations, setExpandedVariantLocations] = useState<Set<string>>(new Set());
 
   // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
@@ -601,31 +647,57 @@ export default function StartReceiving() {
     }
   }, [shipment, receipt, receiptLoading]);
 
-  // Fetch real product locations after items are initialized
+  // Fetch real product locations and variants after items are initialized
   useEffect(() => {
     if (receivingItems.length === 0) return;
 
     // Create a stable key based on product IDs to detect when the set of products changes
     const productIdsKey = receivingItems.map(item => item.productId || `no-${item.id}`).join('|');
 
-    const updateItemsWithLocations = async () => {
+    const updateItemsWithLocationsAndVariants = async () => {
       const updatedItems = await Promise.all(
         receivingItems.map(async (item) => {
           // If no productId, mark as new product
           if (!item.productId || item.productId === item.id) {
-            return { ...item, isNewProduct: true };
+            return { ...item, isNewProduct: true, hasVariants: false };
           }
 
           try {
-            const locations = await fetchProductLocations(item.productId);
-            if (locations.length === 0) {
-              return { ...item, isNewProduct: true };
+            // Fetch both locations and variants in parallel
+            const [locations, variants] = await Promise.all([
+              fetchProductLocations(item.productId),
+              fetchProductVariants(item.productId)
+            ]);
+            
+            const hasVariants = variants.length > 0;
+            
+            // If product has variants, update variantAllocations with location info
+            let updatedVariantAllocations = item.variantAllocations;
+            if (hasVariants && item.variantAllocations?.length) {
+              updatedVariantAllocations = item.variantAllocations.map(va => {
+                const matchingVariant = variants.find(v => v.id === va.variantId || v.name === va.variantName);
+                return {
+                  ...va,
+                  locationCode: matchingVariant?.locationCode
+                };
+              });
+            }
+            
+            if (locations.length === 0 && !hasVariants) {
+              return { ...item, isNewProduct: true, hasVariants: false };
             } else {
-              return { ...item, warehouseLocations: locations, isNewProduct: false };
+              return { 
+                ...item, 
+                warehouseLocations: locations, 
+                isNewProduct: false,
+                hasVariants,
+                productVariants: variants,
+                variantAllocations: updatedVariantAllocations
+              };
             }
           } catch (error) {
-            console.error(`Error fetching locations for product ${item.productId}:`, error);
-            return { ...item, isNewProduct: true };
+            console.error(`Error fetching locations/variants for product ${item.productId}:`, error);
+            return { ...item, isNewProduct: true, hasVariants: false };
           }
         })
       );
@@ -633,14 +705,15 @@ export default function StartReceiving() {
       setReceivingItems(updatedItems);
     };
 
-    // Only fetch locations if items don't already have them or if product set changed
+    // Only fetch if items don't already have location data
     const needsLocationUpdate = receivingItems.some(
       item => (!item.warehouseLocations || item.warehouseLocations.length === 0) && 
-               item.isNewProduct === false // Don't refetch for items already marked as new
+               item.isNewProduct === false && // Don't refetch for items already marked as new
+               item.hasVariants === undefined // Haven't fetched variants yet
     );
 
     if (needsLocationUpdate) {
-      updateItemsWithLocations();
+      updateItemsWithLocationsAndVariants();
     }
   }, [receivingItems.map(item => item.productId || `no-${item.id}`).join('|')]);
 
@@ -2556,8 +2629,8 @@ export default function StartReceiving() {
                                           {item.variantAllocations.length} Variants • {item.expectedQty} Total Units
                                         </span>
                                       </div>
-                                      <div className="space-y-1">
-                                        {item.variantAllocations.map((variant, vIndex) => (
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {item.variantAllocations.slice(0, 10).map((variant, vIndex) => (
                                           <div 
                                             key={variant.variantId || vIndex}
                                             className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
@@ -2565,17 +2638,63 @@ export default function StartReceiving() {
                                             <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
                                               {variant.variantName || `Variant ${vIndex + 1}`}
                                             </span>
-                                            <span className="font-mono font-bold text-purple-600 dark:text-purple-400 ml-2">
-                                              ×{variant.quantity}
-                                            </span>
+                                            <div className="flex items-center gap-2 ml-2">
+                                              {variant.locationCode && (
+                                                <span className="text-xs text-purple-500 dark:text-purple-400 font-mono">
+                                                  {variant.locationCode}
+                                                </span>
+                                              )}
+                                              <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
+                                                ×{variant.quantity}
+                                              </span>
+                                            </div>
                                           </div>
                                         ))}
+                                        {item.variantAllocations.length > 10 && (
+                                          <div className="text-xs text-purple-500 dark:text-purple-400 text-center py-1">
+                                            +{item.variantAllocations.length - 10} more variants
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   )}
                                   
-                                  {/* Order Items Display - For custom items from unpacked POs */}
-                                  {!item.variantAllocations?.length && item.orderItems && item.orderItems.length > 0 && (
+                                  {/* Variants Display - For parent products with variants but no variantAllocations */}
+                                  {!item.variantAllocations?.length && item.hasVariants && item.productVariants && item.productVariants.length > 0 && (
+                                    <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+                                          {item.productVariants.length} Variants • {item.expectedQty} Total Units
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {item.productVariants.slice(0, 8).map((variant, vIndex) => (
+                                          <div 
+                                            key={variant.id || vIndex}
+                                            className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                          >
+                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                              {variant.name}
+                                            </span>
+                                            {variant.locationCode && (
+                                              <span className="text-xs text-purple-500 dark:text-purple-400 font-mono ml-1">
+                                                {variant.locationCode}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                        {item.productVariants.length > 8 && (
+                                          <div className="text-xs text-purple-500 dark:text-purple-400 text-center py-1">
+                                            +{item.productVariants.length - 8} more variants
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Order Items Display - For custom items from unpacked POs (only when no variants) */}
+                                  {!item.variantAllocations?.length && !item.hasVariants && item.orderItems && item.orderItems.length > 0 && (
                                     <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                       <div className="flex items-center gap-1.5 mb-1.5">
                                         <Package className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
@@ -2621,13 +2740,64 @@ export default function StartReceiving() {
                                         className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1"
                                         data-testid={`text-bin-location-${item.id}`}
                                       >
-                                        <Package className="h-3 w-3" />
+                                        <MapPin className="h-3 w-3" />
                                         Bin: TBA (New Product)
                                       </p>
+                                    ) : item.hasVariants && item.productVariants && item.productVariants.some(v => v.locationCode) ? (
+                                      /* Expandable Variant Locations for products with variants */
+                                      <div className="bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-800/50">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newExpanded = new Set(expandedVariantLocations);
+                                            if (newExpanded.has(item.id)) {
+                                              newExpanded.delete(item.id);
+                                            } else {
+                                              newExpanded.add(item.id);
+                                            }
+                                            setExpandedVariantLocations(newExpanded);
+                                          }}
+                                          className="w-full px-2 py-1.5 flex items-center justify-between text-xs text-purple-700 dark:text-purple-300 font-medium hover:bg-purple-100/50 dark:hover:bg-purple-800/20 rounded-lg transition-colors"
+                                          data-testid={`btn-expand-locations-${item.id}`}
+                                        >
+                                          <div className="flex items-center gap-1.5">
+                                            <MapPin className="h-3 w-3" />
+                                            <span>
+                                              Bin: {item.productVariants.filter(v => v.locationCode).length} variant locations
+                                            </span>
+                                          </div>
+                                          {expandedVariantLocations.has(item.id) ? (
+                                            <ChevronUp className="h-4 w-4" />
+                                          ) : (
+                                            <ChevronDown className="h-4 w-4" />
+                                          )}
+                                        </button>
+                                        
+                                        {expandedVariantLocations.has(item.id) && (
+                                          <div className="px-2 pb-2 space-y-1 max-h-40 overflow-y-auto">
+                                            {item.productVariants
+                                              .filter(v => v.locationCode)
+                                              .map((variant, vIndex) => (
+                                              <div 
+                                                key={variant.id || vIndex}
+                                                className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                              >
+                                                <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                                  {variant.name}
+                                                </span>
+                                                <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-md font-mono ml-2">
+                                                  {variant.locationCode}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
                                     ) : item.warehouseLocations && item.warehouseLocations.length > 0 ? (
+                                      /* Regular product locations */
                                       <div>
                                         <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 mb-1">
-                                          <Package className="h-3 w-3" />
+                                          <MapPin className="h-3 w-3" />
                                           Bin{item.warehouseLocations.length > 1 ? 's' : ''}:
                                         </p>
                                         <div 
