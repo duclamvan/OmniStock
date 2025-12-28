@@ -3753,6 +3753,133 @@ function QuickStorageSheet({
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Bulk Allocation Dialog */}
+        <Dialog open={showBulkAllocation} onOpenChange={setShowBulkAllocation}>
+          <DialogContent className="max-w-md" data-testid="dialog-bulk-allocation">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-purple-600" />
+                {t('imports:bulkAllocate', 'Bulk Allocate to Racks')}
+              </DialogTitle>
+              <DialogDescription>
+                {t('imports:bulkAllocateDesc', 'Automatically distribute {{count}} variants across multiple rack locations', { count: items[selectedItemIndex]?.variantAllocations?.length || 0 })}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Location Prefix */}
+              <div className="space-y-2">
+                <Label htmlFor="bulk-prefix">{t('imports:locationPrefix', 'Location Prefix')}</Label>
+                <Input
+                  id="bulk-prefix"
+                  value={bulkLocationPrefix}
+                  onChange={(e) => setBulkLocationPrefix(e.target.value.toUpperCase())}
+                  placeholder="WH1-A1-R"
+                  className="font-mono"
+                  data-testid="input-bulk-prefix"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('imports:locationPrefixHint', 'e.g., WH1-A1-R for racks R1, R2, R3...')}
+                </p>
+              </div>
+
+              {/* Start Rack Number */}
+              <div className="space-y-2">
+                <Label htmlFor="bulk-start">{t('imports:startRackNumber', 'Start Rack Number')}</Label>
+                <Input
+                  id="bulk-start"
+                  type="number"
+                  min={1}
+                  value={bulkStartRack}
+                  onChange={(e) => setBulkStartRack(parseInt(e.target.value) || 1)}
+                  className="font-mono"
+                  data-testid="input-bulk-start"
+                />
+              </div>
+
+              {/* Items Per Rack */}
+              <div className="space-y-2">
+                <Label htmlFor="bulk-per-rack">{t('imports:itemsPerRack', 'Variants Per Rack')}</Label>
+                <Input
+                  id="bulk-per-rack"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={bulkItemsPerRack}
+                  onChange={(e) => setBulkItemsPerRack(parseInt(e.target.value) || 50)}
+                  className="font-mono"
+                  data-testid="input-bulk-per-rack"
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  {t('imports:allocationPreview', 'Allocation Preview')}
+                </p>
+                <div className="space-y-1 text-xs">
+                  {(() => {
+                    const preview = getBulkAllocationPreview();
+                    return preview.slice(0, 5).map((p, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
+                        <span className="font-mono font-medium">{p.location}</span>
+                        <Badge variant="secondary" className="text-xs">{p.count} variants</Badge>
+                      </div>
+                    ));
+                  })()}
+                  {(() => {
+                    const preview = getBulkAllocationPreview();
+                    if (preview.length > 5) {
+                      return (
+                        <p className="text-center text-muted-foreground pt-1">
+                          +{preview.length - 5} more racks...
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowBulkAllocation(false)}
+                data-testid="button-cancel-bulk"
+              >
+                {t('common:cancel')}
+              </Button>
+              <Button
+                onClick={handleBulkAllocation}
+                disabled={
+                  !bulkLocationPrefix || 
+                  bulkStartRack < 1 || 
+                  bulkItemsPerRack < 1 || 
+                  isSubmitting || 
+                  !items[selectedItemIndex]?.variantAllocations || 
+                  items[selectedItemIndex]?.variantAllocations.length < 2
+                }
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                data-testid="button-apply-bulk"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('common:applying')}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {t('imports:applyBulkAllocation', 'Apply Allocation')}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );

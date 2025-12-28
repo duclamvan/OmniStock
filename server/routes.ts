@@ -12008,12 +12008,9 @@ Important:
       const userId = req.user?.id;
       const userRole = req.user?.role;
 
-      // 1. Orders to pick/pack - Use pickStatus and packStatus for accurate filtering
-      // Match the logic from Pick & Pack page:
-      // - pending: pickStatus === 'not_started' OR pickStatus IS NULL (with status = 'to_fulfill')
-      // - picking: pickStatus === 'in_progress'
-      // - packing: pickStatus === 'completed' AND (packStatus === 'not_started' OR packStatus IS NULL OR packStatus === 'in_progress')
-      // - ready: packStatus === 'completed'
+      // 1. Orders to pick/pack - Use same filtering as storage.getPickPackOrders()
+      // Match the logic from Pick & Pack page: orderStatus = 'to_fulfill' OR orderStatus = 'ready_to_ship'
+      // This ensures fulfillmentStage-driven orders are included regardless of pickStatus/packStatus
       const ordersToPickPackRaw = await db
         .select({
           id: orders.id,
@@ -12029,28 +12026,16 @@ Important:
         })
         .from(orders)
         .where(
-          or(
-            // Pending to pick: status = to_fulfill and not yet picking/packed
-            and(
+          and(
+            or(
               eq(orders.orderStatus, 'to_fulfill'),
-              or(
-                isNull(orders.pickStatus),
-                eq(orders.pickStatus, 'not_started')
-              )
+              eq(orders.orderStatus, 'ready_to_ship')
             ),
-            // Currently picking
-            eq(orders.pickStatus, 'in_progress'),
-            // Ready to pack or packing
-            and(
-              eq(orders.pickStatus, 'completed'),
-              or(
-                isNull(orders.packStatus),
-                eq(orders.packStatus, 'not_started'),
-                eq(orders.packStatus, 'in_progress')
-              )
-            ),
-            // Ready for shipping
-            eq(orders.packStatus, 'completed')
+            // Exclude archived orders
+            or(
+              eq(orders.isArchived, false),
+              isNull(orders.isArchived)
+            )
           )
         )
         .orderBy(desc(orders.createdAt));
