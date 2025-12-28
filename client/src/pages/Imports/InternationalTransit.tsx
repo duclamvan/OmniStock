@@ -1801,8 +1801,33 @@ export default function InternationalTransit() {
                         variant="default"
                         className="text-xs px-2"
                         onClick={() => {
-                          setSelectedPendingShipment(pending);
-                          setDetectedEndCarrier('');
+                          // Check if there's already a shipment for this consolidation
+                          const existingShipment = shipments.find(s => s.consolidationId === pending.id);
+                          if (existingShipment) {
+                            // Autofill with existing shipment data
+                            setSelectedShipment(existingShipment);
+                            // Also map the end carrier to the select value format
+                            const carrierMap: Record<string, string> = {
+                              'DHL Express': 'DHL Express|100001',
+                              'DPD': 'DPD|100010',
+                              'DHL Paket': 'DHL Paket|7041',
+                              'GLS': 'GLS|100005',
+                              'PPL CZ': 'PPL CZ|100140',
+                              'PPL': 'PPL CZ|100140',
+                              'Czech Post': 'Czech Post|3221',
+                              'PostNL': 'PostNL|14041',
+                              'Bpost': 'Bpost|2061',
+                              'FedEx': 'FedEx|100003',
+                              'UPS': 'UPS|100002',
+                              'Yodel': 'Yodel|100017',
+                              'Zásilkovna': 'Zásilkovna|0',
+                              'Zasilkovna': 'Zásilkovna|0',
+                            };
+                            setDetectedEndCarrier(existingShipment.endCarrier ? (carrierMap[existingShipment.endCarrier] || `${existingShipment.endCarrier}|0`) : '');
+                          } else {
+                            setSelectedPendingShipment(pending);
+                            setDetectedEndCarrier('');
+                          }
                           setIsShipmentFormOpen(true);
                         }}
                         data-testid={`button-add-tracking-${pending.id}`}
