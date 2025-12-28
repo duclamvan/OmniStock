@@ -2843,17 +2843,6 @@ export default function InternationalTransit() {
                               <p className="text-muted-foreground">{t('internalTrackingNumber')}</p>
                               <p className="font-mono text-purple-600 font-medium">{viewShipmentDetails.trackingNumber}</p>
                             </div>
-                            <div className="pt-2 border-t">
-                              <p className="text-muted-foreground">{t('trackingUrl')}</p>
-                              <a 
-                                href={`https://t.17track.net/en#nums=${viewShipmentDetails.trackingNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-blue-600 hover:underline break-all text-xs"
-                              >
-                                17track.net/{viewShipmentDetails.trackingNumber}
-                              </a>
-                            </div>
                           </>
                         )}
                         
