@@ -1347,6 +1347,19 @@ export default function CreatePurchase() {
           const savedCostWithShipping = parseFloat(item.costWithShipping) || 0;
           const calculatedCostWithShipping = unitPrice + (perItemShipping / quantity);
           
+          // Parse variantAllocations - handle both object and string formats
+          let variantAllocations: VariantAllocation[] | undefined;
+          if (item.variantAllocations) {
+            try {
+              variantAllocations = typeof item.variantAllocations === 'string' 
+                ? JSON.parse(item.variantAllocations)
+                : item.variantAllocations;
+            } catch (e) {
+              console.warn('Failed to parse variantAllocations:', e);
+            }
+          }
+          const hasVariants = variantAllocations && variantAllocations.length > 0;
+          
           return {
             id: String(item.id),
             name: String(item.productName || item.name || ""),
@@ -1373,7 +1386,9 @@ export default function CreatePurchase() {
             cartons: item.cartons,
             sellingUnitName: item.sellingUnitName || 'piece',
             bulkUnitName: item.bulkUnitName || null,
-            bulkUnitQty: item.bulkUnitQty || null
+            bulkUnitQty: item.bulkUnitQty || null,
+            hasVariants: hasVariants,
+            variantAllocations: variantAllocations
           };
         });
         setItems(loadedItems);
