@@ -6353,6 +6353,11 @@ Important:
           updatedCount++;
         } else {
           // Create new location
+          // Only include variantId if it's a valid UUID (not temp-* IDs)
+          const validVariantId = locData.variantId && !String(locData.variantId).startsWith('temp-') 
+            ? locData.variantId 
+            : undefined;
+          
           const created = await storage.createProductLocation({
             productId,
             locationCode,
@@ -6360,7 +6365,7 @@ Important:
             quantity,
             isPrimary: locData.isPrimary ?? false,
             notes: locData.notes || (receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined),
-            variantId: locData.variantId
+            variantId: validVariantId
           });
           existingMap.set(locationCode, created);
           results.push(created);

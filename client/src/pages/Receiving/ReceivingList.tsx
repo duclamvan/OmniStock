@@ -3696,12 +3696,16 @@ function QuickStorageSheet({
                                             const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                             for (const loc of locationsToSave) {
                                               if (loc.quantity > 0) {
+                                                // Only include variantId if it's a valid UUID (not temp-* IDs)
+                                                const validVariantId = loc.variantId && !String(loc.variantId).startsWith('temp-') 
+                                                  ? loc.variantId 
+                                                  : undefined;
                                                 allLocationsToSave.push({
                                                   locationCode: loc.locationCode,
                                                   locationType: loc.locationType,
                                                   quantity: loc.quantity,
                                                   isPrimary: loc.isPrimary,
-                                                  variantId: loc.variantId
+                                                  variantId: validVariantId
                                                 });
                                               }
                                             }
