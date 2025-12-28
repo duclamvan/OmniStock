@@ -188,6 +188,7 @@ export default function InternationalTransit() {
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
   const [shipmentToUndo, setShipmentToUndo] = useState<Shipment | null>(null);
+  const [consolidationToDelete, setConsolidationToDelete] = useState<PendingShipment | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -274,6 +275,23 @@ export default function InternationalTransit() {
     },
     onError: () => {
       toast({ title: t('error'), description: t('failedToUndoShipment'), variant: "destructive" });
+    }
+  });
+
+  // Delete consolidation mutation (pending shipment - permanent deletion)
+  const deleteConsolidationMutation = useMutation({
+    mutationFn: async (consolidationId: string) => {
+      const response = await apiRequest('DELETE', `/api/imports/consolidations/${consolidationId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      toast({ title: t('success'), description: t('consolidationDeleted') });
+      setConsolidationToDelete(null);
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToDeleteConsolidation'), variant: "destructive" });
     }
   });
 
@@ -1808,11 +1826,11 @@ export default function InternationalTransit() {
                             {t('moveBackToWarehouse')}
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => setShipmentToDelete(pending as any)}
+                            onClick={() => setConsolidationToDelete(pending)}
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
                           >
                             <Trash2 className="h-3 w-3 mr-2" />
-                            {t('deleteShipment')}
+                            {t('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -2932,6 +2950,28 @@ export default function InternationalTransit() {
               disabled={deleteShipmentMutation.isPending}
             >
               {deleteShipmentMutation.isPending ? t('deletingShipment') : t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Consolidation (Pending Shipment) Confirmation Dialog */}
+      <AlertDialog open={!!consolidationToDelete} onOpenChange={() => setConsolidationToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line text-left">
+              {t('confirmDeleteConsolidation', { name: consolidationToDelete?.name || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => consolidationToDelete && deleteConsolidationMutation.mutate(consolidationToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteConsolidationMutation.isPending}
+            >
+              {deleteConsolidationMutation.isPending ? t('deleting') : t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

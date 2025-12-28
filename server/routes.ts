@@ -20860,6 +20860,56 @@ Important rules:
     }
   });
 
+  // Delete consolidation (pending shipment) permanently
+  app.delete('/api/imports/consolidations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get consolidation to verify it exists
+      const [consolidation] = await db
+        .select()
+        .from(consolidations)
+        .where(eq(consolidations.id, id));
+      
+      if (!consolidation) {
+        return res.status(404).json({ message: 'Consolidation not found' });
+      }
+      
+      const deletionResults = {
+        consolidationItems: 0,
+        consolidation: 0
+      };
+      
+      // Step 1: Delete consolidation items
+      const deletedItems = await db
+        .delete(consolidationItems)
+        .where(eq(consolidationItems.consolidationId, id))
+        .returning();
+      deletionResults.consolidationItems = deletedItems.length;
+      
+      // Step 2: Delete the consolidation itself
+      const [deletedConsolidation] = await db
+        .delete(consolidations)
+        .where(eq(consolidations.id, id))
+        .returning();
+      
+      if (deletedConsolidation) {
+        deletionResults.consolidation = 1;
+      }
+      
+      console.log(`Consolidation ${id} deleted:`, deletionResults);
+      
+      res.json({
+        success: true,
+        message: 'Consolidation deleted successfully',
+        deletionResults
+      });
+    } catch (error) {
+      console.error('Error deleting consolidation:', error);
+      res.status(500).json({ message: 'Failed to delete consolidation' });
+    }
+  });
+
   // Get shipment report with full item details including product names
   app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
     try {

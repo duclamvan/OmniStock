@@ -1432,6 +1432,10 @@ const imports = {
   shipmentUndone: 'Đã hoàn tác lô hàng, sản phẩm đã trở về kho',
   failedToUndoShipment: 'Không thể hoàn tác lô hàng',
   undoing: 'Đang hoàn tác...',
+  deleting: 'Đang xóa...',
+  confirmDeleteConsolidation: 'Bạn có chắc chắn muốn xóa vĩnh viễn "{{name}}"? Thao tác này sẽ xóa:\n\n- Bản ghi lô hàng chờ gửi\n- Tất cả sản phẩm trong lô hàng này\n\nHành động này không thể hoàn tác.',
+  consolidationDeleted: 'Đã xóa lô hàng chờ gửi thành công',
+  failedToDeleteConsolidation: 'Không thể xóa lô hàng chờ gửi',
   
   // StartReceiving - Page & Labels
   employeeDefault: 'Nhân viên #1',
