@@ -4240,6 +4240,10 @@ function QuickStorageSheet({
                     // Calculate items that will actually be allocated (sum of location items)
                     const itemsWillBeAllocated = preview.locations.reduce((sum, loc) => sum + loc.items, 0);
                     
+                    // Calculate bins needed (based on how many bins would be used)
+                    const binsNeeded = preview.totalLocations;
+                    const avgItemsPerVariant = totalVariants > 0 ? Math.round(totalItemsToAllocate / totalVariants) : 0;
+                    
                     const totalLocations = generateBulkLocations().length;
                     const totalCapacity = totalLocations * bulkItemsPerLocation;
                     const capacityUsagePercent = totalCapacity > 0 ? Math.round((totalItemsToAllocate / totalCapacity) * 100) : 0;
@@ -4249,14 +4253,20 @@ function QuickStorageSheet({
                     return (
                       <div className="pt-2 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
                         {/* Quick Stats */}
-                        <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="grid grid-cols-4 gap-1.5 text-center">
                           <div className="bg-white dark:bg-gray-900 rounded p-1.5">
                             <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{totalVariants}</p>
                             <p className="text-[10px] text-muted-foreground">{t('imports:variants', 'Variants')}</p>
                           </div>
                           <div className="bg-white dark:bg-gray-900 rounded p-1.5">
-                            <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{totalLocations}</p>
-                            <p className="text-[10px] text-muted-foreground">{t('imports:locations', 'Locations')}</p>
+                            <p className="text-sm font-bold text-amber-600 dark:text-amber-400">~{avgItemsPerVariant}</p>
+                            <p className="text-[10px] text-muted-foreground">{t('imports:avgPerVariant', 'Avg/Variant')}</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
+                            <p className={`text-sm font-bold ${binsNeeded > totalLocations ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                              {binsNeeded}/{totalLocations}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">{t('imports:binsUsed', 'Bins Used')}</p>
                           </div>
                           <div className="bg-white dark:bg-gray-900 rounded p-1.5">
                             <p className="text-sm font-bold text-green-600 dark:text-green-400">{totalCapacity.toLocaleString()}</p>
