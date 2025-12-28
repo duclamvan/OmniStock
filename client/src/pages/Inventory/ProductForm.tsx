@@ -1499,8 +1499,8 @@ export default function ProductForm() {
     const supplierName = suppliers?.find((s: any) => s.id === supplierId)?.name || '';
     const supplierPart = supplierName ? normalizeForSKU(supplierName).slice(0, 2) : '';
     
-    // 3. Product Name Part (4-6 chars) - prefer Vietnamese name if available
-    const productText = vietnameseName || name || 'ITEM';
+    // 3. Product Name Part (4-6 chars) - prefer English name (used for SKU readability)
+    const productText = name || vietnameseName || 'ITEM';
     const words = productText.split(/\s+/).filter(w => w.length > 0);
     let productPart = '';
     
