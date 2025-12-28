@@ -241,7 +241,7 @@ export default function InternationalTransit() {
     }
   });
 
-  // Delete shipment mutation (permanent deletion from database)
+  // Delete shipment mutation (permanent deletion from database - removes all data with no trace)
   const deleteShipmentMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
       const response = await apiRequest('DELETE', `/api/imports/shipments/${shipmentId}`, {});
