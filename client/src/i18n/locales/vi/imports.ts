@@ -1423,6 +1423,9 @@ const imports = {
   shipmentUnarchivedSuccess: 'Lô hàng đã được khôi phục về lô hàng đang hoạt động.',
   archiveShipmentsFailed: 'Không thể lưu trữ lô hàng',
   unarchiveShipmentFailed: 'Không thể khôi phục lô hàng',
+  deleteShipment: 'Xóa lô hàng',
+  confirmDeleteShipment: 'Bạn có chắc chắn muốn xóa "{{name}}"? Hành động này không thể hoàn tác và sẽ xóa tất cả sản phẩm và dữ liệu theo dõi liên quan.',
+  deletingShipment: 'Đang xóa...',
   
   // StartReceiving - Page & Labels
   employeeDefault: 'Nhân viên #1',

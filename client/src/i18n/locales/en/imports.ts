@@ -1406,6 +1406,9 @@ const imports = {
   shipmentUnarchivedSuccess: 'The shipment has been restored to active shipments.',
   archiveShipmentsFailed: 'Failed to archive shipments',
   unarchiveShipmentFailed: 'Failed to restore shipment',
+  deleteShipment: 'Delete Shipment',
+  confirmDeleteShipment: 'Are you sure you want to delete "{{name}}"? This action cannot be undone and will remove all associated items and tracking data.',
+  deletingShipment: 'Deleting...',
   
   // StartReceiving - Page & Labels
   employeeDefault: 'Employee #1',

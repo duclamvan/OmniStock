@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -185,6 +186,7 @@ export default function InternationalTransit() {
   const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('AUTO');
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
+  const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -235,6 +237,24 @@ export default function InternationalTransit() {
     },
     onError: () => {
       toast({ title: t('error'), description: t('failedToUnarchive'), variant: "destructive" });
+    }
+  });
+
+  // Delete shipment mutation
+  const deleteShipmentMutation = useMutation({
+    mutationFn: async (shipmentId: string) => {
+      const response = await apiRequest('DELETE', `/api/imports/shipments/${shipmentId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      toast({ title: t('success'), description: t('shipmentDeleted') });
+      setShipmentToDelete(null);
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToDeleteShipment'), variant: "destructive" });
     }
   });
 
@@ -2022,6 +2042,16 @@ export default function InternationalTransit() {
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 {t('syncTracking')}
                               </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShipmentToDelete(shipment);
+                                }}
+                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t('deleteShipment')}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -2824,6 +2854,28 @@ export default function InternationalTransit() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Shipment Confirmation Dialog */}
+      <AlertDialog open={!!shipmentToDelete} onOpenChange={() => setShipmentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmDeleteShipment', { name: shipmentToDelete?.shipmentName || shipmentToDelete?.trackingNumber || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => shipmentToDelete && deleteShipmentMutation.mutate(shipmentToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteShipmentMutation.isPending}
+            >
+              {deleteShipmentMutation.isPending ? t('deletingShipment') : t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
