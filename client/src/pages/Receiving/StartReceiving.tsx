@@ -2622,74 +2622,163 @@ export default function StartReceiving() {
                                   
                                   {/* Variants Display - Show detailed breakdown for products with variants */}
                                   {item.variantAllocations && item.variantAllocations.length > 0 && (
-                                    <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                                      <div className="flex items-center gap-1.5 mb-1.5">
-                                        <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
-                                          {item.variantAllocations.length} Variants • {item.expectedQty} Total Units
-                                        </span>
-                                      </div>
-                                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                                        {item.variantAllocations.slice(0, 10).map((variant, vIndex) => (
-                                          <div 
-                                            key={variant.variantId || vIndex}
-                                            className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
-                                          >
-                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                                              {variant.variantName || `Variant ${vIndex + 1}`}
-                                            </span>
-                                            <div className="flex items-center gap-2 ml-2">
-                                              {variant.locationCode && (
-                                                <span className="text-xs text-purple-500 dark:text-purple-400 font-mono">
-                                                  {variant.locationCode}
-                                                </span>
-                                              )}
-                                              <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
-                                                ×{variant.quantity}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                        {item.variantAllocations.length > 10 && (
-                                          <div className="text-xs text-purple-500 dark:text-purple-400 text-center py-1">
-                                            +{item.variantAllocations.length - 10} more variants
-                                          </div>
+                                    <div className="mt-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newExpanded = new Set(expandedVariantLocations);
+                                          const key = `alloc-${item.id}`;
+                                          if (newExpanded.has(key)) {
+                                            newExpanded.delete(key);
+                                          } else {
+                                            newExpanded.add(key);
+                                          }
+                                          setExpandedVariantLocations(newExpanded);
+                                        }}
+                                        className="w-full px-2 py-2 flex items-center justify-between text-xs hover:bg-purple-100/50 dark:hover:bg-purple-800/20 rounded-lg transition-colors"
+                                        data-testid={`btn-expand-variants-${item.id}`}
+                                      >
+                                        <div className="flex items-center gap-1.5">
+                                          <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                          <span className="font-semibold text-purple-700 dark:text-purple-300">
+                                            {item.variantAllocations.length} Variants
+                                          </span>
+                                          <span className="text-purple-600 dark:text-purple-400">
+                                            • {item.expectedQty.toLocaleString()} Total Units
+                                          </span>
+                                        </div>
+                                        {expandedVariantLocations.has(`alloc-${item.id}`) ? (
+                                          <ChevronUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                         )}
-                                      </div>
+                                      </button>
+                                      
+                                      {expandedVariantLocations.has(`alloc-${item.id}`) && (
+                                        <div className="px-2 pb-2">
+                                          {item.variantAllocations.length <= 20 ? (
+                                            <div className="space-y-1 max-h-60 overflow-y-auto">
+                                              {item.variantAllocations.map((variant, vIndex) => (
+                                                <div 
+                                                  key={variant.variantId || vIndex}
+                                                  className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                                >
+                                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                                    {variant.variantName || `Variant ${vIndex + 1}`}
+                                                  </span>
+                                                  <div className="flex items-center gap-2 ml-2">
+                                                    {variant.locationCode && (
+                                                      <span className="text-xs text-purple-500 dark:text-purple-400 font-mono">
+                                                        {variant.locationCode}
+                                                      </span>
+                                                    )}
+                                                    <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
+                                                      ×{variant.quantity}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-80 overflow-y-auto">
+                                              {item.variantAllocations.map((variant, vIndex) => (
+                                                <div 
+                                                  key={variant.variantId || vIndex}
+                                                  className="flex items-center justify-between text-[10px] bg-white dark:bg-gray-800 rounded px-1.5 py-0.5 border border-purple-100 dark:border-purple-800"
+                                                >
+                                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1 mr-1">
+                                                    {variant.variantName || `V${vIndex + 1}`}
+                                                  </span>
+                                                  <span className="font-mono font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">
+                                                    ×{variant.quantity}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                   
                                   {/* Variants Display - For parent products with variants but no variantAllocations */}
                                   {!item.variantAllocations?.length && item.hasVariants && item.productVariants && item.productVariants.length > 0 && (
-                                    <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                                      <div className="flex items-center gap-1.5 mb-1.5">
-                                        <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
-                                          {item.productVariants.length} Variants • {item.expectedQty} Total Units
-                                        </span>
-                                      </div>
-                                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                                        {item.productVariants.slice(0, 8).map((variant, vIndex) => (
-                                          <div 
-                                            key={variant.id || vIndex}
-                                            className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
-                                          >
-                                            <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                                              {variant.name}
-                                            </span>
-                                            {variant.locationCode && (
-                                              <span className="text-xs text-purple-500 dark:text-purple-400 font-mono ml-1">
-                                                {variant.locationCode}
-                                              </span>
-                                            )}
-                                          </div>
-                                        ))}
-                                        {item.productVariants.length > 8 && (
-                                          <div className="text-xs text-purple-500 dark:text-purple-400 text-center py-1">
-                                            +{item.productVariants.length - 8} more variants
-                                          </div>
+                                    <div className="mt-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newExpanded = new Set(expandedVariantLocations);
+                                          const key = `pv-${item.id}`;
+                                          if (newExpanded.has(key)) {
+                                            newExpanded.delete(key);
+                                          } else {
+                                            newExpanded.add(key);
+                                          }
+                                          setExpandedVariantLocations(newExpanded);
+                                        }}
+                                        className="w-full px-2 py-2 flex items-center justify-between text-xs hover:bg-purple-100/50 dark:hover:bg-purple-800/20 rounded-lg transition-colors"
+                                        data-testid={`btn-expand-product-variants-${item.id}`}
+                                      >
+                                        <div className="flex items-center gap-1.5">
+                                          <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                          <span className="font-semibold text-purple-700 dark:text-purple-300">
+                                            {item.productVariants.length} Variants
+                                          </span>
+                                          <span className="text-purple-600 dark:text-purple-400">
+                                            • {item.expectedQty.toLocaleString()} Total Units
+                                          </span>
+                                        </div>
+                                        {expandedVariantLocations.has(`pv-${item.id}`) ? (
+                                          <ChevronUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                         )}
-                                      </div>
+                                      </button>
+                                      
+                                      {expandedVariantLocations.has(`pv-${item.id}`) && (
+                                        <div className="px-2 pb-2">
+                                          {item.productVariants.length <= 20 ? (
+                                            <div className="space-y-1 max-h-60 overflow-y-auto">
+                                              {item.productVariants.map((variant, vIndex) => (
+                                                <div 
+                                                  key={variant.id || vIndex}
+                                                  className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                                >
+                                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                                    {variant.name}
+                                                  </span>
+                                                  <div className="flex items-center gap-2 ml-2">
+                                                    {variant.locationCode && (
+                                                      <span className="text-xs text-purple-500 dark:text-purple-400 font-mono">
+                                                        {variant.locationCode}
+                                                      </span>
+                                                    )}
+                                                    <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
+                                                      ×{variant.quantity || 0}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-80 overflow-y-auto">
+                                              {item.productVariants.map((variant, vIndex) => (
+                                                <div 
+                                                  key={variant.id || vIndex}
+                                                  className="flex items-center justify-between text-[10px] bg-white dark:bg-gray-800 rounded px-1.5 py-0.5 border border-purple-100 dark:border-purple-800"
+                                                >
+                                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1 mr-1">
+                                                    {variant.name}
+                                                  </span>
+                                                  <span className="font-mono font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">
+                                                    ×{variant.quantity || 0}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                   
