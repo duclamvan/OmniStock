@@ -11316,6 +11316,10 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
             const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
             
+            // Derive VND and CNY from EUR using exchange rates
+            const avgCostVnd = avgCostEur * eurToVnd;
+            const avgCostCny = avgCostEur * eurToCny;
+            
             // Update parent product quantity AND costs to match weighted average of variants
             await tx
               .update(products)
@@ -11324,14 +11328,29 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
                 importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
                 importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
-                // Also update landed cost fields to match EUR cost (as landed cost is in EUR base)
+                importCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(0) : null,
+                importCostCny: avgCostCny > 0 ? avgCostCny.toFixed(2) : null,
+                // Also update landed cost fields
                 latestLandingCost: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
                 landingCostEur: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
                 landingCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(4) : null,
                 landingCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(4) : null,
+                landingCostVnd: avgCostVnd > 0 ? avgCostVnd.toFixed(4) : null,
+                landingCostCny: avgCostCny > 0 ? avgCostCny.toFixed(4) : null,
                 updatedAt: new Date()
               })
               .where(eq(products.id, parentProductId));
+            
+            // Record cost history for parent product
+            if (avgCostEur > 0) {
+              await tx.insert(productCostHistory).values({
+                productId: parentProductId,
+                customItemId: null,
+                landingCostUnitBase: avgCostEur.toFixed(4),
+                method: 'weighted_average_from_variants',
+                computedAt: new Date()
+              });
+            }
             
             console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}`);
           } catch (error) {
