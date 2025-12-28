@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { nanoid } from "nanoid";
 import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -3920,12 +3920,13 @@ export default function CreatePurchase() {
                     </TableHeader>
                     <TableBody>
                       {items.map((item, index) => (
+                        <Fragment key={item.id}>
                         <TableRow 
-                          key={item.id} 
                           className={cn(
                             "hover:bg-muted/50 transition-colors",
                             index % 2 === 1 && "bg-muted/20",
-                            selectedItems.includes(item.id) && "bg-primary/5"
+                            selectedItems.includes(item.id) && "bg-primary/5",
+                            item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && "border-b-0"
                           )}
                           data-testid={`table-row-${item.id}`}
                         >
@@ -4000,7 +4001,10 @@ export default function CreatePurchase() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 px-2 text-xs shrink-0"
+                                    className={cn(
+                                      "h-6 px-2 text-xs shrink-0",
+                                      expandedCards.includes(item.id) && "bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700"
+                                    )}
                                     onClick={() => toggleCardExpand(item.id)}
                                   >
                                     {expandedCards.includes(item.id) ? (
@@ -4025,21 +4029,6 @@ export default function CreatePurchase() {
                               )}
                               {item.dimensions && (
                                 <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
-                              )}
-                              {/* Nested Variants (Desktop) */}
-                              {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && expandedCards.includes(item.id) && (
-                                <div className="mt-2 border-l-2 border-primary/30 pl-3 space-y-1">
-                                  {item.variantAllocations.map((variant, vIdx) => (
-                                    <div key={variant.variantId || vIdx} className="flex items-center justify-between text-xs bg-muted/30 px-2 py-1 rounded">
-                                      <span className="text-gray-700 dark:text-gray-300">{variant.variantName}</span>
-                                      <div className="flex items-center gap-2 text-muted-foreground">
-                                        <span>{t('qty')}: {variant.quantity}</span>
-                                        <span>•</span>
-                                        <span>{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
                               )}
                             </div>
                           </TableCell>
@@ -4168,6 +4157,66 @@ export default function CreatePurchase() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
+                        {/* Variant Rows - Expanded as full table rows */}
+                        {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && expandedCards.includes(item.id) && (
+                          item.variantAllocations.map((variant, vIdx) => {
+                            const variantTotal = variant.quantity * variant.unitPrice;
+                            const variantCostWithShipping = item.costWithShipping * (variant.quantity / item.quantity);
+                            const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
+                            const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
+                            const convertedCost = variantCostWithShipping * rate;
+                            
+                            return (
+                              <TableRow 
+                                key={`${item.id}-variant-${variant.variantId || vIdx}`}
+                                className="bg-purple-50/50 dark:bg-purple-950/20 border-l-4 border-l-purple-400 dark:border-l-purple-600"
+                              >
+                                {/* Empty checkbox column */}
+                                <TableCell className="p-2"></TableCell>
+                                
+                                {/* Empty image column with indent indicator */}
+                                <TableCell className="p-2">
+                                  <div className="w-12 h-8 flex items-center justify-center text-purple-500">
+                                    <span className="text-lg">↳</span>
+                                  </div>
+                                </TableCell>
+                                
+                                {/* Variant Name */}
+                                <TableCell className="font-medium">
+                                  <div className="pl-2">
+                                    <span className="text-sm text-purple-700 dark:text-purple-300">{variant.variantName}</span>
+                                  </div>
+                                </TableCell>
+                                
+                                {/* Variant Quantity */}
+                                <TableCell className="text-center">
+                                  <span className="text-sm font-medium">{variant.quantity}</span>
+                                </TableCell>
+                                
+                                {/* Variant Unit Price */}
+                                <TableCell className="text-right">
+                                  <span className="text-sm">{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
+                                </TableCell>
+                                
+                                {/* Variant Cost with Shipping (proportional) */}
+                                <TableCell className="text-right">
+                                  <span className="text-green-600 text-sm">
+                                    {convertedCost.toFixed(2)} {selectedCurrency}
+                                  </span>
+                                </TableCell>
+                                
+                                {/* Variant Total */}
+                                <TableCell className="text-right">
+                                  <span className="text-sm font-medium">{variantTotal.toFixed(2)} {purchaseCurrency}</span>
+                                </TableCell>
+                                
+                                {/* Empty actions column */}
+                                <TableCell className="p-2"></TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                        </Fragment>
                       ))}
                     </TableBody>
                     <TableFooter>

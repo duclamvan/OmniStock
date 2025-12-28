@@ -1308,7 +1308,7 @@ export default function WarehouseLabels() {
 
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">
-                {t("inventory:selectedProducts", { count: selectedProductIds.size })}
+                {t("inventory:productsSelected", { count: selectedProductIds.size })}
               </p>
             </div>
           </div>

@@ -1423,7 +1423,6 @@ const imports = {
   shipmentUndone: 'Shipment undone, items returned to warehouse',
   failedToUndoShipment: 'Failed to undo shipment',
   undoing: 'Undoing...',
-  deleting: 'Deleting...',
   confirmDeleteConsolidation: 'Are you sure you want to permanently delete "{{name}}"? This will remove:\n\n- The pending shipment record\n- All items in this consolidation\n\nThis action cannot be undone.',
   consolidationDeleted: 'Pending shipment deleted successfully',
   failedToDeleteConsolidation: 'Failed to delete pending shipment',
