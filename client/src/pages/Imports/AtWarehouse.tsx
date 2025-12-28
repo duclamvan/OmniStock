@@ -3348,128 +3348,16 @@ export default function AtWarehouse() {
                                       </DropdownMenu>
                                     </div>
                                     
-                                    {/* Desktop: Multiple action buttons */}
+                                    {/* Desktop: Single unified action menu */}
                                     <div className="hidden lg:flex gap-1 items-start">
-                                      {/* Three dots menu for purchase orders - only show for packages */}
-                                      {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-8 px-2"
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                unpackItemMutation.mutate(item.id);
-                                              }}
-                                              className="text-primary"
-                                            >
-                                              <Package2 className="h-4 w-4 mr-2" />
-                                              {t('unpackAllItems')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditItem(item);
-                                              }}
-                                            >
-                                              <Edit2 className="h-4 w-4 mr-2" />
-                                              {t('editPackage')}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteTarget({ type: 'item', id: item.id, name: item.name });
-                                              }}
-                                              className="text-red-600"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              {t('deletePackage')}
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      )}
+                                      {/* Classification indicator */}
+                                      {item.classification === 'sensitive' ? (
+                                        <Flag className="h-4 w-4 text-red-500 fill-red-500 mt-2" />
+                                      ) : item.classification === 'general' ? (
+                                        <Flag className="h-4 w-4 text-green-500 fill-green-500 mt-2" />
+                                      ) : null}
                                       
-                                      {/* Classification Toggle */}
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 px-2"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            {item.classification === 'sensitive' ? (
-                                              <Flag className="h-4 w-4 text-red-500 fill-red-500" />
-                                            ) : item.classification === 'general' ? (
-                                              <Flag className="h-4 w-4 text-green-500 fill-green-500" />
-                                            ) : (
-                                              <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded" />
-                                            )}
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>{t('setClassification')}</DropdownMenuLabel>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              updateItemClassificationMutation.mutate({
-                                                id: item.id,
-                                                classification: null
-                                              });
-                                            }}
-                                          >
-                                            <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
-                                            {t('none')}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              updateItemClassificationMutation.mutate({
-                                                id: item.id,
-                                                classification: 'general'
-                                              });
-                                            }}
-                                          >
-                                            <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
-                                            {t('generalGoods')}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              updateItemClassificationMutation.mutate({
-                                                id: item.id,
-                                                classification: 'sensitive'
-                                              });
-                                            }}
-                                          >
-                                            <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
-                                            {t('sensitiveGoods')}
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                      
-                                      <Button 
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditItem(item);
-                                        }}
-                                        className="h-8 px-2"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      
+                                      {/* Unified actions menu */}
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                           <Button 
@@ -3482,6 +3370,58 @@ export default function AtWarehouse() {
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                          {/* Edit */}
+                                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            {t('edit')}
+                                          </DropdownMenuItem>
+                                          
+                                          {/* Unpack - only for packages */}
+                                          {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && (
+                                            <DropdownMenuItem
+                                              onClick={(e) => { e.stopPropagation(); unpackItemMutation.mutate(item.id); }}
+                                              className="text-primary"
+                                            >
+                                              <Package2 className="h-4 w-4 mr-2" />
+                                              {t('unpackAllItems')}
+                                            </DropdownMenuItem>
+                                          )}
+                                          
+                                          <DropdownMenuSeparator />
+                                          
+                                          {/* Classification submenu */}
+                                          <DropdownMenuLabel className="text-xs text-muted-foreground">{t('setClassification')}</DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: null });
+                                            }}
+                                          >
+                                            <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                                            {t('none')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: 'general' });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                            {t('generalGoods')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({ id: item.id, classification: 'sensitive' });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                            {t('sensitiveGoods')}
+                                          </DropdownMenuItem>
+                                          
+                                          <DropdownMenuSeparator />
+                                          
+                                          {/* Send back to incoming */}
                                           <DropdownMenuItem 
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -3491,7 +3431,10 @@ export default function AtWarehouse() {
                                             <Undo2 className="h-4 w-4 mr-2 text-amber-600" />
                                             {t('sendBackToIncoming')}
                                           </DropdownMenuItem>
+                                          
                                           <DropdownMenuSeparator />
+                                          
+                                          {/* Delete */}
                                           <DropdownMenuItem 
                                             className="text-red-600"
                                             onClick={(e) => {
