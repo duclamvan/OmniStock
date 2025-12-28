@@ -3877,6 +3877,7 @@ export default function CreatePurchase() {
                                   );
                                   setItems(updatedItems);
                                 }}
+                                onBlur={(e) => { e.target.scrollLeft = e.target.scrollWidth; }}
                                 className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 px-2 rounded transition-all"
                                 placeholder={t('itemName')}
                               />
