@@ -12509,6 +12509,20 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         sku = (item as any).sku;
       }
 
+      // Parse variantAllocations from the customItem
+      let variantAllocations: any[] = [];
+      if (item.variantAllocations) {
+        if (typeof item.variantAllocations === 'string') {
+          try {
+            variantAllocations = JSON.parse(item.variantAllocations);
+          } catch (e) {
+            console.warn('Failed to parse variantAllocations JSON:', e);
+          }
+        } else if (Array.isArray(item.variantAllocations)) {
+          variantAllocations = item.variantAllocations;
+        }
+      }
+
       items.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
@@ -12530,7 +12544,8 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         totalAllocated,
         landingCostPerUnit,
         warnings: [],
-        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined
+        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined,
+        variantAllocations: variantAllocations.length > 0 ? variantAllocations : undefined
       });
     }
 
@@ -12739,6 +12754,20 @@ async function getItemAllocationBreakdownWithMethod(
         sku = (item as any).sku;
       }
 
+      // Parse variantAllocations from the customItem
+      let variantAllocations: any[] = [];
+      if (item.variantAllocations) {
+        if (typeof item.variantAllocations === 'string') {
+          try {
+            variantAllocations = JSON.parse(item.variantAllocations);
+          } catch (e) {
+            console.warn('Failed to parse variantAllocations JSON:', e);
+          }
+        } else if (Array.isArray(item.variantAllocations)) {
+          variantAllocations = item.variantAllocations;
+        }
+      }
+
       results.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
         customItemId: item.id,
@@ -12761,7 +12790,8 @@ async function getItemAllocationBreakdownWithMethod(
         landingCostPerUnit,
         allocationMethod: method,
         warnings: [],
-        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined
+        orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined,
+        variantAllocations: variantAllocations.length > 0 ? variantAllocations : undefined
       });
     }
 
