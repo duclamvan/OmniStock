@@ -1424,8 +1424,14 @@ const imports = {
   archiveShipmentsFailed: 'Không thể lưu trữ lô hàng',
   unarchiveShipmentFailed: 'Không thể khôi phục lô hàng',
   deleteShipment: 'Xóa lô hàng',
-  confirmDeleteShipment: 'Bạn có chắc chắn muốn xóa "{{name}}"? Hành động này không thể hoàn tác và sẽ xóa tất cả sản phẩm và dữ liệu theo dõi liên quan.',
+  confirmDeleteShipment: 'Bạn có chắc chắn muốn xóa vĩnh viễn "{{name}}"? Hành động này không thể hoàn tác và sẽ xóa tất cả sản phẩm và dữ liệu theo dõi liên quan khỏi cơ sở dữ liệu.',
   deletingShipment: 'Đang xóa...',
+  undoShipment: 'Hoàn tác lô hàng',
+  confirmUndo: 'Hoàn tác lô hàng',
+  confirmUndoShipment: 'Bạn có chắc chắn muốn hoàn tác "{{name}}"? Thao tác này sẽ đưa các sản phẩm trở lại kho để gộp lại.',
+  shipmentUndone: 'Đã hoàn tác lô hàng, sản phẩm đã trở về kho',
+  failedToUndoShipment: 'Không thể hoàn tác lô hàng',
+  undoing: 'Đang hoàn tác...',
   
   // StartReceiving - Page & Labels
   employeeDefault: 'Nhân viên #1',

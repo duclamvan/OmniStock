@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -187,6 +187,7 @@ export default function InternationalTransit() {
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
+  const [shipmentToUndo, setShipmentToUndo] = useState<Shipment | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -240,7 +241,7 @@ export default function InternationalTransit() {
     }
   });
 
-  // Delete shipment mutation
+  // Delete shipment mutation (permanent deletion from database)
   const deleteShipmentMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
       const response = await apiRequest('DELETE', `/api/imports/shipments/${shipmentId}`, {});
@@ -255,6 +256,24 @@ export default function InternationalTransit() {
     },
     onError: () => {
       toast({ title: t('error'), description: t('failedToDeleteShipment'), variant: "destructive" });
+    }
+  });
+
+  // Undo shipment mutation (moves items back to warehouse)
+  const undoShipmentMutation = useMutation({
+    mutationFn: async (shipmentId: string) => {
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/undo`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      toast({ title: t('success'), description: t('shipmentUndone') });
+      setShipmentToUndo(null);
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToUndoShipment'), variant: "destructive" });
     }
   });
 
@@ -2042,6 +2061,18 @@ export default function InternationalTransit() {
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 {t('syncTracking')}
                               </DropdownMenuItem>
+                              {shipment.consolidationId && (
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShipmentToUndo(shipment);
+                                  }}
+                                  className="text-amber-600 focus:text-amber-600 focus:bg-amber-50"
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-2" />
+                                  {t('undoShipment')}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2854,6 +2885,28 @@ export default function InternationalTransit() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Undo Shipment Confirmation Dialog */}
+      <AlertDialog open={!!shipmentToUndo} onOpenChange={() => setShipmentToUndo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmUndo')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmUndoShipment', { name: shipmentToUndo?.shipmentName || shipmentToUndo?.trackingNumber || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => shipmentToUndo && undoShipmentMutation.mutate(shipmentToUndo.id)}
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={undoShipmentMutation.isPending}
+            >
+              {undoShipmentMutation.isPending ? t('undoing') : t('undoShipment')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Shipment Confirmation Dialog */}
       <AlertDialog open={!!shipmentToDelete} onOpenChange={() => setShipmentToDelete(null)}>

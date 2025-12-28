@@ -20808,6 +20808,58 @@ Important rules:
     }
   });
 
+  // Undo import shipment - delete shipment and restore consolidation to active
+  app.post('/api/imports/shipments/:id/undo', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get shipment to verify it exists and get consolidationId
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, id));
+      
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      const consolidationId = shipment.consolidationId;
+      
+      // Delete the shipment (just the shipment record, not related data)
+      const [deletedShipment] = await db
+        .delete(shipments)
+        .where(eq(shipments.id, id))
+        .returning();
+      
+      // Restore consolidation to active status if it exists
+      let consolidationRestored = false;
+      if (consolidationId) {
+        await db
+          .update(consolidations)
+          .set({ 
+            status: 'active',
+            updatedAt: new Date()
+          })
+          .where(eq(consolidations.id, consolidationId));
+        consolidationRestored = true;
+      }
+      
+      console.log(`Shipment ${id} undone, consolidation ${consolidationId} restored:`, { consolidationRestored });
+      
+      res.json({
+        success: true,
+        message: consolidationRestored 
+          ? 'Shipment undone and items returned to warehouse'
+          : 'Shipment deleted',
+        consolidationRestored,
+        consolidationId
+      });
+    } catch (error) {
+      console.error('Error undoing shipment:', error);
+      res.status(500).json({ message: 'Failed to undo shipment' });
+    }
+  });
+
   // Get shipment report with full item details including product names
   app.get('/api/imports/shipments/:id/report', isAuthenticated, async (req, res) => {
     try {

@@ -1407,8 +1407,14 @@ const imports = {
   archiveShipmentsFailed: 'Failed to archive shipments',
   unarchiveShipmentFailed: 'Failed to restore shipment',
   deleteShipment: 'Delete Shipment',
-  confirmDeleteShipment: 'Are you sure you want to delete "{{name}}"? This action cannot be undone and will remove all associated items and tracking data.',
+  confirmDeleteShipment: 'Are you sure you want to permanently delete "{{name}}"? This action cannot be undone and will remove all associated items and tracking data from the database.',
   deletingShipment: 'Deleting...',
+  undoShipment: 'Undo Shipment',
+  confirmUndo: 'Undo Shipment',
+  confirmUndoShipment: 'Are you sure you want to undo "{{name}}"? This will move the items back to the warehouse for re-consolidation.',
+  shipmentUndone: 'Shipment undone, items returned to warehouse',
+  failedToUndoShipment: 'Failed to undo shipment',
+  undoing: 'Undoing...',
   
   // StartReceiving - Page & Labels
   employeeDefault: 'Employee #1',
