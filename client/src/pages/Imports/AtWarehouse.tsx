@@ -3091,6 +3091,21 @@ export default function AtWarehouse() {
                                     <Sparkles className="h-4 w-4 mr-2" />
                                     {t('aiClassifySelected')}
                                   </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      if (window.confirm(t('confirmDeleteSelected', { count: selectedItemsForAI.size }))) {
+                                        selectedItemsForAI.forEach(id => {
+                                          deleteCustomItemMutation.mutate(id);
+                                        });
+                                        setSelectedItemsForAI(new Set());
+                                      }
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {t('deleteSelected', { count: selectedItemsForAI.size })}
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </>
