@@ -1407,7 +1407,7 @@ const imports = {
   archiveShipmentsFailed: 'Failed to archive shipments',
   unarchiveShipmentFailed: 'Failed to restore shipment',
   deleteShipment: 'Delete Shipment',
-  confirmDeleteShipment: 'Are you sure you want to permanently delete "{{name}}"? This action cannot be undone and will remove all associated items and tracking data from the database.',
+  confirmDeleteShipment: 'Are you sure you want to permanently delete "{{name}}"? This will remove:\n\n- The shipment record\n- All receipts linked to this shipment\n- All receipt items and their receiving data\n- All product location entries created from this shipment\n\nThis action cannot be undone.',
   deletingShipment: 'Deleting...',
   undoShipment: 'Undo Shipment',
   confirmUndo: 'Undo Shipment',

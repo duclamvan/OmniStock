@@ -1424,7 +1424,7 @@ const imports = {
   archiveShipmentsFailed: 'Không thể lưu trữ lô hàng',
   unarchiveShipmentFailed: 'Không thể khôi phục lô hàng',
   deleteShipment: 'Xóa lô hàng',
-  confirmDeleteShipment: 'Bạn có chắc chắn muốn xóa vĩnh viễn "{{name}}"? Hành động này không thể hoàn tác và sẽ xóa tất cả sản phẩm và dữ liệu theo dõi liên quan khỏi cơ sở dữ liệu.',
+  confirmDeleteShipment: 'Bạn có chắc chắn muốn xóa vĩnh viễn "{{name}}"? Thao tác này sẽ xóa:\n\n- Bản ghi lô hàng\n- Tất cả phiếu nhập liên quan đến lô hàng này\n- Tất cả sản phẩm trong phiếu nhập và dữ liệu nhận hàng\n- Tất cả vị trí kho được tạo từ lô hàng này\n\nHành động này không thể hoàn tác.',
   deletingShipment: 'Đang xóa...',
   undoShipment: 'Hoàn tác lô hàng',
   confirmUndo: 'Hoàn tác lô hàng',

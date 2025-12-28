@@ -2912,8 +2912,8 @@ export default function InternationalTransit() {
       <AlertDialog open={!!shipmentToDelete} onOpenChange={() => setShipmentToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-red-600">{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line text-left">
               {t('confirmDeleteShipment', { name: shipmentToDelete?.shipmentName || shipmentToDelete?.trackingNumber || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
