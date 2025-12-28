@@ -10803,6 +10803,75 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             let parentProductId: string | null = null;
             let processedAsPackageItems = false;
             
+            // ================================================================
+            // VARIANT COST CALCULATION SETUP
+            // Get exchange rates and total allocated costs once for all variants
+            // ================================================================
+            let eurToUsd = 1.08;
+            let eurToCzk = 25.2;
+            let eurToVnd = 27000;
+            let eurToCny = 7.8;
+            
+            // Get exchange rates from shipment
+            if (receipt.shipmentId) {
+              const [shipmentForRates] = await tx
+                .select({ exchangeRates: shipments.exchangeRates })
+                .from(shipments)
+                .where(eq(shipments.id, receipt.shipmentId));
+              
+              if (shipmentForRates?.exchangeRates) {
+                const rates = typeof shipmentForRates.exchangeRates === 'string' 
+                  ? JSON.parse(shipmentForRates.exchangeRates) 
+                  : shipmentForRates.exchangeRates;
+                if (rates.USD && rates.USD > 0) eurToUsd = rates.USD;
+                if (rates.CZK && rates.CZK > 0) eurToCzk = rates.CZK;
+                if (rates.VND && rates.VND > 0) eurToVnd = rates.VND;
+                if (rates.CNY && rates.CNY > 0) eurToCny = rates.CNY;
+              }
+            }
+            
+            // Get landed cost information for this item
+            // For custom items: use costAllocations table
+            // For purchase items: use landingCostUnitBase from purchaseItems
+            let perUnitLandedCostEur = 0; // This is the per-unit landed cost adder (in EUR)
+            const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
+            
+            if (item.itemType === 'custom' && receipt.shipmentId) {
+              // Get total allocated costs from costAllocations table
+              const allocations = await tx
+                .select({ amountAllocatedBase: costAllocations.amountAllocatedBase })
+                .from(costAllocations)
+                .where(
+                  and(
+                    eq(costAllocations.shipmentId, receipt.shipmentId),
+                    eq(costAllocations.customItemId, item.itemId)
+                  )
+                );
+              
+              const totalAllocatedCostEur = allocations.reduce((sum: number, alloc: any) => {
+                return sum + parseFloat(alloc.amountAllocatedBase || '0');
+              }, 0);
+              
+              // Calculate per-unit allocation for distribution across variants
+              perUnitLandedCostEur = totalVariantQuantity > 0 
+                ? totalAllocatedCostEur / totalVariantQuantity 
+                : 0;
+              
+              console.log(`[Variant Costs] Custom item ${item.id}: total allocated = ${totalAllocatedCostEur.toFixed(2)} EUR, per-unit = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+            } else if (item.itemType === 'purchase') {
+              // Get landingCostUnitBase from purchaseItems table (already per-unit, in EUR)
+              const [purchaseItem] = await tx
+                .select({ landingCostUnitBase: purchaseItems.landingCostUnitBase })
+                .from(purchaseItems)
+                .where(eq(purchaseItems.id, item.itemId));
+              
+              if (purchaseItem?.landingCostUnitBase) {
+                // landingCostUnitBase is already per-unit in EUR (includes unit price + allocated costs)
+                perUnitLandedCostEur = parseFloat(purchaseItem.landingCostUnitBase);
+                console.log(`[Variant Costs] Purchase item ${item.id}: landingCostUnitBase = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+              }
+            }
+            
             for (const va of variantAllocations) {
               if (!va.variantId || va.quantity <= 0) continue;
               
@@ -10845,9 +10914,16 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 continue;
               }
               
-              // Look up the variant to get its productId (for actual product variants)
+              // Look up the variant to get its productId and current costs (for actual product variants)
               const [variant] = await tx
-                .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
+                .select({ 
+                  id: productVariants.id, 
+                  productId: productVariants.productId, 
+                  quantity: productVariants.quantity,
+                  importCostUsd: productVariants.importCostUsd,
+                  importCostCzk: productVariants.importCostCzk,
+                  importCostEur: productVariants.importCostEur
+                })
                 .from(productVariants)
                 .where(eq(productVariants.id, va.variantId));
               
@@ -10856,39 +10932,77 @@ router.post('/receipts/:id/store-items', async (req, res) => {
                 continue;
               }
               
-              // Update variant quantity
+              // ================================================================
+              // CALCULATE PER-VARIANT LANDED COST
+              // For custom items: unit price + allocated costs per unit
+              // For purchase items: use landingCostUnitBase (already includes unit price + allocations)
+              // ================================================================
+              const variantUnitPrice = parseFloat(String(va.unitPrice || 0));
+              
+              // Calculate final landed cost per unit (EUR)
+              // If perUnitLandedCostEur > 0, it comes from:
+              //   - Custom items: allocated costs per unit (add to unit price)
+              //   - Purchase items: landingCostUnitBase (already complete, use directly)
+              let variantLandedCostEur: number;
+              if (item.itemType === 'purchase' && perUnitLandedCostEur > 0) {
+                // For purchase items, landingCostUnitBase already includes unit price + allocations
+                variantLandedCostEur = perUnitLandedCostEur;
+              } else {
+                // For custom items: unit price + per-unit allocation
+                variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
+              }
+              
+              // Convert to other currencies
+              const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
+              const variantLandedCostCzk = variantLandedCostEur * eurToCzk;
+              
+              // Calculate weighted average cost for this variant
+              // Guard against null/undefined values to prevent NaN
+              const existingQty = variant.quantity || 0;
+              const existingCostEur = variant.importCostEur != null ? parseFloat(String(variant.importCostEur)) : 0;
+              const existingCostUsd = variant.importCostUsd != null ? parseFloat(String(variant.importCostUsd)) : 0;
+              const existingCostCzk = variant.importCostCzk != null ? parseFloat(String(variant.importCostCzk)) : 0;
+              
+              const newTotalQty = existingQty + va.quantity;
+              
+              // Weighted average: (old_qty * old_cost + new_qty * new_cost) / total_qty
+              const avgCostEur = newTotalQty > 0 
+                ? ((existingQty * existingCostEur) + (va.quantity * variantLandedCostEur)) / newTotalQty 
+                : variantLandedCostEur;
+              const avgCostUsd = newTotalQty > 0 
+                ? ((existingQty * existingCostUsd) + (va.quantity * variantLandedCostUsd)) / newTotalQty 
+                : variantLandedCostUsd;
+              const avgCostCzk = newTotalQty > 0 
+                ? ((existingQty * existingCostCzk) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
+                : variantLandedCostCzk;
+              
+              // Update variant quantity AND cost fields
               await tx
                 .update(productVariants)
                 .set({
                   quantity: sql`COALESCE(${productVariants.quantity}, 0) + ${va.quantity}`,
+                  importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+                  importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+                  importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
                   updatedAt: new Date()
                 })
                 .where(eq(productVariants.id, va.variantId));
               
-              console.log(`Added ${va.quantity} to variant ${va.variantName} (${va.variantId}), parent product: ${variant.productId}`);
+              console.log(`[Variant] Added ${va.quantity} to ${va.variantName} (${va.variantId}), ` +
+                `landed cost: ${variantLandedCostEur.toFixed(2)} EUR, avg cost: ${avgCostEur.toFixed(2)} EUR`);
               
               // Track parent product for quantity update (all variants share same parent)
               parentProductId = variant.productId;
               parentProductsNeedingUpdate.add(variant.productId);
             }
             
-            // IMPORTANT: Do NOT skip - continue to add this item to productQuantities 
-            // so that landed cost calculation runs for the parent product
-            // We'll handle the parent quantity update later from variant sums
-            if (parentProductId) {
-              const existing = productQuantities.get(parentProductId);
-              if (existing) {
-                existing.quantity += quantityToAdd;
-                existing.items.push(item);
-              } else {
-                productQuantities.set(parentProductId, {
-                  quantity: quantityToAdd,
-                  items: [item]
-                });
-              }
-            }
+            // IMPORTANT: When variants consume cost allocations, do NOT add to productQuantities
+            // This prevents double-counting - costs were already applied to individual variants
+            // The parent product will have its quantity updated from sum of variants
+            // and will NOT have its landed cost recalculated (which would double-count allocations)
             
             // Skip the normal productId resolution if we processed variants or package items
+            // Parent quantity update happens separately via parentProductsNeedingUpdate
             if (parentProductId || processedAsPackageItems) {
               continue;
             }
@@ -11175,34 +11289,53 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         }
         
         // ================================================================
-        // UPDATE PARENT PRODUCT QUANTITIES FOR VARIANT PRODUCTS
+        // UPDATE PARENT PRODUCT QUANTITIES AND COSTS FOR VARIANT PRODUCTS
         // After processing all variant allocations, update parent products
-        // to have quantity equal to sum of all their variants
+        // to have quantity equal to sum of variants AND calculate weighted average costs
         // ================================================================
         for (const parentProductId of parentProductsNeedingUpdate) {
           try {
-            // Get sum of all variant quantities for this parent product
-            const variantSums = await tx
+            // Get sum of all variant quantities and weighted cost totals for this parent product
+            const variantData = await tx
               .select({
-                totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`
+                totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`,
+                totalCostValueEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostEur}::numeric, 0)), 0)`,
+                totalCostValueUsd: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostUsd}::numeric, 0)), 0)`,
+                totalCostValueCzk: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostCzk}::numeric, 0)), 0)`
               })
               .from(productVariants)
               .where(eq(productVariants.productId, parentProductId));
             
-            const totalVariantQuantity = variantSums[0]?.totalQuantity || 0;
+            const totalVariantQuantity = Number(variantData[0]?.totalQuantity) || 0;
+            const totalCostValueEur = Number(variantData[0]?.totalCostValueEur) || 0;
+            const totalCostValueUsd = Number(variantData[0]?.totalCostValueUsd) || 0;
+            const totalCostValueCzk = Number(variantData[0]?.totalCostValueCzk) || 0;
             
-            // Update parent product quantity to match sum of variants
+            // Calculate weighted average costs from variants
+            const avgCostEur = totalVariantQuantity > 0 ? totalCostValueEur / totalVariantQuantity : 0;
+            const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
+            const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
+            
+            // Update parent product quantity AND costs to match weighted average of variants
             await tx
               .update(products)
               .set({
                 quantity: totalVariantQuantity,
+                importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+                importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+                importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+                // Also update landed cost fields to match EUR cost (as landed cost is in EUR base)
+                latestLandingCost: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
+                landingCostEur: avgCostEur > 0 ? avgCostEur.toFixed(4) : null,
+                landingCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(4) : null,
+                landingCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(4) : null,
                 updatedAt: new Date()
               })
               .where(eq(products.id, parentProductId));
             
-            console.log(`Updated parent product ${parentProductId} quantity to ${totalVariantQuantity} (sum of variants)`);
+            console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}`);
           } catch (error) {
-            console.error(`Failed to update parent product ${parentProductId} quantity:`, error);
+            console.error(`Failed to update parent product ${parentProductId}:`, error);
           }
         }
         } // End of else block (not already stored)
