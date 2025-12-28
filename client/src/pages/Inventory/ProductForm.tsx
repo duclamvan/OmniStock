@@ -1520,25 +1520,7 @@ export default function ProductForm() {
       productPart = t('products:defaults.productPartFallback');
     }
     
-    // 4. Price Tier Indicator (optional) - based on CZK price
-    let priceTier = '';
-    if (priceCzk > 0) {
-      if (priceCzk < 100) priceTier = 'B'; // Budget
-      else if (priceCzk < 500) priceTier = 'S'; // Standard
-      else if (priceCzk < 1000) priceTier = 'P'; // Premium
-      else priceTier = 'L'; // Luxury
-    }
-    
-    // 5. Random suffix for uniqueness (3 digits)
-    const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
-    
-    // 6. Quantity indicator (optional) - for stock level
-    let qtyIndicator = '';
-    if (quantity > 100) qtyIndicator = 'H'; // High stock
-    else if (quantity > 20) qtyIndicator = 'M'; // Medium stock
-    else if (quantity > 0) qtyIndicator = 'L'; // Low stock
-    
-    // Construct SKU with available parts
+    // Construct base SKU with available parts (no suffix initially)
     let skuParts = [categoryPart];
     
     if (supplierPart) {
@@ -1547,13 +1529,24 @@ export default function ProductForm() {
     
     skuParts.push(productPart);
     
-    if (priceTier) {
-      skuParts.push(priceTier);
+    let baseSKU = skuParts.join('-');
+    
+    // Check if this SKU already exists in the product list
+    const existingSkus = allProducts
+      .filter((p: any) => p.id !== id) // Exclude current product in edit mode
+      .map((p: any) => p.sku?.toUpperCase())
+      .filter(Boolean);
+    
+    // If base SKU exists, find the next available number
+    if (existingSkus.includes(baseSKU.toUpperCase())) {
+      let counter = 1;
+      let candidateSKU = `${baseSKU}-${counter}`;
+      while (existingSkus.includes(candidateSKU.toUpperCase())) {
+        counter++;
+        candidateSKU = `${baseSKU}-${counter}`;
+      }
+      baseSKU = candidateSKU;
     }
-    
-    skuParts.push(randomSuffix);
-    
-    const baseSKU = skuParts.join('-');
     form.setValue('sku', baseSKU);
     
     toast({
