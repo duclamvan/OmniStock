@@ -596,6 +596,7 @@ const imports = {
   addingItem: 'Đang thêm...',
   deletingPurchase: 'Đang xóa...',
   deletePurchase: 'Xóa đơn mua',
+  confirmDeletePurchase: 'Bạn có chắc chắn muốn xóa đơn hàng này từ {{supplier}} không? Hành động này không thể được hoàn tác.',
   additionalNotesItem: 'Ghi chú thêm về sản phẩm này...',
   variantPlaceholder: 'Đỏ - Nhỏ\nĐỏ - Vừa\nĐỏ - Lớn\nXanh - Nhỏ\nXanh - Vừa',
   

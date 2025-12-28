@@ -589,6 +589,7 @@ const imports = {
   addingItem: 'Adding...',
   deletingPurchase: 'Deleting...',
   deletePurchase: 'Delete Purchase',
+  confirmDeletePurchase: 'Are you sure you want to delete this purchase order from {{supplier}}? This action cannot be undone.',
   additionalNotesItem: 'Additional notes about this item...',
   variantPlaceholder: 'Red - Small\nRed - Medium\nRed - Large\nBlue - Small\nBlue - Medium',
   
