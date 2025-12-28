@@ -4161,7 +4161,10 @@ export default function CreatePurchase() {
                         {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && expandedCards.includes(item.id) && (
                           item.variantAllocations.map((variant, vIdx) => {
                             const variantTotal = variant.quantity * variant.unitPrice;
-                            const variantCostWithShipping = item.costWithShipping * (variant.quantity / item.quantity);
+                            // Calculate shipping per unit from parent item (costWithShipping - unitPrice = shipping per unit)
+                            const shippingPerUnit = item.costWithShipping - item.unitPrice;
+                            // Variant cost with shipping = variant unit price + shipping per unit
+                            const variantCostWithShipping = variant.unitPrice + shippingPerUnit;
                             const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
                             const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
                             const convertedCost = variantCostWithShipping * rate;
