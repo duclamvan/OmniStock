@@ -34,7 +34,7 @@ import {
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, Upload, ImageIcon, Settings, Scale,
+  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, ChevronRight, Upload, ImageIcon, Settings, Scale,
   Barcode, MapPin, ClipboardPaste
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -379,6 +379,7 @@ export default function CreatePurchase() {
   
   // Variants state
   const [showVariants, setShowVariants] = useState(false);
+  const [variantsSectionExpanded, setVariantsSectionExpanded] = useState(true);
   const [variants, setVariants] = useState<Array<{
     id: string;
     name: string;
@@ -3202,44 +3203,61 @@ export default function CreatePurchase() {
               
               {/* Variants Section */}
               {showVariants && currentItem.name && (
-                <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-medium">{t('productVariants')}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {t('addVariantsOf')} {currentItem.name}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {selectedProduct && loadingExistingVariants && (
-                        <Button type="button" size="sm" variant="outline" disabled>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          {t('loading')}
+                <Collapsible
+                  open={variantsSectionExpanded}
+                  onOpenChange={setVariantsSectionExpanded}
+                  className="border rounded-lg bg-muted/20"
+                >
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <div className="flex items-center gap-2">
+                        {variantsSectionExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-medium">{t('productVariants')}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {variants.length > 0 
+                              ? `${variants.length} ${t('variants')} - ${t('addVariantsOf')} ${currentItem.name}`
+                              : `${t('addVariantsOf')} ${currentItem.name}`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                        {selectedProduct && loadingExistingVariants && (
+                          <Button type="button" size="sm" variant="outline" disabled>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            {t('loading')}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setVariantDialogOpen(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          {t('addVariant')}
                         </Button>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setVariantDialogOpen(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        {t('addVariant')}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSeriesDialogOpen(true)}
-                      >
-                        <ListPlus className="h-4 w-4 mr-1" />
-                        {t('addSeries')}
-                      </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSeriesDialogOpen(true)}
+                        >
+                          <ListPlus className="h-4 w-4 mr-1" />
+                          {t('addSeries')}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </CollapsibleTrigger>
                   
-                  {/* Variants Table */}
-                  {variants.length > 0 && (
+                  <CollapsibleContent>
+                    {/* Variants Table */}
+                    {variants.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -3414,7 +3432,8 @@ export default function CreatePurchase() {
                       </div>
                     </div>
                   )}
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
               
               {/* Add Button */}
