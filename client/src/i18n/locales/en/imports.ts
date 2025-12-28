@@ -627,6 +627,7 @@ const imports = {
   // AtWarehouse - Operations
   unpack: 'Unpack',
   unpackAll: 'Unpack All',
+  unpackedOrderFromSupplier: 'Unpacked order from {{supplier}} ({{count}} items)',
   receiveAsPackage: 'Receive as Package',
   startProcessing: 'Start Processing',
   viewDetails: 'View Details',

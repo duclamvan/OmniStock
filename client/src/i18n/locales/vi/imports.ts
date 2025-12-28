@@ -634,6 +634,7 @@ const imports = {
   // AtWarehouse - Operations
   unpack: 'Mở kiện',
   unpackAll: 'Mở tất cả',
+  unpackedOrderFromSupplier: 'Đã mở kiện từ {{supplier}} ({{count}} sản phẩm)',
   receiveAsPackage: 'Nhận dạng kiện',
   startProcessing: 'Bắt đầu xử lý',
   viewDetails: 'Xem chi tiết',
