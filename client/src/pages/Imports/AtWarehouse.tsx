@@ -2413,7 +2413,7 @@ export default function AtWarehouse() {
                         {order.items && order.items.length > 0 && (
                           <div className="border rounded-lg p-3 bg-muted/30">
                             <div className="text-sm font-medium mb-2">{t('orderItems')}:</div>
-                            <div className="space-y-1">
+                            <div className={`space-y-1 ${expandedOrders.has(order.id) && order.items.length > 10 ? 'max-h-[300px] overflow-y-auto pr-2' : ''}`}>
                               {(expandedOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, index: number) => (
                                 <div key={index} className="text-sm flex justify-between">
                                   <span className="text-muted-foreground">
