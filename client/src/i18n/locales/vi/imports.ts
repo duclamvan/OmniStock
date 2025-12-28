@@ -1410,6 +1410,13 @@ const imports = {
   moreLabels: 'nhãn nữa',
   noDataAvailable: 'Không có dữ liệu',
   
+  // ReceivingList - In Transit Tracking Issues
+  inTransitTrackingIssues: 'Đang vận chuyển - Cần chú ý',
+  inTransitTrackingIssuesDesc: 'Lô hàng đang vận chuyển nhưng thiếu hoặc lỗi thông tin theo dõi',
+  noTrackingInfo: 'Không có vận đơn',
+  trackingFailed: 'Theo dõi thất bại',
+  viewInTransit: 'Xem đang vận chuyển',
+  
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'Không có lô hàng sẵn sàng nhận',
   allIncomingShipmentsReceived: 'Tất cả lô hàng đến đã được nhận. Lô hàng mới sẽ xuất hiện ở đây khi đến.',

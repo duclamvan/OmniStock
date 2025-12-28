@@ -1392,6 +1392,13 @@ const imports = {
   moreLabels: 'more labels',
   noDataAvailable: 'No data available',
   
+  // ReceivingList - In Transit Tracking Issues
+  inTransitTrackingIssues: 'In Transit - Needs Attention',
+  inTransitTrackingIssuesDesc: 'Shipments that are in transit but have missing or failed tracking information',
+  noTrackingInfo: 'No tracking',
+  trackingFailed: 'Tracking failed',
+  viewInTransit: 'View in Transit',
+  
   // ReceivingList - Empty States
   noShipmentsReadyToReceive: 'No shipments ready to receive',
   allIncomingShipmentsReceived: 'All incoming shipments have been received. New shipments will appear here when they arrive.',

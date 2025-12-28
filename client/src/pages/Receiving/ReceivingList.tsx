@@ -1504,12 +1504,17 @@ function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; i
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Truck className="h-4 w-4" />
-                <span className="truncate">{shipment.carrier || t('unknownCarrier')}</span>
+                <span className="truncate">{shipment.endCarrier || shipment.carrier || t('unknownCarrier')}</span>
               </div>
-              {shipment.trackingNumber && (
+              {(shipment.endTrackingNumber || (shipment.endTrackingNumbers && shipment.endTrackingNumbers.length > 0)) && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Package2 className="h-4 w-4" />
-                  <span className="font-mono text-xs truncate">{shipment.trackingNumber}</span>
+                  <span className="font-mono text-xs truncate">
+                    {shipment.endTrackingNumbers?.[0] || shipment.endTrackingNumber}
+                    {shipment.endTrackingNumbers && shipment.endTrackingNumbers.length > 1 && (
+                      <span className="text-muted-foreground/70 ml-1">+{shipment.endTrackingNumbers.length - 1}</span>
+                    )}
+                  </span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -5559,6 +5564,32 @@ export default function ReceivingList() {
     queryKey: ['/api/imports/shipments/archived'],
   });
 
+  // Fetch all shipments to find in-transit ones with tracking issues
+  const { data: allShipments = [], isLoading: isLoadingAllShipments } = useQuery<Shipment[]>({
+    queryKey: ['/api/imports/shipments'],
+  });
+
+  // Filter for in-transit shipments with tracking issues (no tracking, failed, or unknown status)
+  const inTransitWithIssues = useMemo(() => {
+    return allShipments.filter((s: any) => {
+      // Only in-transit shipments
+      if (s.status !== 'in transit') return false;
+      
+      // Check for tracking issues:
+      // 1. No end tracking number
+      const hasNoEndTracking = !s.endTrackingNumber && (!s.endTrackingNumbers || s.endTrackingNumbers.length === 0);
+      
+      // 2. Failed/unknown tracking status from EasyPost or 17Track
+      const failedTrackingStatus = ['NotFound', 'Unknown', 'Expired', 'error', 'failure'].includes(s.easypostStatus || '') ||
+                                   ['NotFound', 'Unknown', 'Expired', 'error'].includes(s.track17Status || '');
+      
+      // 3. No internal tracking number
+      const hasNoInternalTracking = !s.trackingNumber;
+      
+      return hasNoEndTracking || failedTrackingStatus || hasNoInternalTracking;
+    });
+  }, [allShipments]);
+
   const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery<Receipt[]>({
     queryKey: ['/api/imports/receipts'],
   });
@@ -5900,6 +5931,79 @@ export default function ReceivingList() {
                       toReceiveShipments.map((shipment: any) => (
                         <ToReceiveShipmentCard key={shipment.id} shipment={shipment} isAdministrator={isAdministrator} />
                       ))
+                    )}
+                    
+                    {/* In Transit Shipments with Tracking Issues */}
+                    {inTransitWithIssues.length > 0 && (
+                      <div className="mt-6 pt-6 border-t">
+                        <div className="flex items-center gap-2 mb-4">
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />
+                          <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                            {t('inTransitTrackingIssues')} ({inTransitWithIssues.length})
+                          </h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-4">{t('inTransitTrackingIssuesDesc')}</p>
+                        <div className="space-y-3">
+                          {inTransitWithIssues.map((shipment: any) => {
+                            const itemCount = shipment.items?.length || 0;
+                            const totalQuantity = shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+                            const hasNoEndTracking = !shipment.endTrackingNumber && (!shipment.endTrackingNumbers || shipment.endTrackingNumbers.length === 0);
+                            const hasNoInternalTracking = !shipment.trackingNumber;
+                            
+                            return (
+                              <Card key={shipment.id} className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+                                <CardContent className="p-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <Truck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <span className="font-medium text-sm truncate">
+                                          {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                          <Package className="h-3 w-3" />
+                                          <span>{itemCount} {t('items')} ({totalQuantity} {t('units')})</span>
+                                        </div>
+                                        {shipment.endCarrier && (
+                                          <div className="flex items-center gap-2">
+                                            <Truck className="h-3 w-3" />
+                                            <span>{shipment.endCarrier}</span>
+                                          </div>
+                                        )}
+                                        {(shipment.endTrackingNumber || shipment.endTrackingNumbers?.[0]) && (
+                                          <div className="flex items-center gap-2">
+                                            <Package2 className="h-3 w-3" />
+                                            <span className="font-mono">{shipment.endTrackingNumbers?.[0] || shipment.endTrackingNumber}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                      <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-100/50 text-xs">
+                                        {hasNoEndTracking && hasNoInternalTracking 
+                                          ? t('noTrackingInfo')
+                                          : t('trackingFailed')
+                                        }
+                                      </Badge>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 text-xs"
+                                        onClick={() => window.location.href = '/imports/international-transit'}
+                                        data-testid={`button-view-transit-${shipment.id}`}
+                                      >
+                                        {t('viewInTransit')}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
                   </TabsContent>
 
