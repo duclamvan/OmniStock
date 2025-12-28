@@ -5544,30 +5544,42 @@ export default function ReceivingList() {
   // Ref for tabs container to enable auto-centering
   const tabsListRef = useRef<HTMLDivElement>(null);
 
-  // Fetch shipments data
+  // Fetch shipments data - always refresh on mount for current data
   const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/to-receive'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/receiving'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: storageShipments = [], isLoading: isLoadingStorage } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/storage'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: completedShipments = [], isLoading: isLoadingCompleted } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/completed'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: archivedShipments = [], isLoading: isLoadingArchived } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments/archived'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch all shipments to find in-transit ones with tracking issues
   const { data: allShipments = [], isLoading: isLoadingAllShipments } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Filter for in-transit shipments with tracking issues (no tracking, failed, or unknown status)
@@ -5787,7 +5799,9 @@ export default function ReceivingList() {
                 }`}
                 data-testid="stat-to-receive"
               >
-                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{toReceiveShipments.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {isLoadingToReceive ? <Skeleton className="h-6 w-8 mx-auto bg-blue-200 dark:bg-blue-700" /> : toReceiveShipments.length}
+                </div>
                 <div className="text-xs text-blue-700 dark:text-blue-200">{t('toReceive')}</div>
               </button>
               <button 
@@ -5799,7 +5813,9 @@ export default function ReceivingList() {
                 }`}
                 data-testid="stat-receiving"
               >
-                <div className="text-lg sm:text-2xl font-bold text-cyan-600 dark:text-cyan-400">{receivingShipments.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                  {isLoadingReceiving ? <Skeleton className="h-6 w-8 mx-auto bg-cyan-200 dark:bg-cyan-700" /> : receivingShipments.length}
+                </div>
                 <div className="text-xs text-cyan-700 dark:text-cyan-200">{t('inProgressReceiving')}</div>
               </button>
               <button 
@@ -5811,7 +5827,9 @@ export default function ReceivingList() {
                 }`}
                 data-testid="stat-storage"
               >
-                <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400">{storageShipments.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {isLoadingStorage ? <Skeleton className="h-6 w-8 mx-auto bg-amber-200 dark:bg-amber-700" /> : storageShipments.length}
+                </div>
                 <div className="text-xs text-amber-700 dark:text-amber-200">{t('storage')}</div>
               </button>
               <button 
@@ -5823,7 +5841,9 @@ export default function ReceivingList() {
                 }`}
                 data-testid="stat-completed"
               >
-                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{completedShipments.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
+                  {isLoadingCompleted ? <Skeleton className="h-6 w-8 mx-auto bg-green-200 dark:bg-green-700" /> : completedShipments.length}
+                </div>
                 <div className="text-xs text-green-700 dark:text-green-200">{t('completed')}</div>
               </button>
             </div>
@@ -5855,8 +5875,8 @@ export default function ReceivingList() {
                       <Package className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">{t('toReceive')}</span>
                       <span className="sm:hidden">{t('toReceive')}</span>
-                      <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {toReceiveShipments.length}
+                      <Badge variant="secondary" className="ml-2 bg-background/20 min-w-[24px] justify-center">
+                        {isLoadingToReceive ? <Loader2 className="h-3 w-3 animate-spin" /> : toReceiveShipments.length}
                       </Badge>
                     </TabsTrigger>
                     <TabsTrigger 
@@ -5867,8 +5887,8 @@ export default function ReceivingList() {
                       <Clock className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">{t('inProgressReceiving')}</span>
                       <span className="sm:hidden">{t('inProgressReceiving')}</span>
-                      <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {receivingShipments.length}
+                      <Badge variant="secondary" className="ml-2 bg-background/20 min-w-[24px] justify-center">
+                        {isLoadingReceiving ? <Loader2 className="h-3 w-3 animate-spin" /> : receivingShipments.length}
                       </Badge>
                     </TabsTrigger>
                     <TabsTrigger 
@@ -5879,8 +5899,8 @@ export default function ReceivingList() {
                       <Warehouse className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">{t('storage')}</span>
                       <span className="sm:hidden">{t('storage')}</span>
-                      <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {storageShipments.length}
+                      <Badge variant="secondary" className="ml-2 bg-background/20 min-w-[24px] justify-center">
+                        {isLoadingStorage ? <Loader2 className="h-3 w-3 animate-spin" /> : storageShipments.length}
                       </Badge>
                     </TabsTrigger>
                     <TabsTrigger 
@@ -5891,8 +5911,8 @@ export default function ReceivingList() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">{t('completed')}</span>
                       <span className="sm:hidden">{t('completed')}</span>
-                      <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {completedShipments.length}
+                      <Badge variant="secondary" className="ml-2 bg-background/20 min-w-[24px] justify-center">
+                        {isLoadingCompleted ? <Loader2 className="h-3 w-3 animate-spin" /> : completedShipments.length}
                       </Badge>
                     </TabsTrigger>
                     <TabsTrigger 
@@ -5903,8 +5923,8 @@ export default function ReceivingList() {
                       <Archive className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">{t('archived')}</span>
                       <span className="sm:hidden">{t('archived')}</span>
-                      <Badge variant="secondary" className="ml-2 bg-background/20">
-                        {(archivedShipments as any[]).reduce((sum, group) => sum + (group.count || group.shipments?.length || 0), 0)}
+                      <Badge variant="secondary" className="ml-2 bg-background/20 min-w-[24px] justify-center">
+                        {isLoadingArchived ? <Loader2 className="h-3 w-3 animate-spin" /> : (archivedShipments as any[]).reduce((sum, group) => sum + (group.count || group.shipments?.length || 0), 0)}
                       </Badge>
                     </TabsTrigger>
                   </TabsList>
