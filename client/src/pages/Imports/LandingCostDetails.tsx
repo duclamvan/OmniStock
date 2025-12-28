@@ -25,7 +25,8 @@ import {
   PackagePlus,
   CheckCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Layers
 } from "lucide-react";
 import { format } from "date-fns";
 import CostsPanel from "@/components/receiving/CostsPanel";
@@ -72,6 +73,14 @@ interface OrderItem {
   createdAt?: string;
 }
 
+interface VariantAllocation {
+  variantId?: string;
+  variantName: string;
+  quantity: number;
+  unitPrice?: number;
+  locationCode?: string;
+}
+
 interface LandingCostItem {
   purchaseItemId: number;
   sku: string;
@@ -88,6 +97,7 @@ interface LandingCostItem {
   otherAllocated: number;
   imageUrl?: string;
   orderItems?: OrderItem[];
+  variantAllocations?: VariantAllocation[];
 }
 
 interface LandingCostPreview {
@@ -750,7 +760,10 @@ export default function LandingCostDetails() {
             ) : (
               <div className="space-y-3">
                 {landingCostPreview.items.map((item, index) => {
-                  const hasPackageContents = item.orderItems && item.orderItems.length > 0;
+                  // Check for variant allocations first (parent product with variants like colors/sizes)
+                  const hasVariantAllocations = item.variantAllocations && item.variantAllocations.length > 0;
+                  // Package contents are orderItems WITHOUT variantAllocations (multiple different products bundled)
+                  const hasPackageContents = !hasVariantAllocations && item.orderItems && item.orderItems.length > 0;
                   
                   if (hasPackageContents) {
                     const sortedOrderItems = [...item.orderItems!].sort((a, b) => {
@@ -1105,6 +1118,51 @@ export default function LandingCostDetails() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Variant Allocations Display - for parent products with color/size variants */}
+                      {hasVariantAllocations && item.variantAllocations && (
+                        <div className="mb-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Layers className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                            <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+                              {item.variantAllocations.length} Variants • {item.quantity.toLocaleString()} Total Units
+                            </span>
+                          </div>
+                          {item.variantAllocations.length <= 20 ? (
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {item.variantAllocations.map((variant, vIndex) => (
+                                <div 
+                                  key={variant.variantId || vIndex}
+                                  className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 rounded px-2 py-1 border border-purple-100 dark:border-purple-800"
+                                >
+                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                                    {variant.variantName || `Variant ${vIndex + 1}`}
+                                  </span>
+                                  <span className="font-mono font-bold text-purple-600 dark:text-purple-400 ml-2">
+                                    ×{variant.quantity}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 max-h-48 overflow-y-auto">
+                              {item.variantAllocations.map((variant, vIndex) => (
+                                <div 
+                                  key={variant.variantId || vIndex}
+                                  className="flex items-center justify-between text-[10px] bg-white dark:bg-gray-800 rounded px-1.5 py-0.5 border border-purple-100 dark:border-purple-800"
+                                >
+                                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1 mr-1">
+                                    {variant.variantName || `V${vIndex + 1}`}
+                                  </span>
+                                  <span className="font-mono font-bold text-purple-600 dark:text-purple-400 flex-shrink-0">
+                                    ×{variant.quantity}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Cost Breakdown Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
