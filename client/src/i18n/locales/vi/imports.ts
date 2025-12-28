@@ -460,6 +460,8 @@ const imports = {
   selectACategory: 'Chọn danh mục',
   productPreview: 'Xem trước sản phẩm',
   addNewCategory: 'Thêm danh mục mới',
+  createNewCategory: 'Tạo danh mục mới để tổ chức sản phẩm',
+  categoryName: 'Tên danh mục',
   
   // CreatePurchase - Item Actions
   showCostInCurrency: 'Hiển thị giá theo tiền tệ',

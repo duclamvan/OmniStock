@@ -454,6 +454,8 @@ const imports = {
   selectACategory: 'Select category',
   productPreview: 'Product preview',
   addNewCategory: 'Add New Category',
+  createNewCategory: 'Create a new category for organizing products',
+  categoryName: 'Category Name',
   
   // CreatePurchase - Item Actions
   showCostInCurrency: 'Show cost in currency',
