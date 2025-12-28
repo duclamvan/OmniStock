@@ -1807,6 +1807,13 @@ export default function InternationalTransit() {
                             <ArrowLeft className="h-3 w-3 mr-2" />
                             {t('moveBackToWarehouse')}
                           </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setShipmentToDelete(pending as any)}
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            {t('deleteShipment')}
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
