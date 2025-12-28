@@ -2171,9 +2171,19 @@ function QuickStorageSheet({
         setBulkItemsPerLocation(cached.itemsPerLocation);
         setBulkFillDirection(cached.fillDirection);
         setBulkLastItemsLevel(cached.lastItemsLevel);
+      } else {
+        // Auto-fill Items/Location with average variant quantity
+        const currentStorageItem = items[selectedItemIndex];
+        if (currentStorageItem?.variantAllocations && currentStorageItem.variantAllocations.length > 0) {
+          const totalItems = currentStorageItem.variantAllocations.reduce((sum, v) => sum + (v.quantity || 0), 0);
+          const avgPerVariant = Math.round(totalItems / currentStorageItem.variantAllocations.length);
+          if (avgPerVariant > 0) {
+            setBulkItemsPerLocation(avgPerVariant);
+          }
+        }
       }
     }
-  }, [showBulkAllocation, bulkItemKey]);
+  }, [showBulkAllocation, bulkItemKey, items, selectedItemIndex]);
   
   // Save bulk allocation settings when they change (while modal is open)
   useEffect(() => {
