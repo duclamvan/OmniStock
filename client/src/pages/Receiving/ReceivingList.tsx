@@ -4455,11 +4455,38 @@ function QuickStorageSheet({
                           </div>
                         </div>
                         
-                        {totalItemsToAllocate > totalCapacity && (
-                          <p className="text-center text-red-600 dark:text-red-400 text-[10px] font-medium bg-red-50 dark:bg-red-950/30 rounded p-1.5">
-                            {t('imports:needMoreCapacity', 'Need {{needed}} more slots!', { needed: (totalItemsToAllocate - totalCapacity).toLocaleString() })}
-                          </p>
-                        )}
+                        {totalItemsToAllocate > totalCapacity && (() => {
+                          const shortfall = totalItemsToAllocate - totalCapacity;
+                          // Calculate how many variants won't fit (approximate)
+                          const variantsWithLocations = preview.locations.length;
+                          const variantsWithoutLocations = Math.max(0, totalVariants - variantsWithLocations);
+                          // Additional bins needed = ceil(shortfall / itemsPerBin)
+                          const additionalBinsNeeded = Math.ceil(shortfall / bulkItemsPerLocation);
+                          
+                          return (
+                            <div className="text-center text-red-600 dark:text-red-400 text-[10px] font-medium bg-red-50 dark:bg-red-950/30 rounded p-2 space-y-1">
+                              <div className="flex items-center justify-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                <span>{t('imports:capacityExceeded', 'Capacity exceeded!')}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[9px]">
+                                <div className="bg-white/50 dark:bg-gray-900/50 rounded p-1">
+                                  <p className="font-bold text-sm">{shortfall.toLocaleString()}</p>
+                                  <p>{t('imports:itemsOverCapacity', 'items over')}</p>
+                                </div>
+                                <div className="bg-white/50 dark:bg-gray-900/50 rounded p-1">
+                                  <p className="font-bold text-sm">+{additionalBinsNeeded}</p>
+                                  <p>{t('imports:moreBinsNeeded', 'bins needed')}</p>
+                                </div>
+                              </div>
+                              {variantsWithoutLocations > 0 && (
+                                <p className="text-[9px] pt-1 border-t border-red-200 dark:border-red-800">
+                                  {t('imports:variantsWithoutLocation', '{{count}} variants won\'t get a location', { count: variantsWithoutLocations })}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })()}
