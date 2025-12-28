@@ -3496,11 +3496,61 @@ function QuickStorageSheet({
 
                                 {/* ALL LOCATIONS LIST - Compact */}
                                 <div className="rounded-lg border dark:border-gray-800 overflow-hidden">
-                                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 border-b dark:border-gray-700">
+                                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 border-b dark:border-gray-700 flex items-center justify-between">
                                     <p className="font-medium text-sm flex items-center gap-1.5">
                                       <MapPin className="h-4 w-4" />
                                       {t('allLocations')} ({(item.existingLocations?.length || 0) + item.locations.length})
                                     </p>
+                                    {/* Undo All Saved Locations Button */}
+                                    {item.existingLocations && item.existingLocations.length > 0 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (!item.productId) return;
+                                          
+                                          const totalLocations = item.existingLocations.length;
+                                          const totalQty = item.existingLocations.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+                                          
+                                          try {
+                                            // Use batch delete endpoint for efficiency
+                                            await apiRequest('DELETE', `/api/products/${item.productId}/locations/batch`, {
+                                              receiptItemId: item.receiptItemId
+                                            });
+                                            
+                                            // Update local state
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              updated[index].existingLocations = [];
+                                              updated[index].pendingExistingAdds = {};
+                                              updated[index].assignedQuantity = 0;
+                                              return updated;
+                                            });
+                                            
+                                            toast({
+                                              title: t('imports:locationsCleared', 'Locations Cleared'),
+                                              description: `${totalLocations} ${t('locationsLabel', 'locations')}, ${totalQty} ${t('common:items')} ${t('imports:removed', 'removed')}`,
+                                              duration: 3000
+                                            });
+                                            
+                                            queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
+                                          } catch (error) {
+                                            console.error('Failed to undo locations:', error);
+                                            toast({
+                                              title: t('common:error'),
+                                              description: t('imports:failedToUndoLocations', 'Failed to undo locations'),
+                                              variant: 'destructive'
+                                            });
+                                          }
+                                        }}
+                                        className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                        data-testid="button-undo-all-locations"
+                                      >
+                                        <RotateCcw className="h-3 w-3 mr-1" />
+                                        {t('imports:undoAll', 'Undo All')}
+                                      </Button>
+                                    )}
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">

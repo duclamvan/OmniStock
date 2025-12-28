@@ -6428,6 +6428,75 @@ Important:
     }
   });
 
+  // Batch delete product locations - efficient for undo all
+  app.delete('/api/products/:id/locations/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      const { receiptItemId, locationIds } = req.body;
+      
+      const product = await storage.getProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Get locations to delete - either by receiptItemId or explicit IDs
+      let locationsToDelete: any[] = [];
+      
+      if (receiptItemId) {
+        // Delete all locations tagged for this receipt item
+        const allLocations = await storage.getProductLocations(productId);
+        locationsToDelete = allLocations.filter(loc => 
+          loc.notes?.includes(`RI:${receiptItemId}:`)
+        );
+      } else if (locationIds && Array.isArray(locationIds)) {
+        // Delete specific locations by ID
+        const allLocations = await storage.getProductLocations(productId);
+        locationsToDelete = allLocations.filter(loc => locationIds.includes(loc.id));
+      }
+      
+      if (locationsToDelete.length === 0) {
+        return res.json({ success: true, deleted: 0, totalQuantity: 0 });
+      }
+      
+      // Calculate total quantity being removed
+      const totalQuantity = locationsToDelete.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+      
+      // Delete all locations
+      let deletedCount = 0;
+      for (const loc of locationsToDelete) {
+        await storage.deleteProductLocation(loc.id);
+        deletedCount++;
+      }
+      
+      // Update receipt item's assignedQuantity if receiptItemId is provided
+      if (receiptItemId) {
+        try {
+          await db.update(receiptItems).set({ assignedQuantity: 0 }).where(eq(receiptItems.id, receiptItemId));
+        } catch (error) {
+          console.error('Failed to reset receipt item assignedQuantity:', error);
+        }
+      }
+      
+      // Single activity log for the batch operation
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'product_location_batch',
+        entityId: productId,
+        description: `Batch deleted ${deletedCount} locations for product (${totalQuantity} total items removed)`,
+      });
+
+      res.json({
+        success: true,
+        deleted: deletedCount,
+        totalQuantity
+      });
+    } catch (error: any) {
+      console.error("Error batch deleting product locations:", error);
+      res.status(500).json({ message: "Failed to batch delete product locations", error: error.message });
+    }
+  });
+
   app.patch('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
