@@ -2120,22 +2120,48 @@ function QuickStorageSheet({
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
   const [inventoryLocations, setInventoryLocations] = useState<Map<string, any[]>>(new Map());
   
-  // Bulk allocation state for multi-variant items
+  // Bulk allocation state - per-aisle configuration for practical warehouse layouts
+  interface AisleConfig {
+    id: string;
+    aisle: number;
+    rackStart: number;
+    rackEnd: number;
+    levels: number;
+    binsPerLevel: number;
+  }
+  
   const [showBulkAllocation, setShowBulkAllocation] = useState(false);
   const [bulkWarehouse, setBulkWarehouse] = useState("WH1");
-  const [bulkStartAisle, setBulkStartAisle] = useState(1);
-  const [bulkEndAisle, setBulkEndAisle] = useState(1);
-  const [bulkStartRack, setBulkStartRack] = useState(1);
-  const [bulkEndRack, setBulkEndRack] = useState(10);
-  const [bulkStartLevel, setBulkStartLevel] = useState(1);
-  const [bulkEndLevel, setBulkEndLevel] = useState(4);
-  const [bulkBinsPerLevel, setBulkBinsPerLevel] = useState(0); // 0 = no bins, just level
+  const [bulkAisleConfigs, setBulkAisleConfigs] = useState<AisleConfig[]>([
+    { id: '1', aisle: 1, rackStart: 1, rackEnd: 10, levels: 4, binsPerLevel: 0 }
+  ]);
   const [bulkItemsPerLocation, setBulkItemsPerLocation] = useState(50);
-  const [bulkFillOrder, setBulkFillOrder] = useState<'rack-first' | 'level-first'>('level-first');
   
-  // Derived: build location prefix for preview
-  const bulkLocationPrefix = `${bulkWarehouse}-A${bulkStartAisle}`;
-  const bulkItemsPerRack = bulkItemsPerLocation; // Legacy compatibility
+  // Helper to add new aisle config (copies from last aisle)
+  const addAisleConfig = () => {
+    const lastConfig = bulkAisleConfigs[bulkAisleConfigs.length - 1];
+    const newAisle = lastConfig ? lastConfig.aisle + 1 : 1;
+    setBulkAisleConfigs([...bulkAisleConfigs, {
+      id: Date.now().toString(),
+      aisle: newAisle,
+      rackStart: lastConfig?.rackStart || 1,
+      rackEnd: lastConfig?.rackEnd || 10,
+      levels: lastConfig?.levels || 4,
+      binsPerLevel: lastConfig?.binsPerLevel || 0
+    }]);
+  };
+  
+  // Helper to remove aisle config
+  const removeAisleConfig = (id: string) => {
+    if (bulkAisleConfigs.length > 1) {
+      setBulkAisleConfigs(bulkAisleConfigs.filter(c => c.id !== id));
+    }
+  };
+  
+  // Helper to update aisle config
+  const updateAisleConfig = (id: string, updates: Partial<AisleConfig>) => {
+    setBulkAisleConfigs(bulkAisleConfigs.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -2677,60 +2703,35 @@ function QuickStorageSheet({
     // setLocationInput(""); - Removed to allow faster multi-location entry
   };
   
-  // Generate all location codes based on bulk allocation settings
+  // Generate all location codes based on per-aisle configurations (rack-first ordering)
   const generateBulkLocations = useCallback(() => {
     const locations: string[] = [];
     
-    // Validate inputs - ensure valid ranges
-    if (!bulkWarehouse) return locations;
+    if (!bulkWarehouse || bulkAisleConfigs.length === 0) return locations;
     
-    // Handle reversed ranges by swapping (all inputs are now numbers)
-    const effectiveAisleStart = Math.min(bulkStartAisle, bulkEndAisle);
-    const effectiveAisleEnd = Math.max(bulkStartAisle, bulkEndAisle);
-    const effectiveRackStart = Math.min(bulkStartRack, bulkEndRack);
-    const effectiveRackEnd = Math.max(bulkStartRack, bulkEndRack);
-    const effectiveLevelStart = Math.min(bulkStartLevel, bulkEndLevel);
-    const effectiveLevelEnd = Math.max(bulkStartLevel, bulkEndLevel);
-    
-    // Ensure positive values
-    if (effectiveAisleStart < 1 || effectiveRackStart < 1 || effectiveLevelStart < 1) return locations;
-    
-    // Generate locations based on fill order
-    // Location format: WH1-A1-R1-L1-B1 (Warehouse-Aisle-Rack-Level-Bin)
-    if (bulkFillOrder === 'level-first') {
-      // Fill all levels in a rack before moving to next rack (good for picking efficiency)
-      for (let aisle = effectiveAisleStart; aisle <= effectiveAisleEnd; aisle++) {
-        for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
-          for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
-            if (bulkBinsPerLevel > 0) {
-              for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}-B${bin}`);
-              }
-            } else {
-              locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}`);
+    // Process each aisle configuration
+    for (const config of bulkAisleConfigs) {
+      const rackStart = Math.min(config.rackStart, config.rackEnd);
+      const rackEnd = Math.max(config.rackStart, config.rackEnd);
+      const levels = Math.max(1, config.levels);
+      const bins = config.binsPerLevel > 0 ? config.binsPerLevel : 0;
+      
+      // Rack-first ordering: fill all racks on level 1, then level 2, etc.
+      for (let level = 1; level <= levels; level++) {
+        for (let rack = rackStart; rack <= rackEnd; rack++) {
+          if (bins > 0) {
+            for (let bin = 1; bin <= bins; bin++) {
+              locations.push(`${bulkWarehouse}-A${config.aisle}-R${rack}-L${level}-B${bin}`);
             }
-          }
-        }
-      }
-    } else {
-      // Fill same level across all racks before moving to next level (good for forklift efficiency)
-      for (let aisle = effectiveAisleStart; aisle <= effectiveAisleEnd; aisle++) {
-        for (let level = effectiveLevelStart; level <= effectiveLevelEnd; level++) {
-          for (let rack = effectiveRackStart; rack <= effectiveRackEnd; rack++) {
-            if (bulkBinsPerLevel > 0) {
-              for (let bin = 1; bin <= bulkBinsPerLevel; bin++) {
-                locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}-B${bin}`);
-              }
-            } else {
-              locations.push(`${bulkWarehouse}-A${aisle}-R${rack}-L${level}`);
-            }
+          } else {
+            locations.push(`${bulkWarehouse}-A${config.aisle}-R${rack}-L${level}`);
           }
         }
       }
     }
     
     return locations;
-  }, [bulkWarehouse, bulkStartAisle, bulkEndAisle, bulkStartRack, bulkEndRack, bulkStartLevel, bulkEndLevel, bulkBinsPerLevel, bulkFillOrder]);
+  }, [bulkWarehouse, bulkAisleConfigs]);
   
   // Handle bulk allocation for multi-variant items (e.g., 300-500 gel polishes across racks)
   const handleBulkAllocation = async () => {
@@ -3994,7 +3995,7 @@ function QuickStorageSheet({
           </SheetContent>
         </Sheet>
 
-        {/* Bulk Allocation Dialog */}
+        {/* Bulk Allocation Dialog - Per-Aisle Configuration */}
         <Dialog open={showBulkAllocation} onOpenChange={setShowBulkAllocation}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-bulk-allocation">
             <DialogHeader>
@@ -4008,124 +4009,21 @@ function QuickStorageSheet({
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Warehouse */}
-              <div className="space-y-2">
-                <Label htmlFor="bulk-warehouse">{t('imports:warehouse', 'Warehouse')}</Label>
-                <Input
-                  id="bulk-warehouse"
-                  value={bulkWarehouse}
-                  onChange={(e) => setBulkWarehouse(e.target.value.toUpperCase())}
-                  placeholder="WH1"
-                  className="font-mono"
-                  data-testid="input-bulk-warehouse"
-                />
-              </div>
-
-              {/* Aisle Range */}
-              <div className="space-y-2">
-                <Label>{t('imports:aisleRange', 'Aisle Range')}</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkStartAisle}
-                      onChange={(e) => setBulkStartAisle(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-start-aisle"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
-                  </div>
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkEndAisle}
-                      onChange={(e) => setBulkEndAisle(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-end-aisle"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rack Range */}
-              <div className="space-y-2">
-                <Label>{t('imports:rackRange', 'Rack Range')}</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkStartRack}
-                      onChange={(e) => setBulkStartRack(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-start-rack"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
-                  </div>
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkEndRack}
-                      onChange={(e) => setBulkEndRack(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-end-rack"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Level Range */}
-              <div className="space-y-2">
-                <Label>{t('imports:levelRange', 'Level Range')}</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkStartLevel}
-                      onChange={(e) => setBulkStartLevel(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-start-level"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:start', 'Start')}</p>
-                  </div>
-                  <div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={bulkEndLevel}
-                      onChange={(e) => setBulkEndLevel(parseInt(e.target.value) || 1)}
-                      className="font-mono"
-                      data-testid="input-bulk-end-level"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t('imports:end', 'End')}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bins per Level and Items per Location */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bulk-bins">{t('imports:binsPerLevel', 'Bins per Level')}</Label>
+              {/* Global Settings */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="bulk-warehouse" className="text-xs">{t('imports:warehouse', 'Warehouse')}</Label>
                   <Input
-                    id="bulk-bins"
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={bulkBinsPerLevel}
-                    onChange={(e) => setBulkBinsPerLevel(parseInt(e.target.value) || 0)}
-                    className="font-mono"
-                    data-testid="input-bulk-bins"
+                    id="bulk-warehouse"
+                    value={bulkWarehouse}
+                    onChange={(e) => setBulkWarehouse(e.target.value.toUpperCase())}
+                    placeholder="WH1"
+                    className="font-mono h-9"
+                    data-testid="input-bulk-warehouse"
                   />
-                  <p className="text-xs text-muted-foreground">{t('imports:binsHint', '0 = no bins')}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bulk-per-location">{t('imports:itemsPerLocation', 'Items per Location')}</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="bulk-per-location" className="text-xs">{t('imports:itemsPerLocation', 'Items/Location')}</Label>
                   <Input
                     id="bulk-per-location"
                     type="number"
@@ -4133,42 +4031,138 @@ function QuickStorageSheet({
                     max={500}
                     value={bulkItemsPerLocation}
                     onChange={(e) => setBulkItemsPerLocation(parseInt(e.target.value) || 50)}
-                    className="font-mono"
+                    className="font-mono h-9"
                     data-testid="input-bulk-per-location"
                   />
                 </div>
               </div>
 
-              {/* Fill Order Strategy */}
+              {/* Aisle Configurations */}
               <div className="space-y-2">
-                <Label>{t('imports:fillOrder', 'Fill Order Strategy')}</Label>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">{t('imports:aisleConfigurations', 'Aisle Configuration')}</Label>
                   <Button
                     type="button"
                     size="sm"
-                    variant={bulkFillOrder === 'level-first' ? 'default' : 'outline'}
-                    onClick={() => setBulkFillOrder('level-first')}
-                    className={bulkFillOrder === 'level-first' ? 'bg-purple-600 hover:bg-purple-700' : ''}
-                    data-testid="button-fill-level-first"
+                    variant="outline"
+                    onClick={addAisleConfig}
+                    className="h-7 text-xs"
+                    data-testid="button-add-aisle"
                   >
-                    {t('imports:levelFirst', 'Level-first')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={bulkFillOrder === 'rack-first' ? 'default' : 'outline'}
-                    onClick={() => setBulkFillOrder('rack-first')}
-                    className={bulkFillOrder === 'rack-first' ? 'bg-purple-600 hover:bg-purple-700' : ''}
-                    data-testid="button-fill-rack-first"
-                  >
-                    {t('imports:rackFirst', 'Rack-first')}
+                    <Plus className="h-3 w-3 mr-1" />
+                    {t('imports:addAisle', 'Add Aisle')}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {bulkFillOrder === 'level-first' 
-                    ? t('imports:levelFirstHint', 'Fill all levels in a rack before moving to next rack (best for picking)')
-                    : t('imports:rackFirstHint', 'Fill same level across racks before moving to next level (best for forklift)')
-                  }
+                
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {bulkAisleConfigs.map((config, idx) => (
+                    <div 
+                      key={config.id} 
+                      className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                          {t('imports:aisleLabel', 'Aisle {{num}}', { num: config.aisle })}
+                        </span>
+                        {bulkAisleConfigs.length > 1 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeAisleConfig(config.id)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            data-testid={`button-remove-aisle-${idx}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-5 gap-2">
+                        {/* Aisle Number */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{t('imports:aisle', 'Aisle')}</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={config.aisle}
+                            onChange={(e) => updateAisleConfig(config.id, { aisle: parseInt(e.target.value) || 1 })}
+                            className="font-mono h-8 text-xs"
+                            data-testid={`input-aisle-num-${idx}`}
+                          />
+                        </div>
+                        
+                        {/* Rack Start */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{t('imports:rackFrom', 'Rack')}</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={config.rackStart}
+                            onChange={(e) => updateAisleConfig(config.id, { rackStart: parseInt(e.target.value) || 1 })}
+                            className="font-mono h-8 text-xs"
+                            data-testid={`input-rack-start-${idx}`}
+                          />
+                        </div>
+                        
+                        {/* Rack End */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{t('imports:to', 'To')}</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={config.rackEnd}
+                            onChange={(e) => updateAisleConfig(config.id, { rackEnd: parseInt(e.target.value) || 1 })}
+                            className="font-mono h-8 text-xs"
+                            data-testid={`input-rack-end-${idx}`}
+                          />
+                        </div>
+                        
+                        {/* Levels */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{t('imports:levels', 'Levels')}</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={config.levels}
+                            onChange={(e) => updateAisleConfig(config.id, { levels: parseInt(e.target.value) || 1 })}
+                            className="font-mono h-8 text-xs"
+                            data-testid={`input-levels-${idx}`}
+                          />
+                        </div>
+                        
+                        {/* Bins */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">{t('imports:bins', 'Bins')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={20}
+                            value={config.binsPerLevel}
+                            onChange={(e) => updateAisleConfig(config.id, { binsPerLevel: parseInt(e.target.value) || 0 })}
+                            className="font-mono h-8 text-xs"
+                            data-testid={`input-bins-${idx}`}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Per-aisle capacity info */}
+                      {(() => {
+                        const racks = Math.abs(config.rackEnd - config.rackStart) + 1;
+                        const locs = racks * config.levels * (config.binsPerLevel > 0 ? config.binsPerLevel : 1);
+                        return (
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {racks} {t('imports:racks', 'racks')} × {config.levels} {t('imports:levels', 'levels')}{config.binsPerLevel > 0 ? ` × ${config.binsPerLevel} bins` : ''} = {locs} {t('imports:locations', 'locations')}
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  ))}
+                </div>
+                
+                <p className="text-[10px] text-muted-foreground">
+                  {t('imports:rackFirstHint', 'Items fill across racks on level 1, then level 2, etc. (forklift-friendly)')}
                 </p>
               </div>
 
@@ -4181,29 +4175,30 @@ function QuickStorageSheet({
                 <div className="space-y-1 text-xs">
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    return preview.locations.slice(0, 6).map((loc, idx) => (
+                    return preview.locations.slice(0, 4).map((loc, idx) => (
                       <div key={idx} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
                         <span className="font-mono font-medium text-xs">{loc.code}</span>
-                        <Badge variant="secondary" className="text-xs">{loc.items} items</Badge>
+                        <Badge variant="secondary" className="text-xs">{loc.items}</Badge>
                       </div>
                     ));
                   })()}
                   {(() => {
                     const preview = getBulkAllocationPreview();
-                    if (preview.locations.length > 6) {
+                    if (preview.locations.length > 4) {
                       return (
-                        <p className="text-center text-muted-foreground pt-1">
-                          +{preview.locations.length - 6} more locations...
+                        <p className="text-center text-muted-foreground text-[10px] pt-1">
+                          +{preview.locations.length - 4} {t('imports:moreLocations', 'more locations')}...
                         </p>
                       );
                     }
                     return null;
                   })()}
+                  
+                  {/* Summary */}
                   {(() => {
                     const preview = getBulkAllocationPreview();
                     const totalVariants = currentItem?.variantAllocations?.length || 0;
                     
-                    // Calculate total items to allocate (all variants quantity)
                     const totalItemsToAllocate = currentItem?.variantAllocations?.reduce((sum, v) => {
                       const existingForVariant = currentItem?.existingLocations?.reduce((s: number, loc: any) => {
                         return s + (loc.variantId === v.variantId ? (loc.quantity || 0) : 0);
@@ -4214,113 +4209,67 @@ function QuickStorageSheet({
                       return sum + Math.max(0, v.quantity - existingForVariant - pendingForVariant);
                     }, 0) || 0;
                     
-                    const itemsAllocatedInPreview = preview.totalItems;
-                    const itemsRemaining = totalItemsToAllocate - itemsAllocatedInPreview;
-                    const allocationComplete = itemsRemaining <= 0;
-                    
-                    // Calculate dimensions based on actual ranges
-                    const numAisles = Math.abs(bulkEndAisle - bulkStartAisle) + 1;
-                    const numRacks = Math.abs(bulkEndRack - bulkStartRack) + 1;
-                    const numLevels = Math.abs(bulkEndLevel - bulkStartLevel) + 1;
-                    const numBins = bulkBinsPerLevel > 0 ? bulkBinsPerLevel : 1;
-                    
-                    // Total locations = Aisles × Racks × Levels × Bins (or 1 if no bins)
-                    const totalLocations = numAisles * numRacks * numLevels * numBins;
+                    const totalLocations = generateBulkLocations().length;
                     const totalCapacity = totalLocations * bulkItemsPerLocation;
                     const capacityUsagePercent = totalCapacity > 0 ? Math.round((totalItemsToAllocate / totalCapacity) * 100) : 0;
+                    const itemsRemaining = Math.max(0, totalItemsToAllocate - preview.totalItems);
+                    const allocationComplete = itemsRemaining <= 0;
                     
                     return (
-                      <div className="pt-3 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
-                        {/* Structure Breakdown */}
-                        <div className="bg-white dark:bg-gray-900 rounded p-2 space-y-1">
-                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">{t('imports:structureBreakdown', 'Storage Structure')}</p>
-                          <div className="grid grid-cols-4 gap-1 text-center text-xs">
-                            <div className="bg-purple-100 dark:bg-purple-900/30 rounded p-1">
-                              <p className="font-bold text-purple-700 dark:text-purple-300">{numAisles}</p>
-                              <p className="text-[10px] text-muted-foreground">{t('imports:aisles', 'Aisles')}</p>
-                            </div>
-                            <div className="bg-blue-100 dark:bg-blue-900/30 rounded p-1">
-                              <p className="font-bold text-blue-700 dark:text-blue-300">{numRacks}</p>
-                              <p className="text-[10px] text-muted-foreground">{t('imports:racks', 'Racks')}</p>
-                            </div>
-                            <div className="bg-green-100 dark:bg-green-900/30 rounded p-1">
-                              <p className="font-bold text-green-700 dark:text-green-300">{numLevels}</p>
-                              <p className="text-[10px] text-muted-foreground">{t('imports:levels', 'Levels')}</p>
-                            </div>
-                            <div className="bg-amber-100 dark:bg-amber-900/30 rounded p-1">
-                              <p className="font-bold text-amber-700 dark:text-amber-300">{bulkBinsPerLevel > 0 ? numBins : '-'}</p>
-                              <p className="text-[10px] text-muted-foreground">{t('imports:bins', 'Bins')}</p>
-                            </div>
+                      <div className="pt-2 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
+                        {/* Quick Stats */}
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
+                            <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{totalVariants}</p>
+                            <p className="text-[10px] text-muted-foreground">{t('imports:variants', 'Variants')}</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
+                            <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{totalLocations}</p>
+                            <p className="text-[10px] text-muted-foreground">{t('imports:locations', 'Locations')}</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
+                            <p className="text-sm font-bold text-green-600 dark:text-green-400">{totalCapacity.toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground">{t('imports:capacity', 'Capacity')}</p>
                           </div>
                         </div>
                         
-                        {/* Capacity Calculation */}
-                        <div className="bg-white dark:bg-gray-900 rounded p-2">
-                          <div className="text-xs text-center mb-2">
-                            <span className="font-mono">
-                              {numAisles} × {numRacks} × {numLevels}{bulkBinsPerLevel > 0 ? ` × ${numBins}` : ''} = <span className="font-bold text-blue-600 dark:text-blue-400">{totalLocations}</span> {t('imports:locations', 'locations')}
-                            </span>
-                          </div>
-                          <div className="text-xs text-center">
-                            <span className="font-mono">
-                              {totalLocations} × {bulkItemsPerLocation} = <span className="font-bold text-green-600 dark:text-green-400">{totalCapacity.toLocaleString()}</span> {t('imports:itemCapacity', 'item capacity')}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Items Summary */}
+                        {/* Allocation Progress */}
                         <div className="bg-white dark:bg-gray-900 rounded p-2 space-y-1">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground">{t('imports:variantsToStore', 'Variants to store')}</span>
-                            <span className="font-mono font-medium">{totalVariants}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground">{t('imports:totalItemsToStore', 'Total items to store')}</span>
-                            <span className="font-mono font-medium">{totalItemsToAllocate.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground">{t('imports:itemsAllocated', 'Items allocated')}</span>
-                            <span className="font-mono font-medium text-green-600 dark:text-green-400">{itemsAllocatedInPreview.toLocaleString()}</span>
+                            <span className="text-muted-foreground">{t('imports:itemsToStore', 'Items to store')}</span>
+                            <span className="font-mono">{totalItemsToAllocate.toLocaleString()}</span>
                           </div>
                           {!allocationComplete && (
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-orange-600 dark:text-orange-400 font-medium">{t('imports:itemsLeftToStore', 'Items left to store')}</span>
+                              <span className="text-orange-600 dark:text-orange-400">{t('imports:itemsLeftToStore', 'Left to allocate')}</span>
                               <span className="font-mono font-bold text-orange-600 dark:text-orange-400">{itemsRemaining.toLocaleString()}</span>
                             </div>
                           )}
                           {allocationComplete && (
-                            <div className="flex justify-center items-center text-xs pt-1">
-                              <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3" />
-                                {t('imports:allItemsAllocated', 'All items allocated!')}
-                              </span>
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                              <CheckCircle className="h-3 w-3" />
+                              {t('imports:allItemsAllocated', 'All items will be allocated!')}
                             </div>
                           )}
                         </div>
                         
-                        {/* Capacity Usage Bar */}
+                        {/* Capacity Bar */}
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{t('imports:capacityUsage', 'Capacity usage')}</span>
+                            <span>{t('imports:capacityUsage', 'Usage')}</span>
                             <span>{capacityUsagePercent}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                             <div 
-                              className={`h-2 rounded-full transition-all ${
-                                capacityUsagePercent > 100 ? 'bg-red-500' : 
-                                capacityUsagePercent >= 80 ? 'bg-orange-500' : 'bg-purple-500'
-                              }`}
+                              className={`h-1.5 rounded-full ${capacityUsagePercent > 100 ? 'bg-red-500' : capacityUsagePercent >= 80 ? 'bg-orange-500' : 'bg-purple-500'}`}
                               style={{ width: `${Math.min(100, capacityUsagePercent)}%` }}
                             />
                           </div>
                         </div>
                         
-                        {/* Warning if not enough capacity */}
                         {totalItemsToAllocate > totalCapacity && (
-                          <p className="text-center text-red-600 dark:text-red-400 text-xs font-medium bg-red-50 dark:bg-red-950/30 rounded p-2">
-                            {t('imports:needMoreCapacity', 'Not enough capacity! Need {{needed}} more slots.', { 
-                              needed: (totalItemsToAllocate - totalCapacity).toLocaleString() 
-                            })}
+                          <p className="text-center text-red-600 dark:text-red-400 text-[10px] font-medium bg-red-50 dark:bg-red-950/30 rounded p-1.5">
+                            {t('imports:needMoreCapacity', 'Need {{needed}} more slots!', { needed: (totalItemsToAllocate - totalCapacity).toLocaleString() })}
                           </p>
                         )}
                       </div>
@@ -4346,7 +4295,7 @@ function QuickStorageSheet({
                   isSubmitting || 
                   !items[selectedItemIndex]?.variantAllocations || 
                   items[selectedItemIndex]?.variantAllocations.length < 2 ||
-                  getBulkAllocationPreview().availableLocations === 0
+                  generateBulkLocations().length === 0
                 }
                 className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
                 data-testid="button-apply-bulk"
