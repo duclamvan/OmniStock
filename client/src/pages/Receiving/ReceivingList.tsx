@@ -4405,211 +4405,80 @@ function QuickStorageSheet({
                 </p>
               </div>
 
-              {/* Preview */}
-              <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
-                <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  {t('imports:allocationPreview', 'Allocation Preview')}
-                </p>
-                <div className="space-y-1 text-xs">
-                  {/* Smart preview with first, pattern, and last */}
-                  {(() => {
-                    const preview = getBulkAllocationPreview();
-                    const locs = preview.locations;
-                    const total = locs.length;
-                    
-                    if (total === 0) {
-                      return (
-                        <p className="text-center text-muted-foreground py-2">
-                          {t('imports:noLocationsGenerated', 'No locations to preview')}
-                        </p>
-                      );
-                    }
-                    
-                    // Extract unique levels from locations for pattern display
-                    const extractLevel = (code: string) => {
-                      const match = code.match(/-L(\d+)/);
-                      return match ? parseInt(match[1]) : 0;
-                    };
-                    const uniqueLevels = Array.from(new Set(locs.map(l => extractLevel(l.code)))).sort((a, b) => 
-                      bulkFillDirection === 'top-down' ? b - a : a - b
-                    );
-                    
-                    // Show first 2, pattern indicator, last 2
-                    const showStart = locs.slice(0, 2);
-                    const showEnd = total > 4 ? locs.slice(-2) : [];
-                    const middleCount = total > 4 ? total - 4 : 0;
-                    
-                    return (
-                      <>
-                        {/* First locations */}
-                        {showStart.map((loc, idx) => (
-                          <div key={`start-${idx}`} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700">
-                            <span className="flex items-center gap-1.5">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${loc.isFull ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
-                                {loc.isFull ? '●' : '◐'}
-                              </span>
-                              <span className="font-mono font-medium text-xs">{loc.code}</span>
-                            </span>
-                            <Badge variant="secondary" className={`text-xs ${loc.isFull ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                              {loc.items}
-                            </Badge>
-                          </div>
-                        ))}
-                        
-                        {/* Pattern indicator for middle section */}
-                        {middleCount > 0 && (
-                          <div className="flex items-center justify-center gap-2 py-2 border-b border-purple-200 dark:border-purple-700">
-                            <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
-                              <span className="text-[10px] font-mono">···</span>
-                              <span className="text-[10px] font-medium">+{middleCount}</span>
-                              <span className="text-[10px] font-mono">···</span>
-                            </div>
-                            <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                              {uniqueLevels.slice(0, 5).map((level, i) => (
-                                <span key={level} className="flex items-center">
-                                  {i > 0 && <span className="mx-0.5">→</span>}
-                                  <span className="font-mono bg-gray-200 dark:bg-gray-700 rounded px-1">L{level}</span>
-                                </span>
-                              ))}
-                              {uniqueLevels.length > 5 && <span>...</span>}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Last locations */}
-                        {showEnd.map((loc, idx) => (
-                          <div key={`end-${idx}`} className="flex justify-between items-center py-1 border-b border-purple-200 dark:border-purple-700 last:border-0">
-                            <span className="flex items-center gap-1.5">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${loc.isFull ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}`}>
-                                {loc.isFull ? '●' : '◐'}
-                              </span>
-                              <span className="font-mono font-medium text-xs">{loc.code}</span>
-                            </span>
-                            <Badge variant="secondary" className={`text-xs ${loc.isFull ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                              {loc.items}
-                            </Badge>
-                          </div>
-                        ))}
-                      </>
-                    );
-                  })()}
+              {/* Preview - Clean Summary */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <p className="text-xs font-medium text-muted-foreground mb-2">{t('imports:allocationPreview', 'Allocation Preview')}</p>
+                
+                {(() => {
+                  const preview = getBulkAllocationPreview();
+                  const locs = preview.locations;
+                  const total = locs.length;
+                  const totalVariants = currentItem?.variantAllocations?.length || 0;
+                  const totalItemsToAllocate = preview.totalItems;
+                  const itemsWillBeAllocated = preview.locations.reduce((sum, loc) => sum + loc.items, 0);
+                  const totalLocations = generateBulkLocations().length;
+                  const totalCapacity = totalLocations * bulkItemsPerLocation;
+                  const shortfall = Math.max(0, totalItemsToAllocate - totalCapacity);
+                  const additionalBinsNeeded = shortfall > 0 ? Math.ceil(shortfall / bulkItemsPerLocation) : 0;
+                  const allocationComplete = shortfall <= 0 && totalItemsToAllocate > 0;
                   
-                  {/* Summary */}
-                  {(() => {
-                    const preview = getBulkAllocationPreview();
-                    const totalVariants = currentItem?.variantAllocations?.length || 0;
-                    
-                    // Calculate total items that need allocation (from variants)
-                    const totalItemsToAllocate = preview.totalItems;
-                    
-                    // Calculate items that will actually be allocated (sum of location items)
-                    const itemsWillBeAllocated = preview.locations.reduce((sum, loc) => sum + loc.items, 0);
-                    
-                    // Calculate bins needed (based on how many bins would be used)
-                    const binsNeeded = preview.totalLocations;
-                    const avgItemsPerVariant = totalVariants > 0 ? Math.round(totalItemsToAllocate / totalVariants) : 0;
-                    
-                    const totalLocations = generateBulkLocations().length;
-                    const totalCapacity = totalLocations * bulkItemsPerLocation;
-                    const capacityUsagePercent = totalCapacity > 0 ? Math.round((totalItemsToAllocate / totalCapacity) * 100) : 0;
-                    const itemsRemaining = Math.max(0, totalItemsToAllocate - itemsWillBeAllocated);
-                    const allocationComplete = itemsRemaining <= 0 && totalItemsToAllocate > 0;
-                    
+                  if (total === 0) {
                     return (
-                      <div className="pt-2 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-4 gap-1.5 text-center">
-                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
-                            <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{totalVariants}</p>
-                            <p className="text-[10px] text-muted-foreground">{t('imports:variants', 'Variants')}</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
-                            <p className="text-sm font-bold text-amber-600 dark:text-amber-400">~{avgItemsPerVariant}</p>
-                            <p className="text-[10px] text-muted-foreground">{t('imports:avgPerVariant', 'Avg/Variant')}</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
-                            <p className={`text-sm font-bold ${binsNeeded > totalLocations ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                              {binsNeeded}/{totalLocations}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">{t('imports:binsUsed', 'Bins Used')}</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-900 rounded p-1.5">
-                            <p className="text-sm font-bold text-green-600 dark:text-green-400">{totalCapacity.toLocaleString()}</p>
-                            <p className="text-[10px] text-muted-foreground">{t('imports:capacity', 'Capacity')}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Allocation Progress */}
-                        <div className="bg-white dark:bg-gray-900 rounded p-2 space-y-1">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground">{t('imports:itemsToStore', 'Items to store')}</span>
-                            <span className="font-mono">{totalItemsToAllocate.toLocaleString()}</span>
-                          </div>
-                          {!allocationComplete && (
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-orange-600 dark:text-orange-400">{t('imports:itemsLeftToStore', 'Left to allocate')}</span>
-                              <span className="font-mono font-bold text-orange-600 dark:text-orange-400">{itemsRemaining.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {allocationComplete && (
-                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                              <CheckCircle className="h-3 w-3" />
-                              {t('imports:allItemsAllocated', 'All items will be allocated!')}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Capacity Bar */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{t('imports:capacityUsage', 'Usage')}</span>
-                            <span>{capacityUsagePercent}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                            <div 
-                              className={`h-1.5 rounded-full ${capacityUsagePercent > 100 ? 'bg-red-500' : capacityUsagePercent >= 80 ? 'bg-orange-500' : 'bg-purple-500'}`}
-                              style={{ width: `${Math.min(100, capacityUsagePercent)}%` }}
-                            />
-                          </div>
-                        </div>
-                        
-                        {totalItemsToAllocate > totalCapacity && (() => {
-                          const shortfall = totalItemsToAllocate - totalCapacity;
-                          // Calculate how many variants won't fit (approximate)
-                          const variantsWithLocations = preview.locations.length;
-                          const variantsWithoutLocations = Math.max(0, totalVariants - variantsWithLocations);
-                          // Additional bins needed = ceil(shortfall / itemsPerBin)
-                          const additionalBinsNeeded = Math.ceil(shortfall / bulkItemsPerLocation);
-                          
-                          return (
-                            <div className="text-center text-red-600 dark:text-red-400 text-[10px] font-medium bg-red-50 dark:bg-red-950/30 rounded p-2 space-y-1">
-                              <div className="flex items-center justify-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                <span>{t('imports:capacityExceeded', 'Capacity exceeded!')}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-[9px]">
-                                <div className="bg-white/50 dark:bg-gray-900/50 rounded p-1">
-                                  <p className="font-bold text-sm">{shortfall.toLocaleString()}</p>
-                                  <p>{t('imports:itemsOverCapacity', 'items over')}</p>
-                                </div>
-                                <div className="bg-white/50 dark:bg-gray-900/50 rounded p-1">
-                                  <p className="font-bold text-sm">+{additionalBinsNeeded}</p>
-                                  <p>{t('imports:moreBinsNeeded', 'bins needed')}</p>
-                                </div>
-                              </div>
-                              {variantsWithoutLocations > 0 && (
-                                <p className="text-[9px] pt-1 border-t border-red-200 dark:border-red-800">
-                                  {t('imports:variantsWithoutLocation', '{{count}} variants won\'t get a location', { count: variantsWithoutLocations })}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
+                      <p className="text-center text-muted-foreground py-3 text-sm">
+                        {t('imports:noLocationsGenerated', 'No locations to preview')}
+                      </p>
                     );
-                  })()}
-                </div>
+                  }
+                  
+                  return (
+                    <div className="space-y-3">
+                      {/* Location Range */}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-mono text-foreground">{locs[0]?.code}</span>
+                        <span className="text-muted-foreground px-2">→</span>
+                        <span className="font-mono text-foreground">{locs[locs.length - 1]?.code}</span>
+                      </div>
+                      
+                      {/* Key Stats - 2 rows, clean */}
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div>
+                          <p className="font-semibold text-foreground">{totalVariants}</p>
+                          <p className="text-muted-foreground">{t('imports:variants', 'variants')}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">{total}</p>
+                          <p className="text-muted-foreground">{t('imports:bins', 'bins')}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">{bulkItemsPerLocation}/bin</p>
+                          <p className="text-muted-foreground">{t('imports:capacity', 'capacity')}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Allocation Status */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">{t('imports:itemsToStore', 'Items')}</span>
+                          <span className="font-mono font-medium">{totalItemsToAllocate.toLocaleString()} / {totalCapacity.toLocaleString()}</span>
+                        </div>
+                        
+                        {allocationComplete ? (
+                          <div className="flex items-center gap-1.5 mt-1.5 text-sm text-green-600 dark:text-green-500">
+                            <CheckCircle className="h-4 w-4" />
+                            <span>{t('imports:allItemsAllocated', 'All items will be allocated')}</span>
+                          </div>
+                        ) : shortfall > 0 ? (
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-900">
+                            <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+                              <AlertTriangle className="h-4 w-4 shrink-0" />
+                              <span>{t('imports:needMoreBins', 'Need +{{count}} bins for {{items}} items', { count: additionalBinsNeeded, items: shortfall.toLocaleString() })}</span>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
