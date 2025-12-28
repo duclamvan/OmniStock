@@ -19672,8 +19672,9 @@ Important rules:
         for (const ri of allReceivedItems) {
           totalReceived += (ri.receivedQuantity || 0) + (ri.damagedQuantity || 0);
           // Use assignedQuantity for stored count (items assigned to warehouse locations)
-          // Fall back to receivedQuantity for backwards compatibility with older items
-          totalStored += ri.assignedQuantity || ri.receivedQuantity || 0;
+          // Use nullish coalescing to properly handle assignedQuantity=0 (not yet stored)
+          // Only fall back to receivedQuantity if assignedQuantity is null/undefined (legacy items)
+          totalStored += ri.assignedQuantity ?? ri.receivedQuantity ?? 0;
           totalMissing += ri.missingQuantity || 0;
         }
         
