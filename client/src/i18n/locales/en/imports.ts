@@ -610,6 +610,8 @@ const imports = {
   dragToConsolidation: 'Drag card to consolidation',
   hideItems: 'Hide items',
   showItems: 'Show items',
+  hideVariants: 'Hide variants',
+  showVariants: 'Show variants',
   moveToConsolidation: 'Move to consolidation',
   expandAll: 'Expand All',
   collapseAll: 'Collapse All',

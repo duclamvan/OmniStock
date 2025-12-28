@@ -65,6 +65,13 @@ interface ImportPurchase {
   itemCount: number;
 }
 
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  unitPrice?: number;
+}
+
 interface CustomItem {
   id: string;
   name: string;
@@ -82,6 +89,7 @@ interface CustomItem {
   classification?: string;
   purchaseOrderId?: string;
   orderItems?: any[];
+  variantAllocations?: VariantAllocation[];
   imageUrl?: string | null;
   isPackage?: boolean;
   createdAt: string;
@@ -332,6 +340,25 @@ const ItemCard = memo(({
                         </Button>
                       </>
                     )}
+                    {/* Variant allocations toggle - show for items with variants */}
+                    {item.variantAllocations && item.variantAllocations.length > 0 && (
+                      <>
+                        <span>•</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-1.5 -ml-1 text-xs hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleItemExpanded(item.id);
+                          }}
+                          title={expandedItems.has(item.id) ? t('hideVariants') : t('showVariants')}
+                        >
+                          <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                          <span className="ml-1">{item.variantAllocations.length} {t('variants')}</span>
+                        </Button>
+                      </>
+                    )}
                   </div>
                   
                   {item.purchaseOrderId && item.isPackage && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
@@ -345,6 +372,18 @@ const ItemCard = memo(({
                             )}
                           </div>
                           <span className="text-gray-700 dark:text-gray-300">{t('qty')}: {orderItem.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Show variant allocations if expanded */}
+                  {item.variantAllocations && item.variantAllocations.length > 0 && expandedItems.has(item.id) && (
+                    <div className="mt-2 ml-4 border-l-4 border-l-purple-400 pl-3 space-y-1 bg-purple-50/50 dark:bg-purple-900/20 rounded-r py-2 max-h-48 overflow-y-auto">
+                      {item.variantAllocations.map((variant: VariantAllocation, idx: number) => (
+                        <div key={variant.variantId || idx} className="flex items-center justify-between text-xs">
+                          <span className="text-purple-900 dark:text-purple-100 truncate max-w-[200px]">{variant.variantName}</span>
+                          <span className="text-purple-700 dark:text-purple-300 font-medium ml-2">{t('qty')}: {variant.quantity}</span>
                         </div>
                       ))}
                     </div>
@@ -3289,6 +3328,25 @@ export default function AtWarehouse() {
                                                 </Button>
                                               </>
                                             )}
+                                            {/* Variant allocations toggle - show for items with variants */}
+                                            {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                              <>
+                                                <span>•</span>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 px-2 text-xs hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleItemExpanded(item.id);
+                                                  }}
+                                                  title={expandedItems.has(item.id) ? t('hideVariants') : t('showVariants')}
+                                                >
+                                                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                                                  <span className="ml-1">{item.variantAllocations.length} {t('variants')}</span>
+                                                </Button>
+                                              </>
+                                            )}
                                           </div>
                                           
                                           {/* Show order items inline if expanded - only for packages */}
@@ -3303,6 +3361,18 @@ export default function AtWarehouse() {
                                                     )}
                                                   </div>
                                                   <span className="text-gray-700 dark:text-gray-300">{t('qty')}: {orderItem.quantity}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                          
+                                          {/* Show variant allocations if expanded */}
+                                          {item.variantAllocations && item.variantAllocations.length > 0 && expandedItems.has(item.id) && (
+                                            <div className="mt-2 ml-4 border-l-4 border-l-purple-400 pl-3 space-y-1 bg-purple-50/50 dark:bg-purple-900/20 rounded-r py-2 max-h-48 overflow-y-auto">
+                                              {item.variantAllocations.map((variant, idx) => (
+                                                <div key={variant.variantId || idx} className="flex items-center justify-between text-xs">
+                                                  <span className="text-purple-900 dark:text-purple-100 truncate max-w-[200px]">{variant.variantName}</span>
+                                                  <span className="text-purple-700 dark:text-purple-300 font-medium ml-2">{t('qty')}: {variant.quantity}</span>
                                                 </div>
                                               ))}
                                             </div>

@@ -617,6 +617,8 @@ const imports = {
   dragToConsolidation: 'Kéo thẻ sang tổng hợp',
   hideItems: 'Ẩn sản phẩm',
   showItems: 'Hiện sản phẩm',
+  hideVariants: 'Ẩn biến thể',
+  showVariants: 'Hiện biến thể',
   moveToConsolidation: 'Chuyển sang tổng hợp',
   expandAll: 'Mở rộng tất cả',
   collapseAll: 'Thu gọn tất cả',
