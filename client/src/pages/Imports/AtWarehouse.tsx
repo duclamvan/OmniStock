@@ -21,7 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FixedSizeList as List } from "react-window";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train, Check, ChevronsUpDown, Barcode } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train, Check, ChevronsUpDown, Barcode, Undo2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -1084,6 +1084,27 @@ export default function AtWarehouse() {
     },
     onError: () => {
       toast({ title: t('error'), description: t('itemDeleteFailed'), variant: "destructive" });
+    }
+  });
+
+  // Send item back to incoming orders mutation
+  const sendBackToIncomingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('POST', `/api/imports/custom-items/${id}/send-back-to-incoming`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      toast({ title: t('success'), description: t('itemSentBackToIncoming') });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: t('error'), 
+        description: error.message || t('itemSendBackFailed'), 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -3461,6 +3482,16 @@ export default function AtWarehouse() {
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                          <DropdownMenuItem 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              sendBackToIncomingMutation.mutate(item.id);
+                                            }}
+                                          >
+                                            <Undo2 className="h-4 w-4 mr-2 text-amber-600" />
+                                            {t('sendBackToIncoming')}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
                                           <DropdownMenuItem 
                                             className="text-red-600"
                                             onClick={(e) => {

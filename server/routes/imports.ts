@@ -2130,6 +2130,70 @@ router.delete("/custom-items/:id", async (req, res) => {
   }
 });
 
+// Send custom item back to incoming orders (reverses the at-warehouse state)
+router.post("/custom-items/:id/send-back-to-incoming", async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    
+    // Get the custom item first
+    const [customItem] = await db
+      .select()
+      .from(customItems)
+      .where(eq(customItems.id, itemId));
+    
+    if (!customItem) {
+      return res.status(404).json({ message: "Custom item not found" });
+    }
+    
+    // Check if item is already in a consolidation - cannot send back
+    if (customItem.status === 'consolidated' || customItem.consolidationId) {
+      return res.status(400).json({ 
+        message: "Cannot send back items that are already in a consolidation. Remove from consolidation first." 
+      });
+    }
+    
+    // If item came from a purchase order, reset the purchase order status
+    if (customItem.purchaseOrderId) {
+      // Delete the custom item
+      await db.delete(customItems).where(eq(customItems.id, itemId));
+      
+      // Check if there are any remaining custom items from this purchase order
+      const remainingItems = await db
+        .select()
+        .from(customItems)
+        .where(eq(customItems.purchaseOrderId, customItem.purchaseOrderId));
+      
+      // If no remaining items, reset purchase order status to 'at_warehouse' (before unpacking)
+      if (remainingItems.length === 0) {
+        await db
+          .update(purchases)
+          .set({ 
+            status: 'at_warehouse',
+            updatedAt: new Date()
+          })
+          .where(eq(purchases.id, customItem.purchaseOrderId));
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Item sent back to incoming orders. Purchase order status updated.",
+        purchaseOrderId: customItem.purchaseOrderId
+      });
+    } else {
+      // For custom items without a purchase order, just delete them
+      await db.delete(customItems).where(eq(customItems.id, itemId));
+      
+      res.json({ 
+        success: true, 
+        message: "Custom item removed from warehouse items."
+      });
+    }
+  } catch (error) {
+    console.error("Error sending item back to incoming:", error);
+    res.status(500).json({ message: "Failed to send item back to incoming orders" });
+  }
+});
+
 // AI Auto-Classification using DeepSeek AI
 // Classifies items as "general" or "sensitive" goods for China transport
 // Sensitive goods require special handling (UPS, railway restrictions)

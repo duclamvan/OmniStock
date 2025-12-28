@@ -655,6 +655,9 @@ const imports = {
   itemDeleted: 'Item deleted successfully',
   itemDeleteFailed: 'Failed to delete item',
   itemUnpackFailed: 'Failed to unpack item',
+  sendBackToIncoming: 'Send back to Incoming',
+  itemSentBackToIncoming: 'Item sent back to incoming orders',
+  itemSendBackFailed: 'Failed to send item back',
   
   // AtWarehouse - Consolidation
   newConsolidation: 'New Consolidation',

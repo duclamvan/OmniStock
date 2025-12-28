@@ -662,6 +662,9 @@ const imports = {
   itemDeleted: 'Đã xóa sản phẩm thành công',
   itemDeleteFailed: 'Không thể xóa sản phẩm',
   itemUnpackFailed: 'Không thể mở kiện sản phẩm',
+  sendBackToIncoming: 'Gửi lại về Đơn chờ',
+  itemSentBackToIncoming: 'Đã gửi sản phẩm về đơn chờ',
+  itemSendBackFailed: 'Không thể gửi sản phẩm về',
   
   // AtWarehouse - Consolidation
   newConsolidation: 'Tổng hợp mới',
