@@ -3287,7 +3287,6 @@ export default function CreatePurchase() {
                               <TableHead className="min-w-[100px] p-2">{t('barcode')}</TableHead>
                               <TableHead className="text-center w-14 p-2">{t('qty')}</TableHead>
                               <TableHead className="text-right w-16 p-2">{t('cost')}</TableHead>
-                              <TableHead className="text-right w-14 p-2">{t('weight')}</TableHead>
                               <TableHead className="w-8 p-2"></TableHead>
                             </TableRow>
                           </TableHeader>
@@ -3388,38 +3387,6 @@ export default function CreatePurchase() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => fillDownVariantValue(variant.id, 'unitPrice')}
-                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title={t('fillDown')}
-                                      >
-                                        <ChevronDown className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="p-2">
-                                  <div className="flex items-center gap-0.5 group">
-                                    <Input
-                                      type="number"
-                                      value={variant.weight ?? ''}
-                                      onChange={(e) => {
-                                        setVariants(variants.map(v => 
-                                          v.id === variant.id ? {...v, weight: e.target.value ? parseDecimal(e.target.value) : undefined} : v
-                                        ));
-                                      }}
-                                      onKeyDown={handleDecimalKeyDown}
-                                      onFocus={(e) => e.target.select()}
-                                      className="h-6 w-12 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      step="0.01"
-                                      min="0"
-                                      placeholder="-"
-                                      data-testid={`input-variant-weight-${variant.id}`}
-                                    />
-                                    {variants.indexOf(variant) < variants.length - 1 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => fillDownVariantValue(variant.id, 'weight')}
                                         className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                         title={t('fillDown')}
                                       >
