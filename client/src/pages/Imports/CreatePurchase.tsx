@@ -1779,7 +1779,7 @@ export default function CreatePurchase() {
     });
   };
   
-  // Add all variants as items
+  // Add product with all variants as a single parent item
   const addVariantsAsItems = () => {
     if (!currentItem.name) {
       toast({
@@ -1790,30 +1790,42 @@ export default function CreatePurchase() {
       return;
     }
     
-    const variantItems = variants.map(variant => ({
+    // Calculate totals from variants
+    const totalQuantity = variants.reduce((sum, v) => sum + v.quantity, 0);
+    const totalValue = variants.reduce((sum, v) => sum + (v.quantity * v.unitPrice), 0);
+    const avgUnitPrice = totalQuantity > 0 ? totalValue / totalQuantity : 0;
+    
+    // Create variant allocations for the parent item
+    const variantAllocations: VariantAllocation[] = variants.map(variant => ({
+      variantId: variant.id,
+      variantName: variant.name,
+      quantity: variant.quantity,
+      unitPrice: variant.unitPrice
+    }));
+    
+    // Create a single parent item with nested variants
+    const parentItem: PurchaseItem = {
       id: `item-${Date.now()}-${Math.random()}`,
-      name: `${currentItem.name} - ${variant.name}`,
-      sku: variant.sku || currentItem.sku || "",
+      name: currentItem.name,
+      sku: currentItem.sku || "",
       category: currentItem.category || "",
       categoryId: currentItem.categoryId,
       barcode: currentItem.barcode || "",
-      quantity: variant.quantity,
-      unitPrice: variant.unitPrice,
-      // Use variant weight/dimensions if set, otherwise inherit from parent
-      weight: variant.weight ?? currentItem.weight ?? 0,
-      dimensions: variant.dimensions ?? currentItem.dimensions ?? "",
+      quantity: totalQuantity,
+      unitPrice: avgUnitPrice,
+      weight: currentItem.weight ?? 0,
+      dimensions: currentItem.dimensions ?? "",
       notes: currentItem.notes || "",
-      // Include product image for variants
       productId: selectedProduct?.id,
-      imageUrl: variant.imageUrl || productImagePreview || selectedProduct?.imageUrl,
+      imageUrl: productImagePreview || selectedProduct?.imageUrl,
       imageFile: productImageFile,
-      totalPrice: variant.quantity * variant.unitPrice,
+      totalPrice: totalValue,
       costWithShipping: 0,
-      isVariant: true,
-      variantName: variant.name
-    }));
+      hasVariants: true,
+      variantAllocations: variantAllocations
+    };
     
-    const updatedItems = [...items, ...variantItems];
+    const updatedItems = [...items, parentItem];
     updateItemsWithShipping(updatedItems);
     
     // Reset form
@@ -1839,7 +1851,7 @@ export default function CreatePurchase() {
     
     toast({
       title: t('success'),
-      description: t('addedItemsCount', { count: variantItems.length }),
+      description: t('productWithVariantsAdded', { name: currentItem.name, count: variants.length }),
     });
   };
   
@@ -3516,7 +3528,7 @@ export default function CreatePurchase() {
                   data-testid="button-add-variants"
                 >
                   <PackagePlus className="h-4 w-4 mr-2" />
-                  {t('addVariantsAsItems', { count: variants.length })}
+                  {t('addProductWithVariants', { count: variants.length })}
                 </Button>
               )}
             </CardContent>
@@ -3832,6 +3844,26 @@ export default function CreatePurchase() {
                                     {item.notes}
                                   </div>
                                 )}
+                                
+                                {/* Nested Variants */}
+                                {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && (
+                                  <div className="mt-3 border-l-2 border-primary/30 pl-3 space-y-1.5">
+                                    <div className="text-xs font-medium text-primary flex items-center gap-1">
+                                      <Package className="h-3 w-3" />
+                                      {t('includedVariants', { count: item.variantAllocations.length })}
+                                    </div>
+                                    {item.variantAllocations.map((variant, vIdx) => (
+                                      <div key={variant.variantId || vIdx} className="flex items-center justify-between text-xs bg-muted/30 px-2 py-1.5 rounded">
+                                        <span className="text-gray-700 dark:text-gray-300">{variant.variantName}</span>
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                          <span>{t('qty')}: {variant.quantity}</span>
+                                          <span>•</span>
+                                          <span>{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </CollapsibleContent>
                             </div>
                           </div>
@@ -3951,18 +3983,35 @@ export default function CreatePurchase() {
                           {/* Item Details */}
                           <TableCell className="font-medium">
                             <div className="space-y-1">
-                              <Input
-                                value={item.name}
-                                onChange={(e) => {
-                                  const updatedItems = items.map(i => 
-                                    i.id === item.id ? {...i, name: e.target.value} : i
-                                  );
-                                  setItems(updatedItems);
-                                }}
-                                onBlur={(e) => { e.target.scrollLeft = e.target.scrollWidth; }}
-                                className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 px-2 rounded transition-all"
-                                placeholder={t('itemName')}
-                              />
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={item.name}
+                                  onChange={(e) => {
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id ? {...i, name: e.target.value} : i
+                                    );
+                                    setItems(updatedItems);
+                                  }}
+                                  onBlur={(e) => { e.target.scrollLeft = e.target.scrollWidth; }}
+                                  className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted hover:border hover:border-input/50 focus:bg-background focus:border-input focus:ring-2 focus:ring-primary/20 px-2 rounded transition-all flex-1"
+                                  placeholder={t('itemName')}
+                                />
+                                {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs shrink-0"
+                                    onClick={() => toggleCardExpand(item.id)}
+                                  >
+                                    {expandedCards.includes(item.id) ? (
+                                      <ChevronUp className="h-3 w-3 mr-1" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3 mr-1" />
+                                    )}
+                                    {item.variantAllocations.length} {t('variants')}
+                                  </Button>
+                                )}
+                              </div>
                               {item.unitType === 'bulk' && item.cartons && item.bulkUnitQty && (
                                 <span className="inline-flex items-center ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
                                   {t('bulkUnit', { cartons: item.cartons, quantity: item.cartons * item.bulkUnitQty })}
@@ -3976,6 +4025,21 @@ export default function CreatePurchase() {
                               )}
                               {item.dimensions && (
                                 <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
+                              )}
+                              {/* Nested Variants (Desktop) */}
+                              {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && expandedCards.includes(item.id) && (
+                                <div className="mt-2 border-l-2 border-primary/30 pl-3 space-y-1">
+                                  {item.variantAllocations.map((variant, vIdx) => (
+                                    <div key={variant.variantId || vIdx} className="flex items-center justify-between text-xs bg-muted/30 px-2 py-1 rounded">
+                                      <span className="text-gray-700 dark:text-gray-300">{variant.variantName}</span>
+                                      <div className="flex items-center gap-2 text-muted-foreground">
+                                        <span>{t('qty')}: {variant.quantity}</span>
+                                        <span>•</span>
+                                        <span>{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </TableCell>
