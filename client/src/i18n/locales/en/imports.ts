@@ -813,6 +813,7 @@ const imports = {
   copyWithCommas: 'Copy with Commas',
   exportTrackingNumbers: 'Export Tracking Numbers',
   quickShipMoveToPending: 'Quick Ship: Move to Pending',
+  edit: 'Edit',
   delete: 'Delete',
   cancel: 'Cancel',
   close: 'Close',

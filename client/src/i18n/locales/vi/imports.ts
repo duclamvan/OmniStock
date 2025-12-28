@@ -831,6 +831,7 @@ const imports = {
   copyWithCommas: 'Sao chép có dấu phẩy',
   exportTrackingNumbers: 'Xuất mã vận đơn',
   quickShipMoveToPending: 'Gửi nhanh: Chuyển sang đang chờ',
+  edit: 'Chỉnh sửa',
   delete: 'Xóa',
   cancel: 'Hủy',
   close: 'Đóng',
