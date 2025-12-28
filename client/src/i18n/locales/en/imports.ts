@@ -880,6 +880,8 @@ const imports = {
   railwaySensitive: 'Railway Sensitive',
   seaGeneral: 'Sea General',
   seaSensitive: 'Sea Sensitive',
+  airGeneral: 'Air General',
+  airSensitive: 'Air Sensitive',
   addItemsFromExternal: 'Add items from external sources like Taobao, Pinduoduo, etc.',
   processIncomingOrders: 'Process incoming orders and manage warehouse items',
 

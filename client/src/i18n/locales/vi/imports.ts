@@ -899,6 +899,8 @@ const imports = {
   railwaySensitive: 'Đường sắt nhạy cảm',
   seaGeneral: 'Đường biển thông thường',
   seaSensitive: 'Đường biển nhạy cảm',
+  airGeneral: 'Đường hàng không thông thường',
+  airSensitive: 'Đường hàng không nhạy cảm',
   addItemsFromExternal: 'Thêm sản phẩm từ nguồn bên ngoài như Taobao, Pinduoduo, v.v.',
   processIncomingOrders: 'Xử lý đơn hàng đến và quản lý sản phẩm trong kho',
 

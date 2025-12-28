@@ -1611,6 +1611,60 @@ const settings = {
   defaultShippingPriceCzk: 'Default Shipping Price (CZK)',
   defaultShippingPriceEur: 'Default Shipping Price (EUR)',
   defaultShippingPriceAutoApplyDescription: 'This price will be automatically applied when this carrier is selected in Add Order',
+
+  // Imports Settings
+  purchaseOrders: 'Purchase Orders',
+  consolidations: 'Consolidations',
+  internationalShipping: 'International Shipping',
+  processing: 'Processing',
+  
+  // Purchase Order Defaults
+  purchaseOrderDefaults: 'Purchase Order Defaults',
+  purchaseOrderDefaultsDesc: 'Configure default values for new purchase orders',
+  defaultPurchaseCurrency: 'Default Purchase Currency',
+  defaultPurchaseCurrencyDesc: 'Currency used for supplier purchases',
+  defaultPaymentCurrency: 'Default Payment Currency',
+  defaultPaymentCurrencyDesc: 'Currency used for payments to suppliers',
+  defaultPurchaseLocation: 'Default Purchase Location',
+  defaultPurchaseLocationDesc: 'Default origin location for purchases',
+  defaultWeightUnitDesc: 'Default unit for product weights',
+  autoUpdateDeliveryStatus: 'Auto-update delivery status',
+  autoUpdateDeliveryStatusDesc: 'Automatically mark purchase orders as delivered when all items are received and stored',
+  autoGenerateSkuDesc: 'Automatically generate SKU codes for new products',
+  skuPrefixDesc: 'Prefix added to auto-generated SKU codes',
+
+  // Consolidation Defaults
+  consolidationDefaults: 'Consolidation Defaults',
+  consolidationDefaultsDesc: 'Configure default values for consolidation shipments',
+  defaultShippingMethodDesc: 'Default shipping method for new consolidations',
+  defaultConsolidationLocation: 'Default Origin Location',
+  defaultConsolidationLocationDesc: 'Default origin location for consolidation shipments',
+  maxConsolidationWeight: 'Max Consolidation Weight',
+  maxConsolidationWeightDesc: 'Maximum weight allowed per consolidation package',
+  maxConsolidationItems: 'Max Items per Consolidation',
+  maxConsolidationItemsDesc: 'Maximum number of items per consolidation',
+
+  // International Shipping Rates
+  internationalShippingRates: 'International Shipping Rates',
+  internationalShippingRatesDesc: 'Configure shipping rates per kg for different shipping methods',
+  shippingRateCurrency: 'Rate Currency',
+  shippingRateCurrencyDesc: 'Currency for shipping rate calculations',
+
+  // Item Processing
+  itemProcessing: 'Item Processing',
+  itemProcessingDesc: 'Configure how items are processed during import',
+  defaultItemClassification: 'Default Item Classification',
+  defaultItemClassificationDesc: 'Default classification for new import items',
+  enableAiClassification: 'Enable AI Classification',
+  enableAiClassificationDesc: 'Use AI to automatically classify items as general or sensitive',
+  autoClassifyOnUnpack: 'Auto-classify on Unpack',
+  autoClassifyOnUnpackDesc: 'Automatically classify items when unpacking consolidation shipments',
+  enableVariantDistribution: 'Enable Variant Distribution',
+  enableVariantDistributionDesc: 'Distribute received quantities to individual product variants on completion',
+  autoCalculateImportCost: 'Auto-calculate Import Cost',
+  autoCalculateImportCostDesc: 'Automatically calculate weighted average import costs when receiving is completed',
+  includeShippingInCost: 'Include Shipping in Cost',
+  includeShippingInCostDesc: 'Include international shipping costs in the product import cost calculation',
 } as const;
 
 export default settings;

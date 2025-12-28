@@ -1633,6 +1633,60 @@ const settings = {
   defaultShippingPriceCzk: 'Giá vận chuyển mặc định (CZK)',
   defaultShippingPriceEur: 'Giá vận chuyển mặc định (EUR)',
   defaultShippingPriceAutoApplyDescription: 'Giá này sẽ được tự động áp dụng khi chọn đơn vị vận chuyển này trong Thêm Đơn Hàng',
+
+  // Imports Settings
+  purchaseOrders: 'Đơn đặt hàng',
+  consolidations: 'Gom hàng',
+  internationalShipping: 'Vận chuyển quốc tế',
+  processing: 'Xử lý',
+  
+  // Purchase Order Defaults
+  purchaseOrderDefaults: 'Mặc định đơn đặt hàng',
+  purchaseOrderDefaultsDesc: 'Cấu hình giá trị mặc định cho đơn đặt hàng mới',
+  defaultPurchaseCurrency: 'Đơn vị tiền mua hàng mặc định',
+  defaultPurchaseCurrencyDesc: 'Đơn vị tiền tệ dùng để mua hàng từ nhà cung cấp',
+  defaultPaymentCurrency: 'Đơn vị tiền thanh toán mặc định',
+  defaultPaymentCurrencyDesc: 'Đơn vị tiền tệ dùng để thanh toán cho nhà cung cấp',
+  defaultPurchaseLocation: 'Vị trí mua hàng mặc định',
+  defaultPurchaseLocationDesc: 'Vị trí xuất xứ mặc định cho đơn mua hàng',
+  defaultWeightUnitDesc: 'Đơn vị mặc định cho trọng lượng sản phẩm',
+  autoUpdateDeliveryStatus: 'Tự động cập nhật trạng thái giao hàng',
+  autoUpdateDeliveryStatusDesc: 'Tự động đánh dấu đơn đặt hàng đã giao khi tất cả mặt hàng được nhận và nhập kho',
+  autoGenerateSkuDesc: 'Tự động tạo mã SKU cho sản phẩm mới',
+  skuPrefixDesc: 'Tiền tố được thêm vào mã SKU tự động tạo',
+
+  // Consolidation Defaults
+  consolidationDefaults: 'Mặc định gom hàng',
+  consolidationDefaultsDesc: 'Cấu hình giá trị mặc định cho các lô hàng gom',
+  defaultShippingMethodDesc: 'Phương thức vận chuyển mặc định cho gom hàng mới',
+  defaultConsolidationLocation: 'Vị trí xuất phát mặc định',
+  defaultConsolidationLocationDesc: 'Vị trí xuất phát mặc định cho lô hàng gom',
+  maxConsolidationWeight: 'Trọng lượng gom tối đa',
+  maxConsolidationWeightDesc: 'Trọng lượng tối đa cho mỗi kiện hàng gom',
+  maxConsolidationItems: 'Số mặt hàng tối đa mỗi lô',
+  maxConsolidationItemsDesc: 'Số lượng mặt hàng tối đa mỗi lô gom hàng',
+
+  // International Shipping Rates
+  internationalShippingRates: 'Giá vận chuyển quốc tế',
+  internationalShippingRatesDesc: 'Cấu hình giá vận chuyển theo kg cho các phương thức khác nhau',
+  shippingRateCurrency: 'Đơn vị tiền tính giá',
+  shippingRateCurrencyDesc: 'Đơn vị tiền tệ để tính toán giá vận chuyển',
+
+  // Item Processing
+  itemProcessing: 'Xử lý mặt hàng',
+  itemProcessingDesc: 'Cấu hình cách xử lý mặt hàng trong quá trình nhập hàng',
+  defaultItemClassification: 'Phân loại mặt hàng mặc định',
+  defaultItemClassificationDesc: 'Phân loại mặc định cho mặt hàng nhập khẩu mới',
+  enableAiClassification: 'Bật phân loại AI',
+  enableAiClassificationDesc: 'Sử dụng AI để tự động phân loại mặt hàng là thường hay nhạy cảm',
+  autoClassifyOnUnpack: 'Tự động phân loại khi mở hàng',
+  autoClassifyOnUnpackDesc: 'Tự động phân loại mặt hàng khi mở kiện hàng gom',
+  enableVariantDistribution: 'Bật phân phối biến thể',
+  enableVariantDistributionDesc: 'Phân phối số lượng nhận được cho từng biến thể sản phẩm khi hoàn tất',
+  autoCalculateImportCost: 'Tự động tính giá nhập',
+  autoCalculateImportCostDesc: 'Tự động tính giá nhập bình quân gia quyền khi hoàn tất nhận hàng',
+  includeShippingInCost: 'Bao gồm phí vận chuyển',
+  includeShippingInCostDesc: 'Bao gồm chi phí vận chuyển quốc tế trong tính toán giá nhập sản phẩm',
 } as const;
 
 export default settings;
