@@ -1154,6 +1154,7 @@ const imports = {
   createAndLink: 'Tạo & Liên kết',
   linkProduct: 'Liên kết sản phẩm',
   selectProduct: 'Chọn sản phẩm',
+  noProductFound: 'Không tìm thấy sản phẩm',
   createNewProduct: 'Tạo sản phẩm mới',
   link: 'Liên kết',
   productLinking: 'Liên kết sản phẩm',

@@ -1136,6 +1136,7 @@ const imports = {
   createAndLink: 'Create & Link',
   linkProduct: 'Link Product',
   selectProduct: 'Select Product',
+  noProductFound: 'No product found',
   createNewProduct: 'Create New Product',
   link: 'Link',
   productLinking: 'Product Linking',
