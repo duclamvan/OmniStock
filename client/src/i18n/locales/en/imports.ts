@@ -71,6 +71,7 @@ const imports = {
   trackingLabel: 'Tracking:',
   internalTrackingNumber: 'Internal Tracking #',
   internalCarrier: 'Internal Carrier',
+  trackingUrl: 'Tracking URL',
   enterInternalTracking: 'Enter internal tracking number',
   enterInternalCarrier: 'Enter internal carrier',
   estimatedArrival: 'Estimated Arrival',

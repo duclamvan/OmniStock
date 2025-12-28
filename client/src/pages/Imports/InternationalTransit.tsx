@@ -2807,7 +2807,33 @@ export default function InternationalTransit() {
                         </Button>
                       </div>
                       <div className="space-y-2 p-3 border rounded-lg text-xs">
-                        <div>
+                        {/* Internal/Transit Tracking */}
+                        {viewShipmentDetails.trackingNumber && (
+                          <>
+                            <div>
+                              <p className="text-muted-foreground">{t('transitCarrier')}</p>
+                              <p className="font-medium">{viewShipmentDetails.carrier || '—'}</p>
+                            </div>
+                            <div className="pt-2 border-t">
+                              <p className="text-muted-foreground">{t('internalTrackingNumber')}</p>
+                              <p className="font-mono text-purple-600 font-medium">{viewShipmentDetails.trackingNumber}</p>
+                            </div>
+                            <div className="pt-2 border-t">
+                              <p className="text-muted-foreground">{t('trackingUrl')}</p>
+                              <a 
+                                href={`https://t.17track.net/en#nums=${viewShipmentDetails.trackingNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-blue-600 hover:underline break-all text-xs"
+                              >
+                                17track.net/{viewShipmentDetails.trackingNumber}
+                              </a>
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* End/Final Delivery Tracking */}
+                        <div className={viewShipmentDetails.trackingNumber ? "pt-2 border-t" : ""}>
                           <p className="text-muted-foreground">{t('endCarrier')}</p>
                           <p className="font-medium">{viewShipmentDetails.endCarrier || '—'}</p>
                         </div>

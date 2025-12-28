@@ -81,6 +81,7 @@ const imports = {
   trackingLabel: 'Mã vận đơn:',
   internalTrackingNumber: 'Mã vận đơn nội bộ',
   internalCarrier: 'Hãng vận chuyển nội bộ',
+  trackingUrl: 'Link theo dõi',
   enterInternalTracking: 'Nhập mã vận đơn nội bộ',
   enterInternalCarrier: 'Nhập hãng vận chuyển nội bộ',
   estimatedArrival: 'Dự kiến đến',
