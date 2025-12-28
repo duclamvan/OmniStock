@@ -35,7 +35,7 @@ import {
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
   Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, ChevronRight, Upload, ImageIcon, Settings, Scale,
-  Barcode, MapPin, ClipboardPaste
+  Barcode, MapPin, ClipboardPaste, PlusCircle, Pencil
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -2009,15 +2009,20 @@ export default function CreatePurchase() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('backToPurchaseOrders')}
               </Button>
-              <div>
-                <h1 className="text-lg md:text-2xl font-semibold">{t('editPurchase')}</h1>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Pencil className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h1 className="text-lg md:text-2xl font-semibold">{t('editPurchase')}</h1>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
             <p className="text-muted-foreground">{t('loading') || 'Loading...'}</p>
           </div>
         </div>
@@ -2049,9 +2054,23 @@ export default function CreatePurchase() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               {t('backToPurchaseOrders')}
             </Button>
-            <div>
-              <h1 className="text-lg md:text-2xl font-semibold">{isEditMode ? t('editPurchase') : t('createPurchase')}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{isEditMode ? t('updateImportOrder') : t('basicDetailsSupplier')}</p>
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg",
+                isEditMode 
+                  ? "bg-amber-100 dark:bg-amber-900/30" 
+                  : "bg-emerald-100 dark:bg-emerald-900/30"
+              )}>
+                {isEditMode ? (
+                  <Pencil className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <PlusCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </div>
+              <div>
+                <h1 className="text-lg md:text-2xl font-semibold">{isEditMode ? t('editPurchase') : t('createPurchase')}</h1>
+                <p className="text-xs md:text-sm text-muted-foreground hidden md:block">{isEditMode ? t('updateImportOrder') : t('basicDetailsSupplier')}</p>
+              </div>
             </div>
           </div>
           <div className="hidden md:flex gap-2">
@@ -2066,8 +2085,17 @@ export default function CreatePurchase() {
               onClick={handleSubmit}
               disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
               data-testid="button-save-purchase"
+              className={cn(
+                isEditMode 
+                  ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              )}
             >
-              <Save className="h-4 w-4 mr-2" />
+              {isEditMode ? (
+                <Pencil className="h-4 w-4 mr-2" />
+              ) : (
+                <PlusCircle className="h-4 w-4 mr-2" />
+              )}
               {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? t('updating') : t('creating')) : (isEditMode ? t('update') : t('create'))}
             </Button>
           </div>
@@ -2089,9 +2117,18 @@ export default function CreatePurchase() {
             onClick={handleSubmit}
             disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
             data-testid="button-save-purchase-mobile"
-            className="flex-1"
+            className={cn(
+              "flex-1",
+              isEditMode 
+                ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            )}
           >
-            <Save className="h-4 w-4 mr-2" />
+            {isEditMode ? (
+              <Pencil className="h-4 w-4 mr-2" />
+            ) : (
+              <PlusCircle className="h-4 w-4 mr-2" />
+            )}
             {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? t('updating') : t('creating')) : (isEditMode ? t('update') : t('create'))}
           </Button>
         </div>
