@@ -4218,39 +4218,79 @@ function QuickStorageSheet({
                     const itemsRemaining = totalItemsToAllocate - itemsAllocatedInPreview;
                     const allocationComplete = itemsRemaining <= 0;
                     
-                    // Calculate location capacity
-                    const totalCapacity = preview.availableLocations * bulkItemsPerLocation;
-                    const capacityUsagePercent = totalCapacity > 0 ? Math.round((itemsAllocatedInPreview / totalCapacity) * 100) : 0;
+                    // Calculate dimensions based on actual ranges
+                    const numAisles = Math.abs(bulkEndAisle - bulkStartAisle) + 1;
+                    const numRacks = Math.abs(bulkEndRack - bulkStartRack) + 1;
+                    const numLevels = Math.abs(bulkEndLevel - bulkStartLevel) + 1;
+                    const numBins = bulkBinsPerLevel > 0 ? bulkBinsPerLevel : 1;
+                    
+                    // Total locations = Aisles × Racks × Levels × Bins (or 1 if no bins)
+                    const totalLocations = numAisles * numRacks * numLevels * numBins;
+                    const totalCapacity = totalLocations * bulkItemsPerLocation;
+                    const capacityUsagePercent = totalCapacity > 0 ? Math.round((totalItemsToAllocate / totalCapacity) * 100) : 0;
                     
                     return (
                       <div className="pt-3 space-y-2 border-t border-purple-200 dark:border-purple-700 mt-2">
-                        {/* Allocation Summary Grid */}
-                        <div className="grid grid-cols-2 gap-2 text-center">
-                          <div className="bg-white dark:bg-gray-900 rounded p-2">
-                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{totalVariants}</p>
-                            <p className="text-xs text-muted-foreground">{t('imports:variants', 'Variants')}</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-900 rounded p-2">
-                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{preview.totalLocations}</p>
-                            <p className="text-xs text-muted-foreground">{t('imports:locations', 'Locations')}</p>
+                        {/* Structure Breakdown */}
+                        <div className="bg-white dark:bg-gray-900 rounded p-2 space-y-1">
+                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">{t('imports:structureBreakdown', 'Storage Structure')}</p>
+                          <div className="grid grid-cols-4 gap-1 text-center text-xs">
+                            <div className="bg-purple-100 dark:bg-purple-900/30 rounded p-1">
+                              <p className="font-bold text-purple-700 dark:text-purple-300">{numAisles}</p>
+                              <p className="text-[10px] text-muted-foreground">{t('imports:aisles', 'Aisles')}</p>
+                            </div>
+                            <div className="bg-blue-100 dark:bg-blue-900/30 rounded p-1">
+                              <p className="font-bold text-blue-700 dark:text-blue-300">{numRacks}</p>
+                              <p className="text-[10px] text-muted-foreground">{t('imports:racks', 'Racks')}</p>
+                            </div>
+                            <div className="bg-green-100 dark:bg-green-900/30 rounded p-1">
+                              <p className="font-bold text-green-700 dark:text-green-300">{numLevels}</p>
+                              <p className="text-[10px] text-muted-foreground">{t('imports:levels', 'Levels')}</p>
+                            </div>
+                            <div className="bg-amber-100 dark:bg-amber-900/30 rounded p-1">
+                              <p className="font-bold text-amber-700 dark:text-amber-300">{bulkBinsPerLevel > 0 ? numBins : '-'}</p>
+                              <p className="text-[10px] text-muted-foreground">{t('imports:bins', 'Bins')}</p>
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Items Allocated vs Remaining */}
+                        {/* Capacity Calculation */}
                         <div className="bg-white dark:bg-gray-900 rounded p-2">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs text-muted-foreground">{t('imports:itemsAllocated', 'Items Allocated')}</span>
-                            <span className="text-xs font-mono font-medium text-green-600 dark:text-green-400">{itemsAllocatedInPreview}</span>
+                          <div className="text-xs text-center mb-2">
+                            <span className="font-mono">
+                              {numAisles} × {numRacks} × {numLevels}{bulkBinsPerLevel > 0 ? ` × ${numBins}` : ''} = <span className="font-bold text-blue-600 dark:text-blue-400">{totalLocations}</span> {t('imports:locations', 'locations')}
+                            </span>
+                          </div>
+                          <div className="text-xs text-center">
+                            <span className="font-mono">
+                              {totalLocations} × {bulkItemsPerLocation} = <span className="font-bold text-green-600 dark:text-green-400">{totalCapacity.toLocaleString()}</span> {t('imports:itemCapacity', 'item capacity')}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Items Summary */}
+                        <div className="bg-white dark:bg-gray-900 rounded p-2 space-y-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-muted-foreground">{t('imports:variantsToStore', 'Variants to store')}</span>
+                            <span className="font-mono font-medium">{totalVariants}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-muted-foreground">{t('imports:totalItemsToStore', 'Total items to store')}</span>
+                            <span className="font-mono font-medium">{totalItemsToAllocate.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-muted-foreground">{t('imports:itemsAllocated', 'Items allocated')}</span>
+                            <span className="font-mono font-medium text-green-600 dark:text-green-400">{itemsAllocatedInPreview.toLocaleString()}</span>
                           </div>
                           {!allocationComplete && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-muted-foreground">{t('imports:itemsRemaining', 'Items Remaining')}</span>
-                              <span className="text-xs font-mono font-medium text-orange-600 dark:text-orange-400">{itemsRemaining}</span>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-orange-600 dark:text-orange-400 font-medium">{t('imports:itemsLeftToStore', 'Items left to store')}</span>
+                              <span className="font-mono font-bold text-orange-600 dark:text-orange-400">{itemsRemaining.toLocaleString()}</span>
                             </div>
                           )}
                           {allocationComplete && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                            <div className="flex justify-center items-center text-xs pt-1">
+                              <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
                                 <CheckCircle className="h-3 w-3" />
                                 {t('imports:allItemsAllocated', 'All items allocated!')}
                               </span>
@@ -4258,29 +4298,29 @@ function QuickStorageSheet({
                           )}
                         </div>
                         
-                        {/* Capacity Info */}
-                        <div className="text-center space-y-1">
-                          <p className="text-xs text-muted-foreground">
-                            {t('imports:locationCapacity', '{{available}} locations × {{perLoc}} items = {{total}} capacity', { 
-                              available: preview.availableLocations, 
-                              perLoc: bulkItemsPerLocation,
-                              total: totalCapacity
-                            })}
-                          </p>
-                          {capacityUsagePercent > 0 && (
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${capacityUsagePercent >= 100 ? 'bg-orange-500' : 'bg-purple-500'}`}
-                                style={{ width: `${Math.min(100, capacityUsagePercent)}%` }}
-                              />
-                            </div>
-                          )}
+                        {/* Capacity Usage Bar */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>{t('imports:capacityUsage', 'Capacity usage')}</span>
+                            <span>{capacityUsagePercent}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all ${
+                                capacityUsagePercent > 100 ? 'bg-red-500' : 
+                                capacityUsagePercent >= 80 ? 'bg-orange-500' : 'bg-purple-500'
+                              }`}
+                              style={{ width: `${Math.min(100, capacityUsagePercent)}%` }}
+                            />
+                          </div>
                         </div>
                         
-                        {/* Warning if not enough locations */}
-                        {itemsRemaining > 0 && (
-                          <p className="text-center text-orange-600 dark:text-orange-400 text-xs font-medium">
-                            {t('imports:needMoreSpace', 'Need more locations! Expand range, add levels, or add bins.')}
+                        {/* Warning if not enough capacity */}
+                        {totalItemsToAllocate > totalCapacity && (
+                          <p className="text-center text-red-600 dark:text-red-400 text-xs font-medium bg-red-50 dark:bg-red-950/30 rounded p-2">
+                            {t('imports:needMoreCapacity', 'Not enough capacity! Need {{needed}} more slots.', { 
+                              needed: (totalItemsToAllocate - totalCapacity).toLocaleString() 
+                            })}
                           </p>
                         )}
                       </div>
