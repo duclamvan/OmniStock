@@ -2358,6 +2358,20 @@ function QuickStorageSheet({
         // Get orderNumber from customItem if available
         const orderNumber = item.customItem?.orderNumber || item.orderNumber;
         
+        // Enhance existing locations with variantName from variantAllocations
+        const rawLocations = item.existingLocations || item.product?.locations || [];
+        const enhancedLocations = rawLocations.map((loc: any) => {
+          let variantName = '';
+          if (loc.variantId && variantAllocations && variantAllocations.length > 0) {
+            const variant = variantAllocations.find((v: VariantAllocation) => v.variantId === loc.variantId);
+            variantName = variant?.variantName || '';
+          }
+          return {
+            ...loc,
+            variantName
+          };
+        });
+        
         return {
           receiptItemId: item.id,
           productId: item.productId,
@@ -2369,7 +2383,7 @@ function QuickStorageSheet({
           receivedQuantity: item.receivedQuantity || item.quantity || 0,
           assignedQuantity: item.assignedQuantity || 0,
           locations: item.locations || [],
-          existingLocations: item.existingLocations || item.product?.locations || [],
+          existingLocations: enhancedLocations,
           pendingExistingAdds: {}, // Initialize empty pending adds
           variantAllocations,
           orderItems,
@@ -3900,6 +3914,8 @@ function QuickStorageSheet({
                                               });
                                               
                                               queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
+                                              // Also invalidate the by-shipment query to ensure fresh data on reload
+                                              queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
                                             } catch (error) {
                                               console.error('Failed to batch save locations:', error);
                                               toast({

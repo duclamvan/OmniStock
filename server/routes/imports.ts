@@ -9422,7 +9422,8 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           locationType: loc.locationType || 'warehouse',
           quantity: loc.quantity || 0,
           isPrimary: loc.isPrimary || false,
-          notes: loc.notes || ''
+          notes: loc.notes || '',
+          variantId: loc.variantId || null
         });
       });
     }
