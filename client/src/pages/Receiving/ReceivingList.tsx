@@ -3096,7 +3096,7 @@ function QuickStorageSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-[92vh] p-0 flex flex-col rounded-t-2xl relative"
+        className="h-[92vh] p-0 flex flex-col rounded-t-2xl"
         data-testid="sheet-quick-storage"
       >
         {/* Compact Header with Progress */}
@@ -3132,20 +3132,6 @@ function QuickStorageSheet({
             <span>{completedItems}/{totalItems} {t('itemsCompleted')}</span>
           </div>
         </div>
-        
-        {/* Global Operation Loading Overlay */}
-        {(isBatchSaving || isSubmitting || isUndoingAll) && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-gray-950/60 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 flex flex-col items-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-              <span className="text-sm font-medium">
-                {isBatchSaving ? t('common:saving', 'Saving...') : 
-                 isSubmitting ? t('common:applying', 'Applying...') : 
-                 t('common:loading')}
-              </span>
-            </div>
-          </div>
-        )}
         
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
