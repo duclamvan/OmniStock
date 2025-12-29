@@ -2618,31 +2618,39 @@ function QuickStorageSheet({
   });
   
   // Complete receiving mutation - updates shipment status to completed
+  // Optimistically closes dialog immediately for swift UX while server processes
   const completeReceivingMutation = useMutation({
     mutationFn: async () => {
       return apiRequest('PATCH', `/api/imports/shipments/${shipment.id}/receiving-status`, { 
         receivingStatus: 'completed' 
       });
     },
-    onSuccess: () => {
-      // Invalidate both storage and completed shipments queries
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
-      
+    onMutate: () => {
+      // Immediately close dialog and show processing toast for swift UX
       soundEffects.playCompletionSound();
       toast({
         title: t('storageComplete'),
-        description: t('allItemsStoredSuccessfully'),
-        duration: 3000
+        description: t('processingInBackground', 'Inventory and costs are being updated...'),
+        duration: 5000
       });
       onOpenChange(false);
     },
+    onSuccess: () => {
+      // Invalidate queries in background after server completes
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    },
     onError: (error) => {
+      // If server fails, notify user (dialog already closed)
       toast({
         title: t('common:error'),
         description: error instanceof Error ? error.message : t('failedToCompleteReceiving'),
         variant: "destructive",
+        duration: 5000
       });
+      // Re-open the storage list to allow retry
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
     }
   });
   
