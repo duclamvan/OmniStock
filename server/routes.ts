@@ -20246,6 +20246,28 @@ Important rules:
       
       const receiptIds = shipmentReceipts.map(r => r.id);
       
+      // Step 1b: Get shipment data for shipping costs and allocation method
+      const [shipmentData] = await db
+        .select({
+          shippingCost: shipments.shippingCost,
+          shippingCostCurrency: shipments.shippingCostCurrency,
+          insuranceValue: shipments.insuranceValue,
+          allocationMethod: shipments.allocationMethod,
+          totalWeight: shipments.totalWeight,
+          totalUnits: shipments.totalUnits
+        })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      const shipmentShippingCost = parseFloat(shipmentData?.shippingCost || '0');
+      const shipmentShippingCurrency = shipmentData?.shippingCostCurrency || 'USD';
+      const shipmentInsuranceCost = parseFloat(shipmentData?.insuranceValue || '0');
+      const allocationMethod = shipmentData?.allocationMethod || 'PER_UNIT';
+      const shipmentTotalWeight = parseFloat(shipmentData?.totalWeight || '0');
+      const shipmentTotalUnits = shipmentData?.totalUnits || 0;
+      
+      console.log(`[addInventoryOnCompletion] Shipment ${shipmentId}: shipping=${shipmentShippingCost} ${shipmentShippingCurrency}, insurance=${shipmentInsuranceCost}, allocation=${allocationMethod}`);
+      
       // Step 2: Get all receipt items with productId, receivedQuantity, AND itemId/itemType/sku for fallback lookups
       // ALSO include variantAllocations for variant quantity distribution
       const allReceiptItems = await db
@@ -20356,6 +20378,118 @@ Important rules:
       
       console.log(`[addInventoryOnCompletion] Aggregated ${productQuantityMap.size} unique products from ${allReceiptItems.length} receipt items`);
       
+      // Step 3b: PRE-COMPUTE shipment totals for allocation methods
+      // All values converted to EUR for consistent ratio calculation
+      // Uses SIMPLE per-unit equal distribution as the primary method
+      // VALUE/WEIGHT methods require consistent data across all products
+      type ProductMetrics = {
+        receivedUnits: number;
+        totalWeightKg: number;
+        baseValueEur: number; // Accumulated EUR value (sum of all lines converted)
+      };
+      const productBreakdown = new Map<string, ProductMetrics>();
+      let totalShipmentUnits = 0;
+      let totalShipmentWeightKg = 0;
+      let totalShipmentValueEur = 0;
+      
+      // Iterate productQuantityMap to build breakdown - accumulate per line, don't overwrite
+      for (const [productId, data] of productQuantityMap.entries()) {
+        let productUnits = 0;
+        let productWeightKg = 0;
+        let productBaseValueEur = 0;
+        
+        for (const item of data.items) {
+          const receivedQty = item.assignedQuantity || item.receivedQuantity || 0;
+          productUnits += receivedQty;
+          
+          if (item.itemId && item.itemType === 'purchase') {
+            const [pi] = await db
+              .select({ 
+                unitPrice: purchaseItems.unitPrice, 
+                weight: purchaseItems.weight,
+                unitGrossWeightKg: purchaseItems.unitGrossWeightKg,
+                purchaseId: purchaseItems.purchaseId,
+                costWithShipping: purchaseItems.costWithShipping,
+                landingCostUnitBase: purchaseItems.landingCostUnitBase
+              })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, item.itemId));
+            
+            if (pi) {
+              // Use cost WITH purchase shipping (same basis as final landed cost)
+              // This ensures allocation ratios match the cost structure used in updates
+              let lineUnitCost = 0;
+              if (pi.costWithShipping && parseFloat(pi.costWithShipping) > 0) {
+                lineUnitCost = parseFloat(pi.costWithShipping);
+              } else if (pi.landingCostUnitBase && parseFloat(pi.landingCostUnitBase) > 0) {
+                lineUnitCost = parseFloat(pi.landingCostUnitBase);
+              } else {
+                lineUnitCost = parseFloat(pi.unitPrice || '0');
+              }
+              
+              const itemWeight = parseFloat(pi.unitGrossWeightKg || pi.weight || '0');
+              productWeightKg += itemWeight * receivedQty;
+              
+              // Get currency for THIS line and convert to EUR
+              let lineCurrency = 'USD';
+              if (pi.purchaseId) {
+                const [purchase] = await db
+                  .select({ paymentCurrency: importPurchases.paymentCurrency, purchaseCurrency: importPurchases.purchaseCurrency })
+                  .from(importPurchases)
+                  .where(eq(importPurchases.id, pi.purchaseId));
+                if (purchase) {
+                  lineCurrency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+                }
+              }
+              
+              // Convert this line's value to EUR and ADD to product total
+              let linePriceEur = lineUnitCost;
+              if (lineCurrency === 'CZK') linePriceEur = lineUnitCost / eurToCzk;
+              else if (lineCurrency === 'USD') linePriceEur = lineUnitCost * usdToEur;
+              else if (lineCurrency === 'VND') linePriceEur = lineUnitCost / eurToVnd;
+              else if (lineCurrency === 'CNY') linePriceEur = lineUnitCost / eurToCny;
+              
+              productBaseValueEur += linePriceEur * receivedQty;
+            }
+          }
+        }
+        
+        productBreakdown.set(productId, {
+          receivedUnits: productUnits,
+          totalWeightKg: productWeightKg,
+          baseValueEur: productBaseValueEur
+        });
+        
+        totalShipmentUnits += productUnits;
+        totalShipmentWeightKg += productWeightKg;
+        totalShipmentValueEur += productBaseValueEur;
+      }
+      
+      console.log(`[addInventoryOnCompletion] Shipment totals: ${totalShipmentUnits} units, ${totalShipmentWeightKg.toFixed(2)}kg, ${totalShipmentValueEur.toFixed(2)} EUR`);
+      
+      // Convert shipment costs to EUR once for allocation calculations
+      let shipmentCostsEur = shipmentShippingCost + shipmentInsuranceCost;
+      if (shipmentShippingCurrency === 'USD') shipmentCostsEur = shipmentCostsEur * usdToEur;
+      else if (shipmentShippingCurrency === 'CZK') shipmentCostsEur = shipmentCostsEur / eurToCzk;
+      else if (shipmentShippingCurrency === 'VND') shipmentCostsEur = shipmentCostsEur / eurToVnd;
+      else if (shipmentShippingCurrency === 'CNY') shipmentCostsEur = shipmentCostsEur / eurToCny;
+      
+      // Helper: compute share based on allocation method
+      // All bases are in EUR to ensure Σ(ratios) = 1
+      function computeShipmentShare(metrics: ProductMetrics): number {
+        switch (allocationMethod) {
+          case 'CHARGEABLE_WEIGHT':
+            return totalShipmentWeightKg > 0 ? metrics.totalWeightKg / totalShipmentWeightKg : (totalShipmentUnits > 0 ? metrics.receivedUnits / totalShipmentUnits : 0);
+          case 'VALUE':
+          case 'HYBRID':
+            return totalShipmentValueEur > 0 ? metrics.baseValueEur / totalShipmentValueEur : (totalShipmentUnits > 0 ? metrics.receivedUnits / totalShipmentUnits : 0);
+          case 'PER_UNIT':
+          case 'QUANTITY':
+          default:
+            return totalShipmentUnits > 0 ? metrics.receivedUnits / totalShipmentUnits : 0;
+        }
+      }
+      
       // Step 4: Update each product's inventory AND import costs with aggregated data
       for (const [productId, data] of productQuantityMap.entries()) {
         try {
@@ -20378,26 +20512,64 @@ Important rules:
           const newStock = currentStock + quantityToAdd;
           
           // Get unit cost from original purchase/custom item for import cost calculation
+          // INCLUDES: base unit price + purchase shipping portion + shipment shipping portion + insurance
           let unitCost = 0;
           let purchaseCurrency = 'USD';
+          let purchaseShippingPerUnit = 0;
           
           if (firstItem.itemId && firstItem.itemType === 'purchase') {
             const [purchaseItem] = await db
-              .select({ unitPrice: purchaseItems.unitPrice, purchaseId: purchaseItems.purchaseId })
+              .select({ 
+                unitPrice: purchaseItems.unitPrice, 
+                purchaseId: purchaseItems.purchaseId,
+                quantity: purchaseItems.quantity,
+                costWithShipping: purchaseItems.costWithShipping,
+                landingCostUnitBase: purchaseItems.landingCostUnitBase
+              })
               .from(purchaseItems)
               .where(eq(purchaseItems.id, firstItem.itemId));
             
             if (purchaseItem) {
-              unitCost = parseFloat(purchaseItem.unitPrice || '0');
+              // Use costWithShipping or landingCostUnitBase if available (already includes shipping)
+              // Otherwise calculate from unit price + purchase shipping
+              if (purchaseItem.costWithShipping && parseFloat(purchaseItem.costWithShipping) > 0) {
+                unitCost = parseFloat(purchaseItem.costWithShipping);
+              } else if (purchaseItem.landingCostUnitBase && parseFloat(purchaseItem.landingCostUnitBase) > 0) {
+                unitCost = parseFloat(purchaseItem.landingCostUnitBase);
+              } else {
+                unitCost = parseFloat(purchaseItem.unitPrice || '0');
+              }
               
-              // Get purchase currency
+              // Get purchase currency AND shipping cost to distribute
               if (purchaseItem.purchaseId) {
                 const [purchase] = await db
-                  .select({ purchaseCurrency: importPurchases.purchaseCurrency, paymentCurrency: importPurchases.paymentCurrency })
+                  .select({ 
+                    purchaseCurrency: importPurchases.purchaseCurrency, 
+                    paymentCurrency: importPurchases.paymentCurrency,
+                    shippingCost: importPurchases.shippingCost,
+                    shippingCurrency: importPurchases.shippingCurrency,
+                    totalCost: importPurchases.totalCost
+                  })
                   .from(importPurchases)
                   .where(eq(importPurchases.id, purchaseItem.purchaseId));
                 if (purchase) {
                   purchaseCurrency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+                  
+                  // If costWithShipping wasn't pre-calculated, add purchase shipping portion
+                  if (!purchaseItem.costWithShipping || parseFloat(purchaseItem.costWithShipping) <= 0) {
+                    const purchaseShipping = parseFloat(purchase.shippingCost || '0');
+                    if (purchaseShipping > 0) {
+                      // Get total items in purchase to distribute shipping
+                      const purchaseItemsCount = await db
+                        .select({ totalQty: sql<number>`SUM(${purchaseItems.quantity})` })
+                        .from(purchaseItems)
+                        .where(eq(purchaseItems.purchaseId, purchaseItem.purchaseId));
+                      const totalQty = purchaseItemsCount[0]?.totalQty || 1;
+                      purchaseShippingPerUnit = purchaseShipping / totalQty;
+                      unitCost += purchaseShippingPerUnit;
+                      console.log(`[addInventoryOnCompletion] Added purchase shipping: ${purchaseShippingPerUnit.toFixed(4)} per unit (total ${purchaseShipping} / ${totalQty} items)`);
+                    }
+                  }
                 }
               }
             }
@@ -20425,6 +20597,28 @@ Important rules:
               } catch (e) { 
                 console.error(`[addInventoryOnCompletion] Error parsing custom item orderItems:`, e);
               }
+            }
+          }
+          
+          // Add shipment-level shipping cost using pre-computed allocation shares
+          let shipmentCostPerUnit = 0;
+          if (shipmentCostsEur > 0) {
+            const productMetrics = productBreakdown.get(productId);
+            if (productMetrics) {
+              // Calculate this product's share of shipment costs
+              const shareRatio = computeShipmentShare(productMetrics);
+              const productTotalFreightEur = shipmentCostsEur * shareRatio;
+              const freightPerUnitEur = quantityToAdd > 0 ? productTotalFreightEur / quantityToAdd : 0;
+              
+              // Convert freight from EUR to purchase currency
+              if (purchaseCurrency === 'CZK') shipmentCostPerUnit = freightPerUnitEur * eurToCzk;
+              else if (purchaseCurrency === 'USD') shipmentCostPerUnit = freightPerUnitEur * eurToUsd;
+              else if (purchaseCurrency === 'VND') shipmentCostPerUnit = freightPerUnitEur * eurToVnd;
+              else if (purchaseCurrency === 'CNY') shipmentCostPerUnit = freightPerUnitEur * eurToCny;
+              else shipmentCostPerUnit = freightPerUnitEur;
+              
+              unitCost += shipmentCostPerUnit;
+              console.log(`[addInventoryOnCompletion] ${allocationMethod} allocation: ${shipmentCostPerUnit.toFixed(4)} ${purchaseCurrency}/unit (${(shareRatio * 100).toFixed(1)}% of shipment)`);
             }
           }
           
@@ -20601,7 +20795,31 @@ Important rules:
                 const variantName = allocation.variantName || allocation.name;
                 const variantSku = allocation.sku || allocation.variantSku;
                 const allocatedQty = allocation.quantity || allocation.receivedQuantity || 0;
-                const variantUnitPrice = allocation.unitPrice || allocation.unit_price || unitCost;
+                // Base unit price from variant allocation
+                let variantUnitPrice = parseFloat(allocation.unitPrice || allocation.unit_price || '0');
+                
+                // Add shipment costs per unit to variant (same as parent product)
+                if (shipmentCostPerUnit > 0) {
+                  // Convert shipment cost to purchase currency
+                  let shipmentCostInPurchaseCurrency = shipmentCostPerUnit;
+                  if (shipmentShippingCurrency !== purchaseCurrency) {
+                    let shipmentToEur = 1;
+                    if (shipmentShippingCurrency === 'USD') shipmentToEur = usdToEur;
+                    else if (shipmentShippingCurrency === 'CZK') shipmentToEur = 1 / eurToCzk;
+                    else if (shipmentShippingCurrency === 'VND') shipmentToEur = 1 / eurToVnd;
+                    else if (shipmentShippingCurrency === 'CNY') shipmentToEur = 1 / eurToCny;
+                    const shipmentCostEur = shipmentCostPerUnit * shipmentToEur;
+                    if (purchaseCurrency === 'CZK') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToCzk;
+                    else if (purchaseCurrency === 'USD') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToUsd;
+                    else if (purchaseCurrency === 'VND') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToVnd;
+                    else if (purchaseCurrency === 'CNY') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToCny;
+                    else shipmentCostInPurchaseCurrency = shipmentCostEur;
+                  }
+                  variantUnitPrice += shipmentCostInPurchaseCurrency;
+                }
+                
+                // Fall back to parent unit cost if no variant price
+                if (variantUnitPrice <= 0) variantUnitPrice = unitCost;
                 
                 if (!variantName || allocatedQty <= 0) continue;
                 
@@ -20616,20 +20834,38 @@ Important rules:
                   const oldVariantQty = matchedVariant.quantity || 0;
                   const newVariantQty = oldVariantQty + allocatedQty;
                   
-                  // Calculate weighted average costs for variant
+                  // Calculate costs for variant in all currencies
                   const variantNewCosts: any = {};
                   if (purchaseCurrency === 'CZK') {
-                    variantNewCosts.importCostCzk = variantUnitPrice.toString();
+                    variantNewCosts.importCostCzk = variantUnitPrice.toFixed(2);
                     variantNewCosts.importCostEur = (variantUnitPrice / eurToCzk).toFixed(2);
                     variantNewCosts.importCostUsd = (variantUnitPrice / eurToCzk * eurToUsd).toFixed(2);
                   } else if (purchaseCurrency === 'EUR') {
-                    variantNewCosts.importCostEur = variantUnitPrice.toString();
+                    variantNewCosts.importCostEur = variantUnitPrice.toFixed(2);
                     variantNewCosts.importCostCzk = (variantUnitPrice * eurToCzk).toFixed(2);
                     variantNewCosts.importCostUsd = (variantUnitPrice * eurToUsd).toFixed(2);
+                  } else if (purchaseCurrency === 'VND') {
+                    variantNewCosts.importCostVnd = variantUnitPrice.toFixed(0);
+                    variantNewCosts.importCostEur = (variantUnitPrice / eurToVnd).toFixed(2);
+                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToVnd * eurToUsd).toFixed(2);
+                    variantNewCosts.importCostCzk = (variantUnitPrice / eurToVnd * eurToCzk).toFixed(2);
+                  } else if (purchaseCurrency === 'CNY') {
+                    variantNewCosts.importCostCny = variantUnitPrice.toFixed(2);
+                    variantNewCosts.importCostEur = (variantUnitPrice / eurToCny).toFixed(2);
+                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToCny * eurToUsd).toFixed(2);
+                    variantNewCosts.importCostCzk = (variantUnitPrice / eurToCny * eurToCzk).toFixed(2);
                   } else {
-                    variantNewCosts.importCostUsd = variantUnitPrice.toString();
+                    variantNewCosts.importCostUsd = variantUnitPrice.toFixed(2);
                     variantNewCosts.importCostEur = (variantUnitPrice * usdToEur).toFixed(2);
                     variantNewCosts.importCostCzk = (variantUnitPrice * usdToCzk).toFixed(2);
+                  }
+                  
+                  // Also set selling prices if variant has priceEur in allocation
+                  if (allocation.priceEur || allocation.price_eur) {
+                    variantNewCosts.priceEur = (allocation.priceEur || allocation.price_eur).toString();
+                  }
+                  if (allocation.priceCzk || allocation.price_czk) {
+                    variantNewCosts.priceCzk = (allocation.priceCzk || allocation.price_czk).toString();
                   }
                   
                   await db
@@ -20637,12 +20873,13 @@ Important rules:
                     .set({ 
                       quantity: newVariantQty,
                       sku: variantSku || matchedVariant.sku,
+                      barcode: allocation.barcode || matchedVariant.barcode,
                       ...variantNewCosts,
                       updatedAt: new Date()
                     })
                     .where(eq(productVariants.id, matchedVariant.id));
                   
-                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty})`);
+                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty}), import cost: ${variantUnitPrice.toFixed(2)} ${purchaseCurrency}`);
                 } else {
                   console.log(`[addInventoryOnCompletion] Variant ${variantName} not found for product ${productId} - skipping`);
                 }
