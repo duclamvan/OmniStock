@@ -4456,23 +4456,32 @@ function QuickStorageSheet({
                       </div>
                       
                       {/* Allocation Status */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">{t('imports:itemsToStore', 'Items')}</span>
                           <span className="font-mono font-medium">{totalItemsToAllocate.toLocaleString()} / {totalCapacity.toLocaleString()}</span>
                         </div>
                         
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all ${
+                              shortfall > 0 ? 'bg-red-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(100, totalCapacity > 0 ? (itemsWillBeAllocated / totalItemsToAllocate) * 100 : 0)}%` }}
+                          />
+                        </div>
+                        
+                        {/* Status Message */}
                         {allocationComplete ? (
-                          <div className="flex items-center gap-1.5 mt-1.5 text-sm text-green-600 dark:text-green-500">
+                          <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-500">
                             <CheckCircle className="h-4 w-4" />
                             <span>{t('imports:allItemsAllocated', 'All items will be allocated')}</span>
                           </div>
                         ) : shortfall > 0 ? (
-                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-900">
-                            <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
-                              <AlertTriangle className="h-4 w-4 shrink-0" />
-                              <span>{t('imports:needMoreBins', 'Need +{{count}} bins for {{items}} items', { count: additionalBinsNeeded, items: shortfall.toLocaleString() })}</span>
-                            </div>
+                          <div className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                            <span>{t('imports:needMoreBins', 'Need +{{count}} bins for {{items}} items', { count: additionalBinsNeeded, items: shortfall.toLocaleString() })}</span>
                           </div>
                         ) : null}
                       </div>
