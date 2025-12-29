@@ -20247,6 +20247,7 @@ Important rules:
       const receiptIds = shipmentReceipts.map(r => r.id);
       
       // Step 2: Get all receipt items with productId, receivedQuantity, AND itemId/itemType/sku for fallback lookups
+      // ALSO include variantAllocations for variant quantity distribution
       const allReceiptItems = await db
         .select({
           id: receiptItems.id,
@@ -20255,7 +20256,8 @@ Important rules:
           assignedQuantity: receiptItems.assignedQuantity,
           itemId: receiptItems.itemId,
           itemType: receiptItems.itemType,
-          sku: receiptItems.sku
+          sku: receiptItems.sku,
+          variantAllocations: receiptItems.variantAllocations
         })
         .from(receiptItems)
         .where(inArray(receiptItems.receiptId, receiptIds));
@@ -20575,6 +20577,80 @@ Important rules:
           
           inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock}), costs updated`);
           console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock}), import costs: USD=${avgCostUsd.toFixed(2)} CZK=${avgCostCzk.toFixed(2)} EUR=${avgCostEur.toFixed(2)}`);
+          
+          // VARIANT DISTRIBUTION: If receipt items have variantAllocations, distribute quantities to individual variants
+          for (const receiptItem of data.items) {
+            if (!receiptItem.variantAllocations) continue;
+            
+            try {
+              const allocations = typeof receiptItem.variantAllocations === 'string' 
+                ? JSON.parse(receiptItem.variantAllocations) 
+                : receiptItem.variantAllocations;
+              
+              if (!Array.isArray(allocations) || allocations.length === 0) continue;
+              
+              console.log(`[addInventoryOnCompletion] Processing ${allocations.length} variant allocations for product ${productId}`);
+              
+              // Get existing variants for this product
+              const existingVariants = await db
+                .select()
+                .from(productVariants)
+                .where(eq(productVariants.productId, productId));
+              
+              for (const allocation of allocations) {
+                const variantName = allocation.variantName || allocation.name;
+                const variantSku = allocation.sku || allocation.variantSku;
+                const allocatedQty = allocation.quantity || allocation.receivedQuantity || 0;
+                const variantUnitPrice = allocation.unitPrice || allocation.unit_price || unitCost;
+                
+                if (!variantName || allocatedQty <= 0) continue;
+                
+                // Find matching variant by SKU first, then by name
+                let matchedVariant = existingVariants.find(v => 
+                  (variantSku && v.sku === variantSku) || 
+                  v.name === variantName
+                );
+                
+                if (matchedVariant) {
+                  // Update existing variant with quantity and pricing
+                  const oldVariantQty = matchedVariant.quantity || 0;
+                  const newVariantQty = oldVariantQty + allocatedQty;
+                  
+                  // Calculate weighted average costs for variant
+                  const variantNewCosts: any = {};
+                  if (purchaseCurrency === 'CZK') {
+                    variantNewCosts.importCostCzk = variantUnitPrice.toString();
+                    variantNewCosts.importCostEur = (variantUnitPrice / eurToCzk).toFixed(2);
+                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToCzk * eurToUsd).toFixed(2);
+                  } else if (purchaseCurrency === 'EUR') {
+                    variantNewCosts.importCostEur = variantUnitPrice.toString();
+                    variantNewCosts.importCostCzk = (variantUnitPrice * eurToCzk).toFixed(2);
+                    variantNewCosts.importCostUsd = (variantUnitPrice * eurToUsd).toFixed(2);
+                  } else {
+                    variantNewCosts.importCostUsd = variantUnitPrice.toString();
+                    variantNewCosts.importCostEur = (variantUnitPrice * usdToEur).toFixed(2);
+                    variantNewCosts.importCostCzk = (variantUnitPrice * usdToCzk).toFixed(2);
+                  }
+                  
+                  await db
+                    .update(productVariants)
+                    .set({ 
+                      quantity: newVariantQty,
+                      sku: variantSku || matchedVariant.sku,
+                      ...variantNewCosts,
+                      updatedAt: new Date()
+                    })
+                    .where(eq(productVariants.id, matchedVariant.id));
+                  
+                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty})`);
+                } else {
+                  console.log(`[addInventoryOnCompletion] Variant ${variantName} not found for product ${productId} - skipping`);
+                }
+              }
+            } catch (variantError) {
+              console.error(`[addInventoryOnCompletion] Error processing variant allocations:`, variantError);
+            }
+          }
           
         } catch (itemError) {
           console.error(`[addInventoryOnCompletion] Error updating inventory for product ${productId}:`, itemError);
