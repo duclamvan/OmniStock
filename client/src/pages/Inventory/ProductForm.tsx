@@ -4036,9 +4036,15 @@ export default function ProductForm() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
-                                  {variant.warehouseLocation || '-'}
-                                </span>
+                                {variant.warehouseLocation ? (
+                                  <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
+                                    {variant.warehouseLocation}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                                    {t('products:variants.locationFilledOnReceiving', 'Set on receiving')}
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell className="text-right">
                                 <Input
