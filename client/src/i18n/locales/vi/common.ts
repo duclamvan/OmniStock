@@ -200,6 +200,7 @@ const common = {
   meters: 'm',
   inches: 'in',
   units: 'đơn vị',
+  totalWeight: 'Tổng trọng lượng',
   
   // Common Phrases
   yes: 'Có',

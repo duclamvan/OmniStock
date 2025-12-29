@@ -204,6 +204,7 @@ const common = {
   meters: 'm',
   inches: 'in',
   units: 'units',
+  totalWeight: 'Total Weight',
   
   // Common Phrases
   yes: 'Yes',

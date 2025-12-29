@@ -21,7 +21,8 @@ import {
   AlertCircle,
   CheckCircle,
   AlertTriangle,
-  Download
+  Download,
+  ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency as formatCurrencyUtil, convertCurrency } from "@/lib/currencyUtils";
@@ -44,6 +45,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ShipmentCost {
   id: number;
@@ -81,7 +89,20 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const [selectedCost, setSelectedCost] = useState<ShipmentCost | null>(null);
   const [costToDelete, setCostToDelete] = useState<ShipmentCost | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CZK'>('EUR');
+  const [displayCurrency, setDisplayCurrency] = useState<string>('EUR');
+
+  const AVAILABLE_CURRENCIES = [
+    { value: 'EUR', label: 'EUR €' },
+    { value: 'USD', label: 'USD $' },
+    { value: 'CZK', label: 'CZK Kč' },
+    { value: 'VND', label: 'VND ₫' },
+    { value: 'CNY', label: 'CNY ¥' },
+    { value: 'GBP', label: 'GBP £' },
+    { value: 'JPY', label: 'JPY ¥' },
+    { value: 'CHF', label: 'CHF Fr' },
+    { value: 'AUD', label: 'AUD $' },
+    { value: 'CAD', label: 'CAD $' },
+  ];
 
   // Fetch shipment data
   const { data: shipmentData } = useQuery({
@@ -274,26 +295,18 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             )}
           </div>
           <div className="flex gap-2">
-            <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/30">
-              <Button
-                variant={displayCurrency === 'EUR' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDisplayCurrency('EUR')}
-                className={displayCurrency === 'EUR' ? 'h-7' : 'h-7 hover:bg-muted'}
-                data-testid="button-currency-eur"
-              >
-                EUR €
-              </Button>
-              <Button
-                variant={displayCurrency === 'CZK' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDisplayCurrency('CZK')}
-                className={displayCurrency === 'CZK' ? 'h-7' : 'h-7 hover:bg-muted'}
-                data-testid="button-currency-czk"
-              >
-                CZK Kč
-              </Button>
-            </div>
+            <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+              <SelectTrigger className="w-[130px] h-10" data-testid="select-currency">
+                <SelectValue placeholder={t('displayCurrency')} />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {AVAILABLE_CURRENCIES.map(curr => (
+                  <SelectItem key={curr.value} value={curr.value} data-testid={`option-currency-${curr.value}`}>
+                    {curr.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               variant="default"
               size="default"
