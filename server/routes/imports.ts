@@ -5559,15 +5559,66 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
         .where(eq(receipts.id, existingReceipt.id));
     }
     
-    // Update the shipment's receiving status back to 'storage'
+    // Update the shipment - reset receivingStatus, status, and clear all processing flags
     const [updated] = await db
       .update(shipments)
       .set({ 
         receivingStatus: 'storage',
+        status: 'delivered', // Reset from 'completed' back to 'delivered' so it can be completed again
+        inventoryAddedAt: null,
+        inventoryAddedBy: null,
+        costsAllocatedAt: null,
+        costsAllocatedBy: null,
+        landedCostCalculatedAt: null,
+        landedCostCalculatedBy: null,
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId))
       .returning();
+    
+    // Also revert consolidation status if linked
+    if (shipment.consolidationId) {
+      await db
+        .update(consolidations)
+        .set({
+          status: 'in_transit', // Reset consolidation status
+          updatedAt: new Date()
+        })
+        .where(eq(consolidations.id, shipment.consolidationId));
+      
+      // Revert purchase orders to 'shipped' status (before 'delivered')
+      // Find all purchase orders linked to this consolidation
+      const consolidationItemsList = await db
+        .select()
+        .from(consolidationItems)
+        .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+      
+      // Get unique purchase order IDs from purchase items
+      const purchaseItemIds = consolidationItemsList
+        .filter(ci => ci.itemType === 'purchase')
+        .map(ci => ci.itemId);
+      
+      if (purchaseItemIds.length > 0) {
+        const purchaseItemRecords = await db
+          .select()
+          .from(purchaseItems)
+          .where(inArray(purchaseItems.id, purchaseItemIds));
+        
+        const purchaseOrderIds = [...new Set(purchaseItemRecords.map(pi => pi.purchaseOrderId))];
+        
+        for (const poId of purchaseOrderIds) {
+          if (poId) {
+            await db
+              .update(purchaseOrders)
+              .set({
+                status: 'shipped', // Reset from 'delivered' back to 'shipped'
+                updatedAt: new Date()
+              })
+              .where(eq(purchaseOrders.id, poId));
+          }
+        }
+      }
+    }
     
     res.json({ 
       message: "Shipment reverted to receiving status successfully",
