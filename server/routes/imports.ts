@@ -1035,24 +1035,36 @@ async function finalizeReceivingInventory(
           const variantLandedCostCny = variantLandedCostEur * eurToCny;
           
           // Calculate weighted average cost for this variant
-          // Guard against null/undefined values with != null checks
+          // CRITICAL: Only include existing inventory in weighted average if it has a valid cost
+          // If existing cost is null/0, ignore existing inventory for averaging (use new cost only)
           const existingQty = variant.quantity || 0;
-          const existingCostEur = variant.importCostEur != null ? parseFloat(String(variant.importCostEur)) : 0;
-          const existingCostUsd = variant.importCostUsd != null ? parseFloat(String(variant.importCostUsd)) : 0;
-          const existingCostCzk = variant.importCostCzk != null ? parseFloat(String(variant.importCostCzk)) : 0;
+          const existingCostEur = variant.importCostEur != null ? parseFloat(String(variant.importCostEur)) : null;
+          const existingCostUsd = variant.importCostUsd != null ? parseFloat(String(variant.importCostUsd)) : null;
+          const existingCostCzk = variant.importCostCzk != null ? parseFloat(String(variant.importCostCzk)) : null;
           
-          const newTotalQty = existingQty + va.quantity;
+          // Only use existing cost for weighted average if it's a valid positive number
+          // This prevents null/0 costs from incorrectly pulling down the average
+          const hasValidExistingCost = existingCostEur !== null && existingCostEur > 0;
+          const effectiveExistingQty = hasValidExistingCost ? existingQty : 0;
+          const newTotalQty = effectiveExistingQty + va.quantity;
           
           // Weighted average: (old_qty * old_cost + new_qty * new_cost) / total_qty
-          const avgCostEur = newTotalQty > 0 
-            ? ((existingQty * existingCostEur) + (va.quantity * variantLandedCostEur)) / newTotalQty 
+          // Only include existing inventory if it has a valid cost, otherwise just use new cost
+          const avgCostEur = (newTotalQty > 0 && hasValidExistingCost)
+            ? ((effectiveExistingQty * (existingCostEur || 0)) + (va.quantity * variantLandedCostEur)) / newTotalQty 
             : variantLandedCostEur;
-          const avgCostUsd = newTotalQty > 0 
-            ? ((existingQty * existingCostUsd) + (va.quantity * variantLandedCostUsd)) / newTotalQty 
+          const avgCostUsd = (newTotalQty > 0 && hasValidExistingCost)
+            ? ((effectiveExistingQty * (existingCostUsd || 0)) + (va.quantity * variantLandedCostUsd)) / newTotalQty 
             : variantLandedCostUsd;
-          const avgCostCzk = newTotalQty > 0 
-            ? ((existingQty * existingCostCzk) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
+          const avgCostCzk = (newTotalQty > 0 && hasValidExistingCost)
+            ? ((effectiveExistingQty * (existingCostCzk || 0)) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
             : variantLandedCostCzk;
+          
+          // Log weighted average calculation details for debugging
+          console.log(`[Weighted Avg] ${va.variantName}: ` +
+            `existing=${effectiveExistingQty}×$${(existingCostUsd || 0).toFixed(2)} (valid=${hasValidExistingCost}) + ` +
+            `new=${va.quantity}×$${variantLandedCostUsd.toFixed(2)} = avg $${avgCostUsd.toFixed(2)} ` +
+            `(EUR rates: eurToUsd=${eurToUsd.toFixed(4)})`);
           
           // Get location code from receipt item (warehouseLocation field)
           const variantLocationCode = item.warehouseLocation || null;
