@@ -4025,15 +4025,33 @@ function QuickStorageSheet({
                                                   !loc.notes?.includes('RI:')
                                                 );
                                                 
+                                                // Fetch product variants to get SKU/name mapping
+                                                let variantMap = new Map<string, { sku: string; name: string }>();
+                                                try {
+                                                  const variantResponse = await fetch(`/api/products/${item.productId}/variants`, { credentials: 'include' });
+                                                  if (variantResponse.ok) {
+                                                    const variants = await variantResponse.json();
+                                                    for (const v of variants) {
+                                                      variantMap.set(v.id, { sku: v.sku || '', name: v.name || '' });
+                                                    }
+                                                  }
+                                                } catch (e) {
+                                                  console.warn('Failed to fetch variants for name lookup:', e);
+                                                }
+                                                
                                                 setItems(prevItems => {
                                                   const updated = [...prevItems];
                                                   const variantAllocations = updated[index].variantAllocations || [];
                                                   updated[index].existingLocations = relevantLocations.map((loc: any) => {
-                                                    // Look up variant name from variantId
+                                                    // Look up variant name from real variantId using fetched variants
                                                     let variantName = '';
-                                                    if (loc.variantId && variantAllocations.length > 0) {
-                                                      const variant = variantAllocations.find((v: any) => v.variantId === loc.variantId);
-                                                      variantName = variant?.variantName || '';
+                                                    let sku = '';
+                                                    if (loc.variantId) {
+                                                      const variantInfo = variantMap.get(loc.variantId);
+                                                      if (variantInfo) {
+                                                        variantName = variantInfo.name;
+                                                        sku = variantInfo.sku;
+                                                      }
                                                     }
                                                     return {
                                                       id: loc.id,
@@ -4043,7 +4061,8 @@ function QuickStorageSheet({
                                                       isPrimary: loc.isPrimary,
                                                       notes: loc.notes,
                                                       variantId: loc.variantId,
-                                                      variantName
+                                                      variantName,
+                                                      sku
                                                     };
                                                   });
                                                   updated[index].locations = [];
