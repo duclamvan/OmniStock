@@ -6428,6 +6428,41 @@ router.get("/shipments/receiving", async (req, res) => {
 // Get shipments in storage status (ready for warehouse placement)
 router.get("/shipments/storage", async (req, res) => {
   try {
+    // ORPHAN FIX: Automatically fix any shipments where receivingStatus is 'storage' 
+    // but status is still 'completed'. This can happen from incomplete reverts.
+    const orphanedShipments = await db
+      .select()
+      .from(shipments)
+      .where(
+        and(
+          eq(shipments.receivingStatus, 'storage'),
+          eq(shipments.status, 'completed')
+        )
+      );
+    
+    if (orphanedShipments.length > 0) {
+      console.log(`[orphan-fix] Found ${orphanedShipments.length} orphaned storage shipments, fixing...`);
+      
+      for (const orphan of orphanedShipments) {
+        // Reset status and clear processing flags
+        await db
+          .update(shipments)
+          .set({
+            status: 'delivered',
+            inventoryAddedAt: null,
+            inventoryAddedBy: null,
+            costsAllocatedAt: null,
+            costsAllocatedBy: null,
+            landedCostCalculatedAt: null,
+            landedCostCalculatedBy: null,
+            updatedAt: new Date()
+          })
+          .where(eq(shipments.id, orphan.id));
+        
+        console.log(`[orphan-fix] Fixed shipment ${orphan.id} (${orphan.shipmentName})`);
+      }
+    }
+    
     // Get shipments with 'storage' status (items ready to be placed in warehouse)
     // No approval step needed - items go directly from receiving to storage
     const shipmentsWithStatus = await db
