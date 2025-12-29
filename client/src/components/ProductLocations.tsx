@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Table,
@@ -69,7 +69,11 @@ import {
   Layers,
   ChevronDown,
   ChevronRight,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   getLocationTypeIcon,
   getLocationTypeTextColor,
@@ -114,6 +118,10 @@ export default function ProductLocations({
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveFromLocation, setMoveFromLocation] = useState<ProductLocation | null>(null);
   const [locationsExpanded, setLocationsExpanded] = useState(false);
+  
+  // Bulk selection state
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   // Form states for add/edit
   const [locationType, setLocationType] = useState<LocationType>("warehouse");
@@ -289,6 +297,72 @@ export default function ProductLocations({
       });
     },
   });
+
+  // Bulk delete locations mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = await Promise.all(
+        ids.map(id => apiRequest('DELETE', `/api/products/${productId}/locations/${id}`))
+      );
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
+      toast({
+        title: t('common:success'),
+        description: t('common:locationsDeletedSuccessfully', { count: selectedLocations.size }),
+      });
+      setSelectedLocations(new Set());
+      setBulkDeleteDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('common:failedToDeleteLocations'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Selection helpers
+  const toggleLocationSelection = (id: string) => {
+    setSelectedLocations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllLocations = () => {
+    setSelectedLocations(new Set(locations.map(l => l.id)));
+  };
+
+  const deselectAllLocations = () => {
+    setSelectedLocations(new Set());
+  };
+
+  const isAllSelected = locations.length > 0 && selectedLocations.size === locations.length;
+  const isSomeSelected = selectedLocations.size > 0 && selectedLocations.size < locations.length;
+
+  // Sync selected locations with actual locations to remove stale IDs
+  // This runs whenever locations change (e.g., after deletions)
+  useEffect(() => {
+    if (selectedLocations.size > 0) {
+      const locationIds = new Set(locations.map(l => l.id));
+      const validSelected = new Set(Array.from(selectedLocations).filter(id => locationIds.has(id)));
+      if (validSelected.size !== selectedLocations.size) {
+        setSelectedLocations(validSelected);
+      }
+    }
+  }, [locations, selectedLocations]);
+
+  const handleBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedLocations));
+  };
 
   const resetForm = () => {
     setLocationType("warehouse");
@@ -633,18 +707,84 @@ export default function ProductLocations({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3">
+            {/* Bulk Actions Bar - shows when items are selected */}
+            {!readOnly && selectedLocations.size > 0 && (
+              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={(checked) => {
+                      if (checked) selectAllLocations();
+                      else deselectAllLocations();
+                    }}
+                    data-testid="checkbox-select-all"
+                  />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {t('common:selectedCount', { count: selectedLocations.size })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={deselectAllLocations}
+                    className="text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                    data-testid="button-deselect-all"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    {t('common:clearSelection')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    data-testid="button-bulk-delete"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {t('common:deleteSelected')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Select All row when no items selected but list is expanded */}
+            {!readOnly && selectedLocations.size === 0 && locations.length > 1 && (
+              <div className="mb-3 p-2 flex items-center gap-2">
+                <Checkbox
+                  checked={false}
+                  onCheckedChange={() => selectAllLocations()}
+                  data-testid="checkbox-select-all-empty"
+                />
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {t('common:selectAll')}
+                </span>
+              </div>
+            )}
+
             {/* Mobile Card Layout */}
             <div className="md:hidden space-y-3">
               {locations.map((location) => {
                 const LocationIcon = getLocationTypeIcon(location.locationType);
+                const isSelected = selectedLocations.has(location.id);
                 return (
                   <div 
                     key={location.id} 
-                    className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-slate-900"
+                    className={`rounded-lg border p-4 bg-white dark:bg-slate-900 ${
+                      isSelected 
+                        ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/20' 
+                        : 'border-gray-200 dark:border-gray-700'
+                    }`}
                     data-testid={`card-location-${location.id}`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-2">
+                        {!readOnly && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleLocationSelection(location.id)}
+                            data-testid={`checkbox-location-${location.id}`}
+                          />
+                        )}
                         <LocationIcon className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                         <span className="font-mono font-medium" data-testid={`text-location-code-${location.id}`}>
                           {location.locationCode}
@@ -754,6 +894,18 @@ export default function ProductLocations({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {!readOnly && (
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) selectAllLocations();
+                            else deselectAllLocations();
+                          }}
+                          data-testid="checkbox-select-all-table"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>{t('common:locationCode')}</TableHead>
                     <TableHead>{t('common:type')}</TableHead>
                     <TableHead>{t('common:quantity')}</TableHead>
@@ -765,8 +917,22 @@ export default function ProductLocations({
                 <TableBody>
                   {locations.map((location) => {
                     const LocationIcon = getLocationTypeIcon(location.locationType);
+                    const isSelected = selectedLocations.has(location.id);
                     return (
-                      <TableRow key={location.id} data-testid={`row-location-${location.id}`}>
+                      <TableRow 
+                        key={location.id} 
+                        data-testid={`row-location-${location.id}`}
+                        className={isSelected ? 'bg-blue-50 dark:bg-blue-950/20' : ''}
+                      >
+                        {!readOnly && (
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleLocationSelection(location.id)}
+                              data-testid={`checkbox-location-${location.id}`}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="font-mono">
                           <div className="flex items-center space-x-2">
                             <LocationIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
@@ -1074,6 +1240,45 @@ export default function ProductLocations({
               data-testid="button-confirm-delete"
             >
               {t('common:deleteLocation')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common:deleteLocations')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common:confirmDeleteMultipleLocations', { count: selectedLocations.size })}
+              {(() => {
+                const selectedWithInventory = locations
+                  .filter(l => selectedLocations.has(l.id) && l.quantity > 0);
+                const totalInventory = selectedWithInventory.reduce((sum, l) => sum + l.quantity, 0);
+                if (totalInventory > 0) {
+                  return (
+                    <span className="block mt-2 text-red-600">
+                      {t('common:warningLocationsContainInventory', { 
+                        locationCount: selectedWithInventory.length,
+                        totalUnits: totalInventory 
+                      })}
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-bulk-delete">{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={bulkDeleteMutation.isPending}
+              data-testid="button-confirm-bulk-delete"
+            >
+              {bulkDeleteMutation.isPending ? t('common:deleting') : t('common:deleteLocations')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
