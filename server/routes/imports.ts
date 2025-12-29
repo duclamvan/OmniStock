@@ -731,14 +731,31 @@ async function finalizeReceivingInventory(
             continue;
           }
           
-          // Look up the variant - handle temp IDs by creating variants or matching by name
+          // Look up variant by SKU (primary) or create new if not found
+          // SKU is the primary identifier for variants during receiving
           let variant: { id: string; productId: string; quantity: number | null; importCostUsd: string | null; importCostCzk: string | null; importCostEur: string | null } | undefined;
           
-          const isTempId = String(va.variantId).startsWith('temp-');
+          // Get the target product ID first
+          let targetProductId: string | null = null;
+          if (item.productId) {
+            targetProductId = item.productId;
+          } else if (item.sku) {
+            const [productBySku] = await tx
+              .select({ id: products.id })
+              .from(products)
+              .where(eq(products.sku, item.sku));
+            if (productBySku) {
+              targetProductId = productBySku.id;
+            }
+          }
           
-          if (!isTempId) {
-            // Look up by actual ID
-            const [existingVariant] = await tx
+          // Extract variant SKU from the allocation (support both variantSku and sku fields)
+          const vaExt2 = va as any;
+          const variantSku = vaExt2.variantSku || vaExt2.sku || null;
+          
+          if (variantSku && targetProductId) {
+            // Primary lookup: by variant SKU
+            const [existingBySku] = await tx
               .select({ 
                 id: productVariants.id, 
                 productId: productVariants.productId, 
@@ -748,29 +765,85 @@ async function finalizeReceivingInventory(
                 importCostEur: productVariants.importCostEur
               })
               .from(productVariants)
-              .where(eq(productVariants.id, va.variantId));
-            variant = existingVariant;
-          } else {
-            // Temp ID - try to find or create variant by name for the linked product
-            // First, get the product ID from the receipt item
-            let targetProductId: string | null = null;
+              .where(and(
+                eq(productVariants.productId, targetProductId),
+                eq(productVariants.sku, variantSku)
+              ));
             
-            if (item.productId) {
-              targetProductId = item.productId;
-            } else if (item.sku) {
-              // Look up product by SKU
-              const [productBySku] = await tx
-                .select({ id: products.id })
-                .from(products)
-                .where(eq(products.sku, item.sku));
-              if (productBySku) {
-                targetProductId = productBySku.id;
-              }
+            if (existingBySku) {
+              variant = existingBySku;
+              console.log(`[Variant] Found existing variant by SKU "${variantSku}" for product ${targetProductId}`);
+            } else {
+              // SKU not found = new variant, create it
+              const [newVariant] = await tx
+                .insert(productVariants)
+                .values({
+                  productId: targetProductId,
+                  name: va.variantName || variantSku,
+                  sku: variantSku,
+                  quantity: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                })
+                .returning({
+                  id: productVariants.id,
+                  productId: productVariants.productId,
+                  quantity: productVariants.quantity,
+                  importCostUsd: productVariants.importCostUsd,
+                  importCostCzk: productVariants.importCostCzk,
+                  importCostEur: productVariants.importCostEur
+                });
+              variant = newVariant;
+              console.log(`[Variant] Created new variant SKU "${variantSku}" name "${va.variantName}" (${newVariant.id}) for product ${targetProductId}`);
             }
+          } else if (targetProductId && va.variantName) {
+            // Fallback: no SKU provided, try matching by name
+            const [existingByName] = await tx
+              .select({ 
+                id: productVariants.id, 
+                productId: productVariants.productId, 
+                quantity: productVariants.quantity,
+                importCostUsd: productVariants.importCostUsd,
+                importCostCzk: productVariants.importCostCzk,
+                importCostEur: productVariants.importCostEur
+              })
+              .from(productVariants)
+              .where(and(
+                eq(productVariants.productId, targetProductId),
+                eq(productVariants.name, va.variantName)
+              ));
             
-            if (targetProductId && va.variantName) {
-              // Try to find existing variant by name
-              const [existingByName] = await tx
+            if (existingByName) {
+              variant = existingByName;
+              console.log(`[Variant] Found existing variant by name "${va.variantName}" for product ${targetProductId}`);
+            } else {
+              // Name not found = new variant, create it
+              const [newVariant] = await tx
+                .insert(productVariants)
+                .values({
+                  productId: targetProductId,
+                  name: va.variantName,
+                  sku: null,
+                  quantity: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                })
+                .returning({
+                  id: productVariants.id,
+                  productId: productVariants.productId,
+                  quantity: productVariants.quantity,
+                  importCostUsd: productVariants.importCostUsd,
+                  importCostCzk: productVariants.importCostCzk,
+                  importCostEur: productVariants.importCostEur
+                });
+              variant = newVariant;
+              console.log(`[Variant] Created new variant by name "${va.variantName}" (${newVariant.id}) for product ${targetProductId}`);
+            }
+          } else {
+            // Last resort: try lookup by variantId if it's a real UUID
+            const isTempId = String(va.variantId).startsWith('temp-');
+            if (!isTempId) {
+              const [existingById] = await tx
                 .select({ 
                   id: productVariants.id, 
                   productId: productVariants.productId, 
@@ -780,42 +853,16 @@ async function finalizeReceivingInventory(
                   importCostEur: productVariants.importCostEur
                 })
                 .from(productVariants)
-                .where(and(
-                  eq(productVariants.productId, targetProductId),
-                  eq(productVariants.name, va.variantName)
-                ));
-              
-              if (existingByName) {
-                variant = existingByName;
-                console.log(`[Variant] Found existing variant by name "${va.variantName}" for product ${targetProductId}`);
-              } else {
-                // Create new variant
-                const [newVariant] = await tx
-                  .insert(productVariants)
-                  .values({
-                    productId: targetProductId,
-                    name: va.variantName,
-                    sku: null,
-                    quantity: 0,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                  })
-                  .returning({
-                    id: productVariants.id,
-                    productId: productVariants.productId,
-                    quantity: productVariants.quantity,
-                    importCostUsd: productVariants.importCostUsd,
-                    importCostCzk: productVariants.importCostCzk,
-                    importCostEur: productVariants.importCostEur
-                  });
-                variant = newVariant;
-                console.log(`[Variant] Created new variant "${va.variantName}" (${newVariant.id}) for product ${targetProductId}`);
+                .where(eq(productVariants.id, va.variantId));
+              variant = existingById;
+              if (variant) {
+                console.log(`[Variant] Found existing variant by ID "${va.variantId}"`);
               }
             }
           }
           
           if (!variant) {
-            console.warn(`Variant not found for ID ${va.variantId} and could not create (no product link), skipping`);
+            console.warn(`Variant not found for "${va.variantName}" (SKU: ${variantSku}, ID: ${va.variantId}) - no product link available, skipping`);
             continue;
           }
           
