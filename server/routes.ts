@@ -20208,10 +20208,12 @@ Important rules:
     const inventoryUpdates: string[] = [];
     
     // Fetch exchange rates ONCE at the start (shared across all products)
+    // Supports: USD, CZK, VND, CNY, GBP, JPY, CHF, AUD, CAD
     let eurToUsd = 1.1, eurToCzk = 25, eurToVnd = 27000, eurToCny = 7.5; // Fallback rates
+    let eurToGbp = 0.85, eurToJpy = 160, eurToChf = 0.95, eurToAud = 1.65, eurToCad = 1.48;
     let ratesSource = 'fallback';
     try {
-      // Use ExchangeRate-API (no key required) which supports VND
+      // Use ExchangeRate-API (no key required) which supports many currencies including VND
       const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
       if (rateResponse.ok) {
         const rateData = await rateResponse.json();
@@ -20220,8 +20222,13 @@ Important rules:
           eurToCzk = rateData.rates.CZK || eurToCzk;
           eurToCny = rateData.rates.CNY || eurToCny;
           eurToVnd = rateData.rates.VND || eurToVnd;
+          eurToGbp = rateData.rates.GBP || eurToGbp;
+          eurToJpy = rateData.rates.JPY || eurToJpy;
+          eurToChf = rateData.rates.CHF || eurToChf;
+          eurToAud = rateData.rates.AUD || eurToAud;
+          eurToCad = rateData.rates.CAD || eurToCad;
           ratesSource = 'exchangerate-api';
-          console.log(`[addInventoryOnCompletion] Using live ExchangeRate-API rates: EUR→USD=${eurToUsd.toFixed(4)}, EUR→CZK=${eurToCzk.toFixed(2)}, EUR→CNY=${eurToCny.toFixed(4)}, EUR→VND=${eurToVnd.toFixed(0)}`);
+          console.log(`[addInventoryOnCompletion] Using live ExchangeRate-API rates: EUR→USD=${eurToUsd.toFixed(4)}, EUR→CZK=${eurToCzk.toFixed(2)}, EUR→CNY=${eurToCny.toFixed(4)}, EUR→VND=${eurToVnd.toFixed(0)}, EUR→GBP=${eurToGbp.toFixed(4)}`);
         }
       }
     } catch (rateError) {
@@ -20231,6 +20238,40 @@ Important rules:
     const usdToCzk = eurToCzk / eurToUsd;
     const usdToVnd = eurToVnd / eurToUsd;
     const usdToCny = eurToCny / eurToUsd;
+    
+    // Helper function to convert any currency to EUR
+    const toEur = (amount: number, currency: string): number => {
+      const curr = currency.toUpperCase();
+      if (curr === 'EUR') return amount;
+      if (curr === 'USD') return amount * usdToEur;
+      if (curr === 'CZK') return amount / eurToCzk;
+      if (curr === 'VND') return amount / eurToVnd;
+      if (curr === 'CNY') return amount / eurToCny;
+      if (curr === 'GBP') return amount / eurToGbp;
+      if (curr === 'JPY') return amount / eurToJpy;
+      if (curr === 'CHF') return amount / eurToChf;
+      if (curr === 'AUD') return amount / eurToAud;
+      if (curr === 'CAD') return amount / eurToCad;
+      console.warn(`[addInventoryOnCompletion] Unknown currency ${currency}, treating as EUR`);
+      return amount;
+    };
+    
+    // Helper function to convert EUR to any currency
+    const fromEur = (amountEur: number, currency: string): number => {
+      const curr = currency.toUpperCase();
+      if (curr === 'EUR') return amountEur;
+      if (curr === 'USD') return amountEur * eurToUsd;
+      if (curr === 'CZK') return amountEur * eurToCzk;
+      if (curr === 'VND') return amountEur * eurToVnd;
+      if (curr === 'CNY') return amountEur * eurToCny;
+      if (curr === 'GBP') return amountEur * eurToGbp;
+      if (curr === 'JPY') return amountEur * eurToJpy;
+      if (curr === 'CHF') return amountEur * eurToChf;
+      if (curr === 'AUD') return amountEur * eurToAud;
+      if (curr === 'CAD') return amountEur * eurToCad;
+      console.warn(`[addInventoryOnCompletion] Unknown currency ${currency}, treating as EUR`);
+      return amountEur;
+    };
     
     try {
       // Step 1: Find all receipts for this shipment
@@ -20247,7 +20288,7 @@ Important rules:
       const receiptIds = shipmentReceipts.map(r => r.id);
       
       // Step 1b: Get shipment data for shipping costs and allocation method
-      const [shipmentData] = await db
+      const [shipment] = await db
         .select({
           shippingCost: shipments.shippingCost,
           shippingCostCurrency: shipments.shippingCostCurrency,
@@ -20255,17 +20296,18 @@ Important rules:
           allocationMethod: shipments.allocationMethod,
           totalWeight: shipments.totalWeight,
           totalUnits: shipments.totalUnits,
-          unitType: shipments.unitType
+          unitType: shipments.unitType,
+          consolidationId: shipments.consolidationId
         })
         .from(shipments)
         .where(eq(shipments.id, shipmentId));
       
-      const shipmentShippingCost = parseFloat(shipmentData?.shippingCost || '0');
-      const shipmentShippingCurrency = shipmentData?.shippingCostCurrency || 'USD';
-      const shipmentInsuranceCost = parseFloat(shipmentData?.insuranceValue || '0');
-      const shipmentTotalWeight = parseFloat(shipmentData?.totalWeight || '0');
-      const shipmentTotalUnits = shipmentData?.totalUnits || 0;
-      const shipmentUnitType = shipmentData?.unitType?.toLowerCase() || 'items';
+      const shipmentShippingCost = parseFloat(shipment?.shippingCost || '0');
+      const shipmentShippingCurrency = shipment?.shippingCostCurrency || 'USD';
+      const shipmentInsuranceCost = parseFloat(shipment?.insuranceValue || '0');
+      const shipmentTotalWeight = parseFloat(shipment?.totalWeight || '0');
+      const shipmentTotalUnits = shipment?.totalUnits || 0;
+      const shipmentUnitType = shipment?.unitType?.toLowerCase() || 'items';
       
       // Query additional shipment costs (brokerage, customs, etc.) from shipmentCosts table
       const additionalCosts = await db
@@ -20277,27 +20319,20 @@ Important rules:
         .from(shipmentCosts)
         .where(eq(shipmentCosts.shipmentId, shipmentId));
       
-      // Sum all additional costs and convert to EUR
+      // Sum all additional costs and convert to EUR using helper function
       let additionalCostsEur = 0;
       for (const cost of additionalCosts) {
         const amount = parseFloat(cost.amount || '0');
         if (amount <= 0) continue;
-        
-        let amountInEur = amount;
         const costCurrency = cost.currency || 'EUR';
-        if (costCurrency === 'USD') amountInEur = amount * usdToEur;
-        else if (costCurrency === 'CZK') amountInEur = amount / eurToCzk;
-        else if (costCurrency === 'VND') amountInEur = amount / eurToVnd;
-        else if (costCurrency === 'CNY') amountInEur = amount / eurToCny;
-        
-        additionalCostsEur += amountInEur;
+        additionalCostsEur += toEur(amount, costCurrency);
       }
       
       console.log(`[addInventoryOnCompletion] Additional shipment costs: €${additionalCostsEur.toFixed(2)} (${additionalCosts.length} items)`);
       
       // Smart auto-selection when allocationMethod is null (Auto mode)
       // Matches the logic in landingCostService.getAllocationMethod()
-      let allocationMethod = shipmentData?.allocationMethod;
+      let allocationMethod = shipment?.allocationMethod;
       if (!allocationMethod) {
         // Auto-select based on shipment unit type (for freight costs)
         switch (shipmentUnitType) {
@@ -20642,9 +20677,19 @@ Important rules:
             // Get custom item cost from orderItems JSON
             // Note: orderItems may use snake_case (unit_price) or camelCase (unitPrice)
             const [customItem] = await db
-              .select({ orderItems: customItems.orderItems })
+              .select({ 
+                orderItems: customItems.orderItems,
+                purchaseOrderId: customItems.purchaseOrderId,
+                paymentCurrency: customItems.paymentCurrency
+              })
               .from(customItems)
               .where(eq(customItems.id, firstItem.itemId));
+            
+            // Priority 1: Use dedicated paymentCurrency column (most reliable)
+            if (customItem?.paymentCurrency) {
+              purchaseCurrency = customItem.paymentCurrency;
+              console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from custom item's paymentCurrency column`);
+            }
             
             if (customItem?.orderItems) {
               try {
@@ -20656,34 +20701,93 @@ Important rules:
                   // Support both snake_case and camelCase keys
                   const itemPrice = firstOrderItem.unit_price || firstOrderItem.unitPrice || firstOrderItem.price || '0';
                   unitCost = parseFloat(String(itemPrice));
-                  // Get currency from item if available, default to CZK
-                  purchaseCurrency = firstOrderItem.currency || firstOrderItem.price_currency || 'CZK';
+                  // Priority 2: Get payment currency from orderItems JSON if not already set
+                  if (!purchaseCurrency) {
+                    purchaseCurrency = firstOrderItem.payment_currency || firstOrderItem.paymentCurrency || 
+                                       firstOrderItem.currency || firstOrderItem.price_currency || '';
+                  }
                 }
               } catch (e) { 
                 console.error(`[addInventoryOnCompletion] Error parsing custom item orderItems:`, e);
+              }
+            }
+            
+            // If no currency found from column or orderItems, try multiple fallbacks
+            if (!purchaseCurrency) {
+              // Fallback 1: Try custom item's linked purchaseOrderId
+              if (customItem?.purchaseOrderId) {
+                const [linkedPurchase] = await db
+                  .select({ paymentCurrency: importPurchases.paymentCurrency })
+                  .from(importPurchases)
+                  .where(eq(importPurchases.id, customItem.purchaseOrderId));
+                
+                if (linkedPurchase?.paymentCurrency) {
+                  purchaseCurrency = linkedPurchase.paymentCurrency;
+                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from custom item's linked purchaseOrderId`);
+                }
+              }
+              
+              // Fallback 2: Try shipment's consolidation
+              if (!purchaseCurrency && shipment?.consolidationId) {
+                const consolidatedPurchases = await db
+                  .select({ paymentCurrency: importPurchases.paymentCurrency })
+                  .from(purchaseItems)
+                  .innerJoin(importPurchases, eq(purchaseItems.purchaseId, importPurchases.id))
+                  .where(eq(purchaseItems.consolidationId, shipment.consolidationId))
+                  .limit(1);
+                
+                if (consolidatedPurchases.length > 0 && consolidatedPurchases[0].paymentCurrency) {
+                  purchaseCurrency = consolidatedPurchases[0].paymentCurrency;
+                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from consolidated purchase`);
+                }
+              }
+              
+              // Fallback 3: Try to get from other receipt items in same receipt that are purchase type
+              if (!purchaseCurrency && firstItem.receiptId) {
+                const otherPurchaseItems = await db
+                  .select({ paymentCurrency: importPurchases.paymentCurrency })
+                  .from(receiptItems)
+                  .innerJoin(purchaseItems, eq(receiptItems.itemId, purchaseItems.id))
+                  .innerJoin(importPurchases, eq(purchaseItems.purchaseId, importPurchases.id))
+                  .where(and(
+                    eq(receiptItems.receiptId, firstItem.receiptId),
+                    eq(receiptItems.itemType, 'purchase')
+                  ))
+                  .limit(1);
+                
+                if (otherPurchaseItems.length > 0 && otherPurchaseItems[0].paymentCurrency) {
+                  purchaseCurrency = otherPurchaseItems[0].paymentCurrency;
+                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from sibling purchase item in receipt`);
+                }
+              }
+              
+              // Fallback 4: Use shipment's shipping currency - log warning for finance review
+              if (!purchaseCurrency) {
+                purchaseCurrency = shipmentShippingCurrency || 'EUR';
+                console.warn(`[addInventoryOnCompletion] WARNING: No payment currency found for custom item ${firstItem.itemId}. ` +
+                  `Using shipment shipping currency ${purchaseCurrency} as fallback. FINANCE REVIEW RECOMMENDED - ` +
+                  `landed costs may not reflect actual purchase currency. Consider setting paymentCurrency on the custom item.`);
               }
             }
           }
           
           // Add shipment-level shipping cost using pre-computed allocation shares
           let shipmentCostPerUnit = 0;
+          let freightPerUnitEur = 0; // Keep EUR version for variants (avoids double conversion)
           if (shipmentCostsEur > 0) {
             const productMetrics = productBreakdown.get(productId);
             if (productMetrics) {
               // Calculate this product's share of shipment costs
               const shareRatio = computeShipmentShare(productMetrics);
               const productTotalFreightEur = shipmentCostsEur * shareRatio;
-              const freightPerUnitEur = quantityToAdd > 0 ? productTotalFreightEur / quantityToAdd : 0;
+              freightPerUnitEur = quantityToAdd > 0 ? productTotalFreightEur / quantityToAdd : 0;
               
-              // Convert freight from EUR to purchase currency
-              if (purchaseCurrency === 'CZK') shipmentCostPerUnit = freightPerUnitEur * eurToCzk;
-              else if (purchaseCurrency === 'USD') shipmentCostPerUnit = freightPerUnitEur * eurToUsd;
-              else if (purchaseCurrency === 'VND') shipmentCostPerUnit = freightPerUnitEur * eurToVnd;
-              else if (purchaseCurrency === 'CNY') shipmentCostPerUnit = freightPerUnitEur * eurToCny;
-              else shipmentCostPerUnit = freightPerUnitEur;
+              // Convert freight from EUR to purchase currency (for parent product)
+              // Uses helper function to support all currencies (USD, CZK, VND, CNY, GBP, JPY, CHF, AUD, CAD)
+              shipmentCostPerUnit = fromEur(freightPerUnitEur, purchaseCurrency);
               
               unitCost += shipmentCostPerUnit;
-              console.log(`[addInventoryOnCompletion] ${allocationMethod} allocation: ${shipmentCostPerUnit.toFixed(4)} ${purchaseCurrency}/unit (${(shareRatio * 100).toFixed(1)}% of shipment)`);
+              console.log(`[addInventoryOnCompletion] ${allocationMethod} allocation: €${freightPerUnitEur.toFixed(4)}/unit = ${shipmentCostPerUnit.toFixed(4)} ${purchaseCurrency}/unit (${(shareRatio * 100).toFixed(1)}% of shipment)`);
             }
           }
           
@@ -20717,83 +20821,29 @@ Important rules:
           const oldCostVnd = parseFloat(product.importCostVnd || '0');
           const oldCostCny = parseFloat(product.importCostCny || '0');
           
-          // Exchange rates were fetched once at function start - reuse them
-          // Convert new unit cost to all currencies based on purchase currency
-          let newCostUsd = 0, newCostCzk = 0, newCostEur = 0, newCostVnd = 0, newCostCny = 0;
-          
-          if (purchaseCurrency === 'CZK') {
-            newCostCzk = unitCost;
-            newCostUsd = unitCost / eurToCzk * eurToUsd;
-            newCostEur = unitCost / eurToCzk;
-            newCostVnd = unitCost / eurToCzk * eurToVnd;
-            newCostCny = unitCost / eurToCzk * eurToCny;
-          } else if (purchaseCurrency === 'EUR') {
-            newCostEur = unitCost;
-            newCostUsd = unitCost * eurToUsd;
-            newCostCzk = unitCost * eurToCzk;
-            newCostVnd = unitCost * eurToVnd;
-            newCostCny = unitCost * eurToCny;
-          } else if (purchaseCurrency === 'VND') {
-            newCostVnd = unitCost;
-            newCostUsd = unitCost / eurToVnd * eurToUsd;
-            newCostEur = unitCost / eurToVnd;
-            newCostCzk = unitCost / eurToVnd * eurToCzk;
-            newCostCny = unitCost / eurToVnd * eurToCny;
-          } else if (purchaseCurrency === 'CNY') {
-            newCostCny = unitCost;
-            newCostUsd = unitCost / eurToCny * eurToUsd;
-            newCostEur = unitCost / eurToCny;
-            newCostCzk = unitCost / eurToCny * eurToCzk;
-            newCostVnd = unitCost / eurToCny * eurToVnd;
-          } else {
-            // Default: USD
-            newCostUsd = unitCost;
-            newCostEur = unitCost * usdToEur;
-            newCostCzk = unitCost * usdToCzk;
-            newCostVnd = unitCost * usdToVnd;
-            newCostCny = unitCost * usdToCny;
-          }
+          // Exchange rates were fetched once at function start - use toEur/fromEur helpers
+          // Convert new unit cost from purchase currency to EUR, then to all currencies
+          const newCostEur = toEur(unitCost, purchaseCurrency);
+          const newCostUsd = fromEur(newCostEur, 'USD');
+          const newCostCzk = fromEur(newCostEur, 'CZK');
+          const newCostVnd = fromEur(newCostEur, 'VND');
+          const newCostCny = fromEur(newCostEur, 'CNY');
           
           // Derive old costs from any available currency if some are missing
           // Find the best source currency (one that has a value) and derive ALL others from it
-          let derivedOldUsd = oldCostUsd, derivedOldCzk = oldCostCzk, derivedOldEur = oldCostEur;
-          let derivedOldVnd = oldCostVnd, derivedOldCny = oldCostCny;
+          let derivedOldEur = oldCostEur;
           
-          // Determine source currency for derivation (use the first one that has a value)
-          if (oldCostUsd > 0) {
-            // Derive all currencies from USD
-            if (derivedOldEur === 0) derivedOldEur = oldCostUsd * usdToEur;
-            if (derivedOldCzk === 0) derivedOldCzk = oldCostUsd * usdToCzk;
-            if (derivedOldVnd === 0) derivedOldVnd = oldCostUsd * usdToVnd;
-            if (derivedOldCny === 0) derivedOldCny = oldCostUsd * usdToCny;
-          } else if (oldCostEur > 0) {
-            // Derive all currencies from EUR
-            if (derivedOldUsd === 0) derivedOldUsd = oldCostEur * eurToUsd;
-            if (derivedOldCzk === 0) derivedOldCzk = oldCostEur * eurToCzk;
-            if (derivedOldVnd === 0) derivedOldVnd = oldCostEur * eurToVnd;
-            if (derivedOldCny === 0) derivedOldCny = oldCostEur * eurToCny;
-          } else if (oldCostCzk > 0) {
-            // Derive all currencies from CZK (convert via EUR)
-            const oldInEur = oldCostCzk / eurToCzk;
-            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
-            if (derivedOldEur === 0) derivedOldEur = oldInEur;
-            if (derivedOldVnd === 0) derivedOldVnd = oldInEur * eurToVnd;
-            if (derivedOldCny === 0) derivedOldCny = oldInEur * eurToCny;
-          } else if (oldCostVnd > 0) {
-            // Derive all currencies from VND (convert via EUR)
-            const oldInEur = oldCostVnd / eurToVnd;
-            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
-            if (derivedOldEur === 0) derivedOldEur = oldInEur;
-            if (derivedOldCzk === 0) derivedOldCzk = oldInEur * eurToCzk;
-            if (derivedOldCny === 0) derivedOldCny = oldInEur * eurToCny;
-          } else if (oldCostCny > 0) {
-            // Derive all currencies from CNY (convert via EUR)
-            const oldInEur = oldCostCny / eurToCny;
-            if (derivedOldUsd === 0) derivedOldUsd = oldInEur * eurToUsd;
-            if (derivedOldEur === 0) derivedOldEur = oldInEur;
-            if (derivedOldCzk === 0) derivedOldCzk = oldInEur * eurToCzk;
-            if (derivedOldVnd === 0) derivedOldVnd = oldInEur * eurToVnd;
-          }
+          // Determine source currency for derivation (find any non-zero cost and convert to EUR)
+          if (derivedOldEur === 0 && oldCostUsd > 0) derivedOldEur = toEur(oldCostUsd, 'USD');
+          else if (derivedOldEur === 0 && oldCostCzk > 0) derivedOldEur = toEur(oldCostCzk, 'CZK');
+          else if (derivedOldEur === 0 && oldCostVnd > 0) derivedOldEur = toEur(oldCostVnd, 'VND');
+          else if (derivedOldEur === 0 && oldCostCny > 0) derivedOldEur = toEur(oldCostCny, 'CNY');
+          
+          // Derive all currencies from EUR
+          const derivedOldUsd = oldCostUsd > 0 ? oldCostUsd : fromEur(derivedOldEur, 'USD');
+          const derivedOldCzk = oldCostCzk > 0 ? oldCostCzk : fromEur(derivedOldEur, 'CZK');
+          const derivedOldVnd = oldCostVnd > 0 ? oldCostVnd : fromEur(derivedOldEur, 'VND');
+          const derivedOldCny = oldCostCny > 0 ? oldCostCny : fromEur(derivedOldEur, 'CNY');
           
           // Calculate weighted averages for all currencies
           const avgCostUsd = totalQuantity > 0 
@@ -20865,17 +20915,9 @@ Important rules:
                 // Get base unit price in EUR from allocation
                 let variantUnitPriceEur = parseFloat(allocation.unitPrice || allocation.unit_price || '0');
                 
-                // Add shipment costs per unit to variant (convert to EUR first)
-                if (shipmentCostPerUnit > 0) {
-                  // shipmentCostPerUnit is already in purchaseCurrency - convert to EUR
-                  let shipmentCostEur = 0;
-                  if (purchaseCurrency === 'CZK') shipmentCostEur = shipmentCostPerUnit / eurToCzk;
-                  else if (purchaseCurrency === 'USD') shipmentCostEur = shipmentCostPerUnit * usdToEur;
-                  else if (purchaseCurrency === 'VND') shipmentCostEur = shipmentCostPerUnit / eurToVnd;
-                  else if (purchaseCurrency === 'CNY') shipmentCostEur = shipmentCostPerUnit / eurToCny;
-                  else shipmentCostEur = shipmentCostPerUnit; // Already EUR
-                  
-                  variantUnitPriceEur += shipmentCostEur;
+                // Add shipment costs per unit to variant - use EUR directly (avoid double conversion)
+                if (freightPerUnitEur > 0) {
+                  variantUnitPriceEur += freightPerUnitEur;
                 }
                 
                 // Fall back to parent unit cost (converted to EUR) if no variant price

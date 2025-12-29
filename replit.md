@@ -1,5 +1,5 @@
 # Overview
-Davie Supply is a full-stack web application for comprehensive warehouse and order management, aiming to optimize supply chain operations. It manages the entire order lifecycle, inventory, CRM, and multi-currency financial reporting. Key capabilities include complete bilingual internationalization (Vietnamese/English), real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. The system features enterprise-grade security with comprehensive RBAC and 100% route coverage. Future ambitions include advanced warehouse mapping and AI-powered optimization for enhanced efficiency.
+Davie Supply is a full-stack web application designed for comprehensive warehouse and order management, aiming to optimize supply chain operations. It manages the entire order lifecycle, inventory, CRM, and multi-currency financial reporting. Key capabilities include complete bilingual internationalization (Vietnamese/English), real-time Vietnamese diacritics search, customer-specific pricing, external shipping API integrations, extensive settings management, and professional PDF packing list generation. The system features enterprise-grade security with comprehensive RBAC and 100% route coverage. Future ambitions include advanced warehouse mapping and AI-powered optimization for enhanced efficiency.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -7,69 +7,26 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend
-The frontend is a React and TypeScript application built with Vite, utilizing Shadcn/ui, Tailwind CSS, TanStack Query, Wouter, and React Hook Form with Zod. It features a mobile-first, card-based, responsive design with an interactive Pick & Pack interface, 2D warehouse mapping, and unified form components. It supports complete bilingual internationalization (Vietnamese/English) using `react-i18next` across all modules. PWA capabilities include offline functionality, asset caching, background sync, and IndexedDB for local storage with an offline queue manager.
+The frontend is a React and TypeScript application built with Vite, utilizing Shadcn/ui, Tailwind CSS, TanStack Query, Wouter, and React Hook Form with Zod. It features a mobile-first, card-based, responsive design with an interactive Pick & Pack interface, 2D warehouse mapping, and unified form components. It supports complete bilingual internationalization (Vietnamese/English) using `react-i18next`. PWA capabilities include offline functionality, asset caching, background sync, and IndexedDB for local storage with an offline queue manager.
 
 ## Backend
 The backend is an Express.js application written in TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-The system uses username/password authentication with `passport-local` and Enterprise-Grade Role-Based Access Control (RBAC). Passwords are hashed with `bcryptjs`. Session management uses PostgreSQL-backed sessions with HTTP-only cookies. New users have a `NULL` role by default, requiring administrator assignment, with enforcement on both frontend and backend. The first registered user automatically becomes an administrator.
-
-### Dynamic Role Management System
-The system supports dynamic role creation and management with granular section/page-based permissions. It includes `roles`, `permissions`, and `role_permissions` database tables. System roles like `administrator` and `warehouse_operator` are predefined, and custom roles can be created by administrators through a tabbed UI. APIs are provided for CRUD operations on roles, permissions, and user role assignment.
-
-### Production Security Features
-The system implements comprehensive security:
-- **100% Route Protection**: 266 routes are secured with `isAuthenticated` middleware, 44 routes require administrator role, and only 15 authentication-related routes are public.
-- **Rate Limiting**: Prevents brute force attacks and API abuse on authentication and 2FA endpoints.
-- **Account Lockout**: 5 failed login attempts trigger a 15-minute lockout.
-- **Password Complexity**: Enforces strong password requirements.
-- **CSRF Protection**: Uses `SameSite=strict` cookies, origin header validation, and non-default session cookie names.
-- **Security Headers (Helmet.js)**: Implements strict Content Security Policy, HSTS, X-Frame-Options, X-Content-Type-Options, and other directives to prevent common web vulnerabilities.
-- **Private Application**: Blocks search engine indexing via `robots.txt`, meta tags, and `X-Robots-Tag` HTTP headers.
-- **Protected Static File Routes**: Requires authentication for `/images` and `/uploads` directories.
-- **NULL Role Enforcement**: `isAuthenticated` middleware blocks `NULL` role users from business APIs with a 403 Forbidden response and a "pending administrator approval" message.
-
-### Initial Admin Registration
-A dedicated `POST /api/auth/register-initial-admin` endpoint allows the creation of the first administrator when no users exist in the database, using a `setupCode` for security.
+The system uses username/password authentication with `passport-local` and Enterprise-Grade Role-Based Access Control (RBAC). Passwords are hashed with `bcryptjs`. Session management uses PostgreSQL-backed sessions with HTTP-only cookies. The system supports dynamic role creation and management with granular section/page-based permissions. Comprehensive security features include 100% route protection, rate limiting, account lockout, strong password enforcement, CSRF protection, security headers (Helmet.js), and protected static file routes.
 
 ## Database Design
-The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow with entities for users, products, orders, customers, warehouses, suppliers, returns, inventory, multi-currency financial tracking, and an audit trail.
-
-### Database Schema Guidelines (STRICT)
-**ALWAYS use VARCHAR with UUID for ALL new tables:**
-```typescript
-id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-```
-
-**NEVER use these patterns (they cause migration errors):**
-- `serial("id")` - causes `type "serial" does not exist` errors
-- `integer("id").generatedAlwaysAsIdentity()` - causes `relation "xxx_id_seq" already exists` errors
-
-**For foreign key references:**
-```typescript
-parentId: varchar("parent_id").notNull().references(() => parentTable.id),
-```
-
-**For insert schemas with varchar FKs:**
-```typescript
-roleId: z.string(),  // NOT z.number()
-```
+The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a full e-commerce workflow with entities for users, products, orders, customers, warehouses, suppliers, returns, inventory, multi-currency financial tracking, and an audit trail. All new tables must use `VARCHAR` with `UUID` for primary keys and foreign keys.
 
 ## Core Features
 - **Product & Order Management**: Comprehensive CRUD, pricing, location tracking, barcode scanning, grouped packing, tiered pricing, multi-purpose images, variant support, custom order IDs, auto shipping cost, enhanced product search with fuzzy matching and Vietnamese diacritics, and automated packing list PDF generation.
-- **Inventory & Warehouse Management**: Full inventory tracking, variant operations, category management, location codes, barcode scanning, quantity tracking, interactive 2D warehouse map with real inventory data, multi-zone support, and inventory allocation warnings.
-  - **Inventory Allocation Logic**: Allocated = sum of UNPICKED quantities from unfulfilled orders. Once items are picked, inventory is deducted immediately from `products.quantity` and `productLocations.quantity`, and the picked portion is removed from "allocated" count. This prevents double-counting where both deduction AND allocation would subtract from available.
-  - **Receiving Workflow**: To Receive → Receiving → Storage → Completed. Inventory (`products.quantity`) is added atomically ONLY when receiving is marked "completed". Storage assignment only updates `productLocations` for location-based tracking but does NOT add to product quantity. Revert subtracts ALL receivedQuantity and cleans up locations.
-  - **Variant-Aware Import Workflow**: Products with variants are stored as a single parent line item throughout the import workflow (purchase_items → receipt_items) with a `variantAllocations` JSONB field containing `[{variantId, variantName, quantity, unitPrice}]`. CreatePurchase shows a purple-styled variant allocation editor when a product with variants is selected. At receiving completion, quantities are distributed to individual `productVariants` and the parent product quantity is updated from the sum of all variant quantities. Cost calculation runs for the parent product using variant totals, but parent quantity update is deferred to the variant-sum reconciliation loop to prevent double-updates.
-  - **Bulletproof Quantity Tracking**: Uses `productLocations.notes` field with format "RI:{receiptItemId}:Q{qty}" to track which entries belong to which receipt item. Storage reassignment first removes all previously tagged entries before applying new ones. Revert-to-receiving queries by tags to clean up all locations. Legacy fallback uses warehouseLocation/assignedQuantity fields for data created before the tagging system. **Guaranteed synchronization**: Storage calculates `totalAssignedForItem` across ALL locations (not just the last one) and updates `receiptItems.assignedQuantity` with the total. Completion uses `assignedQuantity` (with `receivedQuantity` fallback) to add inventory, ensuring `products.quantity == sum(productLocations.quantity)`.
-  - **Automatic Import Cost Calculation**: On receiving completion, the system resolves productId from receipt items via SKU lookup (checking receiptItems.sku, then linked purchase/custom item SKUs). It calculates weighted average import costs across all 5 currencies (USD, CZK, EUR, VND, CNY) based on the purchase currency, and updates the products table with new quantities and costs. Custom items are parsed with support for both snake_case and camelCase JSON keys. If no unit cost is found, existing costs are preserved and a warning is logged for finance review. **Dynamic exchange rates are fetched from Frankfurter API** for accurate multi-currency conversions (with fallback rates if API unavailable).
+- **Inventory & Warehouse Management**: Full inventory tracking, variant operations, category management, location codes, barcode scanning, quantity tracking, interactive 2D warehouse map with real inventory data, multi-zone support, and inventory allocation warnings. It includes robust receiving workflows, variant-aware import, and bulletproof quantity tracking using `productLocations.notes` for reconciliation. Automatic import cost calculation uses weighted averages across multiple currencies, leveraging dynamic exchange rates.
 - **Customer Management**: Enhanced tables with order statistics, address lookup, "Pay Later," Facebook integration, AI-powered Smart Paste for address parsing, and auto-generating/editable shipping labels.
-- **Financial & Discount Management**: Advanced discount system, customer-specific pricing, multi-currency support (CZK/EUR/USD) with automatic exchange rate conversion, landing cost engine, expense tracking, and automatic weighted average landed cost calculation upon receiving.
-- **Fulfillment & Logistics**: AI-powered carton packing optimization (using DeepSeek AI for weight/dimension inference and best-fit algorithms), automatic shipping cost estimation, country-to-ISO mapping, real-time packing plan visualization, separate fulfillment sub-status tracking, returns management, and packing materials management.
+- **Financial & Discount Management**: Advanced discount system, customer-specific pricing, multi-currency support (CZK/EUR/USD) with automatic exchange rate conversion, landing cost engine, expense tracking, and automatic weighted average landed cost calculation upon receiving. EUR is used as the base currency for all conversions.
+- **Fulfillment & Logistics**: AI-powered carton packing optimization, automatic shipping cost estimation, country-to-ISO mapping, real-time packing plan visualization, separate fulfillment sub-status tracking, returns management, and packing materials management.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation.
-- **System Utilities**: Files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, a generic DataTable component, reporting, and a comprehensive settings management system with 6 categories.
-- **Maintenance Mode**: System-wide safety switch allowing administrators access during updates while blocking other users with a bilingual "System Upgrading" screen.
+- **System Utilities**: Files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, a generic DataTable component, reporting, and a comprehensive settings management system.
+- **Maintenance Mode**: System-wide safety switch allowing administrators access during updates while blocking other users.
 
 # External Dependencies
 
@@ -87,73 +44,5 @@ roleId: z.string(),  // NOT z.number()
 
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
-- **ExchangeRate-API (open.er-api.com)**: For real-time currency exchange rates including VND. Frankfurter API is used as a secondary source in other modules.
+- **ExchangeRate-API (open.er-api.com)**: For real-time currency exchange rates.
 - **Twilio Verify API**: For SMS notifications.
-
-## Formatting Helpers (Localization)
-The application provides centralized formatting helpers that respect user's localization settings (language, date format, number format, currency display, timezone).
-
-### Recommended Pattern
-Use the `useLocalization()` hook from `@/contexts/LocalizationContext` for formatting currency, dates, and numbers:
-
-```typescript
-import { useLocalization } from "@/contexts/LocalizationContext";
-
-function MyComponent() {
-  const { formatCurrency, formatDate, formatNumber } = useLocalization();
-  
-  return (
-    <div>
-      <span>{formatCurrency(100, 'EUR')}</span>
-      <span>{formatDate(new Date())}</span>
-      <span>{formatNumber(1234.56)}</span>
-    </div>
-  );
-}
-```
-
-### Available Formatting Functions
-- `formatCurrency(amount, currency?)` - Formats currency with user's preferred display style
-- `formatDate(date, includeTime?)` - Formats dates using user's preferred format and timezone
-- `formatTime(date)` - Formats time using user's preferred 12/24-hour format
-- `formatNumber(value, decimals?)` - Formats numbers with user's preferred separators
-- `parseNumber(value)` - Parses formatted number strings back to numbers
-
-### Legacy Pattern (Avoid for New Code)
-The standalone functions in `@/lib/currencyUtils.ts` (like `formatCurrency`, `formatDate`) do NOT respect user's localization settings. For new code, prefer `useLocalization()` to ensure consistent formatting across the application.
-
-### Settings Context
-The `useSettings()` hook from `@/contexts/SettingsContext` also provides basic formatting helpers (`formatCurrency`, `formatDate`, `formatNumber`) but `useLocalization()` is more comprehensive with timezone support and time formatting.
-
-### Decimal Input Support (Internationalization)
-All decimal input fields support both `.` (period) and `,` (comma) as decimal separators to accommodate European and US number formats. Users can type either separator and it will be automatically converted.
-
-**Usage:**
-
-For new decimal inputs, use the `DecimalInput` component:
-```typescript
-import { DecimalInput } from "@/components/ui/decimal-input";
-
-<DecimalInput
-  value={price}
-  onChange={(val) => setPrice(val)}
-  step="0.01"
-  className="..."
-/>
-```
-
-For existing inputs in forms/tables, add the keydown handler:
-```typescript
-import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
-
-<Input
-  type="number"
-  step="0.01"
-  onKeyDown={handleDecimalKeyDown}
-  onChange={(e) => setValue(parseDecimal(e.target.value))}
-/>
-```
-
-**Key files:**
-- `client/src/lib/utils.ts` - Contains `parseDecimal()` and `handleDecimalKeyDown()` utilities
-- `client/src/components/ui/decimal-input.tsx` - Reusable DecimalInput component

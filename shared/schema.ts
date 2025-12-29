@@ -311,6 +311,7 @@ export const customItems = pgTable("custom_items", {
   orderNumber: text("order_number"),
   quantity: integer("quantity").notNull().default(1),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).default("0"),
+  paymentCurrency: text("payment_currency"), // Currency used for payment (USD, EUR, CNY, etc.) - for landed cost calculation
   weight: decimal("weight", { precision: 10, scale: 3 }).default("0"),
   dimensions: text("dimensions"),
   trackingNumber: text("tracking_number"),
