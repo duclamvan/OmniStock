@@ -944,7 +944,10 @@ async function finalizeReceivingInventory(
             ? ((existingQty * existingCostCzk) + (va.quantity * variantLandedCostCzk)) / newTotalQty 
             : variantLandedCostCzk;
           
-          // Update variant quantity AND cost fields
+          // Get location code from receipt item (warehouseLocation field)
+          const variantLocationCode = item.warehouseLocation || null;
+          
+          // Update variant quantity, cost fields, AND location code
           // Note: productVariants schema only has EUR, USD, CZK - not VND/CNY
           // CRITICAL: Use variant.id (actual DB ID), NOT va.variantId (which may be temp-* ID)
           await tx
@@ -954,9 +957,52 @@ async function finalizeReceivingInventory(
               importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
               importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+              locationCode: variantLocationCode || undefined, // Set location if available
               updatedAt: new Date()
             })
             .where(eq(productVariants.id, variant.id));
+          
+          // Create/update productLocations entry for this variant at this location
+          if (variantLocationCode && variant.productId) {
+            const [existingLocation] = await tx
+              .select()
+              .from(productLocations)
+              .where(
+                and(
+                  eq(productLocations.productId, variant.productId),
+                  eq(productLocations.locationCode, variantLocationCode),
+                  eq(productLocations.variantId, variant.id)
+                )
+              );
+            
+            if (existingLocation) {
+              // Update existing location - add quantity
+              await tx
+                .update(productLocations)
+                .set({
+                  quantity: existingLocation.quantity + va.quantity,
+                  updatedAt: new Date()
+                })
+                .where(eq(productLocations.id, existingLocation.id));
+              
+              console.log(`[Variant Location] Updated ${variantLocationCode} for variant ${va.variantName}: +${va.quantity} (now ${existingLocation.quantity + va.quantity})`);
+            } else {
+              // Create new location entry
+              await tx
+                .insert(productLocations)
+                .values({
+                  productId: variant.productId,
+                  variantId: variant.id,
+                  locationCode: variantLocationCode,
+                  locationType: 'warehouse',
+                  quantity: va.quantity,
+                  isPrimary: false,
+                  notes: `RI:${item.id}:V${variant.id}:Q${va.quantity}`
+                });
+              
+              console.log(`[Variant Location] Created ${variantLocationCode} for variant ${va.variantName}: ${va.quantity} units`);
+            }
+          }
           
           result.variantsUpdated++;
           
