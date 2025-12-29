@@ -912,7 +912,13 @@ async function finalizeReceivingInventory(
           // ================================================================
           // CALCULATE PER-VARIANT LANDED COST (ALL 5 CURRENCIES)
           // ================================================================
-          const variantUnitPrice = parseFloat(String(va.unitPrice || 0));
+          // Get unit price: first try variant allocation's unitPrice, then fall back to receipt item's unitPrice
+          // Receipt item.unitPrice is stored in the base currency (EUR)
+          const vaUnitPrice = va.unitPrice !== undefined && va.unitPrice !== null ? va.unitPrice : null;
+          const itemUnitPrice = item.unitPrice ? parseFloat(item.unitPrice) : 0;
+          const variantUnitPrice = vaUnitPrice !== null ? parseFloat(String(vaUnitPrice)) : itemUnitPrice;
+          
+          console.log(`[Variant Costs] ${va.variantName}: va.unitPrice=${va.unitPrice}, item.unitPrice=${item.unitPrice}, using variantUnitPrice=${variantUnitPrice}`);
           
           // Full landed cost = purchase unit price + allocated landing costs (freight, shipping, etc.)
           // landingCostUnitBase only stores the landing cost component, NOT the unit purchase price
