@@ -20254,7 +20254,8 @@ Important rules:
           insuranceValue: shipments.insuranceValue,
           allocationMethod: shipments.allocationMethod,
           totalWeight: shipments.totalWeight,
-          totalUnits: shipments.totalUnits
+          totalUnits: shipments.totalUnits,
+          unitType: shipments.unitType
         })
         .from(shipments)
         .where(eq(shipments.id, shipmentId));
@@ -20262,11 +20263,41 @@ Important rules:
       const shipmentShippingCost = parseFloat(shipmentData?.shippingCost || '0');
       const shipmentShippingCurrency = shipmentData?.shippingCostCurrency || 'USD';
       const shipmentInsuranceCost = parseFloat(shipmentData?.insuranceValue || '0');
-      const allocationMethod = shipmentData?.allocationMethod || 'PER_UNIT';
       const shipmentTotalWeight = parseFloat(shipmentData?.totalWeight || '0');
       const shipmentTotalUnits = shipmentData?.totalUnits || 0;
+      const shipmentUnitType = shipmentData?.unitType?.toLowerCase() || 'items';
       
-      console.log(`[addInventoryOnCompletion] Shipment ${shipmentId}: shipping=${shipmentShippingCost} ${shipmentShippingCurrency}, insurance=${shipmentInsuranceCost}, allocation=${allocationMethod}`);
+      // Smart auto-selection when allocationMethod is null (Auto mode)
+      // Matches the logic in landingCostService.getAllocationMethod()
+      let allocationMethod = shipmentData?.allocationMethod;
+      if (!allocationMethod) {
+        // Auto-select based on shipment unit type (for freight costs)
+        switch (shipmentUnitType) {
+          case 'containers':
+          case 'container':
+            allocationMethod = 'VALUE';
+            break;
+          case 'pallets':
+          case 'pallet':
+            allocationMethod = 'QUANTITY';
+            break;
+          case 'boxes':
+          case 'box':
+          case 'parcels':
+          case 'parcel':
+          case 'packages':
+          case 'package':
+            allocationMethod = 'CHARGEABLE_WEIGHT';
+            break;
+          case 'mixed':
+          default:
+            allocationMethod = 'HYBRID';
+            break;
+        }
+        console.log(`[addInventoryOnCompletion] Auto-selected ${allocationMethod} allocation based on unitType: ${shipmentUnitType}`);
+      }
+      
+      console.log(`[addInventoryOnCompletion] Shipment ${shipmentId}: shipping=${shipmentShippingCost} ${shipmentShippingCurrency}, insurance=${shipmentInsuranceCost}, allocation=${allocationMethod} (unitType: ${shipmentUnitType})`);
       
       // Step 2: Get all receipt items with productId, receivedQuantity, AND itemId/itemType/sku for fallback lookups
       // ALSO include variantAllocations for variant quantity distribution
