@@ -278,17 +278,6 @@ const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPr
     enabled: !!shipmentId
   });
 
-  // Auto-select currency based on order's payment currency
-  useEffect(() => {
-    if (preview?.baseCurrency) {
-      // Check if the baseCurrency is in our available currencies
-      const currencyExists = AVAILABLE_CURRENCIES.some(c => c.value === preview.baseCurrency);
-      if (currencyExists) {
-        setDisplayCurrency(preview.baseCurrency);
-      }
-    }
-  }, [preview?.baseCurrency]);
-
   // Mutation for fetching allocation preview with specific method
   const updateAllocationMethod = useMutation({
     mutationFn: async (method: string) => {
