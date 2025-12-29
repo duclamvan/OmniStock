@@ -429,22 +429,29 @@ async function getLandedCostForItem(
   }
   
   // Priority 3: Check purchaseItems.landingCostUnitBase for purchase items
-  // Note: landingCostUnitBase is stored in EUR (base currency) by LandingCostService
+  // Note: landingCostUnitBase stores the LANDING COST PORTION only (freight, duty, etc.)
+  // We must ADD the unit price to get the TOTAL landed cost
   if (source === 'fallback' && itemType === 'purchase') {
     try {
       const [purchaseItem] = await tx
         .select({ 
           landingCostUnitBase: purchaseItems.landingCostUnitBase,
+          unitPrice: purchaseItems.unitPrice,
           purchaseId: purchaseItems.purchaseId
         })
         .from(purchaseItems)
         .where(eq(purchaseItems.id, itemId));
       
-      if (purchaseItem?.landingCostUnitBase) {
-        // landingCostUnitBase is already in EUR (set by LandingCostService)
-        // Exchange rates are already obtained from shipment.exchangeRates in Priority 1
-        landingCostPerUnit = parseFloat(purchaseItem.landingCostUnitBase);
+      if (purchaseItem) {
+        // landingCostUnitBase stores the landing cost portion in EUR (freight, duty, etc.)
+        const landingCostPortion = parseFloat(purchaseItem.landingCostUnitBase || '0');
+        
+        // Total landed cost = unit price (EUR) + landing cost portion (EUR)
+        // unitPrice parameter is already in EUR (converted before this call)
+        landingCostPerUnit = unitPrice + landingCostPortion;
         source = 'purchase_item';
+        
+        console.log(`[getLandedCostForItem] Purchase item ${itemId}: unitPrice=${unitPrice.toFixed(4)} EUR + landingCostPortion=${landingCostPortion.toFixed(4)} EUR = total ${landingCostPerUnit.toFixed(4)} EUR`);
       }
     } catch (error) {
       console.warn('Failed to fetch purchase item landing cost:', error);
