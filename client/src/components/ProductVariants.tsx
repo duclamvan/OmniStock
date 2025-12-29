@@ -31,6 +31,7 @@ interface ProductVariant {
   id: string;
   productId: string;
   name: string;
+  sku?: string;
   barcode?: string;
   quantity: number;
   importCostUsd?: string;
@@ -441,7 +442,12 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                           <Upload className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                         </div>
                       )}
-                      {variant.name}
+                      <div className="flex flex-col">
+                        <span>{variant.name}</span>
+                        {variant.sku && (
+                          <span className="text-xs text-muted-foreground">SKU: {variant.sku}</span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{variant.barcode || "-"}</TableCell>
