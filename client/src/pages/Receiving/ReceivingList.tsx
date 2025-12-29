@@ -3591,43 +3591,14 @@ function QuickStorageSheet({
                                                 <span className="font-mono text-xs font-medium break-all">{loc.locationCode}</span>
                                               </div>
                                               <div className="ml-5 mt-0.5 flex items-center gap-2">
-                                                <span className="text-xs text-green-600 dark:text-green-400">{t('stock')}: <span className="font-bold">{loc.quantity || 0}</span></span>
-                                                {pendingAdd > 0 && (
-                                                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">+{pendingAdd}</span>
-                                                )}
+                                                <span className="text-[10px] text-green-600 dark:text-green-400">{t('imports:allocated', 'allocated')}</span>
                                               </div>
                                             </div>
                                             
-                                            <Input
-                                              type="number"
-                                              value={pendingAdd || ''}
-                                              onChange={(e) => {
-                                                e.stopPropagation();
-                                                const newVal = parseInt(e.target.value) || 0;
-                                                // Calculate max allowed based on remaining
-                                                const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
-                                                const otherPendingExisting = Object.entries(item.pendingExistingAdds || {})
-                                                  .filter(([id]) => id !== locId)
-                                                  .reduce((sum, [, qty]) => sum + (qty || 0), 0);
-                                                const pendingNewLocs = item.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
-                                                const maxAllowed = Math.max(0, item.receivedQuantity - currentStoredQty - otherPendingExisting - pendingNewLocs);
-                                                const clampedVal = Math.min(Math.max(0, newVal), maxAllowed);
-                                                
-                                                setItems(prevItems => {
-                                                  const updated = [...prevItems];
-                                                  updated[index].pendingExistingAdds = {
-                                                    ...updated[index].pendingExistingAdds,
-                                                    [locId]: clampedVal
-                                                  };
-                                                  return updated;
-                                                });
-                                              }}
-                                              onClick={(e) => e.stopPropagation()}
-                                              className={`w-20 h-9 text-center text-base font-bold rounded-lg ${pendingAdd > 0 ? 'border-blue-400 dark:border-blue-600 bg-white dark:bg-gray-900' : 'border-green-300 dark:border-green-700'}`}
-                                              min="0"
-                                              placeholder="0"
-                                              data-testid={`input-add-qty-${locIdx}`}
-                                            />
+                                            {/* Show allocated quantity prominently */}
+                                            <div className="w-16 h-9 flex items-center justify-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg font-bold text-base">
+                                              {loc.quantity || 0}
+                                            </div>
                                             
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
