@@ -4000,11 +4000,13 @@ router.patch("/shipments/:id/receiving-status", async (req, res) => {
         })
         .where(eq(receipts.id, receipt.id));
       
-      // Update shipment status to 'completed'
+      // Update shipment status to 'completed' and receivingStatus to 'completed'
       await tx
         .update(shipments)
         .set({
           status: 'completed',
+          receivingStatus: 'completed',
+          deliveredAt: new Date(),
           updatedAt: new Date()
         })
         .where(eq(shipments.id, shipmentId));
