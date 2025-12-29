@@ -56,7 +56,7 @@ import {
 interface ShipmentCost {
   id: number;
   shipmentId: string;
-  type: 'FREIGHT' | 'BROKERAGE' | 'INSURANCE' | 'PACKAGING' | 'OTHER';
+  type: 'FREIGHT' | 'DUTY' | 'BROKERAGE' | 'INSURANCE' | 'PACKAGING' | 'OTHER';
   mode?: 'AIR' | 'SEA' | 'COURIER';
   volumetricDivisor?: number;
   amountOriginal: string;
@@ -396,12 +396,14 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     <CardTitle className="text-lg">{t('allShipmentCosts') || 'All Shipment Costs'}</CardTitle>
                   </div>
                   {(() => {
+                    // All values should be in their original currency for accurate display
                     const shipmentCost = Number(shipmentData?.shippingCost || 0);
                     const insuranceCost = Number(shipmentData?.insuranceValue || 0);
-                    const poShippingCost = Number(costBreakdown.poShippingCosts || 0);
-                    const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + parseFloat(cost.amountBase || 0), 0);
+                    // Use original PO shipping amount (not EUR-converted) for consistent currency display
+                    const poShippingCost = Number(costBreakdown.poShippingCostsOriginal || costBreakdown.poShippingCosts || 0);
+                    const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + Number(cost.amountOriginal || 0), 0);
                     const grandTotal = shipmentCost + insuranceCost + poShippingCost + manualCostsTotal;
-                    const baseCurrency = shipmentData?.shippingCostCurrency || 'EUR';
+                    const baseCurrency = shipmentData?.shippingCostCurrency || 'USD';
                     const convertedTotal = convertCurrency(grandTotal, baseCurrency, displayCurrency);
                     return (
                       <div className="text-right">
