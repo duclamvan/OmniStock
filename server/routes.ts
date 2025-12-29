@@ -6358,9 +6358,21 @@ Important:
         const existing = existingMap.get(locationCode);
         
         if (existing) {
-          // Update existing - add quantity and update notes with new total
+          // Update existing - add quantity to location total
           const newQuantity = (existing.quantity || 0) + quantity;
-          const newNotes = receiptItemId ? `RI:${receiptItemId}:Q${newQuantity}` : existing.notes;
+          
+          // For notes, track ONLY the receiving-specific quantity (not total location qty)
+          // Parse existing RI tag for this receiptItemId and add new quantity
+          let riQuantity = quantity; // Start with quantity we're adding
+          if (receiptItemId && existing.notes) {
+            const riMatch = existing.notes.match(new RegExp(`RI:${receiptItemId}:Q(\\d+)`));
+            if (riMatch) {
+              // Add to existing RI quantity for this receiptItemId
+              riQuantity += parseInt(riMatch[1], 10);
+            }
+          }
+          const newNotes = receiptItemId ? `RI:${receiptItemId}:Q${riQuantity}` : existing.notes;
+          
           const updated = await storage.updateProductLocation(existing.id, {
             quantity: newQuantity,
             isPrimary: locData.isPrimary ?? existing.isPrimary,
