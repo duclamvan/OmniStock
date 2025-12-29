@@ -789,27 +789,55 @@ async function finalizeReceivingInventory(
               variant = existingBySku;
               console.log(`[Variant] Found existing variant by SKU "${variantSku}" for product ${targetProductId}`);
             } else {
-              // SKU not found = new variant, create it
-              const [newVariant] = await tx
-                .insert(productVariants)
-                .values({
-                  productId: targetProductId,
-                  name: va.variantName || variantSku,
-                  sku: variantSku,
-                  quantity: 0,
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                })
-                .returning({
-                  id: productVariants.id,
-                  productId: productVariants.productId,
+              // SKU not found - check if there's an existing variant with same NAME (no SKU yet)
+              // This prevents creating duplicates when pre-existing variants just need SKU assignment
+              const [existingByNameNoSku] = await tx
+                .select({ 
+                  id: productVariants.id, 
+                  productId: productVariants.productId, 
                   quantity: productVariants.quantity,
                   importCostUsd: productVariants.importCostUsd,
                   importCostCzk: productVariants.importCostCzk,
                   importCostEur: productVariants.importCostEur
-                });
-              variant = newVariant;
-              console.log(`[Variant] Created new variant SKU "${variantSku}" name "${va.variantName}" (${newVariant.id}) for product ${targetProductId}`);
+                })
+                .from(productVariants)
+                .where(and(
+                  eq(productVariants.productId, targetProductId),
+                  eq(productVariants.name, va.variantName),
+                  isNull(productVariants.sku)
+                ));
+              
+              if (existingByNameNoSku) {
+                // Found existing variant by name with no SKU - update it with the new SKU
+                await tx
+                  .update(productVariants)
+                  .set({ sku: variantSku, updatedAt: new Date() })
+                  .where(eq(productVariants.id, existingByNameNoSku.id));
+                variant = existingByNameNoSku;
+                console.log(`[Variant] Found existing variant by name "${va.variantName}" (no SKU), assigned SKU "${variantSku}"`);
+              } else {
+                // No match by SKU or name - create new variant
+                const [newVariant] = await tx
+                  .insert(productVariants)
+                  .values({
+                    productId: targetProductId,
+                    name: va.variantName || variantSku,
+                    sku: variantSku,
+                    quantity: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                  })
+                  .returning({
+                    id: productVariants.id,
+                    productId: productVariants.productId,
+                    quantity: productVariants.quantity,
+                    importCostUsd: productVariants.importCostUsd,
+                    importCostCzk: productVariants.importCostCzk,
+                    importCostEur: productVariants.importCostEur
+                  });
+                variant = newVariant;
+                console.log(`[Variant] Created new variant SKU "${variantSku}" name "${va.variantName}" (${newVariant.id}) for product ${targetProductId}`);
+              }
             }
           } else if (targetProductId && va.variantName) {
             // Fallback: no SKU provided, try matching by name
