@@ -4396,7 +4396,13 @@ function QuickStorageSheet({
                           className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg"
                         >
                           <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          <span className="font-mono text-sm font-medium flex-1">{loc.locationCode}</span>
+                          <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
+                          {loc.variantName && (
+                            <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200 flex-shrink-0">
+                              {loc.variantName}
+                            </Badge>
+                          )}
+                          <div className="flex-1" />
                           {loc.isPrimary && (
                             <Star className="h-4 w-4 text-yellow-500 fill-current" />
                           )}
