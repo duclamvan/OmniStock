@@ -12897,7 +12897,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
     }, 0);
     
     // Calculate total value and total units for fallback allocation methods
-    const totalValue = itemsWithCartons.reduce((sum, row) => {
+    const totalShipmentValue = itemsWithCartons.reduce((sum, row) => {
       return sum + (parseFloat(row.item.unitPrice || '0') * row.item.quantity);
     }, 0);
     
@@ -12905,7 +12905,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
     
     // Determine allocation method: weight-based if weight data exists, otherwise value-based or unit-based
     const useWeightAllocation = totalChargeableWeight > 0;
-    const useValueAllocation = !useWeightAllocation && totalValue > 0;
+    const useValueAllocation = !useWeightAllocation && totalShipmentValue > 0;
     const useUnitAllocation = !useWeightAllocation && !useValueAllocation && totalUnits > 0;
     
     for (const row of itemsWithCartons) {
@@ -12942,7 +12942,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       } else if (useValueAllocation) {
         // Value-based allocation fallback
         const itemValue = parseFloat(item.unitPrice || '0') * item.quantity;
-        allocationRatio = itemValue / totalValue;
+        allocationRatio = itemValue / totalShipmentValue;
       } else if (useUnitAllocation) {
         // Unit-based allocation fallback (last resort)
         allocationRatio = item.quantity / totalUnits;

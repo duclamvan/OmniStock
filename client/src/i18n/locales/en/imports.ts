@@ -2087,6 +2087,10 @@ const imports = {
   addNotesAboutItemPlaceholder: 'Add notes about this item...',
   addAdditionalNotesAboutReceivingPlaceholder: 'Add any additional notes about this receiving process...',
   
+  // Landing Cost Details - No Items
+  noItemsFound: 'No Items Found',
+  noItemsInShipment: 'This shipment has no items for landed cost calculation.',
+  
   // AllocationPreview - Component Strings
   allocationMethodLabel: 'Allocation Method:',
   autoSelection: 'Auto-selection:',

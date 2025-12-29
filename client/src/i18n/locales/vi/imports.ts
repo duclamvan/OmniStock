@@ -2029,6 +2029,10 @@ const imports = {
   addNotesAboutItemPlaceholder: 'Thêm ghi chú về sản phẩm này...',
   addAdditionalNotesAboutReceivingPlaceholder: 'Thêm ghi chú bổ sung về quy trình nhận hàng này...',
   
+  // Landing Cost Details - No Items
+  noItemsFound: 'Không tìm thấy sản phẩm',
+  noItemsInShipment: 'Lô hàng này không có sản phẩm để tính chi phí nhập.',
+  
   // AllocationPreview - Component Strings
   allocationMethodLabel: 'Phương thức phân bổ:',
   autoSelection: 'Chọn tự động:',
