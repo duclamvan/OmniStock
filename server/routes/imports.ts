@@ -788,9 +788,11 @@ async function finalizeReceivingInventory(
         // This function returns the TOTAL landed cost (unit price + landing costs) in EUR
         const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
         
-        // Get the unit price for the item (used by getLandedCostForItem for fallback calculation)
+        // Get the unit price for the item IN EUR (used by getLandedCostForItem)
+        // CRITICAL: Purchase items have unitPrice in purchase currency, must convert to EUR
         let itemUnitPriceEur = 0;
         if (item.itemType === 'custom') {
+          // Custom items are already in EUR (base currency)
           const [customItem] = await tx
             .select({ unitPrice: customItems.unitPrice })
             .from(customItems)
@@ -799,12 +801,56 @@ async function finalizeReceivingInventory(
             itemUnitPriceEur = parseFloat(customItem.unitPrice);
           }
         } else if (item.itemType === 'purchase') {
+          // Purchase items need currency conversion to EUR
           const [purchaseItem] = await tx
-            .select({ unitPrice: purchaseItems.unitPrice })
+            .select({ 
+              unitPrice: purchaseItems.unitPrice,
+              purchaseId: purchaseItems.purchaseId
+            })
             .from(purchaseItems)
             .where(eq(purchaseItems.id, item.itemId));
+          
           if (purchaseItem?.unitPrice) {
-            itemUnitPriceEur = parseFloat(purchaseItem.unitPrice);
+            const unitPriceInPurchaseCurrency = parseFloat(purchaseItem.unitPrice);
+            
+            // Get the purchase currency from the purchase order
+            const [purchase] = await tx
+              .select({ 
+                paymentCurrency: importPurchases.paymentCurrency,
+                purchaseCurrency: importPurchases.purchaseCurrency
+              })
+              .from(importPurchases)
+              .where(eq(importPurchases.id, purchaseItem.purchaseId));
+            
+            const purchaseCurrency = purchase?.paymentCurrency || purchase?.purchaseCurrency || 'USD';
+            
+            // Convert to EUR using exchange rates
+            // Fetch live rates or use fallbacks
+            let conversionRate = 1; // Default: already EUR
+            if (purchaseCurrency !== 'EUR') {
+              try {
+                const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
+                if (rateResponse.ok) {
+                  const rateData = await rateResponse.json();
+                  if (rateData.rates && rateData.rates[purchaseCurrency]) {
+                    // rate is EUR -> purchaseCurrency, so we need 1/rate to convert back
+                    conversionRate = 1 / rateData.rates[purchaseCurrency];
+                  }
+                }
+              } catch (e) {
+                // Use fallback rates
+                const fallbackRates: Record<string, number> = {
+                  'USD': 1.1, 'CZK': 25, 'VND': 27000, 'CNY': 7.5,
+                  'GBP': 0.85, 'JPY': 160, 'CHF': 0.95, 'AUD': 1.65, 'CAD': 1.48
+                };
+                if (fallbackRates[purchaseCurrency]) {
+                  conversionRate = 1 / fallbackRates[purchaseCurrency];
+                }
+              }
+            }
+            
+            itemUnitPriceEur = unitPriceInPurchaseCurrency * conversionRate;
+            console.log(`[Currency Convert] Purchase item ${item.itemId}: ${unitPriceInPurchaseCurrency} ${purchaseCurrency} -> ${itemUnitPriceEur.toFixed(4)} EUR (rate: ${conversionRate.toFixed(6)})`);
           }
         }
         
