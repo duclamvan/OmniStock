@@ -20826,31 +20826,33 @@ Important rules:
                 const variantName = allocation.variantName || allocation.name;
                 const variantSku = allocation.sku || allocation.variantSku;
                 const allocatedQty = allocation.quantity || allocation.receivedQuantity || 0;
-                // Base unit price from variant allocation
-                let variantUnitPrice = parseFloat(allocation.unitPrice || allocation.unit_price || '0');
                 
-                // Add shipment costs per unit to variant (same as parent product)
+                // Variant allocation unit prices are ALWAYS in EUR
+                // Get base unit price in EUR from allocation
+                let variantUnitPriceEur = parseFloat(allocation.unitPrice || allocation.unit_price || '0');
+                
+                // Add shipment costs per unit to variant (convert to EUR first)
                 if (shipmentCostPerUnit > 0) {
-                  // Convert shipment cost to purchase currency
-                  let shipmentCostInPurchaseCurrency = shipmentCostPerUnit;
-                  if (shipmentShippingCurrency !== purchaseCurrency) {
-                    let shipmentToEur = 1;
-                    if (shipmentShippingCurrency === 'USD') shipmentToEur = usdToEur;
-                    else if (shipmentShippingCurrency === 'CZK') shipmentToEur = 1 / eurToCzk;
-                    else if (shipmentShippingCurrency === 'VND') shipmentToEur = 1 / eurToVnd;
-                    else if (shipmentShippingCurrency === 'CNY') shipmentToEur = 1 / eurToCny;
-                    const shipmentCostEur = shipmentCostPerUnit * shipmentToEur;
-                    if (purchaseCurrency === 'CZK') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToCzk;
-                    else if (purchaseCurrency === 'USD') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToUsd;
-                    else if (purchaseCurrency === 'VND') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToVnd;
-                    else if (purchaseCurrency === 'CNY') shipmentCostInPurchaseCurrency = shipmentCostEur * eurToCny;
-                    else shipmentCostInPurchaseCurrency = shipmentCostEur;
-                  }
-                  variantUnitPrice += shipmentCostInPurchaseCurrency;
+                  // shipmentCostPerUnit is already in purchaseCurrency - convert to EUR
+                  let shipmentCostEur = 0;
+                  if (purchaseCurrency === 'CZK') shipmentCostEur = shipmentCostPerUnit / eurToCzk;
+                  else if (purchaseCurrency === 'USD') shipmentCostEur = shipmentCostPerUnit * usdToEur;
+                  else if (purchaseCurrency === 'VND') shipmentCostEur = shipmentCostPerUnit / eurToVnd;
+                  else if (purchaseCurrency === 'CNY') shipmentCostEur = shipmentCostPerUnit / eurToCny;
+                  else shipmentCostEur = shipmentCostPerUnit; // Already EUR
+                  
+                  variantUnitPriceEur += shipmentCostEur;
                 }
                 
-                // Fall back to parent unit cost if no variant price
-                if (variantUnitPrice <= 0) variantUnitPrice = unitCost;
+                // Fall back to parent unit cost (converted to EUR) if no variant price
+                if (variantUnitPriceEur <= 0) {
+                  // Convert parent unitCost from purchaseCurrency to EUR
+                  if (purchaseCurrency === 'CZK') variantUnitPriceEur = unitCost / eurToCzk;
+                  else if (purchaseCurrency === 'USD') variantUnitPriceEur = unitCost * usdToEur;
+                  else if (purchaseCurrency === 'VND') variantUnitPriceEur = unitCost / eurToVnd;
+                  else if (purchaseCurrency === 'CNY') variantUnitPriceEur = unitCost / eurToCny;
+                  else variantUnitPriceEur = unitCost;
+                }
                 
                 if (!variantName || allocatedQty <= 0) continue;
                 
@@ -20865,31 +20867,14 @@ Important rules:
                   const oldVariantQty = matchedVariant.quantity || 0;
                   const newVariantQty = oldVariantQty + allocatedQty;
                   
-                  // Calculate costs for variant in all currencies
-                  const variantNewCosts: any = {};
-                  if (purchaseCurrency === 'CZK') {
-                    variantNewCosts.importCostCzk = variantUnitPrice.toFixed(2);
-                    variantNewCosts.importCostEur = (variantUnitPrice / eurToCzk).toFixed(2);
-                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToCzk * eurToUsd).toFixed(2);
-                  } else if (purchaseCurrency === 'EUR') {
-                    variantNewCosts.importCostEur = variantUnitPrice.toFixed(2);
-                    variantNewCosts.importCostCzk = (variantUnitPrice * eurToCzk).toFixed(2);
-                    variantNewCosts.importCostUsd = (variantUnitPrice * eurToUsd).toFixed(2);
-                  } else if (purchaseCurrency === 'VND') {
-                    variantNewCosts.importCostVnd = variantUnitPrice.toFixed(0);
-                    variantNewCosts.importCostEur = (variantUnitPrice / eurToVnd).toFixed(2);
-                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToVnd * eurToUsd).toFixed(2);
-                    variantNewCosts.importCostCzk = (variantUnitPrice / eurToVnd * eurToCzk).toFixed(2);
-                  } else if (purchaseCurrency === 'CNY') {
-                    variantNewCosts.importCostCny = variantUnitPrice.toFixed(2);
-                    variantNewCosts.importCostEur = (variantUnitPrice / eurToCny).toFixed(2);
-                    variantNewCosts.importCostUsd = (variantUnitPrice / eurToCny * eurToUsd).toFixed(2);
-                    variantNewCosts.importCostCzk = (variantUnitPrice / eurToCny * eurToCzk).toFixed(2);
-                  } else {
-                    variantNewCosts.importCostUsd = variantUnitPrice.toFixed(2);
-                    variantNewCosts.importCostEur = (variantUnitPrice * usdToEur).toFixed(2);
-                    variantNewCosts.importCostCzk = (variantUnitPrice * usdToCzk).toFixed(2);
-                  }
+                  // Calculate costs for variant in all currencies (always from EUR base)
+                  const variantNewCosts: any = {
+                    importCostEur: variantUnitPriceEur.toFixed(2),
+                    importCostCzk: (variantUnitPriceEur * eurToCzk).toFixed(2),
+                    importCostUsd: (variantUnitPriceEur * eurToUsd).toFixed(2),
+                    importCostVnd: (variantUnitPriceEur * eurToVnd).toFixed(0),
+                    importCostCny: (variantUnitPriceEur * eurToCny).toFixed(2),
+                  };
                   
                   // Also set selling prices if variant has priceEur in allocation
                   if (allocation.priceEur || allocation.price_eur) {
@@ -20910,7 +20895,7 @@ Important rules:
                     })
                     .where(eq(productVariants.id, matchedVariant.id));
                   
-                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty}), import cost: ${variantUnitPrice.toFixed(2)} ${purchaseCurrency}`);
+                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty}), import cost: €${variantUnitPriceEur.toFixed(2)} (USD=${variantNewCosts.importCostUsd})`);
                 } else {
                   console.log(`[addInventoryOnCompletion] Variant ${variantName} not found for product ${productId} - skipping`);
                 }
