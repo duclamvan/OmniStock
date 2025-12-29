@@ -2189,7 +2189,101 @@ router.delete("/purchases/:id", async (req, res) => {
   try {
     const purchaseId = req.params.id;
     
-    // Delete associated items first
+    // Get all purchase item IDs for this purchase first
+    const purchaseItemsList = await db
+      .select({ id: purchaseItems.id })
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+    
+    const purchaseItemIds = purchaseItemsList.map(item => item.id);
+    
+    // Delete from consolidation_items where these purchase items were added
+    if (purchaseItemIds.length > 0) {
+      await db.delete(consolidationItems)
+        .where(
+          and(
+            eq(consolidationItems.itemType, 'purchase'),
+            inArray(consolidationItems.itemId, purchaseItemIds)
+          )
+        );
+    }
+    
+    // Get all custom items that reference this purchase order (created when PO was moved to AtWarehouse)
+    const customItemsList = await db
+      .select({ id: customItems.id })
+      .from(customItems)
+      .where(eq(customItems.purchaseOrderId, purchaseId));
+    
+    const customItemIds = customItemsList.map(item => item.id);
+    
+    // Delete from consolidation_items where these custom items were added
+    if (customItemIds.length > 0) {
+      await db.delete(consolidationItems)
+        .where(
+          and(
+            eq(consolidationItems.itemType, 'custom'),
+            inArray(consolidationItems.itemId, customItemIds)
+          )
+        );
+      
+      // Delete the custom items themselves
+      await db.delete(customItems)
+        .where(inArray(customItems.id, customItemIds));
+    }
+    
+    // Find and delete shipments that were auto-created from this purchase order
+    // These are identified by the notes pattern "Auto-created from Purchase Order PO #..."
+    const purchaseIdPrefix = purchaseId.substring(0, 8).toUpperCase();
+    const allShipmentsList = await db
+      .select({ id: shipments.id, notes: shipments.notes })
+      .from(shipments);
+    
+    // Filter shipments that reference this purchase order
+    const relatedShipments = allShipmentsList.filter(s => 
+      s.notes && s.notes.includes(`Auto-created from Purchase Order PO #${purchaseIdPrefix}`)
+    );
+    
+    if (relatedShipments.length > 0) {
+      const shipmentIds = relatedShipments.map(s => s.id);
+      
+      // Get all receipts for these shipments
+      const relatedReceipts = await db
+        .select({ id: receipts.id })
+        .from(receipts)
+        .where(inArray(receipts.shipmentId, shipmentIds));
+      
+      if (relatedReceipts.length > 0) {
+        const receiptIds = relatedReceipts.map(r => r.id);
+        
+        // Delete landed costs for these receipts
+        await db.delete(landedCosts)
+          .where(inArray(landedCosts.receiptId, receiptIds));
+        
+        // Delete receipt items for these receipts
+        await db.delete(receiptItems)
+          .where(inArray(receiptItems.receiptId, receiptIds));
+        
+        // Delete the receipts
+        await db.delete(receipts)
+          .where(inArray(receipts.id, receiptIds));
+      }
+      
+      // Delete shipment-related tables (shipmentTrackingMetadata has ON DELETE CASCADE so it auto-deletes)
+      await db.delete(shipmentCosts)
+        .where(inArray(shipmentCosts.shipmentId, shipmentIds));
+      
+      await db.delete(shipmentCartons)
+        .where(inArray(shipmentCartons.shipmentId, shipmentIds));
+      
+      await db.delete(shipmentItems)
+        .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      
+      // Delete the shipments
+      await db.delete(shipments)
+        .where(inArray(shipments.id, shipmentIds));
+    }
+    
+    // Delete associated purchase items
     await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
     
     // Then delete the purchase
