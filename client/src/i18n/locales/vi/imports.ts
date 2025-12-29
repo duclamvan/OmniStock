@@ -1184,6 +1184,7 @@ const imports = {
   inventoryAdded: 'Đã thêm vào kho',
   costsAllocated: 'Đã phân bổ chi phí',
   landedCostCalculated: 'Đã tính giá vốn',
+  avgLandedCostApplied: 'Đã áp dụng giá vốn TB',
   continueProcessing: 'Tiếp tục xử lý',
   issue: 'Vấn đề',
   linkedItems: 'Sản phẩm đã liên kết',

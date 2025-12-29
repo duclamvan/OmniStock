@@ -6304,18 +6304,6 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   <span>{t('inventoryAdded')}</span>
                 </div>
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                  shipment.costsAllocatedAt 
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                }`}>
-                  {shipment.costsAllocatedAt ? (
-                    <CheckCircle className="h-3.5 w-3.5" />
-                  ) : (
-                    <Circle className="h-3.5 w-3.5" />
-                  )}
-                  <span>{t('costsAllocated')}</span>
-                </div>
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
                   shipment.landedCostCalculatedAt 
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
                     : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
@@ -6326,6 +6314,18 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                     <Circle className="h-3.5 w-3.5" />
                   )}
                   <span>{t('landedCostCalculated')}</span>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                  shipment.costsAllocatedAt 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                }`}>
+                  {shipment.costsAllocatedAt ? (
+                    <CheckCircle className="h-3.5 w-3.5" />
+                  ) : (
+                    <Circle className="h-3.5 w-3.5" />
+                  )}
+                  <span>{t('avgLandedCostApplied')}</span>
                 </div>
               </div>
             )}

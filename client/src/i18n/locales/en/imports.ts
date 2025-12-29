@@ -1166,6 +1166,7 @@ const imports = {
   inventoryAdded: 'Inventory Added',
   costsAllocated: 'Costs Allocated',
   landedCostCalculated: 'Landed Cost Calculated',
+  avgLandedCostApplied: 'Avg Landed Cost Applied',
   continueProcessing: 'Continue Processing',
   issue: 'Issue',
   linkedItems: 'Linked Items',
