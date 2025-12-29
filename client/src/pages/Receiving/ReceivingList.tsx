@@ -2402,6 +2402,12 @@ function QuickStorageSheet({
           };
         });
         
+        // For multi-variant items, calculate total quantity from variant allocations if receivedQuantity is 0
+        let receivedQuantity = item.receivedQuantity || item.quantity || 0;
+        if (receivedQuantity === 0 && variantAllocations && variantAllocations.length > 0) {
+          receivedQuantity = variantAllocations.reduce((sum: number, v: VariantAllocation) => sum + (v.quantity || 0), 0);
+        }
+        
         return {
           receiptItemId: item.id,
           productId: item.productId,
@@ -2410,7 +2416,7 @@ function QuickStorageSheet({
           barcode: item.barcode,
           imageUrl: item.imageUrl || item.product?.imageUrl,
           description: item.description,
-          receivedQuantity: item.receivedQuantity || item.quantity || 0,
+          receivedQuantity,
           assignedQuantity: item.assignedQuantity || 0,
           locations: item.locations || [],
           existingLocations: enhancedLocations,
