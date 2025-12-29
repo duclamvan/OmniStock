@@ -3002,9 +3002,10 @@ function QuickStorageSheet({
         ? Array.from({ length: levels }, (_, i) => levels - i) // Top first: 5,4,3,2,1
         : Array.from({ length: levels }, (_, i) => i + 1);     // Bottom first: 1,2,3,4,5
       
-      // Rack-first ordering: fill all racks on level X, then next level, etc.
-      for (const level of levelOrder) {
-        for (let rack = rackStart; rack <= rackEnd; rack++) {
+      // Correct ordering: Racks → Levels → Bins
+      // This fills all bins in a level, then moves to next level, then next rack
+      for (let rack = rackStart; rack <= rackEnd; rack++) {
+        for (const level of levelOrder) {
           if (bins > 0) {
             for (let bin = 1; bin <= bins; bin++) {
               locations.push(`${bulkWarehouse}-A${config.aisle}-R${rack}-L${level}-B${bin}`);
