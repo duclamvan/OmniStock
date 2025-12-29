@@ -21520,8 +21520,13 @@ Important rules:
         receipts: 0,
         receiptItems: 0,
         productLocations: 0,
+        consolidationItems: 0,
+        consolidation: 0,
         shipment: 0
       };
+      
+      // Step 0: Get the consolidation ID before deleting shipment
+      const consolidationId = shipment.consolidationId;
       
       // Step 1: Find all receipts for this shipment
       const shipmentReceipts = await db
@@ -21575,6 +21580,23 @@ Important rules:
       
       if (deletedShipment) {
         deletionResults.shipment = 1;
+      }
+      
+      // Step 4: Delete the associated consolidation and its items (cleanup orphans)
+      if (consolidationId) {
+        // Delete consolidation items first
+        const deletedConsolidationItems = await db
+          .delete(consolidationItems)
+          .where(eq(consolidationItems.consolidationId, consolidationId))
+          .returning();
+        deletionResults.consolidationItems = deletedConsolidationItems.length;
+        
+        // Delete the consolidation itself
+        const deletedConsolidation = await db
+          .delete(consolidations)
+          .where(eq(consolidations.id, consolidationId))
+          .returning();
+        deletionResults.consolidation = deletedConsolidation.length;
       }
       
       console.log(`Shipment ${id} deleted:`, deletionResults);
