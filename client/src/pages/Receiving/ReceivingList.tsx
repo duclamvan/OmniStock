@@ -623,7 +623,7 @@ function FloatingScanButton({
     if (numbers.length === 0) return;
 
     // Combine with existing scanned numbers (deduplicate)
-    const allNumbers = [...new Set([...bulkScanState.scannedNumbers, ...numbers])];
+    const allNumbers = Array.from(new Set([...bulkScanState.scannedNumbers, ...numbers]));
     setBulkInput("");
     await lookupTrackingNumbers(allNumbers);
   }, [bulkInput, bulkScanState.scannedNumbers, lookupTrackingNumbers]);
@@ -2434,7 +2434,7 @@ function QuickStorageSheet({
         .map(item => String(item.productId));
       
       // Remove duplicates
-      const uniqueProductIds = [...new Set(productIdsToFetch)];
+      const uniqueProductIds = Array.from(new Set(productIdsToFetch));
       
       if (uniqueProductIds.length === 0) {
         console.log('[Storage] No new product IDs to fetch locations for');
@@ -5510,7 +5510,7 @@ function ShipmentReportDialog({
     // Generate labels in the same format as /stock warehouse labels
     const labelsHtml = selectedItems.map(item => {
       const productCode = item.sku || item.productId || '-';
-      const vietnameseName = item.vietnameseName || item.productName;
+      const vietnameseName = (item as any).vietnameseName || item.productName;
       const priceEur = item.prices?.priceEur ? Number(item.prices.priceEur) : null;
       const priceCzk = item.prices?.priceCzk ? Number(item.prices.priceCzk) : null;
       
