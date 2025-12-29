@@ -4459,7 +4459,9 @@ function QuickStorageSheet({
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">{t('imports:itemsToStore', 'Items')}</span>
-                          <span className="font-mono font-medium">{totalItemsToAllocate.toLocaleString()} / {totalCapacity.toLocaleString()}</span>
+                          <span className="font-mono font-medium">
+                            {totalItemsToAllocate.toLocaleString()} / <span className="text-blue-600 dark:text-blue-400">{totalCapacity.toLocaleString()}</span>
+                          </span>
                         </div>
                         
                         {/* Progress Bar */}
