@@ -13251,6 +13251,33 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
   }
 });
 
+// 9b. GET /api/imports/shipments/:id/cost-sources - Get breakdown of all cost sources
+router.get("/shipments/:id/cost-sources", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    // Use the aggregateAllUpstreamCosts function to get cost breakdown
+    const aggregatedCosts = await aggregateAllUpstreamCosts(shipmentId);
+    
+    const responseData = {
+      shipmentId,
+      costsByType: aggregatedCosts.costsByType,
+      costBreakdown: aggregatedCosts.costBreakdown,
+      warnings: aggregatedCosts.warnings,
+      currencyNotes: aggregatedCosts.currencyNotes,
+      baseCurrency: 'EUR'
+    };
+    
+    // Filter financial data based on user role
+    const userRole = (req as any).user?.role || 'warehouse_operator';
+    const filtered = filterFinancialData(responseData, userRole);
+    res.json(filtered);
+  } catch (error) {
+    console.error("Error fetching cost sources:", error);
+    res.status(500).json({ message: "Failed to fetch cost sources" });
+  }
+});
+
 // 10. GET /api/imports/exchange-rates - Get current FX rates
 router.get("/exchange-rates", async (req, res) => {
   try {

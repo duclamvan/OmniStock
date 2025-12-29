@@ -114,6 +114,23 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     enabled: !!shipmentId
   });
 
+  // Fetch cost sources breakdown (includes PO shipping costs)
+  const { data: costSourcesData } = useQuery({
+    queryKey: [`/api/imports/shipments/${shipmentId}/cost-sources`],
+    enabled: !!shipmentId,
+    staleTime: 30 * 1000
+  });
+
+  // Extract cost breakdown
+  const costBreakdown = costSourcesData?.costBreakdown || {
+    shipmentLevelShipping: 0,
+    shipmentLevelInsurance: 0,
+    poShippingCosts: 0,
+    itemDutyCosts: 0,
+    consolidationCosts: 0,
+    shipmentCosts: {}
+  };
+
   // Auto-create freight cost from shipment data - DISABLED to prevent duplicate creation
   // The auto-population was creating duplicate freight costs due to race conditions.
   // Users should manually add freight costs via the "Add Cost" button instead.
@@ -151,6 +168,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/cost-sources`] });
       onUpdate?.();
     },
     onError: (error: any) => {
@@ -340,14 +358,18 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                   {(() => {
                     const shipmentCost = Number(shipmentData?.shippingCost || 0);
                     const insuranceCost = Number(shipmentData?.insuranceValue || 0);
+                    const poShippingCost = Number(costBreakdown.poShippingCosts || 0);
                     const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + parseFloat(cost.amountBase || 0), 0);
-                    const grandTotal = shipmentCost + insuranceCost + manualCostsTotal;
+                    const grandTotal = shipmentCost + insuranceCost + poShippingCost + manualCostsTotal;
                     return (
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">{t('totalLandingCosts') || 'Total Landing Costs'}</p>
                         <p className="text-2xl font-bold text-primary">
                           {formatCurrency(grandTotal, shipmentData?.shippingCostCurrency || 'EUR')}
                         </p>
+                        {poShippingCost > 0 && (
+                          <p className="text-xs text-muted-foreground">{t('includesPOShipping') || 'Includes PO shipping'}</p>
+                        )}
                       </div>
                     );
                   })()}
@@ -393,6 +415,27 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                           {formatCurrency(shipmentData.insuranceValue, shipmentData.shippingCostCurrency || 'USD')}
                         </p>
                         <Badge variant="outline" className="text-[10px] text-indigo-600 border-indigo-300">{t('autoIncluded') || 'Auto'}</Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PO Shipping Costs */}
+                  {Number(costBreakdown.poShippingCosts) > 0 && (
+                    <div className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                          <Box className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('purchaseOrderShipping') || 'Purchase Order Shipping'}</p>
+                          <p className="text-xs text-muted-foreground">{t('fromPurchaseOrders') || 'From linked purchase orders'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-orange-600">
+                          {formatCurrency(costBreakdown.poShippingCosts, 'EUR')}
+                        </p>
+                        <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-300">{t('autoIncluded') || 'Auto'}</Badge>
                       </div>
                     </div>
                   )}
