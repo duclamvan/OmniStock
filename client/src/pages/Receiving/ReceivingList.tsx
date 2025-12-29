@@ -4239,11 +4239,10 @@ function QuickStorageSheet({
                                                       variantMap.set(v.id, { sku: v.sku || '', name: v.name || '' });
                                                     }
                                                     
-                                                    // Match each variantAllocation to a real variant by SKU or name
+                                                    // Match each variantAllocation to a real variant by SKU or name (fallback only)
                                                     const variantAllocations = item.variantAllocations || [];
                                                     for (const va of variantAllocations) {
                                                       const vaSku = (va as any).sku || va.variantName;
-                                                      // Find matching real variant by SKU or name
                                                       for (const v of variants) {
                                                         if ((v.sku && vaSku && v.sku === vaSku) || 
                                                             (v.name && va.variantName && v.name === va.variantName)) {
@@ -4260,22 +4259,23 @@ function QuickStorageSheet({
                                                 setItems(prevItems => {
                                                   const updated = [...prevItems];
                                                   updated[index].existingLocations = relevantLocations.map((loc: any) => {
-                                                    // Look up variant info and match to original allocation
+                                                    // Look up variant info - prioritize direct variantMap lookup
+                                                    // (variantMap is built from product variants, always available)
                                                     let variantName = '';
                                                     let sku = '';
                                                     if (loc.variantId) {
-                                                      // First try to get the original allocation name (for matching purposes)
-                                                      const originalAllocation = variantIdToAllocationMap.get(loc.variantId);
-                                                      if (originalAllocation) {
-                                                        // Use the original variantName from the allocation for consistent matching
-                                                        variantName = originalAllocation.variantName;
-                                                        sku = (originalAllocation as any).sku || originalAllocation.variantName;
-                                                      } else {
-                                                        // Fall back to product variant info
-                                                        const variantInfo = variantMap.get(loc.variantId);
-                                                        if (variantInfo) {
-                                                          variantName = variantInfo.name;
-                                                          sku = variantInfo.sku;
+                                                      // Primary: Use variantMap (product variants) - always reliable
+                                                      const variantInfo = variantMap.get(loc.variantId);
+                                                      if (variantInfo) {
+                                                        variantName = variantInfo.name;
+                                                        sku = variantInfo.sku;
+                                                      }
+                                                      // Fallback: Try allocation map for original allocation names (may be stale after undo)
+                                                      if (!variantName) {
+                                                        const originalAllocation = variantIdToAllocationMap.get(loc.variantId);
+                                                        if (originalAllocation) {
+                                                          variantName = originalAllocation.variantName;
+                                                          sku = (originalAllocation as any).sku || originalAllocation.variantName;
                                                         }
                                                       }
                                                     }
