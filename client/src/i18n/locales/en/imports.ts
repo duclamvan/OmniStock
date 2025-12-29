@@ -2292,6 +2292,19 @@ const imports = {
   noBarcodesPasted: 'No barcodes pasted',
   barcodesApplied: '{{count}} barcodes applied to variants',
   
+  // Quick fill feature for variants
+  quickFill: 'Quick Fill',
+  fillQuantity: 'Fill Quantity',
+  fillCost: 'Fill Cost',
+  pasteQtyList: 'Paste Quantity List',
+  pasteCostList: 'Paste Cost List',
+  quickFillListDescription: 'Paste {{field}} values (comma, tab, or newline separated) to apply to {{count}} variants',
+  valuesInList: '{{count}} values in list',
+  applyValues: 'Apply Values',
+  noValuesProvided: 'No values provided',
+  quickFillApplied: 'Set {{value}} for {{count}} variants',
+  listValuesApplied: '{{count}} values applied to variants',
+  
 } as const;
 
 export default imports;

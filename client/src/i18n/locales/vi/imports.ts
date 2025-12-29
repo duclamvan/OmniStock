@@ -2222,6 +2222,19 @@ const imports = {
   noBarcodesPasted: 'Chưa dán mã vạch nào',
   barcodesApplied: 'Đã áp dụng {{count}} mã vạch cho các biến thể',
   
+  // Quick fill feature for variants
+  quickFill: 'Điền nhanh',
+  fillQuantity: 'Điền số lượng',
+  fillCost: 'Điền giá',
+  pasteQtyList: 'Dán danh sách số lượng',
+  pasteCostList: 'Dán danh sách giá',
+  quickFillListDescription: 'Dán giá trị {{field}} (phân cách bằng dấu phẩy, tab hoặc dòng mới) để áp dụng cho {{count}} biến thể',
+  valuesInList: '{{count}} giá trị trong danh sách',
+  applyValues: 'Áp dụng giá trị',
+  noValuesProvided: 'Chưa cung cấp giá trị nào',
+  quickFillApplied: 'Đã đặt {{value}} cho {{count}} biến thể',
+  listValuesApplied: 'Đã áp dụng {{count}} giá trị cho các biến thể',
+  
   // Variant-aware import workflow
   variantAllocations: 'Phân bổ biến thể',
   variantQty: 'SL',

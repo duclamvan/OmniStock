@@ -27,6 +27,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -35,7 +36,7 @@ import {
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
   Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, ChevronRight, Upload, ImageIcon, Settings, Scale,
-  Barcode, MapPin, ClipboardPaste, PlusCircle, Pencil
+  Barcode, MapPin, ClipboardPaste, PlusCircle, Pencil, Zap, ClipboardList
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -436,6 +437,11 @@ export default function CreatePurchase() {
   // Barcode paste dialog state
   const [barcodePasteDialogOpen, setBarcodePasteDialogOpen] = useState(false);
   const [barcodePasteText, setBarcodePasteText] = useState("");
+  
+  // Quick fill dialog state for variants
+  const [quickFillDialogOpen, setQuickFillDialogOpen] = useState(false);
+  const [quickFillField, setQuickFillField] = useState<'quantity' | 'unitPrice'>('quantity');
+  const [quickFillListText, setQuickFillListText] = useState("");
   
   // Purchase creation state  
   const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
@@ -1816,6 +1822,64 @@ export default function CreatePurchase() {
     toast({
       title: t('success'),
       description: t('barcodesApplied', { count: appliedCount }),
+    });
+  };
+  
+  // Quick fill selected variants with a preset value (field passed explicitly to avoid state confusion)
+  const quickFillSelectedVariants = (value: number, field: 'quantity' | 'unitPrice') => {
+    const targetVariants = selectedVariants.length > 0 ? selectedVariants : variants.map(v => v.id);
+    const updatedVariants = variants.map(v => {
+      if (targetVariants.includes(v.id)) {
+        return { ...v, [field]: value };
+      }
+      return v;
+    });
+    setVariants(updatedVariants);
+    const fieldLabel = field === 'quantity' ? t('quantity') : t('unitCost');
+    toast({
+      title: t('success'),
+      description: t('quickFillApplied', { count: targetVariants.length, value }),
+    });
+  };
+  
+  // Apply list of values to selected variants
+  const applyListToSelectedVariants = () => {
+    const values = quickFillListText
+      .split(/[,\n\t]/)
+      .map(v => v.trim())
+      .filter(v => v.length > 0)
+      .map(v => parseFloat(v) || 0);
+    
+    if (values.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('noValuesProvided'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const targetVariants = selectedVariants.length > 0 ? selectedVariants : variants.map(v => v.id);
+    let valueIndex = 0;
+    const updatedVariants = variants.map(v => {
+      if (targetVariants.includes(v.id) && valueIndex < values.length) {
+        // For quantity, floor to integer; for cost, preserve decimals
+        const newValue = quickFillField === 'quantity' 
+          ? Math.max(0, Math.floor(values[valueIndex])) 
+          : Math.max(0, values[valueIndex]);
+        valueIndex++;
+        return { ...v, [quickFillField]: newValue };
+      }
+      return v;
+    });
+    
+    setVariants(updatedVariants);
+    setQuickFillDialogOpen(false);
+    setQuickFillListText("");
+    
+    toast({
+      title: t('success'),
+      description: t('listValuesApplied', { count: valueIndex }),
     });
   };
   
@@ -3385,22 +3449,93 @@ export default function CreatePurchase() {
                             {selectedVariants.length > 0 ? `${selectedVariants.length} ${t('selected')}` : `${variants.length} ${t('variants')}`}
                           </span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setBarcodePasteDialogOpen(true)}
-                          data-testid="button-paste-barcodes"
-                        >
-                          <ClipboardPaste className="h-4 w-4 mr-1" />
-                          {t('pasteBarcodeList')}
-                        </Button>
-                        {selectedVariants.length > 0 && (
-                          <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            {t('delete')} ({selectedVariants.length})
+                        <div className="flex items-center gap-2">
+                          {/* Quick Fill Dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                data-testid="button-quick-fill"
+                              >
+                                <Zap className="h-4 w-4 mr-1" />
+                                {t('quickFill')}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuLabel>{t('fillQuantity')}</DropdownMenuLabel>
+                              <div className="flex flex-wrap gap-1 px-2 pb-2">
+                                {[1, 5, 10, 20, 50, 100].map((val) => (
+                                  <Button
+                                    key={val}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => quickFillSelectedVariants(val, 'quantity')}
+                                    data-testid={`button-quick-fill-qty-${val}`}
+                                  >
+                                    {val}
+                                  </Button>
+                                ))}
+                              </div>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel>{t('fillCost')}</DropdownMenuLabel>
+                              <div className="flex flex-wrap gap-1 px-2 pb-2">
+                                {[0.5, 1, 2, 5, 10].map((val) => (
+                                  <Button
+                                    key={val}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => quickFillSelectedVariants(val, 'unitPrice')}
+                                    data-testid={`button-quick-fill-cost-${val}`}
+                                  >
+                                    {val}
+                                  </Button>
+                                ))}
+                              </div>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setQuickFillField('quantity');
+                                  setQuickFillDialogOpen(true);
+                                }}
+                              >
+                                <ClipboardList className="h-4 w-4 mr-2" />
+                                {t('pasteQtyList')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setQuickFillField('unitPrice');
+                                  setQuickFillDialogOpen(true);
+                                }}
+                              >
+                                <ClipboardList className="h-4 w-4 mr-2" />
+                                {t('pasteCostList')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBarcodePasteDialogOpen(true)}
+                            data-testid="button-paste-barcodes"
+                          >
+                            <ClipboardPaste className="h-4 w-4 mr-1" />
+                            {t('pasteBarcodeList')}
                           </Button>
-                        )}
+                          {selectedVariants.length > 0 && (
+                            <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              {t('delete')} ({selectedVariants.length})
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="border rounded-lg overflow-x-auto">
@@ -5237,6 +5372,58 @@ export default function CreatePurchase() {
             >
               <ClipboardPaste className="h-4 w-4 mr-2" />
               {t('applyBarcodes')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Quick Fill List Dialog */}
+      <Dialog open={quickFillDialogOpen} onOpenChange={setQuickFillDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {quickFillField === 'quantity' ? t('pasteQtyList') : t('pasteCostList')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('quickFillListDescription', { 
+                field: quickFillField === 'quantity' ? t('qty') : t('cost'),
+                count: selectedVariants.length > 0 ? selectedVariants.length : variants.length 
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={quickFillListText}
+              onChange={(e) => setQuickFillListText(e.target.value)}
+              placeholder={quickFillField === 'quantity' 
+                ? "23, 12, 5, 10, 8, 15\n50\n25" 
+                : "1.50, 2.00, 0.99, 3.50\n2.25\n1.75"}
+              className="min-h-[150px] font-mono text-sm"
+              data-testid="textarea-quick-fill-list"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('valuesInList', { 
+                count: quickFillListText.split(/[,\n\t]/).filter(v => v.trim()).length 
+              })}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setQuickFillDialogOpen(false);
+                setQuickFillListText("");
+              }}
+            >
+              {t('cancel')}
+            </Button>
+            <Button 
+              onClick={applyListToSelectedVariants}
+              disabled={!quickFillListText.trim()}
+              data-testid="button-apply-quick-fill-list"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              {t('applyValues')}
             </Button>
           </DialogFooter>
         </DialogContent>
