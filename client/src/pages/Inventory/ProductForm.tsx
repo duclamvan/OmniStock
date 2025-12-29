@@ -3913,6 +3913,7 @@ export default function ProductForm() {
                             <TableHead>{t('products:variants.tableHeaders.sku')}</TableHead>
                             <TableHead className="text-right">{t('products:variants.tableHeaders.barcode')}</TableHead>
                             <TableHead className="w-24 text-right">{t('products:variants.tableHeaders.quantity')}</TableHead>
+                            <TableHead className="w-28">{t('products:variants.tableHeaders.location', 'Location')}</TableHead>
                             <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.priceCzk')}</TableHead>
                             <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.priceEur')}</TableHead>
                             {canAccessFinancialData && <TableHead className="w-28 text-right">{t('products:variants.tableHeaders.importCostUsd')}</TableHead>}
@@ -4033,6 +4034,11 @@ export default function ProductForm() {
                                     </span>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
+                                  {variant.warehouseLocation || '-'}
+                                </span>
                               </TableCell>
                               <TableCell className="text-right">
                                 <Input
