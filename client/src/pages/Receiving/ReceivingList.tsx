@@ -3991,11 +3991,15 @@ function QuickStorageSheet({
                                                 if (existingLoc) {
                                                   // For existing locations, we add to the batch with just the delta qty
                                                   // The batch endpoint will add to existing
+                                                  // Include SKU and variantName for proper variant matching
                                                   allLocationsToSave.push({
                                                     locationCode: existingLoc.locationCode,
                                                     locationType: existingLoc.locationType,
                                                     quantity: addQty,
-                                                    isPrimary: existingLoc.isPrimary
+                                                    isPrimary: existingLoc.isPrimary,
+                                                    variantId: existingLoc.variantId || undefined,
+                                                    sku: existingLoc.sku || existingLoc.variantName || undefined,
+                                                    variantName: existingLoc.variantName || undefined
                                                   });
                                                 }
                                               }

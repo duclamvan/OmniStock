@@ -6355,10 +6355,10 @@ Important:
       const existingMap = new Map(existingLocations.map(loc => [`${loc.locationCode}:${loc.variantId || ''}`, loc]));
       
       // Build SKU-to-variantId lookup for this product's variants
-      const productWithVariants = await storage.getProductWithVariants(productId);
+      const productVariants = await storage.getProductVariants(productId);
       const skuToVariantId = new Map<string, string>();
-      if (productWithVariants?.variants) {
-        for (const v of productWithVariants.variants) {
+      if (productVariants && productVariants.length > 0) {
+        for (const v of productVariants) {
           if (v.sku) skuToVariantId.set(v.sku, v.id);
           if (v.name) skuToVariantId.set(v.name, v.id); // Also map by name for fallback
         }
