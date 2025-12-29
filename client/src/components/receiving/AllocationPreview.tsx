@@ -56,6 +56,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency as formatCurrencyUtil, convertCurrency } from "@/lib/currencyUtils";
 
+interface VariantAllocation {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  sku?: string;
+  variantSku?: string;
+  unitPrice?: number;
+}
+
 interface ItemAllocation {
   purchaseItemId: number;
   customItemId?: number;  // Fallback ID field
@@ -76,6 +85,7 @@ interface ItemAllocation {
   totalAllocated: number;
   landingCostPerUnit: number;
   warnings: string[];
+  variantAllocations?: VariantAllocation[];
 }
 
 interface AllocationMethod {
@@ -875,6 +885,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-medium text-xs">{item.name}</span>
+                                {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                    <Layers className="h-2.5 w-2.5 mr-0.5" />
+                                    {item.variantAllocations.length}
+                                  </Badge>
+                                )}
                                 {item.warnings.length > 0 && (
                                   <TooltipProvider>
                                     <Tooltip>
@@ -1031,6 +1047,70 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                                     <currentMethod.icon className="h-3 w-3 mr-1" />
                                     {currentMethod.description}
                                   </Badge>
+                                </div>
+                              )}
+                              {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Layers className="h-4 w-4 text-purple-600" />
+                                    <h5 className="text-sm font-medium">{t('variantBreakdown', 'Variant Breakdown')}</h5>
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                      {item.variantAllocations.length} {t('variants', 'variants')}
+                                    </Badge>
+                                    {(() => {
+                                      const prices = item.variantAllocations.map(v => v.unitPrice || 0);
+                                      const uniquePrices = Array.from(new Set(prices));
+                                      const hasDifferentPrices = uniquePrices.length > 1;
+                                      return hasDifferentPrices ? (
+                                        <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                                          <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                                          {t('mixedPricing', 'Mixed Pricing')}
+                                        </Badge>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                  <div className="max-h-48 overflow-y-auto">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="text-[10px]">
+                                          <TableHead className="p-1.5">{t('variant', 'Variant')}</TableHead>
+                                          <TableHead className="p-1.5 text-right w-[60px]">{t('qty', 'Qty')}</TableHead>
+                                          <TableHead className="p-1.5 text-right w-[80px]">{t('unitPrice', 'Unit Price')}</TableHead>
+                                          <TableHead className="p-1.5 text-right w-[80px]">{t('landingPerUnit', 'Landing/Unit')}</TableHead>
+                                          <TableHead className="p-1.5 text-right w-[80px]">{t('totalPerUnit', 'Total/Unit')}</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {item.variantAllocations.map((variant, vIdx) => {
+                                          const variantUnitPrice = variant.unitPrice || item.unitPrice || 0;
+                                          const variantLandingCost = item.landingCostPerUnit || 0;
+                                          const variantTotalCost = variantUnitPrice + variantLandingCost;
+                                          return (
+                                            <TableRow key={variant.variantId || vIdx} className="text-[10px]">
+                                              <TableCell className="p-1.5">
+                                                <div className="flex flex-col">
+                                                  <span className="font-medium">{variant.variantName}</span>
+                                                  {(variant.sku || variant.variantSku) && (
+                                                    <span className="text-[9px] text-muted-foreground">{variant.sku || variant.variantSku}</span>
+                                                  )}
+                                                </div>
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-right">{variant.quantity}</TableCell>
+                                              <TableCell className="p-1.5 text-right text-blue-600 dark:text-blue-400">
+                                                {formatCurrency(variantUnitPrice, preview.baseCurrency)}
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-right text-orange-600 dark:text-orange-400">
+                                                {formatCurrency(variantLandingCost, preview.baseCurrency)}
+                                              </TableCell>
+                                              <TableCell className="p-1.5 text-right font-medium text-cyan-700 dark:text-cyan-400">
+                                                {formatCurrency(variantTotalCost, preview.baseCurrency)}
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
                                 </div>
                               )}
                               {item.warnings.length > 0 && (
