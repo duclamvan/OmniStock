@@ -2362,16 +2362,42 @@ function QuickStorageSheet({
         const orderNumber = item.customItem?.orderNumber || item.orderNumber;
         
         // Enhance existing locations with variantName from variantAllocations
+        // Try multiple matching strategies: variantId, SKU, or existing variantName
         const rawLocations = item.existingLocations || item.product?.locations || [];
         const enhancedLocations = rawLocations.map((loc: any) => {
-          let variantName = '';
-          if (loc.variantId && variantAllocations && variantAllocations.length > 0) {
-            const variant = variantAllocations.find((v: VariantAllocation) => v.variantId === loc.variantId);
-            variantName = variant?.variantName || '';
+          // If location already has variantName, keep it
+          if (loc.variantName) {
+            return loc;
           }
+          
+          let variantName = '';
+          let matchedSku = loc.sku || '';
+          
+          if (variantAllocations && variantAllocations.length > 0) {
+            // Try matching by variantId first
+            if (loc.variantId) {
+              const variantById = variantAllocations.find((v: VariantAllocation) => v.variantId === loc.variantId);
+              if (variantById) {
+                variantName = variantById.variantName || '';
+                matchedSku = (variantById as any).sku || variantName;
+              }
+            }
+            
+            // If no match by ID, try matching by SKU
+            if (!variantName && loc.sku) {
+              const variantBySku = variantAllocations.find((v: any) => 
+                v.sku && loc.sku && v.sku === loc.sku
+              );
+              if (variantBySku) {
+                variantName = variantBySku.variantName || '';
+              }
+            }
+          }
+          
           return {
             ...loc,
-            variantName
+            variantName,
+            sku: matchedSku || loc.sku
           };
         });
         
@@ -2398,6 +2424,7 @@ function QuickStorageSheet({
   }, [receiptData]);
   
   // Fetch inventory locations for all products that have productId
+  // Also fetch variants to populate variantName on locations
   useEffect(() => {
     const fetchInventoryLocations = async () => {
       // Filter items with productId that we haven't fetched yet
@@ -2417,17 +2444,131 @@ function QuickStorageSheet({
       
       for (const productId of uniqueProductIds) {
         try {
-          const response = await fetch(`/api/products/${productId}/locations`, { credentials: 'include' });
-          if (response.ok) {
-            const locations = await response.json();
-            console.log(`[Storage] Fetched ${locations.length} locations for product ${productId}`);
+          // Fetch locations first, then try to get variants for products that have them
+          const locResponse = await fetch(`/api/products/${productId}/locations`, { credentials: 'include' });
+          
+          // Try to fetch variants (may 404 for products without variants, that's OK)
+          let variantResponse: Response | null = null;
+          try {
+            variantResponse = await fetch(`/api/products/${productId}/variants`, { credentials: 'include' });
+          } catch (e) {
+            // Ignore variant fetch errors
+          }
+          
+          if (locResponse.ok) {
+            const locations = await locResponse.json();
+            
+            // Build variant lookup map if variants were fetched successfully
+            const variantMap = new Map<string, { sku: string; name: string }>();
+            if (variantResponse && variantResponse.ok) {
+              try {
+                const variants = await variantResponse.json();
+                for (const v of variants) {
+                  variantMap.set(v.id, { sku: v.sku || '', name: v.name || '' });
+                }
+              } catch (e) {
+                // Ignore JSON parse errors for variant response
+              }
+            }
+            
+            // Enhanced locations will be stored in inventoryLocations Map
+            // Note: We store locations with API variant info; item-specific fallback is applied separately
+            const enhancedLocations = locations.map((loc: any) => {
+              let variantName = loc.variantName || '';
+              let sku = loc.sku || '';
+              if (loc.variantId && variantMap.has(loc.variantId)) {
+                const variantInfo = variantMap.get(loc.variantId);
+                if (variantInfo) {
+                  variantName = variantInfo.name;
+                  sku = variantInfo.sku;
+                }
+              }
+              return { ...loc, variantName, sku };
+            });
+            
+            console.log(`[Storage] Fetched ${enhancedLocations.length} locations for product ${productId}`);
             setInventoryLocations(prev => {
               const newMap = new Map(prev);
-              newMap.set(productId, locations);
+              newMap.set(productId, enhancedLocations);
               return newMap;
             });
+            
+            // Also update existingLocations in items state to show variant badges
+            // This uses both API data AND variantAllocations as fallback
+            setItems(prevItems => {
+              return prevItems.map(item => {
+                if (String(item.productId) !== productId) return item;
+                
+                // Build fallback map from variantAllocations 
+                const allocationMap = new Map<string, { sku: string; name: string }>();
+                if (item.variantAllocations && item.variantAllocations.length > 0) {
+                  for (const va of item.variantAllocations) {
+                    if (va.variantId) {
+                      allocationMap.set(va.variantId, { 
+                        sku: (va as any).sku || va.variantName || '', 
+                        name: va.variantName || '' 
+                      });
+                    }
+                  }
+                }
+                
+                // Also build a SKU-based lookup from variantAllocations
+                const allocationBySkuMap = new Map<string, { sku: string; name: string }>();
+                if (item.variantAllocations && item.variantAllocations.length > 0) {
+                  for (const va of item.variantAllocations) {
+                    const vaSku = (va as any).sku || va.variantName;
+                    if (vaSku) {
+                      allocationBySkuMap.set(vaSku, { 
+                        sku: vaSku, 
+                        name: va.variantName || '' 
+                      });
+                    }
+                  }
+                }
+                
+                // Enhance existing locations - apply variant info from all sources
+                const updatedExisting = (item.existingLocations || []).map((loc: any) => {
+                  // Skip if already has a variantName populated
+                  if (loc.variantName) return loc;
+                  
+                  // Try API variant map first (by variantId)
+                  if (loc.variantId && variantMap.has(loc.variantId)) {
+                    const variantInfo = variantMap.get(loc.variantId);
+                    return {
+                      ...loc,
+                      variantName: variantInfo?.name || '',
+                      sku: variantInfo?.sku || loc.sku || ''
+                    };
+                  }
+                  
+                  // Fallback to variantAllocations by variantId
+                  if (loc.variantId && allocationMap.has(loc.variantId)) {
+                    const variantInfo = allocationMap.get(loc.variantId);
+                    return {
+                      ...loc,
+                      variantName: variantInfo?.name || '',
+                      sku: variantInfo?.sku || loc.sku || ''
+                    };
+                  }
+                  
+                  // Fallback to variantAllocations by SKU
+                  if (loc.sku && allocationBySkuMap.has(loc.sku)) {
+                    const variantInfo = allocationBySkuMap.get(loc.sku);
+                    return {
+                      ...loc,
+                      variantName: variantInfo?.name || '',
+                      sku: variantInfo?.sku || loc.sku || ''
+                    };
+                  }
+                  
+                  return loc;
+                });
+                
+                return { ...item, existingLocations: updatedExisting };
+              });
+            });
           } else {
-            console.error(`[Storage] Failed to fetch locations for product ${productId}: ${response.status}`);
+            console.error(`[Storage] Failed to fetch locations for product ${productId}: ${locResponse.status}`);
           }
         } catch (error) {
           console.error(`[Storage] Error fetching locations for product ${productId}:`, error);
