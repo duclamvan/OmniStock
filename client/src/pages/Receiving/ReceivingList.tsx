@@ -6316,12 +6316,16 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   <span>{t('landedCostCalculated')}</span>
                 </div>
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                  shipment.costsAllocatedAt 
+                  shipment.costsAllocatedAt && shipment.allVariantsCostApplied
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                    : shipment.costsAllocatedAt && !shipment.allVariantsCostApplied
+                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                     : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                 }`}>
-                  {shipment.costsAllocatedAt ? (
+                  {shipment.costsAllocatedAt && shipment.allVariantsCostApplied ? (
                     <CheckCircle className="h-3.5 w-3.5" />
+                  ) : shipment.costsAllocatedAt && !shipment.allVariantsCostApplied ? (
+                    <Clock className="h-3.5 w-3.5" />
                   ) : (
                     <Circle className="h-3.5 w-3.5" />
                   )}

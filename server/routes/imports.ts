@@ -199,6 +199,112 @@ async function updatePurchaseOrderStatusFromConsolidation(
 }
 
 // ============================================================================
+// VARIANT COST CHECK HELPER
+// ============================================================================
+// This helper checks if all product variants linked to a shipment have their
+// import costs applied (non-null importCostEur). Used to verify that weighted
+// average landed costs have been properly calculated and applied.
+
+/**
+ * Check if all product variants linked to a shipment have import costs applied.
+ * Returns true if:
+ * - No variants are linked to the shipment, OR
+ * - All linked variants have non-null importCostEur
+ * 
+ * @param shipmentId - The shipment ID to check variants for
+ * @returns Promise<boolean> - true if all variants have costs, false otherwise
+ */
+async function checkAllVariantsCostApplied(shipmentId: string): Promise<boolean> {
+  try {
+    // Get the shipment to find its consolidation
+    const [shipment] = await db
+      .select({ consolidationId: shipments.consolidationId })
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId))
+      .limit(1);
+    
+    if (!shipment?.consolidationId) {
+      return true; // No consolidation = no variants to check
+    }
+    
+    // Get all custom items and purchase items from the consolidation
+    const consolidationItemsList = await db
+      .select({
+        itemId: consolidationItems.itemId,
+        itemType: consolidationItems.itemType,
+      })
+      .from(consolidationItems)
+      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+    
+    if (consolidationItemsList.length === 0) {
+      return true; // No items = no variants to check
+    }
+    
+    // Get variant IDs from custom items
+    const customItemIds = consolidationItemsList
+      .filter(item => item.itemType === 'custom')
+      .map(item => item.itemId);
+    
+    // Get variant IDs from purchase items
+    const purchaseItemIds = consolidationItemsList
+      .filter(item => item.itemType === 'purchase')
+      .map(item => item.itemId);
+    
+    const variantIdsToCheck: string[] = [];
+    
+    // Get variantIds from custom items
+    if (customItemIds.length > 0) {
+      const customItemsWithVariants = await db
+        .select({ variantId: customItems.variantId })
+        .from(customItems)
+        .where(
+          and(
+            inArray(customItems.id, customItemIds),
+            sql`${customItems.variantId} IS NOT NULL`
+          )
+        );
+      variantIdsToCheck.push(...customItemsWithVariants.map(ci => ci.variantId!).filter(Boolean));
+    }
+    
+    // Get variantIds from purchase items
+    if (purchaseItemIds.length > 0) {
+      const purchaseItemsWithVariants = await db
+        .select({ variantId: purchaseItems.variantId })
+        .from(purchaseItems)
+        .where(
+          and(
+            inArray(purchaseItems.id, purchaseItemIds),
+            sql`${purchaseItems.variantId} IS NOT NULL`
+          )
+        );
+      variantIdsToCheck.push(...purchaseItemsWithVariants.map(pi => pi.variantId!).filter(Boolean));
+    }
+    
+    if (variantIdsToCheck.length === 0) {
+      return true; // No variants linked = nothing to check
+    }
+    
+    // Check if all variants have importCostEur set
+    const variantsWithoutCosts = await db
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(
+        and(
+          inArray(productVariants.id, variantIdsToCheck),
+          isNull(productVariants.importCostEur)
+        )
+      )
+      .limit(1);
+    
+    // If no variants without costs found, all have costs applied
+    return variantsWithoutCosts.length === 0;
+  } catch (error) {
+    console.error('Error checking variant costs for shipment:', shipmentId, error);
+    return false; // On error, assume costs not applied
+  }
+}
+
+// ============================================================================
 // LANDED COST CALCULATION HELPER
 // ============================================================================
 // This helper function calculates the proper weighted average landed cost
@@ -7125,9 +7231,20 @@ router.get("/shipments/completed", async (req, res) => {
       }
     }
 
+    // Check if all variants have costs applied for each shipment
+    const shipmentsWithCostCheck = await Promise.all(
+      formattedShipments.map(async (shipment) => {
+        const allVariantsCostApplied = await checkAllVariantsCostApplied(shipment.id);
+        return {
+          ...shipment,
+          allVariantsCostApplied
+        };
+      })
+    );
+
     // Filter financial data based on user role
     const userRole = (req as any).user?.role || 'warehouse_operator';
-    const filtered = filterFinancialData(formattedShipments, userRole);
+    const filtered = filterFinancialData(shipmentsWithCostCheck, userRole);
     res.json(filtered);
   } catch (error) {
     console.error("Error fetching completed shipments:", error);
