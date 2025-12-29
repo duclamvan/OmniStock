@@ -12131,6 +12131,19 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               processedLocations.push(newLocation);
             }
             
+            // Update variant's locationCode field when storing with a variant
+            if (variantId && locationCode) {
+              await tx
+                .update(productVariants)
+                .set({
+                  locationCode: locationCode,
+                  updatedAt: new Date()
+                })
+                .where(eq(productVariants.id, variantId));
+              
+              console.log(`[Store-Items] Updated variant ${variantId} with locationCode: ${locationCode}`);
+            }
+            
             // If this is set as primary, unset other locations as primary
             if (isPrimary) {
               await tx
