@@ -234,11 +234,11 @@ interface LandedCostData {
 async function getLandedCostForItem(
   tx: any,
   itemType: string,
-  itemId: number,
-  shipmentId: number | null,
+  itemId: string,
+  shipmentId: string | null,
   quantity: number,
   unitPrice: number,
-  purchaseId?: number
+  purchaseId?: string
 ): Promise<LandedCostData> {
   let landingCostPerUnit = 0; // Always stored/returned in EUR (base currency)
   let source: 'cost_allocation' | 'purchase_item' | 'fallback' = 'fallback';
