@@ -6591,6 +6591,8 @@ export default function ReceivingList() {
   const [unmatchedBarcode, setUnmatchedBarcode] = useState("");
   const [filter, setFilter] = useState("all");
   const [processingShipmentIds, setProcessingShipmentIds] = useState<Set<number>>(new Set());
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugLogLevel, setDebugLogLevel] = useState<'all' | 'info' | 'warn' | 'error'>('all');
   
   // Update tab when URL parameter changes
   useEffect(() => {
@@ -6668,6 +6670,26 @@ export default function ReceivingList() {
   // Fetch recently approved receipts (last 7 days)
   const { data: recentReceipts = [] } = useQuery<Receipt[]>({
     queryKey: ['/api/imports/receipts/recent'],
+  });
+
+  // Fetch debug logs when panel is open - uses default fetcher with query params
+  const debugLogUrl = debugLogLevel === 'all' 
+    ? '/api/imports/debug-logs' 
+    : `/api/imports/debug-logs?level=${debugLogLevel}`;
+  const { data: debugLogsData, refetch: refetchDebugLogs } = useQuery<{
+    count: number;
+    total: number;
+    filteredTotal: number;
+    logs: Array<{
+      timestamp: string;
+      level: 'info' | 'warn' | 'error';
+      message: string;
+      context?: any;
+    }>;
+  }>({
+    queryKey: [debugLogUrl],
+    enabled: showDebugPanel,
+    refetchInterval: showDebugPanel ? 2000 : false,
   });
 
   // Auto-center active tab when it changes
@@ -7246,6 +7268,128 @@ export default function ReceivingList() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Debug Panel Button - Fixed bottom-right */}
+        {isAdministrator && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="fixed bottom-20 right-4 z-50 h-10 w-10 rounded-full bg-gray-900 text-white border-gray-700 hover:bg-gray-800 shadow-lg"
+            onClick={() => setShowDebugPanel(true)}
+            data-testid="button-debug-panel"
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+        )}
+
+        {/* Debug Panel Sheet */}
+        <Sheet open={showDebugPanel} onOpenChange={setShowDebugPanel}>
+          <SheetContent side="bottom" className="h-[70vh] overflow-hidden flex flex-col">
+            <SheetHeader className="pb-4 border-b">
+              <SheetTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Debug Logs - Receiving Operations
+                {debugLogsData && (
+                  <Badge variant="outline" className="ml-auto">
+                    {debugLogsData.count} / {debugLogsData.total} logs
+                  </Badge>
+                )}
+              </SheetTitle>
+            </SheetHeader>
+            
+            {/* Log Level Filter */}
+            <div className="flex gap-1 py-3 border-b">
+              {(['all', 'error', 'warn', 'info'] as const).map((level) => (
+                <Button
+                  key={level}
+                  variant={debugLogLevel === level ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDebugLogLevel(level)}
+                  className={`text-xs ${
+                    level === 'error' ? 'border-red-200 hover:border-red-400' :
+                    level === 'warn' ? 'border-amber-200 hover:border-amber-400' :
+                    level === 'info' ? 'border-blue-200 hover:border-blue-400' : ''
+                  } ${debugLogLevel === level && level === 'error' ? 'bg-red-600 hover:bg-red-700' : ''} ${debugLogLevel === level && level === 'warn' ? 'bg-amber-600 hover:bg-amber-700' : ''} ${debugLogLevel === level && level === 'info' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                >
+                  {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex-1 overflow-y-auto mt-4 space-y-2">
+              {!debugLogsData?.logs?.length ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No debug logs available</p>
+                  <p className="text-xs">Logs will appear here during receiving operations</p>
+                </div>
+              ) : (
+                debugLogsData.logs.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg text-sm font-mono ${
+                      log.level === 'error' ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800' :
+                      log.level === 'warn' ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800' :
+                      'bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-semibold uppercase ${
+                        log.level === 'error' ? 'text-red-600 dark:text-red-400' :
+                        log.level === 'warn' ? 'text-amber-600 dark:text-amber-400' :
+                        'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {log.level}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(log.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs break-all">{log.message}</div>
+                    {log.context && (
+                      <details className="mt-2">
+                        <summary className="text-xs text-muted-foreground cursor-pointer">Context</summary>
+                        <pre className="mt-1 text-xs overflow-x-auto bg-black/5 dark:bg-white/5 p-2 rounded">
+                          {JSON.stringify(log.context, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <div className="pt-4 border-t flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchDebugLogs()}
+                className="flex-1"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await fetch('/api/imports/debug-logs', { method: 'DELETE', credentials: 'include' });
+                  refetchDebugLogs();
+                }}
+                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+              >
+                Clear Logs
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowDebugPanel(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </ReceivingSessionProvider>
   );

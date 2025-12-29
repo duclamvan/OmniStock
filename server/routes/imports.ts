@@ -574,6 +574,7 @@ async function finalizeReceivingInventory(
   
   try {
     console.log(`[finalizeReceivingInventory] Starting for receipt ${receiptId}, shipment ${shipmentId}`);
+    addDebugLog('info', `Starting inventory finalization for receipt ${receiptId}`, { receiptId, shipmentId });
     
     // Get receipt to check status
     console.log(`[DEBUG] Query 1: Getting receipt...`);
@@ -906,6 +907,7 @@ async function finalizeReceivingInventory(
           
           // Update variant quantity AND cost fields
           // Note: productVariants schema only has EUR, USD, CZK - not VND/CNY
+          // CRITICAL: Use variant.id (actual DB ID), NOT va.variantId (which may be temp-* ID)
           await tx
             .update(productVariants)
             .set({
@@ -915,7 +917,7 @@ async function finalizeReceivingInventory(
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
               updatedAt: new Date()
             })
-            .where(eq(productVariants.id, va.variantId));
+            .where(eq(productVariants.id, variant.id));
           
           result.variantsUpdated++;
           
@@ -1250,9 +1252,13 @@ async function finalizeReceivingInventory(
         }
         
         result.parentProductsUpdated++;
+        const logMsg = `Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}`;
         console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}, avgCostVnd=${avgCostVnd.toFixed(0)}, avgCostCny=${avgCostCny.toFixed(2)}`);
+        addDebugLog('info', logMsg, { parentProductId, totalVariantQuantity, avgCostEur, avgCostUsd });
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Failed to update parent product ${parentProductId}:`, error);
+        addDebugLog('error', `Failed to update parent product: ${errorMsg}`, { parentProductId, error: errorMsg });
       }
     }
     
@@ -1260,10 +1266,72 @@ async function finalizeReceivingInventory(
     return result;
   } catch (error) {
     console.error(`[finalizeReceivingInventory] Error processing receipt ${receiptId}:`, error);
-    result.error = error instanceof Error ? error.message : 'Unknown error';
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    addDebugLog('error', `Failed to finalize inventory: ${errorMsg}`, { receiptId, shipmentId, error: errorMsg });
+    result.error = errorMsg;
     return result;
   }
 }
+
+// ================================================================
+// DEBUG LOG BUFFER FOR RECEIVING OPERATIONS
+// Stores recent logs for UI debugging panel
+// ================================================================
+interface DebugLogEntry {
+  timestamp: Date;
+  level: 'info' | 'warn' | 'error';
+  message: string;
+  context?: any;
+}
+
+const debugLogBuffer: DebugLogEntry[] = [];
+const MAX_DEBUG_LOGS = 200;
+
+function addDebugLog(level: 'info' | 'warn' | 'error', message: string, context?: any) {
+  debugLogBuffer.unshift({
+    timestamp: new Date(),
+    level,
+    message,
+    context
+  });
+  // Keep buffer size limited
+  if (debugLogBuffer.length > MAX_DEBUG_LOGS) {
+    debugLogBuffer.pop();
+  }
+}
+
+// Get debug logs for receiving operations
+router.get("/debug-logs", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const level = req.query.level as string;
+    
+    // Filter by level FIRST, then limit (correct order for targeted troubleshooting)
+    let logs = [...debugLogBuffer];
+    
+    if (level && ['info', 'warn', 'error'].includes(level)) {
+      logs = logs.filter(log => log.level === level);
+    }
+    
+    // Apply limit after filtering
+    logs = logs.slice(0, limit);
+    
+    res.json({
+      count: logs.length,
+      total: debugLogBuffer.length,
+      filteredTotal: level ? debugLogBuffer.filter(l => l.level === level).length : debugLogBuffer.length,
+      logs
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch debug logs" });
+  }
+});
+
+// Clear debug logs
+router.delete("/debug-logs", async (req, res) => {
+  debugLogBuffer.length = 0;
+  res.json({ success: true, message: "Debug logs cleared" });
+});
 
 // Get frequent suppliers
 router.get("/suppliers/frequent", async (req: any, res) => {
