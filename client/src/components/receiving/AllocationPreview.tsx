@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -267,6 +267,17 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     },
     enabled: !!shipmentId
   });
+
+  // Auto-select currency based on order's payment currency
+  useEffect(() => {
+    if (preview?.baseCurrency) {
+      // Check if the baseCurrency is in our available currencies
+      const currencyExists = AVAILABLE_CURRENCIES.some(c => c.value === preview.baseCurrency);
+      if (currencyExists) {
+        setDisplayCurrency(preview.baseCurrency);
+      }
+    }
+  }, [preview?.baseCurrency]);
 
   // Mutation for fetching allocation preview with specific method
   const updateAllocationMethod = useMutation({
