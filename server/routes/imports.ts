@@ -671,41 +671,45 @@ async function finalizeReceivingInventory(
         let parentProductId: string | null = null;
         let processedAsPackageItems = false;
         
-        // Get landed cost info for variant distribution
-        let perUnitLandedCostEur = 0;
+        // Get landed cost info for variant distribution using getLandedCostForItem
+        // This function returns the TOTAL landed cost (unit price + landing costs) in EUR
         const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
         
-        if (item.itemType === 'custom' && shipmentId) {
-          const allocations = await tx
-            .select({ amountAllocatedBase: costAllocations.amountAllocatedBase })
-            .from(costAllocations)
-            .where(
-              and(
-                eq(costAllocations.shipmentId, shipmentId),
-                eq(costAllocations.customItemId, item.itemId)
-              )
-            );
-          
-          const totalAllocatedCostEur = allocations.reduce((sum: number, alloc: any) => {
-            return sum + parseFloat(alloc.amountAllocatedBase || '0');
-          }, 0);
-          
-          perUnitLandedCostEur = totalVariantQuantity > 0 
-            ? totalAllocatedCostEur / totalVariantQuantity 
-            : 0;
-          
-          console.log(`[Variant Costs] Custom item ${item.id}: total allocated = ${totalAllocatedCostEur.toFixed(2)} EUR, per-unit = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+        // Get the unit price for the item (used by getLandedCostForItem for fallback calculation)
+        let itemUnitPriceEur = 0;
+        if (item.itemType === 'custom') {
+          const [customItem] = await tx
+            .select({ unitPrice: customItems.unitPrice })
+            .from(customItems)
+            .where(eq(customItems.id, item.itemId));
+          if (customItem?.unitPrice) {
+            itemUnitPriceEur = parseFloat(customItem.unitPrice);
+          }
         } else if (item.itemType === 'purchase') {
           const [purchaseItem] = await tx
-            .select({ landingCostUnitBase: purchaseItems.landingCostUnitBase })
+            .select({ unitPrice: purchaseItems.unitPrice })
             .from(purchaseItems)
             .where(eq(purchaseItems.id, item.itemId));
-          
-          if (purchaseItem?.landingCostUnitBase) {
-            perUnitLandedCostEur = parseFloat(purchaseItem.landingCostUnitBase);
-            console.log(`[Variant Costs] Purchase item ${item.id}: landingCostUnitBase = ${perUnitLandedCostEur.toFixed(4)} EUR`);
+          if (purchaseItem?.unitPrice) {
+            itemUnitPriceEur = parseFloat(purchaseItem.unitPrice);
           }
         }
+        
+        // Get the TOTAL landed cost using the same logic as the preview
+        // This returns unit price + landing costs (all in EUR)
+        const landedCostData = await getLandedCostForItem(
+          tx,
+          item.itemType,
+          item.itemId,
+          shipmentId,
+          totalVariantQuantity,
+          itemUnitPriceEur
+        );
+        
+        // landedCostData.landingCostPerUnit is the TOTAL landed cost (unit price + landing costs)
+        const totalLandedCostEur = landedCostData.landingCostPerUnit;
+        
+        console.log(`[Variant Costs] ${item.itemType} item ${item.id}: unitPrice=${itemUnitPriceEur.toFixed(4)} EUR, totalLandedCost=${totalLandedCostEur.toFixed(4)} EUR, source=${landedCostData.source}`);
         
         for (const va of variantAllocations) {
           if (!va.variantId || va.quantity <= 0) continue;
@@ -912,17 +916,11 @@ async function finalizeReceivingInventory(
           // ================================================================
           // CALCULATE PER-VARIANT LANDED COST (ALL 5 CURRENCIES)
           // ================================================================
-          // Get unit price: first try variant allocation's unitPrice, then fall back to receipt item's unitPrice
-          // Receipt item.unitPrice is stored in the base currency (EUR)
-          const vaUnitPrice = va.unitPrice !== undefined && va.unitPrice !== null ? va.unitPrice : null;
-          const itemUnitPrice = item.unitPrice ? parseFloat(item.unitPrice) : 0;
-          const variantUnitPrice = vaUnitPrice !== null ? parseFloat(String(vaUnitPrice)) : itemUnitPrice;
+          // Use the total landed cost calculated above via getLandedCostForItem
+          // This includes both unit price + landing costs (freight, duty, etc.)
+          const variantLandedCostEur = totalLandedCostEur;
           
-          console.log(`[Variant Costs] ${va.variantName}: va.unitPrice=${va.unitPrice}, item.unitPrice=${item.unitPrice}, using variantUnitPrice=${variantUnitPrice}`);
-          
-          // Full landed cost = purchase unit price + allocated landing costs (freight, shipping, etc.)
-          // landingCostUnitBase only stores the landing cost component, NOT the unit purchase price
-          const variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
+          console.log(`[Variant Costs] ${va.variantName}: using totalLandedCostEur=${totalLandedCostEur.toFixed(4)} from ${landedCostData.source}`);
           
           // Convert to ALL currencies (VND and CNY added per requirements)
           const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
