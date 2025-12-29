@@ -3466,8 +3466,20 @@ function QuickStorageSheet({
                                           return false;
                                         };
                                         
+                                        // Calculate total stored vs required for fallback check
+                                        const totalRequired = item.variantAllocations.reduce((sum, v) => sum + (v.quantity || 0), 0);
+                                        const totalExisting = item.existingLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
+                                        const totalPending = item.locations?.reduce((sum, loc) => sum + (loc.quantity || 0), 0) || 0;
+                                        const totalStored = totalExisting + totalPending;
+                                        const isFullyAllocatedByTotal = totalStored >= totalRequired;
+                                        
                                         // Calculate remaining for each variant
                                         const variantsWithRemaining = item.variantAllocations.map(variant => {
+                                          // If fully allocated by total, set remaining to 0 for all
+                                          if (isFullyAllocatedByTotal) {
+                                            return { ...variant, remaining: 0, existingQty: variant.quantity, pendingQty: 0 };
+                                          }
+                                          
                                           const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
                                             return sum + (matchVariantForDetails(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
