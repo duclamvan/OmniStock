@@ -259,6 +259,8 @@ export const shipments = pgTable("shipments", {
   // Archive fields for weekly archiving
   archivedAt: timestamp("archived_at"), // When the shipment was archived (null = active)
   archiveWeek: text("archive_week"), // Week identifier for grouping (e.g., "2025-W51")
+  // Landing cost exchange rates (stored at calculation time from Frankfurter API)
+  exchangeRates: jsonb("exchange_rates"), // Format: { USD: 1.08, CZK: 25.2, VND: 27000, CNY: 7.8 }
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

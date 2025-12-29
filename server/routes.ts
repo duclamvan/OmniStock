@@ -6321,18 +6321,21 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // First, aggregate locations by code to avoid duplicate key issues
-      const aggregatedLocations = new Map<string, { quantity: number; locationType: string; isPrimary: boolean; variantId?: string }>();
+      // First, aggregate locations by code AND variantId to preserve variant-specific tracking
+      const aggregatedLocations = new Map<string, { locationCode: string; quantity: number; locationType: string; isPrimary: boolean; variantId?: string }>();
       for (const locData of locations) {
         const code = locData.locationCode;
+        const variantId = locData.variantId || '';
+        const aggregateKey = `${code}:${variantId}`;
         const qty = locData.quantity || 0;
         if (qty <= 0) continue;
         
-        const existing = aggregatedLocations.get(code);
+        const existing = aggregatedLocations.get(aggregateKey);
         if (existing) {
           existing.quantity += qty;
         } else {
-          aggregatedLocations.set(code, {
+          aggregatedLocations.set(aggregateKey, {
+            locationCode: code,
             quantity: qty,
             locationType: locData.locationType || 'bin',
             isPrimary: locData.isPrimary ?? false,
@@ -6341,9 +6344,9 @@ Important:
         }
       }
       
-      // Get existing locations for this product
+      // Get existing locations for this product - key by both locationCode AND variantId
       const existingLocations = await storage.getProductLocations(productId);
-      const existingMap = new Map(existingLocations.map(loc => [loc.locationCode, loc]));
+      const existingMap = new Map(existingLocations.map(loc => [`${loc.locationCode}:${loc.variantId || ''}`, loc]));
       
       let createdCount = 0;
       let updatedCount = 0;
@@ -6351,11 +6354,12 @@ Important:
       const results: any[] = [];
       
       // Process each aggregated location
-      for (const [locationCode, locData] of aggregatedLocations.entries()) {
+      for (const [aggregateKey, locData] of aggregatedLocations.entries()) {
+        const locationCode = locData.locationCode;
         const quantity = locData.quantity;
         totalQuantity += quantity;
         
-        const existing = existingMap.get(locationCode);
+        const existing = existingMap.get(aggregateKey);
         
         if (existing) {
           // Update existing - add quantity to location total
@@ -6378,7 +6382,7 @@ Important:
             isPrimary: locData.isPrimary ?? existing.isPrimary,
             notes: newNotes
           });
-          existingMap.set(locationCode, { ...existing, quantity: newQuantity, notes: newNotes });
+          existingMap.set(aggregateKey, { ...existing, quantity: newQuantity, notes: newNotes });
           results.push(updated);
           updatedCount++;
         } else {
@@ -6397,7 +6401,7 @@ Important:
             notes: receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined,
             variantId: validVariantId
           });
-          existingMap.set(locationCode, created);
+          existingMap.set(aggregateKey, created);
           results.push(created);
           createdCount++;
         }

@@ -573,11 +573,15 @@ async function finalizeReceivingInventory(
   };
   
   try {
+    console.log(`[finalizeReceivingInventory] Starting for receipt ${receiptId}, shipment ${shipmentId}`);
+    
     // Get receipt to check status
+    console.log(`[DEBUG] Query 1: Getting receipt...`);
     const [receipt] = await tx
       .select()
       .from(receipts)
       .where(eq(receipts.id, receiptId));
+    console.log(`[DEBUG] Query 1 complete, receipt found: ${!!receipt}`);
     
     if (!receipt) {
       result.error = `Receipt ${receiptId} not found`;
@@ -593,10 +597,12 @@ async function finalizeReceivingInventory(
     }
     
     // Get all receipt items
+    console.log(`[DEBUG] Query 2: Getting receipt items...`);
     const allReceiptItems = await tx
       .select()
       .from(receiptItems)
       .where(eq(receiptItems.receiptId, receiptId));
+    console.log(`[DEBUG] Query 2 complete, found ${allReceiptItems.length} items`);
     
     // ================================================================
     // EXCHANGE RATE SETUP
