@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency as formatCurrencyUtil } from "@/lib/currencyUtils";
+import { formatCurrency as formatCurrencyUtil, convertCurrency } from "@/lib/currencyUtils";
 
 interface ItemAllocation {
   purchaseItemId: number;
@@ -198,6 +198,19 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'totalCost', label: 'Total Cost', defaultVisible: true, group: 'core' },
 ];
 
+const AVAILABLE_CURRENCIES = [
+  { value: 'EUR', label: 'EUR €' },
+  { value: 'USD', label: 'USD $' },
+  { value: 'CZK', label: 'CZK Kč' },
+  { value: 'VND', label: 'VND ₫' },
+  { value: 'CNY', label: 'CNY ¥' },
+  { value: 'GBP', label: 'GBP £' },
+  { value: 'JPY', label: 'JPY ¥' },
+  { value: 'CHF', label: 'CHF Fr' },
+  { value: 'AUD', label: 'AUD $' },
+  { value: 'CAD', label: 'CAD $' },
+];
+
 const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const { toast } = useToast();
   const { t } = useTranslation('imports');
@@ -205,6 +218,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [showMethodDetails, setShowMethodDetails] = useState(true);
+  const [displayCurrency, setDisplayCurrency] = useState<string>('EUR');
   
   // Column visibility state
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
@@ -351,14 +365,15 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
     setExpandedRows(newExpanded);
   };
 
-  // Robust currency formatter with defensive checks
-  const formatCurrency = (amount: number | undefined | null, currency: string = 'EUR') => {
+  // Robust currency formatter with defensive checks and conversion to display currency
+  const formatCurrency = (amount: number | undefined | null, baseCurrency: string = 'EUR') => {
     // Handle undefined, null, or NaN values
     if (amount === undefined || amount === null || isNaN(amount)) {
-      console.warn('formatCurrency received invalid value:', amount);
-      return formatCurrencyUtil(0, currency);
+      return formatCurrencyUtil(0, displayCurrency);
     }
-    return formatCurrencyUtil(amount, currency);
+    // Convert from base currency to display currency (cast to Currency type, will fallback gracefully)
+    const converted = convertCurrency(amount, baseCurrency as any, displayCurrency as any);
+    return formatCurrencyUtil(converted, displayCurrency);
   };
 
   const formatWeight = (weight: number) => {
@@ -681,6 +696,19 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 </Badge>
               </div>
               <div className="flex items-center gap-1">
+                {/* Currency Selector */}
+                <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+                  <SelectTrigger className="w-[100px] h-7 text-xs" data-testid="select-allocation-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {AVAILABLE_CURRENCIES.map(curr => (
+                      <SelectItem key={curr.value} value={curr.value} data-testid={`option-allocation-currency-${curr.value}`}>
+                        {curr.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {/* Column Visibility Settings */}
                 <Popover>
                   <PopoverTrigger asChild>
