@@ -20267,6 +20267,34 @@ Important rules:
       const shipmentTotalUnits = shipmentData?.totalUnits || 0;
       const shipmentUnitType = shipmentData?.unitType?.toLowerCase() || 'items';
       
+      // Query additional shipment costs (brokerage, customs, etc.) from shipmentCosts table
+      const additionalCosts = await db
+        .select({
+          costType: shipmentCosts.costType,
+          amount: shipmentCosts.amount,
+          currency: shipmentCosts.currency
+        })
+        .from(shipmentCosts)
+        .where(eq(shipmentCosts.shipmentId, shipmentId));
+      
+      // Sum all additional costs and convert to EUR
+      let additionalCostsEur = 0;
+      for (const cost of additionalCosts) {
+        const amount = parseFloat(cost.amount || '0');
+        if (amount <= 0) continue;
+        
+        let amountInEur = amount;
+        const costCurrency = cost.currency || 'EUR';
+        if (costCurrency === 'USD') amountInEur = amount * usdToEur;
+        else if (costCurrency === 'CZK') amountInEur = amount / eurToCzk;
+        else if (costCurrency === 'VND') amountInEur = amount / eurToVnd;
+        else if (costCurrency === 'CNY') amountInEur = amount / eurToCny;
+        
+        additionalCostsEur += amountInEur;
+      }
+      
+      console.log(`[addInventoryOnCompletion] Additional shipment costs: €${additionalCostsEur.toFixed(2)} (${additionalCosts.length} items)`);
+      
       // Smart auto-selection when allocationMethod is null (Auto mode)
       // Matches the logic in landingCostService.getAllocationMethod()
       let allocationMethod = shipmentData?.allocationMethod;
@@ -20499,11 +20527,17 @@ Important rules:
       console.log(`[addInventoryOnCompletion] Shipment totals: ${totalShipmentUnits} units, ${totalShipmentWeightKg.toFixed(2)}kg, ${totalShipmentValueEur.toFixed(2)} EUR`);
       
       // Convert shipment costs to EUR once for allocation calculations
+      // Includes: shipping + insurance + brokerage/customs from shipmentCosts table
       let shipmentCostsEur = shipmentShippingCost + shipmentInsuranceCost;
       if (shipmentShippingCurrency === 'USD') shipmentCostsEur = shipmentCostsEur * usdToEur;
       else if (shipmentShippingCurrency === 'CZK') shipmentCostsEur = shipmentCostsEur / eurToCzk;
       else if (shipmentShippingCurrency === 'VND') shipmentCostsEur = shipmentCostsEur / eurToVnd;
       else if (shipmentShippingCurrency === 'CNY') shipmentCostsEur = shipmentCostsEur / eurToCny;
+      
+      // Add additional costs (brokerage, customs, etc.) - already in EUR
+      shipmentCostsEur += additionalCostsEur;
+      
+      console.log(`[addInventoryOnCompletion] Total shipment costs in EUR: €${shipmentCostsEur.toFixed(2)} (shipping+insurance: €${(shipmentCostsEur - additionalCostsEur).toFixed(2)}, additional: €${additionalCostsEur.toFixed(2)})`);
       
       // Helper: compute share based on allocation method
       // All bases are in EUR to ensure Σ(ratios) = 1
