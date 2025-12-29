@@ -12869,19 +12869,12 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
       costWarnings: aggregatedCosts.warnings,
       currencyNotes: aggregatedCosts.currencyNotes,
       // FX rates snapshot - frontend MUST use these exact rates for conversion
-      // This ensures roundtrip accuracy (EUR → display currency uses same rate as original → EUR)
-      fxRates: {
-        EUR: 1.0,
-        USD: { toEUR: 0.92, fromEUR: 1/0.92 },
-        CZK: { toEUR: 0.04, fromEUR: 1/0.04 },
-        CNY: { toEUR: 0.13, fromEUR: 1/0.13 },
-        VND: { toEUR: 0.000038, fromEUR: 1/0.000038 },
-        GBP: { toEUR: 1.17, fromEUR: 1/1.17 },
-        JPY: { toEUR: 0.0061, fromEUR: 1/0.0061 },
-        CHF: { toEUR: 1.08, fromEUR: 1/1.08 },
-        AUD: { toEUR: 0.61, fromEUR: 1/0.61 },
-        CAD: { toEUR: 0.68, fromEUR: 1/0.68 }
-      },
+      // Uses the SAME rates as aggregateAllUpstreamCosts (from shipment snapshot or defaults)
+      fxRates: Object.entries(aggregatedCosts.fxRatesUsed)
+        .reduce((acc, [currency, toEUR]) => ({
+          ...acc,
+          [currency]: { toEUR, fromEUR: 1 / toEUR }
+        }), {} as Record<string, { toEUR: number; fromEUR: number }>),
       message: "Preview includes costs from: shipment costs, PO shipping, per-item duty rates. Use /calculate-landing-costs to save allocations."
     };
     
@@ -12958,18 +12951,12 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
       costWarnings: aggregatedCosts.warnings,
       currencyNotes: aggregatedCosts.currencyNotes,
       // FX rates snapshot - frontend MUST use these exact rates for conversion
-      fxRates: {
-        EUR: 1.0,
-        USD: { toEUR: 0.92, fromEUR: 1/0.92 },
-        CZK: { toEUR: 0.04, fromEUR: 1/0.04 },
-        CNY: { toEUR: 0.13, fromEUR: 1/0.13 },
-        VND: { toEUR: 0.000038, fromEUR: 1/0.000038 },
-        GBP: { toEUR: 1.17, fromEUR: 1/1.17 },
-        JPY: { toEUR: 0.0061, fromEUR: 1/0.0061 },
-        CHF: { toEUR: 1.08, fromEUR: 1/1.08 },
-        AUD: { toEUR: 0.61, fromEUR: 1/0.61 },
-        CAD: { toEUR: 0.68, fromEUR: 1/0.68 }
-      },
+      // Uses the SAME rates as aggregateAllUpstreamCosts (from shipment snapshot or defaults)
+      fxRates: Object.entries(aggregatedCosts.fxRatesUsed)
+        .reduce((acc, [currency, toEUR]) => ({
+          ...acc,
+          [currency]: { toEUR, fromEUR: 1 / toEUR }
+        }), {} as Record<string, { toEUR: number; fromEUR: number }>),
       message: `Preview using ${method} allocation. Includes costs from: shipment costs, PO shipping, per-item duty rates.`
     };
     
@@ -13067,16 +13054,23 @@ interface AggregatedCostResult {
   };
   warnings: string[];
   currencyNotes: string[];
+  // FX rates actually used for conversions (from shipment snapshot or defaults)
+  fxRatesUsed: Record<string, number>;
 }
 
 // Default exchange rates for fallback (to EUR)
+// IMPORTANT: These rates MUST match the fxRates in preview responses for roundtrip accuracy
 const DEFAULT_FX_RATES: Record<string, number> = {
   'EUR': 1.0,
   'USD': 0.92,
   'CZK': 0.04,
   'CNY': 0.13,
   'VND': 0.000038,
-  'GBP': 1.17
+  'GBP': 1.17,
+  'JPY': 0.0061,
+  'CHF': 0.93,
+  'AUD': 0.61,
+  'CAD': 0.68
 };
 
 async function aggregateAllUpstreamCosts(shipmentId: string): Promise<AggregatedCostResult> {
@@ -13109,6 +13103,9 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     totalFreightCurrency: 'USD' as string // Primary freight currency
   };
   
+  // FX rates to use (prefer shipment snapshot, fallback to defaults)
+  let fxRatesUsed: Record<string, number> = { ...DEFAULT_FX_RATES };
+  
   try {
     // 1. Get shipment and consolidation info
     const [shipment] = await db
@@ -13118,8 +13115,40 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     
     if (!shipment?.consolidationId) {
       warnings.push('No consolidation found for shipment');
-      return { costsByType, costBreakdown, warnings, currencyNotes };
+      return { costsByType, costBreakdown, warnings, currencyNotes, fxRatesUsed };
     }
+    
+    // Use stored FX rates if available (captured at landing cost calculation time)
+    if (shipment.exchangeRates) {
+      let storedRates: Record<string, number> | null = null;
+      
+      // Handle both object and JSON string formats
+      if (typeof shipment.exchangeRates === 'string') {
+        try {
+          storedRates = JSON.parse(shipment.exchangeRates);
+        } catch (e) {
+          console.warn('[LandingCost] Failed to parse exchangeRates JSON:', e);
+        }
+      } else if (typeof shipment.exchangeRates === 'object') {
+        storedRates = shipment.exchangeRates as Record<string, number>;
+      }
+      
+      if (storedRates && typeof storedRates === 'object') {
+        // Stored rates are ALWAYS "from EUR" format (e.g., { USD: 1.08, GBP: 0.86 })
+        // meaning 1 EUR = X units of that currency
+        // Convert ALL to "to EUR" rates for our calculations: 1 X = 1/rate EUR
+        for (const [currency, rate] of Object.entries(storedRates)) {
+          if (typeof rate === 'number' && rate > 0) {
+            // Always invert: e.g., GBP: 0.86 means 1 EUR = 0.86 GBP, so 1 GBP = 1/0.86 EUR = 1.16 EUR
+            fxRatesUsed[currency.toUpperCase()] = 1 / rate;
+          }
+        }
+        currencyNotes.push(`Using shipment FX rates snapshot: ${Object.keys(storedRates).join(', ')}`);
+      }
+    }
+    
+    // Ensure EUR is always 1.0
+    fxRatesUsed['EUR'] = 1.0;
     
     // 1b. Add shipment-level shipping cost (shipments.shippingCost) - this is the transit shipping
     // This is what addInventoryOnCompletion uses for shipment freight allocation
@@ -13130,7 +13159,7 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     if (shipmentShippingCost > 0) {
       let shippingEUR = shipmentShippingCost;
       if (shipmentCurrency !== 'EUR') {
-        const fxRate = DEFAULT_FX_RATES[shipmentCurrency] || 1;
+        const fxRate = fxRatesUsed[shipmentCurrency] || DEFAULT_FX_RATES[shipmentCurrency] || 1;
         shippingEUR = shipmentShippingCost * fxRate;
         currencyNotes.push(`Shipment shipping: ${shipmentShippingCost} ${shipmentCurrency} → ${shippingEUR.toFixed(2)} EUR`);
       }
@@ -13146,7 +13175,7 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     if (shipmentInsuranceValue > 0) {
       let insuranceEUR = shipmentInsuranceValue;
       if (shipmentCurrency !== 'EUR') {
-        const fxRate = DEFAULT_FX_RATES[shipmentCurrency] || 1;
+        const fxRate = fxRatesUsed[shipmentCurrency] || DEFAULT_FX_RATES[shipmentCurrency] || 1;
         insuranceEUR = shipmentInsuranceValue * fxRate;
         currencyNotes.push(`Shipment insurance: ${shipmentInsuranceValue} ${shipmentCurrency} → ${insuranceEUR.toFixed(2)} EUR`);
       }
@@ -13345,7 +13374,7 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     warnings.push(`Error collecting upstream costs: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
   
-  return { costsByType, costBreakdown, warnings, currencyNotes };
+  return { costsByType, costBreakdown, warnings, currencyNotes, fxRatesUsed };
 }
 
 // Helper function to get detailed allocation breakdown per item
