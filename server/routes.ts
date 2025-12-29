@@ -6321,12 +6321,16 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // First, aggregate locations by code AND variantId to preserve variant-specific tracking
-      const aggregatedLocations = new Map<string, { locationCode: string; quantity: number; locationType: string; isPrimary: boolean; variantId?: string }>();
+      // First, aggregate locations by code AND variantId/SKU to preserve variant-specific tracking
+      // SKU is preferred for matching when variantId is a temp-* ID
+      const aggregatedLocations = new Map<string, { locationCode: string; quantity: number; locationType: string; isPrimary: boolean; variantId?: string; sku?: string; variantName?: string }>();
       for (const locData of locations) {
         const code = locData.locationCode;
+        // Use SKU as primary identifier, falling back to variantId
+        const sku = locData.sku || locData.variantName || '';
         const variantId = locData.variantId || '';
-        const aggregateKey = `${code}:${variantId}`;
+        // For aggregation, prefer SKU over temp IDs
+        const aggregateKey = sku ? `${code}:sku:${sku}` : `${code}:${variantId}`;
         const qty = locData.quantity || 0;
         if (qty <= 0) continue;
         
@@ -6339,7 +6343,9 @@ Important:
             quantity: qty,
             locationType: locData.locationType || 'bin',
             isPrimary: locData.isPrimary ?? false,
-            variantId: locData.variantId
+            variantId: locData.variantId,
+            sku: locData.sku || locData.variantName,
+            variantName: locData.variantName
           });
         }
       }
@@ -6347,6 +6353,16 @@ Important:
       // Get existing locations for this product - key by both locationCode AND variantId
       const existingLocations = await storage.getProductLocations(productId);
       const existingMap = new Map(existingLocations.map(loc => [`${loc.locationCode}:${loc.variantId || ''}`, loc]));
+      
+      // Build SKU-to-variantId lookup for this product's variants
+      const productWithVariants = await storage.getProductWithVariants(productId);
+      const skuToVariantId = new Map<string, string>();
+      if (productWithVariants?.variants) {
+        for (const v of productWithVariants.variants) {
+          if (v.sku) skuToVariantId.set(v.sku, v.id);
+          if (v.name) skuToVariantId.set(v.name, v.id); // Also map by name for fallback
+        }
+      }
       
       let createdCount = 0;
       let updatedCount = 0;
@@ -6359,7 +6375,22 @@ Important:
         const quantity = locData.quantity;
         totalQuantity += quantity;
         
-        const existing = existingMap.get(aggregateKey);
+        // Resolve SKU to actual variantId for proper matching
+        let resolvedVariantId = locData.variantId;
+        if (locData.sku && !resolvedVariantId) {
+          resolvedVariantId = skuToVariantId.get(locData.sku);
+        }
+        if (locData.variantName && !resolvedVariantId) {
+          resolvedVariantId = skuToVariantId.get(locData.variantName);
+        }
+        // Skip temp-* IDs for resolution
+        if (resolvedVariantId && String(resolvedVariantId).startsWith('temp-')) {
+          resolvedVariantId = skuToVariantId.get(locData.sku || '') || skuToVariantId.get(locData.variantName || '');
+        }
+        
+        // Use resolved variantId for matching existing locations
+        const existingKey = `${locationCode}:${resolvedVariantId || ''}`;
+        const existing = existingMap.get(existingKey);
         
         if (existing) {
           // Update existing - add quantity to location total
@@ -6387,9 +6418,10 @@ Important:
           updatedCount++;
         } else {
           // Create new location
-          // Only include variantId if it's a valid UUID (not temp-* IDs)
-          const validVariantId = locData.variantId && !String(locData.variantId).startsWith('temp-') 
-            ? locData.variantId 
+          // Use resolved variantId (which was resolved from SKU if needed)
+          // Only include if it's a valid UUID (not temp-* IDs)
+          const validVariantId = resolvedVariantId && !String(resolvedVariantId).startsWith('temp-') 
+            ? resolvedVariantId 
             : undefined;
           
           const created = await storage.createProductLocation({
@@ -6401,7 +6433,7 @@ Important:
             notes: receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined,
             variantId: validVariantId
           });
-          existingMap.set(aggregateKey, created);
+          existingMap.set(existingKey, created);
           results.push(created);
           createdCount++;
         }

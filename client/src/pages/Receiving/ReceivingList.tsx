@@ -1867,6 +1867,7 @@ interface LocationAssignment {
   isNew?: boolean;
   variantId?: string; // For variant-specific location tracking
   variantName?: string; // Display name for variant
+  sku?: string; // SKU for variant matching (primary identifier)
 }
 
 // Variant allocation for products with variants
@@ -1875,6 +1876,7 @@ interface VariantAllocation {
   variantName: string;
   quantity: number;
   unitPrice?: number;
+  sku?: string; // SKU as primary identifier
 }
 
 // Order item from unpacked PO package
@@ -2864,14 +2866,23 @@ function QuickStorageSheet({
     const locationAllocations: { code: string; variants: { name: string; qty: number }[] }[] = [];
     let currentLocationVariants: { name: string; qty: number }[] = [];
     
+    // Helper to match variant by SKU first, then variantId, then variantName
+    const matchVariantBulk = (loc: any, variant: VariantAllocation) => {
+      const variantSku = (variant as any).sku || variant.variantName;
+      if (loc.sku && variantSku && loc.sku === variantSku) return true;
+      if (loc.variantId && variant.variantId && loc.variantId === variant.variantId) return true;
+      if (loc.variantName && variant.variantName && loc.variantName === variant.variantName) return true;
+      return false;
+    };
+    
     // Distribute variants across locations
     currentItem.variantAllocations!.forEach((variant) => {
-      // Calculate remaining for this variant
+      // Calculate remaining for this variant using SKU-based matching
       const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
-        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        return sum + (matchVariantBulk(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
-        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        return sum + (matchVariantBulk(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const variantRemaining = Math.max(0, variant.quantity - existingForVariant - pendingForVariant);
       
@@ -2886,6 +2897,9 @@ function QuickStorageSheet({
         if (allocateNow > 0) {
           const locationCode = allLocations[locationIndex];
           
+          // Use SKU as primary identifier, fall back to variantName if no SKU
+          const variantSku = (variant as any).sku || variant.variantName;
+          
           // Add location assignment
           const newLocation: LocationAssignment = {
             id: `bulk-${Date.now()}-${variant.variantId}-${locationIndex}`,
@@ -2894,7 +2908,8 @@ function QuickStorageSheet({
             quantity: allocateNow,
             isPrimary: locationIndex === 0 && currentLocationCount === 0,
             variantId: variant.variantId,
-            variantName: variant.variantName
+            variantName: variant.variantName,
+            sku: variantSku
           };
           updatedItems[selectedItemIndex].locations.push(newLocation);
           
@@ -2941,12 +2956,21 @@ function QuickStorageSheet({
     let currentLocationVariants: string[] = [];
     let totalItems = 0;
     
+    // Helper to match variant by SKU first, then variantId, then variantName
+    const matchVariantPreview = (loc: any, variant: VariantAllocation) => {
+      const variantSku = (variant as any).sku || variant.variantName;
+      if (loc.sku && variantSku && loc.sku === variantSku) return true;
+      if (loc.variantId && variant.variantId && loc.variantId === variant.variantId) return true;
+      if (loc.variantName && variant.variantName && loc.variantName === variant.variantName) return true;
+      return false;
+    };
+    
     currentItem.variantAllocations.forEach((variant) => {
       const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
-        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        return sum + (matchVariantPreview(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
-        return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+        return sum + (matchVariantPreview(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const variantRemaining = Math.max(0, variant.quantity - existingForVariant - pendingForVariant);
       
@@ -3337,12 +3361,22 @@ function QuickStorageSheet({
 
                                 {/* Unallocated Variants Alert - Priority display for underallocation */}
                                 {item.variantAllocations && item.variantAllocations.length > 0 && (() => {
+                                  // Helper to match variant by SKU first, then variantId, then variantName
+                                  const matchVariant = (loc: any, variant: VariantAllocation) => {
+                                    const variantSku = (variant as any).sku || variant.variantName;
+                                    // Match by SKU (primary), then variantId, then variantName
+                                    if (loc.sku && variantSku && loc.sku === variantSku) return true;
+                                    if (loc.variantId && variant.variantId && loc.variantId === variant.variantId) return true;
+                                    if (loc.variantName && variant.variantName && loc.variantName === variant.variantName) return true;
+                                    return false;
+                                  };
+                                  
                                   const unallocatedVariants = item.variantAllocations.filter(variant => {
                                     const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
-                                      return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                      return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                     }, 0) || 0;
                                     const pendingQty = item.locations?.reduce((sum, loc) => {
-                                      return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                      return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                     }, 0) || 0;
                                     return variant.quantity - existingQty - pendingQty > 0;
                                   });
@@ -3364,10 +3398,10 @@ function QuickStorageSheet({
                                       <div className="space-y-1 max-h-32 overflow-y-auto">
                                         {unallocatedVariants.slice(0, 5).map((variant, idx) => {
                                           const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
-                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                            return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const pendingQty = item.locations?.reduce((sum, loc) => {
-                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                            return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const remaining = variant.quantity - existingQty - pendingQty;
                                           return (
@@ -3414,13 +3448,22 @@ function QuickStorageSheet({
                                     <div className="p-3 space-y-3 bg-white dark:bg-gray-950">
                                       {/* Variant Allocations - with remaining calculation and priority sorting */}
                                       {item.variantAllocations && item.variantAllocations.length > 0 && (() => {
+                                        // Helper to match variant by SKU first, then variantId, then variantName
+                                        const matchVariantForDetails = (loc: any, variant: VariantAllocation) => {
+                                          const variantSku = (variant as any).sku || variant.variantName;
+                                          if (loc.sku && variantSku && loc.sku === variantSku) return true;
+                                          if (loc.variantId && variant.variantId && loc.variantId === variant.variantId) return true;
+                                          if (loc.variantName && variant.variantName && loc.variantName === variant.variantName) return true;
+                                          return false;
+                                        };
+                                        
                                         // Calculate remaining for each variant
                                         const variantsWithRemaining = item.variantAllocations.map(variant => {
                                           const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
-                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                            return sum + (matchVariantForDetails(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const pendingQty = item.locations?.reduce((sum, loc) => {
-                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                            return sum + (matchVariantForDetails(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const remaining = Math.max(0, variant.quantity - existingQty - pendingQty);
                                           return { ...variant, remaining, existingQty, pendingQty };
@@ -3918,22 +3961,24 @@ function QuickStorageSheet({
                                               quantity: number;
                                               isPrimary: boolean;
                                               variantId?: string;
+                                              sku?: string;
+                                              variantName?: string;
                                             }> = [];
                                             
                                             // Add pending new locations
                                             const locationsToSave = item.locations.filter(loc => (loc.quantity || 0) > 0);
                                             for (const loc of locationsToSave) {
                                               if (loc.quantity > 0) {
-                                                // Only include variantId if it's a valid UUID (not temp-* IDs)
-                                                const validVariantId = loc.variantId && !String(loc.variantId).startsWith('temp-') 
-                                                  ? loc.variantId 
-                                                  : undefined;
+                                                // Include SKU and variantName for variant matching
+                                                // SKU is the primary identifier; variantId as secondary
                                                 allLocationsToSave.push({
                                                   locationCode: loc.locationCode,
                                                   locationType: loc.locationType,
                                                   quantity: loc.quantity,
                                                   isPrimary: loc.isPrimary,
-                                                  variantId: validVariantId
+                                                  variantId: loc.variantId || undefined,
+                                                  sku: loc.sku || loc.variantName || undefined,
+                                                  variantName: loc.variantName || undefined
                                                 });
                                               }
                                             }
