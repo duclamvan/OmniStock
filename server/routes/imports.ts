@@ -2857,6 +2857,19 @@ router.delete("/custom-items/:id", async (req, res) => {
   try {
     const itemId = req.params.id; // UUID string
     
+    // First, clear the customItemId reference in productCostHistory to avoid FK constraint violation
+    await db
+      .update(productCostHistory)
+      .set({ customItemId: null })
+      .where(eq(productCostHistory.customItemId, itemId));
+    
+    // Also clear references in costAllocations if any
+    await db
+      .update(costAllocations)
+      .set({ customItemId: null })
+      .where(eq(costAllocations.customItemId, itemId));
+    
+    // Now delete the custom item
     const result = await db
       .delete(customItems)
       .where(eq(customItems.id, itemId));
@@ -2881,8 +2894,21 @@ router.post("/custom-items/bulk-delete", async (req, res) => {
       return res.status(400).json({ message: "No item IDs provided" });
     }
     
-    // Delete in batches to avoid overwhelming the database
+    // First, clear FK references in batches
     const batchSize = 50;
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      await db
+        .update(productCostHistory)
+        .set({ customItemId: null })
+        .where(inArray(productCostHistory.customItemId, batch));
+      await db
+        .update(costAllocations)
+        .set({ customItemId: null })
+        .where(inArray(costAllocations.customItemId, batch));
+    }
+    
+    // Delete in batches to avoid overwhelming the database
     let deletedCount = 0;
     
     for (let i = 0; i < ids.length; i += batchSize) {
@@ -2924,6 +2950,16 @@ router.post("/custom-items/:id/send-back-to-incoming", async (req, res) => {
         message: "Cannot send back items that are already in a consolidation. Remove from consolidation first." 
       });
     }
+    
+    // Clear FK references before deleting to avoid constraint violations
+    await db
+      .update(productCostHistory)
+      .set({ customItemId: null })
+      .where(eq(productCostHistory.customItemId, itemId));
+    await db
+      .update(costAllocations)
+      .set({ customItemId: null })
+      .where(eq(costAllocations.customItemId, itemId));
     
     // If item came from a purchase order, reset the purchase order status
     if (customItem.purchaseOrderId) {
