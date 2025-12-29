@@ -98,6 +98,11 @@ interface AllocationMethod {
   costTypes?: string[];
 }
 
+interface FxRateInfo {
+  toEUR: number;
+  fromEUR: number;
+}
+
 interface AllocationSummary {
   shipmentId: string;
   totalItems: number;
@@ -113,6 +118,8 @@ interface AllocationSummary {
     packaging: number;
     other: number;
     total: number;
+    freightOriginal?: number;
+    freightOriginalCurrency?: string;
   };
   baseCurrency: string;
   calculatedAt?: string;
@@ -121,6 +128,8 @@ interface AllocationSummary {
   autoSelectedMethod?: string;
   methodReasoning?: string;
   availableMethods?: string[];
+  // Server-provided FX rates for accurate conversion (no client-side drift)
+  fxRates?: Record<string, number | FxRateInfo>;
 }
 
 interface AllocationPreviewProps {
@@ -375,13 +384,43 @@ const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPr
     setExpandedRows(newExpanded);
   };
 
-  // Robust currency formatter with defensive checks and conversion to display currency
+  // Robust currency formatter using SERVER-PROVIDED FX rates for accurate roundtrip conversion
+  // This eliminates drift between server and client exchange rates
   const formatCurrency = (amount: number | undefined | null, baseCurrency: string = 'EUR') => {
     // Handle undefined, null, or NaN values
     if (amount === undefined || amount === null || isNaN(amount)) {
       return formatCurrencyUtil(0, displayCurrency);
     }
-    // Convert from base currency to display currency (cast to Currency type, will fallback gracefully)
+    
+    // If same currency, no conversion needed
+    if (baseCurrency === displayCurrency) {
+      return formatCurrencyUtil(amount, displayCurrency);
+    }
+    
+    // Use server-provided FX rates if available (ensures roundtrip accuracy)
+    if (preview?.fxRates) {
+      let converted = amount;
+      
+      // First convert to EUR if not already
+      if (baseCurrency !== 'EUR') {
+        const fromRate = preview.fxRates[baseCurrency];
+        if (fromRate && typeof fromRate === 'object' && 'toEUR' in fromRate) {
+          converted = amount * fromRate.toEUR;
+        }
+      }
+      
+      // Then convert from EUR to display currency
+      if (displayCurrency !== 'EUR') {
+        const toRate = preview.fxRates[displayCurrency];
+        if (toRate && typeof toRate === 'object' && 'fromEUR' in toRate) {
+          converted = converted * toRate.fromEUR;
+        }
+      }
+      
+      return formatCurrencyUtil(converted, displayCurrency);
+    }
+    
+    // Fallback to client-side conversion (only if server rates unavailable)
     const converted = convertCurrency(amount, baseCurrency as any, displayCurrency as any);
     return formatCurrencyUtil(converted, displayCurrency);
   };

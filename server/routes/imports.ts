@@ -12868,6 +12868,20 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
       costSources: aggregatedCosts.costBreakdown,
       costWarnings: aggregatedCosts.warnings,
       currencyNotes: aggregatedCosts.currencyNotes,
+      // FX rates snapshot - frontend MUST use these exact rates for conversion
+      // This ensures roundtrip accuracy (EUR → display currency uses same rate as original → EUR)
+      fxRates: {
+        EUR: 1.0,
+        USD: { toEUR: 0.92, fromEUR: 1/0.92 },
+        CZK: { toEUR: 0.04, fromEUR: 1/0.04 },
+        CNY: { toEUR: 0.13, fromEUR: 1/0.13 },
+        VND: { toEUR: 0.000038, fromEUR: 1/0.000038 },
+        GBP: { toEUR: 1.17, fromEUR: 1/1.17 },
+        JPY: { toEUR: 0.0061, fromEUR: 1/0.0061 },
+        CHF: { toEUR: 1.08, fromEUR: 1/1.08 },
+        AUD: { toEUR: 0.61, fromEUR: 1/0.61 },
+        CAD: { toEUR: 0.68, fromEUR: 1/0.68 }
+      },
       message: "Preview includes costs from: shipment costs, PO shipping, per-item duty rates. Use /calculate-landing-costs to save allocations."
     };
     
@@ -12943,6 +12957,19 @@ router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
       costSources: aggregatedCosts.costBreakdown,
       costWarnings: aggregatedCosts.warnings,
       currencyNotes: aggregatedCosts.currencyNotes,
+      // FX rates snapshot - frontend MUST use these exact rates for conversion
+      fxRates: {
+        EUR: 1.0,
+        USD: { toEUR: 0.92, fromEUR: 1/0.92 },
+        CZK: { toEUR: 0.04, fromEUR: 1/0.04 },
+        CNY: { toEUR: 0.13, fromEUR: 1/0.13 },
+        VND: { toEUR: 0.000038, fromEUR: 1/0.000038 },
+        GBP: { toEUR: 1.17, fromEUR: 1/1.17 },
+        JPY: { toEUR: 0.0061, fromEUR: 1/0.0061 },
+        CHF: { toEUR: 1.08, fromEUR: 1/1.08 },
+        AUD: { toEUR: 0.61, fromEUR: 1/0.61 },
+        CAD: { toEUR: 0.68, fromEUR: 1/0.68 }
+      },
       message: `Preview using ${method} allocation. Includes costs from: shipment costs, PO shipping, per-item duty rates.`
     };
     

@@ -1,40 +1,41 @@
 export type Currency = 'CZK' | 'EUR' | 'USD' | 'VND' | 'CNY';
 
-// Simplified exchange rates - in production, use real-time API
+// Exchange rates - must match server-side rates for roundtrip accuracy
+// Server uses: USD=0.92, CZK=0.04, CNY=0.13, VND=0.000038, GBP=1.17 (all to EUR)
 const EXCHANGE_RATES: Record<Currency, Record<Currency, number>> = {
   EUR: {
     EUR: 1,
-    CZK: 25.0,
-    USD: 1.1,
-    VND: 26000,
-    CNY: 7.8,
+    CZK: 25.0,         // 1/0.04
+    USD: 1.087,        // 1/0.92 (must match server inverse)
+    VND: 26316,        // 1/0.000038
+    CNY: 7.69,         // 1/0.13
   },
   CZK: {
     EUR: 0.04,
     CZK: 1,
-    USD: 0.044,
-    VND: 1040,
+    USD: 0.0435,       // 0.04 * 1.087
+    VND: 1053,
     CNY: 0.31,
   },
   USD: {
-    EUR: 0.91,
+    EUR: 0.92,         // Must match server rate
     CZK: 23,
     USD: 1,
-    VND: 23600,
-    CNY: 7.1,
+    VND: 24213,        // 0.92 * 26316
+    CNY: 7.07,         // 0.92 * 7.69
   },
   VND: {
     EUR: 0.000038,
-    CZK: 0.00096,
-    USD: 0.000042,
+    CZK: 0.00095,
+    USD: 0.0000413,    // 0.000038 * 1.087
     VND: 1,
-    CNY: 0.0003,
+    CNY: 0.00029,
   },
   CNY: {
-    EUR: 0.128,
-    CZK: 3.2,
-    USD: 0.14,
-    VND: 3333,
+    EUR: 0.13,         // Must match server rate
+    CZK: 3.25,
+    USD: 0.141,        // 0.13 * 1.087
+    VND: 3421,
     CNY: 1,
   },
 };
