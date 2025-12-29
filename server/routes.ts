@@ -20984,29 +20984,37 @@ Important rules:
         return res.status(404).json({ message: 'Shipment not found' });
       }
       
-      // Only add inventory when TRANSITIONING to completed (not if already completed)
-      let updatedPurchases: string[] = [];
-      let updatedProductCosts: string[] = [];
-      let inventoryUpdates: string[] = [];
-      if (isTransitioningToCompleted) {
-        console.log(`[receiving-status] Shipment ${id} transitioning to completed - adding inventory`);
-        
-        // Add received quantities to product inventory
-        inventoryUpdates = await addInventoryOnCompletion(id);
-        
-        // Calculate and update average landed costs for products (id is UUID string)
-        updatedProductCosts = await calculateAndUpdateLandedCosts(id);
-        
-        // Reconcile purchase order delivery statuses
-        updatedPurchases = await reconcilePurchaseDeliveryForShipment(id);
-      }
-      
+      // Respond immediately for swift UX - let frontend move card to Completed tab
       res.json({
         ...updated,
-        updatedPurchases,
-        updatedProductCosts,
-        inventoryUpdates
+        processingAsync: isTransitioningToCompleted
       });
+      
+      // Only add inventory when TRANSITIONING to completed (not if already completed)
+      // Process asynchronously AFTER response is sent for immediate visual feedback
+      if (isTransitioningToCompleted) {
+        setImmediate(async () => {
+          try {
+            console.log(`[receiving-status] Shipment ${id} - async background processing started`);
+            
+            // Add received quantities to product inventory
+            const inventoryUpdates = await addInventoryOnCompletion(id);
+            console.log(`[receiving-status] Shipment ${id} - inventory updates: ${inventoryUpdates.length} products`);
+            
+            // Calculate and update average landed costs for products (id is UUID string)
+            const updatedProductCosts = await calculateAndUpdateLandedCosts(id);
+            console.log(`[receiving-status] Shipment ${id} - cost updates: ${updatedProductCosts.length} products`);
+            
+            // Reconcile purchase order delivery statuses
+            const updatedPurchases = await reconcilePurchaseDeliveryForShipment(id);
+            console.log(`[receiving-status] Shipment ${id} - reconciled ${updatedPurchases.length} purchase orders`);
+            
+            console.log(`[receiving-status] Shipment ${id} - async background processing completed successfully`);
+          } catch (asyncError) {
+            console.error(`[receiving-status] Shipment ${id} - async background processing failed:`, asyncError);
+          }
+        });
+      }
     } catch (error) {
       console.error('Error updating shipment receiving status:', error);
       res.status(500).json({ message: 'Failed to update shipment status' });

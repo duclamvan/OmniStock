@@ -2618,15 +2618,35 @@ function QuickStorageSheet({
   });
   
   // Complete receiving mutation - updates shipment status to completed
-  // Optimistically closes dialog immediately for swift UX while server processes
+  // Optimistically moves card to Completed tab immediately for swift visual feedback
   const completeReceivingMutation = useMutation({
     mutationFn: async () => {
       return apiRequest('PATCH', `/api/imports/shipments/${shipment.id}/receiving-status`, { 
         receivingStatus: 'completed' 
       });
     },
-    onMutate: () => {
-      // Immediately close dialog and show processing toast for swift UX
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      
+      // Snapshot the previous value for potential rollback
+      const previousStorage = queryClient.getQueryData(['/api/imports/shipments/storage']);
+      const previousCompleted = queryClient.getQueryData(['/api/imports/shipments/completed']);
+      
+      // Optimistically update: remove from storage list
+      queryClient.setQueryData(['/api/imports/shipments/storage'], (old: any) => {
+        if (!old) return old;
+        return old.filter((s: any) => s.id !== shipment.id);
+      });
+      
+      // Optimistically update: add to completed list with updated status
+      queryClient.setQueryData(['/api/imports/shipments/completed'], (old: any) => {
+        if (!old) return [{ ...shipment, receivingStatus: 'completed', completedAt: new Date().toISOString() }];
+        return [{ ...shipment, receivingStatus: 'completed', completedAt: new Date().toISOString() }, ...old];
+      });
+      
+      // Close dialog and show processing toast
       soundEffects.playCompletionSound();
       toast({
         title: t('storageComplete'),
@@ -2634,23 +2654,33 @@ function QuickStorageSheet({
         duration: 5000
       });
       onOpenChange(false);
+      
+      // Return context with previous values for rollback
+      return { previousStorage, previousCompleted };
     },
     onSuccess: () => {
-      // Invalidate queries in background after server completes
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      // Refetch in background to get accurate server data after async processing
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      }, 3000);
     },
-    onError: (error) => {
-      // If server fails, notify user (dialog already closed)
+    onError: (error, _, context) => {
+      // Rollback to previous state if mutation fails
+      if (context?.previousStorage) {
+        queryClient.setQueryData(['/api/imports/shipments/storage'], context.previousStorage);
+      }
+      if (context?.previousCompleted) {
+        queryClient.setQueryData(['/api/imports/shipments/completed'], context.previousCompleted);
+      }
+      
+      // Notify user of failure
       toast({
         title: t('common:error'),
         description: error instanceof Error ? error.message : t('failedToCompleteReceiving'),
         variant: "destructive",
         duration: 5000
       });
-      // Re-open the storage list to allow retry
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
     }
   });
   
