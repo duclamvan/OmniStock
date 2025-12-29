@@ -7409,7 +7409,9 @@ router.get("/receipts/storage", async (req, res) => {
           locationCode: loc.locationCode,
           locationType: loc.locationType || 'warehouse',
           quantity: loc.quantity,
-          isPrimary: loc.isPrimary || false
+          isPrimary: loc.isPrimary || false,
+          variantId: loc.variantId || null,
+          notes: loc.notes || ''
         }))
       });
     });
@@ -9565,7 +9567,8 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
           locationType: productLocations.locationType,
           quantity: productLocations.quantity,
           isPrimary: productLocations.isPrimary,
-          notes: productLocations.notes
+          notes: productLocations.notes,
+          variantId: productLocations.variantId
         })
         .from(productLocations)
         .where(inArray(productLocations.productId, uniqueProductIds))
