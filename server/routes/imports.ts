@@ -6191,6 +6191,261 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
   }
 });
 
+// DELETE /api/imports/shipments/:id - Permanently delete a shipment and revert inventory
+router.delete("/shipments/:id", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    // Check if shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    console.log(`[Delete Shipment] Starting deletion of shipment ${shipmentId}`);
+    
+    // Track what was reverted/deleted
+    let totalQuantityReverted = 0;
+    let variantsReverted = 0;
+    let productsAffected = 0;
+    const parentProductsToRecalc = new Set<string>();
+    
+    // Find associated receipt to revert inventory
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (existingReceipt) {
+      // Get all receipt items to revert inventory
+      const allReceiptItems = await db
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, existingReceipt.id));
+      
+      // Revert variant quantities and costs
+      for (const item of allReceiptItems) {
+        const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; sku?: string; variantSku?: string}> | null;
+        
+        if (variantAllocations && variantAllocations.length > 0) {
+          for (const va of variantAllocations) {
+            if (!va.variantId || va.quantity <= 0) continue;
+            
+            const variantSku = (va as any).variantSku || (va as any).sku || null;
+            let variant: any = null;
+            
+            // Find variant by SKU first
+            if (variantSku && item.productId) {
+              const [variantBySku] = await db
+                .select()
+                .from(productVariants)
+                .where(and(
+                  eq(productVariants.productId, item.productId),
+                  eq(productVariants.sku, variantSku)
+                ));
+              variant = variantBySku;
+            }
+            
+            // Fall back to ID lookup
+            if (!variant && !String(va.variantId).startsWith('temp-')) {
+              const [variantById] = await db
+                .select()
+                .from(productVariants)
+                .where(eq(productVariants.id, va.variantId));
+              variant = variantById;
+            }
+            
+            if (variant) {
+              const newQty = Math.max(0, (variant.quantity || 0) - va.quantity);
+              
+              // If quantity becomes 0, clear all import costs
+              const updateData: any = {
+                quantity: newQty,
+                updatedAt: new Date()
+              };
+              
+              if (newQty === 0) {
+                updateData.importCostEur = null;
+                updateData.importCostUsd = null;
+                updateData.importCostCzk = null;
+                updateData.importCostVnd = null;
+                updateData.importCostCny = null;
+                updateData.latestLandingCost = null;
+                updateData.landingCostEur = null;
+                updateData.landingCostUsd = null;
+                updateData.landingCostCzk = null;
+                updateData.landingCostVnd = null;
+                updateData.landingCostCny = null;
+              }
+              
+              await db
+                .update(productVariants)
+                .set(updateData)
+                .where(eq(productVariants.id, variant.id));
+              
+              console.log(`[Delete Shipment] Reverted ${va.quantity} from variant ${va.variantName}, new qty: ${newQty}`);
+              variantsReverted++;
+              totalQuantityReverted += va.quantity;
+              
+              if (variant.productId) {
+                parentProductsToRecalc.add(variant.productId);
+              }
+            }
+          }
+        }
+        
+        // Revert non-variant product quantities
+        if (item.productId && item.receivedQuantity > 0 && (!variantAllocations || variantAllocations.length === 0)) {
+          const [existingProduct] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId));
+          
+          if (existingProduct) {
+            const newQuantity = Math.max(0, (existingProduct.quantity || 0) - item.receivedQuantity);
+            
+            const productUpdateData: any = {
+              quantity: newQuantity,
+              updatedAt: new Date()
+            };
+            
+            // Clear costs if quantity becomes 0
+            if (newQuantity === 0) {
+              productUpdateData.importCostEur = null;
+              productUpdateData.importCostUsd = null;
+              productUpdateData.importCostCzk = null;
+              productUpdateData.importCostVnd = null;
+              productUpdateData.importCostCny = null;
+              productUpdateData.latestLandingCost = null;
+              productUpdateData.landingCostEur = null;
+            }
+            
+            await db
+              .update(products)
+              .set(productUpdateData)
+              .where(eq(products.id, item.productId));
+            
+            totalQuantityReverted += item.receivedQuantity;
+            productsAffected++;
+          }
+        }
+        
+        // Clean up product locations
+        if (item.productId) {
+          const receiptItemTag = `RI:${item.id}`;
+          const taggedLocations = await db
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, item.productId),
+                sql`${productLocations.notes} LIKE ${`%${receiptItemTag}%`}`
+              )
+            );
+          
+          for (const taggedLoc of taggedLocations) {
+            const qtyMatch = taggedLoc.notes?.match(new RegExp(`RI:${item.id}:Q(\\d+)`));
+            const assignedQty = qtyMatch ? parseInt(qtyMatch[1], 10) : item.assignedQuantity || 0;
+            const newLocationQty = Math.max(0, taggedLoc.quantity - assignedQty);
+            
+            if (newLocationQty === 0) {
+              await db.delete(productLocations).where(eq(productLocations.id, taggedLoc.id));
+            } else {
+              const updatedNotes = (taggedLoc.notes || '').replace(new RegExp(`\\s*RI:${item.id}:Q\\d+`), '').trim();
+              await db
+                .update(productLocations)
+                .set({ quantity: newLocationQty, notes: updatedNotes || null, updatedAt: new Date() })
+                .where(eq(productLocations.id, taggedLoc.id));
+            }
+          }
+        }
+      }
+      
+      // Recalculate parent product quantities and costs from remaining variants
+      for (const parentProductId of parentProductsToRecalc) {
+        const variantSums = await db
+          .select({
+            totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int`,
+            totalCostValueEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostEur}::numeric, 0)), 0)`,
+            totalCostValueUsd: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostUsd}::numeric, 0)), 0)`,
+            totalCostValueCzk: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostCzk}::numeric, 0)), 0)`,
+            totalLandingCostEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.landingCostEur}::numeric, 0)), 0)`
+          })
+          .from(productVariants)
+          .where(eq(productVariants.productId, parentProductId));
+        
+        const newParentQty = variantSums[0]?.totalQuantity || 0;
+        const totalCostValueEur = Number(variantSums[0]?.totalCostValueEur) || 0;
+        const totalCostValueUsd = Number(variantSums[0]?.totalCostValueUsd) || 0;
+        const totalCostValueCzk = Number(variantSums[0]?.totalCostValueCzk) || 0;
+        const totalLandingCostEur = Number(variantSums[0]?.totalLandingCostEur) || 0;
+        
+        const avgCostEur = newParentQty > 0 ? totalCostValueEur / newParentQty : 0;
+        const avgCostUsd = newParentQty > 0 ? totalCostValueUsd / newParentQty : 0;
+        const avgCostCzk = newParentQty > 0 ? totalCostValueCzk / newParentQty : 0;
+        const avgLandingCostEur = newParentQty > 0 ? totalLandingCostEur / newParentQty : 0;
+        
+        await db
+          .update(products)
+          .set({
+            quantity: newParentQty,
+            importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+            importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+            importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+            landingCostEur: avgLandingCostEur > 0 ? avgLandingCostEur.toFixed(4) : null,
+            latestLandingCost: avgLandingCostEur > 0 ? avgLandingCostEur.toFixed(4) : null,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, parentProductId));
+        
+        productsAffected++;
+      }
+      
+      // Delete landed costs for this receipt
+      await db.delete(landedCosts).where(eq(landedCosts.receiptId, existingReceipt.id));
+      
+      // Delete receipt items
+      await db.delete(receiptItems).where(eq(receiptItems.receiptId, existingReceipt.id));
+      
+      // Delete receipt
+      await db.delete(receipts).where(eq(receipts.id, existingReceipt.id));
+    }
+    
+    // Delete cost allocations for this shipment
+    await db.delete(costAllocations).where(eq(costAllocations.shipmentId, shipmentId));
+    
+    // Delete shipment costs
+    await db.delete(shipmentCosts).where(eq(shipmentCosts.shipmentId, shipmentId));
+    
+    // Delete shipment cartons
+    await db.delete(shipmentCartons).where(eq(shipmentCartons.shipmentId, shipmentId));
+    
+    // Delete shipment items
+    await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, shipmentId));
+    
+    // Delete the shipment itself
+    await db.delete(shipments).where(eq(shipments.id, shipmentId));
+    
+    console.log(`[Delete Shipment] Completed: ${variantsReverted} variants, ${productsAffected} products, ${totalQuantityReverted} total units reverted`);
+    
+    res.json({ 
+      message: "Shipment deleted successfully",
+      inventoryReverted: {
+        totalQuantity: totalQuantityReverted,
+        variantsReverted,
+        productsAffected
+      }
+    });
+  } catch (error) {
+    console.error("Error deleting shipment:", error);
+    res.status(500).json({ message: "Failed to delete shipment" });
+  }
+});
+
 // Get shipments by receiving status
 router.get("/shipments/by-status/:status", async (req, res) => {
   try {
