@@ -246,17 +246,31 @@ export default function InternationalTransit() {
   const deleteShipmentMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
       const response = await apiRequest('DELETE', `/api/imports/shipments/${shipmentId}`, {});
+      // Treat 404 as success (already deleted)
+      if (response.status === 404) {
+        return { alreadyDeleted: true };
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
       toast({ title: t('success'), description: t('shipmentDeleted') });
       setShipmentToDelete(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      // If 404, treat as already deleted and close dialog
+      if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')) {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+        toast({ title: t('success'), description: t('shipmentDeleted') });
+        setShipmentToDelete(null);
+        return;
+      }
       toast({ title: t('error'), description: t('failedToDeleteShipment'), variant: "destructive" });
+      setShipmentToDelete(null);
     }
   });
 

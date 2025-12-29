@@ -5102,12 +5102,20 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
   const [showQuickStorage, setShowQuickStorage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
+  // Check if shipment is being processed in background
+  const isProcessing = shipment.isProcessing || shipment.processingStatus === 'in_progress' || shipment.status === 'processing';
+  const isFinalizing = shipment.status === 'finalizing' || shipment.receivingStatus === 'finalizing';
+  
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/imports/shipments/${shipment.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
+      // Treat 404 as success (already deleted)
+      if (response.status === 404) {
+        return { alreadyDeleted: true };
+      }
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to delete');
@@ -5116,6 +5124,7 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
@@ -5124,12 +5133,24 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
       });
       setShowDeleteConfirm(false);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      // If 404, treat as already deleted
+      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+        toast({
+          title: t('common:deleted'),
+          description: t('shipmentDeleted'),
+        });
+        setShowDeleteConfirm(false);
+        return;
+      }
       toast({
         title: t('common:error'),
         description: error.message || t('failedToDeleteShipment'),
         variant: "destructive",
       });
+      setShowDeleteConfirm(false);
     },
   });
   
@@ -5165,25 +5186,73 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
   const isPartiallyReceived = shipment.isPartiallyReceived || shipment.receivingStatus === 'receiving';
 
   return (
-    <Card className="overflow-hidden" data-testid={`card-shipment-${shipment.id}`}>
+    <Card 
+      className={`overflow-hidden relative ${
+        isProcessing || isFinalizing 
+          ? 'ring-2 ring-blue-400 dark:ring-blue-500 animate-pulse' 
+          : ''
+      }`} 
+      data-testid={`card-shipment-${shipment.id}`}
+    >
+      {/* Processing Overlay */}
+      {(isProcessing || isFinalizing) && (
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 animate-shimmer z-10 pointer-events-none" />
+      )}
+      
       <CardHeader 
-        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors relative z-20"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <Warehouse className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              {isProcessing || isFinalizing ? (
+                <Loader2 className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
+              ) : (
+                <Warehouse className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              )}
               <CardTitle className="text-base truncate">
                 {shipment.shipmentName || t('shipmentNumber', { number: shipment.id })}
               </CardTitle>
-              {isPartiallyReceived && (
+              {(isProcessing || isFinalizing) && (
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs animate-pulse">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  {t('processing', 'Processing...')}
+                </Badge>
+              )}
+              {isPartiallyReceived && !isProcessing && !isFinalizing && (
                 <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs">
                   <Clock className="h-3 w-3 mr-1" />
                   {t('partiallyReceived')}
                 </Badge>
               )}
             </div>
+            
+            {/* Processing Progress Indicator */}
+            {(isProcessing || isFinalizing) && (
+              <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs">{t('validating', 'Validating')}</span>
+                  </div>
+                  <ChevronRight className="h-3 w-3" />
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span className="text-xs font-medium">{t('processingInventory', 'Processing Inventory')}</span>
+                  </div>
+                  <ChevronRight className="h-3 w-3" />
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    <span className="text-xs text-muted-foreground">{t('completing', 'Completing')}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('processingHint', 'Refresh page to see completion status')}
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" />
@@ -5198,8 +5267,8 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Badge className={getStatusColor(shipment.status)}>
-              {shipment.status}
+            <Badge className={isProcessing || isFinalizing ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : getStatusColor(shipment.status)}>
+              {isProcessing || isFinalizing ? t('processing', 'Processing') : shipment.status}
             </Badge>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
