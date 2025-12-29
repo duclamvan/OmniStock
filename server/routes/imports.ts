@@ -12714,23 +12714,26 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
         
         const poShippingCost = Number(po.shippingCost || 0);
         if (poShippingCost > 0) {
-          // Use stored exchange rate if available, fallback to defaults
+          // Convert to EUR using standard FX rates
+          // Note: po.exchangeRate is for payment/purchase currency conversion, NOT for EUR conversion
           const currency = po.shippingCurrency || 'USD';
           let amountEUR = poShippingCost;
           
           if (currency !== 'EUR') {
-            // Prefer stored exchangeRate, fallback to default
-            const fxRate = Number(po.exchangeRate) > 0 
-              ? Number(po.exchangeRate) 
-              : (DEFAULT_FX_RATES[currency] || 1);
+            // Use DEFAULT_FX_RATES for currency→EUR conversion
+            const fxRate = DEFAULT_FX_RATES[currency] || 1;
             amountEUR = poShippingCost * fxRate;
             currencyNotes.push(`PO ${po.id.slice(-6)}: ${poShippingCost} ${currency} → ${amountEUR.toFixed(2)} EUR (rate: ${fxRate})`);
           }
           
-          // Calculate proportion using purchaseTotal (excludes shipping) not totalCost (includes shipping)
+          // Calculate proportion: what % of PO's product value is in this shipment?
           const poValueInShipment = itemValuesByPO[po.id] || 0;
-          // Use purchaseTotal to avoid double-counting shipping in the proportion
-          const poSubtotal = Number(po.purchaseTotal || 0) || poValueInShipment;
+          // Product subtotal = purchaseTotal - shippingCost (in case purchaseTotal includes shipping)
+          const rawPurchaseTotal = Number(po.purchaseTotal || 0);
+          const productSubtotal = rawPurchaseTotal > poShippingCost 
+            ? rawPurchaseTotal - poShippingCost 
+            : rawPurchaseTotal;
+          const poSubtotal = productSubtotal || poValueInShipment;
           const proportion = poSubtotal > 0 ? poValueInShipment / poSubtotal : 1;
           
           // Only allocate the proportion of shipping that corresponds to items in this shipment
@@ -12798,10 +12801,9 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
           let dutyEUR = dutyAmount;
           
           if (currency !== 'EUR') {
-            // Use stored exchangeRate if available
-            const fxRate = parentPO && Number(parentPO.exchangeRate) > 0
-              ? Number(parentPO.exchangeRate)
-              : (DEFAULT_FX_RATES[currency] || 1);
+            // Use DEFAULT_FX_RATES for currency→EUR conversion
+            // Note: po.exchangeRate is for payment/purchase currency, NOT EUR conversion
+            const fxRate = DEFAULT_FX_RATES[currency] || 1;
             dutyEUR = dutyAmount * fxRate;
           }
           
