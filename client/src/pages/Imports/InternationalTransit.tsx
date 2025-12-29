@@ -2837,7 +2837,21 @@ export default function InternationalTransit() {
                           <>
                             <div>
                               <p className="text-muted-foreground">{t('transitCarrier')}</p>
-                              <p className="font-medium">{viewShipmentDetails.carrier || '—'}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate flex-1">{viewShipmentDetails.carrier || '—'}</p>
+                                {viewShipmentDetails.carrier && (viewShipmentDetails.carrier.startsWith('http://') || viewShipmentDetails.carrier.startsWith('https://')) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => window.open(viewShipmentDetails.carrier, '_blank')}
+                                    data-testid="button-open-carrier-url"
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    {t('open')}
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                             <div className="pt-2 border-t">
                               <p className="text-muted-foreground">{t('internalTrackingNumber')}</p>
