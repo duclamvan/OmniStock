@@ -688,16 +688,31 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 </Badge>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToCSV}
-              className="h-7 text-xs"
-              data-testid="button-export-csv"
-            >
-              <Download className="h-3 w-3 mr-1" />
-              {t('export')}
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Currency Selector */}
+              <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+                <SelectTrigger className="w-[100px] h-7 text-xs" data-testid="select-allocation-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {AVAILABLE_CURRENCIES.map(curr => (
+                    <SelectItem key={curr.value} value={curr.value} data-testid={`option-allocation-currency-${curr.value}`}>
+                      {curr.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="h-7 text-xs"
+                data-testid="button-export-csv"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                {t('export')}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -717,19 +732,6 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 </Badge>
               </div>
               <div className="flex items-center gap-1">
-                {/* Currency Selector */}
-                <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
-                  <SelectTrigger className="w-[100px] h-7 text-xs" data-testid="select-allocation-currency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                    {AVAILABLE_CURRENCIES.map(curr => (
-                      <SelectItem key={curr.value} value={curr.value} data-testid={`option-allocation-currency-${curr.value}`}>
-                        {curr.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 {/* Column Visibility Settings */}
                 <Popover>
                   <PopoverTrigger asChild>
