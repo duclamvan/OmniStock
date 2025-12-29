@@ -329,9 +329,43 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-3">
+            {/* Shipment-Level Costs Banner - shows shippingCost and insuranceValue from shipment record */}
+            {shipmentData && (Number(shipmentData.shippingCost) > 0 || Number(shipmentData.insuranceValue) > 0) && (
+              <Card className="border-l-4 border-l-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="h-4 w-4 text-purple-600" />
+                    <h3 className="font-semibold text-sm">{t('shipmentLevelCosts') || 'Shipment-Level Costs'}</h3>
+                    <Badge variant="outline" className="text-xs text-purple-600 border-purple-300">{t('autoIncluded') || 'Auto-included'}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Number(shipmentData.shippingCost) > 0 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('transitShipping') || 'Transit Shipping'}</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          {formatCurrency(shipmentData.shippingCost, shipmentData.shippingCostCurrency || 'USD')}
+                        </p>
+                      </div>
+                    )}
+                    {Number(shipmentData.insuranceValue) > 0 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">{t('insuranceValue') || 'Insurance'}</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          {formatCurrency(shipmentData.insuranceValue, shipmentData.shippingCostCurrency || 'USD')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t('shipmentCostsNote') || 'These costs are automatically included in landed cost calculations'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Compact Cost Category Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Freight */}
+              {/* Freight (Additional) */}
               {(() => {
                 const freightCosts = costsByType['FREIGHT'] || [];
                 const total = freightCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
@@ -341,7 +375,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="h-4 w-4 text-blue-600" />
-                        <h3 className="font-semibold text-sm">{t('freight')}</h3>
+                        <h3 className="font-semibold text-sm">{t('additionalFreight') || t('freight')}</h3>
                         {freightCosts.length > 0 && (
                           <Badge variant="secondary" className="text-xs h-4 px-1.5">{freightCosts.length}</Badge>
                         )}

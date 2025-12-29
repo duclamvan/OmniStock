@@ -12503,6 +12503,8 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
   
   const costBreakdown = {
     shipmentCosts: {} as Record<string, number>,
+    shipmentLevelShipping: 0, // From shipments.shippingCost
+    shipmentLevelInsurance: 0, // From shipments.insuranceValue
     poShippingCosts: 0,
     itemDutyCosts: 0,
     consolidationCosts: 0
@@ -12520,7 +12522,37 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
       return { costsByType, costBreakdown, warnings, currencyNotes };
     }
     
-    // 2. Collect costs from shipmentCosts table (existing manual costs)
+    // 1b. Add shipment-level shipping cost (shipments.shippingCost) - this is the transit shipping
+    // This is what addInventoryOnCompletion uses for shipment freight allocation
+    const shipmentShippingCost = Number(shipment.shippingCost || 0);
+    const shipmentInsuranceValue = Number(shipment.insuranceValue || 0);
+    const shipmentCurrency = shipment.shippingCostCurrency || 'USD';
+    
+    if (shipmentShippingCost > 0) {
+      let shippingEUR = shipmentShippingCost;
+      if (shipmentCurrency !== 'EUR') {
+        const fxRate = DEFAULT_FX_RATES[shipmentCurrency] || 1;
+        shippingEUR = shipmentShippingCost * fxRate;
+        currencyNotes.push(`Shipment shipping: ${shipmentShippingCost} ${shipmentCurrency} → ${shippingEUR.toFixed(2)} EUR`);
+      }
+      costsByType['FREIGHT'] += shippingEUR;
+      costBreakdown.shipmentLevelShipping = shippingEUR;
+    }
+    
+    if (shipmentInsuranceValue > 0) {
+      let insuranceEUR = shipmentInsuranceValue;
+      if (shipmentCurrency !== 'EUR') {
+        const fxRate = DEFAULT_FX_RATES[shipmentCurrency] || 1;
+        insuranceEUR = shipmentInsuranceValue * fxRate;
+        currencyNotes.push(`Shipment insurance: ${shipmentInsuranceValue} ${shipmentCurrency} → ${insuranceEUR.toFixed(2)} EUR`);
+      }
+      costsByType['INSURANCE'] += insuranceEUR;
+      costBreakdown.shipmentLevelInsurance = insuranceEUR;
+    }
+    
+    // 2. Collect costs from shipmentCosts table (manually entered costs - NOT duplicating shipment.shippingCost)
+    // Note: shipmentCosts table is for ADDITIONAL costs like customs, brokerage, packaging
+    // The main freight should come from shipments.shippingCost to avoid duplication
     const shipmentCostsData = await db
       .select()
       .from(shipmentCosts)
