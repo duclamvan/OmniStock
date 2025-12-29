@@ -328,8 +328,16 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                 <div>
                   <p className="text-sm text-muted-foreground">{t('totalCost')}</p>
                   <p className="text-xl font-bold">
-                    {formatCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR')}
+                    {formatCurrency(
+                      convertCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR', displayCurrency),
+                      displayCurrency
+                    )}
                   </p>
+                  {displayCurrency !== (summary.baseCurrency || 'EUR') && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {formatCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR')}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('items')}</p>
@@ -374,12 +382,19 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     const poShippingCost = Number(costBreakdown.poShippingCosts || 0);
                     const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + parseFloat(cost.amountBase || 0), 0);
                     const grandTotal = shipmentCost + insuranceCost + poShippingCost + manualCostsTotal;
+                    const baseCurrency = shipmentData?.shippingCostCurrency || 'EUR';
+                    const convertedTotal = convertCurrency(grandTotal, baseCurrency, displayCurrency);
                     return (
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">{t('totalLandingCosts') || 'Total Landing Costs'}</p>
                         <p className="text-2xl font-bold text-primary">
-                          {formatCurrency(grandTotal, shipmentData?.shippingCostCurrency || 'EUR')}
+                          {formatCurrency(convertedTotal, displayCurrency)}
                         </p>
+                        {displayCurrency !== baseCurrency && (
+                          <p className="text-xs text-muted-foreground">
+                            ≈ {formatCurrency(grandTotal, baseCurrency)}
+                          </p>
+                        )}
                         {poShippingCost > 0 && (
                           <p className="text-xs text-muted-foreground">{t('includesPOShipping') || 'Includes PO shipping'}</p>
                         )}
