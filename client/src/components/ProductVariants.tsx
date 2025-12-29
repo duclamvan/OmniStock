@@ -34,6 +34,7 @@ interface ProductVariant {
   sku?: string;
   barcode?: string;
   quantity: number;
+  locationCode?: string;
   importCostUsd?: string;
   importCostCzk?: string;
   importCostEur?: string;
@@ -413,6 +414,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                 </TableHead>
                 <TableHead>{t('common:productName')}</TableHead>
                 <TableHead>{t('common:barcode')}</TableHead>
+                <TableHead>{t('common:location')}</TableHead>
                 <TableHead className="text-right">{t('common:quantity')}</TableHead>
                 <TableHead className="text-right">{t('common:importCostUSD')}</TableHead>
                 <TableHead className="text-right">{t('common:importCostCZK')}</TableHead>
@@ -451,6 +453,13 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                     </div>
                   </TableCell>
                   <TableCell>{variant.barcode || "-"}</TableCell>
+                  <TableCell>
+                    {variant.locationCode ? (
+                      <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                        {variant.locationCode}
+                      </span>
+                    ) : "-"}
+                  </TableCell>
                   <TableCell className="text-right">{variant.quantity}</TableCell>
                   <TableCell className="text-right">
                     {variant.importCostUsd ? `$${parseFloat(variant.importCostUsd).toFixed(2)}` : "-"}
