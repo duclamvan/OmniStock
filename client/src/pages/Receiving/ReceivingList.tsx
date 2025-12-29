@@ -6206,22 +6206,6 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   )}
                   <span>{t('landedCostCalculated')}</span>
                 </div>
-                {/* Continue Processing Button - if costs not yet allocated */}
-                {!shipment.costsAllocatedAt && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-auto h-7 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/imports/landing-costs?shipmentId=${shipment.id}`);
-                    }}
-                    data-testid={`button-continue-processing-${shipment.id}`}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5 mr-1" />
-                    {t('continueProcessing')}
-                  </Button>
-                )}
               </div>
             )}
             
