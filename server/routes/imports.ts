@@ -12603,6 +12603,8 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
     shipmentLevelShipping: 0, // From shipments.shippingCost
     shipmentLevelInsurance: 0, // From shipments.insuranceValue
     poShippingCosts: 0,
+    poShippingCostsOriginal: 0, // Original amount before EUR conversion
+    poShippingCostsCurrency: 'USD' as string, // Original currency
     itemDutyCosts: 0,
     consolidationCosts: 0
   };
@@ -12738,12 +12740,15 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
           
           // Only allocate the proportion of shipping that corresponds to items in this shipment
           const allocatedShippingEUR = amountEUR * Math.min(proportion, 1); // Cap at 100%
+          const allocatedShippingOriginal = poShippingCost * Math.min(proportion, 1); // Original currency amount
           
           costsByType['FREIGHT'] += allocatedShippingEUR;
           costBreakdown.poShippingCosts += allocatedShippingEUR;
+          costBreakdown.poShippingCostsOriginal += allocatedShippingOriginal;
+          costBreakdown.poShippingCostsCurrency = currency; // Use the PO's shipping currency
           
           if (proportion < 1) {
-            currencyNotes.push(`PO ${po.id.slice(-6)}: Allocated ${(proportion * 100).toFixed(1)}% of shipping (${allocatedShippingEUR.toFixed(2)} EUR)`);
+            currencyNotes.push(`PO ${po.id.slice(-6)}: Allocated ${(proportion * 100).toFixed(1)}% of shipping (${allocatedShippingOriginal.toFixed(2)} ${currency})`);
           }
         }
       }

@@ -147,6 +147,8 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     shipmentLevelShipping: 0,
     shipmentLevelInsurance: 0,
     poShippingCosts: 0,
+    poShippingCostsOriginal: 0,
+    poShippingCostsCurrency: 'USD',
     itemDutyCosts: 0,
     consolidationCosts: 0,
     shipmentCosts: {}
@@ -447,8 +449,8 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     </div>
                   )}
 
-                  {/* PO Shipping Costs */}
-                  {Number(costBreakdown.poShippingCosts) > 0 && (
+                  {/* PO Shipping Costs - Display in original currency to avoid conversion errors */}
+                  {(Number(costBreakdown.poShippingCostsOriginal) > 0 || Number(costBreakdown.poShippingCosts) > 0) && (
                     <div className="flex items-center justify-between py-3">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
@@ -461,7 +463,11 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-orange-600">
-                          {formatCurrency(costBreakdown.poShippingCosts, 'EUR')}
+                          {/* Show original amount in original currency to avoid double-conversion errors */}
+                          {costBreakdown.poShippingCostsOriginal > 0 
+                            ? formatCurrencyUtil(costBreakdown.poShippingCostsOriginal, costBreakdown.poShippingCostsCurrency || 'USD')
+                            : formatCurrency(costBreakdown.poShippingCosts, 'EUR')
+                          }
                         </p>
                         <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-300">{t('autoIncluded') || 'Auto'}</Badge>
                       </div>
