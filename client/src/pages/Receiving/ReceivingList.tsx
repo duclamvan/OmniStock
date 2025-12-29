@@ -3591,16 +3591,17 @@ function QuickStorageSheet({
                                           key={`saved-${locId}`}
                                           className="p-2.5 bg-green-50 dark:bg-green-950/20"
                                         >
-                                          <div className="flex items-center gap-2">
-                                            <div className="flex-1 min-w-0">
-                                              <div className="flex items-center gap-1.5">
-                                                <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                                <span className="font-mono text-xs font-medium break-all">{loc.locationCode}</span>
-                                              </div>
-                                              <div className="ml-5 mt-0.5 flex items-center gap-2">
-                                                <span className="text-[10px] text-green-600 dark:text-green-400">{t('imports:allocated', 'allocated')}</span>
-                                              </div>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                              <span className="font-mono text-xs font-medium break-all">{loc.locationCode}</span>
                                             </div>
+                                            {loc.variantName && (
+                                              <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200 flex-shrink-0">
+                                                {loc.variantName}
+                                              </Badge>
+                                            )}
+                                            <div className="flex-1" />
                                             
                                             {/* Show allocated quantity prominently - use receiving-specific qty from notes */}
                                             <div className="w-16 h-9 flex items-center justify-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg font-bold text-base">
@@ -3853,14 +3854,25 @@ function QuickStorageSheet({
                                                 
                                                 setItems(prevItems => {
                                                   const updated = [...prevItems];
-                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => ({
-                                                    id: loc.id,
-                                                    locationCode: loc.locationCode,
-                                                    locationType: loc.locationType,
-                                                    quantity: loc.quantity,
-                                                    isPrimary: loc.isPrimary,
-                                                    notes: loc.notes
-                                                  }));
+                                                  const variantAllocations = updated[index].variantAllocations || [];
+                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => {
+                                                    // Look up variant name from variantId
+                                                    let variantName = '';
+                                                    if (loc.variantId && variantAllocations.length > 0) {
+                                                      const variant = variantAllocations.find((v: any) => v.variantId === loc.variantId);
+                                                      variantName = variant?.variantName || '';
+                                                    }
+                                                    return {
+                                                      id: loc.id,
+                                                      locationCode: loc.locationCode,
+                                                      locationType: loc.locationType,
+                                                      quantity: loc.quantity,
+                                                      isPrimary: loc.isPrimary,
+                                                      notes: loc.notes,
+                                                      variantId: loc.variantId,
+                                                      variantName
+                                                    };
+                                                  });
                                                   updated[index].locations = [];
                                                   updated[index].pendingExistingAdds = {};
                                                   return updated;
