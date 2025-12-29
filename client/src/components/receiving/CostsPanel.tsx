@@ -328,235 +328,284 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             <TabsTrigger value="details">{t('details')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-3">
-            {/* Shipment-Level Costs Banner - shows shippingCost and insuranceValue from shipment record */}
-            {shipmentData && (Number(shipmentData.shippingCost) > 0 || Number(shipmentData.insuranceValue) > 0) && (
-              <Card className="border-l-4 border-l-purple-500 bg-purple-50/50 dark:bg-purple-950/20">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck className="h-4 w-4 text-purple-600" />
-                    <h3 className="font-semibold text-sm">{t('shipmentLevelCosts') || 'Shipment-Level Costs'}</h3>
-                    <Badge variant="outline" className="text-xs text-purple-600 border-purple-300">{t('autoIncluded') || 'Auto-included'}</Badge>
+          <TabsContent value="overview" className="space-y-4">
+            {/* Professional All Costs Summary Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CircleDollarSign className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">{t('allShipmentCosts') || 'All Shipment Costs'}</CardTitle>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Number(shipmentData.shippingCost) > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">{t('transitShipping') || 'Transit Shipping'}</p>
-                        <p className="text-lg font-bold text-purple-600">
+                  {(() => {
+                    const shipmentCost = Number(shipmentData?.shippingCost || 0);
+                    const insuranceCost = Number(shipmentData?.insuranceValue || 0);
+                    const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + parseFloat(cost.amountBase || 0), 0);
+                    const grandTotal = shipmentCost + insuranceCost + manualCostsTotal;
+                    return (
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">{t('totalLandingCosts') || 'Total Landing Costs'}</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {formatCurrency(grandTotal, shipmentData?.shippingCostCurrency || 'EUR')}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="divide-y">
+                  {/* Shipment Transit Shipping */}
+                  {Number(shipmentData?.shippingCost) > 0 && (
+                    <div className="flex items-center justify-between py-3 first:pt-0">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                          <Truck className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('internationalTransitShipping') || 'International Transit Shipping'}</p>
+                          <p className="text-xs text-muted-foreground">{t('shipmentLevelCost') || 'Shipment-level cost'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-purple-600">
                           {formatCurrency(shipmentData.shippingCost, shipmentData.shippingCostCurrency || 'USD')}
                         </p>
+                        <Badge variant="outline" className="text-[10px] text-purple-600 border-purple-300">{t('auto') || 'Auto'}</Badge>
                       </div>
-                    )}
-                    {Number(shipmentData.insuranceValue) > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">{t('insuranceValue') || 'Insurance'}</p>
-                        <p className="text-lg font-bold text-purple-600">
+                    </div>
+                  )}
+
+                  {/* Shipment Insurance */}
+                  {Number(shipmentData?.insuranceValue) > 0 && (
+                    <div className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                          <Shield className="h-4 w-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('shipmentInsurance') || 'Shipment Insurance'}</p>
+                          <p className="text-xs text-muted-foreground">{t('shipmentLevelCost') || 'Shipment-level cost'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-indigo-600">
                           {formatCurrency(shipmentData.insuranceValue, shipmentData.shippingCostCurrency || 'USD')}
                         </p>
+                        <Badge variant="outline" className="text-[10px] text-indigo-600 border-indigo-300">{t('auto') || 'Auto'}</Badge>
                       </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {t('shipmentCostsNote') || 'These costs are automatically included in landed cost calculations'}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Compact Cost Category Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Freight (Additional) */}
-              {(() => {
-                const freightCosts = costsByType['FREIGHT'] || [];
-                const total = freightCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
-                
-                return (
-                  <Card className="border-l-4 border-l-blue-500">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Truck className="h-4 w-4 text-blue-600" />
-                        <h3 className="font-semibold text-sm">{t('additionalFreight') || t('freight')}</h3>
-                        {freightCosts.length > 0 && (
-                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{freightCosts.length}</Badge>
-                        )}
-                      </div>
-                      <div className="text-xl font-bold text-blue-600 mb-2">
-                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
-                      </div>
-                      {freightCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {freightCosts.map(cost => (
-                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium truncate">
-                                    {formatCurrency(cost.amountOriginal, cost.currency)}
-                                  </span>
-                                  {cost.mode && (
-                                    <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.mode}</Badge>
-                                  )}
-                                </div>
-                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
-                              </div>
-                              <div className="flex gap-0.5 shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
-                                  data-testid={`button-edit-cost-${cost.id}`}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => setCostToDelete(cost)}
-                                  data-testid={`button-delete-cost-${cost.id}`}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                    </div>
+                  )}
 
-              {/* Customs */}
-              {(() => {
-                const brokerageCosts = costsByType['BROKERAGE'] || [];
-                const insuranceCosts = costsByType['INSURANCE'] || [];
-                const allCosts = [...brokerageCosts, ...insuranceCosts];
-                const total = allCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
-                
-                return (
-                  <Card className="border-l-4 border-l-amber-500">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Shield className="h-4 w-4 text-amber-600" />
-                        <h3 className="font-semibold text-sm">{t('customs')}</h3>
-                        {allCosts.length > 0 && (
-                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
-                        )}
-                      </div>
-                      <div className="text-xl font-bold text-amber-600 mb-2">
-                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
-                      </div>
-                      {allCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {allCosts.map(cost => (
-                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium truncate">
-                                    {formatCurrency(cost.amountOriginal, cost.currency)}
-                                  </span>
-                                  <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.type}</Badge>
-                                </div>
-                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
-                              </div>
-                              <div className="flex gap-0.5 shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
-                                  data-testid={`button-edit-cost-${cost.id}`}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => setCostToDelete(cost)}
-                                  data-testid={`button-delete-cost-${cost.id}`}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                  {/* Manual Costs - FREIGHT */}
+                  {(costsByType['FREIGHT'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                          <Truck className="h-4 w-4 text-blue-600" />
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                        <div>
+                          <p className="font-medium text-sm">{t('freight') || 'Freight'} {cost.mode && `(${cost.mode})`}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-blue-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
 
-              {/* Other */}
-              {(() => {
-                const packagingCosts = costsByType['PACKAGING'] || [];
-                const otherCosts = costsByType['OTHER'] || [];
-                const allCosts = [...packagingCosts, ...otherCosts];
-                const total = allCosts.reduce((sum, cost) => sum + parseFloat(cost.amountBase), 0);
-                
-                return (
-                  <Card className="border-l-4 border-l-green-500">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Package className="h-4 w-4 text-green-600" />
-                        <h3 className="font-semibold text-sm">{t('other')}</h3>
-                        {allCosts.length > 0 && (
-                          <Badge variant="secondary" className="text-xs h-4 px-1.5">{allCosts.length}</Badge>
-                        )}
-                      </div>
-                      <div className="text-xl font-bold text-green-600 mb-2">
-                        {total > 0 ? formatCurrency(total, 'EUR') : '—'}
-                      </div>
-                      {allCosts.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{t('noCostsLabel')}</p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {allCosts.map(cost => (
-                            <div key={cost.id} className="flex items-start justify-between gap-2 text-xs">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium truncate">
-                                    {formatCurrency(cost.amountOriginal, cost.currency)}
-                                  </span>
-                                  <Badge variant="outline" className="text-[10px] h-4 px-1">{cost.type}</Badge>
-                                </div>
-                                {cost.notes && <p className="text-[10px] text-muted-foreground truncate">{cost.notes}</p>}
-                              </div>
-                              <div className="flex gap-0.5 shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => { setSelectedCost(cost); setShowAddModal(true); }}
-                                  data-testid={`button-edit-cost-${cost.id}`}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => setCostToDelete(cost)}
-                                  data-testid={`button-delete-cost-${cost.id}`}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                  {/* Manual Costs - DUTY */}
+                  {(costsByType['DUTY'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                          <CircleDollarSign className="h-4 w-4 text-red-600" />
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })()}
-            </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('duty') || 'Duty/Tax'}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-red-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Manual Costs - BROKERAGE */}
+                  {(costsByType['BROKERAGE'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                          <Shield className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('customsBrokerage') || 'Customs Brokerage'}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-amber-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Manual Costs - INSURANCE */}
+                  {(costsByType['INSURANCE'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-teal-100 dark:bg-teal-900/30">
+                          <Shield className="h-4 w-4 text-teal-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('insurance') || 'Insurance'}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-teal-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Manual Costs - PACKAGING */}
+                  {(costsByType['PACKAGING'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                          <Box className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('packaging') || 'Packaging'}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-green-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Manual Costs - OTHER */}
+                  {(costsByType['OTHER'] || []).map((cost: any) => (
+                    <div key={cost.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                          <Package className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{t('otherCosts') || 'Other Costs'}</p>
+                          {cost.notes && <p className="text-xs text-muted-foreground">{cost.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-600">
+                            {formatCurrency(cost.amountOriginal, cost.currency)}
+                          </p>
+                          {cost.currency !== 'EUR' && (
+                            <p className="text-xs text-muted-foreground">≈ {formatCurrency(cost.amountBase, 'EUR')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedCost(cost); setShowAddModal(true); }} data-testid={`button-edit-cost-${cost.id}`}>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCostToDelete(cost)} data-testid={`button-delete-cost-${cost.id}`}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Empty State */}
+                  {!Number(shipmentData?.shippingCost) && !Number(shipmentData?.insuranceValue) && costs.length === 0 && (
+                    <div className="py-8 text-center">
+                      <CircleDollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground text-sm">{t('noCostsAddedYet') || 'No costs added yet'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('clickAddCostToBegin') || 'Click "Add Cost" to add shipping, customs, or other fees'}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="allocation">
