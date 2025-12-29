@@ -5388,9 +5388,79 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
         .from(receiptItems)
         .where(eq(receiptItems.receiptId, existingReceipt.id));
       
-      // Subtract received quantities from products AND clean up productLocations
+      // Track parent products that need quantity recalculation after variants are reverted
+      const parentProductsToRecalc = new Set<string>();
+      let variantsReverted = 0;
+      
+      // Subtract received quantities from products/variants AND clean up productLocations
       for (const item of allReceiptItems) {
-        if (item.productId && item.receivedQuantity > 0) {
+        // ================================================================
+        // VARIANT ALLOCATION REVERSION
+        // ================================================================
+        const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; sku?: string; variantSku?: string}> | null;
+        
+        if (variantAllocations && variantAllocations.length > 0) {
+          console.log(`[Revert] Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
+          
+          for (const va of variantAllocations) {
+            if (!va.variantId || va.quantity <= 0) continue;
+            
+            // Get the variant SKU
+            const variantSku = (va as any).variantSku || (va as any).sku || null;
+            
+            // Find the variant by ID or SKU
+            let variant: any = null;
+            
+            if (variantSku && item.productId) {
+              // Try to find by SKU first
+              const [variantBySku] = await db
+                .select()
+                .from(productVariants)
+                .where(and(
+                  eq(productVariants.productId, item.productId),
+                  eq(productVariants.sku, variantSku)
+                ));
+              variant = variantBySku;
+            }
+            
+            if (!variant && !String(va.variantId).startsWith('temp-')) {
+              // Try by ID
+              const [variantById] = await db
+                .select()
+                .from(productVariants)
+                .where(eq(productVariants.id, va.variantId));
+              variant = variantById;
+            }
+            
+            if (variant) {
+              const newQty = Math.max(0, (variant.quantity || 0) - va.quantity);
+              
+              await db
+                .update(productVariants)
+                .set({
+                  quantity: newQty,
+                  updatedAt: new Date()
+                })
+                .where(eq(productVariants.id, variant.id));
+              
+              console.log(`[Revert] Reverted ${va.quantity} from variant ${va.variantName} (${variant.id}), new qty: ${newQty}`);
+              variantsReverted++;
+              totalQuantityReverted += va.quantity;
+              
+              // Mark parent product for recalculation
+              if (variant.productId) {
+                parentProductsToRecalc.add(variant.productId);
+              }
+            } else {
+              console.warn(`[Revert] Variant not found for reversion: ${va.variantName} (${va.variantId})`);
+            }
+          }
+        }
+        
+        // ================================================================
+        // PRODUCT QUANTITY REVERSION (non-variant items)
+        // ================================================================
+        if (item.productId && item.receivedQuantity > 0 && (!variantAllocations || variantAllocations.length === 0)) {
           const [existingProduct] = await db
             .select()
             .from(products)
@@ -5409,8 +5479,14 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
             
             totalQuantityReverted += item.receivedQuantity;
             productsAffected++;
+            console.log(`[Revert] Reverted ${item.receivedQuantity} from product ${item.productId}, new qty: ${newQuantity}`);
           }
-          
+        }
+        
+        // ================================================================
+        // PRODUCT LOCATION CLEANUP
+        // ================================================================
+        if (item.productId) {
           // BULLETPROOF: Clean up ALL productLocations tagged with this receipt item
           // Uses notes field with format "RI:{receiptItemId}:Q{qty}" to track assignments
           const receiptItemTag = `RI:${item.id}`;
@@ -5546,6 +5622,38 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
           })
           .where(eq(receiptItems.id, item.id));
       }
+      
+      // ================================================================
+      // RECALCULATE PARENT PRODUCT QUANTITIES FROM VARIANTS
+      // ================================================================
+      if (parentProductsToRecalc.size > 0) {
+        console.log(`[Revert] Recalculating quantities for ${parentProductsToRecalc.size} parent products`);
+        
+        for (const parentProductId of parentProductsToRecalc) {
+          // Sum all variant quantities for this parent
+          const variantSums = await db
+            .select({
+              totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int`
+            })
+            .from(productVariants)
+            .where(eq(productVariants.productId, parentProductId));
+          
+          const newParentQty = variantSums[0]?.totalQuantity || 0;
+          
+          await db
+            .update(products)
+            .set({
+              quantity: newParentQty,
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, parentProductId));
+          
+          console.log(`[Revert] Updated parent product ${parentProductId} quantity to ${newParentQty}`);
+          productsAffected++;
+        }
+      }
+      
+      console.log(`[Revert] Summary: ${variantsReverted} variants reverted, ${productsAffected} products affected, ${locationsReverted} locations cleaned up`);
       
       // Update receipt status back to 'verified' (ready for storage)
       await db
@@ -6444,7 +6552,95 @@ router.get("/shipments/storage", async (req, res) => {
       console.log(`[orphan-fix] Found ${orphanedShipments.length} orphaned storage shipments, fixing...`);
       
       for (const orphan of orphanedShipments) {
-        // Reset status and clear processing flags
+        // ================================================================
+        // REVERT INVENTORY FOR ORPHANED SHIPMENT
+        // ================================================================
+        const [orphanReceipt] = await db
+          .select()
+          .from(receipts)
+          .where(eq(receipts.shipmentId, orphan.id));
+        
+        if (orphanReceipt) {
+          const orphanReceiptItems = await db
+            .select()
+            .from(receiptItems)
+            .where(eq(receiptItems.receiptId, orphanReceipt.id));
+          
+          const parentProductsToRecalc = new Set<string>();
+          
+          for (const item of orphanReceiptItems) {
+            // Revert variant allocations
+            const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; sku?: string; variantSku?: string}> | null;
+            
+            if (variantAllocations && variantAllocations.length > 0) {
+              for (const va of variantAllocations) {
+                if (!va.variantId || va.quantity <= 0) continue;
+                
+                const variantSku = (va as any).variantSku || (va as any).sku || null;
+                let variant: any = null;
+                
+                if (variantSku && item.productId) {
+                  const [v] = await db.select().from(productVariants).where(and(eq(productVariants.productId, item.productId), eq(productVariants.sku, variantSku)));
+                  variant = v;
+                }
+                if (!variant && !String(va.variantId).startsWith('temp-')) {
+                  const [v] = await db.select().from(productVariants).where(eq(productVariants.id, va.variantId));
+                  variant = v;
+                }
+                
+                if (variant) {
+                  const newQty = Math.max(0, (variant.quantity || 0) - va.quantity);
+                  await db.update(productVariants).set({ quantity: newQty, updatedAt: new Date() }).where(eq(productVariants.id, variant.id));
+                  console.log(`[orphan-fix] Reverted ${va.quantity} from variant ${va.variantName}`);
+                  if (variant.productId) parentProductsToRecalc.add(variant.productId);
+                }
+              }
+            } else if (item.productId && item.receivedQuantity > 0) {
+              // Revert product quantity
+              const [existingProduct] = await db.select().from(products).where(eq(products.id, item.productId));
+              if (existingProduct) {
+                const newQty = Math.max(0, (existingProduct.quantity || 0) - item.receivedQuantity);
+                await db.update(products).set({ quantity: newQty, updatedAt: new Date() }).where(eq(products.id, item.productId));
+                console.log(`[orphan-fix] Reverted ${item.receivedQuantity} from product ${item.productId}`);
+              }
+            }
+            
+            // Clean up locations
+            if (item.productId) {
+              const receiptItemTag = `RI:${item.id}`;
+              const taggedLocs = await db.select().from(productLocations).where(and(eq(productLocations.productId, item.productId), sql`${productLocations.notes} LIKE ${`%${receiptItemTag}%`}`));
+              
+              for (const loc of taggedLocs) {
+                const qtyMatch = loc.notes?.match(new RegExp(`RI:${item.id}:Q(\\d+)`));
+                const assignedQty = qtyMatch ? parseInt(qtyMatch[1], 10) : item.assignedQuantity || 0;
+                const newLocQty = Math.max(0, loc.quantity - assignedQty);
+                
+                if (newLocQty === 0) {
+                  await db.delete(productLocations).where(eq(productLocations.id, loc.id));
+                } else {
+                  const updatedNotes = (loc.notes || '').replace(new RegExp(`\\s*RI:${item.id}:Q\\d+`), '').trim();
+                  await db.update(productLocations).set({ quantity: newLocQty, notes: updatedNotes || null, updatedAt: new Date() }).where(eq(productLocations.id, loc.id));
+                }
+              }
+            }
+            
+            // Clear warehouse location assignment
+            await db.update(receiptItems).set({ warehouseLocation: null, assignedQuantity: 0, updatedAt: new Date() }).where(eq(receiptItems.id, item.id));
+          }
+          
+          // Recalculate parent product quantities
+          for (const parentProductId of parentProductsToRecalc) {
+            const variantSums = await db.select({ totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int` }).from(productVariants).where(eq(productVariants.productId, parentProductId));
+            const newParentQty = variantSums[0]?.totalQuantity || 0;
+            await db.update(products).set({ quantity: newParentQty, updatedAt: new Date() }).where(eq(products.id, parentProductId));
+            console.log(`[orphan-fix] Updated parent product ${parentProductId} quantity to ${newParentQty}`);
+          }
+          
+          // Reset receipt status
+          await db.update(receipts).set({ status: 'verified', approvedAt: null, approvedBy: null, updatedAt: new Date() }).where(eq(receipts.id, orphanReceipt.id));
+        }
+        
+        // Reset shipment status and clear processing flags
         await db
           .update(shipments)
           .set({
@@ -6459,7 +6655,7 @@ router.get("/shipments/storage", async (req, res) => {
           })
           .where(eq(shipments.id, orphan.id));
         
-        console.log(`[orphan-fix] Fixed shipment ${orphan.id} (${orphan.shipmentName})`);
+        console.log(`[orphan-fix] Fixed shipment ${orphan.id} (${orphan.shipmentName}) with full inventory reversion`);
       }
     }
     
