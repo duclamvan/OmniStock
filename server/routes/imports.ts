@@ -649,10 +649,24 @@ async function finalizeReceivingInventory(
       // ================================================================
       // VARIANT ALLOCATION HANDLING
       // ================================================================
-      const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number}> | null;
+      const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number; sku?: string}> | null;
       
       if (variantAllocations && variantAllocations.length > 0) {
         console.log(`[finalizeReceivingInventory] Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
+        
+        // Hydrate missing SKU from database for each variant allocation
+        for (const va of variantAllocations) {
+          if (!va.sku && va.variantId) {
+            const [dbVariant] = await tx
+              .select({ sku: productVariants.sku })
+              .from(productVariants)
+              .where(eq(productVariants.id, va.variantId));
+            if (dbVariant?.sku) {
+              (va as any).sku = dbVariant.sku;
+              console.log(`[SKU Hydration] Backfilled SKU "${dbVariant.sku}" for variantId ${va.variantId}`);
+            }
+          }
+        }
         
         let parentProductId: string | null = null;
         let processedAsPackageItems = false;

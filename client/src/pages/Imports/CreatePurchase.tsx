@@ -60,6 +60,7 @@ interface VariantAllocation {
   variantName: string;
   quantity: number;
   unitPrice: number;
+  sku?: string;
 }
 
 interface PurchaseItem {
@@ -1839,7 +1840,8 @@ export default function CreatePurchase() {
       variantId: variant.id,
       variantName: variant.name,
       quantity: variant.quantity,
-      unitPrice: variant.unitPrice
+      unitPrice: variant.unitPrice,
+      sku: variant.sku || ''
     }));
     
     // Create a single parent item with nested variants

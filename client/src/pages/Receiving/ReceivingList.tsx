@@ -2828,18 +2828,29 @@ function QuickStorageSheet({
   });
   
   // Calculate progress using quantities stored for THIS receiving session only (from notes tags)
-  // Also include pending additions that haven't been saved yet
+  // Also include pending additions that haven't been saved yet (for visual progress only)
   const totalItems = items.length;
-  const completedItems = items.filter(item => {
+  const completedItemsVisual = items.filter(item => {
     const storedQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
     const pendingExisting = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
     const pendingNew = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
     return storedQty + pendingExisting + pendingNew >= item.receivedQuantity;
   }).length;
-  const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+  const progress = totalItems > 0 ? (completedItemsVisual / totalItems) * 100 : 0;
   
-  // Check if all items are fully stored (based on SAVED locations only, not pending)
-  const allItemsStored = totalItems > 0 && completedItems === totalItems;
+  // For UI display of completed items count (includes pending)
+  const completedItems = completedItemsVisual;
+  
+  // Check if all items are fully stored - ONLY based on SAVED assignedQuantity
+  // The backend validates assignedQuantity >= receivedQuantity, so we must match that check
+  // This prevents showing "Complete Receiving" button before pending allocations are saved
+  const allItemsSavedCount = items.filter(item => {
+    return (item.assignedQuantity || 0) >= (item.receivedQuantity || 0);
+  }).length;
+  const allItemsStored = totalItems > 0 && allItemsSavedCount === totalItems;
+  
+  // Show warning if items appear complete visually but not saved
+  const hasPendingUnsaved = completedItemsVisual > allItemsSavedCount;
   
   const currentItem = items[selectedItemIndex];
   // Calculate remaining quantity including pending location quantities (not yet saved)
@@ -3117,13 +3128,116 @@ function QuickStorageSheet({
     setItems(updatedItems);
     setShowBulkAllocation(false);
     
-    await soundEffects.playSuccessBeep();
-    const totalLocations = locationAllocations.length;
-    const fullLocations = locationAllocations.filter(l => l.variants.reduce((sum, v) => sum + v.qty, 0) >= bulkItemsPerLocation).length;
-    toast({
-      title: t('common:success'),
-      description: `Allocated to ${totalLocations} locations (${fullLocations} full, ${totalLocations - fullLocations} partial)`,
-    });
+    // AUTO-SAVE: Save all bulk allocations immediately
+    // This prevents the "pending unsaved" issue where Complete Receiving appears but fails
+    const allLocationsToSave = updatedItems[selectedItemIndex].locations
+      .filter(loc => loc.quantity > 0)
+      .map(loc => ({
+        locationCode: loc.locationCode,
+        locationType: loc.locationType,
+        quantity: loc.quantity,
+        isPrimary: loc.isPrimary,
+        variantId: loc.variantId || undefined,
+        sku: loc.sku || loc.variantName || undefined,
+        variantName: loc.variantName || undefined
+      }));
+    
+    if (allLocationsToSave.length > 0 && currentItem.productId) {
+      setIsBatchSaving(true);
+      try {
+        // Single batch API call to save all locations
+        await apiRequest('POST', `/api/products/${currentItem.productId}/locations/batch`, {
+          locations: allLocationsToSave,
+          receiptItemId: currentItem.receiptItemId
+        });
+        
+        // Refetch product locations from server
+        const locResponse = await fetch(`/api/products/${currentItem.productId}/locations`, { credentials: 'include' });
+        if (locResponse.ok) {
+          const serverLocations = await locResponse.json();
+          const relevantLocations = serverLocations.filter((loc: any) => 
+            loc.notes?.includes(`RI:${currentItem.receiptItemId}:`) || 
+            !loc.notes?.includes('RI:')
+          );
+          
+          // Fetch product variants for name mapping
+          let variantMap = new Map<string, { sku: string; name: string }>();
+          try {
+            const variantResponse = await fetch(`/api/products/${currentItem.productId}/variants`, { credentials: 'include' });
+            if (variantResponse.ok) {
+              const variants = await variantResponse.json();
+              for (const v of variants) {
+                variantMap.set(v.id, { sku: v.sku || '', name: v.name || '' });
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch variants for name lookup:', e);
+          }
+          
+          // Update state with saved locations
+          setItems(prevItems => {
+            const updated = [...prevItems];
+            updated[selectedItemIndex].existingLocations = relevantLocations.map((loc: any) => {
+              let variantName = '';
+              let sku = '';
+              if (loc.variantId) {
+                const variantInfo = variantMap.get(loc.variantId);
+                if (variantInfo) {
+                  variantName = variantInfo.name;
+                  sku = variantInfo.sku;
+                }
+              }
+              return {
+                id: loc.id,
+                locationCode: loc.locationCode,
+                locationType: loc.locationType,
+                quantity: loc.quantity,
+                isPrimary: loc.isPrimary,
+                notes: loc.notes,
+                variantId: loc.variantId,
+                variantName,
+                sku
+              };
+            });
+            updated[selectedItemIndex].locations = [];
+            updated[selectedItemIndex].pendingExistingAdds = {};
+            // Update assignedQuantity to reflect saved state
+            const totalSaved = allLocationsToSave.reduce((sum, loc) => sum + loc.quantity, 0);
+            updated[selectedItemIndex].assignedQuantity = (updated[selectedItemIndex].assignedQuantity || 0) + totalSaved;
+            return updated;
+          });
+        }
+        
+        await soundEffects.playCompletionSound();
+        const totalLocations = locationAllocations.length;
+        const totalItems = allLocationsToSave.reduce((sum, loc) => sum + loc.quantity, 0);
+        toast({
+          title: t('common:success'),
+          description: `${totalLocations} ${t('locationsLabel', 'locations')}, ${totalItems.toLocaleString()} ${t('common:items')} ${t('common:saved')}`,
+        });
+        
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${currentItem.productId}/locations`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
+      } catch (error) {
+        console.error('Failed to auto-save bulk allocations:', error);
+        toast({
+          title: t('common:error'),
+          description: t('failedToSaveLocations', 'Failed to save locations'),
+          variant: 'destructive'
+        });
+        // Locations remain as pending in the UI for manual save
+      } finally {
+        setIsBatchSaving(false);
+      }
+    } else {
+      await soundEffects.playSuccessBeep();
+      const totalLocations = locationAllocations.length;
+      const fullLocations = locationAllocations.filter(l => l.variants.reduce((sum, v) => sum + v.qty, 0) >= bulkItemsPerLocation).length;
+      toast({
+        title: t('common:success'),
+        description: `Allocated to ${totalLocations} locations (${fullLocations} full, ${totalLocations - fullLocations} partial)`,
+      });
+    }
   };
   
   // Calculate bulk allocation preview
