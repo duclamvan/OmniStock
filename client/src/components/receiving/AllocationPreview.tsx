@@ -1074,7 +1074,12 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                       )}
                       {columnVisibility.freight && (
                         <TableCell className="text-right p-2">
-                          {formatCurrency(preview.totalCosts?.freight, preview.baseCurrency)}
+                          {/* Use original currency amount if available and matches display currency */}
+                          {preview.totalCosts?.freightOriginal && preview.totalCosts?.freightOriginalCurrency ? (
+                            formatCurrency(preview.totalCosts.freightOriginal, preview.totalCosts.freightOriginalCurrency as Currency)
+                          ) : (
+                            formatCurrency(preview.totalCosts?.freight, preview.baseCurrency)
+                          )}
                         </TableCell>
                       )}
                       {columnVisibility.duty && (

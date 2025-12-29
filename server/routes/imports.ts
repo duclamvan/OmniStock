@@ -12376,6 +12376,11 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
     // Get item allocation breakdown
     const items = await getItemAllocationBreakdown(shipmentId, costsByType);
     
+    // Calculate original currency totals for accurate display
+    const costBreakdown = aggregatedCosts.costBreakdown;
+    const freightOriginal = (costBreakdown.shipmentLevelShippingOriginal || 0) + (costBreakdown.poShippingCostsOriginal || 0);
+    const freightCurrency = costBreakdown.totalFreightCurrency || costBreakdown.shipmentLevelShippingCurrency || 'USD';
+    
     const responseData = {
       shipmentId,
       metrics,
@@ -12397,7 +12402,10 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
         insurance: costsByType['INSURANCE'] || 0,
         packaging: costsByType['PACKAGING'] || 0,
         other: costsByType['OTHER'] || 0,
-        total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
+        total: Object.values(costsByType).reduce((sum, val) => sum + val, 0),
+        // Original currency totals for accurate display
+        freightOriginal,
+        freightOriginalCurrency: freightCurrency
       },
       // Include cost breakdown for transparency
       costSources: aggregatedCosts.costBreakdown,
@@ -12600,13 +12608,18 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
   
   const costBreakdown = {
     shipmentCosts: {} as Record<string, number>,
-    shipmentLevelShipping: 0, // From shipments.shippingCost
+    shipmentLevelShipping: 0, // From shipments.shippingCost (in EUR)
+    shipmentLevelShippingOriginal: 0, // Original amount before EUR conversion
+    shipmentLevelShippingCurrency: 'USD' as string, // Original currency
     shipmentLevelInsurance: 0, // From shipments.insuranceValue
     poShippingCosts: 0,
     poShippingCostsOriginal: 0, // Original amount before EUR conversion
     poShippingCostsCurrency: 'USD' as string, // Original currency
     itemDutyCosts: 0,
-    consolidationCosts: 0
+    consolidationCosts: 0,
+    // Combined freight totals in original currency (for accurate display)
+    totalFreightOriginal: 0, // Sum of all freight costs in original currency
+    totalFreightCurrency: 'USD' as string // Primary freight currency
   };
   
   try {
@@ -12636,6 +12649,11 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
       }
       costsByType['FREIGHT'] += shippingEUR;
       costBreakdown.shipmentLevelShipping = shippingEUR;
+      costBreakdown.shipmentLevelShippingOriginal = shipmentShippingCost;
+      costBreakdown.shipmentLevelShippingCurrency = shipmentCurrency;
+      // Track original freight totals
+      costBreakdown.totalFreightOriginal += shipmentShippingCost;
+      costBreakdown.totalFreightCurrency = shipmentCurrency;
     }
     
     if (shipmentInsuranceValue > 0) {
@@ -12746,6 +12764,10 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
           costBreakdown.poShippingCosts += allocatedShippingEUR;
           costBreakdown.poShippingCostsOriginal += allocatedShippingOriginal;
           costBreakdown.poShippingCostsCurrency = currency; // Use the PO's shipping currency
+          // Add to total freight original (only if same currency)
+          if (currency === costBreakdown.totalFreightCurrency) {
+            costBreakdown.totalFreightOriginal += allocatedShippingOriginal;
+          }
           
           if (proportion < 1) {
             currencyNotes.push(`PO ${po.id.slice(-6)}: Allocated ${(proportion * 100).toFixed(1)}% of shipping (${allocatedShippingOriginal.toFixed(2)} ${currency})`);
