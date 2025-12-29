@@ -1983,6 +1983,15 @@ const imports = {
   failedToSaveAllocationMethod: 'Failed to save allocation method',
   
   // CostsPanel
+  allShipmentCosts: 'All Shipment Costs',
+  totalLandingCosts: 'Total Landing Costs',
+  internationalTransitShipping: 'International Transit Shipping',
+  shipmentLevelCost: 'Shipment-level cost',
+  autoIncluded: 'Auto-included',
+  shipmentInsurance: 'Shipment Insurance',
+  customsBrokerage: 'Customs Brokerage',
+  otherCosts: 'Other Costs',
+  clickAddCostToBegin: 'Click "Add Cost" to add shipping, customs, or other fees',
   landingCostsCalculated: 'Landing Costs Calculated',
   freightCostAddedAndAllocated: 'Freight cost of {{amount}} added and allocated to items',
   freightCostAddedButFailed: 'Freight cost added but calculation failed: {{error}}. Please try refreshing the page.',

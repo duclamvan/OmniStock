@@ -371,7 +371,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                         <p className="font-semibold text-purple-600">
                           {formatCurrency(shipmentData.shippingCost, shipmentData.shippingCostCurrency || 'USD')}
                         </p>
-                        <Badge variant="outline" className="text-[10px] text-purple-600 border-purple-300">{t('auto') || 'Auto'}</Badge>
+                        <Badge variant="outline" className="text-[10px] text-purple-600 border-purple-300">{t('autoIncluded') || 'Auto'}</Badge>
                       </div>
                     </div>
                   )}
@@ -392,7 +392,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                         <p className="font-semibold text-indigo-600">
                           {formatCurrency(shipmentData.insuranceValue, shipmentData.shippingCostCurrency || 'USD')}
                         </p>
-                        <Badge variant="outline" className="text-[10px] text-indigo-600 border-indigo-300">{t('auto') || 'Auto'}</Badge>
+                        <Badge variant="outline" className="text-[10px] text-indigo-600 border-indigo-300">{t('autoIncluded') || 'Auto'}</Badge>
                       </div>
                     </div>
                   )}

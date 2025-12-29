@@ -1923,6 +1923,15 @@ const imports = {
   failedToSaveAllocationMethod: 'Không thể lưu phương pháp phân bổ',
   
   // CostsPanel
+  allShipmentCosts: 'Tất cả chi phí vận chuyển',
+  totalLandingCosts: 'Tổng chi phí nhập hàng',
+  internationalTransitShipping: 'Vận chuyển quốc tế',
+  shipmentLevelCost: 'Chi phí cấp lô hàng',
+  autoIncluded: 'Tự động bao gồm',
+  shipmentInsurance: 'Bảo hiểm lô hàng',
+  customsBrokerage: 'Phí môi giới hải quan',
+  otherCosts: 'Chi phí khác',
+  clickAddCostToBegin: 'Nhấn "Thêm chi phí" để thêm phí vận chuyển, hải quan hoặc phí khác',
   landingCostsCalculated: 'Đã tính chi phí nhập hàng',
   freightCostAddedAndAllocated: 'Đã thêm và phân bổ chi phí vận chuyển {{amount}}',
   freightCostAddedButFailed: 'Đã thêm chi phí vận chuyển nhưng tính toán thất bại: {{error}}. Vui lòng làm mới trang.',
