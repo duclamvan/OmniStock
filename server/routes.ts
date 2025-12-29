@@ -6453,6 +6453,84 @@ Important:
         }
       }
       
+      // ================================================================
+      // UPDATE VARIANT QUANTITIES IN INVENTORY
+      // When saving locations with variants, also update productVariants.quantity
+      // ================================================================
+      const variantQuantityUpdates = new Map<string, number>();
+      
+      for (const [, locData] of aggregatedLocations.entries()) {
+        // Resolve SKU to actual variantId
+        let resolvedVariantId = locData.variantId;
+        if (locData.sku && (!resolvedVariantId || String(resolvedVariantId).startsWith('temp-'))) {
+          resolvedVariantId = skuToVariantId.get(locData.sku);
+        }
+        if (locData.variantName && (!resolvedVariantId || String(resolvedVariantId).startsWith('temp-'))) {
+          resolvedVariantId = skuToVariantId.get(locData.variantName);
+        }
+        
+        // Only process valid variant IDs (not temp-* IDs)
+        if (resolvedVariantId && !String(resolvedVariantId).startsWith('temp-')) {
+          const currentQty = variantQuantityUpdates.get(resolvedVariantId) || 0;
+          variantQuantityUpdates.set(resolvedVariantId, currentQty + locData.quantity);
+        }
+      }
+      
+      // Apply variant quantity updates
+      if (variantQuantityUpdates.size > 0) {
+        let variantsUpdated = 0;
+        let parentProductsToRecalc = new Set<string>();
+        
+        for (const [variantId, qtyToAdd] of variantQuantityUpdates.entries()) {
+          try {
+            const [variant] = await db
+              .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
+              .from(productVariants)
+              .where(eq(productVariants.id, variantId));
+            
+            if (variant) {
+              const newQty = (variant.quantity || 0) + qtyToAdd;
+              await db
+                .update(productVariants)
+                .set({ quantity: newQty, updatedAt: new Date() })
+                .where(eq(productVariants.id, variantId));
+              
+              console.log(`[locations/batch] Updated variant ${variantId} quantity: ${variant.quantity || 0} + ${qtyToAdd} = ${newQty}`);
+              variantsUpdated++;
+              
+              // Track parent for recalculation
+              if (variant.productId) {
+                parentProductsToRecalc.add(variant.productId);
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to update variant ${variantId} quantity:`, error);
+          }
+        }
+        
+        // Recalculate parent product quantities
+        for (const parentProductId of parentProductsToRecalc) {
+          try {
+            const variantSums = await db
+              .select({ totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int` })
+              .from(productVariants)
+              .where(eq(productVariants.productId, parentProductId));
+            
+            const newParentQty = variantSums[0]?.totalQuantity || 0;
+            await db
+              .update(products)
+              .set({ quantity: newParentQty, updatedAt: new Date() })
+              .where(eq(products.id, parentProductId));
+            
+            console.log(`[locations/batch] Updated parent product ${parentProductId} quantity to ${newParentQty}`);
+          } catch (error) {
+            console.error(`Failed to update parent product ${parentProductId} quantity:`, error);
+          }
+        }
+        
+        console.log(`[locations/batch] Updated ${variantsUpdated} variant quantities`);
+      }
+      
       // Single activity log for the batch operation
       await storage.createUserActivity({
         userId: "test-user",
