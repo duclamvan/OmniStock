@@ -2124,6 +2124,7 @@ function QuickStorageSheet({
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBatchSaving, setIsBatchSaving] = useState(false);
+  const [isUndoingAll, setIsUndoingAll] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
@@ -3095,7 +3096,7 @@ function QuickStorageSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-[92vh] p-0 flex flex-col rounded-t-2xl"
+        className="h-[92vh] p-0 flex flex-col rounded-t-2xl relative"
         data-testid="sheet-quick-storage"
       >
         {/* Compact Header with Progress */}
@@ -3131,6 +3132,20 @@ function QuickStorageSheet({
             <span>{completedItems}/{totalItems} {t('itemsCompleted')}</span>
           </div>
         </div>
+        
+        {/* Global Operation Loading Overlay */}
+        {(isBatchSaving || isSubmitting || isUndoingAll) && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-gray-950/60 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 flex flex-col items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+              <span className="text-sm font-medium">
+                {isBatchSaving ? t('common:saving', 'Saving...') : 
+                 isSubmitting ? t('common:applying', 'Applying...') : 
+                 t('common:loading')}
+              </span>
+            </div>
+          </div>
+        )}
         
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -3517,10 +3532,12 @@ function QuickStorageSheet({
                                       <Button
                                         variant="ghost"
                                         size="sm"
+                                        disabled={isUndoingAll}
                                         onClick={async (e) => {
                                           e.stopPropagation();
-                                          if (!item.productId) return;
+                                          if (!item.productId || isUndoingAll) return;
                                           
+                                          setIsUndoingAll(true);
                                           const totalLocations = item.existingLocations.length;
                                           const totalQty = item.existingLocations.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
                                           
@@ -3553,13 +3570,19 @@ function QuickStorageSheet({
                                               description: t('imports:failedToUndoLocations', 'Failed to undo locations'),
                                               variant: 'destructive'
                                             });
+                                          } finally {
+                                            setIsUndoingAll(false);
                                           }
                                         }}
                                         className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                                         data-testid="button-undo-all-locations"
                                       >
-                                        <RotateCcw className="h-3 w-3 mr-1" />
-                                        {t('imports:undoAll', 'Undo All')}
+                                        {isUndoingAll ? (
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                        ) : (
+                                          <RotateCcw className="h-3 w-3 mr-1" />
+                                        )}
+                                        {isUndoingAll ? t('common:loading') : t('imports:undoAll', 'Undo All')}
                                       </Button>
                                     )}
                                   </div>
