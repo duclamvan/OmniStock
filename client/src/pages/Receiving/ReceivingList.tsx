@@ -3114,13 +3114,21 @@ function QuickStorageSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-[92vh] p-0 flex flex-col rounded-t-2xl"
+        className="h-screen p-0 flex flex-col [&>button]:hidden"
         data-testid="sheet-quick-storage"
       >
-        {/* Compact Header with Progress */}
+        {/* Full-screen Header with Progress */}
         <div className="px-4 pt-3 pb-2 border-b dark:border-gray-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
+              {/* Custom Close Button */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                data-testid="button-close-quick-storage"
+              >
+                <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </button>
               <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                 <Warehouse className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
