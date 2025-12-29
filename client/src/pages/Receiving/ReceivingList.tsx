@@ -3588,7 +3588,7 @@ function QuickStorageSheet({
                                             <div className="flex-1 min-w-0">
                                               <div className="flex items-center gap-1.5">
                                                 <Check className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                                <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                                <span className="font-mono text-xs font-medium break-all">{loc.locationCode}</span>
                                               </div>
                                               <div className="ml-5 mt-0.5 flex items-center gap-2">
                                                 <span className="text-xs text-green-600 dark:text-green-400">{t('stock')}: <span className="font-bold">{loc.quantity || 0}</span></span>
@@ -3686,9 +3686,11 @@ function QuickStorageSheet({
                                         key={loc.id}
                                         className="p-2.5 bg-amber-50 dark:bg-amber-950/20"
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                                          <span className="font-mono text-sm font-medium truncate">{loc.locationCode}</span>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                            <span className="font-mono text-xs font-medium break-all">{loc.locationCode}</span>
+                                          </div>
                                           {loc.variantName && (
                                             <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200 flex-shrink-0">
                                               {loc.variantName}
