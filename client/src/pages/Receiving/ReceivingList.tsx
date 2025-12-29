@@ -1927,14 +1927,18 @@ function getReceivingQtyFromNotes(notes: string | undefined, receiptItemId: numb
 }
 
 // Helper function to calculate total quantity stored for this receiving session
-// Sums quantity from locations tagged for this receipt item OR untagged (legacy) locations
+// Extracts quantity from notes tags for tagged locations, uses loc.quantity for legacy/untagged
 function calculateStoredQtyForReceiving(existingLocations: LocationAssignment[], receiptItemId: number | string): number {
   return (existingLocations || []).reduce((sum, loc) => {
-    // If location has notes with this receipt item's tag, use its quantity
-    // If location has no RI tag at all, also count it (legacy/general location)
+    // If location has notes with this receipt item's tag, extract quantity FROM THE TAG
     const hasThisTag = loc.notes?.includes(`RI:${receiptItemId}:`);
+    if (hasThisTag) {
+      // Use quantity from notes tag (receiving-specific)
+      return sum + getReceivingQtyFromNotes(loc.notes, receiptItemId);
+    }
+    // If location has no RI tag at all, count full quantity (legacy/general location)
     const hasNoRiTag = !loc.notes?.includes('RI:');
-    if (hasThisTag || hasNoRiTag) {
+    if (hasNoRiTag) {
       return sum + (loc.quantity || 0);
     }
     return sum;
@@ -3579,10 +3583,13 @@ function QuickStorageSheet({
                                       const locId = String(loc.id || locIdx);
                                       const pendingAdd = item.pendingExistingAdds?.[locId] || 0;
                                       
+                                      // Extract receiving-specific quantity from notes tag
+                                      const receivingQty = getReceivingQtyFromNotes(loc.notes, item.receiptItemId) || loc.quantity || 0;
+                                      
                                       return (
                                         <div 
                                           key={`saved-${locId}`}
-                                          className={`p-2.5 ${pendingAdd > 0 ? 'bg-blue-50 dark:bg-blue-950/20' : 'bg-green-50 dark:bg-green-950/20'}`}
+                                          className="p-2.5 bg-green-50 dark:bg-green-950/20"
                                         >
                                           <div className="flex items-center gap-2">
                                             <div className="flex-1 min-w-0">
@@ -3595,9 +3602,9 @@ function QuickStorageSheet({
                                               </div>
                                             </div>
                                             
-                                            {/* Show allocated quantity prominently */}
+                                            {/* Show allocated quantity prominently - use receiving-specific qty from notes */}
                                             <div className="w-16 h-9 flex items-center justify-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg font-bold text-base">
-                                              {loc.quantity || 0}
+                                              {receivingQty}
                                             </div>
                                             
                                             <DropdownMenu>
@@ -3626,7 +3633,8 @@ function QuickStorageSheet({
                                                       
                                                       setItems(prevItems => {
                                                         const updated = [...prevItems];
-                                                        const deletedQty = loc.quantity || 0;
+                                                        // Use receiving-specific quantity from notes tag
+                                                        const deletedQty = receivingQty;
                                                         updated[index].existingLocations = updated[index].existingLocations.filter(
                                                           (_: any, i: number) => i !== locIdx
                                                         );
