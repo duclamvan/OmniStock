@@ -1332,6 +1332,7 @@ const imports = {
   goToStorage: 'Go to Storage',
   
   // Revert to Receiving
+  retryInventory: 'Retry Inventory Processing',
   sendBackToReceive: 'Send Back to Receiving',
   shipmentRevertedToReceiving: 'Shipment has been reverted to receiving status',
   inventoryRevertedDetails: 'Reverted {{quantity}} units from {{products}} products ({{locations}} locations cleared)',

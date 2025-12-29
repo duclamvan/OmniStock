@@ -70,7 +70,8 @@ import {
   ClipboardList,
   Barcode,
   RotateCcw,
-  Trash2
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -5856,6 +5857,37 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
     },
   });
 
+  const retryInventoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}/retry-inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to retry inventory processing');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/product-locations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      
+      toast({
+        title: t('common:success'),
+        description: `Inventory reprocessed: ${data.inventoryUpdates?.length || 0} products updated`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || 'Failed to retry inventory processing',
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRevertClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowRevertConfirm(true);
@@ -5965,6 +5997,20 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {isAdministrator && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        retryInventoryMutation.mutate();
+                      }}
+                      disabled={retryInventoryMutation.isPending}
+                      className="text-blue-600 dark:text-blue-400"
+                      data-testid={`menu-item-retry-inventory-${shipment.id}`}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${retryInventoryMutation.isPending ? 'animate-spin' : ''}`} />
+                      {retryInventoryMutation.isPending ? t('common:processing') : t('retryInventory')}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={handleRevertClick}
                     disabled={revertToReceiveMutation.isPending}

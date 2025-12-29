@@ -1350,6 +1350,7 @@ const imports = {
   goToStorage: 'Đi đến Lưu kho',
   
   // Revert to Receiving
+  retryInventory: 'Xử lý lại tồn kho',
   sendBackToReceive: 'Chuyển về Nhận hàng',
   shipmentRevertedToReceiving: 'Lô hàng đã được chuyển về trạng thái nhận hàng',
   inventoryRevertedDetails: 'Đã hoàn tác {{quantity}} đơn vị từ {{products}} sản phẩm ({{locations}} vị trí đã xóa)',

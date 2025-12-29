@@ -21021,6 +21021,58 @@ Important rules:
     }
   });
 
+  // Retry inventory processing for a completed shipment (recovery endpoint)
+  // Use this when async processing failed or server restarted before completion
+  app.post('/api/imports/shipments/:id/retry-inventory', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the shipment and verify it's in completed status
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, id));
+      
+      if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      if (shipment.receivingStatus !== 'completed') {
+        return res.status(400).json({ 
+          message: 'Shipment must be in completed status to retry inventory processing',
+          currentStatus: shipment.receivingStatus
+        });
+      }
+      
+      console.log(`[retry-inventory] Starting retry for shipment ${id}`);
+      
+      // Run inventory processing synchronously for immediate feedback
+      const inventoryUpdates = await addInventoryOnCompletion(id);
+      console.log(`[retry-inventory] Shipment ${id} - inventory updates: ${inventoryUpdates.length} products`);
+      
+      // Calculate and update average landed costs for products
+      const updatedProductCosts = await calculateAndUpdateLandedCosts(id);
+      console.log(`[retry-inventory] Shipment ${id} - cost updates: ${updatedProductCosts.length} products`);
+      
+      // Reconcile purchase order delivery statuses
+      const updatedPurchases = await reconcilePurchaseDeliveryForShipment(id);
+      console.log(`[retry-inventory] Shipment ${id} - reconciled ${updatedPurchases.length} purchase orders`);
+      
+      console.log(`[retry-inventory] Shipment ${id} - completed successfully`);
+      
+      res.json({
+        success: true,
+        message: 'Inventory processing completed',
+        inventoryUpdates,
+        costUpdates: updatedProductCosts.length,
+        purchaseReconciliations: updatedPurchases.length
+      });
+    } catch (error) {
+      console.error('Error retrying inventory processing:', error);
+      res.status(500).json({ message: 'Failed to retry inventory processing' });
+    }
+  });
+
   // Revert completed shipment back to receiving - reverses inventory and cost changes
   app.post('/api/imports/shipments/:id/revert-to-receiving', isAuthenticated, async (req, res) => {
     try {
