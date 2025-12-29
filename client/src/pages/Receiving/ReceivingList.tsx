@@ -3335,6 +3335,60 @@ function QuickStorageSheet({
                                   </p>
                                 </div>
 
+                                {/* Unallocated Variants Alert - Priority display for underallocation */}
+                                {item.variantAllocations && item.variantAllocations.length > 0 && (() => {
+                                  const unallocatedVariants = item.variantAllocations.filter(variant => {
+                                    const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                      return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                    }, 0) || 0;
+                                    const pendingQty = item.locations?.reduce((sum, loc) => {
+                                      return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                    }, 0) || 0;
+                                    return variant.quantity - existingQty - pendingQty > 0;
+                                  });
+                                  
+                                  if (unallocatedVariants.length === 0) return null;
+                                  
+                                  // Show alert only if some locations already assigned (partial allocation)
+                                  const hasAnyAllocations = item.locations.length > 0 || (item.existingLocations && item.existingLocations.length > 0);
+                                  if (!hasAnyAllocations) return null;
+                                  
+                                  return (
+                                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-3">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                                          {unallocatedVariants.length} {t('imports:variantsNeedLocation', 'variants still need location')}
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {unallocatedVariants.slice(0, 5).map((variant, idx) => {
+                                          const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                          }, 0) || 0;
+                                          const pendingQty = item.locations?.reduce((sum, loc) => {
+                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                          }, 0) || 0;
+                                          const remaining = variant.quantity - existingQty - pendingQty;
+                                          return (
+                                            <div key={idx} className="flex items-center justify-between text-sm py-1 px-2 bg-white dark:bg-gray-900 rounded border border-amber-200 dark:border-amber-800">
+                                              <span className="font-medium truncate">{variant.variantName}</span>
+                                              <Badge className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs ml-2 flex-shrink-0">
+                                                {remaining} pcs
+                                              </Badge>
+                                            </div>
+                                          );
+                                        })}
+                                        {unallocatedVariants.length > 5 && (
+                                          <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                                            +{unallocatedVariants.length - 5} {t('common:more')}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                
                                 {/* PRODUCT DETAILS - Collapsible section for variants and order items */}
                                 {((item.variantAllocations && item.variantAllocations.length > 0) || 
                                   (item.orderItems && item.orderItems.length > 0)) && (
@@ -3358,30 +3412,78 @@ function QuickStorageSheet({
                                     </summary>
                                     
                                     <div className="p-3 space-y-3 bg-white dark:bg-gray-950">
-                                      {/* Variant Allocations */}
-                                      {item.variantAllocations && item.variantAllocations.length > 0 && (
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2 text-xs font-medium text-purple-600 dark:text-purple-400">
-                                            <Tag className="h-3 w-3" />
-                                            <span>{t('common:variants')} ({item.variantAllocations.length})</span>
-                                          </div>
-                                          <div className="space-y-1.5">
-                                            {item.variantAllocations.map((variant, vIdx) => (
-                                              <div 
-                                                key={vIdx}
-                                                className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800"
-                                              >
-                                                <span className="text-sm font-medium truncate">{variant.variantName}</span>
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                  <Badge className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs">
-                                                    x{variant.quantity}
-                                                  </Badge>
+                                      {/* Variant Allocations - with remaining calculation and priority sorting */}
+                                      {item.variantAllocations && item.variantAllocations.length > 0 && (() => {
+                                        // Calculate remaining for each variant
+                                        const variantsWithRemaining = item.variantAllocations.map(variant => {
+                                          const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                          }, 0) || 0;
+                                          const pendingQty = item.locations?.reduce((sum, loc) => {
+                                            return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
+                                          }, 0) || 0;
+                                          const remaining = Math.max(0, variant.quantity - existingQty - pendingQty);
+                                          return { ...variant, remaining, existingQty, pendingQty };
+                                        });
+                                        
+                                        // Sort: unallocated first (with remaining > 0)
+                                        const sortedVariants = [...variantsWithRemaining].sort((a, b) => {
+                                          if (a.remaining > 0 && b.remaining === 0) return -1;
+                                          if (a.remaining === 0 && b.remaining > 0) return 1;
+                                          return 0;
+                                        });
+                                        
+                                        const unallocatedCount = sortedVariants.filter(v => v.remaining > 0).length;
+                                        
+                                        return (
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-xs font-medium text-purple-600 dark:text-purple-400">
+                                              <Tag className="h-3 w-3" />
+                                              <span>{t('common:variants')} ({item.variantAllocations.length})</span>
+                                              {unallocatedCount > 0 && (
+                                                <Badge className="ml-auto bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-[10px]">
+                                                  {unallocatedCount} {t('imports:needsAllocation', 'need allocation')}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                              {sortedVariants.map((variant, vIdx) => (
+                                                <div 
+                                                  key={vIdx}
+                                                  className={`flex items-center justify-between py-1.5 px-2 rounded-lg border ${
+                                                    variant.remaining > 0 
+                                                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700' 
+                                                      : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                                                  }`}
+                                                >
+                                                  <div className="flex items-center gap-2 min-w-0">
+                                                    {variant.remaining > 0 ? (
+                                                      <AlertCircle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                                                    ) : (
+                                                      <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                                                    )}
+                                                    <span className="text-sm font-medium truncate">{variant.variantName}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    {variant.remaining > 0 ? (
+                                                      <>
+                                                        <Badge className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs">
+                                                          {variant.remaining} left
+                                                        </Badge>
+                                                        <span className="text-[10px] text-muted-foreground">/{variant.quantity}</span>
+                                                      </>
+                                                    ) : (
+                                                      <Badge className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs">
+                                                        ✓ {variant.quantity}
+                                                      </Badge>
+                                                    )}
+                                                  </div>
                                                 </div>
-                                              </div>
-                                            ))}
+                                              ))}
+                                            </div>
                                           </div>
-                                        </div>
-                                      )}
+                                        );
+                                      })()}
                                       
                                       {/* Order Items from Unpacked PO */}
                                       {item.orderItems && item.orderItems.length > 0 && (
