@@ -4036,9 +4036,9 @@ export default function ProductForm() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {variant.warehouseLocation ? (
+                                {variant.locationCode ? (
                                   <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
-                                    {variant.warehouseLocation}
+                                    {variant.locationCode}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-slate-400 dark:text-slate-500 italic">
