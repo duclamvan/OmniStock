@@ -5846,12 +5846,30 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
             if (variant) {
               const newQty = Math.max(0, (variant.quantity || 0) - va.quantity);
               
+              // If quantity becomes 0, clear all import costs and landed costs
+              const updateData: any = {
+                quantity: newQty,
+                updatedAt: new Date()
+              };
+              
+              if (newQty === 0) {
+                updateData.importCostEur = null;
+                updateData.importCostUsd = null;
+                updateData.importCostCzk = null;
+                updateData.importCostVnd = null;
+                updateData.importCostCny = null;
+                updateData.latestLandingCost = null;
+                updateData.landingCostEur = null;
+                updateData.landingCostUsd = null;
+                updateData.landingCostCzk = null;
+                updateData.landingCostVnd = null;
+                updateData.landingCostCny = null;
+                console.log(`[Revert] Variant ${va.variantName} quantity=0, clearing all import/landing costs`);
+              }
+              
               await db
                 .update(productVariants)
-                .set({
-                  quantity: newQty,
-                  updatedAt: new Date()
-                })
+                .set(updateData)
                 .where(eq(productVariants.id, variant.id));
               
               console.log(`[Revert] Reverted ${va.quantity} from variant ${va.variantName} (${variant.id}), new qty: ${newQty}`);
@@ -6035,31 +6053,50 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
       }
       
       // ================================================================
-      // RECALCULATE PARENT PRODUCT QUANTITIES FROM VARIANTS
+      // RECALCULATE PARENT PRODUCT QUANTITIES AND COSTS FROM VARIANTS
       // ================================================================
       if (parentProductsToRecalc.size > 0) {
-        console.log(`[Revert] Recalculating quantities for ${parentProductsToRecalc.size} parent products`);
+        console.log(`[Revert] Recalculating quantities and costs for ${parentProductsToRecalc.size} parent products`);
         
         for (const parentProductId of parentProductsToRecalc) {
-          // Sum all variant quantities for this parent
+          // Sum all variant quantities and weighted cost values for this parent
           const variantSums = await db
             .select({
-              totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int`
+              totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int`,
+              totalCostValueEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostEur}::numeric, 0)), 0)`,
+              totalCostValueUsd: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostUsd}::numeric, 0)), 0)`,
+              totalCostValueCzk: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.importCostCzk}::numeric, 0)), 0)`,
+              totalLandingCostEur: sql<number>`COALESCE(SUM(${productVariants.quantity} * COALESCE(${productVariants.landingCostEur}::numeric, 0)), 0)`
             })
             .from(productVariants)
             .where(eq(productVariants.productId, parentProductId));
           
           const newParentQty = variantSums[0]?.totalQuantity || 0;
+          const totalCostValueEur = Number(variantSums[0]?.totalCostValueEur) || 0;
+          const totalCostValueUsd = Number(variantSums[0]?.totalCostValueUsd) || 0;
+          const totalCostValueCzk = Number(variantSums[0]?.totalCostValueCzk) || 0;
+          const totalLandingCostEur = Number(variantSums[0]?.totalLandingCostEur) || 0;
+          
+          // Calculate weighted average costs (only if quantity > 0)
+          const avgCostEur = newParentQty > 0 ? totalCostValueEur / newParentQty : 0;
+          const avgCostUsd = newParentQty > 0 ? totalCostValueUsd / newParentQty : 0;
+          const avgCostCzk = newParentQty > 0 ? totalCostValueCzk / newParentQty : 0;
+          const avgLandingCostEur = newParentQty > 0 ? totalLandingCostEur / newParentQty : 0;
           
           await db
             .update(products)
             .set({
               quantity: newParentQty,
+              importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
+              importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+              landingCostEur: avgLandingCostEur > 0 ? avgLandingCostEur.toFixed(4) : null,
+              latestLandingCost: avgLandingCostEur > 0 ? avgLandingCostEur.toFixed(4) : null,
               updatedAt: new Date()
             })
             .where(eq(products.id, parentProductId));
           
-          console.log(`[Revert] Updated parent product ${parentProductId} quantity to ${newParentQty}`);
+          console.log(`[Revert] Updated parent product ${parentProductId}: qty=${newParentQty}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}`);
           productsAffected++;
         }
       }
