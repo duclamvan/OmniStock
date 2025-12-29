@@ -12896,6 +12896,18 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       return sum + chargeableWeight;
     }, 0);
     
+    // Calculate total value and total units for fallback allocation methods
+    const totalValue = itemsWithCartons.reduce((sum, row) => {
+      return sum + (parseFloat(row.item.unitPrice || '0') * row.item.quantity);
+    }, 0);
+    
+    const totalUnits = itemsWithCartons.reduce((sum, row) => sum + row.item.quantity, 0);
+    
+    // Determine allocation method: weight-based if weight data exists, otherwise value-based or unit-based
+    const useWeightAllocation = totalChargeableWeight > 0;
+    const useValueAllocation = !useWeightAllocation && totalValue > 0;
+    const useUnitAllocation = !useWeightAllocation && !useValueAllocation && totalUnits > 0;
+    
     for (const row of itemsWithCartons) {
       const item = row.item;
       const carton = row.carton;
@@ -12921,15 +12933,27 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       
       const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
 
-      // Allocate costs (weight-based allocation)
-      const weightRatio = totalChargeableWeight > 0 ? chargeableWeight / totalChargeableWeight : 0;
+      // Calculate allocation ratio based on available data
+      let allocationRatio = 0;
+      
+      if (useWeightAllocation) {
+        // Weight-based allocation (preferred)
+        allocationRatio = chargeableWeight / totalChargeableWeight;
+      } else if (useValueAllocation) {
+        // Value-based allocation fallback
+        const itemValue = parseFloat(item.unitPrice || '0') * item.quantity;
+        allocationRatio = itemValue / totalValue;
+      } else if (useUnitAllocation) {
+        // Unit-based allocation fallback (last resort)
+        allocationRatio = item.quantity / totalUnits;
+      }
 
-      const freightAllocated = (costsByType['FREIGHT'] || 0) * weightRatio;
-      const dutyAllocated = (costsByType['DUTY'] || 0) * weightRatio;
-      const brokerageAllocated = (costsByType['BROKERAGE'] || 0) * weightRatio;
-      const insuranceAllocated = (costsByType['INSURANCE'] || 0) * weightRatio;
-      const packagingAllocated = (costsByType['PACKAGING'] || 0) * weightRatio;
-      const otherAllocated = (costsByType['OTHER'] || 0) * weightRatio;
+      const freightAllocated = (costsByType['FREIGHT'] || 0) * allocationRatio;
+      const dutyAllocated = (costsByType['DUTY'] || 0) * allocationRatio;
+      const brokerageAllocated = (costsByType['BROKERAGE'] || 0) * allocationRatio;
+      const insuranceAllocated = (costsByType['INSURANCE'] || 0) * allocationRatio;
+      const packagingAllocated = (costsByType['PACKAGING'] || 0) * allocationRatio;
+      const otherAllocated = (costsByType['OTHER'] || 0) * allocationRatio;
 
       const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
