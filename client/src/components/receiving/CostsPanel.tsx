@@ -715,7 +715,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           </TabsContent>
 
           <TabsContent value="allocation">
-            {shipmentId && <AllocationPreview shipmentId={shipmentId} />}
+            {shipmentId && <AllocationPreview shipmentId={shipmentId} displayCurrency={displayCurrency} />}
           </TabsContent>
 
           <TabsContent value="cartons">

@@ -125,6 +125,7 @@ interface AllocationSummary {
 
 interface AllocationPreviewProps {
   shipmentId: string;
+  displayCurrency?: string;
 }
 
 // Define available allocation methods
@@ -221,14 +222,13 @@ const AVAILABLE_CURRENCIES = [
   { value: 'CAD', label: 'CAD $' },
 ];
 
-const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
+const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPreviewProps) => {
   const { toast } = useToast();
   const { t } = useTranslation('imports');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [showMethodDetails, setShowMethodDetails] = useState(true);
-  const [displayCurrency, setDisplayCurrency] = useState<string>('EUR');
   
   // Column visibility state
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
@@ -688,31 +688,16 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {/* Currency Selector */}
-              <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
-                <SelectTrigger className="w-[100px] h-7 text-xs" data-testid="select-allocation-currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  {AVAILABLE_CURRENCIES.map(curr => (
-                    <SelectItem key={curr.value} value={curr.value} data-testid={`option-allocation-currency-${curr.value}`}>
-                      {curr.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="h-7 text-xs"
-                data-testid="button-export-csv"
-              >
-                <Download className="h-3 w-3 mr-1" />
-                {t('export')}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToCSV}
+              className="h-7 text-xs"
+              data-testid="button-export-csv"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              {t('export')}
+            </Button>
           </div>
         </CardContent>
       </Card>
