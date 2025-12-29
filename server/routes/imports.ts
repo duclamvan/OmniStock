@@ -561,8 +561,8 @@ interface FinalizeReceivingResult {
  */
 async function finalizeReceivingInventory(
   tx: any,
-  receiptId: number,
-  shipmentId: number
+  receiptId: string,
+  shipmentId: string
 ): Promise<FinalizeReceivingResult> {
   const result: FinalizeReceivingResult = {
     success: false,
