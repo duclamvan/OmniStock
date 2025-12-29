@@ -2123,6 +2123,7 @@ function QuickStorageSheet({
   const [quantityInput, setQuantityInput] = useState("");
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBatchSaving, setIsBatchSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
@@ -3787,10 +3788,13 @@ function QuickStorageSheet({
                                       {(hasPendingNew || hasPendingExisting) && (
                                         <Button
                                           className="flex-1 h-10 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
+                                          disabled={isBatchSaving}
                                           onClick={async (e) => {
                                             e.stopPropagation();
                                             
-                                            if (!item.productId) return;
+                                            if (!item.productId || isBatchSaving) return;
+                                            
+                                            setIsBatchSaving(true);
                                             
                                             // Collect ALL locations to save in one batch
                                             const allLocationsToSave: Array<{
@@ -3901,18 +3905,24 @@ function QuickStorageSheet({
                                                 description: t('failedToSaveLocations', 'Failed to save locations'),
                                                 variant: 'destructive'
                                               });
+                                            } finally {
+                                              setIsBatchSaving(false);
                                             }
                                             
                                             setTimeout(() => locationInputRef.current?.focus(), 100);
                                           }}
-                                          disabled={storeLocationMutation.isPending || updateLocationMutation.isPending}
                                         >
-                                          {(storeLocationMutation.isPending || updateLocationMutation.isPending) ? (
-                                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                          {isBatchSaving ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                              {t('common:saving', 'Saving...')}
+                                            </>
                                           ) : (
-                                            <Check className="h-4 w-4 mr-1" />
+                                            <>
+                                              <Check className="h-4 w-4 mr-1" />
+                                              {t('saveLocations')} ({pendingExistingQty + pendingLocationQty})
+                                            </>
                                           )}
-                                          {t('saveLocations')} ({pendingExistingQty + pendingLocationQty})
                                         </Button>
                                       )}
                                     </div>
