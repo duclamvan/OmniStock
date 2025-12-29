@@ -914,12 +914,9 @@ async function finalizeReceivingInventory(
           // ================================================================
           const variantUnitPrice = parseFloat(String(va.unitPrice || 0));
           
-          let variantLandedCostEur: number;
-          if (item.itemType === 'purchase' && perUnitLandedCostEur > 0) {
-            variantLandedCostEur = perUnitLandedCostEur;
-          } else {
-            variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
-          }
+          // Full landed cost = purchase unit price + allocated landing costs (freight, shipping, etc.)
+          // landingCostUnitBase only stores the landing cost component, NOT the unit purchase price
+          const variantLandedCostEur = variantUnitPrice + perUnitLandedCostEur;
           
           // Convert to ALL currencies (VND and CNY added per requirements)
           const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
