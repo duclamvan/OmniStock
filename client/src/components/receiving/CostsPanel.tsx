@@ -258,7 +258,11 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     return formatCurrencyUtil(value, currency);
   };
 
-  const hasAnyCosts = costs.length > 0;
+  // Check for ANY costs including auto-included ones from shipment and PO
+  const hasManualCosts = costs.length > 0;
+  const hasShipmentCosts = Number(shipmentData?.shippingCost) > 0 || Number(shipmentData?.insuranceValue) > 0;
+  const hasPOShippingCosts = Number(costBreakdown.poShippingCostsOriginal) > 0 || Number(costBreakdown.poShippingCosts) > 0;
+  const hasAnyCosts = hasManualCosts || hasShipmentCosts || hasPOShippingCosts;
   const isCalculated = summary?.status === 'calculated' || summary?.status === 'approved';
 
   if (loadingCosts || loadingSummary) {
@@ -322,34 +326,47 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           </div>
         </div>
 
-        {/* Summary Card */}
-        {summary && hasAnyCosts && (
+        {/* Summary Card - Show when there are any costs (including auto-included) */}
+        {hasAnyCosts && (
           <Card>
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{t('totalCost')}</p>
-                  <p className="text-xl font-bold">
-                    {formatCurrency(
-                      convertCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR', displayCurrency),
-                      displayCurrency
-                    )}
-                  </p>
-                  {displayCurrency !== (summary.baseCurrency || 'EUR') && (
-                    <p className="text-xs text-muted-foreground">
-                      ≈ {formatCurrency(summary.totalCost || 0, summary.baseCurrency || 'EUR')}
-                    </p>
-                  )}
+                  {(() => {
+                    // Calculate total from all sources
+                    const shipmentCost = Number(shipmentData?.shippingCost || 0);
+                    const insuranceCost = Number(shipmentData?.insuranceValue || 0);
+                    const poShippingCost = Number(costBreakdown.poShippingCostsOriginal || costBreakdown.poShippingCosts || 0);
+                    const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + Number(cost.amountOriginal || 0), 0);
+                    const allCostsTotal = shipmentCost + insuranceCost + poShippingCost + manualCostsTotal;
+                    const baseCurrency = shipmentData?.shippingCostCurrency || 'USD';
+                    return (
+                      <>
+                        <p className="text-xl font-bold">
+                          {formatCurrency(
+                            convertCurrency(allCostsTotal, baseCurrency, displayCurrency),
+                            displayCurrency
+                          )}
+                        </p>
+                        {displayCurrency !== baseCurrency && (
+                          <p className="text-xs text-muted-foreground">
+                            ≈ {formatCurrency(allCostsTotal, baseCurrency)}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('items')}</p>
-                  <p className="text-xl font-semibold">{summary.itemCount || 0}</p>
+                  <p className="text-xl font-semibold">{summary?.itemCount || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('displayCurrency')}</p>
                   <p className="text-xl font-semibold">{displayCurrency}</p>
                 </div>
-                {summary.lastCalculated && (
+                {summary?.lastCalculated && (
                   <div>
                     <p className="text-sm text-muted-foreground">{t('lastCalculated')}</p>
                     <p className="text-sm">{format(new Date(summary.lastCalculated), 'MMM dd, HH:mm')}</p>
@@ -678,8 +695,12 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     </div>
                   ))}
 
-                  {/* Empty State */}
-                  {!Number(shipmentData?.shippingCost) && !Number(shipmentData?.insuranceValue) && costs.length === 0 && (
+                  {/* Empty State - Only show when there are NO costs at all */}
+                  {!Number(shipmentData?.shippingCost) && 
+                   !Number(shipmentData?.insuranceValue) && 
+                   !Number(costBreakdown.poShippingCostsOriginal) && 
+                   !Number(costBreakdown.poShippingCosts) &&
+                   costs.length === 0 && (
                     <div className="py-8 text-center">
                       <CircleDollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
                       <p className="text-muted-foreground text-sm">{t('noCostsAddedYet') || 'No costs added yet'}</p>
@@ -700,73 +721,261 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
           </TabsContent>
 
           <TabsContent value="details" className="space-y-3">
+            {/* Complete Cost Breakdown Card */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{t('costBreakdown')}</CardTitle>
+                <CardTitle className="text-base">{t('completeCostBreakdown') || 'Complete Cost Breakdown'}</CardTitle>
                 <CardDescription className="text-xs">
-                  {t('detailedViewOfCostLines')}
+                  {t('allCostsFromAllSources') || 'All costs from shipment, purchase orders, and manual entries'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {costs.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-6 text-sm">
-                    {t('noCostsAddedYet')}
-                  </p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {costs.map((cost: ShipmentCost) => (
-                      <div key={cost.id} className="flex items-center justify-between p-2.5 border rounded-lg hover:bg-muted/30 transition-colors">
+              <CardContent className="space-y-4">
+                {/* Auto-Included Costs Section */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    {t('autoIncludedCosts') || 'Auto-Included Costs'}
+                  </h4>
+                  <div className="space-y-1.5 pl-6">
+                    {/* International Transit Shipping */}
+                    {Number(shipmentData?.shippingCost) > 0 && (
+                      <div className="flex items-center justify-between p-2.5 border rounded-lg bg-purple-50/50 dark:bg-purple-900/10">
                         <div className="flex items-center gap-2.5">
-                          <div className={`p-1.5 rounded-lg ${getCostColor(cost.type)}`}>
-                            {getCostIcon(cost.type)}
+                          <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                            <Truck className="h-4 w-4 text-purple-600" />
                           </div>
                           <div>
-                            <div className="font-medium text-sm">
-                              {cost.type} {cost.mode && `(${cost.mode})`}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatCurrency(cost.amountOriginal, cost.currency)}
-                              {cost.currency !== 'EUR' && (
-                                <span className="ml-1.5">
-                                  → {formatCurrency(cost.amountBase, 'EUR')}
-                                </span>
-                              )}
-                            </div>
-                            {cost.notes && (
-                              <div className="text-[10px] text-muted-foreground mt-0.5">
-                                {cost.notes}
-                              </div>
-                            )}
+                            <div className="font-medium text-sm">{t('internationalTransitShipping') || 'International Transit Shipping'}</div>
+                            <div className="text-xs text-muted-foreground">{t('fromShipment') || 'From shipment record'}</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(cost.createdAt), 'MMM dd')}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              setSelectedCost(cost);
-                              setShowAddModal(true);
-                            }}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setCostToDelete(cost)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                        <div className="text-right">
+                          <div className="font-semibold text-purple-600">
+                            {formatCurrency(shipmentData.shippingCost, shipmentData.shippingCostCurrency || 'USD')}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('currency') || 'Currency'}: {shipmentData.shippingCostCurrency || 'USD'}
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )}
+                    
+                    {/* Shipment Insurance */}
+                    {Number(shipmentData?.insuranceValue) > 0 && (
+                      <div className="flex items-center justify-between p-2.5 border rounded-lg bg-indigo-50/50 dark:bg-indigo-900/10">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                            <Shield className="h-4 w-4 text-indigo-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{t('shipmentInsurance') || 'Shipment Insurance'}</div>
+                            <div className="text-xs text-muted-foreground">{t('fromShipment') || 'From shipment record'}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-indigo-600">
+                            {formatCurrency(shipmentData.insuranceValue, shipmentData.shippingCostCurrency || 'USD')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* PO Shipping */}
+                    {(Number(costBreakdown.poShippingCostsOriginal) > 0 || Number(costBreakdown.poShippingCosts) > 0) && (
+                      <div className="flex items-center justify-between p-2.5 border rounded-lg bg-orange-50/50 dark:bg-orange-900/10">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                            <Box className="h-4 w-4 text-orange-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{t('purchaseOrderShipping') || 'Purchase Order Shipping'}</div>
+                            <div className="text-xs text-muted-foreground">{t('fromLinkedPO') || 'From linked purchase orders'}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-orange-600">
+                            {costBreakdown.poShippingCostsOriginal > 0 
+                              ? formatCurrency(costBreakdown.poShippingCostsOriginal, costBreakdown.poShippingCostsCurrency || 'USD')
+                              : formatCurrency(costBreakdown.poShippingCosts, 'EUR')
+                            }
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('originalCurrency') || 'Original'}: {costBreakdown.poShippingCostsCurrency || 'USD'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* No auto-included costs */}
+                    {!Number(shipmentData?.shippingCost) && 
+                     !Number(shipmentData?.insuranceValue) && 
+                     !Number(costBreakdown.poShippingCostsOriginal) && 
+                     !Number(costBreakdown.poShippingCosts) && (
+                      <p className="text-xs text-muted-foreground italic py-2">{t('noAutoIncludedCosts') || 'No auto-included costs'}</p>
+                    )}
                   </div>
-                )}
+                </div>
+                
+                {/* Manually Added Costs Section */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Edit2 className="h-4 w-4 text-blue-500" />
+                    {t('manuallyAddedCosts') || 'Manually Added Costs'}
+                  </h4>
+                  <div className="space-y-1.5 pl-6">
+                    {costs.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic py-2">
+                        {t('noManualCostsAdded') || 'No manual costs added yet. Click "Add Cost" to add customs, brokerage, or other fees.'}
+                      </p>
+                    ) : (
+                      costs.map((cost: ShipmentCost) => (
+                        <div key={cost.id} className="flex items-center justify-between p-2.5 border rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`p-1.5 rounded-lg ${getCostColor(cost.type)}`}>
+                              {getCostIcon(cost.type)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">
+                                {cost.type} {cost.mode && `(${cost.mode})`}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatCurrencyUtil(Number(cost.amountOriginal), cost.currency)}
+                                {cost.currency !== 'EUR' && (
+                                  <span className="ml-1.5">
+                                    → {formatCurrencyUtil(Number(cost.amountBase), 'EUR')} EUR
+                                  </span>
+                                )}
+                              </div>
+                              {cost.notes && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  {cost.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-muted-foreground">
+                              {format(new Date(cost.createdAt), 'MMM dd')}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setSelectedCost(cost);
+                                setShowAddModal(true);
+                              }}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setCostToDelete(cost)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                
+                {/* Cost Summary Table */}
+                <div className="space-y-2 pt-2 border-t">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-primary" />
+                    {t('costSummaryByType') || 'Cost Summary by Type'}
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {/* Freight Total */}
+                    <div className="p-2 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('freight') || 'Freight'}</div>
+                      <div className="font-semibold text-blue-600">
+                        {formatCurrency(
+                          Number(shipmentData?.shippingCost || 0) + 
+                          (costBreakdown.poShippingCostsOriginal || 0) +
+                          costs.filter((c: ShipmentCost) => c.type === 'FREIGHT').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          shipmentData?.shippingCostCurrency || 'USD'
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Insurance Total */}
+                    <div className="p-2 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('insurance') || 'Insurance'}</div>
+                      <div className="font-semibold text-indigo-600">
+                        {formatCurrency(
+                          Number(shipmentData?.insuranceValue || 0) +
+                          costs.filter((c: ShipmentCost) => c.type === 'INSURANCE').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          shipmentData?.shippingCostCurrency || 'USD'
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Duty/Tax Total */}
+                    <div className="p-2 bg-red-50/50 dark:bg-red-900/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('dutyTax') || 'Duty/Tax'}</div>
+                      <div className="font-semibold text-red-600">
+                        {formatCurrency(
+                          costs.filter((c: ShipmentCost) => c.type === 'DUTY').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          'USD'
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Brokerage Total */}
+                    <div className="p-2 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('brokerage') || 'Brokerage'}</div>
+                      <div className="font-semibold text-amber-600">
+                        {formatCurrency(
+                          costs.filter((c: ShipmentCost) => c.type === 'BROKERAGE').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          'USD'
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Packaging Total */}
+                    <div className="p-2 bg-green-50/50 dark:bg-green-900/10 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('packaging') || 'Packaging'}</div>
+                      <div className="font-semibold text-green-600">
+                        {formatCurrency(
+                          costs.filter((c: ShipmentCost) => c.type === 'PACKAGING').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          'USD'
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Other Total */}
+                    <div className="p-2 bg-gray-50/50 dark:bg-gray-800/30 rounded-lg">
+                      <div className="text-xs text-muted-foreground">{t('other') || 'Other'}</div>
+                      <div className="font-semibold text-gray-600">
+                        {formatCurrency(
+                          costs.filter((c: ShipmentCost) => c.type === 'OTHER').reduce((sum: number, c: ShipmentCost) => sum + Number(c.amountOriginal), 0),
+                          'USD'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Grand Total */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
+                    <div className="font-medium">{t('grandTotal') || 'Grand Total (All Costs)'}</div>
+                    <div className="text-xl font-bold text-primary">
+                      {(() => {
+                        const shipmentCost = Number(shipmentData?.shippingCost || 0);
+                        const insuranceCost = Number(shipmentData?.insuranceValue || 0);
+                        const poShippingCost = Number(costBreakdown.poShippingCostsOriginal || 0);
+                        const manualCostsTotal = costs.reduce((sum: number, cost: any) => sum + Number(cost.amountOriginal || 0), 0);
+                        return formatCurrency(shipmentCost + insuranceCost + poShippingCost + manualCostsTotal, shipmentData?.shippingCostCurrency || 'USD');
+                      })()}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -804,6 +1013,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
             queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
             queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
             queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/cost-sources`] });
             onUpdate?.();
           }}
         />
