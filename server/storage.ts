@@ -380,6 +380,7 @@ export interface IStorage {
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
+  deleteProductVariantsBulk(ids: string[]): Promise<number>;
 
   // AI Location Suggestions
   getAiLocationSuggestionByProduct(productId: string): Promise<AiLocationSuggestion | undefined>;
@@ -2568,6 +2569,19 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting product variant:', error);
       return false;
+    }
+  }
+
+  async deleteProductVariantsBulk(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    try {
+      const result = await db
+        .delete(productVariants)
+        .where(inArray(productVariants.id, ids));
+      return result.rowCount ?? 0;
+    } catch (error) {
+      console.error('Error bulk deleting product variants:', error);
+      throw error;
     }
   }
 

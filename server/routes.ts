@@ -6171,10 +6171,9 @@ Important:
     }
   });
 
-  // Bulk delete product variants
+  // Bulk delete product variants - optimized single query
   app.post('/api/products/:productId/variants/bulk-delete', isAuthenticated, async (req: any, res) => {
     try {
-      console.log("Bulk delete request body:", req.body);
       const { variantIds } = req.body;
 
       if (!variantIds || !Array.isArray(variantIds)) {
@@ -6185,21 +6184,18 @@ Important:
         return res.status(400).json({ message: "No variant IDs provided" });
       }
 
-      console.log(`Deleting ${variantIds.length} variants:`, variantIds);
-
-      for (const variantId of variantIds) {
-        await storage.deleteProductVariant(variantId);
-      }
+      // Use bulk delete - single SQL query with IN clause
+      const deletedCount = await storage.deleteProductVariantsBulk(variantIds);
 
       await storage.createUserActivity({
-        userId: "test-user",
+        userId: req.user?.id || "system",
         action: 'deleted',
         entityType: 'product_variant',
         entityId: req.params.productId,
-        description: `Deleted ${variantIds.length} product variants`,
+        description: `Bulk deleted ${deletedCount} product variants`,
       });
 
-      res.status(204).send();
+      res.json({ deletedCount });
     } catch (error) {
       console.error("Error deleting product variants in bulk:", error);
       res.status(500).json({ message: "Failed to delete product variants" });
