@@ -6331,6 +6331,7 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   )}
                   <span>{t('avgLandedCostApplied')}</span>
                 </div>
+                <DebugLogsDropdown />
               </div>
             )}
             
@@ -6644,6 +6645,128 @@ function ArchivedShipmentCard({ shipment, isAdministrator }: { shipment: any; is
         </AlertDialog>
       )}
     </Card>
+  );
+}
+
+// ============================================================================
+// DEBUG LOGS DROPDOWN
+// ============================================================================
+
+function DebugLogsDropdown() {
+  const { t } = useTranslation(['imports']);
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const { data: debugLogs, refetch } = useQuery<{
+    count: number;
+    total: number;
+    logs: Array<{
+      timestamp: string;
+      level: 'info' | 'warn' | 'error';
+      message: string;
+      context?: any;
+    }>;
+  }>({
+    queryKey: ['/api/imports/debug-logs?limit=50'],
+    enabled: isOpen,
+    refetchInterval: isOpen ? 3000 : false,
+  });
+  
+  const errorCount = debugLogs?.logs?.filter(l => l.level === 'error').length || 0;
+  const warnCount = debugLogs?.logs?.filter(l => l.level === 'warn').length || 0;
+  
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <button 
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+            errorCount > 0 
+              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50' 
+              : warnCount > 0 
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+              : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+          }`}
+          data-testid="button-debug-logs-dropdown"
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>{t('logs', 'Logs')}</span>
+          {(errorCount > 0 || warnCount > 0) && (
+            <span className="ml-0.5 bg-white/50 dark:bg-black/30 px-1.5 rounded-full text-[10px]">
+              {errorCount > 0 ? errorCount : warnCount}
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-hidden flex flex-col">
+        <div className="px-3 py-2 border-b flex items-center justify-between">
+          <span className="font-semibold text-sm">{t('processingLogs', 'Processing Logs')}</span>
+          <div className="flex gap-1">
+            {errorCount > 0 && (
+              <Badge variant="destructive" className="text-xs">{errorCount} errors</Badge>
+            )}
+            {warnCount > 0 && (
+              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-400 text-xs">{warnCount} warnings</Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto max-h-[300px]">
+          {!debugLogs?.logs?.length ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>{t('noLogs', 'No processing logs')}</p>
+            </div>
+          ) : (
+            <div className="p-2 space-y-1.5">
+              {debugLogs.logs.slice(0, 20).map((log, idx) => (
+                <div
+                  key={idx}
+                  className={`p-2 rounded text-xs ${
+                    log.level === 'error' ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800' :
+                    log.level === 'warn' ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800' :
+                    'bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`font-semibold uppercase text-[10px] ${
+                      log.level === 'error' ? 'text-red-600 dark:text-red-400' :
+                      log.level === 'warn' ? 'text-amber-600 dark:text-amber-400' :
+                      'text-gray-500'
+                    }`}>
+                      {log.level}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(log.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="text-xs break-words text-foreground">{log.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="px-2 py-2 border-t flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="flex-1 h-7 text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            {t('common:refresh', 'Refresh')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              await fetch('/api/imports/debug-logs', { method: 'DELETE', credentials: 'include' });
+              refetch();
+            }}
+            className="h-7 text-xs text-red-600 hover:text-red-700 border-red-200"
+          >
+            {t('common:clear', 'Clear')}
+          </Button>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
