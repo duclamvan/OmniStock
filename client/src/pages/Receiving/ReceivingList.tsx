@@ -5303,7 +5303,22 @@ function ShipmentReportDialog({
   const { toast } = useToast();
   const [selectedItemsForLabels, setSelectedItemsForLabels] = useState<Set<string>>(new Set());
   const [showLabelsSection, setShowLabelsSection] = useState(false);
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
+  
+  const toggleLocationExpand = (itemId: string) => {
+    setExpandedLocations(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+  
+  const LOCATION_PREVIEW_COUNT = 3; // Show first 3 locations by default
   
   const { data: reportData, isLoading } = useQuery<ShipmentReportData>({
     queryKey: [`/api/imports/shipments/${shipmentId}/report`],
@@ -5678,17 +5693,56 @@ function ShipmentReportDialog({
                             )}
                           </div>
                           
-                          {/* Locations - Inline compact */}
+                          {/* Locations - Collapsible */}
                           {item.locations.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              {item.locations.map((loc, idx) => (
-                                <span 
-                                  key={idx} 
-                                  className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
-                                >
-                                  {loc.locationCode}×{loc.quantity}
-                                </span>
-                              ))}
+                            <div className="mt-1.5">
+                              {item.locations.length <= LOCATION_PREVIEW_COUNT ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {item.locations.map((loc, idx) => (
+                                    <span 
+                                      key={idx} 
+                                      className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
+                                    >
+                                      {loc.locationCode}×{loc.quantity}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex flex-wrap gap-1">
+                                    {(expandedLocations.has(String(item.receiptItemId)) 
+                                      ? item.locations 
+                                      : item.locations.slice(0, LOCATION_PREVIEW_COUNT)
+                                    ).map((loc, idx) => (
+                                      <span 
+                                        key={idx} 
+                                        className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
+                                      >
+                                        {loc.locationCode}×{loc.quantity}
+                                      </span>
+                                    ))}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleLocationExpand(String(item.receiptItemId));
+                                      }}
+                                      className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                    >
+                                      {expandedLocations.has(String(item.receiptItemId)) ? (
+                                        <>
+                                          <ChevronUp className="h-3 w-3" />
+                                          {t('common:hide')}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="h-3 w-3" />
+                                          +{item.locations.length - LOCATION_PREVIEW_COUNT} {t('more')}
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
