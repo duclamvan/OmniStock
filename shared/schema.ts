@@ -261,6 +261,13 @@ export const shipments = pgTable("shipments", {
   archiveWeek: text("archive_week"), // Week identifier for grouping (e.g., "2025-W51")
   // Landing cost exchange rates (stored at calculation time from Frankfurter API)
   exchangeRates: jsonb("exchange_rates"), // Format: { USD: 1.08, CZK: 25.2, VND: 27000, CNY: 7.8 }
+  // Processing status tracking for double-checking
+  inventoryAddedAt: timestamp("inventory_added_at"), // When inventory was added to products
+  inventoryAddedBy: text("inventory_added_by"), // Who added the inventory
+  costsAllocatedAt: timestamp("costs_allocated_at"), // When costs were allocated to items
+  costsAllocatedBy: text("costs_allocated_by"), // Who allocated the costs
+  landedCostCalculatedAt: timestamp("landed_cost_calculated_at"), // When avg landed cost was calculated
+  landedCostCalculatedBy: text("landed_cost_calculated_by"), // Who calculated landed cost
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

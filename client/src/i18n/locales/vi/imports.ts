@@ -1182,6 +1182,8 @@ const imports = {
   importNumber: 'Số đơn nhập',
   location: 'Vị trí',
   inventoryAdded: 'Đã thêm vào kho',
+  costsAllocated: 'Đã phân bổ chi phí',
+  landedCostCalculated: 'Đã tính giá vốn',
   issue: 'Vấn đề',
   linkedItems: 'Sản phẩm đã liên kết',
   avgProcessingTime: 'Thời gian TB',

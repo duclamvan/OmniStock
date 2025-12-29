@@ -26,6 +26,7 @@ import {
   Clock, 
   CheckCircle, 
   AlertCircle,
+  Circle,
   Truck,
   Calendar,
   MapPin,
@@ -6111,6 +6112,46 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                 </div>
               </div>
             )}
+            
+            {/* Processing Status Indicators */}
+            <div className="flex flex-wrap gap-2 py-2 border-y border-muted" data-testid={`status-indicators-${shipment.id}`}>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                shipment.inventoryAddedAt 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              }`}>
+                {shipment.inventoryAddedAt ? (
+                  <CheckCircle className="h-3.5 w-3.5" />
+                ) : (
+                  <Clock className="h-3.5 w-3.5" />
+                )}
+                <span>{t('inventoryAdded')}</span>
+              </div>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                shipment.costsAllocatedAt 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              }`}>
+                {shipment.costsAllocatedAt ? (
+                  <CheckCircle className="h-3.5 w-3.5" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5" />
+                )}
+                <span>{t('costsAllocated')}</span>
+              </div>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                shipment.landedCostCalculatedAt 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              }`}>
+                {shipment.landedCostCalculatedAt ? (
+                  <CheckCircle className="h-3.5 w-3.5" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5" />
+                )}
+                <span>{t('landedCostCalculated')}</span>
+              </div>
+            </div>
             
             <div className="flex gap-2">
               <Button

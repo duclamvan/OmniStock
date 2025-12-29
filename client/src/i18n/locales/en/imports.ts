@@ -1164,6 +1164,8 @@ const imports = {
   importNumber: 'Import #',
   location: 'Location',
   inventoryAdded: 'Inventory Added',
+  costsAllocated: 'Costs Allocated',
+  landedCostCalculated: 'Landed Cost Calculated',
   issue: 'Issue',
   linkedItems: 'Linked Items',
   avgProcessingTime: 'Avg Processing',

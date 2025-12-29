@@ -4248,12 +4248,17 @@ router.patch("/shipments/:id/receiving-status", async (req, res) => {
         .where(eq(receipts.id, receipt.id));
       
       // Update shipment status to 'completed' and receivingStatus to 'completed'
+      const username = (req as any).user?.username || 'system';
       await tx
         .update(shipments)
         .set({
           status: 'completed',
           receivingStatus: 'completed',
           deliveredAt: new Date(),
+          inventoryAddedAt: new Date(), // Mark inventory as added
+          inventoryAddedBy: username,
+          landedCostCalculatedAt: new Date(), // Weighted average cost calculated during inventory add
+          landedCostCalculatedBy: username,
           updatedAt: new Date()
         })
         .where(eq(shipments.id, shipmentId));
@@ -12532,10 +12537,13 @@ router.patch("/shipments/:id/allocation-method", async (req, res) => {
     }
     
     // Update the shipment with the selected allocation method
+    const username = (req as any).user?.username || 'system';
     await db
       .update(shipments)
       .set({ 
         allocationMethod,
+        costsAllocatedAt: allocationMethod ? new Date() : null, // Mark costs as allocated when method selected
+        costsAllocatedBy: allocationMethod ? username : null,
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId));
