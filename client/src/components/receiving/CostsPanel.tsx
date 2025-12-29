@@ -449,7 +449,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                     </div>
                   )}
 
-                  {/* PO Shipping Costs - Display in original currency to avoid conversion errors */}
+                  {/* PO Shipping Costs - Convert from original currency to display currency */}
                   {(Number(costBreakdown.poShippingCostsOriginal) > 0 || Number(costBreakdown.poShippingCosts) > 0) && (
                     <div className="flex items-center justify-between py-3">
                       <div className="flex items-center gap-3">
@@ -463,12 +463,18 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-orange-600">
-                          {/* Show original amount in original currency to avoid double-conversion errors */}
+                          {/* Convert from original currency to display currency */}
                           {costBreakdown.poShippingCostsOriginal > 0 
-                            ? formatCurrencyUtil(costBreakdown.poShippingCostsOriginal, costBreakdown.poShippingCostsCurrency || 'USD')
+                            ? formatCurrency(costBreakdown.poShippingCostsOriginal, costBreakdown.poShippingCostsCurrency || 'USD')
                             : formatCurrency(costBreakdown.poShippingCosts, 'EUR')
                           }
                         </p>
+                        {/* Show original if display currency differs */}
+                        {costBreakdown.poShippingCostsOriginal > 0 && displayCurrency !== (costBreakdown.poShippingCostsCurrency || 'USD') && (
+                          <p className="text-xs text-muted-foreground">
+                            ≈ {formatCurrencyUtil(costBreakdown.poShippingCostsOriginal, costBreakdown.poShippingCostsCurrency || 'USD')}
+                          </p>
+                        )}
                         <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-300">{t('autoIncluded') || 'Auto'}</Badge>
                       </div>
                     </div>
