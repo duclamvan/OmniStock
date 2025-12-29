@@ -428,6 +428,89 @@ async function getLandedCostForItem(
     }
   }
   
+  // Priority 2.5: For custom items with no cost_allocations, calculate from shipment-level costs
+  // This matches how AllocationPreview calculates landed costs using aggregateAllUpstreamCosts
+  if (source === 'fallback' && itemType === 'custom' && shipmentId) {
+    try {
+      // Get shipment's shipping cost (main freight)
+      const [shipment] = await tx
+        .select({ 
+          shippingCost: shipments.shippingCost,
+          shippingCostCurrency: shipments.shippingCostCurrency,
+          insuranceValue: shipments.insuranceValue,
+          consolidationId: shipments.consolidationId,
+          exchangeRates: shipments.exchangeRates
+        })
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (shipment?.consolidationId && shipment.shippingCost) {
+        const shippingCost = parseFloat(String(shipment.shippingCost)) || 0;
+        const shippingCurrency = shipment.shippingCostCurrency || 'USD';
+        
+        // Convert shipping cost to EUR
+        let shippingCostEur = shippingCost;
+        if (shippingCurrency !== 'EUR') {
+          // Try to get rate from shipment's stored rates or use default
+          let fxRate = 0.92; // Default USD->EUR
+          if (shipment.exchangeRates) {
+            const rates = typeof shipment.exchangeRates === 'string' 
+              ? JSON.parse(shipment.exchangeRates) 
+              : shipment.exchangeRates;
+            // Stored rates are EUR->X, so we need 1/rate for X->EUR
+            if (rates[shippingCurrency]) {
+              fxRate = 1 / rates[shippingCurrency];
+            }
+          }
+          shippingCostEur = shippingCost * fxRate;
+        }
+        
+        // Get total units in this shipment for proportional allocation
+        const consolidationItemsList = await tx
+          .select({ 
+            quantity: customItems.quantity,
+            id: customItems.id 
+          })
+          .from(consolidationItems)
+          .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+          .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+        
+        const totalUnits = consolidationItemsList.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        // Find this item's quantity
+        const [thisItem] = await tx
+          .select({ quantity: customItems.quantity, unitPrice: customItems.unitPrice })
+          .from(customItems)
+          .where(eq(customItems.id, itemId));
+        
+        if (thisItem && totalUnits > 0) {
+          const itemQuantity = thisItem.quantity || quantity;
+          const itemUnitPriceEur = parseFloat(thisItem.unitPrice || '0');
+          
+          // Calculate freight allocation per unit (simple equal distribution)
+          const freightPerUnit = shippingCostEur / totalUnits;
+          
+          // Add insurance if available
+          let insurancePerUnit = 0;
+          if (shipment.insuranceValue) {
+            const insuranceEur = parseFloat(String(shipment.insuranceValue)) * (shippingCurrency !== 'EUR' ? (1 / eurToUsd) : 1);
+            insurancePerUnit = insuranceEur / totalUnits;
+          }
+          
+          // Total landed cost = unit price + freight + insurance per unit
+          landingCostPerUnit = itemUnitPriceEur + freightPerUnit + insurancePerUnit;
+          source = 'shipment_level_costs' as any;
+          
+          console.log(`[getLandedCostForItem] Custom item ${itemId} from shipment ${shipmentId}: ` +
+            `unitPrice=${itemUnitPriceEur.toFixed(4)} EUR + freight=${freightPerUnit.toFixed(4)} EUR/unit ` +
+            `(${shippingCostEur.toFixed(2)} EUR total / ${totalUnits} units) = ${landingCostPerUnit.toFixed(4)} EUR`);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to calculate from shipment-level costs:', error);
+    }
+  }
+  
   // Priority 3: Check purchaseItems.landingCostUnitBase for purchase items
   // Note: landingCostUnitBase stores the LANDING COST PORTION only (freight, duty, etc.)
   // We must ADD the unit price to get the TOTAL landed cost
