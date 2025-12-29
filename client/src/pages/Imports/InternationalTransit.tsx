@@ -1403,6 +1403,54 @@ export default function InternationalTransit() {
                   </div>
                 </div>
 
+                {/* Package Details */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('totalWeight')} (kg)</Label>
+                    <Input 
+                      name="totalWeight" 
+                      type="number"
+                      step="0.01"
+                      defaultValue={selectedShipment?.totalWeight || selectedPendingShipment?.targetWeight || ''}
+                      className="h-9 text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('totalUnits')}</Label>
+                    <Input 
+                      name="totalUnits" 
+                      type="number"
+                      min="1"
+                      defaultValue={selectedShipment?.totalUnits || selectedPendingShipment?.itemCount || '1'}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t('unitType')}</Label>
+                    <Select name="unitType" defaultValue={selectedShipment?.unitType || 'cartons'}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cartons">{t('cartons')}</SelectItem>
+                        <SelectItem value="boxes">{t('boxes')}</SelectItem>
+                        <SelectItem value="pallets">{t('pallets')}</SelectItem>
+                        <SelectItem value="bags">{t('bags')}</SelectItem>
+                        <SelectItem value="crates">{t('crates')}</SelectItem>
+                        <SelectItem value="pieces">{t('pieces')}</SelectItem>
+                        <SelectItem value="cbm">{t('cbm')}</SelectItem>
+                        <SelectItem value="drums">{t('drums')}</SelectItem>
+                        <SelectItem value="20gp_container">{t('container20GP')}</SelectItem>
+                        <SelectItem value="40gp_container">{t('container40GP')}</SelectItem>
+                        <SelectItem value="40hq_container">{t('container40HQ')}</SelectItem>
+                        <SelectItem value="45hq_container">{t('container45HQ')}</SelectItem>
+                        <SelectItem value="lcl">{t('lclShipment')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 {/* Additional Details - Collapsible */}
                 <Collapsible className="border rounded-lg">
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
@@ -1415,54 +1463,6 @@ export default function InternationalTransit() {
                     </Badge>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-3 pb-3 space-y-4">
-                    {/* Package Details - Autofilled (moved to top) */}
-                    <div className="grid grid-cols-3 gap-3 pt-2">
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">{t('totalWeight')} (kg)</Label>
-                        <Input 
-                          name="totalWeight" 
-                          type="number"
-                          step="0.01"
-                          defaultValue={selectedShipment?.totalWeight || selectedPendingShipment?.targetWeight || ''}
-                          className="h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">{t('totalUnits')}</Label>
-                        <Input 
-                          name="totalUnits" 
-                          type="number"
-                          min="1"
-                          defaultValue={selectedShipment?.totalUnits || selectedPendingShipment?.itemCount || '1'}
-                          className="h-9 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">{t('unitType')}</Label>
-                        <Select name="unitType" defaultValue={selectedShipment?.unitType || 'cartons'}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="cartons">{t('cartons')}</SelectItem>
-                            <SelectItem value="boxes">{t('boxes')}</SelectItem>
-                            <SelectItem value="pallets">{t('pallets')}</SelectItem>
-                            <SelectItem value="bags">{t('bags')}</SelectItem>
-                            <SelectItem value="crates">{t('crates')}</SelectItem>
-                            <SelectItem value="pieces">{t('pieces')}</SelectItem>
-                            <SelectItem value="cbm">{t('cbm')}</SelectItem>
-                            <SelectItem value="drums">{t('drums')}</SelectItem>
-                            <SelectItem value="20gp_container">{t('container20GP')}</SelectItem>
-                            <SelectItem value="40gp_container">{t('container40GP')}</SelectItem>
-                            <SelectItem value="40hq_container">{t('container40HQ')}</SelectItem>
-                            <SelectItem value="45hq_container">{t('container45HQ')}</SelectItem>
-                            <SelectItem value="lcl">{t('lclShipment')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
                     {/* Internal Tracking Number & Carrier (for different tracking tool) */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
