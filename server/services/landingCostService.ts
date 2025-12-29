@@ -40,7 +40,7 @@ interface ItemWithCarton extends CustomItem {
 }
 
 interface ItemAllocation {
-  customItemId: number;
+  customItemId: string;  // UUID string
   chargeableWeight: number;
   actualWeight: number;
   volumetricWeight: number;
@@ -50,12 +50,12 @@ interface ItemAllocation {
 }
 
 interface AllocationResult {
-  customItemId: number;
+  customItemId: string;  // UUID string
   amount: Decimal;
 }
 
 interface LandingCostBreakdown {
-  shipmentId: number;
+  shipmentId: string;  // UUID string
   totalCosts: {
     freight: Decimal;
     insurance: Decimal;
@@ -66,7 +66,7 @@ interface LandingCostBreakdown {
     total: Decimal;
   };
   itemBreakdowns: Array<{
-    customItemId: number;
+    customItemId: string;  // UUID string
     sku: string | null;
     name: string;
     quantity: number;
@@ -621,7 +621,7 @@ export class LandingCostService {
   /**
    * Helper function: Get shipment metrics
    */
-  async getShipmentMetrics(shipmentId: number): Promise<{
+  async getShipmentMetrics(shipmentId: string): Promise<{
     totalWeight: number;
     totalVolumetricWeight: number;
     totalChargeableWeight: number;
@@ -860,7 +860,7 @@ export class LandingCostService {
   /**
    * Main calculation engine: Calculate landing costs for a shipment
    */
-  async calculateLandingCosts(shipmentId: number): Promise<LandingCostBreakdown> {
+  async calculateLandingCosts(shipmentId: string): Promise<LandingCostBreakdown> {
     const warnings: string[] = [];
     const exchangeRates: Record<string, number> = {};
 
@@ -1281,7 +1281,7 @@ export class LandingCostService {
   /**
    * Recalculate landing costs for a shipment (idempotent)
    */
-  async recalculateLandingCosts(shipmentId: number): Promise<LandingCostBreakdown> {
+  async recalculateLandingCosts(shipmentId: string): Promise<LandingCostBreakdown> {
     console.log(`Recalculating landing costs for shipment ${shipmentId}`);
     return this.calculateLandingCosts(shipmentId);
   }
@@ -1289,8 +1289,8 @@ export class LandingCostService {
   /**
    * Get landing cost summary for a shipment
    */
-  async getLandingCostSummary(shipmentId: number): Promise<{
-    shipmentId: number;
+  async getLandingCostSummary(shipmentId: string): Promise<{
+    shipmentId: string;
     totalCost: string;
     itemCount: number;
     lastCalculated: Date | null;
@@ -1330,7 +1330,7 @@ export class LandingCostService {
   /**
    * Validate shipment data completeness for landing cost calculation
    */
-  async validateShipmentData(shipmentId: number): Promise<{
+  async validateShipmentData(shipmentId: string): Promise<{
     isValid: boolean;
     errors: string[];
     warnings: string[];
