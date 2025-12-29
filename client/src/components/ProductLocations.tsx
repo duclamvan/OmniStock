@@ -46,6 +46,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -62,6 +67,8 @@ import {
   ArrowUpDown,
   AlertTriangle,
   Layers,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import {
   getLocationTypeIcon,
@@ -106,6 +113,7 @@ export default function ProductLocations({
   const [deleteLocation, setDeleteLocation] = useState<ProductLocation | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [moveFromLocation, setMoveFromLocation] = useState<ProductLocation | null>(null);
+  const [locationsExpanded, setLocationsExpanded] = useState(false);
 
   // Form states for add/edit
   const [locationType, setLocationType] = useState<LocationType>("warehouse");
@@ -600,9 +608,31 @@ export default function ProductLocations({
           )}
         </div>
 
-        {/* Locations - Card layout on mobile, table on desktop */}
+        {/* Locations - Collapsible section */}
         {locations.length > 0 ? (
-          <>
+          <Collapsible open={locationsExpanded} onOpenChange={setLocationsExpanded}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full flex items-center justify-between p-3 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                data-testid="button-toggle-locations"
+              >
+                <div className="flex items-center gap-2">
+                  {locationsExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                  <MapPin className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium">{t('common:allLocations', 'All Locations')}</span>
+                  <Badge variant="secondary" className="ml-2">{locations.length}</Badge>
+                </div>
+                <span className="text-sm text-slate-500">
+                  {locationsExpanded ? t('common:clickToCollapse', 'Click to collapse') : t('common:clickToExpand', 'Click to expand')}
+                </span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
             {/* Mobile Card Layout */}
             <div className="md:hidden space-y-3">
               {locations.map((location) => {
@@ -840,7 +870,8 @@ export default function ProductLocations({
                 </TableBody>
               </Table>
             </div>
-          </>
+            </CollapsibleContent>
+          </Collapsible>
         ) : (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
