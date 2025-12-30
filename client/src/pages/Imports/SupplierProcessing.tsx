@@ -173,7 +173,7 @@ export default function SupplierProcessing() {
   // Shipment modal state for "Move to Transit" flow
   const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
   const [pendingShipmentData, setPendingShipmentData] = useState<{
-    consolidationId: string;
+    purchaseId: string;
     purchaseName: string;
     purchaseLocation: string;
   } | null>(null);
@@ -251,24 +251,19 @@ export default function SupplierProcessing() {
       } else if (variables.status === 'shipped' && purchase) {
         // When moved to shipped (in transit), show modal to enter shipment details
         if (purchase.consolidation !== 'Yes') {
-          // The backend auto-creates a consolidation - get its ID from the response
-          const consolidationId = _data?.consolidationId;
-          if (consolidationId) {
-            setPendingShipmentData({
-              consolidationId,
-              purchaseName: `PO #${String(purchase.id).substring(0, 8).toUpperCase()} - ${purchase.supplier}`,
-              purchaseLocation: purchase.location || 'China'
-            });
-            setShipmentForm({
-              carrier: '',
-              trackingNumber: '',
-              origin: purchase.location || 'China',
-              destination: 'Czech Republic'
-            });
-            setShipmentModalOpen(true);
-          } else {
-            toast({ title: t('success'), description: t('movedToInternationalTransit') });
-          }
+          // Show modal immediately with purchase info
+          setPendingShipmentData({
+            purchaseId: String(purchase.id),
+            purchaseName: `PO #${String(purchase.id).substring(0, 8).toUpperCase()} - ${purchase.supplier}`,
+            purchaseLocation: purchase.location || 'China'
+          });
+          setShipmentForm({
+            carrier: '',
+            trackingNumber: '',
+            origin: purchase.location || 'China',
+            destination: 'Czech Republic'
+          });
+          setShipmentModalOpen(true);
         } else {
           toast({ title: t('success'), description: t('statusUpdatedSuccessfully') });
         }
@@ -312,25 +307,26 @@ export default function SupplierProcessing() {
   // Create shipment mutation for the "Move to Transit" modal
   const createShipmentMutation = useMutation({
     mutationFn: async (data: {
-      consolidationId: string;
+      purchaseId: string;
       carrier: string;
       trackingNumber: string;
       origin: string;
       destination: string;
     }) => {
-      const response = await apiRequest('POST', '/api/imports/shipments', {
-        consolidationId: data.consolidationId,
+      // Create shipment directly for this purchase (no consolidation needed)
+      const response = await apiRequest('POST', '/api/imports/shipments/from-purchase', {
+        purchaseId: data.purchaseId,
         carrier: data.carrier,
         trackingNumber: data.trackingNumber,
         origin: data.origin,
-        destination: data.destination,
-        status: 'in transit'
+        destination: data.destination
       });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: t('success'), description: t('shipmentCreatedSuccessfully') });
       setShipmentModalOpen(false);
       setPendingShipmentData(null);
@@ -356,7 +352,7 @@ export default function SupplierProcessing() {
       return;
     }
     createShipmentMutation.mutate({
-      consolidationId: pendingShipmentData.consolidationId,
+      purchaseId: pendingShipmentData.purchaseId,
       ...shipmentForm
     });
   };

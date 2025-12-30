@@ -3249,75 +3249,9 @@ router.patch("/purchases/:id/status", async (req, res) => {
       .where(eq(importPurchases.id, purchaseId))
       .returning();
     
-    // AUTO-CREATE PENDING SHIPMENT: If status changed to 'shipped' and consolidation is 'No'
-    // This creates a consolidation entry that appears in International Transit pending shipments
-    // Uses purchase item linkage (itemType: 'purchase') to maintain cost finalization connection
-    if (status === 'shipped' && currentPurchase.consolidation === 'No') {
-      // Check if a consolidation already exists for this purchase by looking for linked purchase items
-      // This is more reliable than searching notes with partial purchaseId
-      const existingLinks = await db
-        .select({ consolidationId: consolidationItems.consolidationId })
-        .from(consolidationItems)
-        .innerJoin(purchaseItems, eq(consolidationItems.itemId, purchaseItems.id))
-        .where(and(
-          eq(consolidationItems.itemType, 'purchase'),
-          eq(purchaseItems.purchaseId, purchaseId)
-        ))
-        .limit(1);
-      
-      // If consolidation already exists, return its ID for the shipment modal
-      if (existingLinks.length > 0) {
-        return res.json({ ...updated, consolidationId: existingLinks[0].consolidationId });
-      }
-      
-      if (existingLinks.length === 0) {
-        // Get purchase items
-        const poItems = await db
-          .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.purchaseId, purchaseId));
-        
-        // Calculate totals: weight × quantity (matches existing consolidation conventions)
-        const totalWeight = poItems.reduce((sum, item) => sum + (parseFloat(item.weight) || 0) * item.quantity, 0);
-        const totalUnits = poItems.reduce((sum, item) => sum + item.quantity, 0);
-        
-        // Wrap in transaction to ensure atomicity - either both consolidation and links persist, or neither
-        let createdConsolidationId: string | null = null;
-        await db.transaction(async (tx) => {
-          // Create a consolidation with status 'ready' so it appears in pending shipments
-          const [newConsolidation] = await tx.insert(consolidations).values({
-            name: `PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
-            location: currentPurchase.location || 'Supplier',
-            shippingMethod: 'general_air_ddp',
-            warehouse: currentPurchase.location || 'Supplier Warehouse',
-            notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
-            targetWeight: totalWeight.toString(),
-            maxItems: totalUnits,
-            status: 'ready',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }).returning();
-          
-          createdConsolidationId = newConsolidation.id;
-          
-          // Link purchase items directly to consolidation using itemType: 'purchase'
-          // This maintains the connection for cost finalization and status propagation
-          for (const item of poItems) {
-            await tx.insert(consolidationItems).values({
-              consolidationId: newConsolidation.id,
-              itemId: item.id,
-              itemType: 'purchase',
-              createdAt: new Date()
-            });
-          }
-        });
-        
-        // Return the consolidation ID so frontend can show shipment modal
-        if (createdConsolidationId) {
-          return res.json({ ...updated, consolidationId: createdConsolidationId });
-        }
-      }
-    }
+    // For direct shipping POs (consolidation='No'), the frontend shows a modal to capture
+    // shipment details and calls POST /api/imports/shipments/from-purchase separately.
+    // This endpoint just updates the status - no consolidation auto-creation needed.
     
     // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
     if (status === 'delivered' && currentPurchase.consolidation === 'No') {
@@ -5191,6 +5125,76 @@ const generateAIShipmentName = async (
     return `XX-GEN-Shipment-${year}`;
   }
 };
+
+// Create shipment directly from a purchase order (for direct shipping without consolidation)
+router.post("/shipments/from-purchase", async (req, res) => {
+  try {
+    const { purchaseId, carrier, trackingNumber, origin, destination } = req.body;
+    
+    if (!purchaseId) {
+      return res.status(400).json({ message: "Purchase ID is required" });
+    }
+    
+    // Get purchase and its items
+    const [purchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId))
+      .limit(1);
+    
+    if (!purchase) {
+      return res.status(404).json({ message: "Purchase not found" });
+    }
+    
+    const items = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+    
+    // Calculate totals
+    const totalWeight = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0) * item.quantity, 0);
+    const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Generate shipment name
+    const shipmentName = `PO #${purchaseId.substring(0, 8).toUpperCase()} - ${purchase.supplier}`;
+    
+    // Create shipment directly (no consolidation needed)
+    const [shipment] = await db.insert(shipments).values({
+      consolidationId: null,
+      carrier: carrier || 'Direct Supplier',
+      trackingNumber: trackingNumber || `PO-${purchaseId.substring(0, 8).toUpperCase()}`,
+      shipmentName: shipmentName,
+      origin: origin || purchase.location || 'Supplier',
+      destination: destination || 'Czech Republic',
+      shippingCost: purchase.shippingCost || '0',
+      shippingCostCurrency: purchase.purchaseCurrency || 'USD',
+      totalWeight: totalWeight.toString(),
+      totalUnits: totalUnits,
+      notes: `Direct shipment from Purchase Order ${purchaseId.substring(0, 8).toUpperCase()}`,
+      status: 'in transit',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    
+    // Note: Direct PO shipments don't use consolidation, so we store the purchase reference
+    // in the shipment notes. The link is maintained through the notes field format:
+    // "Direct shipment from Purchase Order XXXXXXXX"
+    
+    // Update purchase with tracking info
+    await db
+      .update(importPurchases)
+      .set({
+        trackingNumber: trackingNumber || purchase.trackingNumber,
+        updatedAt: new Date()
+      })
+      .where(eq(importPurchases.id, purchaseId));
+    
+    res.json(shipment);
+  } catch (error) {
+    console.error('Error creating shipment from purchase:', error);
+    res.status(500).json({ message: "Failed to create shipment" });
+  }
+});
 
 // Create shipment (optimized for Quick Ship and regular creation)
 router.post("/shipments", async (req, res) => {
