@@ -6365,6 +6365,12 @@ Important:
       let totalQuantity = 0;
       const results: any[] = [];
       
+      // ================================================================
+      // OPTIMIZED: Collect all creates and updates, then batch execute
+      // ================================================================
+      const locationsToCreate: any[] = [];
+      const locationsToUpdate: Array<{ id: string; quantity: number; isPrimary: boolean; notes: string | null }> = [];
+      
       // Process each aggregated location
       for (const [aggregateKey, locData] of aggregatedLocations.entries()) {
         const locationCode = locData.locationCode;
@@ -6393,34 +6399,30 @@ Important:
           const newQuantity = (existing.quantity || 0) + quantity;
           
           // For notes, track ONLY the receiving-specific quantity (not total location qty)
-          // Parse existing RI tag for this receiptItemId and add new quantity
-          let riQuantity = quantity; // Start with quantity we're adding
+          let riQuantity = quantity;
           if (receiptItemId && existing.notes) {
             const riMatch = existing.notes.match(new RegExp(`RI:${receiptItemId}:Q(\\d+)`));
             if (riMatch) {
-              // Add to existing RI quantity for this receiptItemId
               riQuantity += parseInt(riMatch[1], 10);
             }
           }
           const newNotes = receiptItemId ? `RI:${receiptItemId}:Q${riQuantity}` : existing.notes;
           
-          const updated = await storage.updateProductLocation(existing.id, {
+          locationsToUpdate.push({
+            id: existing.id,
             quantity: newQuantity,
             isPrimary: locData.isPrimary ?? existing.isPrimary,
             notes: newNotes
           });
           existingMap.set(aggregateKey, { ...existing, quantity: newQuantity, notes: newNotes });
-          results.push(updated);
           updatedCount++;
         } else {
           // Create new location
-          // Use resolved variantId (which was resolved from SKU if needed)
-          // Only include if it's a valid UUID (not temp-* IDs)
           const validVariantId = resolvedVariantId && !String(resolvedVariantId).startsWith('temp-') 
             ? resolvedVariantId 
             : undefined;
           
-          const created = await storage.createProductLocation({
+          locationsToCreate.push({
             productId,
             locationCode,
             locationType: locData.locationType || 'bin',
@@ -6429,9 +6431,29 @@ Important:
             notes: receiptItemId ? `RI:${receiptItemId}:Q${quantity}` : undefined,
             variantId: validVariantId
           });
-          existingMap.set(existingKey, created);
-          results.push(created);
           createdCount++;
+        }
+      }
+      
+      // Bulk insert new locations
+      if (locationsToCreate.length > 0) {
+        const created = await db.insert(productLocations).values(locationsToCreate).returning();
+        results.push(...created);
+      }
+      
+      // Bulk update existing locations (use Promise.allSettled for resilience)
+      if (locationsToUpdate.length > 0) {
+        const updatePromises = locationsToUpdate.map(loc => 
+          db.update(productLocations)
+            .set({ quantity: loc.quantity, isPrimary: loc.isPrimary, notes: loc.notes, updatedAt: new Date() })
+            .where(eq(productLocations.id, loc.id))
+            .returning()
+        );
+        const updateResults = await Promise.allSettled(updatePromises);
+        for (const result of updateResults) {
+          if (result.status === 'fulfilled' && result.value[0]) {
+            results.push(result.value[0]);
+          }
         }
       }
       
@@ -6472,59 +6494,59 @@ Important:
         }
       }
       
-      // Apply variant quantity updates
+      // Apply variant quantity updates - OPTIMIZED with bulk fetch and parallel updates
       if (variantQuantityUpdates.size > 0) {
-        let variantsUpdated = 0;
-        let parentProductsToRecalc = new Set<string>();
+        const variantIds = Array.from(variantQuantityUpdates.keys());
         
+        // Fetch all variants in ONE query
+        const existingVariantsData = await db
+          .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
+          .from(productVariants)
+          .where(inArray(productVariants.id, variantIds));
+        
+        // Create lookup map
+        const variantDataMap = new Map(existingVariantsData.map(v => [v.id, v]));
+        const parentProductsToRecalc = new Set<string>();
+        
+        // Build update operations
+        const variantUpdateOps: Array<{ id: string; newQty: number }> = [];
         for (const [variantId, qtyToAdd] of variantQuantityUpdates.entries()) {
-          try {
-            const [variant] = await db
-              .select({ id: productVariants.id, productId: productVariants.productId, quantity: productVariants.quantity })
-              .from(productVariants)
-              .where(eq(productVariants.id, variantId));
-            
-            if (variant) {
-              const newQty = (variant.quantity || 0) + qtyToAdd;
-              await db
-                .update(productVariants)
-                .set({ quantity: newQty, updatedAt: new Date() })
-                .where(eq(productVariants.id, variantId));
-              
-              console.log(`[locations/batch] Updated variant ${variantId} quantity: ${variant.quantity || 0} + ${qtyToAdd} = ${newQty}`);
-              variantsUpdated++;
-              
-              // Track parent for recalculation
-              if (variant.productId) {
-                parentProductsToRecalc.add(variant.productId);
-              }
+          const variant = variantDataMap.get(variantId);
+          if (variant) {
+            const newQty = (variant.quantity || 0) + qtyToAdd;
+            variantUpdateOps.push({ id: variantId, newQty });
+            if (variant.productId) {
+              parentProductsToRecalc.add(variant.productId);
             }
-          } catch (error) {
-            console.error(`Failed to update variant ${variantId} quantity:`, error);
           }
         }
         
-        // Recalculate parent product quantities
-        for (const parentProductId of parentProductsToRecalc) {
-          try {
+        // Execute all variant updates in parallel
+        if (variantUpdateOps.length > 0) {
+          await Promise.allSettled(variantUpdateOps.map(op => 
+            db.update(productVariants)
+              .set({ quantity: op.newQty, updatedAt: new Date() })
+              .where(eq(productVariants.id, op.id))
+          ));
+          console.log(`[locations/batch] Updated ${variantUpdateOps.length} variant quantities in parallel`);
+        }
+        
+        // Recalculate parent product quantities in parallel
+        if (parentProductsToRecalc.size > 0) {
+          const parentIds = Array.from(parentProductsToRecalc);
+          await Promise.allSettled(parentIds.map(async (parentProductId) => {
             const variantSums = await db
               .select({ totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)::int` })
               .from(productVariants)
               .where(eq(productVariants.productId, parentProductId));
             
             const newParentQty = variantSums[0]?.totalQuantity || 0;
-            await db
-              .update(products)
+            await db.update(products)
               .set({ quantity: newParentQty, updatedAt: new Date() })
               .where(eq(products.id, parentProductId));
-            
-            console.log(`[locations/batch] Updated parent product ${parentProductId} quantity to ${newParentQty}`);
-          } catch (error) {
-            console.error(`Failed to update parent product ${parentProductId} quantity:`, error);
-          }
+          }));
+          console.log(`[locations/batch] Recalculated ${parentIds.length} parent product quantities`);
         }
-        
-        console.log(`[locations/batch] Updated ${variantsUpdated} variant quantities`);
       }
       
       // Single activity log for the batch operation
