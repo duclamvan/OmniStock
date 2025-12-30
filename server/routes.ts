@@ -4531,11 +4531,60 @@ Important:
       // Get allocated quantities from unfulfilled orders (single query, cached)
       const allocatedMap = includeAvailability ? await storage.getAllocatedQuantities() : new Map<string, number>();
 
+      // For parent products with variants, we need to aggregate variant allocations
+      // Build a map of productId -> total allocated across variants
+      const parentAllocations = new Map<string, number>();
+      if (includeAvailability) {
+        // Get all variants to map SKU -> productId
+        const allVariants = await db.select({ id: productVariants.id, productId: productVariants.productId, sku: productVariants.sku })
+          .from(productVariants);
+        
+        // Build SKU to productId mapping
+        const skuToProductId = new Map<string, string>();
+        const variantToProductId = new Map<string, string>();
+        for (const v of allVariants) {
+          if (v.sku) {
+            skuToProductId.set(v.sku, v.productId);
+          }
+          variantToProductId.set(v.id, v.productId);
+        }
+        
+        // Aggregate allocations by parent product
+        allocatedMap.forEach((allocated, key) => {
+          let productId: string | undefined;
+          
+          // Match SKU keys: "sku:{sku}"
+          if (key.startsWith('sku:')) {
+            const sku = key.substring(4);
+            productId = skuToProductId.get(sku);
+          }
+          // Match variant keys: "product:{productId}:variant:{variantId}"
+          const variantMatch = key.match(/^product:([^:]+):variant:([^:]+)$/);
+          if (variantMatch) {
+            productId = variantMatch[1];
+          }
+          
+          if (productId) {
+            parentAllocations.set(productId, (parentAllocations.get(productId) || 0) + allocated);
+          }
+        });
+      }
+
       // Enrich virtual products with master product data and availability
       const enrichedProducts = productsResult.map((product: any) => {
         // Calculate allocated and available quantities
-        const productKey = `product:${product.id}`;
-        const allocated = allocatedMap.get(productKey) || 0;
+        let allocated = 0;
+        
+        // For parent products with variants, use aggregated variant allocations
+        if (product.hasVariants) {
+          allocated = parentAllocations.get(product.id) || 0;
+        } else {
+          // For products without variants, check both product key and sku key
+          const productKey = `product:${product.id}`;
+          const skuKey = product.sku ? `sku:${product.sku}` : null;
+          allocated = allocatedMap.get(productKey) || (skuKey ? allocatedMap.get(skuKey) : 0) || 0;
+        }
+        
         const onHand = product.quantity || 0;
         const available = Math.max(0, onHand - allocated);
 
