@@ -890,7 +890,43 @@ async function finalizeReceivingInventory(
       // ================================================================
       // VARIANT ALLOCATION HANDLING
       // ================================================================
-      const variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number; sku?: string}> | null;
+      // First check receipt item for variant allocations
+      let variantAllocations = item.variantAllocations as Array<{variantId: string; variantName: string; quantity: number; unitPrice?: number; sku?: string}> | null;
+      
+      // If receipt item doesn't have allocations, try to get from custom item or purchase item
+      if ((!variantAllocations || variantAllocations.length === 0) && item.itemId) {
+        if (item.itemType === 'custom') {
+          const [customItemData] = await tx
+            .select({ variantAllocations: customItems.variantAllocations })
+            .from(customItems)
+            .where(eq(customItems.id, item.itemId));
+          
+          if (customItemData?.variantAllocations) {
+            const parsed = typeof customItemData.variantAllocations === 'string'
+              ? JSON.parse(customItemData.variantAllocations)
+              : customItemData.variantAllocations;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              variantAllocations = parsed;
+              console.log(`[Variant Allocations] Loaded ${parsed.length} allocations from custom item ${item.itemId}`);
+            }
+          }
+        } else if (item.itemType === 'purchase') {
+          const [purchaseItemData] = await tx
+            .select({ variantAllocations: purchaseItems.variantAllocations })
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, item.itemId));
+          
+          if (purchaseItemData?.variantAllocations) {
+            const parsed = typeof purchaseItemData.variantAllocations === 'string'
+              ? JSON.parse(purchaseItemData.variantAllocations)
+              : purchaseItemData.variantAllocations;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              variantAllocations = parsed;
+              console.log(`[Variant Allocations] Loaded ${parsed.length} allocations from purchase item ${item.itemId}`);
+            }
+          }
+        }
+      }
       
       if (variantAllocations && variantAllocations.length > 0) {
         console.log(`[finalizeReceivingInventory] Processing variant allocations for receipt item ${item.id}:`, variantAllocations);
