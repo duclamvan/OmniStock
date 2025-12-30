@@ -142,6 +142,7 @@ export const purchaseItems = pgTable("purchase_items", {
   weightUnit: text("weight_unit").default("kg"), // mg, g, kg, oz, lb
   costWithShipping: decimal("cost_with_shipping", { precision: 10, scale: 4 }), // unit price + shipping portion
   dimensions: jsonb("dimensions"), // {length, width, height}
+  dimensionUnit: text("dimension_unit").default("cm"), // mm, cm, in
   status: text("status").notNull().default("ordered"),
   trackingNumber: text("tracking_number"),
   warehouseLocation: text("warehouse_location"),
@@ -749,7 +750,9 @@ export const products = pgTable("products", {
   length: decimal("length"),
   width: decimal("width"),
   height: decimal("height"),
+  dimensionUnit: text("dimension_unit").default("cm"), // mm, cm, in
   weight: decimal("weight"),
+  weightUnit: text("weight_unit").default("kg"), // mg, g, kg, oz, lb
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

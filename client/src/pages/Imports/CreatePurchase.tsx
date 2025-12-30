@@ -77,6 +77,10 @@ interface PurchaseItem {
   unitPrice: number;
   weight: number;
   weightUnit?: 'mg' | 'g' | 'kg' | 'oz' | 'lb';
+  length?: number;
+  width?: number;
+  height?: number;
+  dimensionUnit?: 'mm' | 'cm' | 'in';
   dimensions: string;
   notes: string;
   totalPrice: number;
@@ -374,6 +378,10 @@ export default function CreatePurchase() {
     unitPrice: 0,
     weight: 0,
     weightUnit: 'kg',
+    length: 0,
+    width: 0,
+    height: 0,
+    dimensionUnit: 'cm',
     dimensions: "",
     notes: "",
     binLocation: "TBA",
@@ -979,6 +987,11 @@ export default function CreatePurchase() {
       sku: product.sku || "",
       unitPrice: product.price || currentItem.unitPrice || 0,
       weight: product.weight || currentItem.weight || 0,
+      weightUnit: (product as any).weightUnit || currentItem.weightUnit || 'kg',
+      length: parseFloat((product as any).length) || currentItem.length || 0,
+      width: parseFloat((product as any).width) || currentItem.width || 0,
+      height: parseFloat((product as any).height) || currentItem.height || 0,
+      dimensionUnit: (product as any).dimensionUnit || currentItem.dimensionUnit || 'cm',
       dimensions: product.dimensions || currentItem.dimensions || "",
       barcode: product.barcode || "",
       categoryId: product.categoryId,
@@ -1512,6 +1525,10 @@ export default function CreatePurchase() {
       unitPrice: unitPrice,
       weight: currentItem.weight || 0,
       weightUnit: currentItem.weightUnit || 'kg',
+      length: currentItem.length || 0,
+      width: currentItem.width || 0,
+      height: currentItem.height || 0,
+      dimensionUnit: currentItem.dimensionUnit || 'cm',
       dimensions: currentItem.dimensions || "",
       notes: currentItem.notes || "",
       totalPrice: quantity * unitPrice,
@@ -1549,6 +1566,10 @@ export default function CreatePurchase() {
       unitPrice: 0,
       weight: 0,
       weightUnit: 'kg',
+      length: 0,
+      width: 0,
+      height: 0,
+      dimensionUnit: 'cm',
       dimensions: "",
       notes: "",
       binLocation: "TBA",
@@ -1926,6 +1947,11 @@ export default function CreatePurchase() {
       quantity: totalQuantity,
       unitPrice: avgUnitPrice,
       weight: currentItem.weight ?? 0,
+      weightUnit: currentItem.weightUnit || 'kg',
+      length: currentItem.length ?? 0,
+      width: currentItem.width ?? 0,
+      height: currentItem.height ?? 0,
+      dimensionUnit: currentItem.dimensionUnit || 'cm',
       dimensions: currentItem.dimensions ?? "",
       notes: currentItem.notes || "",
       productId: selectedProduct?.id,
@@ -1950,6 +1976,11 @@ export default function CreatePurchase() {
       quantity: 1,
       unitPrice: 0,
       weight: 0,
+      weightUnit: 'kg',
+      length: 0,
+      width: 0,
+      height: 0,
+      dimensionUnit: 'cm',
       dimensions: "",
       notes: ""
     });
@@ -3256,23 +3287,63 @@ export default function CreatePurchase() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="dimensions" className="text-xs">{t('dimensions')}</Label>
-                    <Input
-                      id="dimensions"
-                      value={currentItem.dimensions}
-                      onChange={(e) => setCurrentItem({...currentItem, dimensions: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!showVariants || variants.length === 0) {
-                            addItem();
+                    <Label className="text-xs">{t('dimensions')}</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        id="length"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={currentItem.length || ''}
+                        onChange={(e) => setCurrentItem({...currentItem, length: parseFloat(e.target.value) || 0})}
+                        placeholder="L"
+                        className="h-9 w-16"
+                        data-testid="input-length"
+                      />
+                      <Input
+                        id="width"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={currentItem.width || ''}
+                        onChange={(e) => setCurrentItem({...currentItem, width: parseFloat(e.target.value) || 0})}
+                        placeholder="W"
+                        className="h-9 w-16"
+                        data-testid="input-width"
+                      />
+                      <Input
+                        id="height"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={currentItem.height || ''}
+                        onChange={(e) => setCurrentItem({...currentItem, height: parseFloat(e.target.value) || 0})}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!showVariants || variants.length === 0) {
+                              addItem();
+                            }
                           }
-                        }
-                      }}
-                      placeholder={t('dimensionsPlaceholder')}
-                      className="h-9"
-                      data-testid="input-dimensions"
-                    />
+                        }}
+                        placeholder="H"
+                        className="h-9 w-16"
+                        data-testid="input-height"
+                      />
+                      <Select
+                        value={currentItem.dimensionUnit || 'cm'}
+                        onValueChange={(value: 'mm' | 'cm' | 'in') => setCurrentItem({...currentItem, dimensionUnit: value})}
+                      >
+                        <SelectTrigger className="h-9 w-[60px]" data-testid="select-dimension-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mm">mm</SelectItem>
+                          <SelectItem value="cm">cm</SelectItem>
+                          <SelectItem value="in">in</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="category" className="text-xs">{t('category')}</Label>

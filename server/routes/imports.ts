@@ -2581,6 +2581,69 @@ router.post("/purchases", async (req, res) => {
           }
         }
       }
+      
+      // ================================================================
+      // AUTO-UPDATE PRODUCT PHYSICAL PROPERTIES: Save dimensions and weight
+      // to products table when purchase items have physical property data
+      // ================================================================
+      for (const item of items) {
+        if (!item.productId) continue;
+        
+        // Build update object with only non-null/non-zero values
+        const productUpdate: Record<string, any> = { updatedAt: new Date() };
+        let hasUpdate = false;
+        
+        // Parse dimensions from item
+        const dimensions = typeof item.dimensions === 'object' ? item.dimensions : 
+          (typeof item.dimensions === 'string' && item.dimensions.includes('{')) ? JSON.parse(item.dimensions) : null;
+        
+        if (item.length && parseFloat(item.length) > 0) {
+          productUpdate.length = item.length.toString();
+          hasUpdate = true;
+        } else if (dimensions?.length && parseFloat(dimensions.length) > 0) {
+          productUpdate.length = dimensions.length.toString();
+          hasUpdate = true;
+        }
+        
+        if (item.width && parseFloat(item.width) > 0) {
+          productUpdate.width = item.width.toString();
+          hasUpdate = true;
+        } else if (dimensions?.width && parseFloat(dimensions.width) > 0) {
+          productUpdate.width = dimensions.width.toString();
+          hasUpdate = true;
+        }
+        
+        if (item.height && parseFloat(item.height) > 0) {
+          productUpdate.height = item.height.toString();
+          hasUpdate = true;
+        } else if (dimensions?.height && parseFloat(dimensions.height) > 0) {
+          productUpdate.height = dimensions.height.toString();
+          hasUpdate = true;
+        }
+        
+        if (item.dimensionUnit) {
+          productUpdate.dimensionUnit = item.dimensionUnit;
+          hasUpdate = true;
+        }
+        
+        if (item.weight && parseFloat(item.weight) > 0) {
+          productUpdate.weight = item.weight.toString();
+          hasUpdate = true;
+        }
+        
+        if (item.weightUnit) {
+          productUpdate.weightUnit = item.weightUnit;
+          hasUpdate = true;
+        }
+        
+        if (hasUpdate) {
+          await db
+            .update(products)
+            .set(productUpdate)
+            .where(eq(products.id, item.productId));
+          console.log(`[Purchase Create] Updated product ${item.productId} with physical properties:`, productUpdate);
+        }
+      }
     }
     
     // Return purchase with items
