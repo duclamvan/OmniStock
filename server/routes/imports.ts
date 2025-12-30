@@ -3012,6 +3012,12 @@ router.delete("/purchases/:id", async (req, res) => {
           )
         );
       
+      // Clear customItemId references in productCostHistory to avoid FK constraint violation
+      await db
+        .update(productCostHistory)
+        .set({ customItemId: null })
+        .where(inArray(productCostHistory.customItemId, customItemIds));
+      
       // Delete the custom items themselves
       await db.delete(customItems)
         .where(inArray(customItems.id, customItemIds));
