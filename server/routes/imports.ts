@@ -890,11 +890,18 @@ async function finalizeReceivingInventory(
         // This function returns the TOTAL landed cost (unit price + landing costs) in EUR
         const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
         
-        // Get the unit price for the item IN EUR (used by getLandedCostForItem)
-        // CRITICAL: Both purchase and custom items store unitPrice in their payment currency, must convert to EUR
+        // Get the unit price and payment currency for the item
+        // We'll calculate landed cost the SAME WAY as the preview:
+        // 1. Keep unitPrice in original currency (USD)
+        // 2. Calculate freight per unit in EUR
+        // 3. Convert freight to original currency
+        // 4. Add unitPrice + freight = total landed in original currency
+        let itemUnitPriceOriginal = 0;
+        let itemPaymentCurrency = 'USD';
         let itemUnitPriceEur = 0;
+        
         if (item.itemType === 'custom') {
-          // Custom items store unitPrice in paymentCurrency, need to convert to EUR
+          // Custom items store unitPrice in paymentCurrency
           const [customItem] = await tx
             .select({ 
               unitPrice: customItems.unitPrice,
@@ -903,38 +910,37 @@ async function finalizeReceivingInventory(
             .from(customItems)
             .where(eq(customItems.id, item.itemId));
           if (customItem?.unitPrice) {
-            const unitPriceInPaymentCurrency = parseFloat(customItem.unitPrice);
-            const paymentCurrency = customItem.paymentCurrency || 'USD'; // Default to USD if not set
+            itemUnitPriceOriginal = parseFloat(customItem.unitPrice);
+            itemPaymentCurrency = customItem.paymentCurrency || 'USD';
             
-            // Convert to EUR using exchange rates
-            let conversionRate = 1; // Default: already EUR
-            if (paymentCurrency !== 'EUR') {
-              try {
-                const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
-                if (rateResponse.ok) {
-                  const rateData = await rateResponse.json();
-                  if (rateData.rates && rateData.rates[paymentCurrency]) {
-                    // rate is EUR -> paymentCurrency, so we need 1/rate to convert back
-                    conversionRate = 1 / rateData.rates[paymentCurrency];
-                  }
-                }
-              } catch (e) {
-                // Use fallback rates
-                const fallbackRates: Record<string, number> = {
-                  'USD': 1.1, 'CZK': 25, 'VND': 27000, 'CNY': 7.5,
-                  'GBP': 0.85, 'JPY': 160, 'CHF': 0.95, 'AUD': 1.65, 'CAD': 1.48
-                };
-                if (fallbackRates[paymentCurrency]) {
-                  conversionRate = 1 / fallbackRates[paymentCurrency];
+            // Also convert to EUR for backwards compatibility
+            if (itemPaymentCurrency === 'EUR') {
+              itemUnitPriceEur = itemUnitPriceOriginal;
+            } else {
+              // Use stored exchange rates from shipment if available
+              const [shipmentForRates] = await tx
+                .select({ exchangeRates: shipments.exchangeRates })
+                .from(shipments)
+                .where(eq(shipments.id, shipmentId));
+              
+              let eurToPaymentRate = 1.08; // Default EUR->USD rate
+              if (shipmentForRates?.exchangeRates) {
+                const rates = typeof shipmentForRates.exchangeRates === 'string'
+                  ? JSON.parse(shipmentForRates.exchangeRates)
+                  : shipmentForRates.exchangeRates;
+                if (rates[itemPaymentCurrency]) {
+                  eurToPaymentRate = rates[itemPaymentCurrency];
                 }
               }
+              
+              // Convert payment currency to EUR: divide by EUR->Payment rate
+              itemUnitPriceEur = itemUnitPriceOriginal / eurToPaymentRate;
             }
             
-            itemUnitPriceEur = unitPriceInPaymentCurrency * conversionRate;
-            console.log(`[Currency Convert] Custom item ${item.itemId}: ${unitPriceInPaymentCurrency} ${paymentCurrency} -> ${itemUnitPriceEur.toFixed(4)} EUR (rate: ${conversionRate.toFixed(6)})`);
+            console.log(`[Currency] Custom item ${item.itemId}: unitPrice=${itemUnitPriceOriginal} ${itemPaymentCurrency} (${itemUnitPriceEur.toFixed(4)} EUR)`);
           }
         } else if (item.itemType === 'purchase') {
-          // Purchase items need currency conversion to EUR
+          // Purchase items store unitPrice in purchase currency
           const [purchaseItem] = await tx
             .select({ 
               unitPrice: purchaseItems.unitPrice,
@@ -957,51 +963,105 @@ async function finalizeReceivingInventory(
             
             const purchaseCurrency = purchase?.paymentCurrency || purchase?.purchaseCurrency || 'USD';
             
-            // Convert to EUR using exchange rates
-            // Fetch live rates or use fallbacks
-            let conversionRate = 1; // Default: already EUR
-            if (purchaseCurrency !== 'EUR') {
-              try {
-                const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
-                if (rateResponse.ok) {
-                  const rateData = await rateResponse.json();
-                  if (rateData.rates && rateData.rates[purchaseCurrency]) {
-                    // rate is EUR -> purchaseCurrency, so we need 1/rate to convert back
-                    conversionRate = 1 / rateData.rates[purchaseCurrency];
-                  }
-                }
-              } catch (e) {
-                // Use fallback rates
-                const fallbackRates: Record<string, number> = {
-                  'USD': 1.1, 'CZK': 25, 'VND': 27000, 'CNY': 7.5,
-                  'GBP': 0.85, 'JPY': 160, 'CHF': 0.95, 'AUD': 1.65, 'CAD': 1.48
-                };
-                if (fallbackRates[purchaseCurrency]) {
-                  conversionRate = 1 / fallbackRates[purchaseCurrency];
+            // Track original currency values (same as custom items)
+            itemUnitPriceOriginal = unitPriceInPurchaseCurrency;
+            itemPaymentCurrency = purchaseCurrency;
+            
+            // Also convert to EUR
+            if (purchaseCurrency === 'EUR') {
+              itemUnitPriceEur = unitPriceInPurchaseCurrency;
+            } else {
+              // Use stored exchange rates from shipment if available
+              const [shipmentForRates] = await tx
+                .select({ exchangeRates: shipments.exchangeRates })
+                .from(shipments)
+                .where(eq(shipments.id, shipmentId));
+              
+              let eurToPaymentRate = 1.08; // Default EUR->USD rate
+              if (shipmentForRates?.exchangeRates) {
+                const rates = typeof shipmentForRates.exchangeRates === 'string'
+                  ? JSON.parse(shipmentForRates.exchangeRates)
+                  : shipmentForRates.exchangeRates;
+                if (rates[purchaseCurrency]) {
+                  eurToPaymentRate = rates[purchaseCurrency];
                 }
               }
+              
+              // Convert payment currency to EUR: divide by EUR->Payment rate
+              itemUnitPriceEur = unitPriceInPurchaseCurrency / eurToPaymentRate;
             }
             
-            itemUnitPriceEur = unitPriceInPurchaseCurrency * conversionRate;
-            console.log(`[Currency Convert] Purchase item ${item.itemId}: ${unitPriceInPurchaseCurrency} ${purchaseCurrency} -> ${itemUnitPriceEur.toFixed(4)} EUR (rate: ${conversionRate.toFixed(6)})`);
+            console.log(`[Currency] Purchase item ${item.itemId}: unitPrice=${itemUnitPriceOriginal} ${itemPaymentCurrency} (${itemUnitPriceEur.toFixed(4)} EUR)`);
           }
         }
         
-        // Get the TOTAL landed cost using the same logic as the preview
-        // This returns unit price + landing costs (all in EUR)
-        const landedCostData = await getLandedCostForItem(
-          tx,
-          item.itemType,
-          item.itemId,
-          shipmentId,
-          totalVariantQuantity,
-          itemUnitPriceEur
-        );
+        // Calculate landed cost the SAME WAY as the preview (getItemAllocationBreakdown):
+        // 1. Get aggregated costs from all sources (shipment + PO shipping + duties)
+        // 2. Calculate landing cost PORTION per unit (freight, duty, etc.) in EUR
+        // 3. Keep unit price in original currency
+        // 4. Convert landing cost to original currency
+        // 5. Add unitPrice + landingCost = total landed in original currency
         
-        // landedCostData.landingCostPerUnit is the TOTAL landed cost (unit price + landing costs)
-        const totalLandedCostEur = landedCostData.landingCostPerUnit;
+        // Get aggregated costs from all sources (same as preview)
+        const aggregatedCosts = await aggregateAllUpstreamCosts(shipmentId);
+        const totalFreightEur = aggregatedCosts.costsByType['FREIGHT'] || 0;
+        const totalDutyEur = aggregatedCosts.costsByType['DUTY'] || 0;
+        const totalBrokerageEur = aggregatedCosts.costsByType['BROKERAGE'] || 0;
+        const totalInsuranceEur = aggregatedCosts.costsByType['INSURANCE'] || 0;
+        const totalPackagingEur = aggregatedCosts.costsByType['PACKAGING'] || 0;
+        const totalOtherEur = aggregatedCosts.costsByType['OTHER'] || 0;
         
-        console.log(`[Variant Costs] ${item.itemType} item ${item.id}: unitPrice=${itemUnitPriceEur.toFixed(4)} EUR, totalLandedCost=${totalLandedCostEur.toFixed(4)} EUR, source=${landedCostData.source}`);
+        // Get total units in shipment for allocation
+        const [shipmentForMetrics] = await tx
+          .select({ consolidationId: shipments.consolidationId, exchangeRates: shipments.exchangeRates })
+          .from(shipments)
+          .where(eq(shipments.id, shipmentId));
+        
+        let totalUnitsInShipment = 0;
+        if (shipmentForMetrics?.consolidationId) {
+          const allItems = await tx
+            .select({ quantity: customItems.quantity })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+            .where(eq(consolidationItems.consolidationId, shipmentForMetrics.consolidationId));
+          totalUnitsInShipment = allItems.reduce((sum, i) => sum + (i.quantity || 0), 0);
+        }
+        
+        // Calculate this item's allocation ratio (using unit-based allocation like preview default)
+        const thisItemQuantity = totalVariantQuantity || 1;
+        const allocationRatio = totalUnitsInShipment > 0 ? thisItemQuantity / totalUnitsInShipment : 1;
+        
+        // Calculate landing cost PORTION per unit in EUR (NOT including unit price)
+        const totalAllocatedEur = (totalFreightEur + totalDutyEur + totalBrokerageEur + totalInsuranceEur + totalPackagingEur + totalOtherEur) * allocationRatio;
+        const landingCostPerUnitEur = thisItemQuantity > 0 ? totalAllocatedEur / thisItemQuantity : 0;
+        
+        // Get exchange rate for converting EUR to payment currency
+        let eurToPaymentRate = 1.08; // Default EUR->USD rate
+        if (shipmentForMetrics?.exchangeRates) {
+          const rates = typeof shipmentForMetrics.exchangeRates === 'string'
+            ? JSON.parse(shipmentForMetrics.exchangeRates)
+            : shipmentForMetrics.exchangeRates;
+          if (rates[itemPaymentCurrency]) {
+            eurToPaymentRate = rates[itemPaymentCurrency];
+          }
+        }
+        
+        // Convert landing cost to payment currency
+        const landingCostPerUnitOriginal = landingCostPerUnitEur * eurToPaymentRate;
+        
+        // Calculate TOTAL landed cost in payment currency (matches preview calculation)
+        // This is: unitPrice (in original currency) + landingCost (converted to original currency)
+        const totalLandedCostOriginal = itemUnitPriceOriginal + landingCostPerUnitOriginal;
+        
+        // Convert total landed cost to EUR for storage
+        const totalLandedCostEur = itemPaymentCurrency === 'EUR' 
+          ? totalLandedCostOriginal 
+          : totalLandedCostOriginal / eurToPaymentRate;
+        
+        console.log(`[Variant Costs] ${item.itemType} item ${item.id}: ` +
+          `unitPrice=${itemUnitPriceOriginal.toFixed(4)} ${itemPaymentCurrency} + ` +
+          `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} = ` +
+          `total=${totalLandedCostOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${totalLandedCostEur.toFixed(4)})`);
         
         for (const va of variantAllocations) {
           if (!va.variantId || va.quantity <= 0) continue;
@@ -1208,11 +1268,11 @@ async function finalizeReceivingInventory(
           // ================================================================
           // CALCULATE PER-VARIANT LANDED COST (ALL 5 CURRENCIES)
           // ================================================================
-          // Use the total landed cost calculated above via getLandedCostForItem
+          // Use the total landed cost calculated above using the SAME method as preview
           // This includes both unit price + landing costs (freight, duty, etc.)
           const variantLandedCostEur = totalLandedCostEur;
           
-          console.log(`[Variant Costs] ${va.variantName}: using totalLandedCostEur=${totalLandedCostEur.toFixed(4)} from ${landedCostData.source}`);
+          console.log(`[Variant Costs] ${va.variantName}: using totalLandedCostEur=${totalLandedCostEur.toFixed(4)} (calculated matching preview)`);
           
           // Convert to ALL currencies (VND and CNY added per requirements)
           const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
