@@ -8041,8 +8041,8 @@ router.get("/shipments/to-receive", async (req, res) => {
               const items = allPurchaseItems.filter(item => item.purchaseId === purchase.id);
               itemsByPurchaseId[purchase.id] = items.map(item => ({
                 ...item,
-                name: item.productName,
-                productName: item.productName,
+                name: item.name,
+                productName: item.name,
                 itemType: 'purchase'
               }));
             }
