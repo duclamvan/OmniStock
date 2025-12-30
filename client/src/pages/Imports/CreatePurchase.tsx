@@ -1954,6 +1954,7 @@ export default function CreatePurchase() {
       dimensionUnit: currentItem.dimensionUnit || 'cm',
       dimensions: currentItem.dimensions ?? "",
       notes: currentItem.notes || "",
+      binLocation: currentItem.binLocation || "",
       productId: selectedProduct?.id,
       imageUrl: productImagePreview || selectedProduct?.imageUrl,
       imageFile: productImageFile,
