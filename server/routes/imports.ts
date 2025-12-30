@@ -5176,10 +5176,10 @@ router.patch("/shipments/:id/receiving-status", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Check if shipment is already completed
-    if (shipment.status === 'completed') {
+    // Check if shipment is already completed (status 'delivered' with receivingStatus 'completed')
+    if (shipment.receivingStatus === 'completed') {
       return res.status(400).json({ 
-        message: "Shipment is already completed",
+        message: "Shipment receiving is already completed",
         alreadyCompleted: true
       });
     }
@@ -5239,12 +5239,12 @@ router.patch("/shipments/:id/receiving-status", async (req, res) => {
         })
         .where(eq(receipts.id, receipt.id));
       
-      // Update shipment status to 'completed' and receivingStatus to 'completed'
+      // Update shipment status to 'delivered' and receivingStatus to 'completed'
       const username = (req as any).user?.username || 'system';
       await tx
         .update(shipments)
         .set({
-          status: 'completed',
+          status: 'delivered',
           receivingStatus: 'completed',
           deliveredAt: new Date(),
           inventoryAddedAt: new Date(), // Mark inventory as added
