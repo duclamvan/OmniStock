@@ -1903,9 +1903,14 @@ interface StorageItem {
   description?: string;
   receivedQuantity: number;
   assignedQuantity: number;
+  // DRAFT: Pending allocations not yet saved (local only)
   locations: LocationAssignment[];
-  existingLocations: LocationAssignment[];
-  // Track pending additions to existing locations: { locationId: quantity }
+  // REFERENCE: Current inventory locations (read-only, for display/autofill reference)
+  // These are NOT modified by receiving operations - purely informational
+  referenceInventory: LocationAssignment[];
+  // RECEIPT: Locations saved specifically for THIS receipt (tagged with RI:{receiptItemId}:)
+  receiptLocations: LocationAssignment[];
+  // Track pending additions to existing locations: { locationCode: quantity }
   pendingExistingAdds: Record<string, number>;
   // Variant allocations for products with variants
   variantAllocations?: VariantAllocation[];
@@ -1934,34 +1939,32 @@ function getReceivingQtyFromNotes(notes: string | undefined, receiptItemId: numb
 }
 
 // Helper function to calculate total quantity stored for this receiving session
-// Extracts quantity from notes tags for tagged locations, uses loc.quantity for legacy/untagged
-function calculateStoredQtyForReceiving(existingLocations: LocationAssignment[], receiptItemId: number | string): number {
-  return (existingLocations || []).reduce((sum, loc) => {
-    // If location has notes with this receipt item's tag, extract quantity FROM THE TAG
+// Uses receiptLocations (locations tagged with RI:{receiptItemId}:) instead of existingLocations
+function calculateStoredQtyForReceiving(receiptLocations: LocationAssignment[], receiptItemId: number | string): number {
+  return (receiptLocations || []).reduce((sum, loc) => {
+    // receiptLocations already filtered to only contain this receipt's items
+    // Extract quantity from notes tag for precise per-receipt tracking
     const hasThisTag = loc.notes?.includes(`RI:${receiptItemId}:`);
     if (hasThisTag) {
-      // Use quantity from notes tag (receiving-specific)
       return sum + getReceivingQtyFromNotes(loc.notes, receiptItemId);
     }
-    // If location has no RI tag at all, count full quantity (legacy/general location)
-    const hasNoRiTag = !loc.notes?.includes('RI:');
-    if (hasNoRiTag) {
-      return sum + (loc.quantity || 0);
-    }
-    return sum;
+    // Fallback: use location quantity if no tag (shouldn't happen for receiptLocations)
+    return sum + (loc.quantity || 0);
   }, 0);
 }
 
 // Helper function to build all location suggestions with quantities
+// Uses referenceInventory for display/autofill reference (read-only current inventory)
 function buildLocationSuggestions(
   item: StorageItem,
   aiSuggestions: Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>
 ): LocationSuggestion[] {
   const suggestions: LocationSuggestion[] = [];
   
-  // First, add all existing locations sorted by priority (primary first, then by quantity)
-  if (item.existingLocations && item.existingLocations.length > 0) {
-    const sorted = [...item.existingLocations].sort((a, b) => {
+  // First, add all reference inventory locations sorted by priority (primary first, then by quantity)
+  // referenceInventory is read-only current inventory - used for autofill suggestions
+  if (item.referenceInventory && item.referenceInventory.length > 0) {
+    const sorted = [...item.referenceInventory].sort((a, b) => {
       if (a.isPrimary && !b.isPrimary) return -1;
       if (!a.isPrimary && b.isPrimary) return 1;
       return b.quantity - a.quantity;
@@ -1977,7 +1980,7 @@ function buildLocationSuggestions(
     }
   }
   
-  // If no existing locations, add AI or heuristic suggestion
+  // If no reference inventory locations, add AI or heuristic suggestion
   if (suggestions.length === 0) {
     const key = item.productId || item.sku || item.productName;
     if (aiSuggestions.has(key)) {
@@ -2516,7 +2519,11 @@ function QuickStorageSheet({
           receivedQuantity,
           assignedQuantity: item.assignedQuantity || 0,
           locations: item.locations || [],
-          existingLocations: enhancedLocations,
+          // THREE-TIER ALLOCATION MODEL:
+          // referenceInventory: Read-only current inventory (populated by separate fetch)
+          referenceInventory: [],
+          // receiptLocations: Locations saved for THIS receipt (populated by fetch, tagged with RI:{receiptItemId}:)
+          receiptLocations: [],
           pendingExistingAdds: {}, // Initialize empty pending adds
           variantAllocations,
           orderItems,
@@ -2597,8 +2604,9 @@ function QuickStorageSheet({
               return newMap;
             });
             
-            // Also update existingLocations in items state to show variant badges
-            // This uses both API data AND variantAllocations as fallback
+            // Update items with THREE-TIER ALLOCATION MODEL:
+            // - referenceInventory: ALL locations for this product (read-only reference)
+            // - receiptLocations: Only locations with notes containing RI:{receiptItemId}:
             setItems(prevItems => {
               return prevItems.map(item => {
                 if (String(item.productId) !== productId) return item;
@@ -2630,8 +2638,8 @@ function QuickStorageSheet({
                   }
                 }
                 
-                // Enhance existing locations - apply variant info from all sources
-                const updatedExisting = (item.existingLocations || []).map((loc: any) => {
+                // Enhance ALL locations with variant info - apply variant info from all sources
+                const enhanceLocation = (loc: any) => {
                   // Skip if already has a variantName populated
                   if (loc.variantName) return loc;
                   
@@ -2666,9 +2674,25 @@ function QuickStorageSheet({
                   }
                   
                   return loc;
-                });
+                };
                 
-                return { ...item, existingLocations: updatedExisting };
+                // referenceInventory: ALL enhanced locations (for display/autofill reference)
+                const updatedReferenceInventory = enhancedLocations.map(enhanceLocation);
+                
+                // receiptLocations: Only locations with notes containing RI:{receiptItemId}:
+                // These are locations specifically saved for THIS receipt
+                const receiptTag = `RI:${item.receiptItemId}:`;
+                const updatedReceiptLocations = enhancedLocations
+                  .filter((loc: any) => loc.notes?.includes(receiptTag))
+                  .map(enhanceLocation);
+                
+                console.log(`[Storage] Product ${productId}: referenceInventory=${updatedReferenceInventory.length}, receiptLocations=${updatedReceiptLocations.length}`);
+                
+                return { 
+                  ...item, 
+                  referenceInventory: updatedReferenceInventory,
+                  receiptLocations: updatedReceiptLocations
+                };
               });
             });
           } else {
@@ -2685,14 +2709,14 @@ function QuickStorageSheet({
     }
   }, [items, open]); // Use items array directly to trigger on any item change
   
-  // Fetch AI suggestions for items without existing locations (with batching and caching)
+  // Fetch AI suggestions for items without reference inventory locations (with batching and caching)
   useEffect(() => {
     const fetchAISuggestions = async () => {
       // Filter items that need suggestions, using cache to prevent re-fetching
       const itemsNeedingSuggestions = items.filter(item => {
         const key = String(item.productId || item.sku || item.productName);
-        // Skip if: has existing locations, already cached, already fetched, or currently fetching
-        if (item.existingLocations && item.existingLocations.length > 0) return false;
+        // Skip if: has reference inventory locations, already cached, already fetched, or currently fetching
+        if (item.referenceInventory && item.referenceInventory.length > 0) return false;
         if (aiSuggestionCache.current.has(key)) return false;
         if (aiSuggestionFetched.current.has(key)) return false;
         if (aiSuggestionInflight.current.has(key)) return false;
