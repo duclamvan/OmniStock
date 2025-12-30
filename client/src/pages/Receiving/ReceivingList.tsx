@@ -7601,63 +7601,91 @@ export default function ReceivingList() {
               </Card>
             )}
 
-            {/* Quick Stats Overview - Compact Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {/* Quick Stats Navigation Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <button 
                 onClick={() => handleStatTabClick('to-receive')}
-                className={`bg-blue-50 dark:bg-blue-900/30 border rounded-lg p-2 text-center transition-all ${
+                className={`group relative bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
                   activeTab === 'to-receive' 
-                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
-                    : 'border-blue-200 dark:border-blue-700 hover:border-blue-400'
+                    ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md' 
+                    : 'border-blue-200/80 dark:border-blue-700/50 hover:border-blue-400'
                 }`}
                 data-testid="stat-to-receive"
               >
-                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {isLoadingToReceive ? <Skeleton className="h-6 w-8 mx-auto bg-blue-200 dark:bg-blue-700" /> : toReceiveShipments.length}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Package className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-300 uppercase tracking-wide">{t('toReceive')}</span>
                 </div>
-                <div className="text-xs text-blue-700 dark:text-blue-200">{t('toReceive')}</div>
+                <div className="text-4xl sm:text-5xl font-black text-blue-600 dark:text-blue-400 tabular-nums">
+                  {isLoadingToReceive ? <Skeleton className="h-12 w-16 mx-auto bg-blue-200 dark:bg-blue-700" /> : toReceiveShipments.length}
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-500 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span>{t('common:viewAll', 'View')}</span>
+                  <ChevronRight className="h-3 w-3" />
+                </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('receiving')}
-                className={`bg-cyan-50 dark:bg-cyan-900/30 border rounded-lg p-2 text-center transition-all ${
+                className={`group relative bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/40 dark:to-cyan-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
                   activeTab === 'receiving' 
-                    ? 'border-cyan-500 ring-2 ring-cyan-500/30' 
-                    : 'border-cyan-200 dark:border-cyan-700 hover:border-cyan-400'
+                    ? 'border-cyan-500 ring-2 ring-cyan-500/30 shadow-md' 
+                    : 'border-cyan-200/80 dark:border-cyan-700/50 hover:border-cyan-400'
                 }`}
                 data-testid="stat-receiving"
               >
-                <div className="text-lg sm:text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                  {isLoadingReceiving ? <Skeleton className="h-6 w-8 mx-auto bg-cyan-200 dark:bg-cyan-700" /> : receivingShipments.length}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
+                  <span className="text-xs font-medium text-cyan-600 dark:text-cyan-300 uppercase tracking-wide">{t('inProgressReceiving')}</span>
                 </div>
-                <div className="text-xs text-cyan-700 dark:text-cyan-200">{t('inProgressReceiving')}</div>
+                <div className="text-4xl sm:text-5xl font-black text-cyan-600 dark:text-cyan-400 tabular-nums">
+                  {isLoadingReceiving ? <Skeleton className="h-12 w-16 mx-auto bg-cyan-200 dark:bg-cyan-700" /> : receivingShipments.length}
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-cyan-500 dark:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span>{t('common:viewAll', 'View')}</span>
+                  <ChevronRight className="h-3 w-3" />
+                </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('storage')}
-                className={`bg-amber-50 dark:bg-amber-900/30 border rounded-lg p-2 text-center transition-all ${
+                className={`group relative bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/40 dark:to-amber-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
                   activeTab === 'storage' 
-                    ? 'border-amber-500 ring-2 ring-amber-500/30' 
-                    : 'border-amber-200 dark:border-amber-700 hover:border-amber-400'
+                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
+                    : 'border-amber-200/80 dark:border-amber-700/50 hover:border-amber-400'
                 }`}
                 data-testid="stat-storage"
               >
-                <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
-                  {isLoadingStorage ? <Skeleton className="h-6 w-8 mx-auto bg-amber-200 dark:bg-amber-700" /> : storageShipments.length}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Warehouse className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-300 uppercase tracking-wide">{t('storage')}</span>
                 </div>
-                <div className="text-xs text-amber-700 dark:text-amber-200">{t('storage')}</div>
+                <div className="text-4xl sm:text-5xl font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                  {isLoadingStorage ? <Skeleton className="h-12 w-16 mx-auto bg-amber-200 dark:bg-amber-700" /> : storageShipments.length}
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-amber-500 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span>{t('common:viewAll', 'View')}</span>
+                  <ChevronRight className="h-3 w-3" />
+                </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('completed')}
-                className={`bg-green-50 dark:bg-green-900/30 border rounded-lg p-2 text-center transition-all ${
+                className={`group relative bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/40 dark:to-green-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
                   activeTab === 'completed' 
-                    ? 'border-green-500 ring-2 ring-green-500/30' 
-                    : 'border-green-200 dark:border-green-700 hover:border-green-400'
+                    ? 'border-green-500 ring-2 ring-green-500/30 shadow-md' 
+                    : 'border-green-200/80 dark:border-green-700/50 hover:border-green-400'
                 }`}
                 data-testid="stat-completed"
               >
-                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
-                  {isLoadingCompleted ? <Skeleton className="h-6 w-8 mx-auto bg-green-200 dark:bg-green-700" /> : completedShipments.length}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
+                  <span className="text-xs font-medium text-green-600 dark:text-green-300 uppercase tracking-wide">{t('completed')}</span>
                 </div>
-                <div className="text-xs text-green-700 dark:text-green-200">{t('completed')}</div>
+                <div className="text-4xl sm:text-5xl font-black text-green-600 dark:text-green-400 tabular-nums">
+                  {isLoadingCompleted ? <Skeleton className="h-12 w-16 mx-auto bg-green-200 dark:bg-green-700" /> : completedShipments.length}
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-green-500 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span>{t('common:viewAll', 'View')}</span>
+                  <ChevronRight className="h-3 w-3" />
+                </div>
               </button>
             </div>
           </div>
