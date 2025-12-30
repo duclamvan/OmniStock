@@ -967,13 +967,37 @@ async function finalizeReceivingInventory(
           const [customItem] = await tx
             .select({ 
               unitPrice: customItems.unitPrice,
-              paymentCurrency: customItems.paymentCurrency
+              paymentCurrency: customItems.paymentCurrency,
+              orderItems: customItems.orderItems,
+              purchaseOrderId: customItems.purchaseOrderId
             })
             .from(customItems)
             .where(eq(customItems.id, item.itemId));
           if (customItem?.unitPrice) {
             itemUnitPriceOriginal = parseFloat(customItem.unitPrice);
-            itemPaymentCurrency = customItem.paymentCurrency || 'USD';
+            
+            // Get payment currency - try direct field first, then orderItems JSON, then fallback to USD
+            if (customItem.paymentCurrency) {
+              itemPaymentCurrency = customItem.paymentCurrency;
+            } else if (customItem.orderItems) {
+              // Try to get payment currency from orderItems JSON (parentPurchase data)
+              const orderItems = typeof customItem.orderItems === 'string' 
+                ? JSON.parse(customItem.orderItems) 
+                : customItem.orderItems;
+              if (Array.isArray(orderItems) && orderItems.length > 0 && orderItems[0].parentPurchase) {
+                itemPaymentCurrency = orderItems[0].parentPurchase.paymentCurrency || 
+                                      orderItems[0].parentPurchase.purchaseCurrency || 'USD';
+              }
+            } else if (customItem.purchaseOrderId) {
+              // Fallback: look up the linked purchase order
+              const [linkedPO] = await tx
+                .select({ paymentCurrency: importPurchases.paymentCurrency, purchaseCurrency: importPurchases.purchaseCurrency })
+                .from(importPurchases)
+                .where(eq(importPurchases.id, customItem.purchaseOrderId));
+              if (linkedPO) {
+                itemPaymentCurrency = linkedPO.paymentCurrency || linkedPO.purchaseCurrency || 'USD';
+              }
+            }
             
             // Also convert to EUR for backwards compatibility
             if (itemPaymentCurrency === 'EUR') {
@@ -1006,7 +1030,8 @@ async function finalizeReceivingInventory(
           const [purchaseItem] = await tx
             .select({ 
               unitPrice: purchaseItems.unitPrice,
-              purchaseId: purchaseItems.purchaseId
+              purchaseId: purchaseItems.purchaseId,
+              variantAllocations: purchaseItems.variantAllocations
             })
             .from(purchaseItems)
             .where(eq(purchaseItems.id, item.itemId));
@@ -1054,7 +1079,14 @@ async function finalizeReceivingInventory(
             }
             
             console.log(`[Currency] Purchase item ${item.itemId}: unitPrice=${itemUnitPriceOriginal} ${itemPaymentCurrency} (${itemUnitPriceEur.toFixed(4)} EUR)`);
+          } else {
+            console.warn(`[Currency] Purchase item ${item.itemId}: no unitPrice found, will rely on variant-level prices`);
           }
+        }
+        
+        // Log warning if no item-level price was found (will rely on variant prices)
+        if (itemUnitPriceOriginal === 0) {
+          console.log(`[Currency] Item ${item.itemId}: no item-level unitPrice (will use per-variant prices if available)`);
         }
         
         // Calculate landed cost the SAME WAY as the preview (getItemAllocationBreakdown):
@@ -1111,19 +1143,8 @@ async function finalizeReceivingInventory(
         // Convert landing cost to payment currency
         const landingCostPerUnitOriginal = landingCostPerUnitEur * eurToPaymentRate;
         
-        // Calculate TOTAL landed cost in payment currency (matches preview calculation)
-        // This is: unitPrice (in original currency) + landingCost (converted to original currency)
-        const totalLandedCostOriginal = itemUnitPriceOriginal + landingCostPerUnitOriginal;
-        
-        // Convert total landed cost to EUR for storage
-        const totalLandedCostEur = itemPaymentCurrency === 'EUR' 
-          ? totalLandedCostOriginal 
-          : totalLandedCostOriginal / eurToPaymentRate;
-        
-        console.log(`[Variant Costs] ${item.itemType} item ${item.id}: ` +
-          `unitPrice=${itemUnitPriceOriginal.toFixed(4)} ${itemPaymentCurrency} + ` +
-          `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} = ` +
-          `total=${totalLandedCostOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${totalLandedCostEur.toFixed(4)})`);
+        console.log(`[Landing Costs] ${item.itemType} item ${item.id}: ` +
+          `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${landingCostPerUnitEur.toFixed(4)})`);
         
         for (const va of variantAllocations) {
           if (!va.variantId || va.quantity <= 0) continue;
@@ -1330,11 +1351,31 @@ async function finalizeReceivingInventory(
           // ================================================================
           // CALCULATE PER-VARIANT LANDED COST (ALL 5 CURRENCIES)
           // ================================================================
-          // Use the total landed cost calculated above using the SAME method as preview
-          // This includes both unit price + landing costs (freight, duty, etc.)
-          const variantLandedCostEur = totalLandedCostEur;
+          // CRITICAL FIX: Use each variant's own unitPrice from variantAllocations
+          // With fallback to parent item's unitPrice for legacy data without per-variant prices
+          const vaExt3 = va as any;
+          const variantUnitPriceRaw = parseFloat(String(vaExt3.unitPrice || 0));
           
-          console.log(`[Variant Costs] ${va.variantName}: using totalLandedCostEur=${totalLandedCostEur.toFixed(4)} (calculated matching preview)`);
+          // Fallback: if variant doesn't have its own price, use parent item's price
+          const variantUnitPriceOriginal = variantUnitPriceRaw > 0 
+            ? variantUnitPriceRaw 
+            : itemUnitPriceOriginal;
+          
+          // Note: Variant unitPrice is stored in the same currency as the parent item's paymentCurrency
+          // (from the original purchase order), so we can use itemPaymentCurrency for conversion
+          
+          // Calculate total landed cost: variant's unitPrice + landing cost portion
+          const totalLandedCostOriginal = variantUnitPriceOriginal + landingCostPerUnitOriginal;
+          
+          // Convert total landed cost to EUR for storage
+          const variantLandedCostEur = itemPaymentCurrency === 'EUR' 
+            ? totalLandedCostOriginal 
+            : totalLandedCostOriginal / eurToPaymentRate;
+          
+          console.log(`[Variant Costs] ${va.variantName}: ` +
+            `unitPrice=${variantUnitPriceOriginal.toFixed(4)} ${itemPaymentCurrency} (variant=${variantUnitPriceRaw.toFixed(4)}, fallback=${itemUnitPriceOriginal.toFixed(4)}) + ` +
+            `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} = ` +
+            `total=${totalLandedCostOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${variantLandedCostEur.toFixed(4)})`);
           
           // Convert to ALL currencies (VND and CNY added per requirements)
           const variantLandedCostUsd = variantLandedCostEur * eurToUsd;
