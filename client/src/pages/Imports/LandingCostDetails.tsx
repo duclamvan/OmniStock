@@ -587,149 +587,79 @@ export default function LandingCostDetails() {
   };
 
   return (
-    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-6xl overflow-x-hidden">
+    <div className="container mx-auto px-3 py-4 md:px-6 max-w-5xl overflow-x-hidden">
       {/* Header */}
-      <div className="mb-4">
+      <div className="mb-6">
         <Link href="/imports/landing-costs">
-          <Button variant="ghost" size="sm" className="mb-2 h-8" data-testid="button-back-to-list">
-            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-            {t('backToLandingCosts') || 'Back to Landing Costs'}
+          <Button variant="ghost" size="sm" className="mb-3 -ml-2 h-8 text-muted-foreground hover:text-foreground" data-testid="button-back-to-list">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            {t('backToLandingCosts') || 'Back'}
           </Button>
         </Link>
         
-        {/* Title Row */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold">
-              {shipment.shipmentName || `${t('shipment') || 'Shipment'} #${shipment.id}`}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {t('calculateAndReviewLandedCosts') || 'Calculate and review landed costs'}
-            </p>
-          </div>
-          <Badge className={`${getStatusColor(shipment.status)} px-2.5 py-0.5 text-sm`}>
-            {shipment.status?.replace(/_/g, ' ').toUpperCase()}
-          </Badge>
-        </div>
-
-        {/* Shipment Info Bar */}
-        <Card className="mb-4">
-          <CardContent className="p-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
-              <div>
-                <p className="text-muted-foreground mb-0.5">{t('carrier') || 'Carrier'}</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Truck className="h-3 w-3" />
-                  {shipment.carrier}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">{t('trackingNumber') || 'Tracking'}</p>
-                <p className="font-medium flex items-center gap-1 font-mono text-xs">
-                  <Hash className="h-3 w-3" />
-                  {shipment.trackingNumber}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">{t('items') || 'Items'}</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Package className="h-3 w-3" />
-                  {shipment.itemCount} {t('items') || 'items'}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">{t('route') || 'Route'}</p>
-                <p className="font-medium flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {shipment.origin} → {shipment.destination}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-0.5">{t('created') || 'Created'}</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(shipment.createdAt), 'MMM dd, yyyy')}
-                </p>
-              </div>
+        {/* Title + Status + Info inline */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg md:text-xl font-semibold">
+                {shipment.shipmentName || `${t('shipment') || 'Shipment'} #${shipment.id}`}
+              </h1>
+              <Badge className={`${getStatusColor(shipment.status)} px-2 py-0.5 text-xs`}>
+                {shipment.status?.replace(/_/g, ' ').toUpperCase()}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Truck className="h-3 w-3" />
+                {shipment.carrier}
+              </span>
+              <span className="flex items-center gap-1 font-mono">
+                <Hash className="h-3 w-3" />
+                {shipment.trackingNumber}
+              </span>
+              <span className="flex items-center gap-1">
+                <Package className="h-3 w-3" />
+                {shipment.itemCount} {t('items') || 'items'}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {shipment.origin} → {shipment.destination}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(shipment.createdAt), 'MMM d, yyyy')}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Landed Cost Per Item with Selling Prices */}
       {landingCostPreview && landingCostPreview.items && landingCostPreview.items.length > 0 && (
-        <Card className="mb-4">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-3">
-              {/* Title Row */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    {t('landedCostPerItem') || 'Landed Cost Per Item'} ({landingCostPreview.items.length})
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {t('viewLandedCostsSetPrices') || 'View landed costs and set selling prices'}
-                  </CardDescription>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => refetchPreview()}
-                  data-testid="button-refresh"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddSelectedToInventory}
-                  disabled={selectedItems.size === 0 || addToInventoryMutation.isPending}
-                  data-testid="button-add-selected"
-                >
-                  {addToInventoryMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <Package className="h-3.5 w-3.5 mr-1.5" />
-                  )}
-                  {t('addSelectedToInventory') || 'Add Selected'} ({selectedItems.size})
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddAllToInventory}
-                  disabled={landingCostPreview.items.length === 0 || addToInventoryMutation.isPending}
-                  data-testid="button-add-all"
-                >
-                  <PackagePlus className="h-3.5 w-3.5 mr-1.5" />
-                  {t('addAllToInventory') || 'Add All to Inventory'}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveAllPrices}
-                  disabled={changedPricesCount === 0 || saveAllPricesMutation.isPending}
-                  data-testid="button-save-prices"
-                  className="ml-auto"
-                >
-                  {saveAllPricesMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5 mr-1.5" />
-                  )}
-                  {saveAllPricesMutation.isPending 
-                    ? (t('saving') || 'Saving...') 
-                    : `${t('savePrices') || 'Save Prices'} (${changedPricesCount})`
-                  }
-                </Button>
-              </div>
-              
-              {/* Select All Checkbox - Below Buttons */}
-              <div className="flex items-center gap-2 pt-2 border-t">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                {t('landedCostPerItem') || 'Landed Cost Per Item'}
+                <Badge variant="secondary" className="ml-1 text-xs font-normal">{landingCostPreview.items.length}</Badge>
+              </CardTitle>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => refetchPreview()}
+                data-testid="button-refresh"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            
+            {/* Compact Action Bar */}
+            <div className="flex items-center gap-2 pt-3 flex-wrap">
+              <div className="flex items-center gap-1.5">
                 <Checkbox
+                  id="select-all"
                   checked={
                     landingCostPreview.items.filter(item => !productsBySKU[item.sku]).length > 0 &&
                     landingCostPreview.items.filter(item => !productsBySKU[item.sku]).every(item => selectedItems.has(item.sku))
@@ -747,19 +677,70 @@ export default function LandingCostDetails() {
                   }}
                   data-testid="checkbox-select-all"
                 />
-                <Label className="text-xs cursor-pointer">{t('selectAll') || 'Select All'}</Label>
+                <Label htmlFor="select-all" className="text-xs cursor-pointer text-muted-foreground">
+                  {t('selectAll') || 'All'}
+                </Label>
               </div>
+              
+              <div className="h-4 w-px bg-border mx-1" />
+              
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={handleAddSelectedToInventory}
+                disabled={selectedItems.size === 0 || addToInventoryMutation.isPending}
+                data-testid="button-add-selected"
+              >
+                {addToInventoryMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                ) : (
+                  <Package className="h-3 w-3 mr-1" />
+                )}
+                {t('addSelectedToInventory') || 'Add'} ({selectedItems.size})
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={handleAddAllToInventory}
+                disabled={landingCostPreview.items.length === 0 || addToInventoryMutation.isPending}
+                data-testid="button-add-all"
+              >
+                <PackagePlus className="h-3 w-3 mr-1" />
+                {t('addAllToInventory') || 'Add All'}
+              </Button>
+              
+              <div className="flex-1" />
+              
+              {changedPricesCount > 0 && (
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs"
+                  onClick={handleSaveAllPrices}
+                  disabled={saveAllPricesMutation.isPending}
+                  data-testid="button-save-prices"
+                >
+                  {saveAllPricesMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="h-3 w-3 mr-1" />
+                  )}
+                  {t('savePrices') || 'Save'} ({changedPricesCount})
+                </Button>
+              )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pt-0">
             {isLoadingPreview || isLoadingProducts ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-40 w-full" />
+                  <Skeleton key={i} className="h-32 w-full rounded-lg" />
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {landingCostPreview.items.map((item, index) => {
                   // Check for variant allocations first (parent product with variants like colors/sizes)
                   const hasVariantAllocations = item.variantAllocations && item.variantAllocations.length > 0;
@@ -1050,17 +1031,17 @@ export default function LandingCostDetails() {
                   return (
                     <div 
                       key={index}
-                      className={`border rounded-lg p-3 transition-all ${
+                      className={`rounded-lg p-3 transition-all ${
                         hasChanges 
-                          ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' 
+                          ? 'bg-amber-50/80 dark:bg-amber-950/30 ring-1 ring-amber-200 dark:ring-amber-800' 
                           : isSaved
-                          ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20'
-                          : 'bg-white dark:bg-gray-900'
+                          ? 'bg-green-50/50 dark:bg-green-950/20 ring-1 ring-green-200 dark:ring-green-800'
+                          : 'bg-muted/30 hover:bg-muted/50'
                       }`}
                       data-testid={`item-${item.sku}`}
                     >
                       {/* Product Header */}
-                      <div className="flex items-start gap-3 mb-3">
+                      <div className="flex items-start gap-2.5">
                         <Checkbox
                           checked={selectedItems.has(item.sku)}
                           onCheckedChange={(checked) => {
@@ -1074,48 +1055,45 @@ export default function LandingCostDetails() {
                           }}
                           disabled={!!product}
                           data-testid={`checkbox-item-${item.sku}`}
-                          className="mt-1"
+                          className="mt-0.5"
                         />
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt="" className="w-12 h-12 object-cover rounded border flex-shrink-0" />
+                          <img src={item.imageUrl} alt="" className="w-10 h-10 object-cover rounded flex-shrink-0" />
                         ) : (
-                          <div className="w-12 h-12 rounded border bg-muted flex items-center justify-center flex-shrink-0">
-                            <Package className="h-5 w-5 text-muted-foreground" />
+                          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                            <Package className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">{item.name}</h4>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            {item.sku && (
-                              <Badge variant="outline" className="text-xs font-mono">
-                                {item.sku}
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {t('qty') || 'Qty'}: <strong>{item.quantity}</strong>
-                            </span>
-                            {!product ? (
-                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                {t('notInInventory') || 'Not in Inventory'}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {t('inInventory') || 'In Inventory'}
-                              </Badge>
-                            )}
-                            {hasChanges && (
-                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                                {t('unsaved') || 'Unsaved'}
-                              </Badge>
-                            )}
-                            {isSaved && !hasChanges && (
-                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {t('saved') || 'Saved'}
-                              </Badge>
-                            )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                {item.sku && (
+                                  <code className="text-[10px] text-muted-foreground bg-muted px-1 py-0.5 rounded">
+                                    {item.sku}
+                                  </code>
+                                )}
+                                <span className="text-[10px] text-muted-foreground">
+                                  ×{item.quantity}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {!product && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                  {t('notInInventory') || 'New'}
+                                </span>
+                              )}
+                              {hasChanges && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                  {t('unsaved') || 'Unsaved'}
+                                </span>
+                              )}
+                              {isSaved && !hasChanges && (
+                                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1165,149 +1143,81 @@ export default function LandingCostDetails() {
                         </div>
                       )}
 
-                      {/* Cost Breakdown Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                        {/* Purchase Price */}
-                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2">
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {t('purchasePrice') || 'Purchase Price'}
-                          </Label>
-                          <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                      {/* Cost Summary - Compact inline */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 pt-2 border-t border-border/50 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">{t('purchasePrice') || 'Buy'}:</span>
+                          <span className="font-medium text-blue-600 dark:text-blue-400">
                             {formatCurrency(item.unitPrice, 'EUR')}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {formatCurrency(purchasePriceCZK, 'CZK')}
-                          </p>
+                          </span>
                         </div>
-
-                        {/* Landed Cost EUR */}
-                        <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-2">
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {t('landedCost') || 'Landed Cost'}
-                          </Label>
-                          <p className="text-sm font-bold text-purple-700 dark:text-purple-400">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">{t('landedCost') || 'Landed'}:</span>
+                          <span className="font-semibold text-purple-600 dark:text-purple-400">
                             {formatCurrency(item.landingCostPerUnit, 'EUR')}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {formatCurrency(landingCostCZK, 'CZK')}
-                          </p>
+                          </span>
                         </div>
-
-                        {/* Selling Price (Summary) */}
-                        <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2">
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {t('sellingPrice') || 'Selling Price'}
-                          </Label>
-                          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">{t('sellingPrice') || 'Sell'}:</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
                             {displayPriceEUR > 0 ? formatCurrency(displayPriceEUR, 'EUR') : '---'}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {displayPriceCZK > 0 ? formatCurrency(displayPriceCZK, 'CZK') : '---'}
-                          </p>
+                          </span>
                         </div>
-
-                        {/* Margin */}
-                        <div className={`rounded-lg p-2 ${
+                        <div className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           margin >= 30 
-                            ? 'bg-green-50 dark:bg-green-950/30' 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' 
                             : margin >= 15 
-                            ? 'bg-amber-50 dark:bg-amber-950/30'
-                            : 'bg-red-50 dark:bg-red-950/30'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
                         }`}>
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {t('margin') || 'Margin'}
-                          </Label>
-                          <p className={`text-sm font-bold ${
-                            margin >= 30 
-                              ? 'text-green-700 dark:text-green-400' 
-                              : margin >= 15 
-                              ? 'text-amber-700 dark:text-amber-400'
-                              : 'text-red-700 dark:text-red-400'
-                          }`}>
-                            {displayPriceEUR > 0 ? `${margin.toFixed(1)}%` : '---'}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {displayPriceEUR > 0 
-                              ? `+${formatCurrency(displayPriceEUR - item.landingCostPerUnit, 'EUR')}`
-                              : t('setPrice') || 'Set price'
-                            }
-                          </p>
+                          {displayPriceEUR > 0 ? `${margin.toFixed(0)}%` : '---'}
                         </div>
                       </div>
 
-                      {/* Selling Price Inputs */}
-                      <div className="border-t pt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label className="text-xs font-semibold flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            {t('setSellingPrice') || 'Set Selling Price'}
-                          </Label>
-                          {product && (
-                            <Button
-                              size="sm"
-                              variant={hasChanges ? "default" : "outline"}
-                              onClick={() => handleSaveSinglePrice(item.sku)}
-                              disabled={!hasChanges || savePriceMutation.isPending}
-                              className="h-7 text-xs"
-                              data-testid={`button-save-price-${item.sku}`}
-                            >
-                              {savePriceMutation.isPending ? (
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              ) : (
-                                <Save className="h-3 w-3 mr-1" />
-                              )}
-                              {t('save') || 'Save'}
-                            </Button>
-                          )}
+                      {/* Price Inputs - Compact */}
+                      <div className="flex items-end gap-2 mt-3">
+                        <div className="flex-1">
+                          <Label htmlFor={`price-eur-${item.sku}`} className="text-[10px] text-muted-foreground">EUR</Label>
+                          <MathInput
+                            id={`price-eur-${item.sku}`}
+                            min={0}
+                            step={0.01}
+                            value={displayPriceEUR}
+                            onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'EUR', val)}
+                            onBlur={() => handlePriceBlur(item.sku)}
+                            className="h-8 text-sm"
+                            data-testid={`input-price-eur-${item.sku}`}
+                          />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* EUR Price Input */}
-                          <div className="relative">
-                            <Label htmlFor={`price-eur-${item.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
-                              {t('priceEUR') || 'Price EUR'}
-                              {savingItems.has(item.sku) && (
-                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                              )}
-                              {savedItems.has(item.sku) && !hasChanges && (
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                              )}
-                            </Label>
-                            <MathInput
-                              id={`price-eur-${item.sku}`}
-                              min={0}
-                              step={0.01}
-                              value={displayPriceEUR}
-                              onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'EUR', val)}
-                              onBlur={() => handlePriceBlur(item.sku)}
-                              className="mt-1"
-                              data-testid={`input-price-eur-${item.sku}`}
-                            />
-                          </div>
-
-                          {/* CZK Price Input */}
-                          <div className="relative">
-                            <Label htmlFor={`price-czk-${item.sku}`} className="text-xs text-muted-foreground flex items-center gap-1">
-                              {t('priceCZK') || 'Price CZK'}
-                              {savingItems.has(item.sku) && (
-                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                              )}
-                              {savedItems.has(item.sku) && !hasChanges && (
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                              )}
-                            </Label>
-                            <MathInput
-                              id={`price-czk-${item.sku}`}
-                              min={0}
-                              step={1}
-                              isInteger={true}
-                              value={Math.round(displayPriceCZK)}
-                              onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'CZK', val)}
-                              onBlur={() => handlePriceBlur(item.sku)}
-                              className="mt-1"
-                              data-testid={`input-price-czk-${item.sku}`}
-                            />
-                          </div>
+                        <div className="flex-1">
+                          <Label htmlFor={`price-czk-${item.sku}`} className="text-[10px] text-muted-foreground">CZK</Label>
+                          <MathInput
+                            id={`price-czk-${item.sku}`}
+                            min={0}
+                            step={1}
+                            isInteger={true}
+                            value={Math.round(displayPriceCZK)}
+                            onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'CZK', val)}
+                            onBlur={() => handlePriceBlur(item.sku)}
+                            className="h-8 text-sm"
+                            data-testid={`input-price-czk-${item.sku}`}
+                          />
                         </div>
+                        {product && hasChanges && (
+                          <Button
+                            size="sm"
+                            className="h-8 px-3"
+                            onClick={() => handleSaveSinglePrice(item.sku)}
+                            disabled={savePriceMutation.isPending}
+                            data-testid={`button-save-price-${item.sku}`}
+                          >
+                            {savePriceMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Save className="h-3 w-3" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );

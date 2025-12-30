@@ -1647,6 +1647,13 @@ const imports = {
   landedCostIncludes: 'Landed cost includes purchase price plus allocated freight, duty, customs, insurance, and other costs. Set selling prices above to update product prices in your inventory.',
   unsavedChanges: 'unsaved changes',
   notInInventory: 'Not in inventory',
+  inInventory: 'In Inventory',
+  unsaved: 'Unsaved',
+  addedToWarehouse: 'Added to Warehouse',
+  failedToSavePrice: 'Failed to save price',
+  productNotInInventory: 'Product not in inventory',
+  pricesSaved: 'prices saved successfully',
+  pricesNotSaved: 'price(s) not saved. Click "Save Prices" to save all changes.',
   
   // InternationalTransit - Toast Messages (unique keys only)
   success: 'Success',

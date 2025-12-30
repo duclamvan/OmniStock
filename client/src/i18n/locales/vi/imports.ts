@@ -1668,6 +1668,13 @@ const imports = {
   landedCostIncludes: 'Chi phí nhập hàng bao gồm giá mua cộng với phí vận chuyển, thuế, hải quan, bảo hiểm và các chi phí khác. Đặt giá bán ở trên để cập nhật giá sản phẩm trong kho.',
   unsavedChanges: 'thay đổi chưa lưu',
   notInInventory: 'Không có trong kho',
+  inInventory: 'Đã có trong kho',
+  unsaved: 'Chưa lưu',
+  addedToWarehouse: 'Đã thêm vào kho',
+  failedToSavePrice: 'Lưu giá thất bại',
+  productNotInInventory: 'Sản phẩm chưa có trong kho',
+  pricesSaved: 'giá đã được lưu thành công',
+  pricesNotSaved: 'giá chưa được lưu. Nhấn "Lưu giá" để lưu tất cả thay đổi.',
   
   // InternationalTransit - Additional Labels (Non-duplicate)
   trackingNumbers: 'Mã vận đơn',
