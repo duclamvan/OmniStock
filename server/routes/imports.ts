@@ -4757,9 +4757,9 @@ router.get("/shipments", async (req, res) => {
           itemCount = consolidationItemList.length;
         } 
         // If no consolidation, check if this is a direct purchase order shipment
-        else if (shipment.notes && shipment.notes.includes('Auto-created from Purchase Order PO #')) {
-          // Extract purchase ID from notes
-          const match = shipment.notes.match(/PO #([a-zA-Z0-9-]+)/);
+        else if (shipment.notes && (shipment.notes.includes('Auto-created from Purchase Order PO #') || shipment.notes.includes('Direct shipment from Purchase Order'))) {
+          // Extract purchase ID from notes (supports both old and new formats)
+          const match = shipment.notes.match(/PO #([a-zA-Z0-9-]+)/) || shipment.notes.match(/Purchase Order ([a-zA-Z0-9-]+)/);
           if (match) {
             const purchaseId = match[1];
             // Try to find by full ID first, then by prefix
@@ -5170,7 +5170,7 @@ router.post("/shipments/from-purchase", async (req, res) => {
       shippingCostCurrency: purchase.purchaseCurrency || 'USD',
       totalWeight: totalWeight.toString(),
       totalUnits: totalUnits,
-      notes: `Direct shipment from Purchase Order ${purchaseId.substring(0, 8).toUpperCase()}`,
+      notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - Direct Shipping`,
       status: 'in transit',
       createdAt: new Date(),
       updatedAt: new Date()
