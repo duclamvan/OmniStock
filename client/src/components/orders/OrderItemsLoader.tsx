@@ -12,6 +12,8 @@ interface OrderItem {
   price?: string | number;
   total?: string | number;
   sku?: string;
+  variantSku?: string;
+  variantId?: string;
   image?: string;
 }
 
@@ -99,8 +101,8 @@ export function OrderItemsLoader({
                 <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
                   <span className="text-blue-600 dark:text-blue-400">{item.quantity}×</span> {item.productName}
                 </p>
-                {item.sku && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('orders:sku')} {item.sku}</p>
+                {(item.variantSku || item.sku) && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('orders:sku')} {item.variantSku || item.sku}</p>
                 )}
               </div>
               <div className="text-right ml-4">
