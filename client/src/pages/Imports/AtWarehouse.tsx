@@ -2523,14 +2523,16 @@ export default function AtWarehouse() {
                           <Box className="h-4 w-4 mr-1" />
                           {t('receive')}
                         </Button>
-                        <Button 
-                          size="sm"
-                          onClick={() => handleUnpack(order)}
-                          data-testid={`button-unpack-order-${order.id}`}
-                        >
-                          <PackageOpen className="h-4 w-4 mr-1" />
-                          {t('unpack')}
-                        </Button>
+                        {order.status !== 'unpacked' && (
+                          <Button 
+                            size="sm"
+                            onClick={() => handleUnpack(order)}
+                            data-testid={`button-unpack-order-${order.id}`}
+                          >
+                            <PackageOpen className="h-4 w-4 mr-1" />
+                            {t('unpack')}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
