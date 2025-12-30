@@ -1789,11 +1789,137 @@ async function finalizeReceivingInventory(
     }
     
     // ================================================================
+    // SYNC VARIANT QUANTITIES FROM PRODUCT_LOCATIONS (BEFORE COST CALC)
+    // Recalculate variant quantities from product_locations before cost recalculation
+    // ================================================================
+    console.log(`[finalizeReceivingInventory] Syncing variant quantities from product_locations...`);
+    
+    // Get all unique product IDs from receipt items and parent products
+    const allProductIds = new Set<string>();
+    for (const item of allReceiptItems) {
+      if (item.productId) allProductIds.add(item.productId);
+    }
+    for (const parentId of parentProductsNeedingUpdate) {
+      allProductIds.add(parentId);
+    }
+    
+    // Sync each product's variant quantities from product_locations
+    for (const productId of allProductIds) {
+      try {
+        // Check if this product has variants
+        const variants = await tx
+          .select({ id: productVariants.id, quantity: productVariants.quantity })
+          .from(productVariants)
+          .where(eq(productVariants.productId, productId));
+        
+        if (variants.length === 0) {
+          // Non-variant product: first check if ANY location records exist
+          const existsCheck = await tx
+            .select({ count: sql<number>`COUNT(*)::int` })
+            .from(productLocations)
+            .where(eq(productLocations.productId, productId));
+          
+          const hasLocations = (existsCheck[0]?.count || 0) > 0;
+          
+          // Only update if there are location records (preserve existing quantity otherwise)
+          if (hasLocations) {
+            const locationSum = await tx
+              .select({
+                totalQty: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)`
+              })
+              .from(productLocations)
+              .where(eq(productLocations.productId, productId));
+            
+            const locQty = Number(locationSum[0]?.totalQty) || 0;
+            
+            await tx
+              .update(products)
+              .set({ quantity: locQty, updatedAt: new Date() })
+              .where(eq(products.id, productId));
+            
+            console.log(`[finalizeReceivingInventory] Synced non-variant product ${productId} qty to ${locQty}`);
+          } else {
+            console.log(`[finalizeReceivingInventory] No locations for non-variant product ${productId}, preserving existing qty`);
+          }
+          continue;
+        }
+        
+        // Variant product: aggregate quantities by variantId in a single query
+        const variantSums = await tx
+          .select({
+            variantId: productLocations.variantId,
+            totalQty: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)`
+          })
+          .from(productLocations)
+          .where(eq(productLocations.productId, productId))
+          .groupBy(productLocations.variantId);
+        
+        // Skip if no location records exist (preserve existing quantities)
+        if (variantSums.length === 0) {
+          console.log(`[finalizeReceivingInventory] No locations for product ${productId}, preserving existing quantities`);
+          continue;
+        }
+        
+        // Create a map of variantId -> quantity
+        const variantQtyMap = new Map<string | null, number>();
+        for (const row of variantSums) {
+          variantQtyMap.set(row.variantId, Number(row.totalQty) || 0);
+        }
+        
+        // Update each variant's quantity, tracking total
+        let syncedVariantQty = 0;
+        let variantsUpdated = 0;
+        for (const variant of variants) {
+          // Only update if we have location data for this variant, otherwise preserve
+          if (variantQtyMap.has(variant.id)) {
+            const newQty = variantQtyMap.get(variant.id) || 0;
+            syncedVariantQty += newQty;
+            variantsUpdated++;
+            await tx
+              .update(productVariants)
+              .set({ quantity: newQty, updatedAt: new Date() })
+              .where(eq(productVariants.id, variant.id));
+          } else {
+            // Add existing quantity from variants not in locations
+            const existingVariant = variants.find(v => v.id === variant.id);
+            syncedVariantQty += existingVariant?.quantity || 0;
+          }
+        }
+        
+        // Also include any unassigned stock (NULL variantId) in the parent total
+        const unassignedQty = variantQtyMap.get(null) || 0;
+        syncedVariantQty += unassignedQty;
+        
+        // Persist the synced quantity to the parent product BEFORE cost calculation
+        // This ensures the cost calculation uses accurate quantities
+        await tx
+          .update(products)
+          .set({ quantity: syncedVariantQty, updatedAt: new Date() })
+          .where(eq(products.id, productId));
+        
+        console.log(`[finalizeReceivingInventory] Synced ${variantsUpdated}/${variants.length} variants for product ${productId}, persisted total qty=${syncedVariantQty} (incl. ${unassignedQty} unassigned)`);
+      } catch (err) {
+        console.error(`[finalizeReceivingInventory] Error syncing quantities for product ${productId}:`, err);
+      }
+    }
+    
+    console.log(`[finalizeReceivingInventory] Completed variant quantity sync for ${allProductIds.size} products`);
+    
+    // ================================================================
     // UPDATE PARENT PRODUCT QUANTITIES AND COSTS FOR VARIANT PRODUCTS
+    // Now uses the synced variant quantities for accurate cost calculations
     // ================================================================
     for (const parentProductId of parentProductsNeedingUpdate) {
       try {
-        // Get sum of all variant quantities and weighted cost totals (VND and CNY added)
+        // Get current product quantity (already synced with unassigned stock) for cost calculation
+        const [currentProduct] = await tx
+          .select({ quantity: products.quantity })
+          .from(products)
+          .where(eq(products.id, parentProductId));
+        
+        const syncedProductQty = Number(currentProduct?.quantity) || 0;
+        
+        // Get weighted cost totals from variants (VND and CNY added)
         const variantData = await tx
           .select({
             totalQuantity: sql<number>`COALESCE(SUM(${productVariants.quantity}), 0)`,
@@ -1809,7 +1935,7 @@ async function finalizeReceivingInventory(
         const totalCostValueUsd = Number(variantData[0]?.totalCostValueUsd) || 0;
         const totalCostValueCzk = Number(variantData[0]?.totalCostValueCzk) || 0;
         
-        // Calculate weighted average costs from variants
+        // Calculate weighted average costs from variants (use variant qty for cost weights)
         const avgCostEur = totalVariantQuantity > 0 ? totalCostValueEur / totalVariantQuantity : 0;
         const avgCostUsd = totalVariantQuantity > 0 ? totalCostValueUsd / totalVariantQuantity : 0;
         const avgCostCzk = totalVariantQuantity > 0 ? totalCostValueCzk / totalVariantQuantity : 0;
@@ -1818,11 +1944,11 @@ async function finalizeReceivingInventory(
         const avgCostVnd = avgCostEur * eurToVnd;
         const avgCostCny = avgCostEur * eurToCny;
         
-        // Update parent product
+        // Update parent product costs ONLY (quantity already synced with unassigned stock)
         await tx
           .update(products)
           .set({
-            quantity: totalVariantQuantity,
+            // Don't overwrite quantity - it's already synced with unassigned stock included
             importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
             importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
             importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
@@ -1850,8 +1976,8 @@ async function finalizeReceivingInventory(
         }
         
         result.parentProductsUpdated++;
-        const logMsg = `Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}`;
-        console.log(`Updated parent product ${parentProductId}: qty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}, avgCostVnd=${avgCostVnd.toFixed(0)}, avgCostCny=${avgCostCny.toFixed(2)}`);
+        const logMsg = `Updated parent product ${parentProductId}: syncedQty=${syncedProductQty}, variantQty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}`;
+        console.log(`Updated parent product ${parentProductId}: syncedQty=${syncedProductQty}, variantQty=${totalVariantQuantity}, avgCostEur=${avgCostEur.toFixed(2)}, avgCostUsd=${avgCostUsd.toFixed(2)}, avgCostVnd=${avgCostVnd.toFixed(0)}, avgCostCny=${avgCostCny.toFixed(2)}`);
         addDebugLog('info', logMsg, { parentProductId, totalVariantQuantity, avgCostEur, avgCostUsd });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
