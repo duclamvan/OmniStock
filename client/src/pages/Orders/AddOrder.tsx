@@ -2332,7 +2332,10 @@ export default function AddOrder() {
       
       // Check if product has variants
       try {
-        const variantsResponse = await fetch(`/api/products/${product.id}/variants`);
+        // Add cache-busting to get fresh allocation data
+        const variantsResponse = await fetch(`/api/products/${product.id}/variants?_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         if (variantsResponse.ok) {
           const variants = await variantsResponse.json();
           if (variants && variants.length > 0) {
@@ -5643,7 +5646,7 @@ export default function AddOrder() {
                                 const allocatedToOthers = product.allocatedQuantity ?? 0;
                                 return (
                                   <div className={`text-[10px] md:text-xs ${isLow ? 'text-red-500 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    <span className="hidden sm:inline">{isVirtual ? 'V.Stock: ' : 'Stock: '}</span>{availableStock}{inOrder > 0 && <span className="hidden md:inline"> ({inOrder} in order)</span>}{allocatedToOthers > 0 && inOrder === 0 && <span className="hidden lg:inline text-amber-600"> ({allocatedToOthers} pending)</span>}
+                                    <span className="hidden sm:inline">{isVirtual ? 'V.Stock: ' : 'Stock: '}</span>{availableStock}{allocatedToOthers > 0 && <span className="text-amber-600"> ({allocatedToOthers} pending)</span>}{inOrder > 0 && <span className="hidden md:inline text-blue-600"> +{inOrder} here</span>}
                                   </div>
                                 );
                               })()
