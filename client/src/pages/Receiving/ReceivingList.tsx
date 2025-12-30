@@ -3998,6 +3998,132 @@ function QuickStorageSheet({
                                 {/* ADD LOCATION - Simplified for mobile */}
                                 {itemRemainingQty > 0 && (
                                   <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                                    {/* Autofill from Existing Locations - for products that already have variant locations */}
+                                    {item.variantAllocations && item.variantAllocations.length > 0 && item.productId && (
+                                      <Button
+                                        variant="outline"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (!item.productId) return;
+                                          
+                                          try {
+                                            // Fetch all existing locations for this product
+                                            const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
+                                            if (!locResponse.ok) throw new Error('Failed to fetch locations');
+                                            const allProductLocations = await locResponse.json();
+                                            
+                                            // Fetch variants to build SKU/name → location mapping
+                                            const variantResponse = await fetch(`/api/products/${item.productId}/variants`, { credentials: 'include' });
+                                            if (!variantResponse.ok) throw new Error('Failed to fetch variants');
+                                            const productVariants = await variantResponse.json();
+                                            
+                                            // Build variantId → locationCode mapping (prefer primary locations)
+                                            const variantLocationMap = new Map<string, { locationCode: string; locationType: string; variantId: string; variantName: string; sku: string }>();
+                                            const skuToVariantId = new Map<string, string>();
+                                            const nameToVariantId = new Map<string, string>();
+                                            
+                                            for (const v of productVariants) {
+                                              if (v.sku) skuToVariantId.set(v.sku.toLowerCase(), v.id);
+                                              if (v.name) nameToVariantId.set(v.name.toLowerCase(), v.id);
+                                            }
+                                            
+                                            // For each location, map to its variant
+                                            for (const loc of allProductLocations) {
+                                              if (loc.variantId) {
+                                                const variant = productVariants.find((v: any) => v.id === loc.variantId);
+                                                if (variant) {
+                                                  // Only add if not already mapped or this is primary
+                                                  const existing = variantLocationMap.get(loc.variantId);
+                                                  if (!existing || loc.isPrimary) {
+                                                    variantLocationMap.set(loc.variantId, {
+                                                      locationCode: loc.locationCode,
+                                                      locationType: loc.locationType || 'bin',
+                                                      variantId: loc.variantId,
+                                                      variantName: variant.name || '',
+                                                      sku: variant.sku || ''
+                                                    });
+                                                  }
+                                                }
+                                              }
+                                            }
+                                            
+                                            if (variantLocationMap.size === 0) {
+                                              toast({
+                                                title: t('imports:noVariantLocationsFound', 'No Existing Locations'),
+                                                description: t('imports:noVariantLocationsDesc', 'No variant-specific locations found. Use Bulk Allocate instead.'),
+                                                variant: 'destructive'
+                                              });
+                                              return;
+                                            }
+                                            
+                                            // Match variant allocations to their locations
+                                            const newLocations: LocationAssignment[] = [];
+                                            let matchedCount = 0;
+                                            let unmatchedCount = 0;
+                                            
+                                            for (const va of item.variantAllocations) {
+                                              const vaSku = ((va as any).sku || va.variantName || '').toLowerCase();
+                                              const vaName = (va.variantName || '').toLowerCase();
+                                              
+                                              // Find matching variantId by SKU or name
+                                              let variantId = skuToVariantId.get(vaSku) || nameToVariantId.get(vaName);
+                                              
+                                              if (variantId && variantLocationMap.has(variantId)) {
+                                                const locInfo = variantLocationMap.get(variantId)!;
+                                                newLocations.push({
+                                                  id: `autofill-${Date.now()}-${matchedCount}`,
+                                                  locationCode: locInfo.locationCode,
+                                                  locationType: locInfo.locationType,
+                                                  quantity: va.quantity || 0,
+                                                  isPrimary: false,
+                                                  variantId: variantId,
+                                                  variantName: va.variantName || locInfo.variantName,
+                                                  sku: (va as any).sku || locInfo.sku
+                                                });
+                                                matchedCount++;
+                                              } else {
+                                                unmatchedCount++;
+                                              }
+                                            }
+                                            
+                                            if (newLocations.length === 0) {
+                                              toast({
+                                                title: t('imports:noMatchingLocations', 'No Matches Found'),
+                                                description: t('imports:variantsNotMatchedDesc', 'Could not match variants to existing locations'),
+                                                variant: 'destructive'
+                                              });
+                                              return;
+                                            }
+                                            
+                                            // Update state with the new locations
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              updated[index].locations = newLocations;
+                                              return updated;
+                                            });
+                                            
+                                            toast({
+                                              title: t('imports:autofillComplete', 'Autofill Complete'),
+                                              description: `${matchedCount} ${t('imports:variantsMatched', 'variants matched')}${unmatchedCount > 0 ? `, ${unmatchedCount} ${t('imports:unmatched', 'unmatched')}` : ''}`,
+                                              duration: 3000
+                                            });
+                                          } catch (error) {
+                                            console.error('Autofill error:', error);
+                                            toast({
+                                              title: t('common:error'),
+                                              description: t('imports:autofillFailed', 'Failed to autofill locations'),
+                                              variant: 'destructive'
+                                            });
+                                          }
+                                        }}
+                                        className="w-full mb-2 h-10 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white border-0 font-medium"
+                                        data-testid="button-autofill-locations"
+                                      >
+                                        <Zap className="h-4 w-4 mr-2" />
+                                        {t('imports:autofillFromExisting', 'Autofill from Existing')} ({item.variantAllocations.length} variants)
+                                      </Button>
+                                    )}
+                                    
                                     {/* Bulk Allocate Button for multi-variant items */}
                                     {item.variantAllocations && item.variantAllocations.length > 1 && (
                                       <Button
