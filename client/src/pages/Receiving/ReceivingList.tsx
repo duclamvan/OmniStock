@@ -4119,10 +4119,16 @@ function QuickStorageSheet({
                                               return;
                                             }
                                             
-                                            // Update state with the new locations
+                                            // Update state - APPEND to existing draft locations, don't replace
                                             setItems(prevItems => {
                                               const updated = [...prevItems];
-                                              updated[index].locations = newLocations;
+                                              // Merge with existing draft locations, avoiding duplicates by locationCode+variantId
+                                              const existingDrafts = updated[index].locations || [];
+                                              const existingKeys = new Set(existingDrafts.map(l => `${l.locationCode}:${l.variantId || ''}`));
+                                              const newNonDuplicates = newLocations.filter(l => 
+                                                !existingKeys.has(`${l.locationCode}:${l.variantId || ''}`)
+                                              );
+                                              updated[index].locations = [...existingDrafts, ...newNonDuplicates];
                                               return updated;
                                             });
                                             
