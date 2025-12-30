@@ -1087,6 +1087,8 @@ const common = {
   selectAll: 'Chọn tất cả',
   locationsDeletedSuccessfully: 'Đã xóa {{count}} vị trí thành công',
   failedToDeleteLocations: 'Không thể xóa các vị trí',
+  partialSuccess: 'Thành công một phần',
+  someLocationsDeleted: 'Đã xóa {{succeeded}} vị trí, {{failed}} thất bại',
   confirmDeleteMultipleLocations: 'Bạn có chắc chắn muốn xóa {{count}} vị trí? Hành động này không thể hoàn tác.',
   warningLocationsContainInventory: 'Cảnh báo: {{locationCount}} vị trí chứa tổng cộng {{totalUnits}} đơn vị. Hãy cân nhắc di chuyển hàng tồn kho trước.',
   deleting: 'Đang xóa...',

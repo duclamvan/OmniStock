@@ -1130,6 +1130,8 @@ const common = {
   selectAll: 'Select all',
   locationsDeletedSuccessfully: '{{count}} locations deleted successfully',
   failedToDeleteLocations: 'Failed to delete locations',
+  partialSuccess: 'Partial Success',
+  someLocationsDeleted: '{{succeeded}} locations deleted, {{failed}} failed',
   confirmDeleteMultipleLocations: 'Are you sure you want to delete {{count}} locations? This action cannot be undone.',
   warningLocationsContainInventory: 'Warning: {{locationCount}} locations contain a total of {{totalUnits}} units. Consider moving inventory first.',
   deleting: 'Deleting...',

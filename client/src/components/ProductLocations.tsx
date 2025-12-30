@@ -301,17 +301,35 @@ export default function ProductLocations({
   // Bulk delete locations mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const results = await Promise.all(
+      // Use Promise.allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled(
         ids.map(id => apiRequest('DELETE', `/api/products/${productId}/locations/${id}`))
       );
-      return results;
+      // Count successful and failed deletions
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      return { succeeded, failed, total: ids.length };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
-      toast({
-        title: t('common:success'),
-        description: t('common:locationsDeletedSuccessfully', { count: selectedLocations.size }),
-      });
+      if (result.failed === 0) {
+        toast({
+          title: t('common:success'),
+          description: t('common:locationsDeletedSuccessfully', { count: result.succeeded }),
+        });
+      } else if (result.succeeded > 0) {
+        toast({
+          title: t('common:partialSuccess'),
+          description: t('common:someLocationsDeleted', { succeeded: result.succeeded, failed: result.failed }),
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: t('common:error'),
+          description: t('common:failedToDeleteLocations'),
+          variant: "destructive",
+        });
+      }
       setSelectedLocations(new Set());
       setBulkDeleteDialogOpen(false);
     },

@@ -1,0 +1,59 @@
+{
+  "period": "weekly",
+  "startDate": "2025-12-23T00:00:00.000Z",
+  "endDate": "2025-12-30T23:59:59.999Z",
+  "generatedAt": "2025-12-30T13:03:04.009Z",
+  "summary": {
+    "totalOrders": 47,
+    "completedOrders": 8,
+    "pendingOrders": 10,
+    "cancelledOrders": 1,
+    "totalRevenue": 518880,
+    "totalItemsSold": 175,
+    "averageOrderValue": 11040,
+    "newCustomers": 0
+  },
+  "inventory": {
+    "totalProducts": 3,
+    "lowStockProducts": 1,
+    "outOfStockProducts": 0,
+    "stockAdjustments": 0,
+    "itemsReceived": 60
+  },
+  "topProducts": [
+    {
+      "id": "04253c78-164e-4b97-bfa8-7bf49cea2fe6",
+      "name": "Bucket Acrylic Powder 25lbs - Natural Pink",
+      "quantity": 24,
+      "revenue": 456000,
+      "quantitySold": 24
+    },
+    {
+      "id": "bcabfea8-4cae-4f08-84bf-6b623afc9a29",
+      "name": "Acrylic Powder 660g - Natural Pink",
+      "quantity": 51,
+      "revenue": 42880,
+      "quantitySold": 51
+    },
+    {
+      "id": "7c9380bb-560f-4237-9b94-e91a8458440e",
+      "name": "SORAH Gel Polish 15ml",
+      "quantity": 98,
+      "revenue": 9800,
+      "quantitySold": 98
+    }
+  ],
+  "topCustomers": [
+    {
+      "id": "07568cb6-bcb9-42f9-a585-914e0c5b4eef",
+      "name": "Davie Lam",
+      "orderCount": 47,
+      "totalSpent": 518880
+    }
+  ],
+  "financials": {
+    "totalExpenses": 0,
+    "grossProfit": 518880,
+    "expensesByCategory": {}
+  }
+}
