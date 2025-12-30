@@ -69,6 +69,7 @@ import {
   XCircle,
   Image as ImageIcon,
   ClipboardList,
+  Clipboard,
   Barcode,
   RotateCcw,
   Trash2,
@@ -2234,6 +2235,100 @@ function QuickStorageSheet({
   // Helper to update aisle config
   const updateAisleConfig = (id: string, updates: Partial<AisleConfig>) => {
     setBulkAisleConfigs(bulkAisleConfigs.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
+  
+  // Helper to paste/detect scheme from existing locations
+  const pasteSchemeFromLocations = () => {
+    const currentItem = items[selectedItemIndex];
+    if (!currentItem?.existingLocations || currentItem.existingLocations.length === 0) {
+      toast({
+        title: t('imports:noLocationsFound', 'No Existing Locations'),
+        description: t('imports:noLocationsToAnalyze', 'No existing locations found to analyze scheme from'),
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Parse location codes: WH1-A1-R01-L1 or WH1-A1-R01-L1-B2
+    // Format: {warehouse}-A{aisle}-R{rack}-L{level}[-B{bin}]
+    const parsedLocations: Array<{ warehouse: string; aisle: number; rack: number; level: number; bin?: number }> = [];
+    
+    for (const loc of currentItem.existingLocations) {
+      const code = loc.locationCode || '';
+      // Match pattern: WH1-A1-R01-L1 or WH1-A1-R1-L1-B2
+      const match = code.match(/^([A-Z0-9]+)-A(\d+)-R(\d+)-L(\d+)(?:-B(\d+))?$/i);
+      if (match) {
+        parsedLocations.push({
+          warehouse: match[1].toUpperCase(),
+          aisle: parseInt(match[2]),
+          rack: parseInt(match[3]),
+          level: parseInt(match[4]),
+          bin: match[5] ? parseInt(match[5]) : undefined
+        });
+      }
+    }
+    
+    if (parsedLocations.length === 0) {
+      toast({
+        title: t('imports:unrecognizedFormat', 'Unrecognized Format'),
+        description: t('imports:locationFormatNotRecognized', 'Could not parse location codes. Expected format: WH1-A1-R01-L1'),
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Extract warehouse (use most common)
+    const warehouseCounts = new Map<string, number>();
+    parsedLocations.forEach(loc => {
+      warehouseCounts.set(loc.warehouse, (warehouseCounts.get(loc.warehouse) || 0) + 1);
+    });
+    const detectedWarehouse = Array.from(warehouseCounts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+    setBulkWarehouse(detectedWarehouse);
+    
+    // Group by aisle and find rack/level ranges
+    const aisleMap = new Map<number, { racks: Set<number>; levels: Set<number>; bins: Set<number> }>();
+    
+    for (const loc of parsedLocations) {
+      if (!aisleMap.has(loc.aisle)) {
+        aisleMap.set(loc.aisle, { racks: new Set(), levels: new Set(), bins: new Set() });
+      }
+      const aisleData = aisleMap.get(loc.aisle)!;
+      aisleData.racks.add(loc.rack);
+      aisleData.levels.add(loc.level);
+      if (loc.bin !== undefined) aisleData.bins.add(loc.bin);
+    }
+    
+    // Build aisle configs
+    const newConfigs: AisleConfig[] = [];
+    const sortedAisles = Array.from(aisleMap.keys()).sort((a, b) => a - b);
+    
+    for (const aisleNum of sortedAisles) {
+      const data = aisleMap.get(aisleNum)!;
+      const racks = Array.from(data.racks).sort((a, b) => a - b);
+      const levels = Array.from(data.levels).sort((a, b) => a - b);
+      const bins = Array.from(data.bins).sort((a, b) => a - b);
+      
+      newConfigs.push({
+        id: Date.now().toString() + aisleNum,
+        aisle: aisleNum,
+        rackStart: racks[0] || 1,
+        rackEnd: racks[racks.length - 1] || 10,
+        levels: levels.length > 0 ? Math.max(...levels) : 4,
+        binsPerLevel: bins.length > 0 ? Math.max(...bins) : 0
+      });
+    }
+    
+    if (newConfigs.length > 0) {
+      setBulkAisleConfigs(newConfigs);
+      toast({
+        title: t('imports:schemeDetected', 'Scheme Detected'),
+        description: t('imports:schemeApplied', '{{count}} aisle(s) detected from {{total}} locations', { 
+          count: newConfigs.length, 
+          total: parsedLocations.length 
+        }),
+        duration: 3000
+      });
+    }
   };
   
   // Refs
@@ -4873,17 +4968,31 @@ function QuickStorageSheet({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">{t('imports:aisleConfigurations', 'Aisle Configuration')}</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={addAisleConfig}
-                    className="h-7 text-xs"
-                    data-testid="button-add-aisle"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {t('imports:addAisle', 'Add Aisle')}
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={pasteSchemeFromLocations}
+                      className="h-7 text-xs"
+                      title={t('imports:pasteSchemeTooltip', 'Detect aisle scheme from existing locations')}
+                      data-testid="button-paste-scheme"
+                    >
+                      <Clipboard className="h-3 w-3 mr-1" />
+                      {t('imports:pasteScheme', 'Paste Scheme')}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={addAisleConfig}
+                      className="h-7 text-xs"
+                      data-testid="button-add-aisle"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {t('imports:addAisle', 'Add Aisle')}
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-2 max-h-48 overflow-y-auto">
