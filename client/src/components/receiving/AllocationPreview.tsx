@@ -63,6 +63,7 @@ interface VariantAllocation {
   sku?: string;
   variantSku?: string;
   unitPrice?: number;
+  unitPriceCurrency?: string; // Currency of the unitPrice, defaults to parent's paymentCurrency
 }
 
 interface ItemAllocation {

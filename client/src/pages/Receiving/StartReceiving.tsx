@@ -75,6 +75,7 @@ interface VariantAllocation {
   variantName: string;
   quantity: number;
   unitPrice?: number;
+  unitPriceCurrency?: string; // Currency of the unitPrice, defaults to parent's paymentCurrency
   receivedQuantity?: number;
   locationCode?: string; // Variant-specific location
 }
