@@ -1547,9 +1547,17 @@ function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; i
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Badge className={getStatusColor(shipment.status)}>
-              {shipment.status}
-            </Badge>
+            <div className="flex items-center gap-1">
+              {shipment.isDirectPO && shipment.status === 'in transit' && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800 text-xs">
+                  <Plane className="h-3 w-3 mr-1" />
+                  {t('incoming')}
+                </Badge>
+              )}
+              <Badge className={getStatusColor(shipment.status)}>
+                {shipment.status}
+              </Badge>
+            </div>
             {etaInfo && (
               <span className={`text-xs font-medium ${etaInfo.color}`}>
                 {etaInfo.text}
@@ -7401,10 +7409,15 @@ export default function ReceivingList() {
   });
 
   // Filter for in-transit shipments with tracking issues (no tracking, failed, or unknown status)
+  // Excludes direct PO shipments which now appear in the main To Receive section
   const inTransitWithIssues = useMemo(() => {
     return allShipments.filter((s: any) => {
       // Only in-transit shipments
       if (s.status !== 'in transit') return false;
+      
+      // Exclude direct PO shipments - they appear in main To Receive section with countdown
+      const isDirectPO = !s.consolidationId && s.notes?.includes('Auto-created from Purchase Order');
+      if (isDirectPO) return false;
       
       // Check for tracking issues:
       // 1. No end tracking number

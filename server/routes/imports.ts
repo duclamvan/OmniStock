@@ -7891,6 +7891,7 @@ router.get("/shipments/receivable", async (req, res) => {
 // ============================================================================
 
 // Get shipments ready to receive (alias for receivable)
+// Includes: delivered shipments, near-ETA shipments, and ALL in-transit direct PO shipments
 router.get("/shipments/to-receive", async (req, res) => {
   try {
     const receivableShipments = await db
@@ -7902,10 +7903,17 @@ router.get("/shipments/to-receive", async (req, res) => {
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
       .where(and(
         or(
+          // Standard receivable: delivered or near-ETA in transit
           eq(shipments.status, 'delivered'),
           and(
             eq(shipments.status, 'in transit'),
             sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
+          ),
+          // Direct PO shipments in transit (no consolidation) - show with countdown
+          and(
+            eq(shipments.status, 'in transit'),
+            isNull(shipments.consolidationId),
+            sql`${shipments.notes} ILIKE '%Auto-created from Purchase Order%'`
           )
         ),
         or(
@@ -7973,7 +7981,7 @@ router.get("/shipments/to-receive", async (req, res) => {
           }
         }
         
-        // Attach items array to each shipment
+        // Attach items array to each consolidated shipment
         formattedShipments = formattedShipments.map(shipment => {
           const items = shipment.consolidationId ? (itemsByConsolidationId[shipment.consolidationId] || []) : [];
           const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
@@ -7984,6 +7992,89 @@ router.get("/shipments/to-receive", async (req, res) => {
             totalQuantity
           };
         });
+      }
+      
+      // Mark all direct PO shipments first, then load items
+      // Direct PO shipments: no consolidation AND notes contain "Auto-created from Purchase Order"
+      formattedShipments = formattedShipments.map(shipment => {
+        const isDirectPO = !shipment.consolidationId && 
+          shipment.notes?.toLowerCase().includes('auto-created from purchase order');
+        return isDirectPO ? { ...shipment, isDirectPO: true } : shipment;
+      });
+      
+      // Load items for direct PO shipments (non-consolidated)
+      const directPOShipments = formattedShipments.filter(s => s.isDirectPO);
+      
+      if (directPOShipments.length > 0) {
+        // Extract purchase ID prefixes from notes - map shipmentId -> prefix
+        // Match "PO #XXXXXXXX" where X is alphanumeric (8 chars representing first part of UUID)
+        const shipmentToPrefixMap = new Map<string, string>();
+        for (const shipment of directPOShipments) {
+          // Match PO # followed by 8 alphanumeric characters (case-insensitive)
+          const match = shipment.notes?.match(/PO\s*#\s*([a-fA-F0-9]{8})/i);
+          if (match) {
+            shipmentToPrefixMap.set(shipment.id, match[1].toLowerCase());
+          }
+        }
+        
+        // Find the actual purchase IDs and load their items
+        if (shipmentToPrefixMap.size > 0) {
+          const purchaseIdPrefixes = Array.from(new Set(shipmentToPrefixMap.values()));
+          
+          // Get all matching purchases using case-insensitive prefix match
+          const matchingPurchases = await db
+            .select()
+            .from(importPurchases)
+            .where(sql`LOWER(${importPurchases.id}) LIKE ANY(ARRAY[${sql.join(purchaseIdPrefixes.map(p => sql`${p.toLowerCase() + '%'}`), sql`, `)}])`);
+          
+          // Load items for all found purchases
+          const purchaseIds = matchingPurchases.map(p => p.id);
+          if (purchaseIds.length > 0) {
+            const allPurchaseItems = await db
+              .select()
+              .from(purchaseItems)
+              .where(inArray(purchaseItems.purchaseId, purchaseIds));
+            
+            // Create a map from purchase ID (full) to items
+            const itemsByPurchaseId: Record<string, any[]> = {};
+            for (const purchase of matchingPurchases) {
+              const items = allPurchaseItems.filter(item => item.purchaseId === purchase.id);
+              itemsByPurchaseId[purchase.id] = items.map(item => ({
+                ...item,
+                name: item.productName,
+                productName: item.productName,
+                itemType: 'purchase'
+              }));
+            }
+            
+            // Create a map from lowercase prefix to full purchase ID for lookup
+            const prefixToPurchaseId: Record<string, string> = {};
+            for (const purchase of matchingPurchases) {
+              const prefix = purchase.id.substring(0, 8).toLowerCase();
+              prefixToPurchaseId[prefix] = purchase.id;
+            }
+            
+            // Attach items to direct PO shipments
+            formattedShipments = formattedShipments.map(shipment => {
+              if (shipment.isDirectPO) {
+                const match = shipment.notes?.match(/PO\s*#\s*([a-fA-F0-9]{8})/i);
+                if (match) {
+                  const prefix = match[1].toLowerCase();
+                  const purchaseId = prefixToPurchaseId[prefix];
+                  const items = purchaseId ? (itemsByPurchaseId[purchaseId] || []) : [];
+                  const totalQuantity = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+                  return {
+                    ...shipment,
+                    items: items.length > 0 ? items : shipment.items,
+                    itemCount: items.length > 0 ? items.length : shipment.itemCount,
+                    totalQuantity: items.length > 0 ? totalQuantity : shipment.totalQuantity
+                  };
+                }
+              }
+              return shipment;
+            });
+          }
+        }
       }
     }
 

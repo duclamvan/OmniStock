@@ -569,6 +569,7 @@ const imports = {
   arrivalToday: 'Arriving today',
   overdue: '{{days}} days overdue',
   overdueDay: '{{days}} day overdue',
+  incoming: 'Incoming',
   fillLater: 'Fill Later',
   createShipment: 'Create Shipment',
   creating: 'Creating...',

@@ -575,6 +575,7 @@ const imports = {
   arrivalToday: 'Đến hôm nay',
   overdue: 'Trễ {{days}} ngày',
   overdueDay: 'Trễ {{days}} ngày',
+  incoming: 'Đang đến',
   fillLater: 'Điền sau',
   createShipment: 'Tạo lô hàng',
   creating: 'Đang tạo...',
