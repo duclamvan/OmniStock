@@ -5132,7 +5132,7 @@ const generateAIShipmentName = async (
 // Create shipment directly from a purchase order (for direct shipping without consolidation)
 router.post("/shipments/from-purchase", async (req, res) => {
   try {
-    const { purchaseId, carrier, trackingNumber, origin, destination } = req.body;
+    const { purchaseId, carrier, trackingNumber, origin, destination, estimatedDeliveryDays } = req.body;
     
     if (!purchaseId) {
       return res.status(400).json({ message: "Purchase ID is required" });
@@ -5176,6 +5176,13 @@ router.post("/shipments/from-purchase", async (req, res) => {
     // Generate shipment name
     const shipmentName = `PO #${purchaseId.substring(0, 8).toUpperCase()} - ${purchase.supplier}`;
     
+    // Calculate estimated delivery date from days
+    let estimatedDelivery: Date | null = null;
+    if (estimatedDeliveryDays && !isNaN(estimatedDeliveryDays)) {
+      estimatedDelivery = new Date();
+      estimatedDelivery.setDate(estimatedDelivery.getDate() + parseInt(estimatedDeliveryDays));
+    }
+    
     // Create shipment directly (no consolidation needed)
     const [shipment] = await db.insert(shipments).values({
       consolidationId: null,
@@ -5190,6 +5197,7 @@ router.post("/shipments/from-purchase", async (req, res) => {
       totalUnits: totalUnits,
       notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - Direct Shipping`,
       status: 'in transit',
+      estimatedDelivery: estimatedDelivery,
       createdAt: new Date(),
       updatedAt: new Date()
     }).returning();

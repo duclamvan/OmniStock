@@ -1459,6 +1459,26 @@ function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; i
   
   const itemCount = shipment.items?.length || 0;
   const totalQuantity = shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+  
+  const getEtaCountdown = () => {
+    if (!shipment.estimatedDelivery) return null;
+    const eta = new Date(shipment.estimatedDelivery);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eta.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((eta.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      const absDays = Math.abs(diffDays);
+      return { text: absDays === 1 ? t('overdueDay', { days: absDays }) : t('overdue', { days: absDays }), color: 'text-red-600 dark:text-red-400' };
+    } else if (diffDays === 0) {
+      return { text: t('arrivalToday'), color: 'text-green-600 dark:text-green-400' };
+    } else {
+      return { text: diffDays === 1 ? t('dayRemaining', { days: diffDays }) : t('daysRemaining', { days: diffDays }), color: 'text-amber-600 dark:text-amber-400' };
+    }
+  };
+  
+  const etaInfo = getEtaCountdown();
 
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
@@ -1530,6 +1550,11 @@ function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; i
             <Badge className={getStatusColor(shipment.status)}>
               {shipment.status}
             </Badge>
+            {etaInfo && (
+              <span className={`text-xs font-medium ${etaInfo.color}`}>
+                {etaInfo.text}
+              </span>
+            )}
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (

@@ -181,7 +181,8 @@ export default function SupplierProcessing() {
     carrier: '',
     trackingNumber: '',
     origin: '',
-    destination: ''
+    destination: '',
+    estimatedDeliveryDays: ''
   });
 
   const { data: purchasesData, isLoading } = useQuery<Purchase[]>({
@@ -261,7 +262,8 @@ export default function SupplierProcessing() {
             carrier: '',
             trackingNumber: '',
             origin: purchase.location || 'China',
-            destination: 'Czech Republic'
+            destination: 'Czech Republic',
+            estimatedDeliveryDays: ''
           });
           setShipmentModalOpen(true);
         } else {
@@ -312,6 +314,7 @@ export default function SupplierProcessing() {
       trackingNumber: string;
       origin: string;
       destination: string;
+      estimatedDeliveryDays: string;
     }) => {
       // Create shipment directly for this purchase (no consolidation needed)
       const response = await apiRequest('POST', '/api/imports/shipments/from-purchase', {
@@ -319,7 +322,8 @@ export default function SupplierProcessing() {
         carrier: data.carrier,
         trackingNumber: data.trackingNumber,
         origin: data.origin,
-        destination: data.destination
+        destination: data.destination,
+        estimatedDeliveryDays: data.estimatedDeliveryDays ? parseInt(data.estimatedDeliveryDays) : null
       });
       return response.json();
     },
@@ -330,7 +334,7 @@ export default function SupplierProcessing() {
       toast({ title: t('success'), description: t('shipmentCreatedSuccessfully') });
       setShipmentModalOpen(false);
       setPendingShipmentData(null);
-      setShipmentForm({ carrier: '', trackingNumber: '', origin: '', destination: '' });
+      setShipmentForm({ carrier: '', trackingNumber: '', origin: '', destination: '', estimatedDeliveryDays: '' });
     },
     onError: () => {
       toast({ 
@@ -2053,6 +2057,18 @@ export default function SupplierProcessing() {
                     data-testid="input-shipment-destination"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="estimatedDeliveryDays">{t('estimatedDeliveryDays')}</Label>
+                <Input
+                  id="estimatedDeliveryDays"
+                  type="number"
+                  min="1"
+                  placeholder={t('estimatedDeliveryDaysPlaceholder')}
+                  value={shipmentForm.estimatedDeliveryDays}
+                  onChange={(e) => setShipmentForm(prev => ({ ...prev, estimatedDeliveryDays: e.target.value }))}
+                  data-testid="input-shipment-eta-days"
+                />
               </div>
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
