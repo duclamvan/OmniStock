@@ -14088,13 +14088,16 @@ Important:
       }
 
       // Calculate summary
+      const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || order.total || '0'), 0);
+      const totalCost = filteredOrders.reduce((sum, order) => sum + parseFloat(order.totalCost || '0'), 0);
       const summary = {
         totalOrders: filteredOrders.length,
-        totalRevenue: filteredOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0),
-        averageOrderValue: filteredOrders.length > 0 ? 
-          filteredOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0) / filteredOrders.length : 0,
+        totalRevenue,
+        totalCost,
+        totalProfit: totalRevenue - totalCost,
+        averageOrderValue: filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0,
         ordersByStatus: filteredOrders.reduce((acc, order) => {
-          acc[order.status] = (acc[order.status] || 0) + 1;
+          acc[order.orderStatus || order.status] = (acc[order.orderStatus || order.status] || 0) + 1;
           return acc;
         }, {} as Record<string, number>),
         ordersByCurrency: filteredOrders.reduce((acc, order) => {
@@ -14117,9 +14120,10 @@ Important:
 
       const summary = {
         totalProducts: products.length,
+        // Use landing cost for stock value (cost-based valuation)
         totalStockValue: products.reduce((sum, product) => {
-          const price = parseFloat(product.sellingPriceCzk || '0');
-          return sum + (price * (product.quantity || 0));
+          const cost = parseFloat(product.landingCostCzk || product.importCostCzk || product.sellingPriceCzk || '0');
+          return sum + (cost * (product.quantity || 0));
         }, 0),
         lowStockProducts: products.filter(p => (p.quantity || 0) < (p.minQuantity || 10)).length,
         outOfStockProducts: products.filter(p => (p.quantity || 0) === 0).length,
@@ -14157,7 +14161,12 @@ Important:
       // Calculate customer metrics
       const customerMetrics = customers.map(customer => {
         const customerOrders = orders.filter(o => o.customerId === customer.id);
-        const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+        const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || order.total || '0'), 0);
+        const totalProfit = customerOrders.reduce((sum, order) => {
+          const grandTotal = parseFloat(order.grandTotal || order.total || '0');
+          const totalCost = parseFloat(order.totalCost || '0');
+          return sum + (grandTotal - totalCost);
+        }, 0);
         const lastOrderDate = customerOrders.length > 0 ? 
           customerOrders.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt : null;
 
@@ -14166,6 +14175,7 @@ Important:
           customerName: customer.name,
           totalOrders: customerOrders.length,
           totalSpent,
+          totalProfit,
           averageOrderValue: customerOrders.length > 0 ? totalSpent / customerOrders.length : 0,
           lastOrderDate
         };
@@ -14273,32 +14283,11 @@ Important:
         totalRevenue += convertToBaseCurrency(grandTotal, order.currency || 'CZK');
       });
 
-      // Calculate COGS from order items using import costs
+      // Calculate COGS from order.totalCost (pre-calculated from item landing costs)
       let totalCost = 0;
-      filteredOrderItems.forEach(item => {
-        const product = allProducts.find(p => p.id === item.productId);
-        if (product) {
-          const quantity = item.quantity || 0;
-          const costUSD = parseFloat(product.importCostUsd || '0');
-          const costEUR = parseFloat(product.importCostEur || '0');
-          const costCZK = parseFloat(product.importCostCzk || '0');
-          
-          let itemCost = 0;
-          let sourceCurrency: string = 'CZK';
-          
-          if (costUSD > 0) {
-            itemCost = costUSD * quantity;
-            sourceCurrency = 'USD';
-          } else if (costEUR > 0) {
-            itemCost = costEUR * quantity;
-            sourceCurrency = 'EUR';
-          } else if (costCZK > 0) {
-            itemCost = costCZK * quantity;
-            sourceCurrency = 'CZK';
-          }
-          
-          totalCost += convertToBaseCurrency(itemCost, sourceCurrency);
-        }
+      revenueOrders.forEach(order => {
+        const orderCost = parseFloat(order.totalCost || '0');
+        totalCost += convertToBaseCurrency(orderCost, order.currency || 'CZK');
       });
 
       // Add expenses to total cost
@@ -14491,12 +14480,22 @@ Important:
       }
 
       // Calculate financial summary with currency conversion
-      const revenue = filteredOrders
-        .filter(o => o.status === 'shipped' || o.status === 'delivered')
-        .reduce((sum, order) => {
-          const amount = parseFloat(order.total || '0');
-          return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
-        }, 0);
+      // Only count shipped+paid orders for revenue
+      const revenueOrders = filteredOrders.filter(o => 
+        (o.orderStatus === 'shipped' || o.orderStatus === 'delivered') && 
+        o.paymentStatus === 'paid'
+      );
+      
+      const revenue = revenueOrders.reduce((sum, order) => {
+        const amount = parseFloat(order.grandTotal || order.total || '0');
+        return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
+      }, 0);
+      
+      // Calculate cost from stored totalCost (already includes item landing costs)
+      const totalCost = revenueOrders.reduce((sum, order) => {
+        const cost = parseFloat(order.totalCost || '0');
+        return sum + convertToBaseCurrency(cost, order.currency || 'CZK');
+      }, 0);
 
       // Calculate expenses with currency conversion (only paid expenses count)
       const totalExpenses = filteredExpenses
@@ -14506,6 +14505,8 @@ Important:
           return sum + convertToBaseCurrency(amount, expense.currency || 'CZK');
         }, 0);
 
+      // Note: Purchases represent inventory acquisition, which becomes COGS when sold
+      // We don't subtract purchases from profit to avoid double-counting with COGS
       const totalPurchases = filteredPurchases
         .reduce((sum, purchase) => {
           const qty = purchase.quantity || 0;
@@ -14513,7 +14514,9 @@ Important:
           return sum + (qty * price); // Purchases are typically in the same currency
         }, 0);
 
-      const profit = revenue - totalExpenses - totalPurchases;
+      // Profit = Revenue - COGS (totalCost) - Operating Expenses
+      // Purchases are NOT subtracted as they become COGS when items are sold
+      const profit = revenue - totalCost - totalExpenses;
 
       // Calculate expense breakdown with currency conversion
       const expenseBreakdown = filteredExpenses
@@ -14528,12 +14531,14 @@ Important:
 
       const summary = {
         revenue,
+        cost: totalCost,
         expenses: totalExpenses,
         purchases: totalPurchases,
         profit,
         profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
         expenseBreakdown,
         baseCurrency,
+        orderCount: revenueOrders.length,
         monthlyTrend: year ? getMonthlyTrendWithCurrency(orders, expenses, purchases, parseInt(year as string), convertToBaseCurrency) : []
       };
 
@@ -14570,12 +14575,21 @@ Important:
         new Date(p.createdAt!).getMonth() === month
       );
 
-      const revenue = monthOrders
-        .filter(o => o.status === 'shipped' || o.status === 'delivered')
-        .reduce((sum, order) => {
-          const amount = parseFloat(order.total || '0');
-          return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
-        }, 0);
+      // Only count shipped+paid orders for revenue
+      const revenueOrders = monthOrders.filter(o => 
+        (o.orderStatus === 'shipped' || o.orderStatus === 'delivered') && 
+        o.paymentStatus === 'paid'
+      );
+      
+      const revenue = revenueOrders.reduce((sum, order) => {
+        const amount = parseFloat(order.grandTotal || order.total || '0');
+        return sum + convertToBaseCurrency(amount, order.currency || 'CZK');
+      }, 0);
+      
+      const totalCost = revenueOrders.reduce((sum, order) => {
+        const cost = parseFloat(order.totalCost || '0');
+        return sum + convertToBaseCurrency(cost, order.currency || 'CZK');
+      }, 0);
 
       const totalExpenses = monthExpenses
         .filter(e => e.status === 'paid')
@@ -14594,9 +14608,10 @@ Important:
       return {
         month: month + 1,
         revenue,
+        cost: totalCost,
         expenses: totalExpenses,
-        purchases: totalPurchases,
-        profit: revenue - totalExpenses - totalPurchases
+        purchases: totalPurchases, // For reference, not subtracted from profit
+        profit: revenue - totalCost - totalExpenses // Purchases become COGS when sold
       };
     });
   }
