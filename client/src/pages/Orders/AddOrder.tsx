@@ -7950,8 +7950,8 @@ export default function AddOrder() {
                       <div className="font-medium truncate text-xs md:text-sm" title={variant.name}>{variant.name}</div>
                       <div className="text-right text-xs md:text-sm hidden md:block">{selectedProductForVariant?.priceCzk ? `${selectedProductForVariant.priceCzk} Kč` : (selectedProductForVariant?.priceEur ? `${selectedProductForVariant.priceEur} €` : '-')}</div>
                       <div className="text-center md:text-right">
-                        <Badge variant={variant.quantity > 10 ? "default" : variant.quantity > 0 ? "outline" : "destructive"} className="text-[10px] md:text-xs px-1.5">
-                          {variant.quantity}
+                        <Badge variant={(variant.availableQuantity ?? variant.quantity) > 10 ? "default" : (variant.availableQuantity ?? variant.quantity) > 0 ? "outline" : "destructive"} className="text-[10px] md:text-xs px-1.5">
+                          {variant.availableQuantity ?? variant.quantity}
                         </Badge>
                       </div>
                       <div>

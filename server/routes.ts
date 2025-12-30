@@ -5986,6 +5986,14 @@ Important:
       // Get allocated quantities to calculate availability for each variant (same as parent products)
       const allocatedMap = await storage.getAllocatedQuantities();
       
+      // Debug: Log allocation map keys for first 3 variants
+      const debugVariants = variants.slice(0, 3);
+      for (const v of debugVariants) {
+        const skuKey = v.sku ? `sku:${v.sku}` : null;
+        const variantKey = `product:${v.productId}:variant:${v.id}`;
+        console.log(`[Variants Alloc] ${v.name}: SKU key=${skuKey} exists=${skuKey ? allocatedMap.has(skuKey) : false} val=${skuKey ? allocatedMap.get(skuKey) : 0}, variantKey exists=${allocatedMap.has(variantKey)} val=${allocatedMap.get(variantKey) || 0}`);
+      }
+      
       // Enrich variants with allocation info - use SKU first, then variantId as fallback
       const enrichedVariants = variants.map((variant: any) => {
         let allocated = 0;
