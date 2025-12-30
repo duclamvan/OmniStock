@@ -941,12 +941,14 @@ export default function CreatePurchase() {
           
           const hasVariants = variantAllocations && variantAllocations.length > 0;
           
+          const itemExt = item as any;
           return {
             id: item.id,
             name: item.name,
             sku: item.sku || '',
-            category: '',
-            barcode: '',
+            category: itemExt.category || '',
+            categoryId: itemExt.categoryId,
+            barcode: itemExt.barcode || '',
             quantity: quantity,
             unitPrice: unitPrice,
             weight: parseFloat(item.weight || '0'),
@@ -2083,6 +2085,9 @@ export default function CreatePurchase() {
       items: items.map(item => ({
         name: item.name,
         sku: item.sku || null,
+        barcode: item.barcode || null, // Include barcode for item
+        category: item.category || null,
+        categoryId: item.categoryId || null,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
@@ -2096,6 +2101,7 @@ export default function CreatePurchase() {
         quantityInSellingUnits: item.quantityInSellingUnits || item.quantity,
         imageUrl: item.imageUrl || null,
         productId: item.productId || null,
+        hasVariants: item.hasVariants || false,
         variantAllocations: item.variantAllocations || null
       }))
     };
