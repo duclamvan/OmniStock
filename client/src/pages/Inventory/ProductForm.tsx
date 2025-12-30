@@ -360,6 +360,7 @@ export default function ProductForm() {
   const salesPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
   const wholesalePriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
   const tierPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
+  const importCostManualRef = useRef<{usd: boolean, czk: boolean, eur: boolean, vnd: boolean, cny: boolean}>({usd: false, czk: false, eur: false, vnd: false, cny: false});
 
   // Get query parameters from URL (for add mode - pre-fill from purchase order)
   const searchParams = new URLSearchParams(window.location.search);
@@ -491,6 +492,7 @@ export default function ProductForm() {
       // Reset manual edit tracking for new products
       salesPriceManualRef.current = {czk: false, eur: false};
       wholesalePriceManualRef.current = {czk: false, eur: false};
+      importCostManualRef.current = {usd: false, czk: false, eur: false, vnd: false, cny: false};
       hasResetRef.current = true;
     }
   }, [lowStockThreshold, defaultWarehouse, buildDefaultValues, form, isEditMode]);
@@ -908,6 +910,13 @@ export default function ProductForm() {
       wholesalePriceManualRef.current = {
         czk: !!product.wholesalePriceCzk,
         eur: !!product.wholesalePriceEur
+      };
+      importCostManualRef.current = {
+        usd: !!product.importCostUsd,
+        czk: !!product.importCostCzk,
+        eur: !!product.importCostEur,
+        vnd: !!product.importCostVnd,
+        cny: !!product.importCostCny
       };
       
       // Mark bulk price as manually edited if both values already exist (prevents overwriting)
@@ -2681,13 +2690,14 @@ export default function ProductForm() {
                             onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'usd') return;
+                              importCostManualRef.current.usd = true;
                               const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'usd';
-                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
-                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
-                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'USD', 'VND').toFixed(0)));
-                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'USD', 'CNY').toFixed(2)));
+                                if (!importCostManualRef.current.czk) form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
+                                if (!importCostManualRef.current.eur) form.setValue('importCostEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                                if (!importCostManualRef.current.vnd) form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'USD', 'VND').toFixed(0)));
+                                if (!importCostManualRef.current.cny) form.setValue('importCostCny', parseFloat(convertCurrency(value, 'USD', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2707,13 +2717,14 @@ export default function ProductForm() {
                             onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'czk') return;
+                              importCostManualRef.current.czk = true;
                               const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'czk';
-                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
-                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
-                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CZK', 'VND').toFixed(0)));
-                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'CZK', 'CNY').toFixed(2)));
+                                if (!importCostManualRef.current.usd) form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
+                                if (!importCostManualRef.current.eur) form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                                if (!importCostManualRef.current.vnd) form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CZK', 'VND').toFixed(0)));
+                                if (!importCostManualRef.current.cny) form.setValue('importCostCny', parseFloat(convertCurrency(value, 'CZK', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2733,13 +2744,14 @@ export default function ProductForm() {
                             onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'eur') return;
+                              importCostManualRef.current.eur = true;
                               const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'eur';
-                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
-                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
-                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'EUR', 'VND').toFixed(0)));
-                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'EUR', 'CNY').toFixed(2)));
+                                if (!importCostManualRef.current.usd) form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
+                                if (!importCostManualRef.current.czk) form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                                if (!importCostManualRef.current.vnd) form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'EUR', 'VND').toFixed(0)));
+                                if (!importCostManualRef.current.cny) form.setValue('importCostCny', parseFloat(convertCurrency(value, 'EUR', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2758,13 +2770,14 @@ export default function ProductForm() {
                             className="mt-1"
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'vnd') return;
+                              importCostManualRef.current.vnd = true;
                               const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'vnd';
-                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
-                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'VND', 'CZK').toFixed(2)));
-                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'VND', 'EUR').toFixed(2)));
-                                form.setValue('importCostCny', parseFloat(convertCurrency(value, 'VND', 'CNY').toFixed(2)));
+                                if (!importCostManualRef.current.usd) form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
+                                if (!importCostManualRef.current.czk) form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'VND', 'CZK').toFixed(2)));
+                                if (!importCostManualRef.current.eur) form.setValue('importCostEur', parseFloat(convertCurrency(value, 'VND', 'EUR').toFixed(2)));
+                                if (!importCostManualRef.current.cny) form.setValue('importCostCny', parseFloat(convertCurrency(value, 'VND', 'CNY').toFixed(2)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
@@ -2784,13 +2797,14 @@ export default function ProductForm() {
                             onKeyDown={handleDecimalKeyDown}
                             onInput={(e) => {
                               if (importCostUpdatingRef.current === 'cny') return;
+                              importCostManualRef.current.cny = true;
                               const value = parseDecimal((e.target as HTMLInputElement).value);
                               if (value && value > 0) {
                                 importCostUpdatingRef.current = 'cny';
-                                form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
-                                form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'CNY', 'CZK').toFixed(2)));
-                                form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CNY', 'EUR').toFixed(2)));
-                                form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CNY', 'VND').toFixed(0)));
+                                if (!importCostManualRef.current.usd) form.setValue('importCostUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
+                                if (!importCostManualRef.current.czk) form.setValue('importCostCzk', parseFloat(convertCurrency(value, 'CNY', 'CZK').toFixed(2)));
+                                if (!importCostManualRef.current.eur) form.setValue('importCostEur', parseFloat(convertCurrency(value, 'CNY', 'EUR').toFixed(2)));
+                                if (!importCostManualRef.current.vnd) form.setValue('importCostVnd', parseFloat(convertCurrency(value, 'CNY', 'VND').toFixed(0)));
                                 setTimeout(() => { importCostUpdatingRef.current = null; }, 0);
                               }
                             }}
