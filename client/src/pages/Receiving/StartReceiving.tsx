@@ -217,7 +217,7 @@ export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['imports']);
+  const { t } = useTranslation(['imports', 'inventory']);
   const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
@@ -1508,8 +1508,8 @@ export default function StartReceiving() {
     },
     onSuccess: (data) => {
       toast({
-        title: t('receivingCompleted'),
-        description: t('shipmentSuccessfullyReceived')
+        title: t('inventory:receivingCompleted'),
+        description: t('inventory:receivingCompletedSuccess')
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
