@@ -2313,6 +2313,24 @@ const imports = {
   quickFillApplied: 'Set {{value}} for {{count}} variants',
   listValuesApplied: '{{count}} values applied to variants',
   
+  // CostsPanel - Complete Cost Breakdown Section
+  completeCostBreakdown: 'Complete Cost Breakdown',
+  allCostsFromAllSources: 'All costs from shipment, purchase orders, and manual entries',
+  autoIncludedCosts: 'Auto-Included Costs',
+  manuallyAddedCosts: 'Manually Added Costs',
+  noAutoIncludedCosts: 'No auto-included costs',
+  noManualCostsAdded: 'No manual costs added yet. Click "Add Cost" to add customs, brokerage, or other fees.',
+  internationalTransitShipping: 'International Transit Shipping',
+  fromShipment: 'From shipment record',
+  shipmentInsurance: 'Shipment Insurance',
+  purchaseOrderShipping: 'Purchase Order Shipping',
+  fromLinkedPO: 'From linked purchase orders',
+  originalCurrency: 'Original',
+  currency: 'Currency',
+  costSummaryByType: 'Cost Summary by Type',
+  dutyTax: 'Duty/Tax',
+  other: 'Other',
+  
 } as const;
 
 export default imports;

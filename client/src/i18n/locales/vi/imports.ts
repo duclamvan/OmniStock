@@ -2254,6 +2254,24 @@ const imports = {
   productHasVariants: 'Sản phẩm này có biến thể - phân bổ số lượng bên dưới',
   withVariants: 'có biến thể',
   
+  // CostsPanel - Complete Cost Breakdown Section
+  completeCostBreakdown: 'Chi tiết chi phí',
+  allCostsFromAllSources: 'Tất cả chi phí từ lô hàng, đơn đặt hàng và nhập thủ công',
+  autoIncludedCosts: 'Chi phí tự động',
+  manuallyAddedCosts: 'Chi phí thêm thủ công',
+  noAutoIncludedCosts: 'Không có chi phí tự động',
+  noManualCostsAdded: 'Chưa có chi phí thủ công. Nhấn "Thêm chi phí" để thêm thuế quan, phí hải quan hoặc các khoản phí khác.',
+  internationalTransitShipping: 'Vận chuyển quốc tế',
+  fromShipment: 'Từ lô hàng',
+  shipmentInsurance: 'Bảo hiểm lô hàng',
+  purchaseOrderShipping: 'Vận chuyển đơn hàng',
+  fromLinkedPO: 'Từ các đơn đặt hàng liên kết',
+  originalCurrency: 'Gốc',
+  currency: 'Tiền tệ',
+  costSummaryByType: 'Tổng hợp theo loại',
+  dutyTax: 'Thuế/Quan',
+  other: 'Khác',
+  
 } as const;
 
 export default imports;
