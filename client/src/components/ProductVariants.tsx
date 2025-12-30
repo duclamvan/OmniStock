@@ -72,6 +72,28 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     refetchOnWindowFocus: false,
   });
 
+  // Fetch product locations to show all locations per variant
+  const { data: productLocations = [] } = useQuery<Array<{
+    id: string;
+    locationCode: string;
+    variantId?: string | null;
+    quantity: number;
+  }>>({
+    queryKey: [`/api/products/${productId}/locations`],
+    enabled: !!productId,
+  });
+
+  // Build map of variantId -> all location codes with quantities
+  const variantLocationsMap = productLocations.reduce((acc, loc) => {
+    if (loc.variantId) {
+      if (!acc[loc.variantId]) {
+        acc[loc.variantId] = [];
+      }
+      acc[loc.variantId].push({ code: loc.locationCode, qty: loc.quantity });
+    }
+    return acc;
+  }, {} as Record<string, Array<{ code: string; qty: number }>>);
+
   // Create variant mutation
   const createVariantMutation = useMutation({
     mutationFn: async (data: typeof newVariant) => {
@@ -463,11 +485,34 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                   </TableCell>
                   <TableCell>{variant.barcode || "-"}</TableCell>
                   <TableCell>
-                    {variant.locationCode ? (
-                      <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                        {variant.locationCode}
-                      </span>
-                    ) : "-"}
+                    {(() => {
+                      // Get all locations for this variant from productLocations
+                      const allLocations = variantLocationsMap[variant.id] || [];
+                      // If no locations in map, fall back to variant.locationCode
+                      if (allLocations.length === 0 && variant.locationCode) {
+                        return (
+                          <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {variant.locationCode}
+                          </span>
+                        );
+                      }
+                      if (allLocations.length === 0) return "-";
+                      // Show all locations with quantities
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {allLocations.map((loc, idx) => (
+                            <span 
+                              key={idx} 
+                              className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded"
+                              title={`${loc.qty} units`}
+                            >
+                              {loc.code}
+                              {loc.qty > 0 && <span className="text-slate-500 ml-0.5">({loc.qty})</span>}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">{variant.quantity}</TableCell>
                   <TableCell className="text-right">
