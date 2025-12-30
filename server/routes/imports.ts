@@ -252,32 +252,58 @@ async function checkAllVariantsCostApplied(shipmentId: string): Promise<boolean>
     
     const variantIdsToCheck: string[] = [];
     
-    // Get variantIds from custom items
+    // Get variantIds from custom items' variantAllocations JSON field
     if (customItemIds.length > 0) {
-      const customItemsWithVariants = await db
-        .select({ variantId: customItems.variantId })
+      const customItemsWithAllocations = await db
+        .select({ variantAllocations: customItems.variantAllocations })
         .from(customItems)
         .where(
           and(
             inArray(customItems.id, customItemIds),
-            sql`${customItems.variantId} IS NOT NULL`
+            sql`${customItems.variantAllocations} IS NOT NULL`
           )
         );
-      variantIdsToCheck.push(...customItemsWithVariants.map(ci => ci.variantId!).filter(Boolean));
+      for (const ci of customItemsWithAllocations) {
+        if (ci.variantAllocations) {
+          const allocations = typeof ci.variantAllocations === 'string' 
+            ? JSON.parse(ci.variantAllocations) 
+            : ci.variantAllocations;
+          if (Array.isArray(allocations)) {
+            for (const alloc of allocations) {
+              if (alloc.variantId) {
+                variantIdsToCheck.push(alloc.variantId);
+              }
+            }
+          }
+        }
+      }
     }
     
-    // Get variantIds from purchase items
+    // Get variantIds from purchase items' variantAllocations JSON field
     if (purchaseItemIds.length > 0) {
-      const purchaseItemsWithVariants = await db
-        .select({ variantId: purchaseItems.variantId })
+      const purchaseItemsWithAllocations = await db
+        .select({ variantAllocations: purchaseItems.variantAllocations })
         .from(purchaseItems)
         .where(
           and(
             inArray(purchaseItems.id, purchaseItemIds),
-            sql`${purchaseItems.variantId} IS NOT NULL`
+            sql`${purchaseItems.variantAllocations} IS NOT NULL`
           )
         );
-      variantIdsToCheck.push(...purchaseItemsWithVariants.map(pi => pi.variantId!).filter(Boolean));
+      for (const pi of purchaseItemsWithAllocations) {
+        if (pi.variantAllocations) {
+          const allocations = typeof pi.variantAllocations === 'string' 
+            ? JSON.parse(pi.variantAllocations) 
+            : pi.variantAllocations;
+          if (Array.isArray(allocations)) {
+            for (const alloc of allocations) {
+              if (alloc.variantId) {
+                variantIdsToCheck.push(alloc.variantId);
+              }
+            }
+          }
+        }
+      }
     }
     
     if (variantIdsToCheck.length === 0) {
@@ -1024,7 +1050,7 @@ async function finalizeReceivingInventory(
             .from(consolidationItems)
             .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
             .where(eq(consolidationItems.consolidationId, shipmentForMetrics.consolidationId));
-          totalUnitsInShipment = allItems.reduce((sum, i) => sum + (i.quantity || 0), 0);
+          totalUnitsInShipment = allItems.reduce((sum: number, i: { quantity: number }) => sum + (i.quantity || 0), 0);
         }
         
         // Calculate this item's allocation ratio (using unit-based allocation like preview default)
