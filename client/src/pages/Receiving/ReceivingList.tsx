@@ -2677,14 +2677,17 @@ function QuickStorageSheet({
                 };
                 
                 // referenceInventory: ALL enhanced locations (for display/autofill reference)
-                const updatedReferenceInventory = enhancedLocations.map(enhanceLocation);
+                // Deep copy to prevent mutations from affecting this read-only list
+                const updatedReferenceInventory = enhancedLocations.map(enhanceLocation).map(loc => ({ ...loc }));
                 
                 // receiptLocations: Only locations with notes containing RI:{receiptItemId}:
                 // These are locations specifically saved for THIS receipt
+                // Deep copy to ensure edits don't affect referenceInventory
                 const receiptTag = `RI:${item.receiptItemId}:`;
                 const updatedReceiptLocations = enhancedLocations
                   .filter((loc: any) => loc.notes?.includes(receiptTag))
-                  .map(enhanceLocation);
+                  .map(enhanceLocation)
+                  .map(loc => ({ ...loc })); // Deep copy for isolation
                 
                 console.log(`[Storage] Product ${productId}: referenceInventory=${updatedReferenceInventory.length}, receiptLocations=${updatedReceiptLocations.length}`);
                 
