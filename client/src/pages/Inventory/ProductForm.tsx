@@ -4050,15 +4050,14 @@ export default function ProductForm() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {variant.locationCode ? (
-                                  <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
-                                    {variant.locationCode}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-slate-400 dark:text-slate-500 italic">
-                                    {t('products:variants.locationFilledOnReceiving', 'Set on receiving')}
-                                  </span>
-                                )}
+                                <Input
+                                  type="text"
+                                  value={variant.locationCode || ''}
+                                  onChange={(e) => updateVariant(variant.id, 'locationCode', e.target.value.toUpperCase())}
+                                  className="h-8 w-32 font-mono text-xs uppercase"
+                                  placeholder="WH1-A1-R1"
+                                  data-testid={`input-variant-location-${variant.id}`}
+                                />
                               </TableCell>
                               <TableCell className="text-right">
                                 <Input
