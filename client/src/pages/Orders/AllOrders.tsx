@@ -979,24 +979,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   // Calculate profit for each order
   const calculateOrderProfit = (order: any) => {
-    // Calculate total cost from order items
-    let totalCost = 0;
-    if (order.items && Array.isArray(order.items)) {
-      order.items.forEach((item: any) => {
-        // Get product cost based on currency
-        let itemCost = 0;
-        if (order.currency === 'CZK' && item.product?.importCostCzk) {
-          itemCost = parseFloat(item.product.importCostCzk) * item.quantity;
-        } else if (order.currency === 'EUR' && item.product?.importCostEur) {
-          itemCost = parseFloat(item.product.importCostEur) * item.quantity;
-        } else if (order.currency === 'USD' && item.product?.importCostUsd) {
-          itemCost = parseFloat(item.product.importCostUsd) * item.quantity;
-        }
-        totalCost += itemCost;
-      });
-    }
-    
     const revenue = parseFloat(order.grandTotal || '0');
+    // Use the stored totalCost on the order (calculated at order creation/update)
+    const totalCost = parseFloat(order.totalCost || '0');
     const profit = revenue - totalCost;
     return profit;
   };

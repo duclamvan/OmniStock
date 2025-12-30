@@ -10520,6 +10520,20 @@ Important:
         console.log('No items to create or empty items array');
       }
 
+      // Calculate and update totalCost from order items' landing costs
+      if (items && items.length > 0) {
+        const orderItems = await storage.getOrderItems(order.id);
+        let totalCost = 0;
+        for (const item of orderItems) {
+          if (item.landingCost) {
+            totalCost += parseFloat(item.landingCost) * (item.quantity || 1);
+          }
+        }
+        if (totalCost > 0) {
+          await storage.updateOrder(order.id, { totalCost: totalCost.toFixed(2) });
+        }
+      }
+
       // Invalidate allocated quantities cache after order creation
       storage.invalidateAllocatedQuantitiesCache();
 
