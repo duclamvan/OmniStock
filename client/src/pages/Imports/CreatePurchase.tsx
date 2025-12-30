@@ -2126,8 +2126,13 @@ export default function CreatePurchase() {
         weight: item.weight, // Keep original weight value (unit is stored separately)
         weightUnit: item.weightUnit || 'kg',
         costWithShipping: item.costWithShipping || 0,
+        length: item.length || null,
+        width: item.width || null,
+        height: item.height || null,
+        dimensionUnit: item.dimensionUnit || 'cm',
         dimensions: item.dimensions || null,
         notes: item.notes || null,
+        binLocation: item.binLocation || null,
         processingTimeDays: item.processingTimeDays,
         unitType: item.unitType || 'selling',
         quantityInSellingUnits: item.quantityInSellingUnits || item.quantity,

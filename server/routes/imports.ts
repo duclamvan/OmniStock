@@ -2451,7 +2451,12 @@ router.post("/purchases", async (req, res) => {
         weight: item.weight ? parseFloat(item.weight).toString() : null,
         weightUnit: item.weightUnit || 'kg',
         costWithShipping: item.costWithShipping ? parseFloat(item.costWithShipping).toString() : null,
+        unitLengthCm: item.length ? parseFloat(item.length).toString() : null,
+        unitWidthCm: item.width ? parseFloat(item.width).toString() : null,
+        unitHeightCm: item.height ? parseFloat(item.height).toString() : null,
+        dimensionUnit: item.dimensionUnit || 'cm',
         dimensions: item.dimensions || null,
+        warehouseLocation: item.binLocation || null,
         notes: item.notes || null,
         status: "ordered",
         unitType: item.unitType || 'selling',
@@ -2912,7 +2917,12 @@ router.patch("/purchases/:id", async (req, res) => {
           weight: item.weight || 0,
           weightUnit: item.weightUnit || 'kg',
           costWithShipping: item.costWithShipping ? parseFloat(item.costWithShipping).toString() : null,
+          unitLengthCm: item.length ? parseFloat(item.length).toString() : null,
+          unitWidthCm: item.width ? parseFloat(item.width).toString() : null,
+          unitHeightCm: item.height ? parseFloat(item.height).toString() : null,
+          dimensionUnit: item.dimensionUnit || 'cm',
           dimensions: item.dimensions || null,
+          warehouseLocation: item.binLocation || null,
           notes: item.notes || null,
           unitType: item.unitType || 'selling',
           quantityInSellingUnits: parseInt(item.quantityInSellingUnits) || parseInt(item.quantity) || 1,
@@ -10080,8 +10090,12 @@ router.post("/receipts/approve-with-prices/:id", async (req, res) => {
               if (priceItem.priceUsd !== undefined) newProduct.priceUsd = priceItem.priceUsd;
             }
             
-            // Handle dimensions if available
-            if (originalItem.dimensions) {
+            // Handle dimensions if available - check individual fields first, then fallback to dimensions JSON
+            if (originalItem.unitLengthCm || originalItem.unitWidthCm || originalItem.unitHeightCm) {
+              newProduct.length = originalItem.unitLengthCm ? parseFloat(originalItem.unitLengthCm).toFixed(2) : null;
+              newProduct.width = originalItem.unitWidthCm ? parseFloat(originalItem.unitWidthCm).toFixed(2) : null;
+              newProduct.height = originalItem.unitHeightCm ? parseFloat(originalItem.unitHeightCm).toFixed(2) : null;
+            } else if (originalItem.dimensions) {
               const dims = typeof originalItem.dimensions === 'string' 
                 ? JSON.parse(originalItem.dimensions) 
                 : originalItem.dimensions;
@@ -10625,8 +10639,12 @@ router.post("/receipts/approve/:id", async (req, res) => {
             }
           }
           
-          // Handle dimensions if available
-          if (originalItem.dimensions) {
+          // Handle dimensions if available - check individual fields first, then fallback to dimensions JSON
+          if (originalItem.unitLengthCm || originalItem.unitWidthCm || originalItem.unitHeightCm) {
+            newProduct.length = originalItem.unitLengthCm ? parseFloat(originalItem.unitLengthCm).toFixed(2) : null;
+            newProduct.width = originalItem.unitWidthCm ? parseFloat(originalItem.unitWidthCm).toFixed(2) : null;
+            newProduct.height = originalItem.unitHeightCm ? parseFloat(originalItem.unitHeightCm).toFixed(2) : null;
+          } else if (originalItem.dimensions) {
             const dims = typeof originalItem.dimensions === 'string' 
               ? JSON.parse(originalItem.dimensions) 
               : originalItem.dimensions;
