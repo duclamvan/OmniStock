@@ -2006,12 +2006,12 @@ function buildLocationSuggestions(
   return suggestions;
 }
 
-// Helper function to get suggested location from existing inventory (legacy - returns primary)
+// Helper function to get suggested location from reference inventory (read-only current inventory)
 function getSuggestedLocation(item: StorageItem): string | null {
-  if (item.existingLocations && item.existingLocations.length > 0) {
-    const primaryLoc = item.existingLocations.find(loc => loc.isPrimary);
+  if (item.referenceInventory && item.referenceInventory.length > 0) {
+    const primaryLoc = item.referenceInventory.find(loc => loc.isPrimary);
     if (primaryLoc) return primaryLoc.locationCode;
-    const sortedByQty = [...item.existingLocations].sort((a, b) => b.quantity - a.quantity);
+    const sortedByQty = [...item.referenceInventory].sort((a, b) => b.quantity - a.quantity);
     if (sortedByQty.length > 0) return sortedByQty[0].locationCode;
   }
   return null;
@@ -2240,10 +2240,10 @@ function QuickStorageSheet({
     setBulkAisleConfigs(bulkAisleConfigs.map(c => c.id === id ? { ...c, ...updates } : c));
   };
   
-  // Helper to paste/detect scheme from existing locations
+  // Helper to paste/detect scheme from reference inventory (current warehouse locations)
   const pasteSchemeFromLocations = () => {
     const currentItem = items[selectedItemIndex];
-    if (!currentItem?.existingLocations || currentItem.existingLocations.length === 0) {
+    if (!currentItem?.referenceInventory || currentItem.referenceInventory.length === 0) {
       toast({
         title: t('imports:noLocationsFound', 'No Existing Locations'),
         description: t('imports:noLocationsToAnalyze', 'No existing locations found to analyze scheme from'),
@@ -2256,7 +2256,7 @@ function QuickStorageSheet({
     // Format: {warehouse}-A{aisle}-R{rack}-L{level}[-B{bin}]
     const parsedLocations: Array<{ warehouse: string; aisle: number; rack: number; level: number; bin?: number }> = [];
     
-    for (const loc of currentItem.existingLocations) {
+    for (const loc of currentItem.referenceInventory) {
       const code = loc.locationCode || '';
       // Match pattern: WH1-A1-R01-L1 or WH1-A1-R1-L1-B2
       const match = code.match(/^([A-Z0-9]+)-A(\d+)-R(\d+)-L(\d+)(?:-B(\d+))?$/i);
@@ -2464,7 +2464,7 @@ function QuickStorageSheet({
         
         // Enhance existing locations with variantName from variantAllocations
         // Try multiple matching strategies: variantId, SKU, or existing variantName
-        const rawLocations = item.existingLocations || item.product?.locations || [];
+        const rawLocations = item.receiptLocations || item.product?.locations || [];
         const enhancedLocations = rawLocations.map((loc: any) => {
           // If location already has variantName, keep it
           if (loc.variantName) {
@@ -2958,7 +2958,7 @@ function QuickStorageSheet({
   // Also include pending additions that haven't been saved yet (for visual progress only)
   const totalItems = items.length;
   const completedItemsVisual = items.filter(item => {
-    const storedQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+    const storedQty = calculateStoredQtyForReceiving(item.receiptLocations, item.receiptItemId);
     const pendingExisting = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
     const pendingNew = item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
     return storedQty + pendingExisting + pendingNew >= item.receivedQuantity;
@@ -3035,9 +3035,9 @@ function QuickStorageSheet({
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
     
-    // Calculate remaining quantity for auto-fill - include BOTH existing and pending locations
-    const isFirstLocation = (currentItem?.locations.length === 0) && (currentItem?.existingLocations?.length === 0);
-    const existingQty = currentItem?.existingLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
+    // Calculate remaining quantity for auto-fill - include BOTH receipt-saved and pending locations
+    const isFirstLocation = (currentItem?.locations.length === 0) && (currentItem?.receiptLocations?.length === 0);
+    const existingQty = currentItem?.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
     const pendingQty = currentItem?.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0) || 0;
     const currentRemaining = currentItem ? 
       Math.max(0, currentItem.receivedQuantity - existingQty - pendingQty) : 0;
@@ -3052,8 +3052,8 @@ function QuickStorageSheet({
       // Only add entries for variants with remaining quantity (subtract stored + pending)
       let addedFirst = false;
       currentItem.variantAllocations.forEach((variant) => {
-        // Calculate remaining for this specific variant
-        const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+        // Calculate remaining for this specific variant (use receiptLocations for this receipt's saved data)
+        const existingForVariant = currentItem?.receiptLocations?.reduce((sum: number, loc: any) => {
           return sum + (loc.variantId === variant.variantId ? (loc.quantity || 0) : 0);
         }, 0) || 0;
         const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
@@ -3197,8 +3197,8 @@ function QuickStorageSheet({
     
     // Distribute variants across locations
     currentItem.variantAllocations!.forEach((variant) => {
-      // Calculate remaining for this variant using SKU-based matching
-      const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+      // Calculate remaining for this variant using SKU-based matching (use receiptLocations for this receipt)
+      const existingForVariant = currentItem?.receiptLocations?.reduce((sum: number, loc: any) => {
         return sum + (matchVariantBulk(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
@@ -3302,10 +3302,10 @@ function QuickStorageSheet({
             console.warn('Failed to fetch variants for name lookup:', e);
           }
           
-          // Update state with saved locations
+          // Update state with saved locations (receiptLocations for this receipt)
           setItems(prevItems => {
             const updated = [...prevItems];
-            updated[selectedItemIndex].existingLocations = relevantLocations.map((loc: any) => {
+            updated[selectedItemIndex].receiptLocations = relevantLocations.map((loc: any) => {
               let variantName = '';
               let sku = '';
               if (loc.variantId) {
@@ -3389,7 +3389,7 @@ function QuickStorageSheet({
     };
     
     currentItem.variantAllocations.forEach((variant) => {
-      const existingForVariant = currentItem?.existingLocations?.reduce((sum: number, loc: any) => {
+      const existingForVariant = currentItem?.receiptLocations?.reduce((sum: number, loc: any) => {
         return sum + (matchVariantPreview(loc, variant) ? (loc.quantity || 0) : 0);
       }, 0) || 0;
       const pendingForVariant = currentItem?.locations.reduce((sum, loc) => {
@@ -3621,7 +3621,7 @@ function QuickStorageSheet({
                     {items.map((item, index) => {
                       const isSelected = index === selectedItemIndex;
                       // Calculate from quantities stored for THIS receiving session only (from notes tags)
-                      const storedQtyForReceiving = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                      const storedQtyForReceiving = calculateStoredQtyForReceiving(item.receiptLocations, item.receiptItemId);
                       // Sum pending additions to existing locations
                       const pendingExistingQty = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
                       // Sum pending new locations
@@ -3709,21 +3709,21 @@ function QuickStorageSheet({
                                 </div>
                                 
                                 {/* Warehouse Locations - Inline compact */}
-                                {(item.existingLocations?.length > 0 || item.locations.length > 0) && (
+                                {(item.receiptLocations?.length > 0 || item.locations.length > 0) && (
                                   <div className="flex flex-wrap gap-1 mt-1.5">
-                                    {item.existingLocations?.slice(0, 2).map((loc, idx) => (
-                                      <span key={`existing-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
+                                    {item.receiptLocations?.slice(0, 2).map((loc, idx) => (
+                                      <span key={`saved-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
                                         {loc.locationCode}
                                       </span>
                                     ))}
                                     {item.locations.slice(0, 2).map((loc, idx) => (
-                                      <span key={`new-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700">
+                                      <span key={`new-${idx}`} className="text-[10px] font-mono px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700">
                                         {loc.locationCode}
                                       </span>
                                     ))}
-                                    {((item.existingLocations?.length || 0) + item.locations.length) > 2 && (
+                                    {((item.receiptLocations?.length || 0) + item.locations.length) > 2 && (
                                       <span className="text-[10px] text-muted-foreground">
-                                        +{((item.existingLocations?.length || 0) + item.locations.length) - 2}
+                                        +{((item.receiptLocations?.length || 0) + item.locations.length) - 2}
                                       </span>
                                     )}
                                   </div>
@@ -3794,9 +3794,9 @@ function QuickStorageSheet({
                                     return false;
                                   };
                                   
-                                  // Calculate total stored vs required
+                                  // Calculate total stored vs required (use receiptLocations for this receipt's saved data)
                                   const totalRequired = item.variantAllocations.reduce((sum, v) => sum + (v.quantity || 0), 0);
-                                  const totalExisting = item.existingLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
+                                  const totalExisting = item.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
                                   const totalPending = item.locations?.reduce((sum, loc) => sum + (loc.quantity || 0), 0) || 0;
                                   const totalStored = totalExisting + totalPending;
                                   
@@ -3804,7 +3804,7 @@ function QuickStorageSheet({
                                   if (totalStored >= totalRequired) return null;
                                   
                                   const unallocatedVariants = item.variantAllocations.filter(variant => {
-                                    const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                    const existingQty = item.receiptLocations?.reduce((sum: number, loc: any) => {
                                       return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                     }, 0) || 0;
                                     const pendingQty = item.locations?.reduce((sum, loc) => {
@@ -3816,7 +3816,7 @@ function QuickStorageSheet({
                                   if (unallocatedVariants.length === 0) return null;
                                   
                                   // Show alert only if some locations already assigned (partial allocation)
-                                  const hasAnyAllocations = item.locations.length > 0 || (item.existingLocations && item.existingLocations.length > 0);
+                                  const hasAnyAllocations = item.locations.length > 0 || (item.receiptLocations && item.receiptLocations.length > 0);
                                   if (!hasAnyAllocations) return null;
                                   
                                   return (
@@ -3829,7 +3829,7 @@ function QuickStorageSheet({
                                       </div>
                                       <div className="space-y-1 max-h-32 overflow-y-auto">
                                         {unallocatedVariants.slice(0, 5).map((variant, idx) => {
-                                          const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                          const existingQty = item.receiptLocations?.reduce((sum: number, loc: any) => {
                                             return sum + (matchVariant(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const pendingQty = item.locations?.reduce((sum, loc) => {
@@ -3889,9 +3889,9 @@ function QuickStorageSheet({
                                           return false;
                                         };
                                         
-                                        // Calculate total stored vs required for fallback check
+                                        // Calculate total stored vs required for fallback check (use receiptLocations)
                                         const totalRequired = item.variantAllocations.reduce((sum, v) => sum + (v.quantity || 0), 0);
-                                        const totalExisting = item.existingLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
+                                        const totalExisting = item.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0;
                                         const totalPending = item.locations?.reduce((sum, loc) => sum + (loc.quantity || 0), 0) || 0;
                                         const totalStored = totalExisting + totalPending;
                                         const isFullyAllocatedByTotal = totalStored >= totalRequired;
@@ -3903,7 +3903,7 @@ function QuickStorageSheet({
                                             return { ...variant, remaining: 0, existingQty: variant.quantity, pendingQty: 0 };
                                           }
                                           
-                                          const existingQty = item.existingLocations?.reduce((sum: number, loc: any) => {
+                                          const existingQty = item.receiptLocations?.reduce((sum: number, loc: any) => {
                                             return sum + (matchVariantForDetails(loc, variant) ? (loc.quantity || 0) : 0);
                                           }, 0) || 0;
                                           const pendingQty = item.locations?.reduce((sum, loc) => {
@@ -4247,15 +4247,15 @@ function QuickStorageSheet({
                                   </div>
                                 )}
 
-                                {/* ALL LOCATIONS LIST - Compact */}
+                                {/* THIS RECEIPT - Allocations for this receiving session */}
                                 <div className="rounded-lg border dark:border-gray-800 overflow-hidden">
-                                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 border-b dark:border-gray-700 flex items-center justify-between">
+                                  <div className="bg-green-100 dark:bg-green-900/30 px-3 py-2 border-b dark:border-gray-700 flex items-center justify-between">
                                     <p className="font-medium text-sm flex items-center gap-1.5">
-                                      <MapPin className="h-4 w-4" />
-                                      {t('allLocations')} ({(item.existingLocations?.length || 0) + item.locations.length})
+                                      <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                      {t('imports:thisReceipt', 'This Receipt')} ({(item.receiptLocations?.length || 0) + item.locations.length})
                                     </p>
-                                    {/* Undo All Saved Locations Button */}
-                                    {item.existingLocations && item.existingLocations.length > 0 && (
+                                    {/* Undo All - clears receiptLocations + pending locations */}
+                                    {(item.receiptLocations && item.receiptLocations.length > 0) || item.locations.length > 0 ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -4265,19 +4265,23 @@ function QuickStorageSheet({
                                           if (!item.productId || isUndoingAll) return;
                                           
                                           setIsUndoingAll(true);
-                                          const totalLocations = item.existingLocations.length;
-                                          const totalQty = item.existingLocations.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0);
+                                          const totalLocations = (item.receiptLocations?.length || 0) + item.locations.length;
+                                          const totalQty = (item.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0) +
+                                            item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
                                           
                                           try {
-                                            // Use batch delete endpoint for efficiency
-                                            await apiRequest('DELETE', `/api/products/${item.productId}/locations/batch`, {
-                                              receiptItemId: item.receiptItemId
-                                            });
+                                            // Use batch delete endpoint for saved receiptLocations
+                                            if (item.receiptLocations && item.receiptLocations.length > 0) {
+                                              await apiRequest('DELETE', `/api/products/${item.productId}/locations/batch`, {
+                                                receiptItemId: item.receiptItemId
+                                              });
+                                            }
                                             
-                                            // Update local state
+                                            // Update local state - clear both receiptLocations and pending locations
                                             setItems(prevItems => {
                                               const updated = [...prevItems];
-                                              updated[index].existingLocations = [];
+                                              updated[index].receiptLocations = [];
+                                              updated[index].locations = [];
                                               updated[index].pendingExistingAdds = {};
                                               updated[index].assignedQuantity = 0;
                                               return updated;
@@ -4311,12 +4315,12 @@ function QuickStorageSheet({
                                         )}
                                         {isUndoingAll ? t('common:loading') : t('imports:undoAll', 'Undo All')}
                                       </Button>
-                                    )}
+                                    ) : null}
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">
-                                    {/* Fill All Existing Locations Button */}
-                                    {item.existingLocations && item.existingLocations.length > 0 && itemRemainingQty > 0 && (
+                                    {/* Fill All Receipt Locations Button */}
+                                    {item.receiptLocations && item.receiptLocations.length > 0 && itemRemainingQty > 0 && (
                                       <div className="p-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-800">
                                         <Button
                                           variant="outline"
@@ -4324,17 +4328,16 @@ function QuickStorageSheet({
                                           className="w-full h-9 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-medium"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            // Distribute remaining quantity evenly across existing locations
-                                            const locCount = item.existingLocations.length;
+                                            // Distribute remaining quantity evenly across receipt locations
+                                            const locCount = item.receiptLocations.length;
                                             const perLoc = Math.floor(itemRemainingQty / locCount);
                                             const remainder = itemRemainingQty % locCount;
                                             
                                             setItems(prevItems => {
                                               const updated = [...prevItems];
                                               const newPendingAdds: Record<string, number> = {};
-                                              item.existingLocations.forEach((loc: any, idx: number) => {
+                                              item.receiptLocations.forEach((loc: any, idx: number) => {
                                                 const locId = String(loc.id || idx);
-                                                // Give first location the remainder
                                                 newPendingAdds[locId] = perLoc + (idx === 0 ? remainder : 0);
                                               });
                                               updated[index].pendingExistingAdds = newPendingAdds;
@@ -4355,8 +4358,8 @@ function QuickStorageSheet({
                                       </div>
                                     )}
                                     
-                                    {/* SAVED LOCATIONS - Compact rows with editable "Add more" input */}
-                                    {item.existingLocations?.map((loc: any, locIdx: number) => {
+                                    {/* SAVED RECEIPT LOCATIONS - Compact rows with editable "Add more" input */}
+                                    {item.receiptLocations?.map((loc: any, locIdx: number) => {
                                       const locId = String(loc.id || locIdx);
                                       const pendingAdd = item.pendingExistingAdds?.[locId] || 0;
                                       
@@ -4403,7 +4406,7 @@ function QuickStorageSheet({
                                                         .filter(([k]) => k !== locId)
                                                         .reduce((sum, [, qty]) => sum + (qty || 0), 0);
                                                       const pendingNewLocs = currentItem.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
-                                                      const storedQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                      const storedQty = calculateStoredQtyForReceiving(currentItem.receiptLocations, currentItem.receiptItemId);
                                                       const availableForThisLoc = currentItem.receivedQuantity - storedQty - otherPendingAdds - pendingNewLocs;
                                                       
                                                       updated[index].pendingExistingAdds = {
@@ -4446,7 +4449,7 @@ function QuickStorageSheet({
                                                           .filter(([k]) => k !== locId)
                                                           .reduce((sum, [, qty]) => sum + (qty || 0), 0);
                                                         const pendingNewLocs = currentItem.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
-                                                        const storedQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                        const storedQty = calculateStoredQtyForReceiving(currentItem.receiptLocations, currentItem.receiptItemId);
                                                         const availableQty = currentItem.receivedQuantity - storedQty - otherPendingAdds - pendingNewLocs;
                                                         
                                                         updated[index].pendingExistingAdds = {
@@ -4477,7 +4480,7 @@ function QuickStorageSheet({
                                                         const updated = [...prevItems];
                                                         // Use receiving-specific quantity from notes tag
                                                         const deletedQty = receivingQty;
-                                                        updated[index].existingLocations = updated[index].existingLocations.filter(
+                                                        updated[index].receiptLocations = updated[index].receiptLocations.filter(
                                                           (_: any, i: number) => i !== locIdx
                                                         );
                                                         updated[index].assignedQuantity -= deletedQty;
@@ -4528,7 +4531,7 @@ function QuickStorageSheet({
                                                 const updated = [...prevItems];
                                                 const currentItem = updated[index];
                                                 // Use receiving-specific quantity from notes tags
-                                                const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                const freshStoredQty = calculateStoredQtyForReceiving(currentItem.receiptLocations, currentItem.receiptItemId);
                                                 const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
                                                 const freshPendingNew = currentItem.locations
                                                   .reduce((sum, l, i) => sum + (i === locIndex ? 0 : (l.quantity || 0)), 0);
@@ -4573,7 +4576,7 @@ function QuickStorageSheet({
                                     ))}
                                     
                                     {/* Empty state - Compact */}
-                                    {(!item.existingLocations || item.existingLocations.length === 0) && item.locations.length === 0 && (
+                                    {(!item.receiptLocations || item.receiptLocations.length === 0) && item.locations.length === 0 && (
                                       <div className="p-4 text-center text-muted-foreground text-sm">
                                         <MapPin className="h-6 w-6 mx-auto mb-1 opacity-30" />
                                         <p>{t('noLocationsYet')}</p>
@@ -4581,6 +4584,45 @@ function QuickStorageSheet({
                                     )}
                                   </div>
                                 </div>
+
+                                {/* CURRENT INVENTORY (REFERENCE) - Read-only display of existing warehouse inventory */}
+                                {item.referenceInventory && item.referenceInventory.length > 0 && (
+                                  <div className="rounded-lg border dark:border-gray-800 overflow-hidden">
+                                    <div className="bg-blue-50 dark:bg-blue-900/30 px-3 py-2 border-b dark:border-gray-700 flex items-center gap-2">
+                                      <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      <p className="font-medium text-sm text-blue-700 dark:text-blue-300">
+                                        {t('imports:currentInventory', 'Current Inventory')}
+                                      </p>
+                                      <Badge variant="outline" className="text-[10px] border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
+                                        {t('imports:reference', 'Reference')}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground ml-auto">
+                                        ({item.referenceInventory.length})
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="divide-y dark:divide-gray-800 max-h-32 overflow-y-auto bg-blue-50/50 dark:bg-blue-950/10">
+                                      {item.referenceInventory.map((loc: any, locIdx: number) => (
+                                        <div 
+                                          key={`ref-${locIdx}`}
+                                          className="p-2 flex items-center gap-2"
+                                        >
+                                          <MapPin className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                          <span className="font-mono text-xs text-blue-700 dark:text-blue-300">{loc.locationCode}</span>
+                                          {loc.variantName && (
+                                            <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-800/50 text-purple-700 dark:text-purple-200 flex-shrink-0">
+                                              {loc.variantName}
+                                            </Badge>
+                                          )}
+                                          <div className="flex-1" />
+                                          <Badge variant="secondary" className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                                            {loc.quantity}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* ACTION BUTTONS - Show when there are pending quantities to save */}
                                 {(() => {
@@ -4601,7 +4643,7 @@ function QuickStorageSheet({
                                               const updated = [...prevItems];
                                               const currentItem = updated[index];
                                               const lastIndex = currentItem.locations.length - 1;
-                                              const freshStoredQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                              const freshStoredQty = calculateStoredQtyForReceiving(currentItem.receiptLocations, currentItem.receiptItemId);
                                               const freshPendingExisting = Object.values(currentItem.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
                                               const freshPendingNew = currentItem.locations
                                                 .reduce((sum, l, i) => sum + (i === lastIndex ? 0 : (l.quantity || 0)), 0);
@@ -4661,7 +4703,7 @@ function QuickStorageSheet({
                                             const pendingAdds = Object.entries(item.pendingExistingAdds || {});
                                             for (const [locId, addQty] of pendingAdds) {
                                               if (addQty > 0) {
-                                                const existingLoc = item.existingLocations.find((l: any) => String(l.id) === locId);
+                                                const existingLoc = item.receiptLocations.find((l: any) => String(l.id) === locId);
                                                 if (existingLoc) {
                                                   // For existing locations, we add to the batch with just the delta qty
                                                   // The batch endpoint will add to existing
@@ -4731,7 +4773,7 @@ function QuickStorageSheet({
                                                 
                                                 setItems(prevItems => {
                                                   const updated = [...prevItems];
-                                                  updated[index].existingLocations = relevantLocations.map((loc: any) => {
+                                                  updated[index].receiptLocations = relevantLocations.map((loc: any) => {
                                                     // Look up variant info - prioritize direct variantMap lookup
                                                     // (variantMap is built from product variants, always available)
                                                     let variantName = '';
@@ -4771,7 +4813,7 @@ function QuickStorageSheet({
                                               }
                                               
                                               // Check if fully stored
-                                              const currentStoredQty = calculateStoredQtyForReceiving(item.existingLocations, item.receiptItemId);
+                                              const currentStoredQty = calculateStoredQtyForReceiving(item.receiptLocations, item.receiptItemId);
                                               const isFullyAssigned = currentStoredQty + totalSavedQty >= item.receivedQuantity;
                                               
                                               if (isFullyAssigned) {
@@ -5030,12 +5072,12 @@ function QuickStorageSheet({
                   </div>
                 </div>
                 
-                {/* Existing Locations */}
-                {currentItem.existingLocations && currentItem.existingLocations.length > 0 && (
+                {/* Current Inventory (Reference) - Read-only display */}
+                {currentItem.referenceInventory && currentItem.referenceInventory.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">{t('currentLocations')}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t('currentLocations')} ({t('imports:reference', 'Reference')})</p>
                     <div className="space-y-1.5">
-                      {currentItem.existingLocations.map((loc: any, idx: number) => (
+                      {currentItem.referenceInventory.map((loc: any, idx: number) => (
                         <div 
                           key={idx} 
                           className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg"
