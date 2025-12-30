@@ -4792,6 +4792,9 @@ router.get("/shipments", async (req, res) => {
               trackingNumber: null,
               unitPrice: item.unitPrice,
               sku: item.sku,
+              dimensions: item.dimensions,
+              productId: item.productId,
+              variantAllocations: item.variantAllocations,
               itemType: 'purchase'
             }));
             itemCount = purchaseItemsList.length;
@@ -5151,9 +5154,24 @@ router.post("/shipments/from-purchase", async (req, res) => {
       .from(purchaseItems)
       .where(eq(purchaseItems.purchaseId, purchaseId));
     
-    // Calculate totals
-    const totalWeight = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0) * item.quantity, 0);
-    const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+    // Calculate totals - handle items with variant allocations
+    const totalWeight = items.reduce((sum, item) => {
+      const weight = parseFloat(item.weight) || 0;
+      // For variant items, calculate based on variant quantities
+      if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+        const variantQty = (item.variantAllocations as any[]).reduce((vSum, v) => vSum + (v.quantity || 0), 0);
+        return sum + weight * variantQty;
+      }
+      return sum + weight * item.quantity;
+    }, 0);
+    
+    const totalUnits = items.reduce((sum, item) => {
+      // For variant items, sum up all variant quantities
+      if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+        return sum + (item.variantAllocations as any[]).reduce((vSum, v) => vSum + (v.quantity || 0), 0);
+      }
+      return sum + item.quantity;
+    }, 0);
     
     // Generate shipment name
     const shipmentName = `PO #${purchaseId.substring(0, 8).toUpperCase()} - ${purchase.supplier}`;
