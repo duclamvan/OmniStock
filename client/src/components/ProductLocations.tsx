@@ -176,10 +176,19 @@ export default function ProductLocations({
     a.locationCode.localeCompare(b.locationCode, undefined, { numeric: true, sensitivity: 'base' })
   );
 
-  // Get display quantity for a location (variant quantity sum for products with variants, else actual quantity)
+  // Get display quantity for a location
+  // For variant-specific locations (with variantId), show actual location quantity
+  // For aggregate locations without variantId, use variant quantity sum if available
   const getDisplayQuantity = (location: ProductLocation): number => {
+    // If this location is tied to a specific variant, use the actual location quantity
+    if ((location as any).variantId) {
+      return location.quantity;
+    }
+    // For non-variant-specific locations with variants product, try variant aggregation
     if (hasVariants) {
-      return variantQuantitiesByLocation[location.locationCode] || 0;
+      const variantQty = variantQuantitiesByLocation[location.locationCode];
+      // Use location quantity if it exists, otherwise use variant aggregation
+      return location.quantity > 0 ? location.quantity : (variantQty || 0);
     }
     return location.quantity;
   };
