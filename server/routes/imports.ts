@@ -1361,21 +1361,37 @@ async function finalizeReceivingInventory(
             ? variantUnitPriceRaw 
             : itemUnitPriceOriginal;
           
-          // Note: Variant unitPrice is stored in the same currency as the parent item's paymentCurrency
-          // (from the original purchase order), so we can use itemPaymentCurrency for conversion
+          // Support per-variant currency: use variant's unitPriceCurrency if available,
+          // otherwise fall back to parent item's paymentCurrency (for legacy data)
+          const variantCurrency = vaExt3.unitPriceCurrency || itemPaymentCurrency;
+          
+          // If variant has a different currency than the item, we need to convert
+          // landing cost (which is in itemPaymentCurrency) to variant's currency
+          let landingCostInVariantCurrency = landingCostPerUnitOriginal;
+          if (variantCurrency !== itemPaymentCurrency) {
+            // Convert landing cost from item's currency to variant's currency via EUR
+            // First convert to EUR, then to variant's currency
+            const landingCostEur = landingCostPerUnitOriginal / eurToPaymentRate;
+            const variantCurrencyRate = exchangeRates[variantCurrency] || 1;
+            landingCostInVariantCurrency = landingCostEur * variantCurrencyRate;
+            console.log(`[Currency Conversion] Landing cost: ${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} → ${landingCostInVariantCurrency.toFixed(4)} ${variantCurrency}`);
+          }
           
           // Calculate total landed cost: variant's unitPrice + landing cost portion
-          const totalLandedCostOriginal = variantUnitPriceOriginal + landingCostPerUnitOriginal;
+          // Both should now be in the same currency (variant's currency)
+          const totalLandedCostOriginal = variantUnitPriceOriginal + landingCostInVariantCurrency;
           
           // Convert total landed cost to EUR for storage
-          const variantLandedCostEur = itemPaymentCurrency === 'EUR' 
+          // Use variant's currency for conversion, not item's currency
+          const variantCurrencyRate = exchangeRates[variantCurrency] || 1;
+          const variantLandedCostEur = variantCurrency === 'EUR' 
             ? totalLandedCostOriginal 
-            : totalLandedCostOriginal / eurToPaymentRate;
+            : totalLandedCostOriginal / variantCurrencyRate;
           
           console.log(`[Variant Costs] ${va.variantName}: ` +
-            `unitPrice=${variantUnitPriceOriginal.toFixed(4)} ${itemPaymentCurrency} (variant=${variantUnitPriceRaw.toFixed(4)}, fallback=${itemUnitPriceOriginal.toFixed(4)}) + ` +
-            `landingCost=${landingCostPerUnitOriginal.toFixed(4)} ${itemPaymentCurrency} = ` +
-            `total=${totalLandedCostOriginal.toFixed(4)} ${itemPaymentCurrency} (EUR: ${variantLandedCostEur.toFixed(4)})`);
+            `unitPrice=${variantUnitPriceOriginal.toFixed(4)} ${variantCurrency} (variant=${variantUnitPriceRaw.toFixed(4)}, fallback=${itemUnitPriceOriginal.toFixed(4)}) + ` +
+            `landingCost=${landingCostInVariantCurrency.toFixed(4)} ${variantCurrency} = ` +
+            `total=${totalLandedCostOriginal.toFixed(4)} ${variantCurrency} (EUR: ${variantLandedCostEur.toFixed(4)})`);
           
           // Convert to ALL currencies (VND and CNY added per requirements)
           const variantLandedCostUsd = variantLandedCostEur * eurToUsd;

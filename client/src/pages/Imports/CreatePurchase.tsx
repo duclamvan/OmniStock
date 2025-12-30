@@ -1901,11 +1901,13 @@ export default function CreatePurchase() {
     const avgUnitPrice = totalQuantity > 0 ? totalValue / totalQuantity : 0;
     
     // Create variant allocations for the parent item
+    // Include unitPriceCurrency so receiving finalization knows which currency the price is in
     const variantAllocations: VariantAllocation[] = variants.map(variant => ({
       variantId: variant.id,
       variantName: variant.name,
       quantity: variant.quantity,
       unitPrice: variant.unitPrice,
+      unitPriceCurrency: paymentCurrency, // Store the currency for each variant price
       sku: variant.sku || ''
     }));
     
