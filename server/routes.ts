@@ -1594,79 +1594,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 0);
       };
 
-      // Calculate profit in EUR using landing cost snapshots (Profit = Grand Total - Total Import Cost - Tax Amount - Discount Value)
-      // CRITICAL: Uses stored landingCost snapshot from order items (captured at sale time) for accurate historical profit
-      // Falls back to current product cost only for legacy orders without snapshots
-      const calculateProfitInEur = async (orders: any[]) => {
-        let totalProfit = 0;
-
-        for (const order of orders) {
+      // Calculate profit in EUR using stored totalCost (Profit = Grand Total - Total Cost)
+      // Uses order.totalCost which is pre-calculated from item landing costs
+      const calculateProfitInEur = (orders: any[]) => {
+        return orders.reduce((sum, order) => {
+          // Only count shipped and paid orders for profit
           if (order.orderStatus !== 'shipped' || order.paymentStatus !== 'paid') {
-            continue; // Only calculate profit for completed orders
+            return sum;
           }
-
           const grandTotal = parseFloat(order.grandTotal || '0');
-          const taxAmount = parseFloat(order.taxAmount || '0');
-          const discountValue = parseFloat(order.discountValue || '0');
-
-          // Get order items to calculate import cost
-          let orderItems: any[] = [];
-          try {
-            orderItems = await storage.getOrderItems(order.id);
-          } catch (itemError) {
-            // Skip this order if items can't be fetched (e.g., schema sync issue)
-            console.warn(`Skipping order ${order.id} in profit calculation due to item fetch error`);
-            continue;
-          }
-          let totalImportCost = 0;
-
-          for (const item of orderItems) {
-            const quantity = parseInt(String(item.quantity) || '0');
-            let importCostInOrderCurrency = 0;
-
-            // Priority 1: Use stored landing cost snapshot (immutable cost at time of sale - in order currency)
-            if (item.landingCost) {
-              importCostInOrderCurrency = parseFloat(item.landingCost);
-            } else if (item.productId) {
-              // Fallback for legacy orders without snapshot: fetch current product cost
-              const product = await storage.getProductById(item.productId);
-              if (product) {
-                // Use import cost matching order currency, or convert to order currency
-                if (order.currency === 'CZK' && product.importCostCzk) {
-                  importCostInOrderCurrency = parseFloat(product.importCostCzk);
-                } else if (order.currency === 'EUR' && product.importCostEur) {
-                  importCostInOrderCurrency = parseFloat(product.importCostEur);
-                } else if (product.importCostUsd) {
-                  // Convert USD to order currency first, not to EUR
-                  const importCostUsd = parseFloat(product.importCostUsd);
-                  if (order.currency === 'CZK') {
-                    // USD to CZK conversion (approximate rate from EUR rates)
-                    const usdToEur = 1 / (exchangeRates.rates?.USD || 1.1);
-                    const eurToCzk = exchangeRates.rates?.CZK || 25.0;
-                    importCostInOrderCurrency = importCostUsd * usdToEur * eurToCzk;
-                  } else {
-                    // Default: convert to EUR
-                    importCostInOrderCurrency = importCostUsd * (1 / (exchangeRates.rates?.USD || 1.1));
-                  }
-                }
-              }
-            }
-
-            totalImportCost += importCostInOrderCurrency * quantity;
-          }
-
-          // Profit = Revenue - Import Costs - Tax - Discount
-          const profit = grandTotal - totalImportCost - taxAmount - discountValue;
-          totalProfit += convertToEur(profit, order.currency);
-        }
-
-        return totalProfit;
+          const totalCost = parseFloat(order.totalCost || '0');
+          const profit = grandTotal - totalCost;
+          return sum + convertToEur(profit, order.currency);
+        }, 0);
       };
 
       // Calculate base profits (from orders only)
-      const baseProfitToday = await calculateProfitInEur(todayShippedOrders);
-      const baseProfitThisMonth = await calculateProfitInEur(thisMonthOrders);
-      const baseProfitLastMonth = await calculateProfitInEur(lastMonthOrders);
+      const baseProfitToday = calculateProfitInEur(todayShippedOrders);
+      const baseProfitThisMonth = calculateProfitInEur(thisMonthOrders);
+      const baseProfitLastMonth = calculateProfitInEur(lastMonthOrders);
 
       // Net profit = order profit - expenses (expenses reduce profit)
       const metricsWithConversion = {
