@@ -14587,7 +14587,36 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
 
-      const unitPrice = parseFloat(item.unitPrice || '0');
+      // Parse variantAllocations early to determine if we need to calculate weighted average price
+      let variantAllocationsArray: any[] = [];
+      if (item.variantAllocations) {
+        if (typeof item.variantAllocations === 'string') {
+          try {
+            variantAllocationsArray = JSON.parse(item.variantAllocations);
+          } catch (e) {
+            console.warn('Failed to parse variantAllocations JSON for price calculation:', e);
+          }
+        } else if (Array.isArray(item.variantAllocations)) {
+          variantAllocationsArray = item.variantAllocations;
+        }
+      }
+
+      // Calculate unit price: use weighted average from variants if available, otherwise use item's unit price
+      let unitPrice: number;
+      if (variantAllocationsArray.length > 0) {
+        // Calculate weighted average unit price from variant allocations
+        let totalVariantValue = 0;
+        let totalVariantQty = 0;
+        for (const va of variantAllocationsArray) {
+          const vaQty = va.quantity || 0;
+          const vaPrice = parseFloat(String(va.unitPrice || 0));
+          totalVariantValue += vaPrice * vaQty;
+          totalVariantQty += vaQty;
+        }
+        unitPrice = totalVariantQty > 0 ? totalVariantValue / totalVariantQty : parseFloat(item.unitPrice || '0');
+      } else {
+        unitPrice = parseFloat(item.unitPrice || '0');
+      }
       const totalValue = unitPrice * item.quantity;
 
       // Get imageUrl from orderItems if available (for purchase order items)
@@ -14637,19 +14666,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         sku = (item as any).sku;
       }
 
-      // Parse variantAllocations from the customItem
-      let variantAllocations: any[] = [];
-      if (item.variantAllocations) {
-        if (typeof item.variantAllocations === 'string') {
-          try {
-            variantAllocations = JSON.parse(item.variantAllocations);
-          } catch (e) {
-            console.warn('Failed to parse variantAllocations JSON:', e);
-          }
-        } else if (Array.isArray(item.variantAllocations)) {
-          variantAllocations = item.variantAllocations;
-        }
-      }
+      // Use the already parsed variantAllocationsArray from earlier
 
       items.push({
         purchaseItemId: item.id,  // Frontend expects purchaseItemId
@@ -14658,7 +14675,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         sku,
         imageUrl,
         quantity: item.quantity,
-        unitPrice,  // Add unit price for purchase price column
+        unitPrice,  // Add unit price for purchase price column (weighted avg from variants if available)
         totalValue,
         actualWeightKg: actualWeight,
         volumetricWeightKg: volumetricWeight,
@@ -14673,7 +14690,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         landingCostPerUnit,
         warnings: [],
         orderItems: orderItemsArray.length > 0 ? orderItemsArray : undefined,
-        variantAllocations: variantAllocations.length > 0 ? variantAllocations : undefined
+        variantAllocations: variantAllocationsArray.length > 0 ? variantAllocationsArray : undefined
       });
     }
 
