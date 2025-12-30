@@ -868,6 +868,8 @@ const imports = {
   eachItemWillBecome: 'Each item in this purchase order will become an individual item ready for consolidation. The items will retain all supplier and order information.',
   confirmUnpack: 'Confirm Unpack',
   noActiveConsolidations: 'No active consolidations available',
+  noItemsInConsolidation: 'No items in this consolidation',
+  createFirstConsolidation: 'Create a consolidation to start grouping items',
   allConsolidationsShipped: 'All consolidations are either shipped or delivered',
   aiScreenshotReader: 'AI Screenshot Reader',
   uploadScreenshotTaobao: 'Upload a screenshot from Pinduoduo or Taobao to auto-extract order details',

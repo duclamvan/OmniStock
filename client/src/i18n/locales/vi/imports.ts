@@ -886,6 +886,8 @@ const imports = {
   eachItemWillBecome: 'Mỗi sản phẩm trong đơn mua hàng này sẽ trở thành một sản phẩm riêng lẻ sẵn sàng để tổng hợp. Các sản phẩm sẽ giữ nguyên thông tin nhà cung cấp và đơn hàng.',
   confirmUnpack: 'Xác nhận mở kiện',
   noActiveConsolidations: 'Không có tổng hợp đang hoạt động',
+  noItemsInConsolidation: 'Không có sản phẩm trong tổng hợp này',
+  createFirstConsolidation: 'Tạo một tổng hợp để bắt đầu gom nhóm sản phẩm',
   allConsolidationsShipped: 'Tất cả tổng hợp đã được gửi hoặc đã giao',
   success: 'Thành công',
   aiScreenshotReader: 'Trình đọc ảnh chụp màn hình AI',

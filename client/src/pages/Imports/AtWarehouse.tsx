@@ -619,6 +619,7 @@ export default function AtWarehouse() {
   const [editingItem, setEditingItem] = useState<CustomItem | null>(null);
   const [isCreateConsolidationOpen, setIsCreateConsolidationOpen] = useState(false);
   const [isConsolidationDrawerOpen, setIsConsolidationDrawerOpen] = useState(false);
+  const [mobileExpandedConsolidation, setMobileExpandedConsolidation] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<ImportPurchase | null>(null);
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
@@ -2608,10 +2609,13 @@ export default function AtWarehouse() {
           </Collapsible>
 
           <DragDropContext onDragEnd={handleDragEnd}>
-            {/* Mobile Consolidation Drawer */}
-            <Drawer open={isConsolidationDrawerOpen} onOpenChange={setIsConsolidationDrawerOpen}>
-              <DrawerContent className="max-h-[85vh]">
-                <DrawerHeader className="pb-2">
+            {/* Mobile Consolidation Drawer - Enhanced with items and ship button */}
+            <Drawer open={isConsolidationDrawerOpen} onOpenChange={(open) => {
+              setIsConsolidationDrawerOpen(open);
+              if (!open) setMobileExpandedConsolidation(null);
+            }}>
+              <DrawerContent className="max-h-[90vh]">
+                <DrawerHeader className="pb-2 border-b">
                   <DrawerTitle className="flex items-center justify-between text-lg">
                     <span>{t('consolidations')}</span>
                     <Button
@@ -2627,77 +2631,195 @@ export default function AtWarehouse() {
                     </Button>
                   </DrawerTitle>
                 </DrawerHeader>
-                <div className="px-4 pb-6 overflow-y-auto">
+                <div className="px-4 pb-6 overflow-y-auto flex-1">
                   {selectedItemsForAI.size > 0 && (
-                    <div className="bg-primary/10 rounded-lg p-3 mb-4 text-center">
+                    <div className="bg-primary/10 rounded-lg p-3 my-3 text-center sticky top-0 z-10">
                       <span className="text-sm font-medium text-primary">
                         {t('clickToAddSelectedItems', { count: selectedItemsForAI.size })}
                       </span>
                     </div>
                   )}
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-3 pt-3">
                     {consolidations
                       .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
-                      .map((consolidation) => (
-                        <div 
-                          key={consolidation.id}
-                          className={`border-2 rounded-xl p-4 transition-all min-h-[72px] ${
-                            selectedItemsForAI.size > 0 
-                              ? 'cursor-pointer bg-primary/5 hover:bg-primary/10 border-primary/40 active:scale-[0.98] shadow-sm' 
-                              : 'bg-card border-border'
-                          }`}
-                          onClick={() => {
-                            if (selectedItemsForAI.size > 0) {
-                              addItemsToConsolidationMutation.mutate({
-                                consolidationId: consolidation.id,
-                                itemIds: Array.from(selectedItemsForAI)
-                              });
-                              setSelectedItemsForAI(new Set());
-                              setIsConsolidationDrawerOpen(false);
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className={`p-2.5 rounded-lg ${
-                                consolidation.shippingMethod?.includes('sensitive') 
-                                  ? 'bg-orange-100 dark:bg-orange-900/30' 
-                                  : 'bg-primary/10'
-                              }`}>
-                                {(() => {
-                                  const method = consolidation.shippingMethod;
-                                  const iconClass = `h-5 w-5 ${method?.includes('sensitive') ? 'text-orange-600' : 'text-primary'}`;
-                                  if (method?.includes('air')) return <Plane className={iconClass} />;
-                                  if (method?.includes('express')) return <Zap className={iconClass} />;
-                                  if (method?.includes('railway')) return <Train className={iconClass} />;
-                                  if (method?.includes('sea')) return <Ship className={iconClass} />;
-                                  return <Package className="h-5 w-5 text-muted-foreground" />;
-                                })()}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="font-semibold text-base block truncate">{consolidation.name}</span>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                                  <span>{consolidation.itemCount || 0} {t('items')}</span>
-                                  {consolidation.location && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="truncate">{consolidation.location}</span>
-                                    </>
-                                  )}
+                      .map((consolidation) => {
+                        const isExpanded = mobileExpandedConsolidation === consolidation.id;
+                        const items = consolidationItems[consolidation.id] || [];
+                        // Calculate weight directly from item properties, multiplying by quantity
+                        const totalWeight = items.reduce((sum: number, item: any) => {
+                          const itemWeight = parseFloat(item?.weight || '0') || 0;
+                          const itemQty = parseInt(item?.quantity || '1') || 1;
+                          return sum + (itemWeight * itemQty);
+                        }, 0);
+                        
+                        return (
+                          <div 
+                            key={consolidation.id}
+                            className={`border-2 rounded-xl overflow-hidden transition-all ${
+                              selectedItemsForAI.size > 0 
+                                ? 'bg-primary/5 border-primary/40 shadow-sm' 
+                                : isExpanded ? 'bg-card border-primary/50 shadow-md' : 'bg-card border-border'
+                            }`}
+                          >
+                            {/* Consolidation Header - Always visible */}
+                            <div 
+                              className={`p-4 ${selectedItemsForAI.size > 0 ? 'cursor-pointer active:scale-[0.98]' : 'cursor-pointer'}`}
+                              onClick={() => {
+                                if (selectedItemsForAI.size > 0) {
+                                  addItemsToConsolidationMutation.mutate({
+                                    consolidationId: consolidation.id,
+                                    itemIds: Array.from(selectedItemsForAI)
+                                  });
+                                  setSelectedItemsForAI(new Set());
+                                  setIsConsolidationDrawerOpen(false);
+                                } else {
+                                  // Fetch items if not loaded yet
+                                  if (!consolidationItems[consolidation.id] && consolidation.itemCount > 0) {
+                                    fetchConsolidationItems(consolidation.id);
+                                  }
+                                  setMobileExpandedConsolidation(isExpanded ? null : consolidation.id);
+                                }
+                              }}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className={`p-2.5 rounded-lg shrink-0 ${
+                                    consolidation.shippingMethod?.includes('sensitive') 
+                                      ? 'bg-orange-100 dark:bg-orange-900/30' 
+                                      : 'bg-primary/10'
+                                  }`}>
+                                    {(() => {
+                                      const method = consolidation.shippingMethod;
+                                      const iconClass = `h-5 w-5 ${method?.includes('sensitive') ? 'text-orange-600' : 'text-primary'}`;
+                                      if (method?.includes('air')) return <Plane className={iconClass} />;
+                                      if (method?.includes('express')) return <Zap className={iconClass} />;
+                                      if (method?.includes('railway')) return <Train className={iconClass} />;
+                                      if (method?.includes('sea')) return <Ship className={iconClass} />;
+                                      return <Package className="h-5 w-5 text-muted-foreground" />;
+                                    })()}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="font-semibold text-base block truncate">{consolidation.name}</span>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {consolidation.itemCount || 0} {t('items')}
+                                      </Badge>
+                                      {items.length > 0 && (
+                                        <>
+                                          <span>•</span>
+                                          <span>{totalWeight.toFixed(1)} kg</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
+                                {selectedItemsForAI.size > 0 ? (
+                                  <div className="bg-primary text-primary-foreground rounded-full p-2 shrink-0">
+                                    <Plus className="h-5 w-5" />
+                                  </div>
+                                ) : (
+                                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                                )}
                               </div>
                             </div>
-                            {selectedItemsForAI.size > 0 && (
-                              <div className="bg-primary text-primary-foreground rounded-full p-2">
-                                <Plus className="h-5 w-5" />
+                            
+                            {/* Expanded Content - Items and Actions */}
+                            {isExpanded && selectedItemsForAI.size === 0 && (
+                              <div className="border-t bg-muted/30">
+                                {/* Items List */}
+                                <div className="p-3 max-h-[200px] overflow-y-auto">
+                                  {items.length > 0 ? (
+                                    <div className="space-y-2">
+                                      {items.map((item: any) => (
+                                        <div key={item.id} className="bg-background rounded-lg p-3 flex justify-between items-center">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-sm truncate">{item.name}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                              {t('qty')}: {item.quantity}
+                                              {item.weight && ` • ${item.weight} kg`}
+                                            </div>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-10 w-10 p-0 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              e.preventDefault();
+                                              removeItemFromConsolidationMutation.mutate({
+                                                consolidationId: consolidation.id,
+                                                itemId: item.id
+                                              });
+                                            }}
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : consolidation.itemCount > 0 ? (
+                                    <div className="text-center py-6 text-muted-foreground text-sm">
+                                      <RefreshCw className="h-6 w-6 mx-auto mb-2 animate-spin opacity-50" />
+                                      {t('loadingItems')}...
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-6 text-muted-foreground text-sm">
+                                      <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                      {t('noItemsInConsolidation')}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="p-3 border-t bg-background/50 flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="flex-1 h-12"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      quickShipMutation.mutate(consolidation.id, {
+                                        onSuccess: () => {
+                                          setIsConsolidationDrawerOpen(false);
+                                          setMobileExpandedConsolidation(null);
+                                        }
+                                      });
+                                    }}
+                                    disabled={quickShipMutation.isPending || consolidation.itemCount === 0}
+                                  >
+                                    {quickShipMutation.isPending ? (
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <ArrowRightToLine className="h-4 w-4 mr-2" />
+                                    )}
+                                    {t('quickShip')}
+                                  </Button>
+                                  <Button
+                                    size="lg"
+                                    className="flex-1 h-12"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleShipConsolidation(consolidation);
+                                      setIsConsolidationDrawerOpen(false);
+                                    }}
+                                    disabled={consolidation.itemCount === 0}
+                                  >
+                                    <Ship className="h-4 w-4 mr-2" />
+                                    {t('shipConsolidation')}
+                                  </Button>
+                                </div>
                               </div>
                             )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
-                        {t('noActiveConsolidations')}
+                        <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="font-medium">{t('noActiveConsolidations')}</p>
+                        <p className="text-sm mt-1">{t('createFirstConsolidation')}</p>
                       </div>
                     )}
                   </div>
