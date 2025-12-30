@@ -477,15 +477,34 @@ async function getLandedCostForItem(
         
         const totalUnits = consolidationItemsList.reduce((sum, item) => sum + (item.quantity || 0), 0);
         
-        // Find this item's quantity
+        // Find this item's quantity and price with currency
         const [thisItem] = await tx
-          .select({ quantity: customItems.quantity, unitPrice: customItems.unitPrice })
+          .select({ 
+            quantity: customItems.quantity, 
+            unitPrice: customItems.unitPrice,
+            paymentCurrency: customItems.paymentCurrency
+          })
           .from(customItems)
           .where(eq(customItems.id, itemId));
         
         if (thisItem && totalUnits > 0) {
           const itemQuantity = thisItem.quantity || quantity;
-          const itemUnitPriceEur = parseFloat(thisItem.unitPrice || '0');
+          const unitPriceInPaymentCurrency = parseFloat(thisItem.unitPrice || '0');
+          const paymentCurrency = thisItem.paymentCurrency || 'USD';
+          
+          // Convert unit price to EUR
+          let itemUnitPriceEur = unitPriceInPaymentCurrency;
+          if (paymentCurrency !== 'EUR' && shipment.exchangeRates) {
+            const rates = typeof shipment.exchangeRates === 'string' 
+              ? JSON.parse(shipment.exchangeRates) 
+              : shipment.exchangeRates;
+            if (rates[paymentCurrency]) {
+              itemUnitPriceEur = unitPriceInPaymentCurrency / rates[paymentCurrency];
+            }
+          } else if (paymentCurrency !== 'EUR') {
+            // Fallback rate for USD->EUR
+            itemUnitPriceEur = unitPriceInPaymentCurrency * 0.92;
+          }
           
           // Calculate freight allocation per unit (simple equal distribution)
           const freightPerUnit = shippingCostEur / totalUnits;
@@ -872,16 +891,47 @@ async function finalizeReceivingInventory(
         const totalVariantQuantity = variantAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
         
         // Get the unit price for the item IN EUR (used by getLandedCostForItem)
-        // CRITICAL: Purchase items have unitPrice in purchase currency, must convert to EUR
+        // CRITICAL: Both purchase and custom items store unitPrice in their payment currency, must convert to EUR
         let itemUnitPriceEur = 0;
         if (item.itemType === 'custom') {
-          // Custom items are already in EUR (base currency)
+          // Custom items store unitPrice in paymentCurrency, need to convert to EUR
           const [customItem] = await tx
-            .select({ unitPrice: customItems.unitPrice })
+            .select({ 
+              unitPrice: customItems.unitPrice,
+              paymentCurrency: customItems.paymentCurrency
+            })
             .from(customItems)
             .where(eq(customItems.id, item.itemId));
           if (customItem?.unitPrice) {
-            itemUnitPriceEur = parseFloat(customItem.unitPrice);
+            const unitPriceInPaymentCurrency = parseFloat(customItem.unitPrice);
+            const paymentCurrency = customItem.paymentCurrency || 'USD'; // Default to USD if not set
+            
+            // Convert to EUR using exchange rates
+            let conversionRate = 1; // Default: already EUR
+            if (paymentCurrency !== 'EUR') {
+              try {
+                const rateResponse = await fetch('https://open.er-api.com/v6/latest/EUR');
+                if (rateResponse.ok) {
+                  const rateData = await rateResponse.json();
+                  if (rateData.rates && rateData.rates[paymentCurrency]) {
+                    // rate is EUR -> paymentCurrency, so we need 1/rate to convert back
+                    conversionRate = 1 / rateData.rates[paymentCurrency];
+                  }
+                }
+              } catch (e) {
+                // Use fallback rates
+                const fallbackRates: Record<string, number> = {
+                  'USD': 1.1, 'CZK': 25, 'VND': 27000, 'CNY': 7.5,
+                  'GBP': 0.85, 'JPY': 160, 'CHF': 0.95, 'AUD': 1.65, 'CAD': 1.48
+                };
+                if (fallbackRates[paymentCurrency]) {
+                  conversionRate = 1 / fallbackRates[paymentCurrency];
+                }
+              }
+            }
+            
+            itemUnitPriceEur = unitPriceInPaymentCurrency * conversionRate;
+            console.log(`[Currency Convert] Custom item ${item.itemId}: ${unitPriceInPaymentCurrency} ${paymentCurrency} -> ${itemUnitPriceEur.toFixed(4)} EUR (rate: ${conversionRate.toFixed(6)})`);
           }
         } else if (item.itemType === 'purchase') {
           // Purchase items need currency conversion to EUR
