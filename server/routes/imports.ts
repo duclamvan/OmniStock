@@ -3277,6 +3277,7 @@ router.patch("/purchases/:id/status", async (req, res) => {
         const totalUnits = poItems.reduce((sum, item) => sum + item.quantity, 0);
         
         // Wrap in transaction to ensure atomicity - either both consolidation and links persist, or neither
+        let createdConsolidationId: string | null = null;
         await db.transaction(async (tx) => {
           // Create a consolidation with status 'ready' so it appears in pending shipments
           const [newConsolidation] = await tx.insert(consolidations).values({
@@ -3292,6 +3293,8 @@ router.patch("/purchases/:id/status", async (req, res) => {
             updatedAt: new Date()
           }).returning();
           
+          createdConsolidationId = newConsolidation.id;
+          
           // Link purchase items directly to consolidation using itemType: 'purchase'
           // This maintains the connection for cost finalization and status propagation
           for (const item of poItems) {
@@ -3303,6 +3306,11 @@ router.patch("/purchases/:id/status", async (req, res) => {
             });
           }
         });
+        
+        // Return the consolidation ID so frontend can show shipment modal
+        if (createdConsolidationId) {
+          return res.json({ ...updated, consolidationId: createdConsolidationId });
+        }
       }
     }
     

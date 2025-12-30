@@ -170,6 +170,20 @@ export default function SupplierProcessing() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
 
+  // Shipment modal state for "Move to Transit" flow
+  const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
+  const [pendingShipmentData, setPendingShipmentData] = useState<{
+    consolidationId: string;
+    purchaseName: string;
+    purchaseLocation: string;
+  } | null>(null);
+  const [shipmentForm, setShipmentForm] = useState({
+    carrier: '',
+    trackingNumber: '',
+    origin: '',
+    destination: ''
+  });
+
   const { data: purchasesData, isLoading } = useQuery<Purchase[]>({
     queryKey: ['/api/imports/purchases']
   });
@@ -235,10 +249,26 @@ export default function SupplierProcessing() {
           setLocation('/receiving');
         }
       } else if (variables.status === 'shipped' && purchase) {
-        // When moved to shipped (in transit), redirect to International Transit pending shipments
+        // When moved to shipped (in transit), show modal to enter shipment details
         if (purchase.consolidation !== 'Yes') {
-          toast({ title: t('success'), description: t('movedToInternationalTransit') });
-          setLocation('/international-transit');
+          // The backend auto-creates a consolidation - get its ID from the response
+          const consolidationId = _data?.consolidationId;
+          if (consolidationId) {
+            setPendingShipmentData({
+              consolidationId,
+              purchaseName: `PO #${String(purchase.id).substring(0, 8).toUpperCase()} - ${purchase.supplier}`,
+              purchaseLocation: purchase.location || 'China'
+            });
+            setShipmentForm({
+              carrier: '',
+              trackingNumber: '',
+              origin: purchase.location || 'China',
+              destination: 'Czech Republic'
+            });
+            setShipmentModalOpen(true);
+          } else {
+            toast({ title: t('success'), description: t('movedToInternationalTransit') });
+          }
         } else {
           toast({ title: t('success'), description: t('statusUpdatedSuccessfully') });
         }
@@ -278,6 +308,72 @@ export default function SupplierProcessing() {
       setPurchaseToDelete(null);
     }
   });
+
+  // Create shipment mutation for the "Move to Transit" modal
+  const createShipmentMutation = useMutation({
+    mutationFn: async (data: {
+      consolidationId: string;
+      carrier: string;
+      trackingNumber: string;
+      origin: string;
+      destination: string;
+    }) => {
+      const response = await apiRequest('POST', '/api/imports/shipments', {
+        consolidationId: data.consolidationId,
+        carrier: data.carrier,
+        trackingNumber: data.trackingNumber,
+        origin: data.origin,
+        destination: data.destination,
+        status: 'in transit'
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      toast({ title: t('success'), description: t('shipmentCreatedSuccessfully') });
+      setShipmentModalOpen(false);
+      setPendingShipmentData(null);
+      setShipmentForm({ carrier: '', trackingNumber: '', origin: '', destination: '' });
+    },
+    onError: () => {
+      toast({ 
+        title: t('error'), 
+        description: t('shipmentCreationFailed'), 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleCreateShipment = () => {
+    if (!pendingShipmentData) return;
+    if (!shipmentForm.carrier.trim() || !shipmentForm.trackingNumber.trim()) {
+      toast({ 
+        title: t('error'), 
+        description: t('carrierAndTrackingRequired'), 
+        variant: "destructive" 
+      });
+      return;
+    }
+    createShipmentMutation.mutate({
+      consolidationId: pendingShipmentData.consolidationId,
+      ...shipmentForm
+    });
+  };
+
+  const handleSkipShipment = () => {
+    setShipmentModalOpen(false);
+    setPendingShipmentData(null);
+    toast({ 
+      title: t('movedToInternationalTransit'), 
+      description: t('youCanAddTrackingLater'),
+      action: (
+        <Button variant="outline" size="sm" onClick={() => setLocation('/imports/international-transit')}>
+          {t('viewPendingShipments')}
+        </Button>
+      )
+    });
+  };
 
   const archiveMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
@@ -1904,6 +2000,92 @@ export default function SupplierProcessing() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Shipment Details Modal - shown after "Move to Transit" */}
+        <Dialog open={shipmentModalOpen} onOpenChange={(open) => {
+          if (!open) handleSkipShipment();
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-cyan-600" />
+                {t('enterShipmentDetails')}
+              </DialogTitle>
+              <DialogDescription>
+                {pendingShipmentData?.purchaseName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="carrier">{t('carrier')} *</Label>
+                <Input
+                  id="carrier"
+                  placeholder={t('carrierPlaceholder')}
+                  value={shipmentForm.carrier}
+                  onChange={(e) => setShipmentForm(prev => ({ ...prev, carrier: e.target.value }))}
+                  data-testid="input-shipment-carrier"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trackingNumber">{t('trackingNumber')} *</Label>
+                <Input
+                  id="trackingNumber"
+                  placeholder={t('trackingNumberPlaceholder')}
+                  value={shipmentForm.trackingNumber}
+                  onChange={(e) => setShipmentForm(prev => ({ ...prev, trackingNumber: e.target.value }))}
+                  data-testid="input-shipment-tracking"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="origin">{t('origin')}</Label>
+                  <Input
+                    id="origin"
+                    placeholder={t('originPlaceholder')}
+                    value={shipmentForm.origin}
+                    onChange={(e) => setShipmentForm(prev => ({ ...prev, origin: e.target.value }))}
+                    data-testid="input-shipment-origin"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="destination">{t('destination')}</Label>
+                  <Input
+                    id="destination"
+                    placeholder={t('destinationPlaceholder')}
+                    value={shipmentForm.destination}
+                    onChange={(e) => setShipmentForm(prev => ({ ...prev, destination: e.target.value }))}
+                    data-testid="input-shipment-destination"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={handleSkipShipment}
+                className="w-full sm:w-auto"
+                data-testid="button-skip-shipment"
+              >
+                {t('fillLater')}
+              </Button>
+              <Button
+                onClick={handleCreateShipment}
+                disabled={createShipmentMutation.isPending}
+                className="w-full sm:w-auto"
+                data-testid="button-create-shipment"
+              >
+                {createShipmentMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('creating')}
+                  </>
+                ) : (
+                  t('createShipment')
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
