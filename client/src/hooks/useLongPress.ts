@@ -26,6 +26,7 @@ export function useLongPress({
   const targetRef = useRef<EventTarget | null>(null);
   const longPressTriggeredRef = useRef(false);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
+  const scrollingRef = useRef(false);
 
   const start = useCallback(
     (event: React.TouchEvent | React.MouseEvent) => {
@@ -38,6 +39,7 @@ export function useLongPress({
       const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
       startPosRef.current = { x: clientX, y: clientY };
       longPressTriggeredRef.current = false;
+      scrollingRef.current = false;
 
       timeoutRef.current = setTimeout(() => {
         longPressTriggeredRef.current = true;
@@ -54,7 +56,7 @@ export function useLongPress({
         timeoutRef.current = null;
       }
 
-      if (shouldTriggerClick && !longPressTriggeredRef.current && onClick) {
+      if (shouldTriggerClick && !longPressTriggeredRef.current && !scrollingRef.current && onClick) {
         onClick(event);
       }
 
@@ -80,10 +82,14 @@ export function useLongPress({
       const deltaY = Math.abs(clientY - startPosRef.current.y);
 
       if (deltaX > moveThreshold || deltaY > moveThreshold) {
-        clear(event, false);
+        scrollingRef.current = true;
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       }
     },
-    [clear]
+    []
   );
 
   return {
