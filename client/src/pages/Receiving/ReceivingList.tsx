@@ -4070,7 +4070,47 @@ function QuickStorageSheet({
                                   </div>
                                   
                                   <div className="divide-y dark:divide-gray-800 max-h-48 overflow-y-auto">
-                                    {/* SAVED LOCATIONS - Compact rows with controlled "To add" input */}
+                                    {/* Fill All Existing Locations Button */}
+                                    {item.existingLocations && item.existingLocations.length > 0 && itemRemainingQty > 0 && (
+                                      <div className="p-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-800">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="w-full h-9 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-medium"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Distribute remaining quantity evenly across existing locations
+                                            const locCount = item.existingLocations.length;
+                                            const perLoc = Math.floor(itemRemainingQty / locCount);
+                                            const remainder = itemRemainingQty % locCount;
+                                            
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              const newPendingAdds: Record<string, number> = {};
+                                              item.existingLocations.forEach((loc: any, idx: number) => {
+                                                const locId = String(loc.id || idx);
+                                                // Give first location the remainder
+                                                newPendingAdds[locId] = perLoc + (idx === 0 ? remainder : 0);
+                                              });
+                                              updated[index].pendingExistingAdds = newPendingAdds;
+                                              return updated;
+                                            });
+                                            
+                                            toast({
+                                              title: t('imports:quantityDistributed', 'Quantity Distributed'),
+                                              description: `${itemRemainingQty} ${t('common:items')} → ${locCount} ${t('locationsLabel', 'locations')}`,
+                                              duration: 2000
+                                            });
+                                          }}
+                                          data-testid="button-fill-all-existing"
+                                        >
+                                          <Layers className="h-4 w-4 mr-2" />
+                                          {t('imports:fillAllLocations', 'Fill All')} (+{itemRemainingQty})
+                                        </Button>
+                                      </div>
+                                    )}
+                                    
+                                    {/* SAVED LOCATIONS - Compact rows with editable "Add more" input */}
                                     {item.existingLocations?.map((loc: any, locIdx: number) => {
                                       const locId = String(loc.id || locIdx);
                                       const pendingAdd = item.pendingExistingAdds?.[locId] || 0;
@@ -4095,10 +4135,47 @@ function QuickStorageSheet({
                                             )}
                                             <div className="flex-1" />
                                             
-                                            {/* Show allocated quantity prominently - use receiving-specific qty from notes */}
-                                            <div className="w-16 h-9 flex items-center justify-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg font-bold text-base">
+                                            {/* Show current stored quantity */}
+                                            <div className="w-14 h-9 flex items-center justify-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg font-bold text-sm">
                                               {receivingQty}
                                             </div>
+                                            
+                                            {/* Add more input - only show if remaining qty > 0 */}
+                                            {itemRemainingQty > 0 && (
+                                              <div className="flex items-center gap-1">
+                                                <span className="text-xs text-muted-foreground">+</span>
+                                                <Input
+                                                  type="number"
+                                                  value={pendingAdd || ''}
+                                                  onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    const newQty = parseInt(e.target.value) || 0;
+                                                    setItems(prevItems => {
+                                                      const updated = [...prevItems];
+                                                      const currentItem = updated[index];
+                                                      // Calculate max allowed for this specific location
+                                                      const otherPendingAdds = Object.entries(currentItem.pendingExistingAdds || {})
+                                                        .filter(([k]) => k !== locId)
+                                                        .reduce((sum, [, qty]) => sum + (qty || 0), 0);
+                                                      const pendingNewLocs = currentItem.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                                                      const storedQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                      const availableForThisLoc = currentItem.receivedQuantity - storedQty - otherPendingAdds - pendingNewLocs;
+                                                      
+                                                      updated[index].pendingExistingAdds = {
+                                                        ...currentItem.pendingExistingAdds,
+                                                        [locId]: Math.min(Math.max(0, newQty), availableForThisLoc)
+                                                      };
+                                                      return updated;
+                                                    });
+                                                  }}
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  className="w-16 h-9 text-center text-sm font-bold rounded-lg border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30"
+                                                  min="0"
+                                                  placeholder="0"
+                                                  data-testid={`input-add-existing-${locIdx}`}
+                                                />
+                                              </div>
+                                            )}
                                             
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
@@ -4112,6 +4189,33 @@ function QuickStorageSheet({
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="end" className="w-40">
+                                                {/* Fill this location option */}
+                                                {itemRemainingQty > 0 && (
+                                                  <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setItems(prevItems => {
+                                                        const updated = [...prevItems];
+                                                        const currentItem = updated[index];
+                                                        const otherPendingAdds = Object.entries(currentItem.pendingExistingAdds || {})
+                                                          .filter(([k]) => k !== locId)
+                                                          .reduce((sum, [, qty]) => sum + (qty || 0), 0);
+                                                        const pendingNewLocs = currentItem.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                                                        const storedQty = calculateStoredQtyForReceiving(currentItem.existingLocations, currentItem.receiptItemId);
+                                                        const availableQty = currentItem.receivedQuantity - storedQty - otherPendingAdds - pendingNewLocs;
+                                                        
+                                                        updated[index].pendingExistingAdds = {
+                                                          ...currentItem.pendingExistingAdds,
+                                                          [locId]: availableQty
+                                                        };
+                                                        return updated;
+                                                      });
+                                                    }}
+                                                  >
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    {t('imports:fillHere', 'Fill Here')} (+{itemRemainingQty})
+                                                  </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuItem
                                                   onClick={async (e) => {
                                                     e.stopPropagation();
