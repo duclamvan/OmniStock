@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DayPicker } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
@@ -219,6 +221,7 @@ export default function InternationalTransit() {
     staleTime: 30000,
   });
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
+  const [selectedEtaDate, setSelectedEtaDate] = useState<Date | undefined>(undefined);
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
   const [shipmentToUndo, setShipmentToUndo] = useState<Shipment | null>(null);
@@ -1163,6 +1166,9 @@ export default function InternationalTransit() {
                 setSelectedShipment(null);
                 setSelectedPendingShipment(null);
                 setDetectedEndCarrier('');
+                setSelectedEtaDate(undefined);
+              } else if (open && selectedShipment?.estimatedDelivery) {
+                setSelectedEtaDate(new Date(selectedShipment.estimatedDelivery));
               }
             }}
           >
@@ -1304,6 +1310,55 @@ export default function InternationalTransit() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Estimated Delivery Date with countdown */}
+                  <div className="space-y-2">
+                    <Label htmlFor="estimatedDelivery">{t('estimatedDelivery')}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal h-10"
+                          data-testid="button-eta-date"
+                        >
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          {selectedEtaDate ? (
+                            <span className="flex items-center gap-2">
+                              <span>{format(selectedEtaDate, 'MMM dd, yyyy')}</span>
+                              {(() => {
+                                const days = differenceInDays(selectedEtaDate, new Date());
+                                if (days < 0) {
+                                  return <Badge variant="destructive" className="text-xs">{Math.abs(days)} {t('daysOverdue')}</Badge>;
+                                } else if (days === 0) {
+                                  return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">{t('today')}</Badge>;
+                                } else if (days <= 7) {
+                                  return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">{days} {t('daysRemaining')}</Badge>;
+                                } else if (days <= 30) {
+                                  const weeks = Math.ceil(days / 7);
+                                  return <Badge variant="secondary" className="text-xs">{weeks} {weeks === 1 ? t('weekRemaining') : t('weeksRemaining')}</Badge>;
+                                } else {
+                                  const months = Math.ceil(days / 30);
+                                  return <Badge variant="secondary" className="text-xs">{months} {months === 1 ? t('monthRemaining') : t('monthsRemaining')}</Badge>;
+                                }
+                              })()}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">{t('selectEtaDate')}</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <DayPicker
+                          mode="single"
+                          selected={selectedEtaDate}
+                          onSelect={setSelectedEtaDate}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          className="p-3"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <input type="hidden" name="estimatedDelivery" value={selectedEtaDate ? selectedEtaDate.toISOString() : ''} />
                   </div>
 
                   {/* End Carrier - Dropdown with EasyPost carrier codes */}
@@ -1601,6 +1656,7 @@ export default function InternationalTransit() {
                   setIsShipmentFormOpen(false);
                   setSelectedShipment(null);
                   setSelectedPendingShipment(null);
+                  setSelectedEtaDate(undefined);
                 }}>
                   {t('cancel')}
                 </Button>
@@ -2147,6 +2203,7 @@ export default function InternationalTransit() {
                                 e.stopPropagation();
                                 setSelectedShipment(shipment);
                                 setDetectedEndCarrier('');
+                                setSelectedEtaDate(shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery) : undefined);
                                 setIsShipmentFormOpen(true);
                               }}>
                                 <Edit className="h-4 w-4 mr-2" />
