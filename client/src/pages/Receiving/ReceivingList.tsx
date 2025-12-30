@@ -2808,11 +2808,11 @@ function QuickStorageSheet({
       return { previousStorage, previousCompleted };
     },
     onSuccess: () => {
-      // Refetch in background to get accurate server data after async processing
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      }, 3000);
+      // Immediately invalidate storage query to ensure fresh data when navigating back
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/storage'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
     },
     onError: (error, _, context) => {
       // Rollback to previous state if mutation fails
