@@ -2143,6 +2143,7 @@ router.post("/purchases/unpack", async (req, res) => {
         orderNumber: `PO-${purchase.id.substring(0, 8).toUpperCase()}`, // Short PO ID for display
         quantity: item.quantity,
         unitPrice: effectiveUnitPrice.toString(), // Use calculated price if item has no individual price
+        paymentCurrency: purchase.paymentCurrency || purchase.purchaseCurrency || 'USD', // Copy currency from PO for landed cost calculation
         weight: item.weight || '0',
         dimensions: item.dimensions ? JSON.stringify(item.dimensions) : null,
         trackingNumber: item.trackingNumber || purchase.trackingNumber,
@@ -2160,6 +2161,7 @@ router.post("/purchases/unpack", async (req, res) => {
           // COMPLETE item data preservation
           originalItemId: item.id,
           sku: item.sku,
+          barcode: item.barcode, // Preserve barcode for variant linking
           name: item.name,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -8565,17 +8567,39 @@ router.post("/receipts", async (req, res) => {
         }
       }
       
+      // For custom items that came from purchase orders, extract data from orderItems if available
+      let warehouseLocation = (item as any).warehouseLocation || null;
+      let barcode = (item as any).barcode || null;
+      
+      if (item.itemType === 'custom' && (item as any).orderItems) {
+        const orderItems = typeof (item as any).orderItems === 'string' 
+          ? JSON.parse((item as any).orderItems) 
+          : (item as any).orderItems;
+        
+        if (Array.isArray(orderItems) && orderItems.length > 0) {
+          // Extract warehouseLocation and barcode from the first order item (original purchase item data)
+          const firstOrderItem = orderItems[0];
+          if (!warehouseLocation && firstOrderItem.warehouseLocation) {
+            warehouseLocation = firstOrderItem.warehouseLocation;
+          }
+          if (!barcode && firstOrderItem.barcode) {
+            barcode = firstOrderItem.barcode;
+          }
+        }
+      }
+      
       return {
         receiptId: receipt.id,
         itemId: item.id,
         itemType: item.itemType,
         productId: (item as any).productId || null, // Link to products table if available
         sku: (item as any).sku || null, // Store SKU for easier product matching
+        barcode, // Copy barcode from source item
         expectedQuantity: item.quantity || 1,
         receivedQuantity: 0, // Will be updated during verification
         damagedQuantity: 0,
         missingQuantity: 0,
-        warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
+        warehouseLocation, // Copy warehouseLocation from both purchase AND custom items
         condition: 'pending',
         // Copy variant allocations from purchase item for variant-aware receiving
         variantAllocations,
