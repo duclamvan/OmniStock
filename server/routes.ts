@@ -5986,10 +5986,23 @@ Important:
       // Get allocated quantities to calculate availability for each variant (same as parent products)
       const allocatedMap = await storage.getAllocatedQuantities();
       
-      // Enrich variants with allocation info (same as parent products)
+      // Enrich variants with allocation info - use SKU first, then variantId as fallback
       const enrichedVariants = variants.map((variant: any) => {
-        const variantKey = `product:${variant.productId}:variant:${variant.id}`;
-        const allocated = allocatedMap.get(variantKey) || 0;
+        let allocated = 0;
+        
+        // Primary: Look up by SKU (most reliable identifier) - check if key EXISTS
+        if (variant.sku) {
+          const skuKey = `sku:${variant.sku}`;
+          if (allocatedMap.has(skuKey)) {
+            allocated = allocatedMap.get(skuKey) || 0;
+          }
+        }
+        // Fallback: Look up by variantId if SKU key didn't exist
+        if (allocated === 0 && (!variant.sku || !allocatedMap.has(`sku:${variant.sku}`))) {
+          const variantKey = `product:${variant.productId}:variant:${variant.id}`;
+          allocated = allocatedMap.get(variantKey) || 0;
+        }
+        
         const onHand = variant.quantity || 0;
         const available = Math.max(0, onHand - allocated);
         

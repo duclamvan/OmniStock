@@ -6592,7 +6592,8 @@ export class DatabaseStorage implements IStorage {
    * Get allocated quantities from unfulfilled orders.
    * Returns a map where keys are in format:
    * - "product:{productId}" for regular products
-   * - "product:{productId}:variant:{variantId}" for variants
+   * - "sku:{sku}" for variants (primary lookup by SKU)
+   * - "product:{productId}:variant:{variantId}" for variants (fallback lookup by variantId)
    * - "virtual:{virtualSkuId}" for virtual SKUs
    * Values are total quantities allocated to unfulfilled orders.
    */
@@ -6612,10 +6613,12 @@ export class DatabaseStorage implements IStorage {
 
       // Query order items from unfulfilled, non-cancelled, non-archived orders
       // Include pickedQuantity to calculate UNPICKED portion (what's truly "allocated" vs already deducted)
+      // Include variantSku for SKU-based allocation tracking
       const allocatedItems = await db
         .select({
           productId: orderItems.productId,
           variantId: orderItems.variantId,
+          variantSku: orderItems.variantSku,
           isVirtual: orderItems.isVirtual,
           masterProductId: orderItems.masterProductId,
           inventoryDeductionRatio: orderItems.inventoryDeductionRatio,
@@ -6660,10 +6663,18 @@ export class DatabaseStorage implements IStorage {
             allocatedMap.set(masterKey, (allocatedMap.get(masterKey) || 0) + masterQty);
           }
         }
-        // Handle variants
-        else if (item.productId && item.variantId) {
-          const key = `product:${item.productId}:variant:${item.variantId}`;
-          allocatedMap.set(key, (allocatedMap.get(key) || 0) + unpickedQty);
+        // Handle variants - use SKU as primary key, variantId as fallback
+        else if (item.productId && (item.variantSku || item.variantId)) {
+          // Primary: Track by SKU (most reliable identifier)
+          if (item.variantSku) {
+            const skuKey = `sku:${item.variantSku}`;
+            allocatedMap.set(skuKey, (allocatedMap.get(skuKey) || 0) + unpickedQty);
+          }
+          // Also track by variantId for backwards compatibility
+          if (item.variantId) {
+            const variantKey = `product:${item.productId}:variant:${item.variantId}`;
+            allocatedMap.set(variantKey, (allocatedMap.get(variantKey) || 0) + unpickedQty);
+          }
         }
         // Handle regular products
         else if (item.productId) {
