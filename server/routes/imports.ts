@@ -1211,9 +1211,10 @@ async function finalizeReceivingInventory(
             }
           }
           
-          // Extract variant SKU from the allocation (support both variantSku and sku fields)
+          // Extract variant SKU and barcode from the allocation (support both variantSku and sku fields)
           const vaExt2 = va as any;
           const variantSku = vaExt2.variantSku || vaExt2.sku || null;
+          const variantBarcode = vaExt2.barcode || null;
           
           if (variantSku && targetProductId) {
             // Primary lookup: by variant SKU
@@ -1255,10 +1256,10 @@ async function finalizeReceivingInventory(
                 ));
               
               if (existingByNameNoSku) {
-                // Found existing variant by name with no SKU - update it with the new SKU
+                // Found existing variant by name with no SKU - update it with the new SKU and barcode
                 await tx
                   .update(productVariants)
-                  .set({ sku: variantSku, updatedAt: new Date() })
+                  .set({ sku: variantSku, barcode: variantBarcode || undefined, updatedAt: new Date() })
                   .where(eq(productVariants.id, existingByNameNoSku.id));
                 variant = existingByNameNoSku;
                 console.log(`[Variant] Found existing variant by name "${va.variantName}" (no SKU), assigned SKU "${variantSku}"`);
@@ -1270,6 +1271,7 @@ async function finalizeReceivingInventory(
                     productId: targetProductId,
                     name: va.variantName || variantSku,
                     sku: variantSku,
+                    barcode: variantBarcode,
                     quantity: 0,
                     createdAt: new Date(),
                     updatedAt: new Date()
@@ -1314,6 +1316,7 @@ async function finalizeReceivingInventory(
                   productId: targetProductId,
                   name: va.variantName,
                   sku: null,
+                  barcode: variantBarcode,
                   quantity: 0,
                   createdAt: new Date(),
                   updatedAt: new Date()
@@ -1456,7 +1459,7 @@ async function finalizeReceivingInventory(
           // Get location code from receipt item (warehouseLocation field)
           const variantLocationCode = item.warehouseLocation || null;
           
-          // Update variant quantity, cost fields, AND location code
+          // Update variant quantity, cost fields, location code, AND barcode
           // Note: productVariants schema only has EUR, USD, CZK - not VND/CNY
           // CRITICAL: Use variant.id (actual DB ID), NOT va.variantId (which may be temp-* ID)
           await tx
@@ -1467,6 +1470,7 @@ async function finalizeReceivingInventory(
               importCostUsd: avgCostUsd > 0 ? avgCostUsd.toFixed(2) : null,
               importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
               locationCode: variantLocationCode || undefined, // Set location if available
+              barcode: variantBarcode || undefined, // Set barcode if available
               updatedAt: new Date()
             })
             .where(eq(productVariants.id, variant.id));
