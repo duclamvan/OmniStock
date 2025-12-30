@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, MoreHorizontal, Upload } from "lucide-react";
+import { Plus, Trash2, MoreHorizontal, Upload, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -49,6 +50,7 @@ interface ProductVariantsProps {
 export default function ProductVariants({ productId }: ProductVariantsProps) {
   const { toast } = useToast();
   const { t } = useTranslation('common');
+  const [isOpen, setIsOpen] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [seriesInput, setSeriesInput] = useState("");
@@ -248,27 +250,33 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{t('common:productVariants')}</CardTitle>
-        <div className="flex gap-2">
-          {selectedVariants.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteSelected}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t('common:deleteSelected')} ({selectedVariants.length})
-            </Button>
-          )}
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {t('common:addVariant')}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80" data-testid="toggle-variants-section">
+              {isOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              <CardTitle>{t('common:productVariants')} ({variants.length})</CardTitle>
+            </div>
+          </CollapsibleTrigger>
+          <div className="flex gap-2">
+            {selectedVariants.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('common:deleteSelected')} ({selectedVariants.length})
               </Button>
-            </DialogTrigger>
+            )}
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('common:addVariant')}
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>{t('common:addProductVariants')}</DialogTitle>
@@ -397,13 +405,14 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent>
-        {variants.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p>{t('common:noVariantsYet')}</p>
-          </div>
-        ) : (
-          <Table>
+      <CollapsibleContent>
+        <CardContent>
+          {variants.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>{t('common:noVariantsYet')}</p>
+            </div>
+          ) : (
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">
@@ -492,8 +501,10 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
               ))}
             </TableBody>
           </Table>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
