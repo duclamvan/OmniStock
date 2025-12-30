@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -445,6 +445,14 @@ export default function ImportKanbanDashboard() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Refresh all data when page loads
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+  }, []);
 
   // Fetch data
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
