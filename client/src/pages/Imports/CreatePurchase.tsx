@@ -2408,24 +2408,22 @@ export default function CreatePurchase() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between h-5">
                       <Label htmlFor="total-paid" className="text-xs text-muted-foreground">{t('totalPaid')}</Label>
-                      {totalPaidManuallySet && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 text-xs text-muted-foreground hover:text-foreground px-1"
-                          onClick={() => {
-                            setTotalPaidManuallySet(false);
-                            setTotalPaid(parseFloat(grandTotalInPaymentCurrency.toFixed(2)));
-                          }}
-                          title={t('resetToAutoCalculated')}
-                        >
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          {t('autoReset')}
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={cn("h-5 text-xs text-muted-foreground hover:text-foreground px-1", !totalPaidManuallySet && "hidden")}
+                        onClick={() => {
+                          setTotalPaidManuallySet(false);
+                          setTotalPaid(parseFloat(grandTotalInPaymentCurrency.toFixed(2)));
+                        }}
+                        title={t('resetToAutoCalculated')}
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        {t('autoReset')}
+                      </Button>
                     </div>
                     <div className="relative">
                       <DecimalInput
