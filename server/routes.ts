@@ -6351,10 +6351,10 @@ Important:
       const existingMap = new Map(existingLocations.map(loc => [`${loc.locationCode}:${loc.variantId || ''}`, loc]));
       
       // Build SKU-to-variantId lookup for this product's variants
-      const productVariants = await storage.getProductVariants(productId);
+      const fetchedVariants = await storage.getProductVariants(productId);
       const skuToVariantId = new Map<string, string>();
-      if (productVariants && productVariants.length > 0) {
-        for (const v of productVariants) {
+      if (fetchedVariants && fetchedVariants.length > 0) {
+        for (const v of fetchedVariants) {
           if (v.sku) skuToVariantId.set(v.sku, v.id);
           if (v.name) skuToVariantId.set(v.name, v.id); // Also map by name for fallback
         }
