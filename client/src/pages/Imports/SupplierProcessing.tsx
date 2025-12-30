@@ -219,6 +219,12 @@ export default function SupplierProcessing() {
         queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       }
       
+      // Invalidate pending shipments when moving to shipped (for International Transit page)
+      if (variables.status === 'shipped') {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      }
+      
       const purchase = purchases.find(p => p.id === variables.purchaseId);
       if (variables.status === 'delivered' && purchase) {
         if (purchase.consolidation === 'Yes') {
@@ -227,6 +233,14 @@ export default function SupplierProcessing() {
         } else {
           toast({ title: t('success'), description: t('shipmentAutoCreated') });
           setLocation('/receiving');
+        }
+      } else if (variables.status === 'shipped' && purchase) {
+        // When moved to shipped (in transit), redirect to International Transit pending shipments
+        if (purchase.consolidation !== 'Yes') {
+          toast({ title: t('success'), description: t('movedToInternationalTransit') });
+          setLocation('/international-transit');
+        } else {
+          toast({ title: t('success'), description: t('statusUpdatedSuccessfully') });
         }
       } else if (variables.status === 'at_warehouse') {
         toast({ title: t('success'), description: t('statusUpdatedMovedToConsolidation') });

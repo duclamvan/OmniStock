@@ -554,6 +554,7 @@ const imports = {
   // SupplierProcessing - Actions & Toast
   itemsMovedToConsolidation: 'Items moved to Consolidation - Incoming Orders',
   shipmentAutoCreated: 'Shipment auto-created and moved to Receiving',
+  movedToInternationalTransit: 'Moved to International Transit - add tracking details',
   statusUpdatedMovedToConsolidation: 'Status updated - moved to Consolidation',
   statusUpdatedSuccessfully: 'Status updated successfully',
   statusUpdateFailed: 'Failed to update status',

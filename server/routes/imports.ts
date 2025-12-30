@@ -3249,6 +3249,63 @@ router.patch("/purchases/:id/status", async (req, res) => {
       .where(eq(importPurchases.id, purchaseId))
       .returning();
     
+    // AUTO-CREATE PENDING SHIPMENT: If status changed to 'shipped' and consolidation is 'No'
+    // This creates a consolidation entry that appears in International Transit pending shipments
+    // Uses purchase item linkage (itemType: 'purchase') to maintain cost finalization connection
+    if (status === 'shipped' && currentPurchase.consolidation === 'No') {
+      // Check if a consolidation already exists for this purchase by looking for linked purchase items
+      // This is more reliable than searching notes with partial purchaseId
+      const existingLinks = await db
+        .select({ consolidationId: consolidationItems.consolidationId })
+        .from(consolidationItems)
+        .innerJoin(purchaseItems, eq(consolidationItems.itemId, purchaseItems.id))
+        .where(and(
+          eq(consolidationItems.itemType, 'purchase'),
+          eq(purchaseItems.purchaseId, purchaseId)
+        ))
+        .limit(1);
+      
+      if (existingLinks.length === 0) {
+        // Get purchase items
+        const poItems = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchaseId));
+        
+        // Calculate totals: weight × quantity (matches existing consolidation conventions)
+        const totalWeight = poItems.reduce((sum, item) => sum + (parseFloat(item.weight) || 0) * item.quantity, 0);
+        const totalUnits = poItems.reduce((sum, item) => sum + item.quantity, 0);
+        
+        // Wrap in transaction to ensure atomicity - either both consolidation and links persist, or neither
+        await db.transaction(async (tx) => {
+          // Create a consolidation with status 'ready' so it appears in pending shipments
+          const [newConsolidation] = await tx.insert(consolidations).values({
+            name: `PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
+            location: currentPurchase.location || 'Supplier',
+            shippingMethod: 'general_air_ddp',
+            warehouse: currentPurchase.location || 'Supplier Warehouse',
+            notes: `Auto-created from Purchase Order PO #${purchaseId.substring(0, 8).toUpperCase()} - ${currentPurchase.supplier}`,
+            targetWeight: totalWeight.toString(),
+            maxItems: totalUnits,
+            status: 'ready',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }).returning();
+          
+          // Link purchase items directly to consolidation using itemType: 'purchase'
+          // This maintains the connection for cost finalization and status propagation
+          for (const item of poItems) {
+            await tx.insert(consolidationItems).values({
+              consolidationId: newConsolidation.id,
+              itemId: item.id,
+              itemType: 'purchase',
+              createdAt: new Date()
+            });
+          }
+        });
+      }
+    }
+    
     // AUTO-CREATE SHIPMENT: If status changed to 'delivered' and consolidation is 'No'
     if (status === 'delivered' && currentPurchase.consolidation === 'No') {
       // Check if a shipment already exists for this purchase
@@ -4392,21 +4449,50 @@ router.get("/shipments/pending", async (req, res) => {
           .from(shipments)
           .where(eq(shipments.consolidationId, consolidation.id));
         
-        // Get items for this consolidation
-        const items = await db
-          .select({
-            id: customItems.id,
-            name: customItems.name,
-            quantity: customItems.quantity,
-            weight: customItems.weight,
-            unitPrice: customItems.unitPrice,
-            imageUrl: customItems.imageUrl,
-            sku: customItems.sku,
-            dimensions: customItems.dimensions
-          })
+        // Get items for this consolidation (supports both custom items and purchase items)
+        // First get consolidation items with their types
+        const consolidationItemsData = await db
+          .select()
           .from(consolidationItems)
-          .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
           .where(eq(consolidationItems.consolidationId, consolidation.id));
+        
+        // Fetch items from appropriate tables based on itemType
+        const items: any[] = [];
+        for (const ci of consolidationItemsData) {
+          if (ci.itemType === 'custom') {
+            const [customItem] = await db
+              .select({
+                id: customItems.id,
+                name: customItems.name,
+                quantity: customItems.quantity,
+                weight: customItems.weight,
+                unitPrice: customItems.unitPrice,
+                imageUrl: customItems.imageUrl,
+                sku: customItems.sku,
+                dimensions: customItems.dimensions
+              })
+              .from(customItems)
+              .where(eq(customItems.id, ci.itemId));
+            if (customItem) items.push(customItem);
+          } else if (ci.itemType === 'purchase') {
+            const [purchaseItem] = await db
+              .select({
+                id: purchaseItems.id,
+                name: purchaseItems.name,
+                quantity: purchaseItems.quantity,
+                weight: purchaseItems.weight,
+                unitPrice: purchaseItems.unitPrice,
+                sku: purchaseItems.sku,
+                dimensions: purchaseItems.dimensions
+              })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, ci.itemId));
+            if (purchaseItem) {
+              // Add null imageUrl for UI compatibility (ternary check)
+              items.push({ ...purchaseItem, imageUrl: null, isPurchaseItem: true });
+            }
+          }
+        }
         
         // Include if:
         // 1. No shipment exists, OR

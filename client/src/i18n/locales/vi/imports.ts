@@ -560,6 +560,7 @@ const imports = {
   // SupplierProcessing - Actions & Toast
   itemsMovedToConsolidation: 'Đã chuyển sản phẩm sang Tổng hợp - Đơn đến',
   shipmentAutoCreated: 'Đã tự động tạo lô hàng và chuyển sang Nhận hàng',
+  movedToInternationalTransit: 'Đã chuyển sang Vận chuyển quốc tế - thêm thông tin theo dõi',
   statusUpdatedMovedToConsolidation: 'Đã cập nhật trạng thái - chuyển sang Tổng hợp',
   statusUpdatedSuccessfully: 'Đã cập nhật trạng thái thành công',
   statusUpdateFailed: 'Không thể cập nhật trạng thái',
