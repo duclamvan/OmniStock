@@ -3265,6 +3265,11 @@ router.patch("/purchases/:id/status", async (req, res) => {
         ))
         .limit(1);
       
+      // If consolidation already exists, return its ID for the shipment modal
+      if (existingLinks.length > 0) {
+        return res.json({ ...updated, consolidationId: existingLinks[0].consolidationId });
+      }
+      
       if (existingLinks.length === 0) {
         // Get purchase items
         const poItems = await db
