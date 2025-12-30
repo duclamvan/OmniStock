@@ -2469,7 +2469,17 @@ router.post("/purchases", async (req, res) => {
       // ================================================================
       // AUTO-CREATE VARIANTS: Create variants in productVariants table
       // when purchase items have variant allocations and a product link
+      // OPTIMIZED: Bulk operations instead of per-variant queries
       // ================================================================
+      
+      // Collect all variant allocations from all items
+      const allAllocations: Array<{
+        productId: string;
+        sku: string | null;
+        name: string | null;
+        unitPrice: number | null;
+      }> = [];
+      
       for (const item of items) {
         if (!item.productId || !item.variantAllocations) continue;
         
@@ -2477,73 +2487,105 @@ router.post("/purchases", async (req, res) => {
           ? item.variantAllocations 
           : (typeof item.variantAllocations === 'string' ? JSON.parse(item.variantAllocations) : []);
         
-        if (allocations.length === 0) continue;
-        
-        console.log(`[Purchase Create] Creating ${allocations.length} variants for product ${item.productId}`);
-        
         for (const va of allocations) {
           const variantSku = va.sku || va.variantSku || null;
           const variantName = va.variantName || va.name || variantSku || null;
           
-          if (!variantSku && !variantName) {
-            console.warn(`[Purchase Create] Skipping variant with no SKU or name`);
-            continue;
+          if (variantSku || variantName) {
+            allAllocations.push({
+              productId: item.productId,
+              sku: variantSku,
+              name: variantName,
+              unitPrice: va.unitPrice ? parseFloat(va.unitPrice) : null
+            });
           }
-          
-          // Check if variant already exists by SKU
-          let existingVariant = null;
-          if (variantSku) {
-            const [found] = await db
-              .select({ id: productVariants.id })
-              .from(productVariants)
-              .where(and(
-                eq(productVariants.productId, item.productId),
-                eq(productVariants.sku, variantSku)
-              ));
-            existingVariant = found;
+        }
+      }
+      
+      if (allAllocations.length > 0) {
+        console.log(`[Purchase Create] Processing ${allAllocations.length} variants in bulk`);
+        
+        // Get unique product IDs
+        const productIds = Array.from(new Set(allAllocations.map(a => a.productId)));
+        
+        // Fetch ALL existing variants for these products in ONE query
+        const existingVariants = await db
+          .select({ id: productVariants.id, productId: productVariants.productId, sku: productVariants.sku, name: productVariants.name })
+          .from(productVariants)
+          .where(inArray(productVariants.productId, productIds));
+        
+        // Create lookup maps for fast matching
+        const variantBySkuKey = new Map<string, { id: string; sku: string | null }>();
+        const variantByNameKey = new Map<string, { id: string; name: string | null }>();
+        
+        for (const v of existingVariants) {
+          if (v.sku) {
+            variantBySkuKey.set(`${v.productId}:${v.sku}`, { id: v.id, sku: v.sku });
           }
-          
-          // If not found by SKU, check by name
-          if (!existingVariant && variantName) {
-            const [found] = await db
-              .select({ id: productVariants.id })
-              .from(productVariants)
-              .where(and(
-                eq(productVariants.productId, item.productId),
-                eq(productVariants.name, variantName)
-              ));
-            existingVariant = found;
+          if (v.name) {
+            variantByNameKey.set(`${v.productId}:${v.name}`, { id: v.id, name: v.name });
           }
+        }
+        
+        // Separate allocations into new variants and updates
+        const variantsToCreate: Array<any> = [];
+        const variantsToUpdate: Array<{ id: string; sku: string }> = [];
+        const seenKeys = new Set<string>();
+        
+        for (const alloc of allAllocations) {
+          // Check if already exists by SKU
+          const skuKey = alloc.sku ? `${alloc.productId}:${alloc.sku}` : null;
+          const nameKey = alloc.name ? `${alloc.productId}:${alloc.name}` : null;
           
-          if (existingVariant) {
-            // Update variant SKU if it was found by name but didn't have a SKU
-            if (variantSku) {
-              await db
-                .update(productVariants)
-                .set({ sku: variantSku, updatedAt: new Date() })
-                .where(eq(productVariants.id, existingVariant.id));
+          // Deduplicate within this batch
+          const uniqueKey = skuKey || nameKey || '';
+          if (seenKeys.has(uniqueKey)) continue;
+          seenKeys.add(uniqueKey);
+          
+          const existingBySku = skuKey ? variantBySkuKey.get(skuKey) : null;
+          const existingByName = nameKey ? variantByNameKey.get(nameKey) : null;
+          
+          if (existingBySku) {
+            // Already exists, no action needed
+          } else if (existingByName) {
+            // Found by name, update SKU if we have one
+            if (alloc.sku && !existingByName.name) {
+              variantsToUpdate.push({ id: existingByName.id, sku: alloc.sku });
             }
-            console.log(`[Purchase Create] Variant already exists: ${variantName || variantSku}`);
           } else {
-            // Create new variant
-            const [newVariant] = await db
-              .insert(productVariants)
-              .values({
-                productId: item.productId,
-                name: variantName || variantSku,
-                sku: variantSku,
-                quantity: 0, // Will be updated during receiving
-                // Copy unit price from allocation if provided (in purchase currency)
-                importCostUsd: va.unitPrice ? (parseFloat(va.unitPrice) * (1 / (req.body.exchangeRates?.USD || 1))).toString() : null,
-                importCostEur: va.unitPrice ? (parseFloat(va.unitPrice) * (1 / (req.body.exchangeRates?.EUR || 1))).toString() : null,
-                importCostCzk: va.unitPrice ? (parseFloat(va.unitPrice) * (1 / (req.body.exchangeRates?.CZK || 1))).toString() : null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              })
-              .returning({ id: productVariants.id });
+            // New variant, add to bulk insert list
+            variantsToCreate.push({
+              productId: alloc.productId,
+              name: alloc.name || alloc.sku,
+              sku: alloc.sku,
+              quantity: 0,
+              importCostUsd: alloc.unitPrice ? (alloc.unitPrice * (1 / (req.body.exchangeRates?.USD || 1))).toString() : null,
+              importCostEur: alloc.unitPrice ? (alloc.unitPrice * (1 / (req.body.exchangeRates?.EUR || 1))).toString() : null,
+              importCostCzk: alloc.unitPrice ? (alloc.unitPrice * (1 / (req.body.exchangeRates?.CZK || 1))).toString() : null,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
             
-            console.log(`[Purchase Create] Created new variant: ${variantName || variantSku} (${newVariant.id})`);
+            // Add to lookup to prevent duplicates within this batch
+            if (skuKey) variantBySkuKey.set(skuKey, { id: 'pending', sku: alloc.sku });
+            if (nameKey) variantByNameKey.set(nameKey, { id: 'pending', name: alloc.name });
           }
+        }
+        
+        // Bulk insert new variants (one query for all)
+        if (variantsToCreate.length > 0) {
+          await db.insert(productVariants).values(variantsToCreate);
+          console.log(`[Purchase Create] Bulk created ${variantsToCreate.length} new variants`);
+        }
+        
+        // Bulk update existing variants that need SKU updates
+        if (variantsToUpdate.length > 0) {
+          for (const update of variantsToUpdate) {
+            await db.update(productVariants)
+              .set({ sku: update.sku, updatedAt: new Date() })
+              .where(eq(productVariants.id, update.id));
+          }
+          console.log(`[Purchase Create] Updated ${variantsToUpdate.length} existing variants with SKUs`);
         }
       }
       
