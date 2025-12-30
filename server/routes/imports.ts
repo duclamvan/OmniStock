@@ -29,7 +29,7 @@ import {
   orders,
   orderItems
 } from "@shared/schema";
-import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-orm";
+import { eq, desc, sql, and, like, ilike, or, isNull, inArray, ne, gte } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 import { LandingCostService } from "../services/landingCostService";
@@ -4768,12 +4768,12 @@ router.get("/shipments", async (req, res) => {
               .from(purchaseItems)
               .where(eq(purchaseItems.purchaseId, purchaseId));
             
-            // If not found by exact match, search by ID prefix
+            // If not found by exact match, search by ID prefix (case-insensitive)
             if (purchaseItemsList.length === 0) {
               const allPurchases = await db
                 .select({ id: importPurchases.id })
                 .from(importPurchases)
-                .where(like(importPurchases.id, `${purchaseId}%`))
+                .where(ilike(importPurchases.id, `${purchaseId}%`))
                 .limit(1);
               
               if (allPurchases.length > 0) {
