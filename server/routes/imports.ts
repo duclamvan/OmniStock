@@ -6802,6 +6802,52 @@ router.delete("/shipments/:id", async (req, res) => {
     // Delete shipment items
     await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, shipmentId));
     
+    // ================================================================
+    // CLEAN UP ORPHANED CONSOLIDATION
+    // When a shipment is deleted, also delete the linked consolidation
+    // and reset the status of items that were in that consolidation
+    // ================================================================
+    if (shipment.consolidationId) {
+      const consolidationId = shipment.consolidationId;
+      console.log(`[Delete Shipment] Cleaning up consolidation ${consolidationId}`);
+      
+      // Get all items in the consolidation to reset their status
+      const consolidationItemsList = await db
+        .select()
+        .from(consolidationItems)
+        .where(eq(consolidationItems.consolidationId, consolidationId));
+      
+      // Reset status of purchase items back to available
+      for (const ci of consolidationItemsList) {
+        if (ci.itemType === 'purchase') {
+          await db
+            .update(purchaseItems)
+            .set({ 
+              status: 'ordered',
+              consolidationId: null,
+              updatedAt: new Date() 
+            })
+            .where(eq(purchaseItems.id, ci.itemId));
+        } else if (ci.itemType === 'custom') {
+          await db
+            .update(customItems)
+            .set({ 
+              status: 'available',
+              updatedAt: new Date() 
+            })
+            .where(eq(customItems.id, ci.itemId));
+        }
+      }
+      
+      // Delete consolidation items
+      await db.delete(consolidationItems).where(eq(consolidationItems.consolidationId, consolidationId));
+      
+      // Delete the consolidation itself
+      await db.delete(consolidations).where(eq(consolidations.id, consolidationId));
+      
+      console.log(`[Delete Shipment] Deleted consolidation ${consolidationId} and reset ${consolidationItemsList.length} items`);
+    }
+    
     // Delete the shipment itself
     await db.delete(shipments).where(eq(shipments.id, shipmentId));
     
