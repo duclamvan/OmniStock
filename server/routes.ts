@@ -6377,17 +6377,26 @@ Important:
         const quantity = locData.quantity;
         totalQuantity += quantity;
         
-        // Resolve SKU to actual variantId for proper matching
-        let resolvedVariantId = locData.variantId;
-        if (locData.sku && !resolvedVariantId) {
+        // Resolve SKU/variantName to actual variantId from product_variants table
+        // ALWAYS prefer SKU lookup over incoming variantId (which may be from shipment allocations, not DB)
+        let resolvedVariantId: string | undefined = undefined;
+        
+        // First priority: Look up by SKU
+        if (locData.sku && skuToVariantId.has(locData.sku)) {
           resolvedVariantId = skuToVariantId.get(locData.sku);
         }
-        if (locData.variantName && !resolvedVariantId) {
+        // Second priority: Look up by variant name
+        if (!resolvedVariantId && locData.variantName && skuToVariantId.has(locData.variantName)) {
           resolvedVariantId = skuToVariantId.get(locData.variantName);
         }
-        // Skip temp-* IDs for resolution
-        if (resolvedVariantId && String(resolvedVariantId).startsWith('temp-')) {
-          resolvedVariantId = skuToVariantId.get(locData.sku || '') || skuToVariantId.get(locData.variantName || '');
+        // Last resort: Use incoming variantId ONLY if it exists in our fetched variants
+        if (!resolvedVariantId && locData.variantId) {
+          const variantExists = fetchedVariants?.some((v: any) => v.id === locData.variantId);
+          if (variantExists) {
+            resolvedVariantId = locData.variantId;
+          } else {
+            console.log(`[locations/batch] Rejected invalid variantId=${locData.variantId} for SKU=${locData.sku}, variantName=${locData.variantName} (not in product_variants)`);
+          }
         }
         
         // Use resolved variantId for matching existing locations
@@ -6417,10 +6426,8 @@ Important:
           existingMap.set(aggregateKey, { ...existing, quantity: newQuantity, notes: newNotes });
           updatedCount++;
         } else {
-          // Create new location
-          const validVariantId = resolvedVariantId && !String(resolvedVariantId).startsWith('temp-') 
-            ? resolvedVariantId 
-            : undefined;
+          // Create new location - resolvedVariantId is already validated to exist in product_variants
+          const validVariantId = resolvedVariantId;
           
           locationsToCreate.push({
             productId,
