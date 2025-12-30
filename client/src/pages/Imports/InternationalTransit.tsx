@@ -183,7 +183,41 @@ export default function InternationalTransit() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
-  const [allocationMethod, setAllocationMethod] = useState<'AUTO' | 'UNITS' | 'WEIGHT' | 'VALUE' | 'HYBRID'>('AUTO');
+  
+  // Fetch landing cost preview when viewing shipment details (uses proper array query key)
+  const shipmentIdForPreview = viewShipmentDetails?.id;
+  const { data: landingCostPreview, isLoading: isLoadingLandingCost } = useQuery<{
+    items: Array<{
+      name: string;
+      quantity: number;
+      weight: number;
+      unitPrice: number;
+      itemCurrency: string;
+      freightAllocation: number;
+      dutyAllocation: number;
+      brokerageAllocation: number;
+      totalAllocation: number;
+      landingCostPerUnit: number;
+    }>;
+    totalCosts: {
+      freight: number;
+      duty: number;
+      brokerage: number;
+      insurance: number;
+      packaging: number;
+      other: number;
+    };
+    metrics: {
+      totalWeight: number;
+      totalUnits: number;
+      totalValue: number;
+    };
+    baseCurrency: string;
+  } | null>({
+    queryKey: ['/api/imports/shipments', shipmentIdForPreview, 'landing-cost-preview'],
+    enabled: !!shipmentIdForPreview,
+    staleTime: 30000,
+  });
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
@@ -2484,7 +2518,7 @@ export default function InternationalTransit() {
               autoMethod = 'HYBRID';
             }
             
-            const effectiveMethod = allocationMethod === 'AUTO' ? autoMethod : allocationMethod;
+            const effectiveMethod = autoMethod; // Always use auto-calculated method for fallback (server handles final allocation)
             
             // Function to calculate shipping cost per item based on allocation method
             const calculateShippingCost = (item: any) => {
@@ -2542,67 +2576,34 @@ export default function InternationalTransit() {
                   </div>
                 </div>
 
-                {/* Items Table with Pricing */}
-                {viewShipmentDetails.items && viewShipmentDetails.items.length > 0 && (
+                {/* Items Table with Pricing - Using Landing Cost API */}
+                {(landingCostPreview?.items || viewShipmentDetails.items)?.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-sm flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-primary" />
                         {t('itemPricingAndLandingCost')}
+                        {isLoadingLandingCost && (
+                          <span className="text-xs text-muted-foreground animate-pulse">({t('loading')}...)</span>
+                        )}
                       </h3>
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="allocation-method" className="text-xs text-muted-foreground">
-                          {t('allocationMethod')}:
-                        </Label>
-                        <Select value={allocationMethod} onValueChange={(value: any) => setAllocationMethod(value)}>
-                          <SelectTrigger id="allocation-method" className="h-8 w-[160px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AUTO">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-3 w-3 text-cyan-600" />
-                                <span className="font-semibold">{t('auto')}</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="UNITS">
-                              <div className="flex items-center gap-2">
-                                <Package className="h-3 w-3" />
-                                {t('byUnits')}
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="WEIGHT">
-                              <div className="flex items-center gap-2">
-                                <Target className="h-3 w-3" />
-                                {t('byWeight')}
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="VALUE">
-                              <div className="flex items-center gap-2">
-                                <TrendingUp className="h-3 w-3" />
-                                {t('byValue')}
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="HYBRID">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-3 w-3" />
-                                {t('hybrid')}
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {landingCostPreview?.items?.length ? t('serverCalculated') : t('estimated')}
+                      </Badge>
                     </div>
                     {/* Mobile Card View */}
                     <div className="md:hidden space-y-3">
-                      {viewShipmentDetails.items.map((item: any, index: number) => {
+                      {(landingCostPreview?.items?.length ? landingCostPreview.items : viewShipmentDetails.items || []).map((item: any, index: number) => {
                         const qty = item.quantity || 1;
                         const unitCost = parseFloat(item.unitPrice || 0);
-                        const itemShippingCost = calculateShippingCost(item);
-                        const shippingCostPerUnit = qty > 0 ? itemShippingCost / qty : 0;
-                        const landingCost = unitCost + shippingCostPerUnit;
-                        const landingCostEUR = convertCurrency(landingCost, currency as Currency, 'EUR');
-                        const landingCostCZK = convertCurrency(landingCost, currency as Currency, 'CZK');
+                        const hasServerData = landingCostPreview?.items?.length && item.landingCostPerUnit !== undefined;
+                        const landingCostPerUnit = hasServerData 
+                          ? item.landingCostPerUnit 
+                          : unitCost + (totalItems > 0 ? totalShipping / totalItems : 0);
+                        const freightPerUnit = hasServerData 
+                          ? (item.freightAllocation || 0) / qty 
+                          : (totalItems > 0 ? totalShipping / totalItems : 0);
+                        const landingCostCZK = convertCurrency(landingCostPerUnit || 0, 'EUR', 'CZK');
                         
                         return (
                           <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
@@ -2623,25 +2624,20 @@ export default function InternationalTransit() {
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
                                 <p className="text-muted-foreground">{t('unitCost')}</p>
-                                <p className="font-mono">{currency} {unitCost.toFixed(2)}</p>
+                                <p className="font-mono">€{unitCost.toFixed(2)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">{t('shippingPerUnit')}</p>
-                                <p className="font-mono text-blue-600">{currency} {shippingCostPerUnit.toFixed(2)}</p>
+                                <p className="font-mono text-blue-600">€{freightPerUnit.toFixed(2)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">{t('landingCost')}</p>
-                                <p className="font-mono font-semibold">{currency} {landingCost.toFixed(2)}</p>
+                                <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{landingCostPerUnit.toFixed(2)}</p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">{t('landingEUR')}</p>
-                                <p className="font-mono text-cyan-700 dark:text-cyan-400">€{landingCostEUR.toFixed(2)}</p>
+                                <p className="text-muted-foreground">{t('landingCZK')}</p>
+                                <p className="font-mono text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</p>
                               </div>
-                            </div>
-                            
-                            <div className="pt-2 border-t">
-                              <p className="text-xs text-muted-foreground">{t('landingCZK')}</p>
-                              <p className="font-mono text-sm text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</p>
                             </div>
                           </div>
                         );
@@ -2650,55 +2646,42 @@ export default function InternationalTransit() {
                       {/* Mobile Totals Card */}
                       <div className="border-2 border-primary/20 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/30">
                         <p className="font-semibold mb-3">{t('totals')}</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <p className="text-muted-foreground">{t('totalCost')}</p>
-                            <p className="font-mono font-semibold">
-                              {currency} {viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                              ).toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">{t('totalShipping')}</p>
-                            <p className="font-mono font-semibold text-blue-600">
-                              {currency} {totalShipping.toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">{t('totalLanding')}</p>
-                            <p className="font-mono font-semibold">
-                              {currency} {(() => {
-                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                                ) + totalShipping;
-                                return totalLanding.toFixed(2);
-                              })()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">{t('landingEUR')}</p>
-                            <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">
-                              €{(() => {
-                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                                ) + totalShipping;
-                                return convertCurrency(totalLanding, currency as Currency, 'EUR').toFixed(2);
-                              })()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-2 pt-2 border-t">
-                          <p className="text-xs text-muted-foreground">{t('totalLandingCZK')}</p>
-                          <p className="font-mono text-base font-semibold text-cyan-700 dark:text-cyan-400">
-                            {(() => {
-                              const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                              ) + totalShipping;
-                              return convertCurrency(totalLanding, currency as Currency, 'CZK').toFixed(0);
-                            })()} Kč
-                          </p>
-                        </div>
+                        {(() => {
+                          const hasServerData = landingCostPreview?.items?.length;
+                          const totalProductCost = hasServerData 
+                            ? landingCostPreview.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 1)), 0)
+                            : viewShipmentDetails.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0) || 0;
+                          const totalFreight = hasServerData && landingCostPreview.totalCosts?.freight !== undefined
+                            ? landingCostPreview.totalCosts.freight 
+                            : totalShipping;
+                          const totalLandingCost = hasServerData 
+                            ? landingCostPreview.items.reduce((sum, item) => sum + ((item.landingCostPerUnit || 0) * (item.quantity || 1)), 0)
+                            : totalProductCost + totalShipping;
+                          const totalLandingCZK = convertCurrency(totalLandingCost || 0, 'EUR', 'CZK');
+                          
+                          return (
+                            <>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground">{t('totalCost')}</p>
+                                  <p className="font-mono font-semibold">€{totalProductCost.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">{t('totalShipping')}</p>
+                                  <p className="font-mono font-semibold text-blue-600">€{totalFreight.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">{t('totalLanding')}</p>
+                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{totalLandingCost.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">{t('totalLandingCZK')}</p>
+                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">{totalLandingCZK.toFixed(0)} Kč</p>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     
@@ -2710,116 +2693,67 @@ export default function InternationalTransit() {
                             <TableHead className="w-[30%]">{t('item')}</TableHead>
                             <TableHead className="text-center w-[8%]">{t('qty')}</TableHead>
                             <TableHead className="text-right w-[14%]">{t('unitCost')}</TableHead>
-                            <TableHead className="text-right w-[12%]">{t('shipping')}</TableHead>
-                            <TableHead className="text-right w-[12%]">{t('landing')}</TableHead>
+                            <TableHead className="text-right w-[12%]">{t('freight')}</TableHead>
                             <TableHead className="text-right w-[12%]">{t('landingCostEUR')}</TableHead>
                             <TableHead className="text-right w-[12%]">{t('landingCostCZK')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {viewShipmentDetails.items.map((item: any, index: number) => {
+                          {(landingCostPreview?.items?.length ? landingCostPreview.items : viewShipmentDetails.items || []).map((item: any, index: number) => {
                             const qty = item.quantity || 1;
                             const unitCost = parseFloat(item.unitPrice || 0);
-                            const itemShippingCost = calculateShippingCost(item);
-                            const shippingCostPerUnit = qty > 0 ? itemShippingCost / qty : 0;
-                            const landingCost = unitCost + shippingCostPerUnit;
-                            const landingCostEUR = convertCurrency(landingCost, currency as Currency, 'EUR');
-                            const landingCostCZK = convertCurrency(landingCost, currency as Currency, 'CZK');
+                            const hasServerData = landingCostPreview?.items?.length && item.landingCostPerUnit !== undefined;
+                            const landingCostPerUnit = hasServerData 
+                              ? item.landingCostPerUnit 
+                              : unitCost + (totalItems > 0 ? totalShipping / totalItems : 0);
+                            const freightPerUnit = hasServerData 
+                              ? (item.freightAllocation || 0) / qty 
+                              : (totalItems > 0 ? totalShipping / totalItems : 0);
+                            const landingCostCZK = convertCurrency(landingCostPerUnit || 0, 'EUR', 'CZK');
                             
                             return (
                               <TableRow key={index} className="text-sm">
                                 <TableCell className="font-medium">{item.name || t('itemNumber', { number: index + 1 })}</TableCell>
                                 <TableCell className="text-center font-mono text-xs">{qty}</TableCell>
-                                <TableCell className="text-right font-mono text-xs">
-                                  {currency} {unitCost.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right font-mono text-xs text-blue-600">
-                                  {currency} {shippingCostPerUnit.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold font-mono text-xs">
-                                  {currency} {landingCost.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
-                                  €{landingCostEUR.toFixed(2)}
-                                </TableCell>
-                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">
-                                  {landingCostCZK.toFixed(0)} Kč
-                                </TableCell>
+                                <TableCell className="text-right font-mono text-xs">€{unitCost.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-xs text-blue-600">€{(freightPerUnit || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-semibold font-mono text-xs text-cyan-700 dark:text-cyan-400">€{(landingCostPerUnit || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</TableCell>
                               </TableRow>
                             );
                           })}
-                          <TableRow className="bg-slate-50 dark:bg-slate-900/30 font-semibold">
-                            <TableCell colSpan={2}>{t('totals')}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {currency} {viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                              ).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-blue-600">
-                              {currency} {totalShipping.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {currency} {(() => {
-                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                                ) + totalShipping;
-                                return totalLanding.toFixed(2);
-                              })()}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
-                              €{(() => {
-                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                                ) + totalShipping;
-                                return convertCurrency(totalLanding, currency as Currency, 'EUR').toFixed(2);
-                              })()}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">
-                              {(() => {
-                                const totalLanding = viewShipmentDetails.items.reduce((sum: number, item: any) => 
-                                  sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0
-                                ) + totalShipping;
-                                return convertCurrency(totalLanding, currency as Currency, 'CZK').toFixed(0);
-                              })()} Kč
-                            </TableCell>
-                          </TableRow>
+                          {(() => {
+                            const hasServerData = landingCostPreview?.items?.length;
+                            const totalProductCost = hasServerData 
+                              ? landingCostPreview.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * (item.quantity || 1)), 0)
+                              : viewShipmentDetails.items?.reduce((sum: number, item: any) => sum + (parseFloat(item.unitPrice || 0) * (item.quantity || 1)), 0) || 0;
+                            const totalFreight = hasServerData && landingCostPreview.totalCosts?.freight !== undefined
+                              ? landingCostPreview.totalCosts.freight 
+                              : totalShipping;
+                            const totalLandingCost = hasServerData 
+                              ? landingCostPreview.items.reduce((sum, item) => sum + ((item.landingCostPerUnit || 0) * (item.quantity || 1)), 0)
+                              : totalProductCost + totalShipping;
+                            const totalLandingCZK = convertCurrency(totalLandingCost || 0, 'EUR', 'CZK');
+                            
+                            return (
+                              <TableRow className="bg-slate-50 dark:bg-slate-900/30 font-semibold">
+                                <TableCell colSpan={2}>{t('totals')}</TableCell>
+                                <TableCell className="text-right font-mono text-sm">€{totalProductCost.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-blue-600">€{(totalFreight || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">€{(totalLandingCost || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">{totalLandingCZK.toFixed(0)} Kč</TableCell>
+                              </TableRow>
+                            );
+                          })()}
                         </TableBody>
                       </Table>
                     </div>
-                    <div className="text-xs text-muted-foreground px-1 space-y-1.5">
+                    <div className="text-xs text-muted-foreground px-1">
                       <p>
-                        💡 {t('shippingCostAllocatedAcross')} <strong className="text-foreground">{totalItems} {t('unitsLabel')}</strong> {t('using')}{' '}
-                        <strong className="text-foreground">
-                          {effectiveMethod}
-                        </strong>{allocationMethod === 'AUTO' && ` ${t('autoSelected')}`}. {t('landingCostsConverted')}
+                        💡 {landingCostPreview?.items?.length 
+                          ? t('landingCostsFromServer') 
+                          : t('landingCostsEstimated')}
                       </p>
-                      
-                      {/* Method-specific explanation with auto-selection context */}
-                      {effectiveMethod === 'CHARGEABLE_WEIGHT' && (
-                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-blue-600 dark:text-blue-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}⚖️ {t('usingChargeableWeight')}
-                        </p>
-                      )}
-                      {effectiveMethod === 'WEIGHT' && (
-                        <p className="text-blue-600 dark:text-blue-400">
-                          ⚖️ {t('heavierItemsProportional')}
-                        </p>
-                      )}
-                      {effectiveMethod === 'VALUE' && (
-                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-green-600 dark:text-green-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}💰 {t('higherValueItemsProportional')}
-                        </p>
-                      )}
-                      {effectiveMethod === 'HYBRID' && (
-                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-purple-600 dark:text-purple-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}⚡ {t('balancedAllocation')}
-                        </p>
-                      )}
-                      {effectiveMethod === 'UNITS' && (
-                        <p className={allocationMethod === 'AUTO' ? "text-cyan-600 dark:text-cyan-400" : "text-gray-600 dark:text-gray-400"}>
-                          {allocationMethod === 'AUTO' && '🤖 '}📦 {t('equalDistributionPerUnit')}
-                        </p>
-                      )}
                     </div>
                   </div>
                 )}
