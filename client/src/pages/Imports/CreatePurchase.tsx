@@ -63,6 +63,7 @@ interface VariantAllocation {
   unitPrice: number;
   unitPriceCurrency?: string; // Currency of the unitPrice, defaults to parent's paymentCurrency
   sku?: string;
+  barcode?: string; // Barcode for variant
 }
 
 interface PurchaseItem {
@@ -1908,7 +1909,8 @@ export default function CreatePurchase() {
       quantity: variant.quantity,
       unitPrice: variant.unitPrice,
       unitPriceCurrency: paymentCurrency, // Store the currency for each variant price
-      sku: variant.sku || ''
+      sku: variant.sku || '',
+      barcode: variant.barcode || '' // Include barcode for variant creation during receiving
     }));
     
     // Create a single parent item with nested variants

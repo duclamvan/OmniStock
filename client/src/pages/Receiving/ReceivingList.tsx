@@ -1880,6 +1880,7 @@ interface VariantAllocation {
   unitPrice?: number;
   unitPriceCurrency?: string; // Currency of the unitPrice, defaults to parent's paymentCurrency
   sku?: string; // SKU as primary identifier
+  barcode?: string; // Barcode for variant
 }
 
 // Order item from unpacked PO package
