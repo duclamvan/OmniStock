@@ -1,6 +1,6 @@
 import { forwardRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { parseDecimal, handleDecimalKeyDown } from "@/lib/utils";
+import { parseDecimal } from "@/lib/utils";
 
 export interface DecimalInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "type" | "value"> {
@@ -25,19 +25,22 @@ const DecimalInput = forwardRef<HTMLInputElement, DecimalInputProps>(
     }, [value, isFocused]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const rawValue = e.target.value;
-      setInternalValue(rawValue);
+      let rawValue = e.target.value;
+      // Replace comma with dot for decimal separator
+      rawValue = rawValue.replace(',', '.');
       
-      if (rawValue === '' || rawValue === '-') {
-        return;
+      // Allow empty, negative sign, or valid decimal pattern
+      if (rawValue === '' || rawValue === '-' || rawValue === '.' || /^-?[0-9]*\.?[0-9]*$/.test(rawValue)) {
+        setInternalValue(rawValue);
+        
+        // Don't update parent if incomplete
+        if (rawValue === '' || rawValue === '-' || rawValue === '.' || rawValue.endsWith('.')) {
+          return;
+        }
+        
+        const parsed = parseDecimal(rawValue);
+        onChange(parsed);
       }
-      
-      if (rawValue.endsWith('.') || rawValue.endsWith(',')) {
-        return;
-      }
-      
-      const parsed = parseDecimal(rawValue);
-      onChange(parsed);
     };
 
     const handleBlurWrapper = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -46,11 +49,6 @@ const DecimalInput = forwardRef<HTMLInputElement, DecimalInputProps>(
       onChange(parsed);
       setInternalValue(parsed === 0 ? '' : String(parsed));
       onBlur?.(e);
-    };
-
-    const handleKeyDownWrapper = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      handleDecimalKeyDown(e);
-      onKeyDown?.(e);
     };
 
     const handleFocusWrapper = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -62,13 +60,11 @@ const DecimalInput = forwardRef<HTMLInputElement, DecimalInputProps>(
     return (
       <Input
         ref={ref}
-        type="number"
-        step={step}
-        min={min}
-        max={max}
+        type="text"
+        inputMode="decimal"
         value={internalValue}
         onChange={handleChange}
-        onKeyDown={handleKeyDownWrapper}
+        onKeyDown={onKeyDown}
         onFocus={handleFocusWrapper}
         onBlur={handleBlurWrapper}
         {...props}

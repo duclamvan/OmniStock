@@ -3612,16 +3612,17 @@ export default function CreatePurchase() {
                                 <TableCell className="p-2">
                                   <div className="flex items-center gap-0.5 group">
                                     <Input
-                                      type="number"
+                                      type="text"
+                                      inputMode="numeric"
                                       value={variant.quantity}
                                       onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
                                         setVariants(variants.map(v => 
-                                          v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
+                                          v.id === variant.id ? {...v, quantity: parseInt(val) || 0} : v
                                         ));
                                       }}
                                       onFocus={(e) => e.target.select()}
-                                      className="h-6 w-12 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      min="0"
+                                      className="h-6 w-12 text-center text-xs"
                                       data-testid={`input-variant-qty-${variant.id}`}
                                     />
                                     {variants.indexOf(variant) < variants.length - 1 && (
@@ -3640,19 +3641,14 @@ export default function CreatePurchase() {
                                 </TableCell>
                                 <TableCell className="p-2">
                                   <div className="flex items-center gap-0.5 group">
-                                    <Input
-                                      type="number"
+                                    <DecimalInput
                                       value={variant.unitPrice}
-                                      onChange={(e) => {
+                                      onChange={(val) => {
                                         setVariants(variants.map(v => 
-                                          v.id === variant.id ? {...v, unitPrice: parseDecimal(e.target.value)} : v
+                                          v.id === variant.id ? {...v, unitPrice: val} : v
                                         ));
                                       }}
-                                      onKeyDown={handleDecimalKeyDown}
-                                      onFocus={(e) => e.target.select()}
-                                      className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      step="0.01"
-                                      min="0"
+                                      className="h-6 w-14 text-right text-xs"
                                       data-testid={`input-variant-price-${variant.id}`}
                                     />
                                     {variants.indexOf(variant) < variants.length - 1 && (
