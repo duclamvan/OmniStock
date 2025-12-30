@@ -1,4 +1,4 @@
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, ilike } from 'drizzle-orm';
 import { db } from '../db';
 import {
   shipments,
@@ -11,6 +11,8 @@ import {
   products,
   receipts,
   receiptItems,
+  purchaseItems,
+  importPurchases,
   type Shipment,
   type ShipmentCost,
   type ShipmentCarton,
@@ -629,20 +631,84 @@ export class LandingCostService {
     totalUnits: number;
     itemCount: number;
   }> {
-    // Get shipment to find consolidationId
-    const shipment = await db
-      .select({ consolidationId: shipments.consolidationId })
+    // Get shipment to find consolidationId and notes
+    const shipmentResult = await db
+      .select({ 
+        consolidationId: shipments.consolidationId,
+        notes: shipments.notes 
+      })
       .from(shipments)
       .where(eq(shipments.id, shipmentId))
       .limit(1);
 
-    if (!shipment.length) {
+    if (!shipmentResult.length) {
       throw new Error(`Shipment ${shipmentId} not found`);
     }
 
-    const consolidationId = shipment[0].consolidationId;
+    const consolidationId = shipmentResult[0].consolidationId;
+    const notes = shipmentResult[0].notes;
     
+    // Check if this is a direct PO shipment (no consolidation)
     if (!consolidationId) {
+      // Try to find items from direct PO shipment via notes
+      if (notes && (notes.includes('Auto-created from Purchase Order PO #') || notes.includes('Direct shipment from Purchase Order'))) {
+        const match = notes.match(/PO #([a-zA-Z0-9-]+)/) || notes.match(/Purchase Order ([a-zA-Z0-9-]+)/);
+        if (match) {
+          const purchaseIdPrefix = match[1];
+          
+          // Find the purchase by ID prefix (case-insensitive)
+          const purchases = await db
+            .select({ id: importPurchases.id })
+            .from(importPurchases)
+            .where(ilike(importPurchases.id, `${purchaseIdPrefix}%`))
+            .limit(1);
+          
+          if (purchases.length > 0) {
+            const purchaseItemsList = await db
+              .select()
+              .from(purchaseItems)
+              .where(eq(purchaseItems.purchaseId, purchases[0].id));
+            
+            let totalWeight = 0;
+            let totalVolumetricWeight = 0;
+            let totalChargeableWeight = 0;
+            let totalValue = new Decimal(0);
+            let totalUnits = 0;
+            
+            for (const item of purchaseItemsList) {
+              // Handle items with variant allocations
+              let itemQuantity = item.quantity;
+              if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+                itemQuantity = (item.variantAllocations as any[]).reduce((sum, v) => sum + (v.quantity || 0), 0);
+              }
+              
+              const weight = parseFloat(item.weight || '0') * itemQuantity;
+              const volumetricWeight = weight * 0.8; // Conservative estimate
+              const chargeableWeight = this.calculateChargeableWeight(weight, volumetricWeight);
+              
+              totalWeight += weight;
+              totalVolumetricWeight += volumetricWeight;
+              totalChargeableWeight += chargeableWeight;
+              totalUnits += itemQuantity;
+              
+              if (item.unitPrice) {
+                totalValue = totalValue.add(new Decimal(item.unitPrice.toString()).mul(itemQuantity));
+              }
+            }
+            
+            return {
+              totalWeight,
+              totalVolumetricWeight,
+              totalChargeableWeight,
+              totalValue,
+              totalUnits,
+              itemCount: purchaseItemsList.length
+            };
+          }
+        }
+      }
+      
+      // No items found
       return {
         totalWeight: 0,
         totalVolumetricWeight: 0,

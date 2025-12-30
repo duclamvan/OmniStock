@@ -14574,8 +14574,8 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
       .from(shipments)
       .where(eq(shipments.id, shipmentId));
     
-    if (!shipment?.consolidationId) {
-      warnings.push('No consolidation found for shipment');
+    if (!shipment) {
+      warnings.push('Shipment not found');
       return { costsByType, costBreakdown, warnings, currencyNotes, fxRatesUsed };
     }
     
@@ -14660,41 +14660,73 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
       costBreakdown.shipmentCosts[costType] = (costBreakdown.shipmentCosts[costType] || 0) + amountEUR;
     }
     
-    // 3. Get all custom items in the consolidation
-    const consolidationItemsData = await db
-      .select({
-        item: customItems
-      })
-      .from(consolidationItems)
-      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
-      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
-    
-    // 4. Trace items back to purchase orders to collect PO-level shipping costs
+    // 3. Get all items - either from consolidation or direct PO
+    let consolidationItemsData: { item: typeof customItems.$inferSelect }[] = [];
     const purchaseOrderIds = new Set<string>();
     const itemValuesByPO: Record<string, number> = {};
     const allPurchaseItemIds: string[] = [];
     
-    for (const row of consolidationItemsData) {
-      const item = row.item;
-      const itemValue = Number(item.unitPrice || 0) * item.quantity;
+    // Check if this has a consolidation
+    if (shipment.consolidationId) {
+      // Get all custom items in the consolidation
+      consolidationItemsData = await db
+        .select({
+          item: customItems
+        })
+        .from(consolidationItems)
+        .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+        .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
       
-      if (item.purchaseOrderId) {
-        purchaseOrderIds.add(item.purchaseOrderId);
-        itemValuesByPO[item.purchaseOrderId] = (itemValuesByPO[item.purchaseOrderId] || 0) + itemValue;
-      }
-      
-      // Collect purchaseItemIds for batch query (avoid N+1)
-      if (item.orderItems) {
-        try {
-          const orderItemsArray = typeof item.orderItems === 'string' 
-            ? JSON.parse(item.orderItems) 
-            : item.orderItems;
-          if (Array.isArray(orderItemsArray)) {
-            for (const oi of orderItemsArray) {
-              if (oi.purchaseItemId) allPurchaseItemIds.push(oi.purchaseItemId);
+      // 4. Trace items back to purchase orders to collect PO-level shipping costs
+      for (const row of consolidationItemsData) {
+        const item = row.item;
+        const itemValue = Number(item.unitPrice || 0) * item.quantity;
+        
+        if (item.purchaseOrderId) {
+          purchaseOrderIds.add(item.purchaseOrderId);
+          itemValuesByPO[item.purchaseOrderId] = (itemValuesByPO[item.purchaseOrderId] || 0) + itemValue;
+        }
+        
+        // Collect purchaseItemIds for batch query (avoid N+1)
+        if (item.orderItems) {
+          try {
+            const orderItemsArray = typeof item.orderItems === 'string' 
+              ? JSON.parse(item.orderItems) 
+              : item.orderItems;
+            if (Array.isArray(orderItemsArray)) {
+              for (const oi of orderItemsArray) {
+                if (oi.purchaseItemId) allPurchaseItemIds.push(oi.purchaseItemId);
+              }
             }
+          } catch (e) { /* ignore parse errors */ }
+        }
+      }
+    } else if (shipment.notes && (shipment.notes.includes('Auto-created from Purchase Order PO #') || shipment.notes.includes('Direct shipment from Purchase Order'))) {
+      // Direct PO shipment - find the purchase order from notes
+      const match = shipment.notes.match(/PO #([a-zA-Z0-9-]+)/) || shipment.notes.match(/Purchase Order ([a-zA-Z0-9-]+)/);
+      if (match) {
+        const purchaseIdPrefix = match[1];
+        const purchases = await db
+          .select()
+          .from(importPurchases)
+          .where(ilike(importPurchases.id, `${purchaseIdPrefix}%`))
+          .limit(1);
+        
+        if (purchases.length > 0) {
+          purchaseOrderIds.add(purchases[0].id);
+          
+          // Get purchase items for this PO
+          const poItems = await db
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.purchaseId, purchases[0].id));
+          
+          for (const pi of poItems) {
+            allPurchaseItemIds.push(pi.id);
+            const itemValue = Number(pi.unitPrice || 0) * pi.quantity;
+            itemValuesByPO[purchases[0].id] = (itemValuesByPO[purchases[0].id] || 0) + itemValue;
           }
-        } catch (e) { /* ignore parse errors */ }
+        }
       }
     }
     
@@ -14841,14 +14873,183 @@ async function aggregateAllUpstreamCosts(shipmentId: string): Promise<Aggregated
 // Helper function to get detailed allocation breakdown per item
 async function getItemAllocationBreakdown(shipmentId: string | number, costsByType: Record<string, number>): Promise<any[]> {
   try {
-    // Get consolidation ID and exchange rates
+    // Get shipment with consolidation ID and notes
     const [shipment] = await db
       .select()
       .from(shipments)
       .where(eq(shipments.id, shipmentId))
       .limit(1);
 
-    if (!shipment?.consolidationId) {
+    if (!shipment) {
+      return [];
+    }
+    
+    // Check if this is a direct PO shipment (no consolidation)
+    if (!shipment.consolidationId) {
+      // Try to find items from direct PO shipment via notes
+      if (shipment.notes && (shipment.notes.includes('Auto-created from Purchase Order PO #') || shipment.notes.includes('Direct shipment from Purchase Order'))) {
+        const match = shipment.notes.match(/PO #([a-zA-Z0-9-]+)/) || shipment.notes.match(/Purchase Order ([a-zA-Z0-9-]+)/);
+        if (match) {
+          const purchaseIdPrefix = match[1];
+          
+          // Find the purchase by ID prefix (case-insensitive)
+          const purchases = await db
+            .select()
+            .from(importPurchases)
+            .where(ilike(importPurchases.id, `${purchaseIdPrefix}%`))
+            .limit(1);
+          
+          if (purchases.length > 0) {
+            const purchase = purchases[0];
+            const purchaseItemsList = await db
+              .select()
+              .from(purchaseItems)
+              .where(eq(purchaseItems.purchaseId, purchase.id));
+            
+            // Build exchange rates map
+            let exchangeRates: Record<string, number> = { 
+              EUR: 1, USD: 1.08, CZK: 25, VND: 26500, CNY: 7.8,
+              GBP: 0.86, JPY: 162, CHF: 0.95, AUD: 1.65, CAD: 1.48
+            };
+            if (shipment.exchangeRates) {
+              const rates = typeof shipment.exchangeRates === 'string'
+                ? JSON.parse(shipment.exchangeRates)
+                : shipment.exchangeRates;
+              exchangeRates = { ...exchangeRates, ...rates };
+            }
+            
+            const items: any[] = [];
+            
+            // Calculate totals for allocation
+            let totalChargeableWeight = 0;
+            let totalShipmentValue = 0;
+            let totalUnits = 0;
+            
+            for (const item of purchaseItemsList) {
+              // Handle items with variant allocations
+              let itemQuantity = item.quantity;
+              if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+                itemQuantity = (item.variantAllocations as any[]).reduce((sum, v) => sum + (v.quantity || 0), 0);
+              }
+              
+              const weight = parseFloat(item.weight || '0') * itemQuantity;
+              const volumetricWeight = weight * 0.8;
+              const chargeableWeight = landingCostService.calculateChargeableWeight(weight, volumetricWeight);
+              
+              totalChargeableWeight += chargeableWeight;
+              totalShipmentValue += parseFloat(item.unitPrice || '0') * itemQuantity;
+              totalUnits += itemQuantity;
+            }
+            
+            const useWeightAllocation = totalChargeableWeight > 0;
+            const useValueAllocation = !useWeightAllocation && totalShipmentValue > 0;
+            
+            for (const item of purchaseItemsList) {
+              // Handle items with variant allocations
+              let itemQuantity = item.quantity;
+              let variantAllocationsArray: any[] = [];
+              
+              if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+                variantAllocationsArray = item.variantAllocations as any[];
+                itemQuantity = variantAllocationsArray.reduce((sum, v) => sum + (v.quantity || 0), 0);
+              }
+              
+              const weight = parseFloat(item.weight || '0') * itemQuantity;
+              const volumetricWeight = weight * 0.8;
+              const chargeableWeight = landingCostService.calculateChargeableWeight(weight, volumetricWeight);
+              
+              // Calculate allocation ratio
+              let allocationRatio = 0;
+              if (useWeightAllocation && totalChargeableWeight > 0) {
+                allocationRatio = chargeableWeight / totalChargeableWeight;
+              } else if (useValueAllocation && totalShipmentValue > 0) {
+                const itemValue = parseFloat(item.unitPrice || '0') * itemQuantity;
+                allocationRatio = itemValue / totalShipmentValue;
+              } else if (totalUnits > 0) {
+                allocationRatio = itemQuantity / totalUnits;
+              }
+              
+              const freightAllocated = (costsByType['FREIGHT'] || 0) * allocationRatio;
+              const dutyAllocated = (costsByType['DUTY'] || 0) * allocationRatio;
+              const brokerageAllocated = (costsByType['BROKERAGE'] || 0) * allocationRatio;
+              const insuranceAllocated = (costsByType['INSURANCE'] || 0) * allocationRatio;
+              const packagingAllocated = (costsByType['PACKAGING'] || 0) * allocationRatio;
+              const otherAllocated = (costsByType['OTHER'] || 0) * allocationRatio;
+              
+              const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
+              const landingCostPerUnit = itemQuantity > 0 ? totalAllocated / itemQuantity : 0;
+              
+              // Get unit price in EUR
+              const itemPaymentCurrency = purchase.purchaseCurrency || 'USD';
+              const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+              
+              let unitPriceEur: number;
+              if (variantAllocationsArray.length > 0) {
+                let totalVariantValueEur = 0;
+                let totalVariantQty = 0;
+                for (const va of variantAllocationsArray) {
+                  const vaQty = va.quantity || 0;
+                  const vaPrice = parseFloat(String(va.unitPrice || 0));
+                  const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+                  const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+                  const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+                  totalVariantValueEur += vaPriceEur * vaQty;
+                  totalVariantQty += vaQty;
+                }
+                unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
+                if (unitPriceEur === 0) {
+                  const itemUnitPrice = parseFloat(item.unitPrice || '0');
+                  unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
+                }
+              } else {
+                const itemUnitPrice = parseFloat(item.unitPrice || '0');
+                unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
+              }
+              
+              // Convert variant allocations to EUR
+              const variantAllocationsEur = variantAllocationsArray.map(va => {
+                const vaPrice = parseFloat(String(va.unitPrice || 0));
+                const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+                const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+                const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+                return {
+                  ...va,
+                  unitPrice: vaPriceEur,
+                  unitPriceCurrency: 'EUR'
+                };
+              });
+              
+              items.push({
+                purchaseItemId: item.id,
+                customItemId: item.id,
+                name: item.name,
+                sku: item.sku,
+                imageUrl: null,
+                quantity: itemQuantity,
+                unitPrice: unitPriceEur,
+                totalValue: unitPriceEur * itemQuantity,
+                actualWeightKg: weight,
+                volumetricWeightKg: volumetricWeight,
+                chargeableWeightKg: chargeableWeight,
+                freightAllocated,
+                dutyAllocated,
+                brokerageAllocated,
+                insuranceAllocated,
+                packagingAllocated,
+                otherAllocated,
+                totalAllocated,
+                landingCostPerUnit,
+                warnings: [],
+                variantAllocations: variantAllocationsEur.length > 0 ? variantAllocationsEur : undefined
+              });
+            }
+            
+            return items;
+          }
+        }
+      }
+      
+      // No consolidation and not a direct PO shipment
       return [];
     }
 
