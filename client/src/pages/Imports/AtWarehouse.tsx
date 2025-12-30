@@ -1286,8 +1286,34 @@ export default function AtWarehouse() {
     const dateCode = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     
     const methodPrefix = methodPrefixes[consolidationShippingMethod] || "CONSOL";
+    const basePrefix = `${methodPrefix}-${warehouseCode}-${dateCode}`;
     
-    return `${methodPrefix}-${warehouseCode}-${dateCode}`;
+    // Count existing consolidations with same prefix to generate unique sequence number
+    const existingWithPrefix = consolidations.filter(c => 
+      c.name && c.name.startsWith(basePrefix)
+    );
+    
+    // Add sequence number (A, B, C, etc.) if there are existing ones with same prefix
+    if (existingWithPrefix.length === 0) {
+      return basePrefix;
+    }
+    
+    // Find the next available letter (A, B, C, ... Z, AA, AB, ...)
+    const usedSuffixes = new Set(existingWithPrefix.map(c => {
+      const suffix = c.name.replace(basePrefix, '').replace(/^-/, '');
+      return suffix || '';
+    }));
+    
+    // Generate next suffix (A, B, C, ... Z, then AA, AB, etc.)
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < 26; i++) {
+      const letter = alphabet[i];
+      if (!usedSuffixes.has(letter)) {
+        return `${basePrefix}-${letter}`;
+      }
+    }
+    // Fallback to number if all letters used
+    return `${basePrefix}-${existingWithPrefix.length + 1}`;
   };
 
   // Simple add items mutation with optimized cache updates
