@@ -406,6 +406,8 @@ const products = {
     widthCm: 'Width (cm)',
     heightCm: 'Height (cm)',
     weightKg: 'Weight (kg)',
+    weightValue: 'Weight',
+    weightUnit: 'Unit',
     packingMaterials: 'Packing Materials',
     handlingInstructions: 'Handling Instructions',
   },

@@ -513,6 +513,8 @@ const products = {
     widthCm: 'Rộng (cm)',
     heightCm: 'Cao (cm)',
     weightKg: 'Trọng lượng (kg)',
+    weightValue: 'Trọng lượng',
+    weightUnit: 'Đơn vị',
     packingMaterials: 'Vật liệu đóng gói',
     handlingInstructions: 'Hướng dẫn xử lý',
   },

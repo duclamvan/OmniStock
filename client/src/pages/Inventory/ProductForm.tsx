@@ -4339,7 +4339,7 @@ export default function ProductForm() {
                       <Ruler className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                       <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:packing.physicalSpecifications')}</h4>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <div>
                         <Label htmlFor="length" className="text-sm font-medium">{t('products:packing.lengthCm')}</Label>
                         <Input type="number" step="0.1" min="0" {...form.register('length')} placeholder="0.0" data-testid="input-length" className="mt-1" onKeyDown={handleDecimalKeyDown} />
@@ -4353,8 +4353,23 @@ export default function ProductForm() {
                         <Input type="number" step="0.1" min="0" {...form.register('height')} placeholder="0.0" data-testid="input-height" className="mt-1" onKeyDown={handleDecimalKeyDown} />
                       </div>
                       <div>
-                        <Label htmlFor="weight" className="text-sm font-medium">{t('products:packing.weightKg')}</Label>
+                        <Label htmlFor="weight" className="text-sm font-medium">{t('products:packing.weightValue')}</Label>
                         <Input type="number" step="0.001" min="0" {...form.register('weight')} placeholder="0.000" data-testid="input-weight" className="mt-1" onKeyDown={handleDecimalKeyDown} />
+                      </div>
+                      <div>
+                        <Label htmlFor="weightUnit" className="text-sm font-medium">{t('products:packing.weightUnit')}</Label>
+                        <Select value={form.watch('weightUnit') || 'kg'} onValueChange={(value) => form.setValue('weightUnit', value)}>
+                          <SelectTrigger className="mt-1" data-testid="select-weight-unit">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mg">mg</SelectItem>
+                            <SelectItem value="g">g</SelectItem>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="oz">oz</SelectItem>
+                            <SelectItem value="lb">lb</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
