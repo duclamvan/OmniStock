@@ -7643,10 +7643,10 @@ export default function ReceivingList() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <button 
                 onClick={() => handleStatTabClick('to-receive')}
-                className={`group relative bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
+                className={`group relative bg-blue-50 dark:bg-blue-950/40 rounded-xl p-4 text-center transition-colors ${
                   activeTab === 'to-receive' 
-                    ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md' 
-                    : 'border-blue-200/80 dark:border-blue-700/50 hover:border-blue-400'
+                    ? 'border-2 border-blue-500 dark:border-blue-400' 
+                    : 'border border-blue-200 dark:border-blue-800 hover:border-blue-400'
                 }`}
                 data-testid="stat-to-receive"
               >
@@ -7657,17 +7657,17 @@ export default function ReceivingList() {
                 <div className="text-4xl sm:text-5xl font-black text-blue-600 dark:text-blue-400 tabular-nums">
                   {isLoadingToReceive ? <Skeleton className="h-12 w-16 mx-auto bg-blue-200 dark:bg-blue-700" /> : toReceiveShipments.length}
                 </div>
-                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-500 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-500 dark:text-blue-400">
                   <span>{t('common:viewAll', 'View')}</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('receiving')}
-                className={`group relative bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/40 dark:to-cyan-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
+                className={`group relative bg-cyan-50 dark:bg-cyan-950/40 rounded-xl p-4 text-center transition-colors ${
                   activeTab === 'receiving' 
-                    ? 'border-cyan-500 ring-2 ring-cyan-500/30 shadow-md' 
-                    : 'border-cyan-200/80 dark:border-cyan-700/50 hover:border-cyan-400'
+                    ? 'border-2 border-cyan-500 dark:border-cyan-400' 
+                    : 'border border-cyan-200 dark:border-cyan-800 hover:border-cyan-400'
                 }`}
                 data-testid="stat-receiving"
               >
@@ -7678,17 +7678,17 @@ export default function ReceivingList() {
                 <div className="text-4xl sm:text-5xl font-black text-cyan-600 dark:text-cyan-400 tabular-nums">
                   {isLoadingReceiving ? <Skeleton className="h-12 w-16 mx-auto bg-cyan-200 dark:bg-cyan-700" /> : receivingShipments.length}
                 </div>
-                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-cyan-500 dark:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-cyan-500 dark:text-cyan-400">
                   <span>{t('common:viewAll', 'View')}</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('storage')}
-                className={`group relative bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/40 dark:to-amber-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
+                className={`group relative bg-amber-50 dark:bg-amber-950/40 rounded-xl p-4 text-center transition-colors ${
                   activeTab === 'storage' 
-                    ? 'border-amber-500 ring-2 ring-amber-500/30 shadow-md' 
-                    : 'border-amber-200/80 dark:border-amber-700/50 hover:border-amber-400'
+                    ? 'border-2 border-amber-500 dark:border-amber-400' 
+                    : 'border border-amber-200 dark:border-amber-800 hover:border-amber-400'
                 }`}
                 data-testid="stat-storage"
               >
@@ -7699,17 +7699,17 @@ export default function ReceivingList() {
                 <div className="text-4xl sm:text-5xl font-black text-amber-600 dark:text-amber-400 tabular-nums">
                   {isLoadingStorage ? <Skeleton className="h-12 w-16 mx-auto bg-amber-200 dark:bg-amber-700" /> : storageShipments.length}
                 </div>
-                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-amber-500 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-amber-500 dark:text-amber-400">
                   <span>{t('common:viewAll', 'View')}</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
               </button>
               <button 
                 onClick={() => handleStatTabClick('completed')}
-                className={`group relative bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/40 dark:to-green-950/30 border-2 rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:shadow-lg ${
+                className={`group relative bg-green-50 dark:bg-green-950/40 rounded-xl p-4 text-center transition-colors ${
                   activeTab === 'completed' 
-                    ? 'border-green-500 ring-2 ring-green-500/30 shadow-md' 
-                    : 'border-green-200/80 dark:border-green-700/50 hover:border-green-400'
+                    ? 'border-2 border-green-500 dark:border-green-400' 
+                    : 'border border-green-200 dark:border-green-800 hover:border-green-400'
                 }`}
                 data-testid="stat-completed"
               >
@@ -7720,7 +7720,7 @@ export default function ReceivingList() {
                 <div className="text-4xl sm:text-5xl font-black text-green-600 dark:text-green-400 tabular-nums">
                   {isLoadingCompleted ? <Skeleton className="h-12 w-16 mx-auto bg-green-200 dark:bg-green-700" /> : completedShipments.length}
                 </div>
-                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-green-500 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-2 flex items-center justify-center gap-1 text-xs text-green-500 dark:text-green-400">
                   <span>{t('common:viewAll', 'View')}</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
