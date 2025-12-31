@@ -1460,21 +1460,41 @@ function ToReceiveShipmentCard({ shipment, isAdministrator }: { shipment: any; i
   const itemCount = shipment.items?.length || 0;
   const totalQuantity = shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
   
+  // Get effective ETA: For direct PO shipments, prioritize tracking ETA if available,
+  // otherwise fall back to manually set estimatedDelivery from International Transit
+  const getEffectiveEta = (): { date: Date | null; source: 'tracking' | 'manual' | null } => {
+    // For direct PO shipments or consolidated shipments with tracking
+    // Priority: easypostEstDelivery (if tracking successful) > estimatedDelivery (manual)
+    if (shipment.easypostEstDelivery && shipment.easypostStatus && 
+        !['Unknown', 'Error', 'Failure'].includes(shipment.easypostStatus)) {
+      return { date: new Date(shipment.easypostEstDelivery), source: 'tracking' };
+    }
+    
+    // Fall back to manually set ETA from International Transit
+    if (shipment.estimatedDelivery) {
+      return { date: new Date(shipment.estimatedDelivery), source: 'manual' };
+    }
+    
+    return { date: null, source: null };
+  };
+  
   const getEtaCountdown = () => {
-    if (!shipment.estimatedDelivery) return null;
-    const eta = new Date(shipment.estimatedDelivery);
+    const { date: eta, source } = getEffectiveEta();
+    if (!eta) return null;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    eta.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((eta.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const etaDate = new Date(eta);
+    etaDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((etaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
       const absDays = Math.abs(diffDays);
-      return { text: absDays === 1 ? t('overdueDay', { days: absDays }) : t('overdue', { days: absDays }), color: 'text-red-600 dark:text-red-400' };
+      return { text: absDays === 1 ? t('overdueDay', { days: absDays }) : t('overdue', { days: absDays }), color: 'text-red-600 dark:text-red-400', source };
     } else if (diffDays === 0) {
-      return { text: t('arrivalToday'), color: 'text-green-600 dark:text-green-400' };
+      return { text: t('arrivalToday'), color: 'text-green-600 dark:text-green-400', source };
     } else {
-      return { text: diffDays === 1 ? t('dayRemaining', { days: diffDays }) : t('daysRemaining', { days: diffDays }), color: 'text-amber-600 dark:text-amber-400' };
+      return { text: diffDays === 1 ? t('dayRemaining', { days: diffDays }) : t('daysRemaining', { days: diffDays }), color: 'text-amber-600 dark:text-amber-400', source };
     }
   };
   
