@@ -1992,16 +1992,11 @@ function getReceivingQtyFromNotes(notes: string | undefined, receiptItemId: numb
 }
 
 // Helper function to calculate total quantity stored for this receiving session
-// Uses receiptLocations (locations tagged with RI:{receiptItemId}:) instead of existingLocations
+// receiptLocations now comes from dedicated receipt_item_locations table with quantityAdded stored as quantity
 function calculateStoredQtyForReceiving(receiptLocations: LocationAssignment[], receiptItemId: number | string): number {
   return (receiptLocations || []).reduce((sum, loc) => {
-    // receiptLocations already filtered to only contain this receipt's items
-    // Extract quantity from notes tag for precise per-receipt tracking
-    const hasThisTag = loc.notes?.includes(`RI:${receiptItemId}:`);
-    if (hasThisTag) {
-      return sum + getReceivingQtyFromNotes(loc.notes, receiptItemId);
-    }
-    // Fallback: use location quantity if no tag (shouldn't happen for receiptLocations)
+    // receiptLocations contains entries from receipt_item_locations table
+    // The quantity field stores quantityAdded from the API response
     return sum + (loc.quantity || 0);
   }, 0);
 }
@@ -2174,11 +2169,13 @@ function getAIReasoning(
 function QuickStorageSheet({ 
   shipment, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  isAdministrator = false
 }: { 
   shipment: any; 
   open: boolean; 
   onOpenChange: (open: boolean) => void;
+  isAdministrator?: boolean;
 }) {
   const { t } = useTranslation(['imports', 'warehouse', 'common']);
   const { toast } = useToast();
@@ -2733,21 +2730,12 @@ function QuickStorageSheet({
                 // Deep copy to prevent mutations from affecting this read-only list
                 const updatedReferenceInventory = enhancedLocations.map(enhanceLocation).map(loc => ({ ...loc }));
                 
-                // receiptLocations: Only locations with notes containing RI:{receiptItemId}:
-                // These are locations specifically saved for THIS receipt
-                // Deep copy to ensure edits don't affect referenceInventory
-                const receiptTag = `RI:${item.receiptItemId}:`;
-                const updatedReceiptLocations = enhancedLocations
-                  .filter((loc: any) => loc.notes?.includes(receiptTag))
-                  .map(enhanceLocation)
-                  .map(loc => ({ ...loc })); // Deep copy for isolation
-                
-                console.log(`[Storage] Product ${productId}: referenceInventory=${updatedReferenceInventory.length}, receiptLocations=${updatedReceiptLocations.length}`);
+                console.log(`[Storage] Product ${productId}: referenceInventory=${updatedReferenceInventory.length}`);
                 
                 return { 
                   ...item, 
-                  referenceInventory: updatedReferenceInventory,
-                  receiptLocations: updatedReceiptLocations
+                  referenceInventory: updatedReferenceInventory
+                  // receiptLocations is fetched separately from the dedicated API
                 };
               });
             });
@@ -2764,6 +2752,64 @@ function QuickStorageSheet({
       fetchInventoryLocations();
     }
   }, [items, open]); // Use items array directly to trigger on any item change
+  
+  // Fetch receipt-specific locations from the dedicated API
+  const receiptLocationsFetched = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const fetchReceiptLocations = async () => {
+      // Collect unique receiptItemIds that haven't been fetched yet
+      const itemsToFetch = items.filter(item => {
+        if (!item.receiptItemId) return false;
+        if (receiptLocationsFetched.current.has(item.receiptItemId)) return false;
+        return true;
+      });
+      
+      if (itemsToFetch.length === 0) return;
+      
+      for (const item of itemsToFetch) {
+        try {
+          receiptLocationsFetched.current.add(item.receiptItemId);
+          
+          const response = await fetch(`/api/receipt-items/${item.receiptItemId}/locations`, { credentials: 'include' });
+          if (response.ok) {
+            const receiptLocs = await response.json();
+            console.log(`[Storage] Fetched ${receiptLocs.length} receipt locations for receiptItem ${item.receiptItemId}`);
+            
+            // Update the item with receiptLocations from the API
+            setItems(prevItems => {
+              return prevItems.map(prevItem => {
+                if (prevItem.receiptItemId !== item.receiptItemId) return prevItem;
+                
+                // Map API response to the expected format
+                const mappedLocs = receiptLocs.map((loc: any) => ({
+                  id: loc.productLocationId,
+                  locationCode: loc.locationCode,
+                  locationType: loc.locationType || 'warehouse',
+                  quantity: loc.quantityAdded, // Use quantityAdded for display
+                  variantId: loc.variantId,
+                  variantName: loc.variantName || '',
+                  isPrimary: false,
+                  receiptItemLocationId: loc.id, // Store the receipt_item_locations.id for deletion
+                  originalQuantity: loc.originalQuantity
+                }));
+                
+                return {
+                  ...prevItem,
+                  receiptLocations: mappedLocs
+                };
+              });
+            });
+          }
+        } catch (error) {
+          console.error(`[Storage] Error fetching receipt locations for ${item.receiptItemId}:`, error);
+        }
+      }
+    };
+    
+    if (items.length > 0 && open) {
+      fetchReceiptLocations();
+    }
+  }, [items, open]);
   
   // Fetch AI suggestions for items without reference inventory locations (with batching and caching)
   useEffect(() => {
@@ -4317,7 +4363,7 @@ function QuickStorageSheet({
                                       {t('imports:thisReceipt', 'This Receipt')} ({(item.receiptLocations?.length || 0) + item.locations.length})
                                     </p>
                                     {/* Undo All - clears receiptLocations + pending locations (ONLY for this receipt, preserves existing inventory) */}
-                                    {(item.receiptLocations && item.receiptLocations.length > 0) || item.locations.length > 0 ? (
+                                    {isAdministrator && ((item.receiptLocations && item.receiptLocations.length > 0) || item.locations.length > 0) ? (
                                       <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                           <Button
@@ -4346,6 +4392,7 @@ function QuickStorageSheet({
                                             <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
                                             <AlertDialogAction
                                               onClick={async () => {
+                                                if (!isAdministrator) return; // Runtime guard for defense-in-depth
                                                 if (!item.productId || isUndoingAll) return;
                                                 
                                                 setIsUndoingAll(true);
@@ -4445,8 +4492,8 @@ function QuickStorageSheet({
                                       const locId = String(loc.id || locIdx);
                                       const pendingAdd = item.pendingExistingAdds?.[locId] || 0;
                                       
-                                      // Extract receiving-specific quantity from notes tag
-                                      const receivingQty = getReceivingQtyFromNotes(loc.notes, item.receiptItemId) || loc.quantity || 0;
+                                      // Get quantity from receipt_item_locations table (stored as quantity in the response)
+                                      const receivingQty = loc.quantity || 0;
                                       
                                       return (
                                         <div 
@@ -4546,39 +4593,42 @@ function QuickStorageSheet({
                                                     {t('imports:fillHere', 'Fill Here')} (+{itemRemainingQty})
                                                   </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuItem
-                                                  onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    if (!item.productId || !loc.id) return;
-                                                    
-                                                    try {
-                                                      await deleteLocationMutation.mutateAsync({
-                                                        productId: String(item.productId),
-                                                        locationId: String(loc.id),
-                                                        receiptItemId: String(item.receiptItemId)
-                                                      });
+                                                {isAdministrator && (
+                                                  <DropdownMenuItem
+                                                    onClick={async (e) => {
+                                                      e.stopPropagation();
+                                                      if (!isAdministrator) return; // Runtime guard for defense-in-depth
+                                                      if (!item.productId || !loc.id) return;
                                                       
-                                                      setItems(prevItems => {
-                                                        const updated = [...prevItems];
-                                                        // Use receiving-specific quantity from notes tag
-                                                        const deletedQty = receivingQty;
-                                                        updated[index].receiptLocations = updated[index].receiptLocations.filter(
-                                                          (_: any, i: number) => i !== locIdx
-                                                        );
-                                                        updated[index].assignedQuantity -= deletedQty;
-                                                        delete updated[index].pendingExistingAdds[locId];
-                                                        return updated;
-                                                      });
-                                                    } catch (error) {
-                                                      console.error('Failed to delete location:', error);
-                                                    }
-                                                  }}
-                                                  disabled={deleteLocationMutation.isPending}
-                                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
-                                                >
-                                                  <Trash2 className="h-4 w-4 mr-2" />
-                                                  {t('common:delete')}
-                                                </DropdownMenuItem>
+                                                      try {
+                                                        await deleteLocationMutation.mutateAsync({
+                                                          productId: String(item.productId),
+                                                          locationId: String(loc.id),
+                                                          receiptItemId: String(item.receiptItemId)
+                                                        });
+                                                        
+                                                        setItems(prevItems => {
+                                                          const updated = [...prevItems];
+                                                          // Use receiving-specific quantity from receiptLocations
+                                                          const deletedQty = receivingQty;
+                                                          updated[index].receiptLocations = updated[index].receiptLocations.filter(
+                                                            (_: any, i: number) => i !== locIdx
+                                                          );
+                                                          updated[index].assignedQuantity -= deletedQty;
+                                                          delete updated[index].pendingExistingAdds[locId];
+                                                          return updated;
+                                                        });
+                                                      } catch (error) {
+                                                        console.error('Failed to delete location:', error);
+                                                      }
+                                                    }}
+                                                    disabled={deleteLocationMutation.isPending}
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
+                                                  >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    {t('common:delete')}
+                                                  </DropdownMenuItem>
+                                                )}
                                               </DropdownMenuContent>
                                             </DropdownMenu>
                                           </div>
@@ -4869,85 +4919,28 @@ function QuickStorageSheet({
                                                 receiptItemId: item.receiptItemId
                                               });
                                               
-                                              // Refetch product locations from server
-                                              const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
-                                              if (locResponse.ok) {
-                                                const serverLocations = await locResponse.json();
-                                                // Filter for locations relevant to THIS receipt (or no RI tag = general inventory)
-                                                const relevantLocations = serverLocations.filter((loc: any) => {
-                                                  if (!loc.notes) return true; // No notes = include
-                                                  if (loc.notes.includes(`RI:${item.receiptItemId}:`)) return true; // This receipt
-                                                  if (!loc.notes.includes('RI:')) return true; // No RI tag at all
-                                                  return false; // Has RI tag for different receipt
-                                                });
+                                              // Refetch receipt-specific locations from the new API
+                                              const receiptLocResponse = await fetch(`/api/receipt-items/${item.receiptItemId}/locations`, { credentials: 'include' });
+                                              if (receiptLocResponse.ok) {
+                                                const receiptLocs = await receiptLocResponse.json();
                                                 
-                                                // Fetch product variants to get SKU/name mapping
-                                                let variantMap = new Map<string, { sku: string; name: string }>();
-                                                // Also build a reverse map: real variantId -> original allocation info
-                                                let variantIdToAllocationMap = new Map<string, VariantAllocation>();
-                                                
-                                                try {
-                                                  const variantResponse = await fetch(`/api/products/${item.productId}/variants`, { credentials: 'include' });
-                                                  if (variantResponse.ok) {
-                                                    const variants = await variantResponse.json();
-                                                    for (const v of variants) {
-                                                      variantMap.set(v.id, { sku: v.sku || '', name: v.name || '' });
-                                                    }
-                                                    
-                                                    // Match each variantAllocation to a real variant by SKU or name (fallback only)
-                                                    const variantAllocations = item.variantAllocations || [];
-                                                    for (const va of variantAllocations) {
-                                                      const vaSku = (va as any).sku || va.variantName;
-                                                      for (const v of variants) {
-                                                        if ((v.sku && vaSku && v.sku === vaSku) || 
-                                                            (v.name && va.variantName && v.name === va.variantName)) {
-                                                          variantIdToAllocationMap.set(v.id, va);
-                                                          break;
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                } catch (e) {
-                                                  console.warn('Failed to fetch variants for name lookup:', e);
-                                                }
+                                                // Map API response to the expected format
+                                                const mappedLocs = receiptLocs.map((loc: any) => ({
+                                                  id: loc.productLocationId,
+                                                  locationCode: loc.locationCode,
+                                                  locationType: loc.locationType || 'warehouse',
+                                                  quantity: loc.quantityAdded, // Use quantityAdded for display
+                                                  variantId: loc.variantId,
+                                                  variantName: loc.variantName || '',
+                                                  isPrimary: false,
+                                                  receiptItemLocationId: loc.id, // Store the receipt_item_locations.id for deletion
+                                                  originalQuantity: loc.originalQuantity
+                                                }));
                                                 
                                                 setItems(prevItems => {
                                                   const updated = [...prevItems];
-                                                  updated[index].receiptLocations = relevantLocations.map((loc: any) => {
-                                                    // Look up variant info - prioritize direct variantMap lookup
-                                                    // (variantMap is built from product variants, always available)
-                                                    let variantName = '';
-                                                    let sku = '';
-                                                    if (loc.variantId) {
-                                                      // Primary: Use variantMap (product variants) - always reliable
-                                                      const variantInfo = variantMap.get(loc.variantId);
-                                                      if (variantInfo) {
-                                                        variantName = variantInfo.name;
-                                                        sku = variantInfo.sku;
-                                                      }
-                                                      // Fallback: Try allocation map for original allocation names (may be stale after undo)
-                                                      if (!variantName) {
-                                                        const originalAllocation = variantIdToAllocationMap.get(loc.variantId);
-                                                        if (originalAllocation) {
-                                                          variantName = originalAllocation.variantName;
-                                                          sku = (originalAllocation as any).sku || originalAllocation.variantName;
-                                                        }
-                                                      }
-                                                    }
-                                                    return {
-                                                      id: loc.id,
-                                                      locationCode: loc.locationCode,
-                                                      locationType: loc.locationType,
-                                                      quantity: loc.quantity,
-                                                      isPrimary: loc.isPrimary,
-                                                      notes: loc.notes,
-                                                      variantId: loc.variantId,
-                                                      variantName,
-                                                      sku
-                                                    };
-                                                  });
+                                                  updated[index].receiptLocations = mappedLocs;
                                                   // Update assignedQuantity locally - add the saved quantity to current
-                                                  // We know totalSavedQty was just saved, so add it to existing
                                                   updated[index].assignedQuantity = Math.min(
                                                     (updated[index].assignedQuantity || 0) + totalSavedQty,
                                                     updated[index].receivedQuantity
@@ -5926,6 +5919,7 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
         shipment={shipment}
         open={showQuickStorage}
         onOpenChange={setShowQuickStorage}
+        isAdministrator={isAdministrator}
       />
       
       {isAdministrator && (

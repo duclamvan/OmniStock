@@ -6645,6 +6645,12 @@ Important:
   // SAFETY: Only processes locations that have records in receipt_item_locations table
   app.delete('/api/products/:id/locations/batch', isAuthenticated, async (req: any, res) => {
     try {
+      // SECURITY: Admin-only for batch delete operations
+      const userRole = req.user?.role;
+      if (userRole !== 'administrator') {
+        return res.status(403).json({ message: "Administrator access required for batch delete operations" });
+      }
+      
       const productId = req.params.id;
       const { receiptItemId, locationIds } = req.body;
       
@@ -6870,6 +6876,12 @@ Important:
   // SAFETY: Uses receipt_item_locations table to track original quantities
   app.delete('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
+      // SECURITY: Admin-only for delete operations
+      const userRole = req.user?.role;
+      if (userRole !== 'administrator') {
+        return res.status(403).json({ message: "Administrator access required for delete operations" });
+      }
+      
       const { id: productId, locationId } = req.params;
       const { receiptItemId } = req.body;
 
