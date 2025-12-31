@@ -20162,6 +20162,7 @@ Important rules:
           let items: any[] = [];
           let itemCount = 0;
           
+          // First try to get items from consolidationItems if consolidationId exists
           if (shipment.consolidationId) {
             const consolidationItemList = await db
               .select({
@@ -20178,8 +20179,11 @@ Important rules:
             
             items = consolidationItemList;
             itemCount = consolidationItemList.length;
-          } else {
-            // For Direct PO shipments (no consolidation), get items from receipts
+          }
+          
+          // If no items found (either no consolidationId or consolidation has no items), 
+          // fall back to receipt items (covers Direct PO and transit-linked PO shipments)
+          if (items.length === 0) {
             const shipmentReceipts = await db
               .select({ id: receipts.id })
               .from(receipts)
@@ -22305,6 +22309,7 @@ Important rules:
           let items: any[] = [];
           let itemCount = 0;
           
+          // First try to get items from consolidationItems if consolidationId exists
           if (shipment.consolidationId) {
             const consolidationItemList = await db
               .select({
@@ -22321,6 +22326,32 @@ Important rules:
             
             items = consolidationItemList;
             itemCount = consolidationItemList.length;
+          }
+          
+          // If no items found, fall back to receipt items
+          if (items.length === 0) {
+            const shipmentReceipts = await db
+              .select({ id: receipts.id })
+              .from(receipts)
+              .where(eq(receipts.shipmentId, shipment.id));
+            
+            if (shipmentReceipts.length > 0) {
+              const receiptIds = shipmentReceipts.map(r => r.id);
+              const receiptItemList = await db
+                .select({
+                  id: receiptItems.id,
+                  name: products.name,
+                  productName: products.name,
+                  quantity: receiptItems.receivedQuantity,
+                  category: products.category
+                })
+                .from(receiptItems)
+                .leftJoin(products, eq(receiptItems.productId, products.id))
+                .where(inArray(receiptItems.receiptId, receiptIds));
+              
+              items = receiptItemList;
+              itemCount = receiptItemList.length;
+            }
           }
           
           return {
