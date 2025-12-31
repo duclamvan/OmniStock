@@ -4853,10 +4853,13 @@ function QuickStorageSheet({
                                               const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
                                               if (locResponse.ok) {
                                                 const serverLocations = await locResponse.json();
-                                                const relevantLocations = serverLocations.filter((loc: any) => 
-                                                  loc.notes?.includes(`RI:${item.receiptItemId}:`) || 
-                                                  !loc.notes?.includes('RI:')
-                                                );
+                                                // Filter for locations relevant to THIS receipt (or no RI tag = general inventory)
+                                                const relevantLocations = serverLocations.filter((loc: any) => {
+                                                  if (!loc.notes) return true; // No notes = include
+                                                  if (loc.notes.includes(`RI:${item.receiptItemId}:`)) return true; // This receipt
+                                                  if (!loc.notes.includes('RI:')) return true; // No RI tag at all
+                                                  return false; // Has RI tag for different receipt
+                                                });
                                                 
                                                 // Fetch product variants to get SKU/name mapping
                                                 let variantMap = new Map<string, { sku: string; name: string }>();
@@ -4923,6 +4926,12 @@ function QuickStorageSheet({
                                                       sku
                                                     };
                                                   });
+                                                  // Update assignedQuantity locally - add the saved quantity to current
+                                                  // We know totalSavedQty was just saved, so add it to existing
+                                                  updated[index].assignedQuantity = Math.min(
+                                                    (updated[index].assignedQuantity || 0) + totalSavedQty,
+                                                    updated[index].receivedQuantity
+                                                  );
                                                   updated[index].locations = [];
                                                   updated[index].pendingExistingAdds = {};
                                                   return updated;
