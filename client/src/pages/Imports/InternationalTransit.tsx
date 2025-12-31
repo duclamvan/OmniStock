@@ -195,10 +195,13 @@ export default function InternationalTransit() {
       weight: number;
       unitPrice: number;
       itemCurrency: string;
-      freightAllocation: number;
-      dutyAllocation: number;
-      brokerageAllocation: number;
-      totalAllocation: number;
+      freightAllocated: number;
+      dutyAllocated: number;
+      brokerageAllocated: number;
+      insuranceAllocated: number;
+      packagingAllocated: number;
+      otherAllocated: number;
+      totalAllocated: number;
       landingCostPerUnit: number;
     }>;
     totalCosts: {
@@ -2656,11 +2659,12 @@ export default function InternationalTransit() {
                         const hasServerData = landingCostPreview?.items?.length && item.landingCostPerUnit !== undefined;
                         const landingCostPerUnit = hasServerData 
                           ? item.landingCostPerUnit 
-                          : unitCost + (totalItems > 0 ? totalShipping / totalItems : 0);
-                        const freightPerUnit = hasServerData 
-                          ? (item.freightAllocation || 0) / qty 
                           : (totalItems > 0 ? totalShipping / totalItems : 0);
-                        const landingCostCZK = convertCurrency(landingCostPerUnit || 0, 'EUR', 'CZK');
+                        const freightPerUnit = hasServerData 
+                          ? (item.freightAllocated || 0) / qty 
+                          : (totalItems > 0 ? totalShipping / totalItems : 0);
+                        const totalCostPerUnit = unitCost + landingCostPerUnit;
+                        const totalCostCZK = convertCurrency(totalCostPerUnit || 0, 'EUR', 'CZK');
                         
                         return (
                           <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
@@ -2688,12 +2692,12 @@ export default function InternationalTransit() {
                                 <p className="font-mono text-blue-600">€{freightPerUnit.toFixed(2)}</p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">{t('landingCost')}</p>
-                                <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{landingCostPerUnit.toFixed(2)}</p>
+                                <p className="text-muted-foreground">{t('totalCostPerUnit')}</p>
+                                <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{totalCostPerUnit.toFixed(2)}</p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">{t('landingCZK')}</p>
-                                <p className="font-mono text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</p>
+                                <p className="text-muted-foreground">{t('totalCostCZK')}</p>
+                                <p className="font-mono text-cyan-700 dark:text-cyan-400">{totalCostCZK.toFixed(0)} Kč</p>
                               </div>
                             </div>
                           </div>
@@ -2711,16 +2715,17 @@ export default function InternationalTransit() {
                           const totalFreight = hasServerData && landingCostPreview.totalCosts?.freight !== undefined
                             ? landingCostPreview.totalCosts.freight 
                             : totalShipping;
-                          const totalLandingCost = hasServerData 
+                          const totalLandingCostPortion = hasServerData 
                             ? landingCostPreview.items.reduce((sum, item) => sum + ((item.landingCostPerUnit || 0) * (item.quantity || 1)), 0)
-                            : totalProductCost + totalShipping;
-                          const totalLandingCZK = convertCurrency(totalLandingCost || 0, 'EUR', 'CZK');
+                            : totalShipping;
+                          const grandTotal = totalProductCost + totalLandingCostPortion;
+                          const grandTotalCZK = convertCurrency(grandTotal || 0, 'EUR', 'CZK');
                           
                           return (
                             <>
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div>
-                                  <p className="text-muted-foreground">{t('totalCost')}</p>
+                                  <p className="text-muted-foreground">{t('productCost')}</p>
                                   <p className="font-mono font-semibold">€{totalProductCost.toFixed(2)}</p>
                                 </div>
                                 <div>
@@ -2728,12 +2733,12 @@ export default function InternationalTransit() {
                                   <p className="font-mono font-semibold text-blue-600">€{totalFreight.toFixed(2)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">{t('totalLanding')}</p>
-                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{totalLandingCost.toFixed(2)}</p>
+                                  <p className="text-muted-foreground">{t('grandTotal')}</p>
+                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">€{grandTotal.toFixed(2)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">{t('totalLandingCZK')}</p>
-                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">{totalLandingCZK.toFixed(0)} Kč</p>
+                                  <p className="text-muted-foreground">{t('grandTotalCZK')}</p>
+                                  <p className="font-mono font-semibold text-cyan-700 dark:text-cyan-400">{grandTotalCZK.toFixed(0)} Kč</p>
                                 </div>
                               </div>
                             </>
@@ -2751,8 +2756,8 @@ export default function InternationalTransit() {
                             <TableHead className="text-center w-[8%]">{t('qty')}</TableHead>
                             <TableHead className="text-right w-[14%]">{t('unitCost')}</TableHead>
                             <TableHead className="text-right w-[12%]">{t('freight')}</TableHead>
-                            <TableHead className="text-right w-[12%]">{t('landingCostEUR')}</TableHead>
-                            <TableHead className="text-right w-[12%]">{t('landingCostCZK')}</TableHead>
+                            <TableHead className="text-right w-[12%]">{t('totalCostEUR')}</TableHead>
+                            <TableHead className="text-right w-[12%]">{t('totalCostCZK')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2762,11 +2767,12 @@ export default function InternationalTransit() {
                             const hasServerData = landingCostPreview?.items?.length && item.landingCostPerUnit !== undefined;
                             const landingCostPerUnit = hasServerData 
                               ? item.landingCostPerUnit 
-                              : unitCost + (totalItems > 0 ? totalShipping / totalItems : 0);
-                            const freightPerUnit = hasServerData 
-                              ? (item.freightAllocation || 0) / qty 
                               : (totalItems > 0 ? totalShipping / totalItems : 0);
-                            const landingCostCZK = convertCurrency(landingCostPerUnit || 0, 'EUR', 'CZK');
+                            const freightPerUnit = hasServerData 
+                              ? (item.freightAllocated || 0) / qty 
+                              : (totalItems > 0 ? totalShipping / totalItems : 0);
+                            const totalCostPerUnit = unitCost + landingCostPerUnit;
+                            const totalCostCZK = convertCurrency(totalCostPerUnit || 0, 'EUR', 'CZK');
                             
                             return (
                               <TableRow key={index} className="text-sm">
@@ -2774,8 +2780,8 @@ export default function InternationalTransit() {
                                 <TableCell className="text-center font-mono text-xs">{qty}</TableCell>
                                 <TableCell className="text-right font-mono text-xs">€{unitCost.toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono text-xs text-blue-600">€{(freightPerUnit || 0).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-semibold font-mono text-xs text-cyan-700 dark:text-cyan-400">€{(landingCostPerUnit || 0).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">{landingCostCZK.toFixed(0)} Kč</TableCell>
+                                <TableCell className="text-right font-semibold font-mono text-xs text-cyan-700 dark:text-cyan-400">€{(totalCostPerUnit || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-xs text-cyan-700 dark:text-cyan-400">{totalCostCZK.toFixed(0)} Kč</TableCell>
                               </TableRow>
                             );
                           })}
@@ -2787,18 +2793,19 @@ export default function InternationalTransit() {
                             const totalFreight = hasServerData && landingCostPreview.totalCosts?.freight !== undefined
                               ? landingCostPreview.totalCosts.freight 
                               : totalShipping;
-                            const totalLandingCost = hasServerData 
+                            const totalLandingCostPortion = hasServerData 
                               ? landingCostPreview.items.reduce((sum, item) => sum + ((item.landingCostPerUnit || 0) * (item.quantity || 1)), 0)
-                              : totalProductCost + totalShipping;
-                            const totalLandingCZK = convertCurrency(totalLandingCost || 0, 'EUR', 'CZK');
+                              : totalShipping;
+                            const grandTotal = totalProductCost + totalLandingCostPortion;
+                            const grandTotalCZK = convertCurrency(grandTotal || 0, 'EUR', 'CZK');
                             
                             return (
                               <TableRow className="bg-slate-50 dark:bg-slate-900/30 font-semibold">
                                 <TableCell colSpan={2}>{t('totals')}</TableCell>
                                 <TableCell className="text-right font-mono text-sm">€{totalProductCost.toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono text-sm text-blue-600">€{(totalFreight || 0).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">€{(totalLandingCost || 0).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">{totalLandingCZK.toFixed(0)} Kč</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">€{(grandTotal || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-sm text-cyan-700 dark:text-cyan-400">{grandTotalCZK.toFixed(0)} Kč</TableCell>
                               </TableRow>
                             );
                           })()}
