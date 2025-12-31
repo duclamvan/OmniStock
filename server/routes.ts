@@ -6827,9 +6827,12 @@ Important:
     }
   });
 
+  // Single location delete - PRESERVES pre-existing inventory when receiptItemId is provided
+  // SAFETY: Restores original quantities instead of deleting pre-existing locations
   app.delete('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
+      const { receiptItemId } = req.body;
 
       // Handle legacy locations (from old warehouseLocation field)
       if (locationId === 'legacy') {
@@ -6847,7 +6850,72 @@ Important:
         return res.status(204).send();
       }
 
-      // Normal delete for existing locations
+      // Fetch the location to check for RI tags
+      const allLocations = await storage.getProductLocations(productId);
+      const loc = allLocations.find(l => l.id === locationId);
+      
+      if (!loc) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      // SAFETY: If receiptItemId is provided, apply restore-or-delete logic
+      if (receiptItemId && loc.notes) {
+        // Check if this location is tagged for this receipt
+        if (!loc.notes.includes(`RI:${receiptItemId}:`)) {
+          console.log(`[SAFETY] Blocked deletion of location ${locationId} - not tagged for receipt ${receiptItemId}`);
+          return res.status(400).json({ 
+            message: "Safety: Cannot delete location not tagged for this receipt" 
+          });
+        }
+        
+        // Check for original quantity marker: RI:{id}:Q{added}:O{original}:N{preservedNotes}
+        const originalMatch = loc.notes.match(/:O(\d+)(?::N(.*))?$/);
+        
+        if (originalMatch) {
+          const originalQuantity = parseInt(originalMatch[1], 10);
+          const preservedNotesBase64 = originalMatch[2];
+          
+          if (originalQuantity > 0) {
+            // Pre-existing location - RESTORE to original quantity instead of deleting
+            let restoredNotes: string | null = null;
+            if (preservedNotesBase64) {
+              try {
+                restoredNotes = Buffer.from(preservedNotesBase64, 'base64').toString('utf-8');
+              } catch (e) {
+                console.error('Failed to decode preserved notes:', e);
+              }
+            }
+            
+            // Restore to original quantity and clear RI tag
+            await db.update(productLocations)
+              .set({ 
+                quantity: originalQuantity,
+                notes: restoredNotes,
+                updatedAt: new Date()
+              })
+              .where(eq(productLocations.id, locationId));
+            
+            console.log(`[SAFETY] Restored location ${loc.locationCode} to original qty ${originalQuantity}`);
+            
+            await storage.createUserActivity({
+              userId: "test-user",
+              action: 'restored',
+              entityType: 'product_location',
+              entityId: locationId,
+              description: `Restored location ${loc.locationCode} to original quantity ${originalQuantity}`,
+            });
+            
+            return res.status(200).json({ 
+              restored: true, 
+              originalQuantity,
+              message: `Restored to original quantity ${originalQuantity}` 
+            });
+          }
+          // originalQuantity === 0 means this location was created during this receipt - delete it
+        }
+      }
+
+      // Normal delete for new locations (no RI tag, or :O0, or no receiptItemId)
       const success = await storage.deleteProductLocation(locationId);
 
       if (!success) {
@@ -6859,7 +6927,7 @@ Important:
         action: 'deleted',
         entityType: 'product_location',
         entityId: locationId,
-        description: `Deleted product location`,
+        description: `Deleted product location ${loc.locationCode}`,
       });
 
       res.status(204).send();
