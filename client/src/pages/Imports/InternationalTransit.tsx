@@ -703,6 +703,10 @@ export default function InternationalTransit() {
       .map(num => num.trim())
       .filter(num => num.length > 0);
     
+    // Get estimated delivery from form (hidden input) or from state
+    const estimatedDeliveryStr = formData.get('estimatedDelivery') as string;
+    const estimatedDelivery = estimatedDeliveryStr ? estimatedDeliveryStr : (selectedEtaDate ? selectedEtaDate.toISOString() : null);
+    
     const data = {
       carrier: formData.get('carrier') as string || 'Standard Carrier',
       trackingNumber: formData.get('trackingNumber') as string,
@@ -719,6 +723,7 @@ export default function InternationalTransit() {
       totalWeight: parseFloat(formData.get('totalWeight') as string) || 0,
       totalUnits: parseInt(formData.get('totalUnits') as string) || 1,
       unitType: formData.get('unitType') as string || 'carton',
+      estimatedDelivery: estimatedDelivery,
     };
     
     if (selectedShipment) {

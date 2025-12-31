@@ -5986,6 +5986,16 @@ router.put("/shipments/:id", async (req, res) => {
       }
     }
     
+    // Handle estimatedDelivery - parse if provided, preserve existing if not
+    let estimatedDelivery = existingShipment.estimatedDelivery;
+    if (req.body.estimatedDelivery !== undefined) {
+      if (req.body.estimatedDelivery === null || req.body.estimatedDelivery === '') {
+        estimatedDelivery = null;
+      } else {
+        estimatedDelivery = new Date(req.body.estimatedDelivery);
+      }
+    }
+    
     const updateData: Record<string, any> = {
       carrier: req.body.carrier || existingShipment.carrier || 'Standard Carrier',
       trackingNumber: trackingNumber,
@@ -6004,6 +6014,7 @@ router.put("/shipments/:id", async (req, res) => {
       totalWeight: req.body.totalWeight?.toString() || existingShipment.totalWeight,
       totalUnits: req.body.totalUnits !== undefined ? req.body.totalUnits : existingShipment.totalUnits,
       unitType: req.body.unitType || existingShipment.unitType,
+      estimatedDelivery: estimatedDelivery,
       updatedAt: new Date()
     };
     
