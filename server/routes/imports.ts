@@ -5964,6 +5964,28 @@ router.put("/shipments/:id", async (req, res) => {
       trackingNumber = `QS-${Date.now()}`;
     }
     
+    // Handle notes - preserve "Auto-created from Purchase Order" marker for direct PO shipments
+    let updatedNotes = existingShipment.notes;
+    const directPoMarker = 'Auto-created from Purchase Order';
+    const hasDirectPoMarker = existingShipment.notes?.includes(directPoMarker);
+    
+    if (req.body.notes !== undefined) {
+      if (hasDirectPoMarker && !existingShipment.consolidationId) {
+        // Preserve the direct PO marker - prepend it to new notes if not already present
+        const newNotes = req.body.notes || '';
+        if (!newNotes.includes(directPoMarker)) {
+          // Extract the original marker line from existing notes
+          const markerMatch = existingShipment.notes?.match(/Auto-created from Purchase Order[^\n]*/);
+          const markerLine = markerMatch ? markerMatch[0] : directPoMarker;
+          updatedNotes = newNotes ? `${markerLine}\n${newNotes}` : markerLine;
+        } else {
+          updatedNotes = newNotes;
+        }
+      } else {
+        updatedNotes = req.body.notes;
+      }
+    }
+    
     const updateData: Record<string, any> = {
       carrier: req.body.carrier || existingShipment.carrier || 'Standard Carrier',
       trackingNumber: trackingNumber,
@@ -5978,7 +6000,7 @@ router.put("/shipments/:id", async (req, res) => {
       shippingCost: req.body.shippingCost?.toString() || existingShipment.shippingCost || '0',
       shippingCostCurrency: req.body.shippingCostCurrency || existingShipment.shippingCostCurrency || 'USD',
       shippingMethod: req.body.shippingMethod || req.body.shipmentType || existingShipment.shippingMethod,
-      notes: req.body.notes !== undefined ? req.body.notes : existingShipment.notes,
+      notes: updatedNotes,
       totalWeight: req.body.totalWeight?.toString() || existingShipment.totalWeight,
       totalUnits: req.body.totalUnits !== undefined ? req.body.totalUnits : existingShipment.totalUnits,
       unitType: req.body.unitType || existingShipment.unitType,
