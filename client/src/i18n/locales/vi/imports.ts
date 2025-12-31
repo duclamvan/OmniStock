@@ -1092,6 +1092,8 @@ const imports = {
   sortByDelivery: 'Theo ngày giao',
   sortByType: 'Theo loại',
   sortByStatus: 'Theo trạng thái',
+  createdDate: 'Ngày tạo',
+  deliveryDate: 'Ngày giao',
   filterByType: 'Lọc theo loại...',
   allTypes: 'Tất cả loại',
   expressAirDDP: 'Express Air (DDP)',

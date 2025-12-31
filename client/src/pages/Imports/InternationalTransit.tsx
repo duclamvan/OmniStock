@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar as CalendarIcon, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar as CalendarIcon, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, ArrowDown, ArrowUp, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -181,7 +181,8 @@ export default function InternationalTransit() {
   const [predictions, setPredictions] = useState<Record<string, DeliveryPrediction>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTracking, setExpandedTracking] = useState<Record<string, boolean>>({});
-  const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status'>('delivery');
+  const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status' | 'created' | 'name'>('created');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewShipmentDetails, setViewShipmentDetails] = useState<Shipment | null>(null);
@@ -789,20 +790,35 @@ export default function InternationalTransit() {
 
     // Sort shipments
     const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
       switch (sortBy) {
         case 'delivery':
           const dateA = a.estimatedDelivery || a.deliveredAt || new Date(a.createdAt).toISOString();
           const dateB = b.estimatedDelivery || b.deliveredAt || new Date(b.createdAt).toISOString();
-          return new Date(dateA).getTime() - new Date(dateB).getTime();
+          comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
+          break;
+        case 'created':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'name':
+          const nameA = a.shipmentName || a.trackingNumber || '';
+          const nameB = b.shipmentName || b.trackingNumber || '';
+          comparison = nameA.localeCompare(nameB);
+          break;
         case 'type':
-          return (a.shipmentType || '').localeCompare(b.shipmentType || '');
+          comparison = (a.shipmentType || '').localeCompare(b.shipmentType || '');
+          break;
         case 'status':
           const statusOrder = { 'pending': 0, 'in transit': 1, 'delivered': 2 };
-          return (statusOrder[a.status as keyof typeof statusOrder] || 0) - 
+          comparison = (statusOrder[a.status as keyof typeof statusOrder] || 0) - 
                  (statusOrder[b.status as keyof typeof statusOrder] || 0);
+          break;
         default:
-          return 0;
+          comparison = 0;
       }
+      
+      return sortDirection === 'desc' ? -comparison : comparison;
     });
 
     return sorted;
@@ -2121,17 +2137,31 @@ export default function InternationalTransit() {
                 </div>
                 
                 <div className="flex items-center gap-2 flex-1 min-w-[140px]">
-                  <ArrowUpDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
                     <SelectTrigger className="w-full text-xs sm:text-sm">
                       <SelectValue placeholder={t('sortBy')} />
                     </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="delivery">{t('deliveryDate')}</SelectItem>
-                    <SelectItem value="type">{t('shipmentType')}</SelectItem>
-                    <SelectItem value="status">{t('status')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                    <SelectContent>
+                      <SelectItem value="created">{t('createdDate')}</SelectItem>
+                      <SelectItem value="delivery">{t('deliveryDate')}</SelectItem>
+                      <SelectItem value="name">{t('shipmentName')}</SelectItem>
+                      <SelectItem value="type">{t('shipmentType')}</SelectItem>
+                      <SelectItem value="status">{t('status')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    data-testid="button-toggle-sort-direction"
+                  >
+                    {sortDirection === 'desc' ? (
+                      <ArrowDown className="h-4 w-4" />
+                    ) : (
+                      <ArrowUp className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>

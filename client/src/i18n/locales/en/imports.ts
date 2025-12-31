@@ -1720,6 +1720,7 @@ const imports = {
   // InternationalTransit - Filter and Sort Labels (unique keys only)
   allShipmentsFilter: 'All Shipments',
   allStatus: 'All Status',
+  createdDate: 'Created Date',
   deliveryDate: 'Delivery Date',
   filterByTypeLabel: 'Filter by type',
   
