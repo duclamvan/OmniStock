@@ -133,7 +133,7 @@ function Router() {
         <Route path="/orders/add">
           {() => <ProtectedRoute requireAdmin><AddOrder /></ProtectedRoute>}
         </Route>
-        <Route path="/orders/pick-pack" component={PickPack} />
+        <Route path="/pick-pack" component={PickPack} />
         <Route path="/orders/to-fulfill">
           {() => <ProtectedRoute requireAdmin><AllOrders filter="to_fulfill" /></ProtectedRoute>}
         </Route>

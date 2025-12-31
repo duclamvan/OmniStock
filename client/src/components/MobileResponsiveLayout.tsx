@@ -388,7 +388,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         },
         {
           name: t('common:pickAndPack'),
-          href: "/orders/pick-pack",
+          href: "/pick-pack",
           icon: PackageCheck,
           color: "text-amber-600 dark:text-amber-400",
           description: t('common:orderFulfillment')
@@ -1018,7 +1018,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         }}
       >
         {/* Top Navigation Bar - Desktop Only - Hidden during active picking/packing */}
-        {!(location.includes('/orders/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
+        {!(location.includes('/pick-pack') && sessionStorage.getItem('pickpack-active-mode') === 'true') && (
           <header className="hidden lg:block sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-2">
             {/* Breadcrumb and Page Title */}
@@ -1084,7 +1084,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     <span className="text-foreground font-medium truncate">
                       {location.includes('/orders/add') ? t('common:addOrder') :
                        location.includes('/orders/edit') ? t('common:editOrder') :
-                       location.includes('/orders/pick-pack') ? t('common:pickAndPack') :
+                       location.includes('/pick-pack') ? t('common:pickAndPack') :
                        location.includes('/orders/') ? t('common:orderDetails') :
                        location.includes('/orders') ? t('common:orders') :
                        location.includes('/packing-materials/add') ? t('common:addMaterial') :
@@ -1149,7 +1149,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
               {/* Page Title */}
               <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 border-l pl-3 border-gray-200 dark:border-gray-700">
                 {location === '/' ? t('common:dashboard') : 
-                 location.includes('/orders/pick-pack') ? t('common:pickAndPack') :
+                 location.includes('/pick-pack') ? t('common:pickAndPack') :
                  location.includes('/orders') ? t('common:ordersManagement') :
                  location.includes('/packing-materials') ? t('common:packingMaterials') :
                  location.includes('/inventory') ? t('common:inventoryManagement') :

@@ -310,7 +310,7 @@ export default function WarehouseDashboard() {
       {/* Main Stats - Large Numbers */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Orders To Pick */}
-        <Link href="/orders/pick-pack">
+        <Link href="/pick-pack">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer" data-testid="stat-total-orders">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
@@ -324,7 +324,7 @@ export default function WarehouseDashboard() {
         </Link>
         
         {/* Items To Pick */}
-        <Link href="/orders/pick-pack">
+        <Link href="/pick-pack">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-colors cursor-pointer" data-testid="stat-total-items">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
@@ -338,7 +338,7 @@ export default function WarehouseDashboard() {
         </Link>
         
         {/* Ready to Ship */}
-        <Link href="/orders/pick-pack?tab=ready">
+        <Link href="/pick-pack?tab=ready">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border-2 border-green-100 dark:border-green-900 hover:border-green-300 dark:hover:border-green-700 transition-colors cursor-pointer" data-testid="stat-ready-to-ship">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
@@ -371,7 +371,7 @@ export default function WarehouseDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('common:orderStatus')}</h2>
-            <Link href="/orders/pick-pack">
+            <Link href="/pick-pack">
               <Button variant="outline" size="sm" className="text-sm" data-testid="button-go-to-pickpack">
                 <PlayCircle className="h-4 w-4 mr-2" />
                 {t('warehouse:startPicking')}

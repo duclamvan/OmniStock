@@ -199,7 +199,7 @@ export function MobileHeader({
     };
   }, [location]); // Re-check when location changes
   
-  const shouldHideHeader = location.includes('/orders/pick-pack') && pickpackModeActive;
+  const shouldHideHeader = location.includes('/pick-pack') && pickpackModeActive;
   
   // Track breakpoint changes
   useEffect(() => {

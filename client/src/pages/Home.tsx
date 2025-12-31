@@ -249,7 +249,7 @@ export default function Home() {
               <span className="truncate">{t('newOrder')}</span>
             </Button>
           </Link>
-          <Link href="/orders/pick-pack" className="flex-1 sm:flex-initial">
+          <Link href="/pick-pack" className="flex-1 sm:flex-initial">
             <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm" data-testid="button-pick-pack">
               <PackageCheck className="h-4 w-4 mr-1.5 sm:mr-2 shrink-0" />
               <span className="truncate">{t('pickAndPack')}</span>
@@ -417,7 +417,7 @@ export default function Home() {
                     {t('dashboard:todaysOrders')}
                   </CardDescription>
                 </div>
-                <Link href="/orders/pick-pack" className="shrink-0">
+                <Link href="/pick-pack" className="shrink-0">
                   <Button variant="ghost" size="sm" className="h-8 sm:min-h-[36px] text-xs sm:text-sm px-2 sm:px-3" data-testid="button-view-all-orders">
                     {t('viewAll')}
                     <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1" />
@@ -676,7 +676,7 @@ export default function Home() {
               </Link>
 
               {/* Pick & Pack */}
-              <Link href="/orders/pick-pack">
+              <Link href="/pick-pack">
                 <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors cursor-pointer" data-testid="task-pick-pack">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900 rounded-lg shrink-0">

@@ -383,7 +383,7 @@ export default function OrderDetails() {
   };
 
   // Prevent OrderDetails from rendering on pick-pack page
-  if (location === '/orders/pick-pack') {
+  if (location === '/pick-pack') {
     return null;
   }
 
