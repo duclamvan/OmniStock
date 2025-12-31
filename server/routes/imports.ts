@@ -8946,50 +8946,69 @@ router.get("/shipments/:id", async (req, res) => {
         }
       }
     } else {
-      // Non-consolidated shipment - try to get items from purchase order
+      // Non-consolidated shipment - try to get items from purchase order (direct PO shipment)
+      // Direct PO shipments have notes like "Auto-created from Purchase Order #FBF908DE"
       const notes = shipment.shipment.notes || '';
-      const poMatch = notes.match(/PO #(\d+)/);
+      
+      // Match UUID prefix format: "PO #XXXXXXXX" or "Purchase Order #XXXXXXXX" where X is hex
+      const poMatch = notes.match(/(?:PO|Purchase Order)\s*#\s*([a-fA-F0-9]{8})/i);
+      console.log(`[GET shipment] Direct PO check - notes: "${notes}", match: ${poMatch?.[1] || 'none'}`);
       
       if (poMatch) {
-        const purchaseId = parseInt(poMatch[1]);
+        const poPrefix = poMatch[1].toLowerCase();
         
-        // Get items from purchaseItems table with variant allocations
-        const purchaseItemsList = await db
-          .select({
-            id: purchaseItems.id,
-            name: purchaseItems.name,
-            sku: purchaseItems.sku,
-            quantity: purchaseItems.quantity,
-            weight: purchaseItems.weight,
-            trackingNumber: purchaseItems.trackingNumber,
-            unitPrice: purchaseItems.unitPrice,
-            imageUrl: purchaseItems.imageUrl,
-            notes: purchaseItems.notes,
-            variantAllocations: purchaseItems.variantAllocations,
-            productId: purchaseItems.productId
-          })
-          .from(purchaseItems)
-          .where(eq(purchaseItems.purchaseId, purchaseId));
+        // Find the actual purchase order ID by prefix
+        const matchingPurchases = await db
+          .select()
+          .from(importPurchases)
+          .where(sql`LOWER(${importPurchases.id}) LIKE ${poPrefix + '%'}`);
         
-        // Add items with image fallback from products table
-        for (const item of purchaseItemsList) {
-          let finalImageUrl = item.imageUrl;
+        console.log(`[GET shipment] Found ${matchingPurchases.length} purchases with prefix ${poPrefix}`);
+        
+        if (matchingPurchases.length > 0) {
+          const purchaseId = matchingPurchases[0].id;
           
-          if (!finalImageUrl && item.sku) {
-            const [product] = await db
-              .select({ imageUrl: products.imageUrl })
-              .from(products)
-              .where(eq(products.sku, item.sku));
+          // Get items from purchaseItems table with variant allocations
+          const purchaseItemsList = await db
+            .select({
+              id: purchaseItems.id,
+              name: purchaseItems.name,
+              sku: purchaseItems.sku,
+              quantity: purchaseItems.quantity,
+              weight: purchaseItems.weight,
+              trackingNumber: purchaseItems.trackingNumber,
+              unitPrice: purchaseItems.unitPrice,
+              imageUrl: purchaseItems.imageUrl,
+              notes: purchaseItems.notes,
+              variantAllocations: purchaseItems.variantAllocations,
+              productId: purchaseItems.productId
+            })
+            .from(purchaseItems)
+            .where(eq(purchaseItems.purchaseId, purchaseId));
+          
+          console.log(`[GET shipment] Found ${purchaseItemsList.length} items for purchase ${purchaseId}`);
+        
+          // Add items with image fallback from products table
+          for (const item of purchaseItemsList) {
+            let finalImageUrl = item.imageUrl;
             
-            if (product) {
-              finalImageUrl = product.imageUrl;
+            if (!finalImageUrl && item.sku) {
+              const [product] = await db
+                .select({ imageUrl: products.imageUrl })
+                .from(products)
+                .where(eq(products.sku, item.sku));
+              
+              if (product) {
+                finalImageUrl = product.imageUrl;
+              }
             }
+            
+            items.push({
+              ...item,
+              imageUrl: finalImageUrl,
+              itemType: 'purchase'
+            });
           }
-          
-          items.push({
-            ...item,
-            imageUrl: finalImageUrl
-          });
         }
       }
     }
