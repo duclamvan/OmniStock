@@ -240,6 +240,9 @@ const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPr
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [showMethodDetails, setShowMethodDetails] = useState(true);
   
+  // Track selected variant for each item (key: purchaseItemId, value: variantId or 'all')
+  const [selectedVariants, setSelectedVariants] = useState<Record<number, string>>({});
+  
   // Column visibility state
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -925,17 +928,60 @@ const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPr
                                 )}
                               </div>
                               <span className="text-[10px] text-muted-foreground">{item.sku}</span>
+                              {/* Variant Dropdown Selector */}
+                              {item.variantAllocations && item.variantAllocations.length > 0 && (
+                                <Select
+                                  value={selectedVariants[item.purchaseItemId] || 'all'}
+                                  onValueChange={(value) => setSelectedVariants(prev => ({
+                                    ...prev,
+                                    [item.purchaseItemId]: value
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-6 text-[10px] mt-1 w-full max-w-[180px]" data-testid={`select-variant-${item.purchaseItemId}`}>
+                                    <SelectValue placeholder={t('selectVariant') || 'Select variant'} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all" className="text-[10px]">
+                                      {t('allVariants') || 'All Variants'} ({item.quantity} {t('units')})
+                                    </SelectItem>
+                                    {item.variantAllocations.map((variant) => (
+                                      <SelectItem 
+                                        key={variant.variantId} 
+                                        value={variant.variantId}
+                                        className="text-[10px]"
+                                      >
+                                        {variant.variantName} ({variant.quantity} {t('units')})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
                           </TableCell>
                         )}
-                        {columnVisibility.units && (
-                          <TableCell className="text-right p-2">{item.quantity || 0}</TableCell>
-                        )}
-                        {columnVisibility.purchPrice && (
-                          <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
-                            {formatCurrency(item.unitPrice, preview.baseCurrency)}
-                          </TableCell>
-                        )}
+                        {columnVisibility.units && (() => {
+                          const selectedVariantId = selectedVariants[item.purchaseItemId];
+                          const selectedVariant = selectedVariantId && selectedVariantId !== 'all' 
+                            ? item.variantAllocations?.find(v => v.variantId === selectedVariantId)
+                            : null;
+                          return (
+                            <TableCell className="text-right p-2">
+                              {selectedVariant ? selectedVariant.quantity : (item.quantity || 0)}
+                            </TableCell>
+                          );
+                        })()}
+                        {columnVisibility.purchPrice && (() => {
+                          const selectedVariantId = selectedVariants[item.purchaseItemId];
+                          const selectedVariant = selectedVariantId && selectedVariantId !== 'all'
+                            ? item.variantAllocations?.find(v => v.variantId === selectedVariantId)
+                            : null;
+                          const unitPrice = selectedVariant?.unitPrice ?? item.unitPrice;
+                          return (
+                            <TableCell className="text-right p-2 text-blue-600 dark:text-blue-400 font-medium">
+                              {formatCurrency(unitPrice, preview.baseCurrency)}
+                            </TableCell>
+                          );
+                        })()}
                         {columnVisibility.chgKg && (
                           <TableCell className="text-right p-2 text-muted-foreground">
                             {(item.chargeableWeightKg || 0).toFixed(2)}
@@ -976,11 +1022,19 @@ const AllocationPreview = ({ shipmentId, displayCurrency = 'EUR' }: AllocationPr
                             {formatCurrency(item.landingCostPerUnit, preview.baseCurrency)}
                           </TableCell>
                         )}
-                        {columnVisibility.totalCost && (
-                          <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
-                            {formatCurrency((item.unitPrice || 0) + (item.landingCostPerUnit || 0), preview.baseCurrency)}
-                          </TableCell>
-                        )}
+                        {columnVisibility.totalCost && (() => {
+                          const selectedVariantId = selectedVariants[item.purchaseItemId];
+                          const selectedVariant = selectedVariantId && selectedVariantId !== 'all'
+                            ? item.variantAllocations?.find(v => v.variantId === selectedVariantId)
+                            : null;
+                          const unitPrice = selectedVariant?.unitPrice ?? item.unitPrice ?? 0;
+                          const totalCostPerUnit = unitPrice + (item.landingCostPerUnit || 0);
+                          return (
+                            <TableCell className="text-right font-semibold p-2 text-cyan-700 dark:text-cyan-400">
+                              {formatCurrency(totalCostPerUnit, preview.baseCurrency)}
+                            </TableCell>
+                          );
+                        })()}
                         <TableCell className="p-2">
                           <Button
                             variant="ghost"

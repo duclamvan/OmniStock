@@ -360,7 +360,9 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('items')}</p>
-                  <p className="text-xl font-semibold">{summary?.itemCount || 0}</p>
+                  <p className="text-xl font-semibold">
+                    {summary?.itemCount || shipmentData?.items?.length || shipmentData?.itemCount || 0}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{t('displayCurrency')}</p>
