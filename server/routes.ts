@@ -6613,33 +6613,58 @@ Important:
 
   // Batch delete/restore product locations - efficient for undo all
   // IMPORTANT: Preserves pre-existing inventory by restoring original quantities instead of deleting
+  // SAFETY: Only processes locations tagged with RI:{receiptItemId}: to prevent accidental data loss
   app.delete('/api/products/:id/locations/batch', isAuthenticated, async (req: any, res) => {
     try {
       const productId = req.params.id;
       const { receiptItemId, locationIds } = req.body;
+      
+      // SECURITY: Require receiptItemId to prevent accidental mass deletion
+      if (!receiptItemId && (!locationIds || !Array.isArray(locationIds) || locationIds.length === 0)) {
+        return res.status(400).json({ 
+          message: "Security: receiptItemId or specific locationIds required to prevent accidental data loss" 
+        });
+      }
       
       const product = await storage.getProductById(productId);
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
       
-      // Get locations to process - either by receiptItemId or explicit IDs
+      // Get locations to process - ONLY those tagged for this specific receipt
       let locationsToProcess: any[] = [];
       
       if (receiptItemId) {
-        // Find all locations tagged for this receipt item
+        // Find ONLY locations tagged for this receipt item - never touch untagged locations
         const allLocations = await storage.getProductLocations(productId);
         locationsToProcess = allLocations.filter(loc => 
           loc.notes?.includes(`RI:${receiptItemId}:`)
         );
+        
+        // SAFETY: Log what we're about to process
+        console.log(`[SAFETY] Batch undo for receipt ${receiptItemId}: found ${locationsToProcess.length} tagged locations out of ${allLocations.length} total`);
+        
+        // SAFETY: Double-check that we're only touching tagged locations
+        const untaggedCount = allLocations.length - locationsToProcess.length;
+        console.log(`[SAFETY] ${untaggedCount} untagged locations will NOT be touched`);
       } else if (locationIds && Array.isArray(locationIds)) {
-        // Find specific locations by ID
+        // Find specific locations by ID - but ONLY if they have RI tags
         const allLocations = await storage.getProductLocations(productId);
-        locationsToProcess = allLocations.filter(loc => locationIds.includes(loc.id));
+        locationsToProcess = allLocations.filter(loc => 
+          locationIds.includes(loc.id) && loc.notes?.includes('RI:')
+        );
+        
+        // SAFETY: Reject if any requested location doesn't have RI tag
+        const requestedWithoutTag = allLocations.filter(loc => 
+          locationIds.includes(loc.id) && !loc.notes?.includes('RI:')
+        );
+        if (requestedWithoutTag.length > 0) {
+          console.log(`[SAFETY] Blocked deletion of ${requestedWithoutTag.length} locations without RI tag`);
+        }
       }
       
       if (locationsToProcess.length === 0) {
-        return res.json({ success: true, deleted: 0, restored: 0, totalQuantityRemoved: 0 });
+        return res.json({ success: true, deleted: 0, restored: 0, totalQuantityRemoved: 0, message: "No tagged locations to process" });
       }
       
       // Separate locations into:

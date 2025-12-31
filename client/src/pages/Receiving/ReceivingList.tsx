@@ -15,7 +15,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, Dr
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
@@ -4316,67 +4316,87 @@ function QuickStorageSheet({
                                       <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
                                       {t('imports:thisReceipt', 'This Receipt')} ({(item.receiptLocations?.length || 0) + item.locations.length})
                                     </p>
-                                    {/* Undo All - clears receiptLocations + pending locations */}
+                                    {/* Undo All - clears receiptLocations + pending locations (ONLY for this receipt, preserves existing inventory) */}
                                     {(item.receiptLocations && item.receiptLocations.length > 0) || item.locations.length > 0 ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled={isUndoingAll}
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (!item.productId || isUndoingAll) return;
-                                          
-                                          setIsUndoingAll(true);
-                                          const totalLocations = (item.receiptLocations?.length || 0) + item.locations.length;
-                                          const totalQty = (item.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0) +
-                                            item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
-                                          
-                                          try {
-                                            // Use batch delete endpoint for saved receiptLocations
-                                            if (item.receiptLocations && item.receiptLocations.length > 0) {
-                                              await apiRequest('DELETE', `/api/products/${item.productId}/locations/batch`, {
-                                                receiptItemId: item.receiptItemId
-                                              });
-                                            }
-                                            
-                                            // Update local state - clear both receiptLocations and pending locations
-                                            setItems(prevItems => {
-                                              const updated = [...prevItems];
-                                              updated[index].receiptLocations = [];
-                                              updated[index].locations = [];
-                                              updated[index].pendingExistingAdds = {};
-                                              updated[index].assignedQuantity = 0;
-                                              return updated;
-                                            });
-                                            
-                                            toast({
-                                              title: t('imports:locationsCleared', 'Locations Cleared'),
-                                              description: `${totalLocations} ${t('locationsLabel', 'locations')}, ${totalQty} ${t('common:items')} ${t('imports:removed', 'removed')}`,
-                                              duration: 3000
-                                            });
-                                            
-                                            queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
-                                          } catch (error) {
-                                            console.error('Failed to undo locations:', error);
-                                            toast({
-                                              title: t('common:error'),
-                                              description: t('imports:failedToUndoLocations', 'Failed to undo locations'),
-                                              variant: 'destructive'
-                                            });
-                                          } finally {
-                                            setIsUndoingAll(false);
-                                          }
-                                        }}
-                                        className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                        data-testid="button-undo-all-locations"
-                                      >
-                                        {isUndoingAll ? (
-                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                        ) : (
-                                          <RotateCcw className="h-3 w-3 mr-1" />
-                                        )}
-                                        {isUndoingAll ? t('common:loading') : t('imports:undoAll', 'Undo All')}
-                                      </Button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={isUndoingAll}
+                                            className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                            data-testid="button-undo-all-locations"
+                                          >
+                                            {isUndoingAll ? (
+                                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                            ) : (
+                                              <RotateCcw className="h-3 w-3 mr-1" />
+                                            )}
+                                            {isUndoingAll ? t('common:loading') : t('imports:undoAll', 'Undo All')}
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>{t('imports:undoAllLocations', 'Undo All Locations?')}</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              {t('imports:undoAllDescription', 'This will undo all locations added during THIS receiving session. Pre-existing inventory will be restored to its original state.')}
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={async () => {
+                                                if (!item.productId || isUndoingAll) return;
+                                                
+                                                setIsUndoingAll(true);
+                                                const totalLocations = (item.receiptLocations?.length || 0) + item.locations.length;
+                                                const totalQty = (item.receiptLocations?.reduce((sum: number, loc: any) => sum + (loc.quantity || 0), 0) || 0) +
+                                                  item.locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                                                
+                                                try {
+                                                  // Use batch delete endpoint for saved receiptLocations
+                                                  // SAFETY: Backend only processes locations tagged with RI:{receiptItemId}:
+                                                  if (item.receiptLocations && item.receiptLocations.length > 0) {
+                                                    await apiRequest('DELETE', `/api/products/${item.productId}/locations/batch`, {
+                                                      receiptItemId: item.receiptItemId
+                                                    });
+                                                  }
+                                                  
+                                                  // Update local state - clear both receiptLocations and pending locations
+                                                  setItems(prevItems => {
+                                                    const updated = [...prevItems];
+                                                    updated[index].receiptLocations = [];
+                                                    updated[index].locations = [];
+                                                    updated[index].pendingExistingAdds = {};
+                                                    updated[index].assignedQuantity = 0;
+                                                    return updated;
+                                                  });
+                                                  
+                                                  toast({
+                                                    title: t('imports:locationsCleared', 'Locations Cleared'),
+                                                    description: `${totalLocations} ${t('locationsLabel', 'locations')}, ${totalQty} ${t('common:items')} ${t('imports:removed', 'removed')}`,
+                                                    duration: 3000
+                                                  });
+                                                  
+                                                  queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
+                                                } catch (error) {
+                                                  console.error('Failed to undo locations:', error);
+                                                  toast({
+                                                    title: t('common:error'),
+                                                    description: t('imports:failedToUndoLocations', 'Failed to undo locations'),
+                                                    variant: 'destructive'
+                                                  });
+                                                } finally {
+                                                  setIsUndoingAll(false);
+                                                }
+                                              }}
+                                              className="bg-red-600 hover:bg-red-700"
+                                            >
+                                              {t('imports:undoAll', 'Undo All')}
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
                                     ) : null}
                                   </div>
                                   
