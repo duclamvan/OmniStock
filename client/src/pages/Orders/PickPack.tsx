@@ -193,6 +193,7 @@ interface PackingRecommendation {
 interface ProductLocation {
   id: string;
   productId: string;
+  variantId?: string | null;  // For variant-specific location tracking
   locationCode: string;
   quantity: number | null;
   isPrimary: boolean | null;
@@ -1684,7 +1685,7 @@ function PickingListView({
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600'
                     }`}>
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} />
+                      <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation || t('noLocation') || 'No location'} />
                     </div>
                     {/* Same aisle indicator - shows when next item is in same aisle */}
                     {isSameAisleAsNext && !isPicked && (
@@ -2202,82 +2203,81 @@ function MultiLocationPicker({
 
   // Transform locations with virtual/variant quantity conversion
   const locationOptions = useMemo(() => {
-    // For variants WITH their own locationCode: use variant's location directly
-    if (isVariant && variantQuantity !== undefined && variantLocationCode) {
-      const variantQty = variantQuantity;
-      const pickedFromHere = itemPicks[variantLocationCode] || 0;
-      const availableVirtual = Math.max(0, variantQty - totalPicked);
+    // For VARIANTS: Filter productLocations to only show variant-specific locations by variantId
+    // This is CRITICAL - each variant has its own location(s), matched by variantId not parent product
+    if (isVariant && currentItem.variantId) {
+      const variantQty = variantQuantity ?? 0;
       
-      if (variantQty > 0 || pickedFromHere > 0) {
-        return [{
-          id: `variant-${currentItem.variantId}`,
-          locationCode: variantLocationCode,
-          quantity: variantQty,
-          isPrimary: true,
-          masterQty: variantQty,
-          virtualQty: variantQty,
-          pickedFromHere,
-          availableVirtual,
-        }];
+      // PRIORITY 1: Find locations in productLocations table that match this variant's variantId
+      const variantSpecificLocations = productLocations.filter(
+        loc => loc.variantId === currentItem.variantId
+      );
+      
+      if (variantSpecificLocations.length > 0) {
+        // Use only variant-specific locations from productLocations table
+        return variantSpecificLocations
+          .sort((a, b) => {
+            if (a.isPrimary && !b.isPrimary) return -1;
+            if (!a.isPrimary && b.isPrimary) return 1;
+            return a.locationCode.localeCompare(b.locationCode);
+          })
+          .map((loc) => {
+            const locationStock = loc.quantity || 0;
+            const pickedFromHere = itemPicks[loc.locationCode] || 0;
+            const availableVirtual = Math.max(0, locationStock - pickedFromHere);
+            
+            return {
+              ...loc,
+              masterQty: locationStock,
+              virtualQty: locationStock,
+              pickedFromHere,
+              availableVirtual,
+            };
+          });
       }
-      return [];
-    }
-    
-    // For variants WITHOUT locationCode: use PARENT locations but with VARIANT quantity
-    // This shows the picker WHERE to pick from (parent locations) but HOW MUCH is based on variant stock
-    if (isVariant && variantQuantity !== undefined && !variantLocationCode) {
-      const variantQty = variantQuantity;
       
-      // If variant has no stock, show out of stock
+      // PRIORITY 2: If variant has a locationCode in its record, use that
+      if (variantLocationCode) {
+        const pickedFromHere = itemPicks[variantLocationCode] || 0;
+        const availableVirtual = Math.max(0, variantQty - totalPicked);
+        
+        if (variantQty > 0 || pickedFromHere > 0) {
+          return [{
+            id: `variant-${currentItem.variantId}`,
+            locationCode: variantLocationCode,
+            quantity: variantQty,
+            isPrimary: true,
+            masterQty: variantQty,
+            virtualQty: variantQty,
+            pickedFromHere,
+            availableVirtual,
+          }];
+        }
+      }
+      
+      // PRIORITY 3: No variant-specific locations found - show out of stock or default
       if (variantQty <= 0 && totalPicked <= 0) {
         return [];
       }
       
-      // Use parent product locations - don't filter by location quantity since we use variant qty
-      const parentLocations = [...productLocations].sort((a, b) => {
-        if (a.isPrimary && !b.isPrimary) return -1;
-        if (!a.isPrimary && b.isPrimary) return 1;
-        return a.locationCode.localeCompare(b.locationCode);
-      });
-      
-      // If parent has no locations defined, create a default "WAREHOUSE" location
-      if (parentLocations.length === 0) {
-        const pickedFromHere = Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
-        const availableVirtual = Math.max(0, variantQty - totalPicked);
-        return [{
-          id: `variant-default-${currentItem.variantId}`,
-          locationCode: 'WAREHOUSE',
-          quantity: variantQty,
-          isPrimary: true,
-          masterQty: variantQty,
-          virtualQty: variantQty,
-          pickedFromHere,
-          availableVirtual,
-        }];
-      }
-      
-      // Map parent locations but use variant quantity for availability
-      // For variants, all locations share the same variant stock pool
-      return parentLocations.map((loc, index) => {
-        const pickedFromHere = itemPicks[loc.locationCode] || 0;
-        // Variant's remaining stock is shared across all locations
-        const variantRemaining = Math.max(0, variantQty - totalPicked);
-        
-        return {
-          ...loc,
-          id: loc.id || `variant-loc-${index}`,
-          quantity: variantQty, // Override parent quantity with variant quantity
-          masterQty: variantQty,
-          virtualQty: variantQty, // Show total variant stock
-          pickedFromHere,
-          availableVirtual: variantRemaining, // Available = variant stock minus all picks
-        };
-      });
+      // Fallback: Create a default "WAREHOUSE" location for variants without specific locations
+      const pickedFromHere = Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
+      const availableVirtual = Math.max(0, variantQty - totalPicked);
+      return [{
+        id: `variant-default-${currentItem.variantId}`,
+        locationCode: 'WAREHOUSE',
+        quantity: variantQty,
+        isPrimary: true,
+        masterQty: variantQty,
+        virtualQty: variantQty,
+        pickedFromHere,
+        availableVirtual,
+      }];
     }
     
-    // If this is a variant item but variant quantity not provided, return empty
-    // This ensures we don't show parent product's quantity incorrectly
-    if (isVariant && variantQuantity === undefined) {
+    // If this is a variant item but variantId is missing, return empty
+    // This ensures we don't show parent product's locations incorrectly
+    if (isVariant && !currentItem.variantId) {
       return [];
     }
     
@@ -2890,12 +2890,17 @@ function StockAwarePickingButtons({
 
 // Component: Display primary location for an item - fetches from product locations API
 // Used in list views where we want to show real location data instead of legacy warehouseLocation
+// IMPORTANT: For variants, pass variantId to filter to variant-specific locations only
 const ItemPrimaryLocation = memo(({ 
   productId,
+  variantId,
+  variantLocationCode,
   fallbackLocation,
   className = ""
 }: { 
   productId?: string | null;
+  variantId?: string | null;
+  variantLocationCode?: string | null;
   fallbackLocation?: string;
   className?: string;
 }) => {
@@ -2906,10 +2911,40 @@ const ItemPrimaryLocation = memo(({
   });
   
   // Find primary location, or first with stock, or first location
+  // For variants: ONLY show variant-specific locations matched by variantId
   const primaryLocation = useMemo(() => {
-    if (!productLocations.length) return null;
+    if (!productLocations.length) {
+      // If no locations from API but variant has locationCode, use that
+      if (variantId && variantLocationCode) {
+        return variantLocationCode;
+      }
+      return null;
+    }
     
-    // Sort: primary first, then by stock quantity
+    // If this is a variant, filter to only variant-specific locations
+    if (variantId) {
+      const variantLocations = productLocations.filter(loc => loc.variantId === variantId);
+      
+      if (variantLocations.length > 0) {
+        // Sort: primary first, then by stock quantity
+        const sorted = [...variantLocations].sort((a, b) => {
+          if (a.isPrimary && !b.isPrimary) return -1;
+          if (!a.isPrimary && b.isPrimary) return 1;
+          return (b.quantity || 0) - (a.quantity || 0);
+        });
+        return sorted[0]?.locationCode || null;
+      }
+      
+      // Fallback to variant's own locationCode if no productLocations match
+      if (variantLocationCode) {
+        return variantLocationCode;
+      }
+      
+      // No variant-specific location found
+      return null;
+    }
+    
+    // For regular products: use standard logic
     const sorted = [...productLocations].sort((a, b) => {
       if (a.isPrimary && !b.isPrimary) return -1;
       if (!a.isPrimary && b.isPrimary) return 1;
@@ -2917,7 +2952,7 @@ const ItemPrimaryLocation = memo(({
     });
     
     return sorted[0]?.locationCode || null;
-  }, [productLocations]);
+  }, [productLocations, variantId, variantLocationCode]);
   
   if (!productId) {
     return fallbackLocation ? <span className={className}>{fallbackLocation}</span> : null;
@@ -8859,7 +8894,7 @@ export default function PickPack() {
                                   <div className="mt-1">
                                     {!isBundle && (
                                       <div className="text-xs text-gray-600 font-medium">
-                                        📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                        📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                         {item.sku && <span className="ml-1 text-gray-500">• {item.sku}</span>}
                                       </div>
                                     )}
@@ -8921,7 +8956,7 @@ export default function PickPack() {
                                 <div className="flex items-center gap-2 mt-1">
                                   {!isBundle && (
                                     <span className="text-xs text-gray-600 font-medium truncate">
-                                      📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                      📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                     </span>
                                   )}
                                   {item.sku && (
@@ -14297,7 +14332,7 @@ export default function PickPack() {
                               <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-orange-100 dark:to-orange-900/30 rounded-lg p-4 border-2 border-orange-300 dark:border-orange-700 shadow-sm">
                                 <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mb-2 tracking-wider">{t('warehouseLocation')}</p>
                                 <p className="text-2xl font-mono font-black text-orange-600 dark:text-orange-400 break-all">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                  <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                 </p>
                               </div>
                               <Button
@@ -14560,7 +14595,7 @@ export default function PickPack() {
                                       {/* Fetch real location from product locations API */}
                                       <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                         <MapPin className="h-3 w-3" />
-                                        <ItemPrimaryLocation productId={bundleItem.productId} fallbackLocation={bundleItem.location || 'N/A'} />
+                                        <ItemPrimaryLocation productId={bundleItem.productId} variantId={bundleItem.variantId} fallbackLocation={bundleItem.location || 'N/A'} />
                                       </div>
                                       <div className="text-xs text-gray-600 mt-1">
                                         Qty: {bundleItem.quantity}
@@ -14908,7 +14943,7 @@ export default function PickPack() {
                                   <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
                                     isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
                                   }`}>
-                                    📍 <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                    📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                   </span>
                                   <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
@@ -15053,7 +15088,7 @@ export default function PickPack() {
                               )}
                               {!isServiceBill && (
                                 <span className="text-xs font-mono font-bold">
-                                  <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                  <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                 </span>
                               )}
                             </div>
@@ -16211,7 +16246,7 @@ export default function PickPack() {
                                           )}
                                           <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                             <MapPin className="h-3 w-3" />
-                                            <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                            <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                           </span>
                                         </div>
                                       </div>
@@ -16384,7 +16419,7 @@ export default function PickPack() {
                                           <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                               <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                              <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                             </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
@@ -16567,7 +16602,7 @@ export default function PickPack() {
                                           <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
                                               <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                              <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                             </span>
                                             {item.categoryName && (
                                               <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
@@ -17077,7 +17112,7 @@ export default function PickPack() {
                                                     </p>
                                                     <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
                                                       <MapPin className="h-2.5 w-2.5" />
-                                                      <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                                                      <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                                     </span>
                                                   </div>
                                                 </div>
@@ -17309,7 +17344,7 @@ export default function PickPack() {
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} fallbackLocation={item.warehouseLocation} />
+                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                           </div>
                         </div>
                         {showPricing ? (
