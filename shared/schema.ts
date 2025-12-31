@@ -1095,6 +1095,28 @@ export const productLocations = pgTable("product_locations", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Receipt item locations - tracks which locations were added during receiving
+// This is the source of truth for undo/delete operations
+export const receiptItemLocations = pgTable("receipt_item_locations", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  receiptItemId: varchar("receipt_item_id")
+    .notNull()
+    .references(() => receiptItems.id, { onDelete: "cascade" }),
+  productLocationId: varchar("product_location_id")
+    .notNull()
+    .references(() => productLocations.id, { onDelete: "cascade" }),
+  productId: varchar("product_id")
+    .notNull(),
+  variantId: varchar("variant_id"),
+  locationCode: varchar("location_code").notNull(),
+  quantityAdded: integer("quantity_added").notNull(),
+  originalQuantity: integer("original_quantity").notNull().default(0), // quantity before this receipt (for undo)
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Stock adjustment requests table - for warehouse staff to request inventory changes
 export const stockAdjustmentRequests = pgTable("stock_adjustment_requests", {
   id: varchar("id")
@@ -1654,10 +1676,22 @@ export const receiptsRelations = relations(receipts, ({ one, many }) => ({
   landedCost: one(landedCosts),
 }));
 
-export const receiptItemsRelations = relations(receiptItems, ({ one }) => ({
+export const receiptItemsRelations = relations(receiptItems, ({ one, many }) => ({
   receipt: one(receipts, {
     fields: [receiptItems.receiptId],
     references: [receipts.id],
+  }),
+  locations: many(receiptItemLocations),
+}));
+
+export const receiptItemLocationsRelations = relations(receiptItemLocations, ({ one }) => ({
+  receiptItem: one(receiptItems, {
+    fields: [receiptItemLocations.receiptItemId],
+    references: [receiptItems.id],
+  }),
+  productLocation: one(productLocations, {
+    fields: [receiptItemLocations.productLocationId],
+    references: [productLocations.id],
   }),
 }));
 
@@ -1887,6 +1921,10 @@ export const insertReceiptItemSchema = createInsertSchema(receiptItems).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+export const insertReceiptItemLocationSchema = createInsertSchema(receiptItemLocations).omit({
+  id: true,
+  createdAt: true,
 });
 export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({
   id: true,
@@ -2317,6 +2355,8 @@ export type Receipt = typeof receipts.$inferSelect;
 export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
 export type ReceiptItem = typeof receiptItems.$inferSelect;
 export type InsertReceiptItem = z.infer<typeof insertReceiptItemSchema>;
+export type ReceiptItemLocation = typeof receiptItemLocations.$inferSelect;
+export type InsertReceiptItemLocation = z.infer<typeof insertReceiptItemLocationSchema>;
 export type LandedCost = typeof landedCosts.$inferSelect;
 export type InsertLandedCost = z.infer<typeof insertLandedCostSchema>;
 
