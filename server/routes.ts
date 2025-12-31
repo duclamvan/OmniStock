@@ -12712,28 +12712,45 @@ Important:
         )
         .orderBy(desc(shipments.createdAt));
 
-      // 3. Incoming shipments - shipments with estimatedArrival within 2 days
-      const twoDaysFromNow = new Date();
-      twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
-      const now = new Date();
-      const twoDaysFromNowISO = twoDaysFromNow.toISOString();
-      const nowISO = now.toISOString();
-      
-      const incomingShipments = await db
-        .select()
-        .from(importPurchases)
-        .where(
-          and(
-            or(
-              eq(importPurchases.status, 'shipped'),
-              eq(importPurchases.status, 'processing')
+      // 3. Incoming shipments - same logic as "To Receive" tab in ReceivingList
+      // Only show shipments pending receiving (not already being received or completed)
+      const incomingShipmentsRaw = await db
+        .select({
+          shipment: shipments,
+          consolidation: consolidations
+        })
+        .from(shipments)
+        .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+        .where(and(
+          or(
+            // Standard receivable: delivered or near-ETA in transit
+            eq(shipments.status, 'delivered'),
+            and(
+              eq(shipments.status, 'in transit'),
+              sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
             ),
-            sql`${importPurchases.estimatedArrival} IS NOT NULL`,
-            sql`${importPurchases.estimatedArrival}::timestamp <= ${twoDaysFromNowISO}::timestamp`,
-            sql`${importPurchases.estimatedArrival}::timestamp >= ${nowISO}::timestamp`
-          )
-        )
-        .orderBy(importPurchases.estimatedArrival);
+            // Direct PO shipments in transit (no consolidation)
+            and(
+              eq(shipments.status, 'in transit'),
+              isNull(shipments.consolidationId)
+            )
+          ),
+          // Not yet started receiving (pending status only)
+          eq(shipments.receivingStatus, 'pending'),
+          // Not archived
+          isNull(shipments.archivedAt)
+        ))
+        .orderBy(shipments.estimatedDelivery)
+        .limit(10);
+      
+      // Format for frontend compatibility
+      const incomingShipments = incomingShipmentsRaw.map(({ shipment, consolidation }) => ({
+        id: shipment.id,
+        supplier: shipment.shipmentName || consolidation?.consolidationName || `Shipment #${shipment.id}`,
+        trackingNumber: shipment.trackingNumber,
+        estimatedArrival: shipment.estimatedDelivery,
+        status: shipment.status
+      }));
 
       // 4. Admin tasks - warehouse tasks assigned to current user or unassigned with status 'pending' or 'in_progress'
       let adminTasks;
