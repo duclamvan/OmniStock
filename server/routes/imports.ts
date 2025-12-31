@@ -9664,6 +9664,8 @@ router.get("/receipts/storage", async (req, res) => {
     let productsInfo: any[] = [];
     let productLocationsInfo: any[] = [];
     
+    let productVariantsInfo: any[] = [];
+    
     if (productIds.length > 0) {
       // Get product details
       productsInfo = await db
@@ -9676,12 +9678,26 @@ router.get("/receipts/storage", async (req, res) => {
         .select()
         .from(productLocations)
         .where(inArray(productLocations.productId, productIds));
+      
+      // Get product variants to map SKU -> variantId
+      productVariantsInfo = await db
+        .select()
+        .from(productVariants)
+        .where(inArray(productVariants.productId, productIds));
     }
     
     // Create maps for quick lookup
     const productsMap = Object.fromEntries(
       productsInfo.map(p => [p.id, p])
     );
+    
+    // Create SKU -> variantId map for filtering locations by SKU
+    const skuToVariantIdMap: Record<string, string> = {};
+    productVariantsInfo.forEach(variant => {
+      if (variant.sku) {
+        skuToVariantIdMap[variant.sku.toLowerCase()] = variant.id;
+      }
+    });
     
     const locationsMap: Record<string, any[]> = {};
     productLocationsInfo.forEach(loc => {
@@ -9742,7 +9758,18 @@ router.get("/receipts/storage", async (req, res) => {
       
       // Enhance item with product info and locations
       const product = item.productId ? productsMap[item.productId] : null;
-      const existingLocations = item.productId ? (locationsMap[item.productId] || []) : [];
+      const allLocations = item.productId ? (locationsMap[item.productId] || []) : [];
+      
+      // Get the item's SKU and find matching variantId for filtering locations
+      const itemSku = item.sku || originalItem?.sku || product?.sku;
+      const matchingVariantId = itemSku ? skuToVariantIdMap[itemSku.toLowerCase()] : null;
+      
+      // Filter existing locations by SKU/variantId:
+      // - If item has a matching variantId, show only locations for that variant
+      // - Otherwise show all locations (for non-variant products)
+      const existingLocations = matchingVariantId 
+        ? allLocations.filter(loc => loc.variantId === matchingVariantId || !loc.variantId)
+        : allLocations;
       
       // receivedQuantity already represents good units (not including damaged)
       itemsByReceipt[item.receiptId].push({
