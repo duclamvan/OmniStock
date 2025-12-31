@@ -5996,6 +5996,11 @@ interface ShipmentReportItem {
     isPrimary: boolean;
     notes: string;
   }>;
+  variantAllocations?: Array<{
+    variantId: string;
+    variantName: string;
+    quantity: number;
+  }>;
 }
 
 interface ShipmentReportData {
@@ -6424,6 +6429,11 @@ function ShipmentReportDialog({
                           
                           {/* Compact info row */}
                           <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+                            {item.variantAllocations && item.variantAllocations.length > 0 && (
+                              <span className="text-purple-600 dark:text-purple-400 font-medium">
+                                {item.variantAllocations.length} {t('variants')}
+                              </span>
+                            )}
                             <span className="text-muted-foreground">
                               {t('expected')}: <span className="font-medium text-foreground">{item.expectedQuantity}</span>
                             </span>
