@@ -2018,7 +2018,9 @@ export default function AddOrder() {
             email: selectedShippingAddress.email || undefined,
             label: selectedShippingAddress.label || undefined,
           };
-          await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+          const addressResponse = await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+          const createdAddress = await addressResponse.json();
+          data.shippingAddressId = createdAddress?.id;
         }
       } else if (selectedCustomer && !selectedCustomer.id) {
         // Handle regular new customer creation
@@ -2045,6 +2047,27 @@ export default function AddOrder() {
         data.customerId = customerResponse?.id;
       } else if (selectedCustomer?.id && !selectedCustomer.id.startsWith('temp-')) {
         data.customerId = selectedCustomer.id;
+        
+        // Handle creating new shipping address for existing customer
+        if (selectedShippingAddress && selectedShippingAddress.isNew) {
+          const addressData = {
+            customerId: selectedCustomer.id,
+            firstName: selectedShippingAddress.firstName,
+            lastName: selectedShippingAddress.lastName,
+            company: selectedShippingAddress.company || undefined,
+            street: selectedShippingAddress.street,
+            streetNumber: selectedShippingAddress.streetNumber || undefined,
+            city: selectedShippingAddress.city,
+            zipCode: selectedShippingAddress.zipCode,
+            country: selectedShippingAddress.country,
+            tel: selectedShippingAddress.tel || undefined,
+            email: selectedShippingAddress.email || undefined,
+            label: selectedShippingAddress.label || undefined,
+          };
+          const addressResponse = await apiRequest('POST', `/api/customers/${selectedCustomer.id}/shipping-addresses`, addressData);
+          const createdAddress = await addressResponse.json();
+          data.shippingAddressId = createdAddress?.id;
+        }
       } else if (selectedCustomer && selectedCustomer.isTemporary) {
         data.temporaryCustomerName = selectedCustomer.name;
         data.customerId = null;
