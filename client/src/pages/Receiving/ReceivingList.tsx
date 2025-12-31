@@ -2189,6 +2189,7 @@ function QuickStorageSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBatchSaving, setIsBatchSaving] = useState(false);
   const [isUndoingAll, setIsUndoingAll] = useState(false);
+  const [isAutofilling, setIsAutofilling] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<Map<string | number, { location: string; reasoning: string; zone: string; accessibility: string }>>(new Map());
@@ -4128,10 +4129,12 @@ function QuickStorageSheet({
                                     {item.variantAllocations && item.variantAllocations.length > 0 && item.productId && (
                                       <Button
                                         variant="outline"
+                                        disabled={isAutofilling}
                                         onClick={async (e) => {
                                           e.stopPropagation();
-                                          if (!item.productId) return;
+                                          if (!item.productId || isAutofilling) return;
                                           
+                                          setIsAutofilling(true);
                                           try {
                                             // Fetch all existing locations for this product
                                             const locResponse = await fetch(`/api/products/${item.productId}/locations`, { credentials: 'include' });
@@ -4246,13 +4249,22 @@ function QuickStorageSheet({
                                               description: t('imports:autofillFailed', 'Failed to autofill locations'),
                                               variant: 'destructive'
                                             });
+                                          } finally {
+                                            setIsAutofilling(false);
                                           }
                                         }}
-                                        className="w-full mb-2 h-10 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white border-0 font-medium"
+                                        className="w-full mb-2 h-10 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white border-0 font-medium disabled:opacity-70"
                                         data-testid="button-autofill-locations"
                                       >
-                                        <Zap className="h-4 w-4 mr-2" />
-                                        {t('imports:autofillFromExisting', 'Autofill from Existing')} ({item.variantAllocations.length} variants)
+                                        {isAutofilling ? (
+                                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        ) : (
+                                          <Zap className="h-4 w-4 mr-2" />
+                                        )}
+                                        {isAutofilling 
+                                          ? t('imports:autofilling', 'Autofilling...')
+                                          : `${t('imports:autofillFromExisting', 'Autofill from Existing')} (${item.variantAllocations.length} variants)`
+                                        }
                                       </Button>
                                     )}
                                     

@@ -2283,6 +2283,15 @@ const imports = {
   quickFillApplied: 'Đã đặt {{value}} cho {{count}} biến thể',
   listValuesApplied: 'Đã áp dụng {{count}} giá trị cho các biến thể',
   
+  // Quick Selection feature (select all + fill)
+  quickSelection: 'Chọn nhanh',
+  quickSelectionDescription: 'Chọn tất cả {{count}} biến thể và đặt số lượng/giá',
+  quickSelectionHelp: 'Điều này sẽ chọn tất cả biến thể và áp dụng số lượng và giá được chỉ định cho mỗi biến thể.',
+  quickSelectionApplied: 'Đã áp dụng cho {{count}} biến thể',
+  noVariantsToSelect: 'Không có biến thể nào để chọn',
+  applyToAll: 'Áp dụng tất cả ({{count}})',
+  autofilling: 'Đang điền tự động...',
+  
   // Variant-aware import workflow
   variantAllocations: 'Phân bổ biến thể',
   variantQty: 'SL',

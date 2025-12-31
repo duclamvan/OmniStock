@@ -2353,6 +2353,15 @@ const imports = {
   quickFillApplied: 'Set {{value}} for {{count}} variants',
   listValuesApplied: '{{count}} values applied to variants',
   
+  // Quick Selection feature (select all + fill)
+  quickSelection: 'Quick Selection',
+  quickSelectionDescription: 'Select all {{count}} variants and set quantity/cost',
+  quickSelectionHelp: 'This will select all variants and apply the specified quantity and cost to each one.',
+  quickSelectionApplied: 'Applied to {{count}} variants',
+  noVariantsToSelect: 'No variants available to select',
+  applyToAll: 'Apply to All ({{count}})',
+  autofilling: 'Autofilling...',
+  
   // CostsPanel - Complete Cost Breakdown Section
   completeCostBreakdown: 'Complete Cost Breakdown',
   allCostsFromAllSources: 'All costs from shipment, purchase orders, and manual entries',
