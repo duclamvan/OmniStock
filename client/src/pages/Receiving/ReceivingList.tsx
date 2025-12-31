@@ -4667,7 +4667,61 @@ function QuickStorageSheet({
                                       {item.referenceInventory.map((loc: any, locIdx: number) => (
                                         <div 
                                           key={`ref-${locIdx}`}
-                                          className="p-2 flex items-center gap-2"
+                                          className="p-2 flex items-center gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Calculate remaining quantity for this item
+                                            const storedQty = calculateStoredQtyForReceiving(item.receiptLocations, item.receiptItemId);
+                                            const pendingExistingQty = Object.values(item.pendingExistingAdds || {}).reduce((sum, qty) => sum + (qty || 0), 0);
+                                            const pendingNewQty = item.locations.reduce((sum, l) => sum + (l.quantity || 0), 0);
+                                            const remaining = Math.max(0, item.receivedQuantity - storedQty - pendingExistingQty - pendingNewQty);
+                                            
+                                            if (remaining <= 0) {
+                                              toast({
+                                                title: t('allQuantityAssigned', 'All Assigned'),
+                                                description: t('noRemainingQuantity', 'No remaining quantity to assign'),
+                                                duration: 2000
+                                              });
+                                              return;
+                                            }
+                                            
+                                            // Add this location with all remaining quantity
+                                            setItems(prevItems => {
+                                              const updated = [...prevItems];
+                                              const currentItem = updated[index];
+                                              
+                                              // Check if location already exists in pending locations
+                                              const existingLocIdx = currentItem.locations.findIndex(
+                                                l => l.locationCode === loc.locationCode && 
+                                                     (l.variantId === loc.variantId || l.variantName === loc.variantName)
+                                              );
+                                              
+                                              if (existingLocIdx >= 0) {
+                                                // Add remaining to existing pending location
+                                                currentItem.locations[existingLocIdx].quantity += remaining;
+                                              } else {
+                                                // Add new pending location with all remaining quantity
+                                                currentItem.locations.push({
+                                                  locationCode: loc.locationCode,
+                                                  locationType: loc.locationType || 'warehouse',
+                                                  quantity: remaining,
+                                                  isPrimary: loc.isPrimary || false,
+                                                  variantId: loc.variantId,
+                                                  variantName: loc.variantName,
+                                                  sku: loc.sku
+                                                });
+                                              }
+                                              
+                                              return updated;
+                                            });
+                                            
+                                            toast({
+                                              title: loc.locationCode,
+                                              description: `+${remaining} ${t('common:items')}`,
+                                              duration: 1500
+                                            });
+                                          }}
+                                          data-testid={`ref-location-${locIdx}`}
                                         >
                                           <MapPin className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 flex-shrink-0" />
                                           <span className="font-mono text-xs text-blue-700 dark:text-blue-300">{loc.locationCode}</span>
@@ -4677,6 +4731,7 @@ function QuickStorageSheet({
                                             </Badge>
                                           )}
                                           <div className="flex-1" />
+                                          <Plus className="h-3 w-3 text-blue-400 dark:text-blue-500" />
                                           <Badge variant="secondary" className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
                                             {loc.quantity}
                                           </Badge>
