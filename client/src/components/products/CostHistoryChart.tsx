@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 
 interface CostHistoryData {
   id: number;
@@ -19,17 +21,36 @@ interface CostHistoryData {
 interface CostHistoryChartProps {
   data: CostHistoryData[];
   isLoading?: boolean;
-  currency?: string;
   height?: number;
 }
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  CZK: 'Kč',
+  USD: '$'
+};
 
 export default function CostHistoryChart({ 
   data, 
   isLoading = false, 
-  currency = '€',
   height = 300 
 }: CostHistoryChartProps) {
   const { t } = useTranslation('products');
+  const [selectedCurrency, setSelectedCurrency] = useState<'EUR' | 'CZK' | 'USD'>('EUR');
+  
+  const { data: exchangeRates } = useQuery<{ rates: Record<string, number> }>({
+    queryKey: ['/api/exchange-rates'],
+  });
+  
+  const currencySymbol = CURRENCY_SYMBOLS[selectedCurrency];
+  
+  const getConversionRate = (targetCurrency: string): number => {
+    if (targetCurrency === 'EUR') return 1;
+    if (!exchangeRates?.rates) return 1;
+    return exchangeRates.rates[targetCurrency] || 1;
+  };
+  
+  const conversionRate = getConversionRate(selectedCurrency);
   
   // Process and calculate trends
   const { chartData, average, trend, trendPercentage } = useMemo(() => {
@@ -45,7 +66,7 @@ export default function CostHistoryChart({
     const chartData = sortedData.map((item) => ({
       date: format(new Date(item.computedAt), 'MMM dd'),
       fullDate: format(new Date(item.computedAt), 'PPP'),
-      cost: parseFloat(item.landingCostUnitBase),
+      cost: parseFloat(item.landingCostUnitBase) * conversionRate,
       method: item.method,
       source: item.source || item.method
     }));
@@ -74,7 +95,7 @@ export default function CostHistoryChart({
     }
 
     return { chartData, average, trend, trendPercentage };
-  }, [data]);
+  }, [data, conversionRate]);
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -84,7 +105,7 @@ export default function CostHistoryChart({
         <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border">
           <p className="font-semibold text-sm">{data.fullDate}</p>
           <p className="text-lg font-bold text-primary">
-            {currency}{data.cost.toFixed(2)}
+            {currencySymbol}{data.cost.toFixed(2)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {t('methodLabel', { method: data.method })}
@@ -123,7 +144,7 @@ export default function CostHistoryChart({
 
   return (
     <div className="space-y-4" data-testid="cost-history-chart-container">
-      {/* Trend indicator */}
+      {/* Header with trend indicator and currency picker */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {trend === 'increasing' && (
@@ -151,9 +172,24 @@ export default function CostHistoryChart({
             </>
           )}
         </div>
-        <Badge variant="outline">
-          {t('avgPrice', { currency, price: average.toFixed(2) })}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Select 
+            value={selectedCurrency} 
+            onValueChange={(val) => setSelectedCurrency(val as 'EUR' | 'CZK' | 'USD')}
+          >
+            <SelectTrigger className="h-7 w-20 text-xs" data-testid="select-currency-chart">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EUR">EUR €</SelectItem>
+              <SelectItem value="CZK">CZK Kč</SelectItem>
+              <SelectItem value="USD">USD $</SelectItem>
+            </SelectContent>
+          </Select>
+          <Badge variant="outline">
+            {t('avgPrice', { currency: currencySymbol, price: average.toFixed(2) })}
+          </Badge>
+        </div>
       </div>
 
       {/* Chart */}
@@ -171,7 +207,7 @@ export default function CostHistoryChart({
           <YAxis 
             className="text-xs"
             tick={{ fill: 'currentColor' }}
-            tickFormatter={(value) => `${currency}${value.toFixed(0)}`}
+            tickFormatter={(value) => `${currencySymbol}${value.toFixed(0)}`}
           />
           <Tooltip content={<CustomTooltip />} />
           
@@ -201,19 +237,19 @@ export default function CostHistoryChart({
         <div className="text-center p-2 bg-muted rounded">
           <div className="text-muted-foreground">{t('min')}</div>
           <div className="font-semibold">
-            {currency}{Math.min(...chartData.map(d => d.cost)).toFixed(2)}
+            {currencySymbol}{Math.min(...chartData.map(d => d.cost)).toFixed(2)}
           </div>
         </div>
         <div className="text-center p-2 bg-muted rounded">
           <div className="text-muted-foreground">{t('average')}</div>
           <div className="font-semibold">
-            {currency}{average.toFixed(2)}
+            {currencySymbol}{average.toFixed(2)}
           </div>
         </div>
         <div className="text-center p-2 bg-muted rounded">
           <div className="text-muted-foreground">{t('max')}</div>
           <div className="font-semibold">
-            {currency}{Math.max(...chartData.map(d => d.cost)).toFixed(2)}
+            {currencySymbol}{Math.max(...chartData.map(d => d.cost)).toFixed(2)}
           </div>
         </div>
       </div>

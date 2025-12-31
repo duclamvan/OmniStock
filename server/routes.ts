@@ -19128,7 +19128,31 @@ Important rules:
     }
   });
 
-
+  // Exchange Rates endpoint - provides EUR-based conversion rates
+  app.get('/api/exchange-rates', isAuthenticated, async (req, res) => {
+    try {
+      const response = await fetch('https://api.frankfurter.app/latest?from=EUR');
+      if (!response.ok) {
+        // Fallback to default rates if API fails
+        return res.json({ 
+          base: 'EUR',
+          rates: { CZK: 25.0, USD: 1.08 } 
+        });
+      }
+      const data = await response.json();
+      res.json({
+        base: data.base || 'EUR',
+        rates: data.rates || { CZK: 25.0, USD: 1.08 }
+      });
+    } catch (error) {
+      console.error('Error fetching exchange rates:', error);
+      // Return fallback rates on error
+      res.json({ 
+        base: 'EUR',
+        rates: { CZK: 25.0, USD: 1.08 } 
+      });
+    }
+  });
 
   // App Settings endpoints
   app.get('/api/settings', isAuthenticated, async (req, res) => {
