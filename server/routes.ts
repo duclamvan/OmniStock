@@ -20036,6 +20036,30 @@ Important rules:
             
             items = consolidationItemList;
             itemCount = consolidationItemList.length;
+          } else {
+            // For Direct PO shipments (no consolidation), get items from receipts
+            const shipmentReceipts = await db
+              .select({ id: receipts.id })
+              .from(receipts)
+              .where(eq(receipts.shipmentId, shipment.id));
+            
+            if (shipmentReceipts.length > 0) {
+              const receiptIds = shipmentReceipts.map(r => r.id);
+              const receiptItemList = await db
+                .select({
+                  id: receiptItems.id,
+                  name: products.name,
+                  productName: products.name,
+                  quantity: receiptItems.receivedQuantity,
+                  category: products.category
+                })
+                .from(receiptItems)
+                .leftJoin(products, eq(receiptItems.productId, products.id))
+                .where(inArray(receiptItems.receiptId, receiptIds));
+              
+              items = receiptItemList;
+              itemCount = receiptItemList.length;
+            }
           }
           
           return {
@@ -20104,6 +20128,30 @@ Important rules:
             
             items = consolidationItemList;
             itemCount = consolidationItemList.length;
+          } else {
+            // For Direct PO shipments (no consolidation), get items from receipts
+            const shipmentReceipts = await db
+              .select({ id: receipts.id })
+              .from(receipts)
+              .where(eq(receipts.shipmentId, shipment.id));
+            
+            if (shipmentReceipts.length > 0) {
+              const receiptIds = shipmentReceipts.map(r => r.id);
+              const receiptItemList = await db
+                .select({
+                  id: receiptItems.id,
+                  name: products.name,
+                  productName: products.name,
+                  quantity: receiptItems.receivedQuantity,
+                  category: products.category
+                })
+                .from(receiptItems)
+                .leftJoin(products, eq(receiptItems.productId, products.id))
+                .where(inArray(receiptItems.receiptId, receiptIds));
+              
+              items = receiptItemList;
+              itemCount = receiptItemList.length;
+            }
           }
           
           return {
