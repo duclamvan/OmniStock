@@ -8719,6 +8719,53 @@ router.get("/shipments/completed", async (req, res) => {
           };
         });
       }
+      
+      // Load receipt items for direct PO shipments (no consolidation)
+      const directShipmentIds = formattedShipments
+        .filter(s => !s.consolidationId)
+        .map(s => s.id);
+      
+      if (directShipmentIds.length > 0) {
+        // Get receipts for these shipments
+        const directReceipts = await db
+          .select()
+          .from(receipts)
+          .where(inArray(receipts.shipmentId, directShipmentIds));
+        
+        const receiptIds = directReceipts.map(r => r.id);
+        
+        if (receiptIds.length > 0) {
+          const allReceiptItems = await db
+            .select()
+            .from(receiptItems)
+            .where(inArray(receiptItems.receiptId, receiptIds));
+          
+          // Group by shipmentId via receipt
+          const receiptToShipment = new Map(directReceipts.map(r => [r.id, r.shipmentId]));
+          const receiptItemsByShipmentId: Record<number, any[]> = {};
+          
+          for (const ri of allReceiptItems) {
+            const shipmentId = receiptToShipment.get(ri.receiptId);
+            if (shipmentId) {
+              if (!receiptItemsByShipmentId[shipmentId]) {
+                receiptItemsByShipmentId[shipmentId] = [];
+              }
+              receiptItemsByShipmentId[shipmentId].push(ri);
+            }
+          }
+          
+          // Attach receiptItems to each direct shipment
+          formattedShipments = formattedShipments.map(shipment => {
+            if (!shipment.consolidationId && receiptItemsByShipmentId[shipment.id]) {
+              return {
+                ...shipment,
+                receiptItems: receiptItemsByShipmentId[shipment.id]
+              };
+            }
+            return shipment;
+          });
+        }
+      }
     }
 
     // Check if all variants have costs applied for each shipment
@@ -8839,6 +8886,53 @@ router.get("/shipments/archived", async (req, res) => {
             totalQuantity
           };
         });
+      }
+      
+      // Load receipt items for direct PO shipments (no consolidation)
+      const directShipmentIds = formattedShipments
+        .filter(s => !s.consolidationId)
+        .map(s => s.id);
+      
+      if (directShipmentIds.length > 0) {
+        // Get receipts for these shipments
+        const directReceipts = await db
+          .select()
+          .from(receipts)
+          .where(inArray(receipts.shipmentId, directShipmentIds));
+        
+        const receiptIds = directReceipts.map(r => r.id);
+        
+        if (receiptIds.length > 0) {
+          const allReceiptItems = await db
+            .select()
+            .from(receiptItems)
+            .where(inArray(receiptItems.receiptId, receiptIds));
+          
+          // Group by shipmentId via receipt
+          const receiptToShipment = new Map(directReceipts.map(r => [r.id, r.shipmentId]));
+          const receiptItemsByShipmentId: Record<number, any[]> = {};
+          
+          for (const ri of allReceiptItems) {
+            const shipmentId = receiptToShipment.get(ri.receiptId);
+            if (shipmentId) {
+              if (!receiptItemsByShipmentId[shipmentId]) {
+                receiptItemsByShipmentId[shipmentId] = [];
+              }
+              receiptItemsByShipmentId[shipmentId].push(ri);
+            }
+          }
+          
+          // Attach receiptItems to each direct shipment
+          formattedShipments = formattedShipments.map(shipment => {
+            if (!shipment.consolidationId && receiptItemsByShipmentId[shipment.id]) {
+              return {
+                ...shipment,
+                receiptItems: receiptItemsByShipmentId[shipment.id]
+              };
+            }
+            return shipment;
+          });
+        }
       }
     }
 
