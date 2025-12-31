@@ -1113,12 +1113,51 @@ async function finalizeReceivingInventory(
         
         let totalUnitsInShipment = 0;
         if (shipmentForMetrics?.consolidationId) {
+          // Consolidation shipment: get items from consolidationItems
           const allItems = await tx
             .select({ quantity: customItems.quantity })
             .from(consolidationItems)
             .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
             .where(eq(consolidationItems.consolidationId, shipmentForMetrics.consolidationId));
           totalUnitsInShipment = allItems.reduce((sum: number, i: { quantity: number }) => sum + (i.quantity || 0), 0);
+        } else {
+          // Direct PO shipment (no consolidation): get items from receiptItems
+          // This ensures proper cost allocation across all items for variants
+          const allReceiptItemsForShipment = await tx
+            .select({ 
+              receivedQuantity: receiptItems.receivedQuantity,
+              assignedQuantity: receiptItems.assignedQuantity,
+              variantAllocations: receiptItems.variantAllocations
+            })
+            .from(receiptItems)
+            .innerJoin(receipts, eq(receiptItems.receiptId, receipts.id))
+            .where(eq(receipts.shipmentId, shipmentId));
+          
+          for (const ri of allReceiptItemsForShipment) {
+            // Parse variantAllocations if it's a string (JSONB may be returned as string)
+            let parsedAllocations: any[] | null = null;
+            if (ri.variantAllocations) {
+              if (typeof ri.variantAllocations === 'string') {
+                try {
+                  parsedAllocations = JSON.parse(ri.variantAllocations);
+                } catch (e) {
+                  console.warn(`[finalizeReceivingInventory] Failed to parse variantAllocations string`);
+                }
+              } else if (Array.isArray(ri.variantAllocations)) {
+                parsedAllocations = ri.variantAllocations;
+              }
+            }
+            
+            // Check if item has variant allocations - use those quantities
+            if (parsedAllocations && parsedAllocations.length > 0) {
+              const variantQty = parsedAllocations.reduce((sum, va) => sum + (va.quantity || 0), 0);
+              totalUnitsInShipment += variantQty;
+            } else {
+              // No variants - use assigned or received quantity
+              totalUnitsInShipment += ri.assignedQuantity || ri.receivedQuantity || 0;
+            }
+          }
+          console.log(`[finalizeReceivingInventory] Direct PO shipment ${shipmentId}: calculated totalUnitsInShipment=${totalUnitsInShipment} from ${allReceiptItemsForShipment.length} receipt items`);
         }
         
         // Calculate this item's allocation ratio (using unit-based allocation like preview default)
