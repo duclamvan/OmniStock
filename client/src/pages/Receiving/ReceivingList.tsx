@@ -4959,8 +4959,8 @@ function QuickStorageSheet({
                                               });
                                               
                                               queryClient.invalidateQueries({ queryKey: [`/api/products/${item.productId}/locations`] });
-                                              // Also invalidate the by-shipment query to ensure fresh data on reload
-                                              queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${shipment.id}`] });
+                                              // Note: Do NOT invalidate by-shipment query here as it would reset local state
+                                              // The local state is already updated with the saved quantities
                                             } catch (error) {
                                               console.error('Failed to batch save locations:', error);
                                               toast({
