@@ -570,7 +570,7 @@ const imports = {
   destinationPlaceholder: 'vd: Cộng hòa Séc',
   estimatedDeliveryDays: 'Ngày giao dự kiến (ngày)',
   estimatedDeliveryDaysPlaceholder: 'vd: 14',
-  daysRemaining: 'ngày còn lại',
+  daysRemaining: 'Còn {{days}} ngày',
   dayRemaining: 'Còn {{days}} ngày',
   arrivalToday: 'Đến hôm nay',
   overdue: 'Trễ {{days}} ngày',

@@ -564,7 +564,7 @@ const imports = {
   destinationPlaceholder: 'e.g. Czech Republic',
   estimatedDeliveryDays: 'Est. Delivery (days)',
   estimatedDeliveryDaysPlaceholder: 'e.g. 14',
-  daysRemaining: 'days remaining',
+  daysRemaining: '{{days}} days remaining',
   dayRemaining: '{{days}} day remaining',
   arrivalToday: 'Arriving today',
   overdue: '{{days}} days overdue',

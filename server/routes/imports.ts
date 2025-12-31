@@ -8026,14 +8026,16 @@ router.get("/shipments/to-receive", async (req, res) => {
       
       // Load items for direct PO shipments (non-consolidated)
       const directPOShipments = formattedShipments.filter(s => s.isDirectPO);
+      console.log(`[to-receive] Found ${directPOShipments.length} direct PO shipments`);
       
       if (directPOShipments.length > 0) {
         // Extract purchase ID prefixes from notes - map shipmentId -> prefix
         // Match "PO #XXXXXXXX" where X is alphanumeric (8 chars representing first part of UUID)
         const shipmentToPrefixMap = new Map<string, string>();
         for (const shipment of directPOShipments) {
-          // Match PO # followed by 8 alphanumeric characters (case-insensitive)
-          const match = shipment.notes?.match(/PO\s*#\s*([a-fA-F0-9]{8})/i);
+          // Match "PO #XXXXXXXX" or "Purchase Order #XXXXXXXX" followed by 8 alphanumeric characters
+          const match = shipment.notes?.match(/(?:PO|Purchase Order)\s*#\s*([a-fA-F0-9]{8})/i);
+          console.log(`[to-receive] Shipment ${shipment.id} notes="${shipment.notes}" match=${match?.[1] || 'none'}`);
           if (match) {
             shipmentToPrefixMap.set(shipment.id, match[1].toLowerCase());
           }
@@ -8042,12 +8044,14 @@ router.get("/shipments/to-receive", async (req, res) => {
         // Find the actual purchase IDs and load their items
         if (shipmentToPrefixMap.size > 0) {
           const purchaseIdPrefixes = Array.from(new Set(shipmentToPrefixMap.values()));
+          console.log(`[to-receive] Looking for purchases with prefixes: ${purchaseIdPrefixes.join(', ')}`);
           
           // Get all matching purchases using case-insensitive prefix match
           const matchingPurchases = await db
             .select()
             .from(importPurchases)
             .where(sql`LOWER(${importPurchases.id}) LIKE ANY(ARRAY[${sql.join(purchaseIdPrefixes.map(p => sql`${p.toLowerCase() + '%'}`), sql`, `)}])`);
+          console.log(`[to-receive] Found ${matchingPurchases.length} matching purchases: ${matchingPurchases.map(p => p.id).join(', ')}`);
           
           // Load items for all found purchases
           const purchaseIds = matchingPurchases.map(p => p.id);
@@ -8056,6 +8060,7 @@ router.get("/shipments/to-receive", async (req, res) => {
               .select()
               .from(purchaseItems)
               .where(inArray(purchaseItems.purchaseId, purchaseIds));
+            console.log(`[to-receive] Loaded ${allPurchaseItems.length} purchase items`);
             
             // Create a map from purchase ID (full) to items
             const itemsByPurchaseId: Record<string, any[]> = {};
@@ -8079,7 +8084,7 @@ router.get("/shipments/to-receive", async (req, res) => {
             // Attach items to direct PO shipments
             formattedShipments = formattedShipments.map(shipment => {
               if (shipment.isDirectPO) {
-                const match = shipment.notes?.match(/PO\s*#\s*([a-fA-F0-9]{8})/i);
+                const match = shipment.notes?.match(/(?:PO|Purchase Order)\s*#\s*([a-fA-F0-9]{8})/i);
                 if (match) {
                   const prefix = match[1].toLowerCase();
                   const purchaseId = prefixToPurchaseId[prefix];
