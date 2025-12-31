@@ -3277,24 +3277,35 @@ export default function PickPack() {
   }>({ pending: 0, picking: 0, packing: 0, ready: 0 });
 
   // Helper functions for persisting picked items
-  const savePickedProgress = (orderId: string, items: OrderItem[]) => {
+  const savePickedProgress = (orderId: string, items: OrderItem[], locationPicks?: Record<string, Record<string, number>>) => {
     const progress = items.map(item => ({
       id: item.id,
       pickedQuantity: item.pickedQuantity
     }));
     localStorage.setItem(`pickpack-progress-${orderId}`, JSON.stringify(progress));
+    if (locationPicks) {
+      localStorage.setItem(`pickpack-locations-${orderId}`, JSON.stringify(locationPicks));
+    }
   };
 
-  const loadPickedProgress = (orderId: string): Record<string, number> | null => {
+  const loadPickedProgress = (orderId: string): { quantities: Record<string, number>; locations: Record<string, Record<string, number>> } | null => {
     const saved = localStorage.getItem(`pickpack-progress-${orderId}`);
     if (!saved) return null;
     
     try {
       const progress = JSON.parse(saved);
-      return progress.reduce((acc: Record<string, number>, item: { id: string; pickedQuantity: number }) => {
+      const quantities = progress.reduce((acc: Record<string, number>, item: { id: string; pickedQuantity: number }) => {
         acc[item.id] = item.pickedQuantity;
         return acc;
       }, {});
+      
+      let locations: Record<string, Record<string, number>> = {};
+      const savedLocations = localStorage.getItem(`pickpack-locations-${orderId}`);
+      if (savedLocations) {
+        locations = JSON.parse(savedLocations);
+      }
+      
+      return { quantities, locations };
     } catch {
       return null;
     }
@@ -3302,6 +3313,7 @@ export default function PickPack() {
 
   const clearPickedProgress = (orderId: string) => {
     localStorage.removeItem(`pickpack-progress-${orderId}`);
+    localStorage.removeItem(`pickpack-locations-${orderId}`);
   };
 
   // Helper functions for persisting packing state (per order)
@@ -7135,9 +7147,39 @@ export default function PickPack() {
       if (savedProgress) {
         items = items.map(item => ({
           ...item,
-          pickedQuantity: savedProgress[item.id] !== undefined ? savedProgress[item.id] : item.pickedQuantity
+          pickedQuantity: savedProgress.quantities[item.id] !== undefined ? savedProgress.quantities[item.id] : item.pickedQuantity
         }));
       }
+      
+      // Initialize pickedFromLocations state from:
+      // 1. localStorage (savedProgress.locations) - for session continuity
+      // 2. Order item's pickedFromLocations field from database - for existing picks
+      const initialPickedFromLocations: Record<string, Record<string, number>> = {};
+      
+      // First, load from database (order items' pickedFromLocations field)
+      items.forEach(item => {
+        // Type assertion for pickedFromLocations from database
+        const dbLocations = (item as any).pickedFromLocations as Record<string, number> | null | undefined;
+        if (dbLocations && typeof dbLocations === 'object' && Object.keys(dbLocations).length > 0) {
+          initialPickedFromLocations[item.id] = { ...dbLocations };
+        } else if (item.pickedQuantity > 0) {
+          // If item has pickedQuantity but no location breakdown, use a default
+          const location = item.warehouseLocation || item.variantLocationCode || 'WAREHOUSE';
+          initialPickedFromLocations[item.id] = { [location]: item.pickedQuantity };
+        }
+      });
+      
+      // Then, override with localStorage (more recent session data takes priority)
+      if (savedProgress?.locations) {
+        Object.entries(savedProgress.locations).forEach(([itemId, locations]) => {
+          if (locations && Object.keys(locations).length > 0) {
+            initialPickedFromLocations[itemId] = locations;
+          }
+        });
+      }
+      
+      // Set the pickedFromLocations state
+      setPickedFromLocations(initialPickedFromLocations);
       
       // Set UI state immediately for instant feedback
       const updatedOrder = {
@@ -7204,11 +7246,30 @@ export default function PickPack() {
 
     setActivePickingOrder(updatedOrder);
     
-    // Auto-save progress to localStorage
-    savePickedProgress(activePickingOrder.id, updatedItems);
-
     // Get selected location from the picker (do NOT use legacy warehouseLocation field)
     const selectedLocation = locationCode || selectedPickingLocations[itemId];
+    
+    // Update pickedFromLocations state if we have a location and quantity changed
+    // This tracks exactly which locations were picked from
+    let updatedLocations = pickedFromLocations;
+    if (selectedLocation && qtyChange !== 0) {
+      const itemPicks = pickedFromLocations[itemId] || {};
+      const currentPicked = itemPicks[selectedLocation] || 0;
+      const newPicked = Math.max(0, currentPicked + qtyChange);
+      
+      updatedLocations = {
+        ...pickedFromLocations,
+        [itemId]: {
+          ...itemPicks,
+          [selectedLocation]: newPicked
+        }
+      };
+      
+      setPickedFromLocations(updatedLocations);
+    }
+    
+    // Always save progress to localStorage (quantities and locations)
+    savePickedProgress(activePickingOrder.id, updatedItems, updatedLocations);
 
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
