@@ -67,6 +67,7 @@ import {
   notifications,
   shipmentTracking,
   shipmentLabels,
+  receiptItemLocations,
   serializePackingPlanToDB,
   serializePackingPlanItems,
   deserializePackingPlanFromDB,
@@ -6416,67 +6417,56 @@ Important:
           const originalQuantity = existing.quantity || 0;
           const newQuantity = originalQuantity + quantity;
           
-          // For notes, track receipt-added quantity AND preserve original quantity AND original notes
-          // Format: RI:{receiptItemId}:Q{addedQty}:O{originalQty}:N{base64OriginalNotes}
-          // The :N section preserves any pre-existing notes content for restoration on undo
-          let riQuantity = quantity;
-          let preservedOriginalQty = originalQuantity;
-          let preservedOriginalNotes: string | null = null;
-          
-          if (receiptItemId && existing.notes) {
-            // Check if we already have an RI tag for this receipt
-            const riMatch = existing.notes.match(new RegExp(`RI:${receiptItemId}:Q(\\d+):O(\\d+)(?::N(.*))?$`));
-            if (riMatch) {
-              // Add to existing receipt quantity
-              riQuantity += parseInt(riMatch[1], 10);
-              // Keep the original preserved quantity (from first allocation)
-              preservedOriginalQty = parseInt(riMatch[2], 10);
-              // Keep the preserved original notes (base64 encoded)
-              if (riMatch[3]) {
-                preservedOriginalNotes = riMatch[3];
-              }
-            } else {
-              // First time adding to this existing location - preserve its current notes
-              preservedOriginalNotes = Buffer.from(existing.notes).toString('base64');
-            }
-          }
-          
-          // Build notes: include original quantity marker and preserved notes so undo can fully restore
-          let newNotes = receiptItemId ? `RI:${receiptItemId}:Q${riQuantity}:O${preservedOriginalQty}` : existing.notes;
-          if (receiptItemId && preservedOriginalNotes) {
-            newNotes += `:N${preservedOriginalNotes}`;
-          }
-          
           locationsToUpdate.push({
             id: existing.id,
             quantity: newQuantity,
             isPrimary: locData.isPrimary ?? existing.isPrimary,
-            notes: newNotes
+            notes: existing.notes,
+            // Track for receipt_item_locations
+            _originalQuantity: originalQuantity,
+            _quantityAdded: quantity,
+            _locationCode: locationCode,
+            _variantId: resolvedVariantId
           });
-          existingMap.set(aggregateKey, { ...existing, quantity: newQuantity, notes: newNotes });
+          existingMap.set(aggregateKey, { ...existing, quantity: newQuantity });
           updatedCount++;
         } else {
           // Create new location - resolvedVariantId is already validated to exist in product_variants
           const validVariantId = resolvedVariantId;
           
-          // For NEW locations, mark with :O0 to indicate original quantity was 0 (created during this receipt)
-          // This allows undo to correctly DELETE new locations instead of restoring
           locationsToCreate.push({
             productId,
             locationCode,
             locationType: locData.locationType || 'bin',
             quantity,
             isPrimary: locData.isPrimary ?? false,
-            notes: receiptItemId ? `RI:${receiptItemId}:Q${quantity}:O0` : undefined,
-            variantId: validVariantId
+            notes: undefined,
+            variantId: validVariantId,
+            // Track for receipt_item_locations (originalQuantity = 0 for new locations)
+            _originalQuantity: 0,
+            _quantityAdded: quantity
           });
           createdCount++;
         }
       }
       
       // Bulk insert new locations
+      const createdLocations: any[] = [];
       if (locationsToCreate.length > 0) {
-        const created = await db.insert(productLocations).values(locationsToCreate).returning();
+        // Remove internal tracking fields before inserting
+        const cleanLocationsToCreate = locationsToCreate.map(loc => {
+          const { _originalQuantity, _quantityAdded, ...cleanLoc } = loc;
+          return cleanLoc;
+        });
+        const created = await db.insert(productLocations).values(cleanLocationsToCreate).returning();
+        // Pair created locations with their tracking data
+        created.forEach((createdLoc, index) => {
+          createdLocations.push({
+            ...createdLoc,
+            _originalQuantity: locationsToCreate[index]._originalQuantity,
+            _quantityAdded: locationsToCreate[index]._quantityAdded
+          });
+        });
         results.push(...created);
       }
       
@@ -6493,6 +6483,45 @@ Important:
           if (result.status === 'fulfilled' && result.value[0]) {
             results.push(result.value[0]);
           }
+        }
+      }
+      
+      // Insert into receipt_item_locations table if receiptItemId is provided
+      if (receiptItemId) {
+        const receiptItemLocationRecords: any[] = [];
+        
+        // For newly created locations
+        for (const createdLoc of createdLocations) {
+          receiptItemLocationRecords.push({
+            receiptItemId,
+            productLocationId: createdLoc.id,
+            productId,
+            variantId: createdLoc.variantId || null,
+            locationCode: createdLoc.locationCode,
+            quantityAdded: createdLoc._quantityAdded,
+            originalQuantity: 0, // New location, original was 0
+            createdBy: req.user?.id || null
+          });
+        }
+        
+        // For updated locations
+        for (const updatedLoc of locationsToUpdate) {
+          receiptItemLocationRecords.push({
+            receiptItemId,
+            productLocationId: updatedLoc.id,
+            productId,
+            variantId: updatedLoc._variantId || null,
+            locationCode: updatedLoc._locationCode,
+            quantityAdded: updatedLoc._quantityAdded,
+            originalQuantity: updatedLoc._originalQuantity,
+            createdBy: req.user?.id || null
+          });
+        }
+        
+        // Bulk insert receipt_item_locations records
+        if (receiptItemLocationRecords.length > 0) {
+          await db.insert(receiptItemLocations).values(receiptItemLocationRecords);
+          console.log(`[locations/batch] Created ${receiptItemLocationRecords.length} receipt_item_locations records for receiptItemId=${receiptItemId}`);
         }
       }
       
@@ -6612,8 +6641,8 @@ Important:
   });
 
   // Batch delete/restore product locations - efficient for undo all
-  // IMPORTANT: Preserves pre-existing inventory by restoring original quantities instead of deleting
-  // SAFETY: Only processes locations tagged with RI:{receiptItemId}: to prevent accidental data loss
+  // IMPORTANT: Uses receipt_item_locations table to track what was added during receiving
+  // SAFETY: Only processes locations that have records in receipt_item_locations table
   app.delete('/api/products/:id/locations/batch', isAuthenticated, async (req: any, res) => {
     try {
       const productId = req.params.id;
@@ -6631,102 +6660,80 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
       
-      // Get locations to process - ONLY those tagged for this specific receipt
-      let locationsToProcess: any[] = [];
-      
-      if (receiptItemId) {
-        // Find ONLY locations tagged for this receipt item - never touch untagged locations
-        const allLocations = await storage.getProductLocations(productId);
-        locationsToProcess = allLocations.filter(loc => 
-          loc.notes?.includes(`RI:${receiptItemId}:`)
-        );
-        
-        // SAFETY: Log what we're about to process
-        console.log(`[SAFETY] Batch undo for receipt ${receiptItemId}: found ${locationsToProcess.length} tagged locations out of ${allLocations.length} total`);
-        
-        // SAFETY: Double-check that we're only touching tagged locations
-        const untaggedCount = allLocations.length - locationsToProcess.length;
-        console.log(`[SAFETY] ${untaggedCount} untagged locations will NOT be touched`);
-      } else if (locationIds && Array.isArray(locationIds)) {
-        // Find specific locations by ID - but ONLY if they have RI tags
-        const allLocations = await storage.getProductLocations(productId);
-        locationsToProcess = allLocations.filter(loc => 
-          locationIds.includes(loc.id) && loc.notes?.includes('RI:')
-        );
-        
-        // SAFETY: Reject if any requested location doesn't have RI tag
-        const requestedWithoutTag = allLocations.filter(loc => 
-          locationIds.includes(loc.id) && !loc.notes?.includes('RI:')
-        );
-        if (requestedWithoutTag.length > 0) {
-          console.log(`[SAFETY] Blocked deletion of ${requestedWithoutTag.length} locations without RI tag`);
-        }
-      }
-      
-      if (locationsToProcess.length === 0) {
-        return res.json({ success: true, deleted: 0, restored: 0, totalQuantityRemoved: 0, message: "No tagged locations to process" });
-      }
-      
-      // Separate locations into:
-      // 1. Pre-existing (has :O{originalQty} marker) - RESTORE to original quantity
-      // 2. New (no O marker) - DELETE completely
       let deletedCount = 0;
       let restoredCount = 0;
       let totalQuantityRemoved = 0;
       
-      for (const loc of locationsToProcess) {
-        if (!loc.notes) {
-          // No notes - delete the location
-          await storage.deleteProductLocation(loc.id);
-          totalQuantityRemoved += loc.quantity || 0;
-          deletedCount++;
-          continue;
+      if (receiptItemId) {
+        // Query receipt_item_locations table for this receipt item
+        const receiptLocationRecords = await db.select()
+          .from(receiptItemLocations)
+          .where(eq(receiptItemLocations.receiptItemId, receiptItemId));
+        
+        console.log(`[SAFETY] Batch undo for receipt ${receiptItemId}: found ${receiptLocationRecords.length} records in receipt_item_locations`);
+        
+        if (receiptLocationRecords.length === 0) {
+          return res.json({ success: true, deleted: 0, restored: 0, totalQuantityRemoved: 0, message: "No locations to process" });
         }
         
-        // Check for original quantity marker: RI:{id}:Q{added}:O{original}:N{preservedNotes}
-        const originalMatch = loc.notes.match(/:O(\d+)(?::N(.*))?$/);
-        
-        if (originalMatch) {
-          const originalQuantity = parseInt(originalMatch[1], 10);
-          const preservedNotesBase64 = originalMatch[2];
+        // Process each record
+        for (const record of receiptLocationRecords) {
+          const originalQuantity = record.originalQuantity || 0;
+          const quantityAdded = record.quantityAdded || 0;
           
-          // If original quantity was 0, this location was CREATED during this receipt
-          // So we should DELETE it entirely, not restore
           if (originalQuantity === 0) {
-            await storage.deleteProductLocation(loc.id);
-            totalQuantityRemoved += loc.quantity || 0;
+            // This location was CREATED during this receipt - DELETE it entirely
+            await storage.deleteProductLocation(record.productLocationId);
+            totalQuantityRemoved += quantityAdded;
             deletedCount++;
           } else {
-            // Pre-existing location - RESTORE to original quantity and notes
-            const quantityRemoved = (loc.quantity || 0) - originalQuantity;
-            totalQuantityRemoved += quantityRemoved;
+            // Pre-existing location - RESTORE to original quantity
+            totalQuantityRemoved += quantityAdded;
             
-            // Restore original notes from base64, or set to null if none preserved
-            let restoredNotes: string | null = null;
-            if (preservedNotesBase64) {
-              try {
-                restoredNotes = Buffer.from(preservedNotesBase64, 'base64').toString('utf-8');
-              } catch (e) {
-                console.error('Failed to decode preserved notes:', e);
-              }
-            }
-            
-            // Clear the RI tag and restore original quantity and notes
             await db.update(productLocations)
               .set({ 
                 quantity: originalQuantity,
-                notes: restoredNotes, // Restore original notes
                 updatedAt: new Date()
               })
-              .where(eq(productLocations.id, loc.id));
+              .where(eq(productLocations.id, record.productLocationId));
             
             restoredCount++;
           }
-        } else {
-          // New location (no original marker) - DELETE completely
-          await storage.deleteProductLocation(loc.id);
-          totalQuantityRemoved += loc.quantity || 0;
-          deletedCount++;
+        }
+        
+        // Delete all receipt_item_locations records for this receipt item
+        await db.delete(receiptItemLocations)
+          .where(eq(receiptItemLocations.receiptItemId, receiptItemId));
+        
+        console.log(`[locations/batch-delete] Deleted ${receiptLocationRecords.length} receipt_item_locations records`);
+      } else if (locationIds && Array.isArray(locationIds)) {
+        // Find records by productLocationId
+        const receiptLocationRecords = await db.select()
+          .from(receiptItemLocations)
+          .where(inArray(receiptItemLocations.productLocationId, locationIds));
+        
+        for (const record of receiptLocationRecords) {
+          const originalQuantity = record.originalQuantity || 0;
+          const quantityAdded = record.quantityAdded || 0;
+          
+          if (originalQuantity === 0) {
+            await storage.deleteProductLocation(record.productLocationId);
+            totalQuantityRemoved += quantityAdded;
+            deletedCount++;
+          } else {
+            totalQuantityRemoved += quantityAdded;
+            await db.update(productLocations)
+              .set({ quantity: originalQuantity, updatedAt: new Date() })
+              .where(eq(productLocations.id, record.productLocationId));
+            restoredCount++;
+          }
+        }
+        
+        // Delete processed records
+        if (receiptLocationRecords.length > 0) {
+          const recordIds = receiptLocationRecords.map(r => r.id);
+          await db.delete(receiptItemLocations)
+            .where(inArray(receiptItemLocations.id, recordIds));
         }
       }
       
@@ -6757,6 +6764,38 @@ Important:
     } catch (error: any) {
       console.error("Error batch deleting product locations:", error);
       res.status(500).json({ message: "Failed to batch delete product locations", error: error.message });
+    }
+  });
+
+  // GET receipt item locations - returns all locations added during receiving
+  app.get('/api/receipt-items/:receiptItemId/locations', isAuthenticated, async (req: any, res) => {
+    try {
+      const { receiptItemId } = req.params;
+      
+      // Query receipt_item_locations joined with product_locations and optionally productVariants
+      const records = await db.select({
+        id: receiptItemLocations.id,
+        receiptItemId: receiptItemLocations.receiptItemId,
+        productLocationId: receiptItemLocations.productLocationId,
+        productId: receiptItemLocations.productId,
+        variantId: receiptItemLocations.variantId,
+        locationCode: receiptItemLocations.locationCode,
+        quantityAdded: receiptItemLocations.quantityAdded,
+        originalQuantity: receiptItemLocations.originalQuantity,
+        createdAt: receiptItemLocations.createdAt,
+        currentQuantity: productLocations.quantity,
+        locationType: productLocations.locationType,
+        variantName: productVariants.name
+      })
+      .from(receiptItemLocations)
+      .leftJoin(productLocations, eq(receiptItemLocations.productLocationId, productLocations.id))
+      .leftJoin(productVariants, eq(receiptItemLocations.variantId, productVariants.id))
+      .where(eq(receiptItemLocations.receiptItemId, receiptItemId));
+      
+      res.json(records);
+    } catch (error: any) {
+      console.error("Error fetching receipt item locations:", error);
+      res.status(500).json({ message: "Failed to fetch receipt item locations", error: error.message });
     }
   });
 
@@ -6828,7 +6867,7 @@ Important:
   });
 
   // Single location delete - PRESERVES pre-existing inventory when receiptItemId is provided
-  // SAFETY: Restores original quantities instead of deleting pre-existing locations
+  // SAFETY: Uses receipt_item_locations table to track original quantities
   app.delete('/api/products/:id/locations/:locationId', isAuthenticated, async (req: any, res) => {
     try {
       const { id: productId, locationId } = req.params;
@@ -6850,7 +6889,7 @@ Important:
         return res.status(204).send();
       }
 
-      // Fetch the location to check for RI tags
+      // Fetch the location
       const allLocations = await storage.getProductLocations(productId);
       const loc = allLocations.find(l => l.id === locationId);
       
@@ -6858,64 +6897,63 @@ Important:
         return res.status(404).json({ message: "Location not found" });
       }
       
-      // SAFETY: If receiptItemId is provided, apply restore-or-delete logic
-      if (receiptItemId && loc.notes) {
-        // Check if this location is tagged for this receipt
-        if (!loc.notes.includes(`RI:${receiptItemId}:`)) {
-          console.log(`[SAFETY] Blocked deletion of location ${locationId} - not tagged for receipt ${receiptItemId}`);
+      // SAFETY: If receiptItemId is provided, use receipt_item_locations table
+      if (receiptItemId) {
+        // Look up the receipt_item_locations record
+        const [receiptLocationRecord] = await db.select()
+          .from(receiptItemLocations)
+          .where(and(
+            eq(receiptItemLocations.receiptItemId, receiptItemId),
+            eq(receiptItemLocations.productLocationId, locationId)
+          ));
+        
+        if (!receiptLocationRecord) {
+          console.log(`[SAFETY] No receipt_item_locations record for location ${locationId} and receipt ${receiptItemId}`);
           return res.status(400).json({ 
-            message: "Safety: Cannot delete location not tagged for this receipt" 
+            message: "Safety: No record found for this location and receipt combination" 
           });
         }
         
-        // Check for original quantity marker: RI:{id}:Q{added}:O{original}:N{preservedNotes}
-        const originalMatch = loc.notes.match(/:O(\d+)(?::N(.*))?$/);
+        const originalQuantity = receiptLocationRecord.originalQuantity || 0;
+        const quantityAdded = receiptLocationRecord.quantityAdded || 0;
         
-        if (originalMatch) {
-          const originalQuantity = parseInt(originalMatch[1], 10);
-          const preservedNotesBase64 = originalMatch[2];
+        if (originalQuantity > 0) {
+          // Pre-existing location - RESTORE to original quantity instead of deleting
+          await db.update(productLocations)
+            .set({ 
+              quantity: originalQuantity,
+              updatedAt: new Date()
+            })
+            .where(eq(productLocations.id, locationId));
           
-          if (originalQuantity > 0) {
-            // Pre-existing location - RESTORE to original quantity instead of deleting
-            let restoredNotes: string | null = null;
-            if (preservedNotesBase64) {
-              try {
-                restoredNotes = Buffer.from(preservedNotesBase64, 'base64').toString('utf-8');
-              } catch (e) {
-                console.error('Failed to decode preserved notes:', e);
-              }
-            }
-            
-            // Restore to original quantity and clear RI tag
-            await db.update(productLocations)
-              .set({ 
-                quantity: originalQuantity,
-                notes: restoredNotes,
-                updatedAt: new Date()
-              })
-              .where(eq(productLocations.id, locationId));
-            
-            console.log(`[SAFETY] Restored location ${loc.locationCode} to original qty ${originalQuantity}`);
-            
-            await storage.createUserActivity({
-              userId: "test-user",
-              action: 'restored',
-              entityType: 'product_location',
-              entityId: locationId,
-              description: `Restored location ${loc.locationCode} to original quantity ${originalQuantity}`,
-            });
-            
-            return res.status(200).json({ 
-              restored: true, 
-              originalQuantity,
-              message: `Restored to original quantity ${originalQuantity}` 
-            });
-          }
-          // originalQuantity === 0 means this location was created during this receipt - delete it
+          console.log(`[SAFETY] Restored location ${loc.locationCode} to original qty ${originalQuantity}`);
+          
+          // Delete the receipt_item_locations record
+          await db.delete(receiptItemLocations)
+            .where(eq(receiptItemLocations.id, receiptLocationRecord.id));
+          
+          await storage.createUserActivity({
+            userId: "test-user",
+            action: 'restored',
+            entityType: 'product_location',
+            entityId: locationId,
+            description: `Restored location ${loc.locationCode} to original quantity ${originalQuantity}`,
+          });
+          
+          return res.status(200).json({ 
+            restored: true, 
+            originalQuantity,
+            message: `Restored to original quantity ${originalQuantity}` 
+          });
         }
+        
+        // originalQuantity === 0 means this location was created during this receipt - delete it
+        // Delete the receipt_item_locations record first
+        await db.delete(receiptItemLocations)
+          .where(eq(receiptItemLocations.id, receiptLocationRecord.id));
       }
 
-      // Normal delete for new locations (no RI tag, or :O0, or no receiptItemId)
+      // Normal delete for new locations (originalQuantity === 0, or no receiptItemId)
       const success = await storage.deleteProductLocation(locationId);
 
       if (!success) {
