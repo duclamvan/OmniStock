@@ -1389,6 +1389,11 @@ const imports = {
   confirmRevert: 'Yes, Revert',
   partiallyReceived: 'Partially Received',
   
+  // Archive Shipment
+  moveToArchive: 'Move to Archive',
+  shipmentArchived: 'Shipment has been moved to archive',
+  failedToArchiveShipment: 'Failed to archive shipment',
+  
   // Delete Shipment
   confirmDeleteTitle: 'Delete Shipment?',
   confirmDeleteDescription: 'This will permanently delete the shipment and all associated data including receipts and storage assignments. This action cannot be undone.',

@@ -1407,6 +1407,11 @@ const imports = {
   confirmRevert: 'Đồng ý, Hoàn tác',
   partiallyReceived: 'Đã nhận một phần',
   
+  // Archive Shipment
+  moveToArchive: 'Chuyển vào Lưu trữ',
+  shipmentArchived: 'Lô hàng đã được chuyển vào lưu trữ',
+  failedToArchiveShipment: 'Không thể lưu trữ lô hàng',
+  
   // Delete Shipment
   confirmDeleteTitle: 'Xóa lô hàng?',
   confirmDeleteDescription: 'Thao tác này sẽ xóa vĩnh viễn lô hàng và tất cả dữ liệu liên quan bao gồm phiếu nhận và vị trí lưu kho. Hành động này không thể hoàn tác.',

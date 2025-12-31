@@ -6836,6 +6836,35 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
     },
   });
 
+  const archiveShipmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipment.id}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to archive shipment');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      toast({
+        title: t('common:success'),
+        description: t('shipmentArchived'),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToArchiveShipment'),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRevertClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowRevertConfirm(true);
@@ -7013,6 +7042,17 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
                   >
                     <Undo2 className="h-4 w-4 mr-2" />
                     {t('sendBackToReceive')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      archiveShipmentMutation.mutate();
+                    }}
+                    disabled={archiveShipmentMutation.isPending}
+                    data-testid={`menu-item-archive-${shipment.id}`}
+                  >
+                    <Archive className="h-4 w-4 mr-2" />
+                    {t('moveToArchive')}
                   </DropdownMenuItem>
                   {isAdministrator && (
                     <DropdownMenuItem

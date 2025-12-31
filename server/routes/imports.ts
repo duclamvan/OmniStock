@@ -7099,6 +7099,48 @@ router.post("/shipments/:id/revert-to-receiving", async (req, res) => {
   }
 });
 
+// POST /api/imports/shipments/:id/archive - Move completed shipment to archived
+router.post("/shipments/:id/archive", async (req, res) => {
+  try {
+    const shipmentId = req.params.id;
+    
+    // Check if shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Only allow archiving from 'completed' status
+    if (shipment.receivingStatus !== 'completed') {
+      return res.status(400).json({ 
+        message: `Cannot archive shipment - current status is '${shipment.receivingStatus}', expected 'completed'` 
+      });
+    }
+    
+    // Update to archived status
+    const [updated] = await db
+      .update(shipments)
+      .set({
+        receivingStatus: 'archived',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json({ 
+      message: "Shipment moved to archive successfully",
+      shipment: updated
+    });
+  } catch (error) {
+    console.error("Error archiving shipment:", error);
+    res.status(500).json({ message: "Failed to archive shipment" });
+  }
+});
+
 // DELETE /api/imports/shipments/:id - Permanently delete a shipment and revert inventory
 router.delete("/shipments/:id", async (req, res) => {
   try {
