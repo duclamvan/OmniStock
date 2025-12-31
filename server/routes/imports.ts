@@ -4734,6 +4734,35 @@ function getISOWeekNumber(date: Date): number {
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
+// Archive a specific shipment (move to archived)
+router.post("/shipments/:id/archive", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = new Date();
+    const weekNumber = getISOWeekNumber(now);
+    const archiveWeekLabel = `${now.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+    
+    const [updated] = await db
+      .update(shipments)
+      .set({
+        archivedAt: now,
+        archiveWeek: archiveWeekLabel,
+        updatedAt: now
+      })
+      .where(eq(shipments.id, id))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    res.json({ success: true, shipment: updated, archiveWeek: archiveWeekLabel });
+  } catch (error) {
+    console.error("Error archiving shipment:", error);
+    res.status(500).json({ message: "Failed to archive shipment" });
+  }
+});
+
 // Unarchive a specific shipment (move back to active)
 router.post("/shipments/:id/unarchive", async (req, res) => {
   try {

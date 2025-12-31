@@ -282,6 +282,22 @@ export default function InternationalTransit() {
     }
   });
 
+  // Archive single shipment mutation
+  const archiveShipmentMutation = useMutation({
+    mutationFn: async (shipmentId: string) => {
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/archive`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/archived'] });
+      toast({ title: t('success'), description: t('shipmentArchived') });
+    },
+    onError: () => {
+      toast({ title: t('error'), description: t('failedToArchive'), variant: "destructive" });
+    }
+  });
+
   // Delete shipment mutation (permanent deletion from database - removes all data with no trace)
   const deleteShipmentMutation = useMutation({
     mutationFn: async (shipmentId: string) => {
@@ -2224,6 +2240,17 @@ export default function InternationalTransit() {
                               }}>
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 {t('syncTracking')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  archiveShipmentMutation.mutate(shipment.id);
+                                }}
+                                disabled={archiveShipmentMutation.isPending}
+                                className="text-muted-foreground"
+                              >
+                                <Archive className="h-4 w-4 mr-2" />
+                                {t('moveToArchive')}
                               </DropdownMenuItem>
                               {shipment.consolidationId && (
                                 <DropdownMenuItem 
