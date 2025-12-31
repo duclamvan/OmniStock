@@ -423,6 +423,11 @@ export default function CreatePurchase() {
   const [seriesUnitPrice, setSeriesUnitPrice] = useState(0);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   
+  // Quick Selection dialog state (select all variants and fill quantity)
+  const [quickSelectDialogOpen, setQuickSelectDialogOpen] = useState(false);
+  const [quickSelectQuantity, setQuickSelectQuantity] = useState(1);
+  const [quickSelectUnitPrice, setQuickSelectUnitPrice] = useState(0);
+  
   // Existing product variants state (for selecting from parent product)
   const [existingVariants, setExistingVariants] = useState<Array<{
     id: string;
@@ -1712,6 +1717,36 @@ export default function CreatePurchase() {
         description: t('variantAddedSuccess'),
       });
     }
+  };
+  
+  // Quick Selection - select all variants and apply quantity/price
+  const applyQuickSelection = () => {
+    if (variants.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('noVariantsToSelect'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Select all variants
+    setSelectedVariants(variants.map(v => v.id));
+    
+    // Apply quantity and price to all variants
+    const updatedVariants = variants.map(v => ({
+      ...v,
+      quantity: quickSelectQuantity,
+      unitPrice: quickSelectUnitPrice
+    }));
+    setVariants(updatedVariants);
+    
+    // Reset and close dialog
+    setQuickSelectDialogOpen(false);
+    toast({
+      title: t('success'),
+      description: t('quickSelectionApplied', { count: variants.length }),
+    });
   };
   
   // Add series of variants
@@ -3517,6 +3552,22 @@ export default function CreatePurchase() {
                           <ListPlus className="h-4 w-4 mr-1" />
                           {t('addSeries')}
                         </Button>
+                        {variants.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setQuickSelectQuantity(1);
+                              setQuickSelectUnitPrice(currentItem.unitPrice || 0);
+                              setQuickSelectDialogOpen(true);
+                            }}
+                            data-testid="button-quick-selection"
+                          >
+                            <Zap className="h-4 w-4 mr-1" />
+                            {t('quickSelection')}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CollapsibleTrigger>
@@ -5411,6 +5462,54 @@ export default function CreatePurchase() {
             </Button>
             <Button onClick={addVariantSeries} disabled={!seriesInput.trim()}>
               {t('createSeries')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Quick Selection Dialog */}
+      <Dialog open={quickSelectDialogOpen} onOpenChange={setQuickSelectDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('quickSelection')}</DialogTitle>
+            <DialogDescription>
+              {t('quickSelectionDescription', { count: variants.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('quantityPerVariant')}</Label>
+                <Input
+                  type="number"
+                  value={quickSelectQuantity}
+                  onChange={(e) => setQuickSelectQuantity(parseInt(e.target.value) || 1)}
+                  onFocus={(e) => e.target.select()}
+                  min="1"
+                  data-testid="input-quick-select-quantity"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('unitPriceLabel')}</Label>
+                <DecimalInput
+                  value={quickSelectUnitPrice}
+                  onChange={(val) => setQuickSelectUnitPrice(val)}
+                  min="0"
+                  data-testid="input-quick-select-unit-price"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+              {t('quickSelectionHelp')}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQuickSelectDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={applyQuickSelection} disabled={variants.length === 0}>
+              <Zap className="h-4 w-4 mr-2" />
+              {t('applyToAll', { count: variants.length })}
             </Button>
           </DialogFooter>
         </DialogContent>
