@@ -8179,21 +8179,8 @@ export default function PickPack() {
     </Card>
   );
 
-  // Full page skeleton loader for initial load
-  if (isLoading && transformedOrders.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-full max-w-4xl p-4">
-          <div className="skeleton skeleton-title w-48 mx-auto mb-8"></div>
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="skeleton skeleton-card"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Track if initial load is in progress (show skeletons for stats/tabs)
+  const isInitialLoad = isLoading && transformedOrders.length === 0;
 
 
 
@@ -15268,19 +15255,27 @@ export default function PickPack() {
             {/* Quick Stats Overview */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center" data-testid="stat-pending">
-                <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</div>
+                <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.pending}
+                </div>
                 <div className="text-xs text-orange-700 dark:text-orange-200">{t('pending')}</div>
               </div>
               <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center" data-testid="stat-picking">
-                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.picking}</div>
+                <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.picking}
+                </div>
                 <div className="text-xs text-blue-700 dark:text-blue-200 dark:text-blue-100">{t('picking')}</div>
               </div>
               <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center" data-testid="stat-packing">
-                <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.packing}</div>
+                <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.packing}
+                </div>
                 <div className="text-xs text-purple-700 dark:text-purple-200">{t('packing')}</div>
               </div>
               <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center" data-testid="stat-ready">
-                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">{stats.ready}</div>
+                <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">
+                  {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.ready}
+                </div>
                 <div className="text-xs text-green-700 dark:text-green-200">{t('ready')}</div>
               </div>
             </div>
@@ -15305,7 +15300,7 @@ export default function PickPack() {
                   <span className="hidden sm:inline">{t('overview')}</span>
                 </span>
                 <span className="text-sm sm:text-base font-bold">
-                  {stats.pending + stats.picking}
+                  {isInitialLoad ? <Skeleton className="h-4 w-6 mx-auto" /> : stats.pending + stats.picking}
                 </span>
               </div>
             </TabsTrigger>
@@ -15321,7 +15316,7 @@ export default function PickPack() {
                   <span className="hidden sm:inline">{t('pending')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('pending') ? 'animate-bounce-count' : ''}`}>
-                  {stats.pending}
+                  {isInitialLoad ? <Skeleton className="h-4 w-6 mx-auto" /> : stats.pending}
                 </span>
               </div>
             </TabsTrigger>
@@ -15337,7 +15332,7 @@ export default function PickPack() {
                   <span className="hidden sm:inline">{t('picking')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('picking') ? 'animate-bounce-count' : ''}`}>
-                  {stats.picking}
+                  {isInitialLoad ? <Skeleton className="h-4 w-6 mx-auto" /> : stats.picking}
                 </span>
               </div>
             </TabsTrigger>
@@ -15353,7 +15348,7 @@ export default function PickPack() {
                   <span className="hidden sm:inline">{t('packing')}</span>
                 </span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('packing') ? 'animate-bounce-count' : ''}`}>
-                  {stats.packing}
+                  {isInitialLoad ? <Skeleton className="h-4 w-6 mx-auto" /> : stats.packing}
                 </span>
               </div>
             </TabsTrigger>
@@ -15366,7 +15361,7 @@ export default function PickPack() {
               <div className="flex flex-col items-center gap-0">
                 <span className="text-xs sm:text-sm font-medium leading-tight">{t('ready')}</span>
                 <span className={`text-sm sm:text-base font-bold ${animatingCounters.has('ready') ? 'animate-bounce-count' : ''}`}>
-                  {stats.ready}
+                  {isInitialLoad ? <Skeleton className="h-4 w-6 mx-auto" /> : stats.ready}
                 </span>
               </div>
             </TabsTrigger>
