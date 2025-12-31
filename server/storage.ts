@@ -3465,10 +3465,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customers
-  async getCustomers(): Promise<Customer[]> {
+  async getCustomers(): Promise<(Customer & { orderCount: number; totalSpent: string; lastOrderDate: Date | null })[]> {
     try {
-      const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
-      return customersData;
+      // Get customers with aggregated order statistics using LEFT JOIN
+      const result = await db
+        .select({
+          customer: customers,
+          orderCount: sql<number>`COALESCE(COUNT(DISTINCT ${orders.id}), 0)::int`,
+          totalSpent: sql<string>`COALESCE(SUM(${orders.grandTotal}), 0)::text`,
+          lastOrderDate: sql<Date | null>`MAX(${orders.createdAt})`,
+        })
+        .from(customers)
+        .leftJoin(orders, eq(orders.customerId, customers.id))
+        .groupBy(customers.id)
+        .orderBy(desc(customers.createdAt));
+
+      // Flatten the result to match expected Customer type with additional fields
+      return result.map(row => ({
+        ...row.customer,
+        orderCount: row.orderCount,
+        totalSpent: row.totalSpent,
+        lastOrderDate: row.lastOrderDate,
+      }));
     } catch (error) {
       console.error('Error fetching customers:', error);
       return [];
