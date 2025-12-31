@@ -4614,6 +4614,7 @@ export default function PickPack() {
         console.log('📦 No cartons exist, creating one first...');
         const createCartonResponse = await apiRequest('POST', `/api/orders/${orderId}/cartons`, {
           cartonNumber: 1,
+          cartonType: 'non-company',
           isCompanyCarton: false
         });
         if (!createCartonResponse.ok) {
