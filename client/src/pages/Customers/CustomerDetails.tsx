@@ -541,7 +541,7 @@ export default function CustomerDetails() {
                       <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="text-slate-600 dark:text-slate-300">{t('customers:country')}:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5" data-testid="text-country">
-                        <span className="text-lg">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
+                        <span className="text-xl leading-none">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
                         {customer.country}
                       </span>
                     </div>
