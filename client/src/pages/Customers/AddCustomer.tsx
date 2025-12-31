@@ -1729,10 +1729,25 @@ export default function AddCustomer() {
     localStorage.setItem('pinnedCountries', JSON.stringify(newPinned));
   };
 
-  const filteredCountries = availableCountries.filter(country =>
-    country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
-    country.code.toLowerCase().includes(countrySearchQuery.toLowerCase())
-  );
+  const filteredCountries = availableCountries
+    .filter(country =>
+      country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+      country.code.toLowerCase().includes(countrySearchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (!countrySearchQuery) return 0;
+      const query = countrySearchQuery.toLowerCase();
+      const aNameStarts = a.name.toLowerCase().startsWith(query);
+      const bNameStarts = b.name.toLowerCase().startsWith(query);
+      const aCodeStarts = a.code.toLowerCase().startsWith(query);
+      const bCodeStarts = b.code.toLowerCase().startsWith(query);
+      
+      if (aNameStarts && !bNameStarts) return -1;
+      if (!aNameStarts && bNameStarts) return 1;
+      if (aCodeStarts && !bCodeStarts) return -1;
+      if (!aCodeStarts && bCodeStarts) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
   const pinnedFilteredCountries = filteredCountries.filter(country => 
     pinnedCountries.includes(country.code)
@@ -1948,108 +1963,104 @@ export default function AddCustomer() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
+                    <PopoverContent className="w-[320px] sm:w-[400px] p-0" align="start">
+                      <Command shouldFilter={false}>
                         <CommandInput 
                           placeholder={t('customers:searchCountryPlaceholder')} 
                           value={countrySearchQuery}
                           onValueChange={setCountrySearchQuery}
                           data-testid="input-country-search"
                         />
-                        <CommandList>
+                        <CommandList className="max-h-[350px]">
                           <CommandEmpty>{t('customers:noCountryFound')}</CommandEmpty>
                           
-                          {pinnedFilteredCountries.length > 0 && (
+                          {pinnedFilteredCountries.length > 0 && !countrySearchQuery && (
                             <CommandGroup heading={t('customers:pinnedCountries')}>
-                              {pinnedFilteredCountries.map((country) => (
-                                <CommandItem
-                                  key={country.code}
-                                  value={country.code}
-                                  onSelect={() => {
-                                    form.setValue('country', country.code);
-                                    
-                                    // Auto-populate shipping country if shipping form is open and country is empty
-                                    if (isAddingShipping && !shippingForm.getValues('country')) {
-                                      shippingForm.setValue('country', country.name);
-                                    }
-                                    
-                                    setOpenCountryCombobox(false);
-                                    setCountrySearchQuery("");
-                                  }}
-                                  data-testid={`option-country-${country.code}`}
-                                  className="flex items-center justify-between group"
-                                >
-                                  <div className="flex items-center flex-1">
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        selectedCountry === country.code ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
-                                    {country.name}
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      togglePinCountry(country.code);
+                              <div className="grid grid-cols-2 gap-1 p-2">
+                                {pinnedFilteredCountries.map((country) => (
+                                  <div
+                                    key={country.code}
+                                    onClick={() => {
+                                      form.setValue('country', country.code);
+                                      if (isAddingShipping && !shippingForm.getValues('country')) {
+                                        shippingForm.setValue('country', country.name);
+                                      }
+                                      setOpenCountryCombobox(false);
+                                      setCountrySearchQuery("");
                                     }}
-                                    data-testid={`button-unpin-${country.code}`}
+                                    data-testid={`option-country-${country.code}`}
+                                    className={cn(
+                                      "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors group",
+                                      "hover:bg-slate-100 dark:hover:bg-slate-700",
+                                      selectedCountry === country.code && "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+                                    )}
                                   >
-                                    <Pin className="h-3 w-3 fill-current text-blue-600" />
-                                  </Button>
-                                </CommandItem>
-                              ))}
+                                    <span className="text-2xl">{getCountryFlag(country.code)}</span>
+                                    <span className="text-sm font-medium truncate flex-1">{country.name}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        togglePinCountry(country.code);
+                                      }}
+                                      data-testid={`button-unpin-${country.code}`}
+                                    >
+                                      <Pin className="h-3 w-3 fill-current text-blue-600" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
                             </CommandGroup>
                           )}
                           
-                          {unpinnedFilteredCountries.length > 0 && (
-                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? t('customers:allCountries') : undefined}>
-                              {unpinnedFilteredCountries.map((country) => (
+                          {(unpinnedFilteredCountries.length > 0 || countrySearchQuery) && (
+                            <CommandGroup heading={!countrySearchQuery && pinnedFilteredCountries.length > 0 ? t('customers:allCountries') : undefined}>
+                              {(countrySearchQuery ? filteredCountries : unpinnedFilteredCountries).map((country) => (
                                 <CommandItem
                                   key={country.code}
                                   value={country.code}
                                   onSelect={() => {
                                     form.setValue('country', country.code);
-                                    
-                                    // Auto-populate shipping country if shipping form is open and country is empty
                                     if (isAddingShipping && !shippingForm.getValues('country')) {
                                       shippingForm.setValue('country', country.name);
                                     }
-                                    
                                     setOpenCountryCombobox(false);
                                     setCountrySearchQuery("");
                                   }}
                                   data-testid={`option-country-${country.code}`}
-                                  className="flex items-center justify-between group"
+                                  className="flex items-center justify-between group py-2"
                                 >
-                                  <div className="flex items-center flex-1">
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        selectedCountry === country.code ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
-                                    {country.name}
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <span className="text-2xl">{getCountryFlag(country.code)}</span>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{country.name}</span>
+                                      <span className="text-xs text-muted-foreground">{country.code}</span>
+                                    </div>
                                   </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      togglePinCountry(country.code);
-                                    }}
-                                    data-testid={`button-pin-${country.code}`}
-                                  >
-                                    <Pin className="h-3 w-3 text-slate-400" />
-                                  </Button>
+                                  <div className="flex items-center gap-2">
+                                    {selectedCountry === country.code && (
+                                      <Check className="h-4 w-4 text-blue-600" />
+                                    )}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        togglePinCountry(country.code);
+                                      }}
+                                      data-testid={`button-pin-${country.code}`}
+                                    >
+                                      <Pin className={cn(
+                                        "h-3 w-3",
+                                        pinnedCountries.includes(country.code) ? "fill-current text-blue-600" : "text-slate-400"
+                                      )} />
+                                    </Button>
+                                  </div>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
