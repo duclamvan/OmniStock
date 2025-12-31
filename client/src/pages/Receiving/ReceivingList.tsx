@@ -6722,7 +6722,10 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
   const [showRevertConfirm, setShowRevertConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const itemCount = shipment.items?.length || 0;
+  // For direct PO shipments (no consolidation), fall back to receiptItems
+  const itemCount = (shipment.items?.length || 0) > 0 
+    ? shipment.items.length 
+    : (shipment.receiptItems?.length || 0);
 
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
@@ -7101,7 +7104,10 @@ function ArchivedShipmentCard({ shipment, isAdministrator }: { shipment: any; is
   const [showReport, setShowReport] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const itemCount = shipment.items?.length || 0;
+  // For direct PO shipments (no consolidation), fall back to receiptItems
+  const itemCount = (shipment.items?.length || 0) > 0 
+    ? shipment.items.length 
+    : (shipment.receiptItems?.length || 0);
 
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
