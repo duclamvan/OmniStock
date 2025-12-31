@@ -9694,6 +9694,7 @@ Important:
 
   // Deduct inventory for bundle component picking
   // This endpoint handles inventory deduction for individual bundle components
+  // Supports virtual SKUs within bundles (deducts from master product)
   app.post('/api/orders/:id/bundle-component/pick', isAuthenticated, async (req: any, res) => {
     try {
       const { productId, locationCode, quantity, componentId, action } = req.body;
@@ -9702,14 +9703,36 @@ Important:
         return res.status(400).json({ message: 'Missing required fields: productId, locationCode, quantity' });
       }
       
-      // Find the location for this product
-      const locations = await storage.getProductLocations(productId);
-      const location = locations.find(loc => 
+      // Check if this is a virtual SKU that deducts from master product
+      let targetProductId = productId;
+      let actualQuantity = quantity;
+      let isVirtualSku = false;
+      
+      const product = await storage.getProductById(productId);
+      if (product?.isVirtual && product?.masterProductId) {
+        isVirtualSku = true;
+        targetProductId = product.masterProductId;
+        const deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
+        actualQuantity = quantity * deductionRatio;
+        console.log(`🎯 [Bundle Component] Virtual SKU detected: "${product.name}" → deducting from master (ratio: ${deductionRatio})`);
+      }
+      
+      // Find the location for the target product (master product for virtual SKUs)
+      const locations = await storage.getProductLocations(targetProductId);
+      let location = locations.find(loc => 
         loc.locationCode.toUpperCase() === locationCode.toUpperCase()
       );
       
+      // For virtual SKUs, fallback to primary or first location if specified location not found
+      if (!location && isVirtualSku) {
+        location = locations.find(loc => loc.isPrimary) || locations[0];
+        if (location) {
+          console.log(`🎯 [Bundle Component Virtual SKU] Auto-selected master product location: ${location.locationCode}`);
+        }
+      }
+      
       if (!location) {
-        return res.status(404).json({ message: `Location ${locationCode} not found for product ${productId}` });
+        return res.status(404).json({ message: `Location ${locationCode} not found for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}` });
       }
       
       const currentQty = location.quantity || 0;
@@ -9717,25 +9740,25 @@ Important:
       
       if (action === 'restore') {
         // Restore stock (unpicking)
-        newQty = currentQty + quantity;
-        console.log(`📦 [Bundle Component] Restored stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (+${quantity})`);
+        newQty = currentQty + actualQuantity;
+        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Restored stock at ${location.locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (+${actualQuantity})`);
       } else {
         // Deduct stock (picking)
-        newQty = Math.max(0, currentQty - quantity);
-        console.log(`📦 [Bundle Component] Deducted stock at ${locationCode} for product ${productId}: ${currentQty} → ${newQty} (-${quantity})`);
+        newQty = Math.max(0, currentQty - actualQuantity);
+        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Deducted stock at ${location.locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (-${actualQuantity})`);
       }
       
       await storage.updateProductLocation(location.id, { quantity: newQty });
       
-      // Also update the main product quantity
-      const bundleProduct = await storage.getProductById(productId);
-      if (bundleProduct) {
-        const currentProductQty = bundleProduct.quantity || 0;
+      // Also update the main product quantity (target product for virtual SKUs)
+      const targetProduct = await storage.getProductById(targetProductId);
+      if (targetProduct) {
+        const currentProductQty = targetProduct.quantity || 0;
         const newProductQty = action === 'restore' 
-          ? currentProductQty + quantity 
-          : Math.max(0, currentProductQty - quantity);
-        await storage.updateProduct(productId, { quantity: newProductQty });
-        console.log(`📦 [Bundle Component] Product qty updated: ${currentProductQty} → ${newProductQty}`);
+          ? currentProductQty + actualQuantity 
+          : Math.max(0, currentProductQty - actualQuantity);
+        await storage.updateProduct(targetProductId, { quantity: newProductQty });
+        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Product qty updated: ${currentProductQty} → ${newProductQty}`);
       }
       
       // Log the activity
