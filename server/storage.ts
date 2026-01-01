@@ -172,7 +172,22 @@ import {
   type InsertWarehouseTask,
   warehouseLabels,
   type WarehouseLabel,
-  type InsertWarehouseLabel
+  type InsertWarehouseLabel,
+  badgeDefinitions,
+  type BadgeDefinition,
+  type InsertBadgeDefinition,
+  employeeBadges,
+  type EmployeeBadge,
+  type InsertEmployeeBadge,
+  employeePoints,
+  type EmployeePoints,
+  type InsertEmployeePoints,
+  performanceEvents,
+  type PerformanceEvent,
+  type InsertPerformanceEvent,
+  dailyPerformanceSnapshots,
+  type DailyPerformanceSnapshot,
+  type InsertDailyPerformanceSnapshot
 } from "@shared/schema";
 import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, lt, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -723,6 +738,29 @@ export interface IStorage {
   deleteWarehouseLabel(id: string): Promise<boolean>;
   deleteWarehouseLabels(ids: string[]): Promise<number>;
   incrementWarehouseLabelPrintCount(id: string): Promise<WarehouseLabel | undefined>;
+
+  // Gamification - Badge Definitions
+  getBadgeDefinitions(): Promise<BadgeDefinition[]>;
+  getBadgeDefinitionByCode(code: string): Promise<BadgeDefinition | undefined>;
+  createBadgeDefinition(badge: InsertBadgeDefinition): Promise<BadgeDefinition>;
+
+  // Gamification - Employee Badges
+  getEmployeeBadges(userId: string): Promise<EmployeeBadge[]>;
+  awardBadge(data: InsertEmployeeBadge): Promise<EmployeeBadge>;
+  hasUserEarnedBadge(userId: string, badgeCode: string): Promise<boolean>;
+
+  // Gamification - Employee Points
+  getEmployeePoints(userId: string): Promise<EmployeePoints | undefined>;
+  upsertEmployeePoints(userId: string, updates: Partial<EmployeePoints>): Promise<EmployeePoints>;
+  getLeaderboard(period: 'daily' | 'weekly' | 'monthly' | 'all_time', limit?: number): Promise<{ userId: string; username: string; firstName: string; lastName: string; points: number; ordersPicked: number; ordersPacked: number; level: number }[]>;
+
+  // Gamification - Performance Events
+  createPerformanceEvent(event: InsertPerformanceEvent): Promise<PerformanceEvent>;
+  getPerformanceEvents(userId: string, limit?: number): Promise<PerformanceEvent[]>;
+
+  // Gamification - Daily Snapshots
+  upsertDailySnapshot(snapshot: InsertDailyPerformanceSnapshot): Promise<DailyPerformanceSnapshot>;
+  getDailySnapshots(userId: string, startDate: string, endDate: string): Promise<DailyPerformanceSnapshot[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -6748,6 +6786,215 @@ export class DatabaseStorage implements IStorage {
       : -1; // -1 indicates we don't know on-hand quantity
 
     return { allocated, available };
+  }
+
+  // ============================================
+  // GAMIFICATION - Badge Definitions
+  // ============================================
+
+  async getBadgeDefinitions(): Promise<BadgeDefinition[]> {
+    return await db
+      .select()
+      .from(badgeDefinitions)
+      .where(eq(badgeDefinitions.isActive, true))
+      .orderBy(asc(badgeDefinitions.sortOrder), asc(badgeDefinitions.name));
+  }
+
+  async getBadgeDefinitionByCode(code: string): Promise<BadgeDefinition | undefined> {
+    const [badge] = await db
+      .select()
+      .from(badgeDefinitions)
+      .where(eq(badgeDefinitions.code, code))
+      .limit(1);
+    return badge;
+  }
+
+  async createBadgeDefinition(badge: InsertBadgeDefinition): Promise<BadgeDefinition> {
+    const [created] = await db
+      .insert(badgeDefinitions)
+      .values(badge)
+      .returning();
+    return created;
+  }
+
+  // ============================================
+  // GAMIFICATION - Employee Badges
+  // ============================================
+
+  async getEmployeeBadges(userId: string): Promise<EmployeeBadge[]> {
+    return await db
+      .select()
+      .from(employeeBadges)
+      .where(eq(employeeBadges.userId, userId))
+      .orderBy(desc(employeeBadges.awardedAt));
+  }
+
+  async awardBadge(data: InsertEmployeeBadge): Promise<EmployeeBadge> {
+    const [badge] = await db
+      .insert(employeeBadges)
+      .values(data)
+      .returning();
+    return badge;
+  }
+
+  async hasUserEarnedBadge(userId: string, badgeCode: string): Promise<boolean> {
+    const badgeDef = await this.getBadgeDefinitionByCode(badgeCode);
+    if (!badgeDef) return false;
+
+    const [existing] = await db
+      .select()
+      .from(employeeBadges)
+      .where(and(
+        eq(employeeBadges.userId, userId),
+        eq(employeeBadges.badgeId, badgeDef.id)
+      ))
+      .limit(1);
+    
+    return !!existing;
+  }
+
+  // ============================================
+  // GAMIFICATION - Employee Points
+  // ============================================
+
+  async getEmployeePoints(userId: string): Promise<EmployeePoints | undefined> {
+    const [points] = await db
+      .select()
+      .from(employeePoints)
+      .where(eq(employeePoints.userId, userId))
+      .limit(1);
+    return points;
+  }
+
+  async upsertEmployeePoints(userId: string, updates: Partial<EmployeePoints>): Promise<EmployeePoints> {
+    const existing = await this.getEmployeePoints(userId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(employeePoints)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(employeePoints.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(employeePoints)
+        .values({ userId, ...updates })
+        .returning();
+      return created;
+    }
+  }
+
+  async getLeaderboard(
+    period: 'daily' | 'weekly' | 'monthly' | 'all_time',
+    limit: number = 10
+  ): Promise<{ userId: string; username: string; firstName: string; lastName: string; points: number; ordersPicked: number; ordersPacked: number; level: number }[]> {
+    let pointsColumn;
+    switch (period) {
+      case 'daily':
+        pointsColumn = employeePoints.weeklyPoints; // Using weekly as proxy for daily (daily would need separate tracking)
+        break;
+      case 'weekly':
+        pointsColumn = employeePoints.weeklyPoints;
+        break;
+      case 'monthly':
+        pointsColumn = employeePoints.monthlyPoints;
+        break;
+      case 'all_time':
+      default:
+        pointsColumn = employeePoints.totalPoints;
+        break;
+    }
+
+    const results = await db
+      .select({
+        userId: employeePoints.userId,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        points: pointsColumn,
+        ordersPicked: employeePoints.totalOrdersPicked,
+        ordersPacked: employeePoints.totalOrdersPacked,
+        level: employeePoints.level,
+      })
+      .from(employeePoints)
+      .innerJoin(users, eq(employeePoints.userId, users.id))
+      .orderBy(desc(pointsColumn))
+      .limit(limit);
+
+    return results.map(r => ({
+      userId: r.userId,
+      username: r.username || '',
+      firstName: r.firstName || '',
+      lastName: r.lastName || '',
+      points: r.points || 0,
+      ordersPicked: r.ordersPicked || 0,
+      ordersPacked: r.ordersPacked || 0,
+      level: r.level || 1,
+    }));
+  }
+
+  // ============================================
+  // GAMIFICATION - Performance Events
+  // ============================================
+
+  async createPerformanceEvent(event: InsertPerformanceEvent): Promise<PerformanceEvent> {
+    const [created] = await db
+      .insert(performanceEvents)
+      .values(event)
+      .returning();
+    return created;
+  }
+
+  async getPerformanceEvents(userId: string, limit: number = 50): Promise<PerformanceEvent[]> {
+    return await db
+      .select()
+      .from(performanceEvents)
+      .where(eq(performanceEvents.userId, userId))
+      .orderBy(desc(performanceEvents.createdAt))
+      .limit(limit);
+  }
+
+  // ============================================
+  // GAMIFICATION - Daily Performance Snapshots
+  // ============================================
+
+  async upsertDailySnapshot(snapshot: InsertDailyPerformanceSnapshot): Promise<DailyPerformanceSnapshot> {
+    const [existing] = await db
+      .select()
+      .from(dailyPerformanceSnapshots)
+      .where(and(
+        eq(dailyPerformanceSnapshots.userId, snapshot.userId),
+        eq(dailyPerformanceSnapshots.snapshotDate, snapshot.snapshotDate)
+      ))
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await db
+        .update(dailyPerformanceSnapshots)
+        .set(snapshot)
+        .where(eq(dailyPerformanceSnapshots.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(dailyPerformanceSnapshots)
+        .values(snapshot)
+        .returning();
+      return created;
+    }
+  }
+
+  async getDailySnapshots(userId: string, startDate: string, endDate: string): Promise<DailyPerformanceSnapshot[]> {
+    return await db
+      .select()
+      .from(dailyPerformanceSnapshots)
+      .where(and(
+        eq(dailyPerformanceSnapshots.userId, userId),
+        gte(dailyPerformanceSnapshots.snapshotDate, startDate),
+        lte(dailyPerformanceSnapshots.snapshotDate, endDate)
+      ))
+      .orderBy(asc(dailyPerformanceSnapshots.snapshotDate));
   }
 }
 
