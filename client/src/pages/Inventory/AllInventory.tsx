@@ -112,6 +112,8 @@ export default function AllInventory() {
       barcode: false,
       supplierId: false,
       warehouseId: false,
+      createdAt: false,
+      updatedAt: false,
     };
   });
 
@@ -1098,6 +1100,28 @@ export default function AllInventory() {
       key: "status",
       header: t('inventory:status'),
       cell: (product) => getStockStatus(product.quantity, product.lowStockAlert, product.isVirtual, product.availableVirtualStock),
+    },
+    {
+      key: "createdAt",
+      header: t('common:createdAt'),
+      sortable: true,
+      className: "text-right whitespace-nowrap",
+      cell: (product) => {
+        if (!product.createdAt) return '-';
+        const date = new Date(product.createdAt);
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    },
+    {
+      key: "updatedAt",
+      header: t('common:updatedAt'),
+      sortable: true,
+      className: "text-right whitespace-nowrap",
+      cell: (product) => {
+        if (!product.updatedAt) return '-';
+        const date = new Date(product.updatedAt);
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
     },
     {
       key: "actions",
