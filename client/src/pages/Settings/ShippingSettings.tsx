@@ -733,19 +733,18 @@ export default function ShippingSettings() {
                                 <div className="flex items-center gap-2">
                                   <Input
                                     type="number"
-                                    value={parsedRates.surcharges?.fuelSurchargePercent || 0}
-                                    onChange={(e) => updateSurcharge('fuelSurchargePercent', parseDecimal(e.target.value))}
+                                    value={parsedRates.surcharges?.fuelSurchargePerKg || 0}
+                                    onChange={(e) => updateSurcharge('fuelSurchargePerKg', parseDecimal(e.target.value))}
                                     onKeyDown={handleDecimalKeyDown}
                                     onBlur={handleTextBlur('ppl_shipping_rates')}
-                                    className="w-20"
+                                    className="w-24"
                                     min="0"
-                                    max="100"
                                     step="0.1"
                                     data-testid="input-ppl-fuel-surcharge"
                                   />
-                                  <span className="text-sm text-muted-foreground">%</span>
+                                  <span className="text-sm text-muted-foreground">CZK/kg</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">{t('settings:fuelSurchargeDescription', 'Percentage of base price for fuel costs')}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings:fuelSurchargeDescription', 'Fuel surcharge per kilogram of package weight')}</p>
                               </div>
                               
                               {/* Oversized Package Fee */}

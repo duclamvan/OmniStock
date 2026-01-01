@@ -501,7 +501,7 @@ const settings = {
   mytne: 'Mýtné (Toll Fee)',
   mytneDescription: 'Highway toll surcharge per package',
   fuelSurcharge: 'Fuel Surcharge',
-  fuelSurchargeDescription: 'Percentage of base price for fuel costs',
+  fuelSurchargeDescription: 'Fuel surcharge per kilogram of package weight',
   oversizedFee: 'Oversized Package Fee',
   oversizedFeeDescription: 'Surcharge for packages exceeding standard dimensions',
   pplInsurance: 'Insurance',

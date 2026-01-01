@@ -502,7 +502,7 @@ const settings = {
   mytne: 'Mýtné (Phí cầu đường)',
   mytneDescription: 'Phí cầu đường cao tốc cho mỗi gói hàng',
   fuelSurcharge: 'Phụ phí nhiên liệu',
-  fuelSurchargeDescription: 'Phần trăm giá cơ bản cho chi phí nhiên liệu',
+  fuelSurchargeDescription: 'Phụ phí nhiên liệu trên mỗi kg trọng lượng gói hàng',
   oversizedFee: 'Phí gói hàng quá khổ',
   oversizedFeeDescription: 'Phụ phí cho gói hàng vượt quá kích thước tiêu chuẩn',
   pplInsurance: 'Bảo hiểm',

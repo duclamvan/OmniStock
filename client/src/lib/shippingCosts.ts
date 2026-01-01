@@ -53,7 +53,7 @@ export interface PPLCODFee {
 
 export interface PPLSurcharges {
   mytne?: number;
-  fuelSurchargePercent?: number;
+  fuelSurchargePerKg?: number;
   insurancePercent?: number;
   insuranceMinFee?: number;
   oversizedFee?: number;
@@ -96,8 +96,8 @@ export function calculatePPLCZTotalCost(
   const surcharges = rates?.surcharges || {};
   const mytne = surcharges.mytne || 0;
   
-  const fuelSurchargePercent = surcharges.fuelSurchargePercent || 0;
-  const fuelSurcharge = Math.round((basePrice * fuelSurchargePercent) / 100);
+  const fuelSurchargePerKg = surcharges.fuelSurchargePerKg || 0;
+  const fuelSurcharge = Math.round(weightKg * fuelSurchargePerKg);
   
   let codFee = 0;
   if (isCod && rates?.codFees) {
