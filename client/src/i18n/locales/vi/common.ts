@@ -175,7 +175,17 @@ const common = {
   thisMonth: 'Tháng này',
   lastMonth: 'Tháng trước',
   thisYear: 'Năm nay',
+  thisQuarter: 'Quý này',
+  last30Days: '30 ngày qua',
+  last90Days: '90 ngày qua',
+  allTime: 'Tất cả thời gian',
+  timeRange: 'Khoảng thời gian',
   custom: 'Tùy chỉnh',
+  
+  // Sorting
+  sortBy: 'Sắp xếp theo',
+  ascending: 'Tăng dần',
+  descending: 'Giảm dần',
   
   // Common Status
   active: 'Hoạt động',
@@ -302,7 +312,6 @@ const common = {
   salesVelocity: 'Tốc độ bán hàng',
   ordersPerDay: 'đơn/ngày',
   topSellingProducts: 'Sản phẩm bán chạy',
-  last30Days: '30 ngày qua',
   noDataAvailable: 'Chưa có dữ liệu',
   
   // Inventory Health KPIs

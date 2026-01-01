@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,9 @@ import {
   Repeat,
   Check,
   RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -88,6 +91,9 @@ export default function AllExpenses() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [recurringFilter, setRecurringFilter] = useState<string>("all");
+  const [timeRangeFilter, setTimeRangeFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<string>("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -208,6 +214,84 @@ export default function AllExpenses() {
       recurringFilter === "recurring" ? e.isRecurring === true : e.isRecurring !== true
     );
   }
+
+  // Apply time range filter
+  if (timeRangeFilter !== "all") {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    filteredExpenses = filteredExpenses.filter(e => {
+      if (!e.date) return false;
+      try {
+        const expenseDate = new Date(e.date);
+        if (isNaN(expenseDate.getTime())) return false;
+        
+        switch (timeRangeFilter) {
+          case "today":
+            return expenseDate >= today;
+          case "week": {
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            return expenseDate >= weekStart;
+          }
+          case "month":
+            return expenseDate.getMonth() === now.getMonth() && 
+                   expenseDate.getFullYear() === now.getFullYear();
+          case "quarter": {
+            const currentQuarter = Math.floor(now.getMonth() / 3);
+            const expenseQuarter = Math.floor(expenseDate.getMonth() / 3);
+            return expenseQuarter === currentQuarter && 
+                   expenseDate.getFullYear() === now.getFullYear();
+          }
+          case "year":
+            return expenseDate.getFullYear() === now.getFullYear();
+          case "last30":
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return expenseDate >= thirtyDaysAgo;
+          case "last90":
+            const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            return expenseDate >= ninetyDaysAgo;
+          default:
+            return true;
+        }
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  // Apply sorting
+  filteredExpenses = [...filteredExpenses].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortField) {
+      case "date": {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        comparison = dateA - dateB;
+        break;
+      }
+      case "amount": {
+        const amountA = parseFloat(a.amount || '0') || 0;
+        const amountB = parseFloat(b.amount || '0') || 0;
+        comparison = amountA - amountB;
+        break;
+      }
+      case "category":
+        comparison = (a.category || '').localeCompare(b.category || '');
+        break;
+      case "vendor":
+        comparison = (a.vendor || '').localeCompare(b.vendor || '');
+        break;
+      case "status":
+        comparison = (a.status || '').localeCompare(b.status || '');
+        break;
+      default:
+        comparison = 0;
+    }
+    
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
 
   // Helper function to convert expense amount to display currency
   const convertToDisplayCurrency = (expense: any): number => {
@@ -945,7 +1029,7 @@ export default function AllExpenses() {
             <CardTitle className="text-lg">{t('filtersAndSearch')}</CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -990,6 +1074,58 @@ export default function AllExpenses() {
                 <SelectItem value="one-time">{t('oneTimeOnly')}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          {/* Time Range and Sorting Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Select value={timeRangeFilter} onValueChange={setTimeRangeFilter}>
+              <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500" data-testid="select-time-range">
+                <Calendar className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder={t('common:timeRange')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('common:allTime')}</SelectItem>
+                <SelectItem value="today">{t('common:today')}</SelectItem>
+                <SelectItem value="week">{t('common:thisWeek')}</SelectItem>
+                <SelectItem value="month">{t('common:thisMonth')}</SelectItem>
+                <SelectItem value="quarter">{t('common:thisQuarter')}</SelectItem>
+                <SelectItem value="year">{t('common:thisYear')}</SelectItem>
+                <SelectItem value="last30">{t('common:last30Days')}</SelectItem>
+                <SelectItem value="last90">{t('common:last90Days')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortField} onValueChange={setSortField}>
+              <SelectTrigger className="h-10 border-slate-200 dark:border-slate-700 focus:border-cyan-500" data-testid="select-sort-field">
+                <ArrowUpDown className="h-4 w-4 mr-2 text-slate-400" />
+                <SelectValue placeholder={t('common:sortBy')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">{t('date')}</SelectItem>
+                <SelectItem value="amount">{t('amount')}</SelectItem>
+                <SelectItem value="category">{t('category')}</SelectItem>
+                <SelectItem value="vendor">{t('vendor')}</SelectItem>
+                <SelectItem value="status">{t('status')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+              className="h-10 border-slate-200 dark:border-slate-700"
+              data-testid="button-sort-direction"
+            >
+              {sortDirection === "asc" ? (
+                <>
+                  <ArrowUp className="h-4 w-4 mr-2" />
+                  {t('common:ascending')}
+                </>
+              ) : (
+                <>
+                  <ArrowDown className="h-4 w-4 mr-2" />
+                  {t('common:descending')}
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>

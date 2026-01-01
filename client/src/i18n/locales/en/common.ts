@@ -179,7 +179,17 @@ const common = {
   thisMonth: 'This Month',
   lastMonth: 'Last Month',
   thisYear: 'This Year',
+  thisQuarter: 'This Quarter',
+  last30Days: 'Last 30 Days',
+  last90Days: 'Last 90 Days',
+  allTime: 'All Time',
+  timeRange: 'Time Range',
   custom: 'Custom',
+  
+  // Sorting
+  sortBy: 'Sort By',
+  ascending: 'Ascending',
+  descending: 'Descending',
   
   // Common Status
   active: 'Active',
@@ -325,7 +335,6 @@ const common = {
   salesVelocity: 'Sales Velocity',
   ordersPerDay: 'orders per day',
   topSellingProducts: 'Top Selling Products',
-  last30Days: 'Last 30 days',
   noDataAvailable: 'No data available',
   
   // Inventory Health KPIs
@@ -611,7 +620,6 @@ const common = {
   
   // Product Details Common Keys
   totalSold: 'Total Sold',
-  allTime: 'All time',
   perUnit: 'Per unit',
   reorderRate: 'Reorder Rate',
   oneYearRepeatRate: '1-year repeat rate',
