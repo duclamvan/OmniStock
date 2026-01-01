@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiRequest } from "@/lib/queryClient";
 import { generateProductQRUrl } from "@shared/qrUtils";
+import QRCode from "qrcode";
 
 interface WarehouseLabelPreviewProps {
   open: boolean;
@@ -106,6 +109,64 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
   );
 }
 
+export function LargeLabelContent({ product }: { product: LabelProduct | null }) {
+  if (!product) return null;
+
+  const productCode = product.sku || product.barcode || product.id;
+  const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
+  const vietnameseName = product.vietnameseName || product.name;
+  const englishName = product.name;
+  const priceEur = product.priceEur ? Number(product.priceEur) : null;
+  const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
+
+  return (
+    <div
+      id="warehouse-label-large-print"
+      className="w-[148mm] h-[105mm] flex flex-row items-stretch bg-white text-black overflow-hidden border-[3pt] border-black"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif", transform: "scale(0.4)", transformOrigin: "top left" }}
+    >
+      <div className="flex-shrink-0 w-[42mm] flex flex-col items-center justify-center p-[3mm] bg-white border-r-[2pt] border-black">
+        <QRCodeSVG
+          value={qrUrl}
+          size={130}
+          level="M"
+          includeMargin={false}
+        />
+        <div className="mt-[2mm] text-[12pt] font-black font-mono text-center break-all">
+          {product.sku || productCode}
+        </div>
+      </div>
+
+      <div className="flex-1 p-[4mm] flex flex-col">
+        <div className="flex-1 flex flex-col justify-center gap-[2mm]">
+          <div className="font-black text-[36pt] leading-[1.05] uppercase break-words tracking-[-0.5pt]">
+            {vietnameseName}
+          </div>
+          {vietnameseName !== englishName && (
+            <div className="text-[20pt] font-semibold italic break-words border-l-[3pt] border-black pl-[3mm]">
+              {englishName}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-[5mm] border-t-[3pt] border-black pt-[4mm] mt-[4mm] min-h-[22mm]">
+          <div className="price-area flex flex-col items-end gap-[1mm] ml-auto">
+            {priceEur !== null && (
+              <div className="font-black text-[32pt] leading-none">
+                €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            )}
+            {priceCzk !== null && (
+              <div className="font-bold text-[26pt] leading-none tracking-[-0.5pt]">
+                {priceCzk.toLocaleString("cs-CZ")} Kč
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WarehouseLabelPreview({
   open,
   onOpenChange,
@@ -113,8 +174,14 @@ export default function WarehouseLabelPreview({
 }: WarehouseLabelPreviewProps) {
   const { t } = useTranslation(["inventory", "common"]);
   const isMobile = useIsMobile();
+  const [labelSize, setLabelSize] = useState<"small" | "large">("small");
 
   const handlePrint = async () => {
+    if (labelSize === "large") {
+      await handlePrintLarge();
+      return;
+    }
+    
     const printContent = document.getElementById("warehouse-label-print");
     if (!printContent) return;
 
@@ -291,6 +358,186 @@ export default function WarehouseLabelPreview({
     };
   };
 
+  const handlePrintLarge = async () => {
+    if (!product) return;
+    
+    const productCode = product.sku || product.barcode || product.id;
+    const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
+    const vietnameseName = product.vietnameseName || product.name;
+    const englishName = product.name;
+    const priceEur = product.priceEur ? Number(product.priceEur) : null;
+    const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
+
+    // Save label to history
+    try {
+      await apiRequest("POST", "/api/warehouse-labels", {
+        productId: product.id,
+        englishName: product.name,
+        vietnameseName: product.vietnameseName || product.name,
+        sku: product.sku || null,
+        priceEur: product.priceEur ? String(product.priceEur) : null,
+        priceCzk: product.priceCzk ? String(product.priceCzk) : null,
+      });
+    } catch (error) {
+      console.error("Failed to save label to history:", error);
+    }
+
+    // Generate QR code as data URL
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 0 });
+
+    const printWindow = window.open("", "_blank", "width=600,height=450");
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Large Label - ${product?.sku || product?.name || "Label"}</title>
+        <style>
+          @page {
+            size: 148mm 105mm landscape;
+            margin: 0;
+          }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            width: 148mm;
+            height: 105mm;
+            overflow: hidden;
+          }
+          .label-container {
+            width: 148mm;
+            height: 105mm;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            background: white;
+            color: black;
+            overflow: hidden;
+            border: 3pt solid black;
+          }
+          .qr-section {
+            flex-shrink: 0;
+            width: 42mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3mm;
+            background: white;
+            border-right: 2pt solid black;
+          }
+          .qr-section img {
+            width: 35mm;
+            height: 35mm;
+          }
+          .sku-code {
+            margin-top: 2mm;
+            font-size: 12pt;
+            font-weight: 900;
+            font-family: monospace;
+            text-align: center;
+            word-break: break-all;
+            color: black;
+          }
+          .right-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 4mm 5mm;
+          }
+          .name-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2mm;
+          }
+          .product-name {
+            font-weight: 900;
+            font-size: 36pt;
+            line-height: 1.05;
+            text-transform: uppercase;
+            word-break: break-word;
+            letter-spacing: -0.5pt;
+            color: black;
+          }
+          .product-name-en {
+            font-size: 20pt;
+            font-weight: 600;
+            font-style: italic;
+            line-height: 1.15;
+            color: black;
+            word-break: break-word;
+            border-left: 3pt solid black;
+            padding-left: 3mm;
+          }
+          .bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5mm;
+            border-top: 3pt solid black;
+            padding-top: 4mm;
+            margin-top: 4mm;
+            min-height: 22mm;
+          }
+          .price-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1mm;
+          }
+          .price-eur {
+            font-weight: 900;
+            font-size: 32pt;
+            line-height: 1;
+            color: black;
+          }
+          .price-czk {
+            font-weight: bold;
+            font-size: 26pt;
+            line-height: 1;
+            color: black;
+            letter-spacing: -0.5pt;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label-container">
+          <div class="qr-section">
+            <img src="${qrDataUrl}" alt="QR Code" />
+            <div class="sku-code">${product.sku || productCode}</div>
+          </div>
+          <div class="right-section">
+            <div class="name-area">
+              <div class="product-name">${vietnameseName}</div>
+              ${vietnameseName !== englishName ? `<div class="product-name-en">${englishName}</div>` : ''}
+            </div>
+            <div class="bottom-row">
+              <div class="price-area">
+                ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ''}
+                ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
   const DialogWrapper = isMobile ? Drawer : Dialog;
   const ContentWrapper = isMobile ? DrawerContent : DialogContent;
   const HeaderWrapper = isMobile ? DrawerHeader : DialogHeader;
@@ -301,7 +548,7 @@ export default function WarehouseLabelPreview({
 
   return (
     <DialogWrapper open={open} onOpenChange={onOpenChange}>
-      <ContentWrapper className={isMobile ? "max-h-[85vh]" : "max-w-[450px]"}>
+      <ContentWrapper className={isMobile ? "max-h-[85vh]" : labelSize === "large" ? "max-w-[550px]" : "max-w-[450px]"}>
         <HeaderWrapper>
           <TitleWrapper className="text-left flex items-center gap-2">
             <Printer className="h-5 w-5" />
@@ -310,18 +557,39 @@ export default function WarehouseLabelPreview({
         </HeaderWrapper>
 
         <div className={`${isMobile ? "px-4 pb-4" : "py-4"} space-y-4`}>
-          <p className="text-sm text-muted-foreground">
-            {t("inventory:warehouseLabelDesc")}
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground flex-1">
+              {t("inventory:warehouseLabelDesc")}
+            </p>
+            <Select value={labelSize} onValueChange={(v) => setLabelSize(v as "small" | "large")}>
+              <SelectTrigger className="w-[160px]" data-testid="select-label-size">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small" data-testid="option-label-small">
+                  {t("inventory:labelSizeSmall")}
+                </SelectItem>
+                <SelectItem value="large" data-testid="option-label-large">
+                  {t("inventory:labelSizeLarge")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex justify-center py-4 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-x-auto">
-            <div className="transform scale-90 origin-center">
-              <LabelContent product={product} />
-            </div>
+            {labelSize === "small" ? (
+              <div className="transform scale-90 origin-center">
+                <LabelContent product={product} />
+              </div>
+            ) : (
+              <div className="w-full flex justify-center" style={{ minHeight: "180px" }}>
+                <LargeLabelContent product={product} />
+              </div>
+            )}
           </div>
 
           <div className="text-xs text-muted-foreground text-center">
-            {t("inventory:labelDimensions")}: 100mm × 30mm
+            {t("inventory:labelDimensions")}: {labelSize === "small" ? "100mm × 30mm" : "148mm × 105mm"}
           </div>
         </div>
 
