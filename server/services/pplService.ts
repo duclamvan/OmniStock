@@ -346,11 +346,24 @@ export async function getPPLOrderByReference(referenceId: string): Promise<PPLOr
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // Use paramsSerializer to handle array parameters correctly for PPL API
       const response = await axios.get(
         `${PPL_BASE_URL}/order`,
         {
           params: {
-            OrderReferences: [referenceId]
+            OrderReferences: referenceId // Send as single value, not array
+          },
+          paramsSerializer: (params) => {
+            // PPL API expects multiple query params with same name for arrays
+            const searchParams = new URLSearchParams();
+            for (const [key, value] of Object.entries(params)) {
+              if (Array.isArray(value)) {
+                value.forEach(v => searchParams.append(key, v));
+              } else if (value !== undefined && value !== null) {
+                searchParams.append(key, String(value));
+              }
+            }
+            return searchParams.toString();
           },
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -371,6 +384,7 @@ export async function getPPLOrderByReference(referenceId: string): Promise<PPLOr
       return [response.data as PPLOrderResponse];
     } catch (error: any) {
       console.log(`⚠️ PPL Order query attempt ${attempt}/${maxRetries} failed:`, error.message);
+      console.log(`   Error details:`, error.response?.data);
       
       if (attempt < maxRetries) {
         console.log(`   Retrying in ${retryDelay}ms...`);
