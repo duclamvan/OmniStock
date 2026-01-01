@@ -3088,12 +3088,15 @@ export default function AddOrder() {
           
           const updatedItem = { ...item, [field]: finalValue };
           
-          // Automatic price tier switching based on quantity threshold
-          if (field === 'quantity' && updatedItem.allowBulkSales && updatedItem.bulkUnitQty && updatedItem.bulkUnitQty > 0) {
+          // Automatic price tier switching based on quantity threshold (tiered pricing)
+          // Works when product has allowBulkSales enabled with bulkUnitQty threshold and prices set
+          const hasBulkConfig = updatedItem.allowBulkSales && updatedItem.bulkUnitQty && updatedItem.bulkUnitQty > 0;
+          const hasBulkPrice = updatedItem.bulkPrice && updatedItem.bulkPrice > 0;
+          const hasRetailPrice = updatedItem.retailPrice && updatedItem.retailPrice > 0;
+          
+          if (field === 'quantity' && hasBulkConfig && (hasBulkPrice || hasRetailPrice)) {
             const newQuantity = typeof finalValue === 'number' ? finalValue : parseInt(finalValue || '1');
-            const bulkThreshold = updatedItem.bulkUnitQty;
-            const hasBulkPrice = updatedItem.bulkPrice && updatedItem.bulkPrice > 0;
-            const hasRetailPrice = updatedItem.retailPrice && updatedItem.retailPrice > 0;
+            const bulkThreshold = updatedItem.bulkUnitQty!; // Safe: hasBulkConfig checks this exists
             
             // Switch to bulk price when quantity meets threshold
             if (newQuantity >= bulkThreshold && hasBulkPrice) {
