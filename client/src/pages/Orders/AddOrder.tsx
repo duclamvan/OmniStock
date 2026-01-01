@@ -8122,7 +8122,7 @@ export default function AddOrder() {
             </div>
             
             {/* Header row - Responsive grid */}
-            <div className="grid grid-cols-[1fr_50px_60px] md:grid-cols-[1fr_80px_70px_100px] gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted/50 rounded-t-md text-xs md:text-sm font-medium border-b mt-2">
+            <div className="grid grid-cols-[1fr_50px_120px] md:grid-cols-[1fr_80px_60px_130px] gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-muted/50 rounded-t-md text-xs md:text-sm font-medium border-b mt-2">
               <div>{t('orders:variantName')}</div>
               <div className="text-right hidden md:block">{t('orders:price')}</div>
               <div className="text-center md:text-right">{t('orders:stock')}</div>
@@ -8143,7 +8143,7 @@ export default function AddOrder() {
                   return (
                     <div 
                       style={style} 
-                      className="grid grid-cols-[1fr_50px_60px] md:grid-cols-[1fr_80px_70px_100px] gap-1.5 md:gap-2 px-2 md:px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
+                      className="grid grid-cols-[1fr_50px_120px] md:grid-cols-[1fr_80px_60px_130px] gap-1.5 md:gap-2 px-2 md:px-3 items-center border-b last:border-b-0 hover:bg-muted/30"
                     >
                       <div className="font-medium truncate text-xs md:text-sm" title={variant.name}>{variant.name}</div>
                       <div className="text-right text-xs md:text-sm hidden md:block">{selectedProductForVariant?.priceCzk ? `${selectedProductForVariant.priceCzk} Kč` : (selectedProductForVariant?.priceEur ? `${selectedProductForVariant.priceEur} €` : '-')}</div>
@@ -8152,23 +8152,7 @@ export default function AddOrder() {
                           {variant.availableQuantity ?? variant.quantity}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setVariantQuantities(prev => ({
-                            ...prev,
-                            [variant.id]: (prev[variant.id] || 0) + 1
-                          }))}
-                          className="h-8 w-6 text-[10px] font-medium bg-muted hover:bg-muted/80 rounded-l border text-center"
-                        >+1</button>
-                        <button
-                          type="button"
-                          onClick={() => setVariantQuantities(prev => ({
-                            ...prev,
-                            [variant.id]: (prev[variant.id] || 0) + 10
-                          }))}
-                          className="h-8 w-7 text-[10px] font-medium bg-muted hover:bg-muted/80 border-y text-center"
-                        >+10</button>
+                      <div className="flex items-center justify-end gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -8193,9 +8177,25 @@ export default function AddOrder() {
                               }
                             }
                           }}
-                          className="text-right h-8 w-12 text-xs rounded-l-none"
+                          className="text-center h-7 w-10 text-xs px-1"
                           data-testid={`input-variant-quantity-${variant.id}`}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setVariantQuantities(prev => ({
+                            ...prev,
+                            [variant.id]: (prev[variant.id] || 0) + 1
+                          }))}
+                          className="h-7 px-1.5 text-[10px] font-medium text-primary hover:bg-primary/10 rounded border"
+                        >+1</button>
+                        <button
+                          type="button"
+                          onClick={() => setVariantQuantities(prev => ({
+                            ...prev,
+                            [variant.id]: (prev[variant.id] || 0) + 10
+                          }))}
+                          className="h-7 px-1 text-[10px] font-medium text-primary hover:bg-primary/10 rounded border"
+                        >+10</button>
                       </div>
                     </div>
                   );
