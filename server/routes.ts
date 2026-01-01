@@ -2651,6 +2651,323 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sales Growth KPIs - daily/weekly trends, velocity, best sellers
+  app.get('/api/dashboard/sales-growth', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
+    try {
+      const convertToEur = await getCurrencyConverter();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const thisWeekStart = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000);
+      const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const allOrders = await storage.getOrders();
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+
+      // Daily sales (last 7 days)
+      const dailySales: { date: string; revenue: number; orders: number; profit: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+        const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+        const dayOrders = paidOrders.filter(o => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= dayStart && orderDate <= dayEnd;
+        });
+        const revenue = dayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+        const cost = dayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.totalCost || '0'), o.currency || 'EUR'), 0);
+        dailySales.push({
+          date: dayStart.toISOString().split('T')[0],
+          revenue: Math.round(revenue * 100) / 100,
+          orders: dayOrders.length,
+          profit: Math.round((revenue - cost) * 100) / 100
+        });
+      }
+
+      // Today's metrics
+      const todayOrders = paidOrders.filter(o => new Date(o.createdAt) >= today);
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      // Yesterday's comparison
+      const yesterdayOrders = paidOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= yesterday && orderDate < today;
+      });
+      const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      // This week vs last week
+      const thisWeekOrders = paidOrders.filter(o => new Date(o.createdAt) >= thisWeekStart);
+      const thisWeekRevenue = thisWeekOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      const lastWeekOrders = paidOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= lastWeekStart && orderDate <= lastWeekEnd;
+      });
+      const lastWeekRevenue = lastWeekOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      // This month vs last month
+      const thisMonthOrders = paidOrders.filter(o => new Date(o.createdAt) >= thisMonthStart);
+      const thisMonthRevenue = thisMonthOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      const lastMonthOrders = paidOrders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+      });
+      const lastMonthRevenue = lastMonthOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+
+      // Sales velocity (orders per day in last 30 days)
+      const last30DaysOrders = paidOrders.filter(o => new Date(o.createdAt) >= thirtyDaysAgo);
+      const salesVelocity = last30DaysOrders.length / 30;
+
+      // Best selling products (last 30 days)
+      const productSales = new Map<string, { productId: string; name: string; sku: string; unitsSold: number; revenue: number }>();
+      const allProducts = await storage.getProducts();
+      
+      for (const order of last30DaysOrders) {
+        if (order.items && Array.isArray(order.items)) {
+          for (const item of order.items) {
+            const productId = item.productId || item.id;
+            const quantity = item.quantity || 1;
+            const itemRevenue = convertToEur(parseFloat(item.price || '0') * quantity, order.currency || 'EUR');
+            
+            if (productSales.has(productId)) {
+              const existing = productSales.get(productId)!;
+              existing.unitsSold += quantity;
+              existing.revenue += itemRevenue;
+            } else {
+              const product = allProducts.find(p => p.id === productId);
+              productSales.set(productId, {
+                productId,
+                name: product?.name || item.name || 'Unknown',
+                sku: product?.sku || item.sku || '',
+                unitsSold: quantity,
+                revenue: itemRevenue
+              });
+            }
+          }
+        }
+      }
+
+      const topSellingProducts = Array.from(productSales.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map(p => ({
+          ...p,
+          revenue: Math.round(p.revenue * 100) / 100
+        }));
+
+      // Average order value trends
+      const todayAOV = todayOrders.length > 0 ? todayRevenue / todayOrders.length : 0;
+      const thisWeekAOV = thisWeekOrders.length > 0 ? thisWeekRevenue / thisWeekOrders.length : 0;
+      const thisMonthAOV = thisMonthOrders.length > 0 ? thisMonthRevenue / thisMonthOrders.length : 0;
+
+      res.json({
+        dailySales,
+        todayMetrics: {
+          revenue: Math.round(todayRevenue * 100) / 100,
+          orders: todayOrders.length,
+          aov: Math.round(todayAOV * 100) / 100,
+          changeVsYesterday: yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 10000) / 100 : 0
+        },
+        weeklyComparison: {
+          thisWeekRevenue: Math.round(thisWeekRevenue * 100) / 100,
+          thisWeekOrders: thisWeekOrders.length,
+          lastWeekRevenue: Math.round(lastWeekRevenue * 100) / 100,
+          lastWeekOrders: lastWeekOrders.length,
+          changePercent: lastWeekRevenue > 0 ? Math.round(((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 10000) / 100 : 0
+        },
+        monthlyComparison: {
+          thisMonthRevenue: Math.round(thisMonthRevenue * 100) / 100,
+          thisMonthOrders: thisMonthOrders.length,
+          lastMonthRevenue: Math.round(lastMonthRevenue * 100) / 100,
+          lastMonthOrders: lastMonthOrders.length,
+          changePercent: lastMonthRevenue > 0 ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 10000) / 100 : 0
+        },
+        salesVelocity: {
+          ordersPerDay: Math.round(salesVelocity * 100) / 100,
+          avgRevenuePerDay: Math.round((last30DaysOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0) / 30) * 100) / 100
+        },
+        averageOrderValue: {
+          today: Math.round(todayAOV * 100) / 100,
+          thisWeek: Math.round(thisWeekAOV * 100) / 100,
+          thisMonth: Math.round(thisMonthAOV * 100) / 100
+        },
+        topSellingProducts,
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching sales growth metrics:", error);
+      res.status(500).json({ message: "Failed to fetch sales growth metrics" });
+    }
+  });
+
+  // Inventory Health & Turnover KPIs
+  app.get('/api/dashboard/inventory-health', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
+    try {
+      const convertToEur = await getCurrencyConverter();
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const allProducts = await storage.getProducts();
+      const activeProducts = allProducts.filter(p => p.isActive !== false);
+      const allOrders = await storage.getOrders();
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+
+      // Calculate total inventory value
+      let totalInventoryValue = 0;
+      let totalUnits = 0;
+      activeProducts.forEach(p => {
+        const qty = p.quantity || 0;
+        const landingCost = parseFloat(p.landingCostEur || p.landingCostCzk || '0');
+        const landingCostEur = p.landingCostEur ? parseFloat(p.landingCostEur) : convertToEur(landingCost, 'CZK');
+        totalInventoryValue += qty * landingCostEur;
+        totalUnits += qty;
+      });
+
+      // Calculate COGS for last 30 days
+      const last30DaysOrders = paidOrders.filter(o => new Date(o.createdAt) >= thirtyDaysAgo);
+      let totalCOGS30Days = 0;
+      let totalUnitsSold30Days = 0;
+
+      for (const order of last30DaysOrders) {
+        totalCOGS30Days += convertToEur(parseFloat(order.totalCost || '0'), order.currency || 'EUR');
+        if (order.items && Array.isArray(order.items)) {
+          for (const item of order.items) {
+            totalUnitsSold30Days += item.quantity || 1;
+          }
+        }
+      }
+
+      // Inventory turnover ratio (annualized)
+      const avgInventory = totalInventoryValue; // Using current as proxy for average
+      const monthlyTurnover = avgInventory > 0 ? (totalCOGS30Days / avgInventory) : 0;
+      const annualizedTurnover = monthlyTurnover * 12;
+
+      // Days of supply
+      const dailyUnitsSold = totalUnitsSold30Days / 30;
+      const daysOfSupply = dailyUnitsSold > 0 ? Math.round(totalUnits / dailyUnitsSold) : 999;
+
+      // Sell-through rate (last 30 days)
+      const sellThroughRate = totalUnits > 0 ? (totalUnitsSold30Days / (totalUnits + totalUnitsSold30Days)) * 100 : 0;
+
+      // Stock coverage analysis
+      const productsWithCoverage = activeProducts.map(p => {
+        const qty = p.quantity || 0;
+        const unitsSold = p.unitsSold || 0;
+        const dailySalesRate = unitsSold > 0 ? unitsSold / 90 : 0; // Estimate from total units sold
+        const coverageDays = dailySalesRate > 0 ? Math.round(qty / dailySalesRate) : 999;
+        
+        return {
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          quantity: qty,
+          coverageDays,
+          dailySalesRate: Math.round(dailySalesRate * 100) / 100,
+          needsReorder: coverageDays < 14 && qty > 0,
+          outOfStock: qty === 0
+        };
+      });
+
+      // Products needing reorder (less than 14 days coverage)
+      const needsReorder = productsWithCoverage
+        .filter(p => p.needsReorder || p.outOfStock)
+        .sort((a, b) => a.coverageDays - b.coverageDays)
+        .slice(0, 15);
+
+      // Out of stock products
+      const outOfStockProducts = activeProducts.filter(p => (p.quantity || 0) === 0);
+
+      // Overstock products (more than 180 days of supply)
+      const overstockedProducts = productsWithCoverage
+        .filter(p => p.coverageDays > 180 && p.quantity > 0)
+        .sort((a, b) => b.coverageDays - a.coverageDays)
+        .slice(0, 10);
+
+      // Slow movers (not updated in 90 days with stock)
+      const slowMovers = activeProducts.filter(p => {
+        const updatedAt = new Date(p.updatedAt || p.createdAt);
+        return updatedAt < ninetyDaysAgo && (p.quantity || 0) > 0;
+      });
+
+      // Stock health summary
+      const healthyStock = activeProducts.filter(p => {
+        const qty = p.quantity || 0;
+        if (qty === 0) return false;
+        
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        const maxStock = p.maxStockLevel || 100;
+        
+        let isLow = false;
+        if (alertType !== 'none') {
+          if (alertType === 'percentage') {
+            const threshold = Math.ceil((maxStock * alertValue) / 100);
+            isLow = qty <= threshold;
+          } else {
+            isLow = qty <= alertValue;
+          }
+        }
+        
+        const isOver = maxStock > 0 && qty > maxStock;
+        return !isLow && !isOver;
+      });
+
+      const lowStockProducts = activeProducts.filter(p => {
+        if (!p.isActive) return false;
+        const quantity = p.quantity || 0;
+        const alertType = p.lowStockAlertType || 'percentage';
+        const alertValue = p.lowStockAlert || 45;
+        
+        if (alertType === 'none') return false;
+        
+        if (alertType === 'percentage') {
+          const maxStock = p.maxStockLevel || 100;
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          return quantity <= threshold && quantity > 0;
+        } else {
+          return quantity <= alertValue && quantity > 0;
+        }
+      });
+
+      res.json({
+        summary: {
+          totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+          totalUnits,
+          totalProducts: activeProducts.length,
+          healthyStock: healthyStock.length,
+          lowStock: lowStockProducts.length,
+          outOfStock: outOfStockProducts.length,
+          slowMovers: slowMovers.length
+        },
+        turnover: {
+          monthlyTurnover: Math.round(monthlyTurnover * 1000) / 1000,
+          annualizedTurnover: Math.round(annualizedTurnover * 100) / 100,
+          daysOfSupply,
+          sellThroughRate30Days: Math.round(sellThroughRate * 100) / 100
+        },
+        reorderAlerts: needsReorder,
+        overstocked: overstockedProducts,
+        stockHealthDistribution: {
+          healthy: healthyStock.length,
+          lowStock: lowStockProducts.length,
+          outOfStock: outOfStockProducts.length,
+          overstocked: overstockedProducts.length,
+          slowMoving: slowMovers.length
+        },
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching inventory health metrics:", error);
+      res.status(500).json({ message: "Failed to fetch inventory health metrics" });
+    }
+  });
+
   // Image upload endpoint
   app.post('/api/upload', isAuthenticated, upload.single('image'), async (req, res) => {
     try {

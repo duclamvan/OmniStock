@@ -31,7 +31,11 @@ import {
   Calendar,
   Percent,
   Phone,
-  Ticket
+  Ticket,
+  BarChart3,
+  Layers,
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLocalization } from "@/contexts/LocalizationContext";
@@ -207,6 +211,90 @@ interface ActionItemsData {
   timestamp: string;
 }
 
+interface SalesGrowthData {
+  dailySales: Array<{ date: string; revenue: number; orders: number; profit: number }>;
+  todayMetrics: {
+    revenue: number;
+    orders: number;
+    aov: number;
+    changeVsYesterday: number;
+  };
+  weeklyComparison: {
+    thisWeekRevenue: number;
+    thisWeekOrders: number;
+    lastWeekRevenue: number;
+    lastWeekOrders: number;
+    changePercent: number;
+  };
+  monthlyComparison: {
+    thisMonthRevenue: number;
+    thisMonthOrders: number;
+    lastMonthRevenue: number;
+    lastMonthOrders: number;
+    changePercent: number;
+  };
+  salesVelocity: {
+    ordersPerDay: number;
+    avgRevenuePerDay: number;
+  };
+  averageOrderValue: {
+    today: number;
+    thisWeek: number;
+    thisMonth: number;
+  };
+  topSellingProducts: Array<{
+    productId: string;
+    name: string;
+    sku: string;
+    unitsSold: number;
+    revenue: number;
+  }>;
+  timestamp: string;
+}
+
+interface InventoryHealthData {
+  summary: {
+    totalInventoryValue: number;
+    totalUnits: number;
+    totalProducts: number;
+    healthyStock: number;
+    lowStock: number;
+    outOfStock: number;
+    slowMovers: number;
+  };
+  turnover: {
+    monthlyTurnover: number;
+    annualizedTurnover: number;
+    daysOfSupply: number;
+    sellThroughRate30Days: number;
+  };
+  reorderAlerts: Array<{
+    id: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    coverageDays: number;
+    dailySalesRate: number;
+    needsReorder: boolean;
+    outOfStock: boolean;
+  }>;
+  overstocked: Array<{
+    id: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    coverageDays: number;
+  }>;
+  stockHealthDistribution: {
+    healthy: number;
+    lowStock: number;
+    outOfStock: number;
+    overstocked: number;
+    slowMoving: number;
+  };
+  timestamp: string;
+}
+
 // Skeleton components
 const MetricCardSkeleton = memo(() => (
   <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
@@ -303,6 +391,20 @@ export function Dashboard() {
     enabled: isAdmin,
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+  });
+
+  // Sales growth KPIs
+  const { data: salesGrowth, isLoading: salesGrowthLoading } = useQuery<SalesGrowthData>({
+    queryKey: ['/api/dashboard/sales-growth'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
+  // Inventory health KPIs
+  const { data: inventoryHealth, isLoading: inventoryHealthLoading } = useQuery<InventoryHealthData>({
+    queryKey: ['/api/dashboard/inventory-health'],
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
 
   return (
@@ -1267,6 +1369,382 @@ export function Dashboard() {
               </CardContent>
             </Card>
           </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Sales Growth KPIs Section */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-sales-growth">
+            <BarChart3 className="h-5 w-5 text-green-500" />
+            {t('salesGrowth')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('salesGrowthDescription')}</p>
+        </div>
+
+        {salesGrowthLoading && !salesGrowth ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <>
+            {/* Sales Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Today's Revenue */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-revenue">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('todayRevenue')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-today-revenue">
+                        {formatCurrency(salesGrowth?.todayMetrics.revenue || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={`text-xs ${(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.changeVsYesterday || 0}% vs {t('yesterday')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <Euro className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* This Week Revenue */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-week-revenue">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('thisWeek')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-week-revenue">
+                        {formatCurrency(salesGrowth?.weeklyComparison.thisWeekRevenue || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={`text-xs ${(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? '+' : ''}{salesGrowth?.weeklyComparison.changePercent || 0}% vs {t('lastWeek')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* This Month Revenue */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-month-revenue">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('thisMonth')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-month-revenue">
+                        {formatCurrency(salesGrowth?.monthlyComparison.thisMonthRevenue || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={`text-xs ${(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? '+' : ''}{salesGrowth?.monthlyComparison.changePercent || 0}% vs {t('lastMonth')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Sales Velocity */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-sales-velocity">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('salesVelocity')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-sales-velocity">
+                        {salesGrowth?.salesVelocity.ordersPerDay || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ordersPerDay')}</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* AOV and Top Products */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Average Order Value */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4 text-blue-500" />
+                    {t('averageOrderValue')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('today')}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-today">
+                      {formatCurrency(salesGrowth?.averageOrderValue.today || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('thisWeek')}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-week">
+                      {formatCurrency(salesGrowth?.averageOrderValue.thisWeek || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('thisMonth')}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-month">
+                      {formatCurrency(salesGrowth?.averageOrderValue.thisMonth || 0)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Selling Products */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-green-500" />
+                    {t('topSellingProducts')}
+                  </CardTitle>
+                  <CardDescription>{t('last30Days')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {salesGrowth?.topSellingProducts.slice(0, 5).map((product, index) => (
+                      <div key={product.productId} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0" data-testid={`top-product-${index}`}>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{index + 1}</Badge>
+                          <span className="text-gray-900 dark:text-gray-100 truncate max-w-[150px]">{product.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">{product.unitsSold} {t('units')}</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(product.revenue)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {(!salesGrowth?.topSellingProducts || salesGrowth.topSellingProducts.length === 0) && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noDataAvailable')}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Inventory Health Section */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-inventory-health">
+            <Layers className="h-5 w-5 text-blue-500" />
+            {t('inventoryHealth')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('inventoryHealthDescription')}</p>
+        </div>
+
+        {inventoryHealthLoading && !inventoryHealth ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <>
+            {/* Turnover Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Inventory Turnover */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-inventory-turnover">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('inventoryTurnover')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-turnover">
+                        {inventoryHealth?.turnover.annualizedTurnover.toFixed(1) || 0}x
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('annualized')}</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <RefreshCw className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Days of Supply */}
+              <Card className={`${(inventoryHealth?.turnover.daysOfSupply || 0) < 30 ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-days-supply">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('daysOfSupply')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-days-supply">
+                        {inventoryHealth?.turnover.daysOfSupply === 999 ? '∞' : inventoryHealth?.turnover.daysOfSupply || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('currentStock')}</p>
+                    </div>
+                    <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${(inventoryHealth?.turnover.daysOfSupply || 0) < 30 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
+                      <Clock className={`h-6 w-6 ${(inventoryHealth?.turnover.daysOfSupply || 0) < 30 ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Sell-Through Rate */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-sell-through">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('sellThroughRate')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-sell-through">
+                        {inventoryHealth?.turnover.sellThroughRate30Days.toFixed(1) || 0}%
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('last30Days')}</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <Percent className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Inventory Value */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-inventory-value">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('totalInventoryValue')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-inventory-value">
+                        {formatCurrency(inventoryHealth?.summary.totalInventoryValue || 0)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{inventoryHealth?.summary.totalUnits || 0} {t('units')}</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Stock Health Distribution & Reorder Alerts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Stock Health Distribution */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    {t('stockHealthDistribution')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      {t('healthy')}
+                    </span>
+                    <Badge variant="outline" className="text-green-600 dark:text-green-400" data-testid="value-healthy-stock">
+                      {inventoryHealth?.stockHealthDistribution.healthy || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      {t('lowStock')}
+                    </span>
+                    <Badge variant="outline" className="text-yellow-600 dark:text-yellow-400" data-testid="value-low-stock">
+                      {inventoryHealth?.stockHealthDistribution.lowStock || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      {t('outOfStock')}
+                    </span>
+                    <Badge variant="outline" className="text-red-600 dark:text-red-400" data-testid="value-out-of-stock">
+                      {inventoryHealth?.stockHealthDistribution.outOfStock || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      {t('overstocked')}
+                    </span>
+                    <Badge variant="outline" className="text-purple-600 dark:text-purple-400" data-testid="value-overstocked">
+                      {inventoryHealth?.stockHealthDistribution.overstocked || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      {t('slowMoving')}
+                    </span>
+                    <Badge variant="outline" className="text-gray-600 dark:text-gray-400" data-testid="value-slow-moving">
+                      {inventoryHealth?.stockHealthDistribution.slowMoving || 0}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Reorder Alerts */}
+              <Card className={`${(inventoryHealth?.reorderAlerts?.length || 0) > 0 ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <AlertTriangle className={`h-4 w-4 ${(inventoryHealth?.reorderAlerts?.length || 0) > 0 ? 'text-orange-500' : 'text-gray-500'}`} />
+                    {t('reorderAlerts')}
+                  </CardTitle>
+                  <CardDescription>{t('productsNeedingReorder')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {inventoryHealth?.reorderAlerts.slice(0, 8).map((product, index) => (
+                      <Link key={product.id} href={`/products/${product.id}`}>
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded px-1" data-testid={`reorder-alert-${index}`}>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={product.outOfStock ? 'destructive' : 'warning'} className="text-xs">
+                              {product.outOfStock ? t('outOfStock') : `${product.coverageDays}d`}
+                            </Badge>
+                            <span className="text-gray-900 dark:text-gray-100 truncate max-w-[150px]">{product.name}</span>
+                          </div>
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">{product.quantity} {t('inStock')}</span>
+                        </div>
+                      </Link>
+                    ))}
+                    {(!inventoryHealth?.reorderAlerts || inventoryHealth.reorderAlerts.length === 0) && (
+                      <div className="text-center py-4">
+                        <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                        <p className="text-sm text-green-600 dark:text-green-400">{t('allProductsWellStocked')}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
       </section>
 

@@ -318,6 +318,33 @@ const common = {
   recentMajorActivities: 'Recent Major Activities',
   majorActivitiesFromAllUsers: 'Major activities from all users',
   
+  // Sales Growth KPIs
+  salesGrowth: 'Sales Growth',
+  salesGrowthDescription: 'Daily, weekly, and monthly sales trends and velocity',
+  todayRevenue: "Today's Revenue",
+  salesVelocity: 'Sales Velocity',
+  ordersPerDay: 'orders per day',
+  topSellingProducts: 'Top Selling Products',
+  last30Days: 'Last 30 days',
+  noDataAvailable: 'No data available',
+  
+  // Inventory Health KPIs
+  inventoryHealth: 'Inventory Health',
+  inventoryHealthDescription: 'Turnover ratios, stock coverage, and reorder alerts',
+  inventoryTurnover: 'Inventory Turnover',
+  annualized: 'Annualized',
+  daysOfSupply: 'Days of Supply',
+  currentStock: 'Current stock',
+  sellThroughRate: 'Sell-Through Rate',
+  totalInventoryValue: 'Total Inventory Value',
+  stockHealthDistribution: 'Stock Health Distribution',
+  healthy: 'Healthy',
+  outOfStock: 'Out of Stock',
+  overstocked: 'Overstocked',
+  slowMoving: 'Slow Moving',
+  reorderAlerts: 'Reorder Alerts',
+  productsNeedingReorder: 'Products with less than 14 days coverage',
+
   // Home Dashboard Specific
   warehouseManagementDashboard: 'Warehouse Management Dashboard',
   realTimeOverview: 'Real-time overview of your operations',

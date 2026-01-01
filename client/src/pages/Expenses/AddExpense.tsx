@@ -852,7 +852,7 @@ export default function AddExpense() {
             {/* Right: Expense Summary Sidebar - Paper Bill Style */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 z-10">
-                <Card className="shadow-2xl border-4 border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-900">
+                <Card className="shadow-2xl border-4 border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-900 overflow-hidden">
                   {/* Bill Header - Like a paper invoice */}
                   <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white px-6 py-5 border-b-4 border-blue-700">
                     <div className="text-center">

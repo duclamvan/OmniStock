@@ -295,6 +295,33 @@ const common = {
   recentMajorActivities: 'Hoạt động quan trọng gần đây',
   majorActivitiesFromAllUsers: 'Hoạt động quan trọng từ tất cả người dùng',
   
+  // Sales Growth KPIs
+  salesGrowth: 'Tăng trưởng doanh số',
+  salesGrowthDescription: 'Xu hướng doanh số theo ngày, tuần, tháng và tốc độ bán',
+  todayRevenue: 'Doanh thu hôm nay',
+  salesVelocity: 'Tốc độ bán hàng',
+  ordersPerDay: 'đơn/ngày',
+  topSellingProducts: 'Sản phẩm bán chạy',
+  last30Days: '30 ngày qua',
+  noDataAvailable: 'Chưa có dữ liệu',
+  
+  // Inventory Health KPIs
+  inventoryHealth: 'Sức khỏe tồn kho',
+  inventoryHealthDescription: 'Tỷ lệ quay vòng, mức phủ sóng và cảnh báo đặt hàng',
+  inventoryTurnover: 'Vòng quay tồn kho',
+  annualized: 'Theo năm',
+  daysOfSupply: 'Số ngày tồn kho',
+  currentStock: 'Tồn hiện tại',
+  sellThroughRate: 'Tỷ lệ bán hết',
+  totalInventoryValue: 'Tổng giá trị tồn kho',
+  stockHealthDistribution: 'Phân bố sức khỏe tồn kho',
+  healthy: 'Khỏe mạnh',
+  outOfStock: 'Hết hàng',
+  overstocked: 'Tồn quá nhiều',
+  slowMoving: 'Chậm bán',
+  reorderAlerts: 'Cảnh báo đặt hàng',
+  productsNeedingReorder: 'Sản phẩm còn dưới 14 ngày tồn kho',
+
   // Home Dashboard Specific
   warehouseManagementDashboard: 'Bảng điều khiển Quản lý Kho',
   realTimeOverview: 'Tổng quan vận hành thời gian thực',
@@ -607,7 +634,6 @@ const common = {
   yearlyReport: 'Báo cáo hàng năm',
   purchased: 'Đã mua',
   soldAmount: 'Số lượng bán',
-  healthy: 'tốt',
   
   // Authentication Module
   auth: {
@@ -995,7 +1021,6 @@ const common = {
   typeAtLeastTwoCharacters: 'Nhập ít nhất 2 ký tự để tìm kiếm...',
   searching: 'Đang tìm kiếm...',
   noResultsFoundFor: 'Không tìm thấy kết quả cho "{{query}}"',
-  currentStock: 'Tồn kho hiện tại',
   
   // Form Field Labels and Placeholders
   companyName: 'Tên công ty',
@@ -1083,8 +1108,6 @@ const common = {
   deleteLocation: 'Xóa Vị trí',
   deleteLocations: 'Xóa Vị trí',
   selectedCount: 'Đã chọn {{count}}',
-  clearSelection: 'Bỏ chọn',
-  selectAll: 'Chọn tất cả',
   locationsDeletedSuccessfully: 'Đã xóa {{count}} vị trí thành công',
   failedToDeleteLocations: 'Không thể xóa các vị trí',
   partialSuccess: 'Thành công một phần',
