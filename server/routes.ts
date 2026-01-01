@@ -1827,10 +1827,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
-      // Orders awaiting fulfillment
+      // Orders awaiting fulfillment (exclude archived orders)
       const ordersToFulfill = await db.select()
         .from(orders)
-        .where(eq(orders.orderStatus, 'to_fulfill'));
+        .where(
+          and(
+            eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.isArchived, false)
+          )
+        );
 
       // Orders at risk of SLA breach (>24 hours in to_fulfill status)
       const ordersAtRisk = ordersToFulfill.filter(order => {
@@ -1838,24 +1843,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return createdAt < yesterday;
       });
 
-      // Pick/pack throughput today (orders moved to fulfilled today)
+      // Pick/pack throughput today (orders moved to fulfilled today, exclude archived)
       const fulfilledToday = await db.select()
         .from(orders)
         .where(
           and(
             eq(orders.orderStatus, 'fulfilled'),
+            eq(orders.isArchived, false),
             sql`${orders.updatedAt} >= ${today.toISOString()}`
           )
         );
 
-      // Carrier exceptions (simplified - checking for specific statuses)
+      // Carrier exceptions (simplified - checking for specific statuses, exclude archived)
       const carrierExceptions = await db.select()
         .from(orders)
         .where(
-          or(
-            ilike(orders.notes, '%failed%delivery%'),
-            ilike(orders.notes, '%exception%'),
-            ilike(orders.notes, '%delay%')
+          and(
+            eq(orders.isArchived, false),
+            or(
+              ilike(orders.notes, '%failed%delivery%'),
+              ilike(orders.notes, '%exception%'),
+              ilike(orders.notes, '%delay%')
+            )
           )
         );
 
