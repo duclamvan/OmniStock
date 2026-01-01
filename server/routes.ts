@@ -18307,10 +18307,10 @@ Important:
           }
         };
         
-        // Add accessPointCode for PPL SMART shipments (CPL API field name)
+        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase like CodPrice/CodCurrency)
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.accessPointCode = order.pickupLocationCode;
-          console.log(`🏪 PPL SMART: Using pickup location accessPointCode=${order.pickupLocationCode}`);
+          shipment.ParcelShopCode = order.pickupLocationCode;
+          console.log(`🏪 PPL SMART: Using pickup location ParcelShopCode=${order.pickupLocationCode}`);
         }
 
         shipments.push(shipment);
@@ -18359,10 +18359,10 @@ Important:
           ]
         };
         
-        // Add accessPointCode for PPL SMART shipments (CPL API field name)
+        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase like CodPrice/CodCurrency)
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.accessPointCode = order.pickupLocationCode;
-          console.log(`🏪 PPL SMART: Using pickup location accessPointCode=${order.pickupLocationCode}`);
+          singleShipment.ParcelShopCode = order.pickupLocationCode;
+          console.log(`🏪 PPL SMART: Using pickup location ParcelShopCode=${order.pickupLocationCode}`);
         }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
