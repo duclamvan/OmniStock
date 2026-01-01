@@ -573,7 +573,7 @@ export default function WarehouseDetails() {
               <span className="text-xs md:text-sm">{t('warehouse:overview')}</span>
             </TabsTrigger>
             <TabsTrigger value="inventory" data-testid="tab-inventory" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">{t('warehouse:products')}</span>
+              <span className="text-xs md:text-sm">{t('warehouse:inventory', 'Inventory')}</span>
               <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{totalProducts}</Badge>
             </TabsTrigger>
             <TabsTrigger value="files" data-testid="tab-files" className="flex-1 md:flex-initial">
@@ -583,10 +583,6 @@ export default function WarehouseDetails() {
             <TabsTrigger value="contracts" data-testid="tab-contracts" className="flex-1 md:flex-initial">
               <span className="text-xs md:text-sm">{t('warehouse:financialContracts')}</span>
               <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{financialContracts.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="locations" data-testid="tab-locations" className="flex-1 md:flex-initial">
-              <span className="text-xs md:text-sm">{t('warehouse:locations', 'Locations')}</span>
-              <Badge variant="secondary" className="ml-1 md:ml-2 text-xs">{locationInventory?.summary?.totalLocations || 0}</Badge>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -696,108 +692,280 @@ export default function WarehouseDetails() {
           </div>
         </TabsContent>
 
-        {/* Inventory Tab */}
+        {/* Inventory Tab - Combined Products & Locations */}
         <TabsContent value="inventory" className="space-y-4 mt-4 md:mt-6">
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                  <Box className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
-                  {t('warehouse:warehouseInventory')}
-                </CardTitle>
-                <Badge variant="outline" className="font-mono text-xs w-fit">{filteredProducts.length} {t('warehouse:items')}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              {/* Search */}
-              <div className="mb-3 md:mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder={t('warehouse:searchProductsPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search-inventory"
-                  />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {/* Products Section */}
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <Box className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
+                    {t('warehouse:products')}
+                  </CardTitle>
+                  <Badge variant="outline" className="font-mono text-xs w-fit">{filteredProducts.length} {t('warehouse:items')}</Badge>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent className="p-4 md:p-6">
+                {/* Search */}
+                <div className="mb-3 md:mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder={t('warehouse:searchProductsPlaceholder')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-inventory"
+                    />
+                  </div>
+                </div>
 
-              {/* Products List */}
-              {productsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}
-                </div>
-              ) : filteredProducts.length > 0 ? (
-                <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                  {filteredProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-center justify-between p-3 md:p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group touch-manipulation"
-                      data-testid={`product-item-${product.id}`}
-                    >
-                      <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-                        {product.imageUrl ? (
-                          <img 
-                            src={product.imageUrl} 
-                            alt={product.name}
-                            className="w-10 h-10 md:w-12 md:h-12 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
-                            <Package className="h-5 w-5 md:h-6 md:w-6 text-slate-400" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <Link href={`/products/${product.id}`}>
-                            <h4 className="font-semibold text-sm md:text-base text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" data-testid={`text-product-name-${product.id}`}>
-                              {product.name}
-                            </h4>
-                          </Link>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-600 dark:text-slate-400">
-                            {product.sku && (
-                              <span className="flex items-center gap-1">
-                                <Barcode className="h-3 w-3" />
-                                {product.sku}
-                              </span>
-                            )}
-                            {product.primaryLocation && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {product.primaryLocation}
-                              </span>
-                            )}
-                            <span className="font-medium">{t('warehouse:qty')}: {product.quantity || 0}</span>
+                {/* Products List */}
+                {productsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}
+                  </div>
+                ) : filteredProducts.length > 0 ? (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {filteredProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between p-3 md:p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-cyan-300 dark:hover:border-cyan-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group touch-manipulation"
+                        data-testid={`product-item-${product.id}`}
+                      >
+                        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                          {product.imageUrl ? (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-10 h-10 md:w-12 md:h-12 object-cover rounded border border-slate-200 dark:border-slate-700 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                              <Package className="h-5 w-5 md:h-6 md:w-6 text-slate-400" />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <Link href={`/products/${product.id}`}>
+                              <h4 className="font-semibold text-sm md:text-base text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate" data-testid={`text-product-name-${product.id}`}>
+                                {product.name}
+                              </h4>
+                            </Link>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-600 dark:text-slate-400">
+                              {product.sku && (
+                                <span className="flex items-center gap-1">
+                                  <Barcode className="h-3 w-3" />
+                                  {product.sku}
+                                </span>
+                              )}
+                              {product.primaryLocation && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {product.primaryLocation}
+                                </span>
+                              )}
+                              <span className="font-medium">{t('warehouse:qty')}: {product.quantity || 0}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setProductToMove(product);
-                          setShowMoveDialog(true);
-                        }}
-                        data-testid={`button-move-${product.id}`}
-                      >
-                        <MoveRight className="h-4 w-4 mr-2" />
-                        {t('warehouse:move')}
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setProductToMove(product);
+                            setShowMoveDialog(true);
+                          }}
+                          data-testid={`button-move-${product.id}`}
+                        >
+                          <MoveRight className="h-4 w-4 mr-2" />
+                          {t('warehouse:move')}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Box className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-600 dark:text-slate-400">
+                      {searchQuery ? t('warehouse:noProductsFound') : t('warehouse:noProductsInWarehouse')}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Locations Section */}
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <Layers className="h-4 w-4 md:h-5 md:w-5 text-cyan-600 dark:text-cyan-400" />
+                    {t('warehouse:locations', 'Locations')}
+                  </CardTitle>
+                  {locationInventory?.summary && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Badge variant="outline" className="font-mono">{locationInventory.summary.aisleCount} {t('warehouse:aisles', 'Aisles')}</Badge>
+                      <Badge variant="outline" className="font-mono">{locationInventory.summary.totalLocations} {t('warehouse:bins', 'Bins')}</Badge>
+                      <Badge className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-mono">
+                        {locationInventory.summary.totalQuantity} {t('common:units', 'Units')}
+                      </Badge>
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Box className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400">
-                    {searchQuery ? t('warehouse:noProductsFound') : t('warehouse:noProductsInWarehouse')}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="p-4 md:p-6">
+                {locationsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
+                  </div>
+                ) : locationInventory && Object.keys(locationInventory.hierarchy.aisles).length > 0 ? (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {Object.entries(locationInventory.hierarchy.aisles)
+                      .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+                      .map(([aisle, aisleData]) => (
+                      <div key={aisle} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleAisle(aisle)}
+                          className="w-full flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          data-testid={`button-aisle-${aisle}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {expandedAisles.has(aisle) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+                              {t('warehouse:aisle', 'Aisle')}
+                            </span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">{aisle}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+                            {aisleData.totalQuantity} {t('common:units', 'units')}
+                          </Badge>
+                        </button>
+                        
+                        {expandedAisles.has(aisle) && (
+                          <div className="border-t border-slate-200 dark:border-slate-700">
+                            {Object.entries(aisleData.racks)
+                              .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+                              .map(([rack, rackData]) => {
+                              const rackKey = `${aisle}-${rack}`;
+                              return (
+                                <div key={rack} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                                  <button
+                                    onClick={() => toggleRack(rackKey)}
+                                    className="w-full flex items-center justify-between p-2 pl-8 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors"
+                                    data-testid={`button-rack-${rackKey}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {expandedRacks.has(rackKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-medium">
+                                        {t('warehouse:rack', 'Rack')}
+                                      </span>
+                                      <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{rack}</span>
+                                    </div>
+                                    <span className="text-xs text-slate-600 dark:text-slate-400">{rackData.totalQuantity} units</span>
+                                  </button>
+                                  
+                                  {expandedRacks.has(rackKey) && (
+                                    <div className="bg-slate-50 dark:bg-slate-900/50">
+                                      {Object.entries(rackData.levels)
+                                        .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+                                        .map(([level, levelData]) => {
+                                        const levelKey = `${aisle}-${rack}-${level}`;
+                                        return (
+                                          <div key={level} className="border-t border-slate-100 dark:border-slate-800">
+                                            <button
+                                              onClick={() => toggleLevel(levelKey)}
+                                              className="w-full flex items-center justify-between p-2 pl-12 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                              data-testid={`button-level-${levelKey}`}
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                {expandedLevels.has(levelKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                                <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs font-medium">
+                                                  {t('warehouse:level', 'Level')}
+                                                </span>
+                                                <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{level}</span>
+                                              </div>
+                                              <span className="text-xs text-slate-500">{levelData.totalQuantity} units</span>
+                                            </button>
+                                            
+                                            {expandedLevels.has(levelKey) && (
+                                              <div className="bg-white dark:bg-slate-950 p-2 pl-16 space-y-1">
+                                                {Object.entries(levelData.bins)
+                                                  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+                                                  .map(([bin, binData]) => (
+                                                  <div key={bin} className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                          bin.startsWith('PAL') 
+                                                            ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
+                                                            : 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300'
+                                                        }`}>
+                                                          {bin.startsWith('PAL') ? t('warehouse:pallet', 'Pallet') : t('warehouse:bin', 'Bin')}
+                                                        </span>
+                                                        <span className="font-semibold text-sm text-slate-800 dark:text-slate-200">{bin}</span>
+                                                      </div>
+                                                      <Badge className="bg-emerald-500 text-white">
+                                                        {binData.totalQuantity} {t('common:units', 'units')}
+                                                      </Badge>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                      {binData.locations.map((loc) => (
+                                                        <Link 
+                                                          key={loc.locationId}
+                                                          href={`/inventory/${loc.productId}`}
+                                                          className="flex items-center justify-between p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                                                          data-testid={`link-product-${loc.productId}`}
+                                                        >
+                                                          <div className="flex items-center gap-2 min-w-0">
+                                                            {loc.productImage ? (
+                                                              <img src={loc.productImage} alt="" className="w-6 h-6 rounded object-cover" />
+                                                            ) : (
+                                                              <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                                <Package className="h-3 w-3 text-slate-400" />
+                                                              </div>
+                                                            )}
+                                                            <div className="min-w-0">
+                                                              <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                                                {loc.productName}
+                                                              </p>
+                                                              <p className="text-xs text-slate-500 font-mono">{loc.productSku}</p>
+                                                            </div>
+                                                          </div>
+                                                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 ml-2">
+                                                            ×{loc.quantity}
+                                                          </span>
+                                                        </Link>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Layers className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-600 dark:text-slate-400">{t('warehouse:noLocationsAssigned', 'No locations assigned')}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Files Tab */}
@@ -1028,180 +1196,6 @@ export default function WarehouseDetails() {
           </Card>
         </TabsContent>
 
-        {/* Locations Tab - Hierarchical location inventory view */}
-        <TabsContent value="locations" className="space-y-4 mt-6">
-          <Card className="border-slate-200 dark:border-slate-800">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                  {t('warehouse:locationInventory', 'Location Inventory')}
-                </CardTitle>
-                {locationInventory?.summary && (
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="text-slate-600 dark:text-slate-400">
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{locationInventory.summary.aisleCount}</span> {t('warehouse:aisles', 'Aisles')}
-                    </div>
-                    <div className="text-slate-600 dark:text-slate-400">
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{locationInventory.summary.totalLocations}</span> {t('warehouse:bins', 'Bins')}
-                    </div>
-                    <div className="text-slate-600 dark:text-slate-400">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{locationInventory.summary.totalQuantity}</span> {t('common:units', 'Units')}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              {locationsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-16" />)}
-                </div>
-              ) : locationInventory && Object.keys(locationInventory.hierarchy.aisles).length > 0 ? (
-                <div className="space-y-2">
-                  {Object.entries(locationInventory.hierarchy.aisles)
-                    .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-                    .map(([aisle, aisleData]) => (
-                    <div key={aisle} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleAisle(aisle)}
-                        className="w-full flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                        data-testid={`button-aisle-${aisle}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {expandedAisles.has(aisle) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold">
-                            {t('warehouse:aisle', 'Aisle')}
-                          </span>
-                          <span className="font-semibold text-slate-900 dark:text-slate-100">{aisle}</span>
-                        </div>
-                        <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
-                          {aisleData.totalQuantity} {t('common:units', 'units')}
-                        </Badge>
-                      </button>
-                      
-                      {expandedAisles.has(aisle) && (
-                        <div className="border-t border-slate-200 dark:border-slate-700">
-                          {Object.entries(aisleData.racks)
-                            .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-                            .map(([rack, rackData]) => {
-                            const rackKey = `${aisle}-${rack}`;
-                            return (
-                              <div key={rack} className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
-                                <button
-                                  onClick={() => toggleRack(rackKey)}
-                                  className="w-full flex items-center justify-between p-2 pl-8 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors"
-                                  data-testid={`button-rack-${rackKey}`}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {expandedRacks.has(rackKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-medium">
-                                      {t('warehouse:rack', 'Rack')}
-                                    </span>
-                                    <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{rack}</span>
-                                  </div>
-                                  <span className="text-xs text-slate-600 dark:text-slate-400">{rackData.totalQuantity} units</span>
-                                </button>
-                                
-                                {expandedRacks.has(rackKey) && (
-                                  <div className="bg-slate-50 dark:bg-slate-900/50">
-                                    {Object.entries(rackData.levels)
-                                      .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-                                      .map(([level, levelData]) => {
-                                      const levelKey = `${aisle}-${rack}-${level}`;
-                                      return (
-                                        <div key={level} className="border-t border-slate-100 dark:border-slate-800">
-                                          <button
-                                            onClick={() => toggleLevel(levelKey)}
-                                            className="w-full flex items-center justify-between p-2 pl-12 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                            data-testid={`button-level-${levelKey}`}
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              {expandedLevels.has(levelKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                              <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs font-medium">
-                                                {t('warehouse:level', 'Level')}
-                                              </span>
-                                              <span className="font-medium text-sm text-slate-700 dark:text-slate-300">{level}</span>
-                                            </div>
-                                            <span className="text-xs text-slate-500">{levelData.totalQuantity} units</span>
-                                          </button>
-                                          
-                                          {expandedLevels.has(levelKey) && (
-                                            <div className="bg-white dark:bg-slate-950 p-2 pl-16 space-y-1">
-                                              {Object.entries(levelData.bins)
-                                                .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-                                                .map(([bin, binData]) => (
-                                                <div key={bin} className="p-2 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                                                  <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                                                        bin.startsWith('PAL') 
-                                                          ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
-                                                          : 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300'
-                                                      }`}>
-                                                        {bin.startsWith('PAL') ? t('warehouse:pallet', 'Pallet') : t('warehouse:bin', 'Bin')}
-                                                      </span>
-                                                      <span className="font-semibold text-sm text-slate-800 dark:text-slate-200">{bin}</span>
-                                                    </div>
-                                                    <Badge className="bg-emerald-500 text-white">
-                                                      {binData.totalQuantity} {t('common:units', 'units')}
-                                                    </Badge>
-                                                  </div>
-                                                  <div className="space-y-1">
-                                                    {binData.locations.map((loc) => (
-                                                      <Link 
-                                                        key={loc.locationId}
-                                                        href={`/inventory/${loc.productId}`}
-                                                        className="flex items-center justify-between p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
-                                                        data-testid={`link-product-${loc.productId}`}
-                                                      >
-                                                        <div className="flex items-center gap-2 min-w-0">
-                                                          {loc.productImage ? (
-                                                            <img src={loc.productImage} alt="" className="w-6 h-6 rounded object-cover" />
-                                                          ) : (
-                                                            <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                              <Package className="h-3 w-3 text-slate-400" />
-                                                            </div>
-                                                          )}
-                                                          <div className="min-w-0">
-                                                            <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                                              {loc.productName}
-                                                            </p>
-                                                            <p className="text-xs text-slate-500 font-mono">{loc.productSku}</p>
-                                                          </div>
-                                                        </div>
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 ml-2">
-                                                          ×{loc.quantity}
-                                                        </span>
-                                                      </Link>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Layers className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400">{t('warehouse:noLocationsAssigned', 'No locations assigned to products in this warehouse')}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Move Product Dialog */}
