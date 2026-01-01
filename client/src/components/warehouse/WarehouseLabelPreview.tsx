@@ -243,7 +243,8 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
               lineHeight: 1.1,
               color: "white",
               opacity: 0.85,
-              letterSpacing: "-0.3pt"
+              letterSpacing: "-0.3pt",
+              paddingBottom: "2mm"
             }}>
               {priceCzk.toLocaleString("cs-CZ")} Kč
             </div>
@@ -592,6 +593,7 @@ export default function WarehouseLabelPreview({
             color: white;
             opacity: 0.85;
             letter-spacing: -0.3pt;
+            padding-bottom: 2mm;
           }
         </style>
       </head>
