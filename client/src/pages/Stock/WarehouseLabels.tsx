@@ -482,46 +482,50 @@ export default function WarehouseLabels() {
               flex: 1;
               display: flex;
               flex-direction: column;
-              padding: 4mm;
+              padding: 4mm 5mm;
             }
             .name-area {
               flex: 1;
               display: flex;
               flex-direction: column;
               justify-content: center;
+              gap: 2mm;
             }
             .product-name {
               font-weight: 900;
-              font-size: 28pt;
-              line-height: 1.1;
+              font-size: 36pt;
+              line-height: 1.05;
               text-transform: uppercase;
               word-break: break-word;
               letter-spacing: -0.5pt;
               color: black;
             }
             .product-name-en {
-              font-size: 14pt;
-              font-weight: 700;
-              line-height: 1.2;
+              font-size: 20pt;
+              font-weight: 600;
+              font-style: italic;
+              line-height: 1.15;
               color: black;
               word-break: break-word;
-              margin-top: 2mm;
+              border-left: 3pt solid black;
+              padding-left: 3mm;
             }
             .bottom-row {
               display: flex;
-              align-items: flex-end;
+              align-items: center;
               justify-content: space-between;
-              gap: 4mm;
-              border-top: 2pt solid black;
-              padding-top: 3mm;
-              margin-top: 3mm;
+              gap: 5mm;
+              border-top: 3pt solid black;
+              padding-top: 4mm;
+              margin-top: 4mm;
+              min-height: 22mm;
             }
             .bulk-box {
-              font-size: 14pt;
+              font-size: 16pt;
               font-weight: 900;
               color: black;
-              border: 2pt solid black;
-              padding: 2mm 4mm;
+              border: 3pt solid black;
+              padding: 3mm 5mm;
             }
             .price-area {
               display: flex;
@@ -531,13 +535,13 @@ export default function WarehouseLabels() {
             }
             .price-eur {
               font-weight: 900;
-              font-size: 26pt;
+              font-size: 32pt;
               line-height: 1;
               color: black;
             }
             .price-czk {
               font-weight: bold;
-              font-size: 22pt;
+              font-size: 26pt;
               line-height: 1;
               color: black;
               letter-spacing: -0.5pt;
