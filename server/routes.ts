@@ -3585,6 +3585,36 @@ Important:
   });
 
   // Warehouses endpoints
+  
+  // Get the next available warehouse code (WH1, WH2, etc.)
+  app.get('/api/warehouses/next-code', isAuthenticated, async (req, res) => {
+    try {
+      const warehouses = await storage.getWarehouses();
+      
+      // Find all existing WH codes and extract numbers
+      const existingNumbers: number[] = [];
+      for (const wh of warehouses) {
+        const code = wh.code || wh.id || '';
+        const match = code.match(/^WH(\d+)$/i);
+        if (match) {
+          existingNumbers.push(parseInt(match[1], 10));
+        }
+      }
+      
+      // Find the next available number
+      let nextNumber = 1;
+      if (existingNumbers.length > 0) {
+        nextNumber = Math.max(...existingNumbers) + 1;
+      }
+      
+      const nextCode = `WH${nextNumber}`;
+      res.json({ code: nextCode, number: nextNumber });
+    } catch (error) {
+      console.error("Error getting next warehouse code:", error);
+      res.status(500).json({ message: "Failed to get next warehouse code" });
+    }
+  });
+  
   app.get('/api/warehouses', isAuthenticated, async (req, res) => {
     try {
       const warehouses = await storage.getWarehouses();
@@ -3612,8 +3642,8 @@ Important:
       const body = req.body;
       const warehouseData = {
         ...body,
-        // Generate ID using the code directly (format: CODE-timestamp)
-        id: body.id || `${body.code || 'WH'}-${Date.now().toString(36).toUpperCase()}`,
+        // Use the warehouse code as the ID (e.g., WH1, WH2, etc.)
+        id: body.code || body.id || `WH-${Date.now().toString(36).toUpperCase()}`,
         // Convert floorArea from number to string if provided
         floorArea: body.floorArea !== undefined && body.floorArea !== null && body.floorArea !== '' 
           ? String(body.floorArea) 
