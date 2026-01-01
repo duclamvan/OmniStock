@@ -634,7 +634,7 @@ export default function WarehouseLabelPreview({
 
   return (
     <DialogWrapper open={open} onOpenChange={onOpenChange}>
-      <ContentWrapper className={isMobile ? "max-h-[85vh]" : labelSize === "large" ? "max-w-[550px]" : "max-w-[450px]"}>
+      <ContentWrapper className={isMobile ? "max-h-[85vh]" : labelSize === "large" ? "max-w-[750px] w-[min(90vw,750px)]" : "max-w-[450px]"}>
         <HeaderWrapper>
           <TitleWrapper className="text-left flex items-center gap-2">
             <Printer className="h-5 w-5" />
@@ -662,14 +662,14 @@ export default function WarehouseLabelPreview({
             </Select>
           </div>
 
-          <div className="flex justify-center py-4 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-x-auto">
+          <div className={`flex justify-center bg-gray-50 dark:bg-gray-900 rounded-lg ${labelSize === "large" ? "p-6" : "py-4"}`}>
             {labelSize === "small" ? (
               <div className="transform scale-90 origin-center">
                 <LabelContent product={product} />
               </div>
             ) : (
-              <div className="w-full flex justify-center items-center" style={{ height: "160px" }}>
-                <div style={{ transform: "scale(0.38)", transformOrigin: "center center", width: "148mm", height: "105mm" }}>
+              <div className="flex justify-center items-center overflow-visible" style={{ height: "290px" }}>
+                <div style={{ transform: "scale(0.65)", transformOrigin: "center center" }}>
                   <LargeLabelContent product={product} />
                 </div>
               </div>
