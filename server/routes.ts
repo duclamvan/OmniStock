@@ -120,6 +120,7 @@ import {
   getImportBatchItems,
   EntityType
 } from './services/importExportService';
+import { PerformanceService } from './services/performanceService';
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -3123,6 +3124,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching inventory health metrics:", error);
       res.status(500).json({ message: "Failed to fetch inventory health metrics" });
+    }
+  });
+
+  // ============================================
+  // GAMIFICATION - Employee Performance Endpoints
+  // ============================================
+  const performanceService = new PerformanceService(storage);
+
+  // Initialize badges on startup
+  performanceService.initializeBadges().catch(err => {
+    console.error('[Performance] Failed to initialize badges:', err);
+  });
+
+  // Get leaderboard
+  app.get('/api/performance/leaderboard', isAuthenticated, cacheMiddleware(30000), async (req, res) => {
+    try {
+      const period = (req.query.period as string) || 'weekly';
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      if (!['daily', 'weekly', 'monthly', 'all_time'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Use daily, weekly, monthly, or all_time' });
+      }
+      
+      const leaderboard = await performanceService.getLeaderboard(period as any, limit);
+      res.json({ period, leaderboard });
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      res.status(500).json({ message: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Get current user's performance
+  app.get('/api/performance/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const performance = await performanceService.getUserPerformance(userId);
+      res.json(performance);
+    } catch (error) {
+      console.error('Error fetching user performance:', error);
+      res.status(500).json({ message: 'Failed to fetch performance data' });
+    }
+  });
+
+  // Get specific user's performance (admin only)
+  app.get('/api/performance/user/:userId', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const performance = await performanceService.getUserPerformance(userId);
+      res.json(performance);
+    } catch (error) {
+      console.error('Error fetching user performance:', error);
+      res.status(500).json({ message: 'Failed to fetch performance data' });
+    }
+  });
+
+  // Get all badge definitions
+  app.get('/api/performance/badges', isAuthenticated, async (req, res) => {
+    try {
+      const badges = await storage.getBadgeDefinitions();
+      res.json(badges);
+    } catch (error) {
+      console.error('Error fetching badges:', error);
+      res.status(500).json({ message: 'Failed to fetch badges' });
+    }
+  });
+
+  // Get user's earned badges
+  app.get('/api/performance/badges/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const badges = await storage.getEmployeeBadges(userId);
+      res.json(badges);
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+      res.status(500).json({ message: 'Failed to fetch user badges' });
+    }
+  });
+
+  // Get performance events for a user
+  app.get('/api/performance/events/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const events = await storage.getPerformanceEvents(userId, limit);
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching performance events:', error);
+      res.status(500).json({ message: 'Failed to fetch performance events' });
     }
   });
 
@@ -9936,6 +10029,25 @@ Important:
         // Log completion to orderFulfillmentLogs
         await storage.logFulfillmentComplete(req.params.id, userId, 'pick');
         
+        // Record performance points for gamification
+        try {
+          const orderItems = await storage.getOrderItems(req.params.id);
+          const itemCount = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          const durationSeconds = order.pickStartTime && order.pickEndTime 
+            ? Math.floor((new Date(order.pickEndTime).getTime() - new Date(order.pickStartTime).getTime()) / 1000)
+            : 0;
+          
+          const performanceResult = await performanceService.recordOrderPicked(
+            userId,
+            req.params.id,
+            itemCount,
+            durationSeconds
+          );
+          console.log(`[Performance] User ${userId} earned ${performanceResult.pointsEarned} + ${performanceResult.bonusPoints} bonus points for picking order ${order.orderId}`);
+        } catch (perfError) {
+          console.error('[Performance] Failed to record picking performance:', perfError);
+        }
+        
         await storage.createUserActivity({
           userId,
           action: 'completed_picking',
@@ -10128,6 +10240,25 @@ Important:
       if (order) {
         // Log completion to orderFulfillmentLogs
         await storage.logFulfillmentComplete(req.params.id, userId, 'pack');
+        
+        // Record performance points for gamification
+        try {
+          const orderItems = await storage.getOrderItems(req.params.id);
+          const itemCount = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          const durationSeconds = order.packStartTime && order.packEndTime 
+            ? Math.floor((new Date(order.packEndTime).getTime() - new Date(order.packStartTime).getTime()) / 1000)
+            : 0;
+          
+          const performanceResult = await performanceService.recordOrderPacked(
+            userId,
+            req.params.id,
+            itemCount,
+            durationSeconds
+          );
+          console.log(`[Performance] User ${userId} earned ${performanceResult.pointsEarned} + ${performanceResult.bonusPoints} bonus points for packing order ${order.orderId}`);
+        } catch (perfError) {
+          console.error('[Performance] Failed to record packing performance:', perfError);
+        }
         
         await storage.createUserActivity({
           userId,
