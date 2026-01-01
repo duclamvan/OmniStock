@@ -2352,12 +2352,17 @@ export default function CreatePurchase() {
         {/* Left Column - Form */}
         <div className="space-y-6">
           {/* Order Details */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4">
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle>{t('orderDetails')}</CardTitle>
-                  <CardDescription>{t('basicDetailsSupplier')}</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/20">
+                    <ClipboardList className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-white">{t('orderDetails')}</CardTitle>
+                    <CardDescription className="text-white/80">{t('basicDetailsSupplier')}</CardDescription>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -4809,9 +4814,16 @@ export default function CreatePurchase() {
         {/* Right Column - Summary (Sticky) */}
         <div className="xl:sticky xl:top-6 h-fit space-y-6">
           {/* Status Selection - Compact Dropdown */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{t('orderStatus')}</CardTitle>
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <Clock className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">{t('orderStatus')}</CardTitle>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Select value={status} onValueChange={setStatus}>
@@ -4855,23 +4867,26 @@ export default function CreatePurchase() {
           </Card>
 
           {/* Order Summary */}
-          <Card className="shadow-lg border-2">
-            <CardHeader className="bg-muted/30 border-b">
-              <div className="space-y-2">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Calculator className="h-5 w-5 text-primary" />
-                  {t('orderSummary')}
-                </CardTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{purchaseCurrency}</span>
-                  <span>→</span>
-                  <span className="font-medium text-foreground">{paymentCurrency}</span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/20">
+                    <Calculator className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-white">{t('orderSummary')}</CardTitle>
+                    <CardDescription className="text-white/80">
+                      {purchaseCurrency} → {paymentCurrency}
+                    </CardDescription>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
@@ -4900,8 +4915,7 @@ export default function CreatePurchase() {
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
@@ -5078,12 +5092,16 @@ export default function CreatePurchase() {
           </Card>
           
           {/* Multi-Currency Comparison Card */}
-          <Card className="shadow-sm" data-testid="card-currency-comparison">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" />
-                {t('currencyComparison')}
-              </CardTitle>
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)} data-testid="card-currency-comparison">
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">{t('currencyComparison')}</CardTitle>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
