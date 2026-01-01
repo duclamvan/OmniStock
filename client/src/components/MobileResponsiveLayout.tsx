@@ -462,6 +462,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
             { name: t('common:categories'), href: "/inventory/categories" },
             { name: t('common:productBundles'), href: "/inventory/bundles" },
             { name: t('common:packingMaterials'), href: "/packing-materials" },
+            { name: t('common:inventoryDashboard'), href: "/inventory/dashboard" },
             { name: t('common:addProduct'), href: "/inventory/add" },
           ],
         },
