@@ -614,6 +614,8 @@ const common = {
   
   // TopBar Notifications
   newOrderReceived: 'New Order Received',
+  oneNewOrderToPick: '1 new order is ready to pick',
+  multipleNewOrdersToPick: '{{count}} new orders are ready to pick',
   orderShipped: 'Order Shipped',
   lowStockAlert: 'Low Stock Alert',
   orderFrom: 'Order {{number}} from {{customer}}',

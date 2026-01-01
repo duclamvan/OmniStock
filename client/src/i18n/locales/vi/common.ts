@@ -592,6 +592,8 @@ const common = {
   
   // TopBar Notifications
   newOrderReceived: 'Nhận đơn hàng mới',
+  oneNewOrderToPick: '1 đơn hàng mới đã sẵn sàng để lấy',
+  multipleNewOrdersToPick: '{{count}} đơn hàng mới đã sẵn sàng để lấy',
   orderShipped: 'Đơn hàng đã giao vận',
   lowStockAlert: 'Cảnh báo hết hàng',
   orderFrom: 'Đơn hàng {{number}} từ {{customer}}',
