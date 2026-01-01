@@ -66,7 +66,9 @@ import {
   Filter,
   ArrowUpDown,
   X,
-  ChevronDown
+  ChevronDown,
+  Star,
+  Shield
 } from "lucide-react";
 import {
   Tooltip,
@@ -109,6 +111,69 @@ const createEmployeeFormSchema = (t: (key: string) => string) => z.object({
 });
 
 type EmployeeFormValues = z.infer<ReturnType<typeof createEmployeeFormSchema>>;
+
+interface PerformanceData {
+  userId: string;
+  totalPoints: number;
+  level: number;
+  xpInCurrentLevel: number;
+  badges: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    earnedAt: string;
+  }>;
+}
+
+function EmployeePerformanceStats({ userId }: { userId: string }) {
+  const { data, isLoading } = useQuery<PerformanceData>({
+    queryKey: ['/api/performance/user', userId],
+  });
+
+  if (isLoading) {
+    return <Skeleton className="h-5 w-20" />;
+  }
+
+  if (!data) {
+    return <span className="text-xs text-muted-foreground">-</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1 text-sm">
+              <Star className="h-3.5 w-3.5 text-yellow-500" />
+              <span className="font-medium">{data.totalPoints}</span>
+              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                Lv.{data.level}
+              </Badge>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{data.totalPoints} total points, Level {data.level}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      {data.badges && data.badges.length > 0 && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3 text-purple-500" />
+                <span>{data.badges.length}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{data.badges.length} badge{data.badges.length !== 1 ? 's' : ''} earned</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </div>
+  );
+}
 
 export default function Employees() {
   const { t } = useTranslation(['system', 'common']);
@@ -767,6 +832,14 @@ export default function Employees() {
                           })()}
                         </div>
                       )}
+
+                      {/* Performance Stats */}
+                      {employee.userId && (
+                        <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+                          <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Performance</p>
+                          <EmployeePerformanceStats userId={employee.userId} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -784,6 +857,7 @@ export default function Employees() {
                       <TableHead>{t('system:department')}</TableHead>
                       <TableHead>{t('system:hireDate')}</TableHead>
                       <TableHead>{t('system:salary')}</TableHead>
+                      <TableHead>Performance</TableHead>
                       <TableHead>{t('common:status')}</TableHead>
                       <TableHead className="w-[150px]">{t('common:actions')}</TableHead>
                     </TableRow>
@@ -852,6 +926,13 @@ export default function Employees() {
                           <div className="text-xs text-muted-foreground">
                             {t(`system:${employee.paymentFrequency}`)}
                           </div>
+                        </TableCell>
+                        <TableCell data-testid={`text-performance-${employee.id}`}>
+                          {employee.userId ? (
+                            <EmployeePerformanceStats userId={employee.userId} />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(employee.status)}
