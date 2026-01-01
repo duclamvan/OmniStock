@@ -18289,6 +18289,12 @@ Important:
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
+          // specificDelivery contains parcelShopCode for SMAR product type
+          ...(isSmartShipment && order.pickupLocationCode ? { 
+            specificDelivery: { 
+              parcelShopCode: order.pickupLocationCode 
+            } 
+          } : {}),
           // COD applied to the entire shipment set (if present)
           cashOnDelivery,
           externalNumbers: [
@@ -18307,15 +18313,9 @@ Important:
           }
         };
         
-        // Add parcelShopCode for PPL SMART shipments - services is an array of ServiceModel objects
+        // Log parcelShopCode for PPL SMART shipments
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.services = [
-            {
-              code: "PS",  // ParcelShop service code
-              parcelShopCode: order.pickupLocationCode
-            }
-          ];
-          console.log(`🏪 PPL SMART: Using services array with code=PS, parcelShopCode=${order.pickupLocationCode}`);
+          console.log(`🏪 PPL SMART: specificDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         shipments.push(shipment);
@@ -18355,6 +18355,12 @@ Important:
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
+          // specificDelivery contains parcelShopCode for SMAR product type
+          ...(isSmartShipment && order.pickupLocationCode ? { 
+            specificDelivery: { 
+              parcelShopCode: order.pickupLocationCode 
+            } 
+          } : {}),
           cashOnDelivery,
           externalNumbers: [
             {
@@ -18364,15 +18370,9 @@ Important:
           ]
         };
         
-        // Add parcelShopCode for PPL SMART shipments - services is an array of ServiceModel objects
+        // Log parcelShopCode for PPL SMART shipments
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.services = [
-            {
-              code: "PS",  // ParcelShop service code
-              parcelShopCode: order.pickupLocationCode
-            }
-          ];
-          console.log(`🏪 PPL SMART: Using services array with code=PS, parcelShopCode=${order.pickupLocationCode}`);
+          console.log(`🏪 PPL SMART: specificDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
