@@ -16950,9 +16950,15 @@ Important:
         label = await getPPLLabel(batchId, 'pdf');
       } catch (labelError: any) {
         console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        // Save batchId to order so retry button appears
+        await storage.updateOrder(orderId, {
+          pplBatchId: batchId,
+          pplStatus: 'pending'
+        });
         return res.status(500).json({ 
-          error: 'PPL shipment created but label retrieval failed',
-          batchId
+          error: 'PPL shipment created but label retrieval failed. Use the Retry button to download the label.',
+          batchId,
+          canRetry: true
         });
       }
 
@@ -17336,9 +17342,15 @@ Important:
         console.log(`✅ Label retrieved (${label.labelContent?.length} bytes)`);
       } catch (labelError: any) {
         console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        // Save batchId to order so retry button appears
+        await storage.updateOrder(orderId, {
+          pplBatchId: batchId,
+          pplStatus: 'pending'
+        });
         return res.status(500).json({ 
-          error: 'PPL shipment created but label retrieval failed. Please try again.',
+          error: 'PPL shipment created but label retrieval failed. Use the Retry button to download the label.',
           batchId,
+          canRetry: true,
           labelError: labelError.message
         });
       }
@@ -17409,6 +17421,146 @@ Important:
       console.error('Failed to get PPL batch status:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to get batch status' 
+      });
+    }
+  });
+
+  // Retry PPL label download (when initial label retrieval failed but batch was created)
+  app.post('/api/orders/:orderId/ppl/retry-label', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { getPPLLabel, getPPLBatchStatus } = await import('./services/pplService');
+
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Check if we have a batchId to retry with
+      const batchId = order.pplBatchId;
+      if (!batchId) {
+        return res.status(400).json({ 
+          error: 'No PPL batch ID found. Please create a new label instead.' 
+        });
+      }
+
+      // Check if label already exists (avoid duplicates)
+      if (order.pplLabelData) {
+        return res.status(400).json({ 
+          error: 'Label already exists for this order. No retry needed.',
+          batchId
+        });
+      }
+
+      // Also check shipment_labels table for existing labels with this batchId
+      const existingLabels = await storage.getShipmentLabelsByOrderId(orderId);
+      const existingLabelForBatch = existingLabels.find(l => l.batchId === batchId);
+      if (existingLabelForBatch) {
+        return res.status(400).json({ 
+          error: 'Label already exists for this batch. Refreshing order data.',
+          batchId
+        });
+      }
+
+      console.log(`🔄 Retrying PPL label download for batch ${batchId}...`);
+
+      // Get cartons for this order
+      const cartons = await storage.getOrderCartons(orderId);
+
+      // Try to get tracking numbers from batch status first
+      let shipmentNumbers: string[] = [];
+      try {
+        const batchStatus = await getPPLBatchStatus(batchId);
+        console.log('📦 Batch status:', JSON.stringify(batchStatus, null, 2));
+        if (batchStatus.items && Array.isArray(batchStatus.items)) {
+          shipmentNumbers = batchStatus.items
+            .filter((item: any) => item.shipmentNumber)
+            .map((item: any) => item.shipmentNumber);
+          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
+        }
+      } catch (statusError) {
+        console.log('⚠️ Batch status check failed:', statusError);
+      }
+
+      // Try to get the label
+      let label;
+      try {
+        console.log('📄 Retrieving PPL label...');
+        label = await getPPLLabel(batchId, 'pdf');
+        console.log(`✅ Label retrieved (${label.labelContent?.length} bytes)`);
+      } catch (labelError: any) {
+        console.error('❌ Failed to retrieve PPL label:', labelError.message);
+        return res.status(500).json({ 
+          error: 'Label retrieval still failing. The batch may need more time to process. Please try again in a few minutes.',
+          batchId,
+          labelError: labelError.message
+        });
+      }
+
+      // Use placeholder tracking if we couldn't get them
+      if (shipmentNumbers.length === 0 && cartons.length > 0) {
+        shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
+        console.log('⚠️ Using placeholder tracking numbers');
+      }
+
+      // Determine if COD
+      const hasCOD = order.paymentMethod === 'COD' || order.paymentMethod === 'cod' || 
+                     order.paymentMethod === 'Cash on Delivery' || order.paymentMethod === 'Dobírka';
+
+      // Update order with PPL data
+      await storage.updateOrder(orderId, {
+        pplShipmentNumbers: shipmentNumbers as any,
+        pplLabelData: {
+          batchId,
+          shipmentNumbers,
+          labelBase64: label.labelContent,
+          format: label.format,
+          createdAt: new Date().toISOString()
+        } as any,
+        pplStatus: 'created'
+      });
+
+      // Save to shipment_labels table
+      const cartonIds = cartons.map(c => c.id);
+      await storage.createShipmentLabel({
+        orderId,
+        carrier: 'PPL',
+        trackingNumbers: shipmentNumbers,
+        batchId,
+        labelBase64: label.labelContent,
+        labelData: {
+          referenceId: order.orderId,
+          cartonNumber: 1,
+          cartonIds,
+          hasCOD
+        },
+        shipmentCount: shipmentNumbers.length,
+        status: 'active'
+      });
+
+      // Update cartons with tracking info
+      for (let i = 0; i < cartons.length; i++) {
+        const carton = cartons[i];
+        const trackingNumber = shipmentNumbers[i] || shipmentNumbers[0];
+        await storage.updateOrderCarton(carton.id, {
+          labelPrinted: true,
+          trackingNumber
+        });
+      }
+
+      console.log('✅ PPL label retry successful');
+      res.json({
+        success: true,
+        batchId,
+        shipmentNumbers,
+        trackingNumber: shipmentNumbers[0],
+        labelPdf: label.labelContent
+      });
+    } catch (error) {
+      console.error('Failed to retry PPL label:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to retry PPL label download' 
       });
     }
   });
