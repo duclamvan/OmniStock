@@ -2804,6 +2804,7 @@ export default function AddOrder() {
             appliedDiscountScope: 'specific_category',
             categoryId: productCategoryId,
             isFreeItem: true,
+            availableQuantity: variant.availableQuantity ?? variant.quantity ?? 0,
           };
           
           setOrderItems(items => [...items, freeItem]);
@@ -2855,6 +2856,7 @@ export default function AddOrder() {
             appliedDiscountScope: discountScope,
             categoryId: productCategoryId,
             isFreeItem: false,
+            availableQuantity: variant.availableQuantity ?? variant.quantity ?? 0,
           };
           
           setOrderItems(items => [...items, paidItem]);
@@ -2932,6 +2934,7 @@ export default function AddOrder() {
           retailPrice: retailPriceForVariant,
           bulkPrice: bulkPriceForVariant,
           allowBulkSales: selectedProductForVariant.allowBulkSales || false,
+          availableQuantity: variant.availableQuantity ?? variant.quantity ?? 0,
         };
         
         setOrderItems(items => [...items, newItem]);
@@ -3097,10 +3100,8 @@ export default function AddOrder() {
               const bundle = Array.isArray(allBundles) ? allBundles.find((b: any) => b.id === item.bundleId) : null;
               baseStock = bundle?.availableStock ?? 0;
             } else if (item.variantId && item.productId) {
-              // For variants, look up variant stock from productsWithVariants or use a fallback
-              const variants = productsWithVariants[item.productId];
-              const variant = variants?.find((v: any) => v.id === item.variantId);
-              baseStock = variant?.stockQuantity ?? variant?.quantity ?? 0;
+              // For variants, use item's stored available quantity or product lookup
+              baseStock = item.availableQuantity ?? item.stockQuantity ?? 0;
             } else if (item.productId) {
               const product = Array.isArray(allProducts) ? allProducts.find((p: any) => p.id === item.productId) : null;
               baseStock = product?.quantity ?? 0;
