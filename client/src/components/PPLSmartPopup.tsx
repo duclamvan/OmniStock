@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Loader2, ExternalLink, X } from "lucide-react";
+import { MapPin, Loader2, X } from "lucide-react";
 
 interface PPLPickupPoint {
   code: string;
@@ -225,16 +225,6 @@ export function PPLSmartPopup({
             className="w-full h-full"
             style={{ minHeight: "500px" }}
           />
-        </div>
-
-        <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ExternalLink className="h-3.5 w-3.5" />
-            <span>{t("orders:poweredByPPL", "Powered by PPL CZ")}</span>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} data-testid="button-close-ppl-popup">
-            {t("common:cancel", "Cancel")}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
