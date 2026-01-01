@@ -47,6 +47,7 @@ export function PPLSmartPopup({
   const { t } = useTranslation(["orders", "common"]);
   const [isLoading, setIsLoading] = useState(true);
   const [widgetError, setWidgetError] = useState<string | null>(null);
+  const [retryCounter, setRetryCounter] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptLoadedRef = useRef(false);
   const eventListenerAddedRef = useRef(false);
@@ -169,7 +170,7 @@ export function PPLSmartPopup({
         eventListenerAddedRef.current = false;
       }
     };
-  }, [open, language, buildAddressString, handlePickupPointSelected, t]);
+  }, [open, language, buildAddressString, handlePickupPointSelected, t, retryCounter]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,8 +213,10 @@ export function PPLSmartPopup({
                   onClick={() => {
                     setWidgetError(null);
                     setIsLoading(true);
-                    window.location.reload();
+                    scriptLoadedRef.current = false;
+                    setRetryCounter(prev => prev + 1);
                   }}
+                  data-testid="button-retry-ppl-widget"
                 >
                   {t("common:retry", "Retry")}
                 </Button>
