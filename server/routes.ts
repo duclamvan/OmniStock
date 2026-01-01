@@ -18265,9 +18265,9 @@ Important:
             throw new Error(`Invalid COD amount: ${order.codAmount}`);
           }
           cashOnDelivery = {
-            CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
-            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
+            codPrice: codValue,                           // PPL API uses camelCase
+            codCurrency: order.codCurrency || 'CZK',      // PPL API uses camelCase
+            codVarSym: numericOrderId || '1234567890'     // PPL API uses camelCase
           };
           console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.codCurrency || 'CZK'} (applied to entire set)`);
         } else {
@@ -18304,12 +18304,10 @@ Important:
             }
           ],
           // shipmentSet defines multiple cartons in ONE shipment
+          // When numberOfShipments > 1, PPL auto-generates shipment numbers for each item
           shipmentSet: {
-            numberOfShipments: cartons.length,
-            shipmentSetItems: cartons.map((carton) => ({
-              referenceId: `${order.orderId}-${carton.cartonNumber}`
-              // Weight removed as per user requirement - PPL doesn't need weight input
-            }))
+            numberOfShipments: cartons.length
+            // shipmentSetItems is optional - PPL auto-generates numbers when not provided
           }
         };
         
@@ -18332,9 +18330,9 @@ Important:
             throw new Error(`Invalid COD amount: ${order.codAmount}`);
           }
           cashOnDelivery = {
-            CodPrice: codValue,                           // PPL API requires PascalCase
-            CodCurrency: order.codCurrency || 'CZK',  // PPL API requires PascalCase
-            CodVarSym: numericOrderId || '1234567890'     // PPL API requires PascalCase
+            codPrice: codValue,                           // PPL API uses camelCase
+            codCurrency: order.codCurrency || 'CZK',      // PPL API uses camelCase
+            codVarSym: numericOrderId || '1234567890'     // PPL API uses camelCase
           };
           console.log(`💰 Single carton WITH COD: ${codValue} ${order.codCurrency || 'CZK'}`);
         } else {
