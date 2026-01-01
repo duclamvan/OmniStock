@@ -81,6 +81,7 @@ import {
   formatLocationCode,
   calculateTotalQuantity,
   getLocationSummary,
+  parseLocationCodeToSegments,
   LocationType,
 } from "@/lib/warehouseHelpers";
 import WarehouseLocationSelector from "./WarehouseLocationSelector";
@@ -102,6 +103,37 @@ interface ProductLocationsProps {
   productName?: string;
   readOnly?: boolean;
   embedded?: boolean;
+}
+
+// Visual location code display component
+function LocationCodeDisplay({ code, quantity }: { code: string; quantity?: number }) {
+  const segments = parseLocationCodeToSegments(code);
+  
+  if (segments.length === 0) {
+    return <span className="font-mono text-sm">{code}</span>;
+  }
+  
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {segments.map((segment, index) => (
+        <div key={index} className="flex items-center">
+          {index > 0 && <span className="text-slate-400 dark:text-slate-500 mx-0.5">›</span>}
+          <div 
+            className={`px-1.5 py-0.5 rounded text-xs font-medium ${segment.bgColor} ${segment.color}`}
+            title={segment.tooltip}
+          >
+            <span className="opacity-60 mr-0.5">{segment.label}:</span>
+            <span className="font-semibold">{segment.value}</span>
+          </div>
+        </div>
+      ))}
+      {quantity !== undefined && quantity > 0 && (
+        <div className="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200" title="Quantity at this location">
+          ×{quantity}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ProductLocations({
@@ -893,7 +925,9 @@ export default function ProductLocations({
                           {getDisplayQuantity(location)}
                         </span>
                         {hasVariants && (
-                          <Layers className="h-3 w-3 text-violet-500 ml-1" title={t('common:fromVariants', 'From variants')} />
+                          <span title={t('common:fromVariants', 'From variants')}>
+                            <Layers className="h-3 w-3 text-violet-500 ml-1" />
+                          </span>
                         )}
                       </div>
                     </div>
@@ -960,12 +994,9 @@ export default function ProductLocations({
                             />
                           </TableCell>
                         )}
-                        <TableCell className="font-mono">
-                          <div className="flex items-center space-x-2">
-                            <LocationIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                            <span data-testid={`text-location-code-${location.id}`}>
-                              {location.locationCode}
-                            </span>
+                        <TableCell>
+                          <div className="flex items-center space-x-2" data-testid={`text-location-code-${location.id}`}>
+                            <LocationCodeDisplay code={location.locationCode} quantity={getDisplayQuantity(location)} />
                           </div>
                         </TableCell>
                         <TableCell>
@@ -983,7 +1014,9 @@ export default function ProductLocations({
                               {getDisplayQuantity(location)}
                             </span>
                             {hasVariants && (
-                              <Layers className="h-3 w-3 text-violet-500" title={t('common:fromVariants', 'From variants')} />
+                              <span title={t('common:fromVariants', 'From variants')}>
+                                <Layers className="h-3 w-3 text-violet-500" />
+                              </span>
                             )}
                           </div>
                         </TableCell>

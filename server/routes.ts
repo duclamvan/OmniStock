@@ -3995,6 +3995,186 @@ Important:
     }
   });
 
+  // Get warehouse location inventory breakdown - maps location codes to hierarchical structure with quantities
+  app.get('/api/warehouses/:id/location-inventory', isAuthenticated, async (req, res) => {
+    try {
+      const warehouseId = req.params.id;
+      const warehouse = await storage.getWarehouse(warehouseId);
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+
+      // Get the warehouse code to match against location codes (supports WH1, WH2, etc.)
+      // Use the warehouse.code if available, otherwise try to infer from the warehouse ID
+      const warehouseCode = warehouse.code || warehouse.id;
+
+      // Use optimized single query to get all locations with product info for this warehouse
+      // Join productLocations with products where products.warehouseId matches
+      const locationsWithProducts = await db
+        .select({
+          locationId: productLocations.id,
+          locationCode: productLocations.locationCode,
+          quantity: productLocations.quantity,
+          locationType: productLocations.locationType,
+          isPrimary: productLocations.isPrimary,
+          notes: productLocations.notes,
+          productId: products.id,
+          productName: products.name,
+          productSku: products.sku,
+          productImage: products.imageUrl,
+        })
+        .from(productLocations)
+        .innerJoin(products, eq(productLocations.productId, products.id))
+        .where(eq(products.warehouseId, warehouseId));
+
+      // Filter locations that match the warehouse code prefix
+      interface LocationWithProduct {
+        locationId: string;
+        locationCode: string;
+        quantity: number;
+        locationType: string;
+        isPrimary: boolean;
+        productId: string;
+        productName: string;
+        productSku: string;
+        productImage?: string | null;
+        notes?: string | null;
+      }
+
+      const allLocations: LocationWithProduct[] = locationsWithProducts
+        .filter(loc => {
+          // Extract warehouse code from location code (first segment)
+          const locWarehouseCode = loc.locationCode.split('-')[0];
+          return locWarehouseCode === warehouseCode || locWarehouseCode === warehouse.code;
+        })
+        .map(loc => ({
+          locationId: loc.locationId,
+          locationCode: loc.locationCode,
+          quantity: loc.quantity || 0,
+          locationType: loc.locationType || 'warehouse',
+          isPrimary: loc.isPrimary || false,
+          productId: loc.productId,
+          productName: loc.productName,
+          productSku: loc.productSku || '',
+          productImage: loc.productImage,
+          notes: loc.notes,
+        }));
+
+      // Parse location codes and build hierarchical structure
+      interface HierarchicalLocation {
+        warehouse: string;
+        aisles: {
+          [aisle: string]: {
+            racks: {
+              [rack: string]: {
+                levels: {
+                  [level: string]: {
+                    bins: {
+                      [bin: string]: {
+                        locations: LocationWithProduct[];
+                        totalQuantity: number;
+                      };
+                    };
+                    totalQuantity: number;
+                  };
+                };
+                totalQuantity: number;
+              };
+            };
+            totalQuantity: number;
+          };
+        };
+        totalQuantity: number;
+        totalLocations: number;
+        totalProducts: number;
+      }
+
+      const hierarchy: HierarchicalLocation = {
+        warehouse: warehouseCode,
+        aisles: {},
+        totalQuantity: 0,
+        totalLocations: allLocations.length,
+        totalProducts: new Set(allLocations.map(l => l.productId)).size,
+      };
+
+      // Parse each location and build hierarchy using pattern: WH1-A01-R01-L01-B1 or WH1-B01-R01-L01-PAL1
+      for (const loc of allLocations) {
+        const parts = loc.locationCode.split('-');
+        if (parts.length < 2) continue;
+
+        // Parse based on the format: parts[0]=warehouse, parts[1]=aisle, parts[2]=rack, parts[3]=level, parts[4]=bin/pallet
+        let aisle = parts[1] || 'Unknown';
+        let rack = parts[2] || 'R01';
+        let level = parts[3] || 'L01';
+        let bin = parts[4] || 'B1';
+
+        // Handle case where location code may not have all parts
+        if (parts.length === 2) {
+          // Just warehouse-aisle
+          rack = 'R01';
+          level = 'L01';
+          bin = 'B1';
+        } else if (parts.length === 3) {
+          // warehouse-aisle-rack
+          level = 'L01';
+          bin = 'B1';
+        } else if (parts.length === 4) {
+          // warehouse-aisle-rack-level
+          bin = 'B1';
+        }
+
+        // Initialize aisle if needed
+        if (!hierarchy.aisles[aisle]) {
+          hierarchy.aisles[aisle] = { racks: {}, totalQuantity: 0 };
+        }
+        // Initialize rack if needed
+        if (!hierarchy.aisles[aisle].racks[rack]) {
+          hierarchy.aisles[aisle].racks[rack] = { levels: {}, totalQuantity: 0 };
+        }
+        // Initialize level if needed
+        if (!hierarchy.aisles[aisle].racks[rack].levels[level]) {
+          hierarchy.aisles[aisle].racks[rack].levels[level] = { bins: {}, totalQuantity: 0 };
+        }
+        // Initialize bin if needed
+        if (!hierarchy.aisles[aisle].racks[rack].levels[level].bins[bin]) {
+          hierarchy.aisles[aisle].racks[rack].levels[level].bins[bin] = { locations: [], totalQuantity: 0 };
+        }
+
+        // Add location to bin
+        hierarchy.aisles[aisle].racks[rack].levels[level].bins[bin].locations.push(loc);
+        hierarchy.aisles[aisle].racks[rack].levels[level].bins[bin].totalQuantity += loc.quantity;
+        hierarchy.aisles[aisle].racks[rack].levels[level].totalQuantity += loc.quantity;
+        hierarchy.aisles[aisle].racks[rack].totalQuantity += loc.quantity;
+        hierarchy.aisles[aisle].totalQuantity += loc.quantity;
+        hierarchy.totalQuantity += loc.quantity;
+      }
+
+      // Also return a flat list for table view
+      const flatList = allLocations.sort((a, b) => 
+        a.locationCode.localeCompare(b.locationCode, undefined, { numeric: true })
+      );
+
+      res.json({
+        warehouse: {
+          id: warehouse.id,
+          code: warehouseCode,
+          name: warehouse.name,
+        },
+        hierarchy,
+        flatList,
+        summary: {
+          totalLocations: hierarchy.totalLocations,
+          totalProducts: hierarchy.totalProducts,
+          totalQuantity: hierarchy.totalQuantity,
+          aisleCount: Object.keys(hierarchy.aisles).length,
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching warehouse location inventory:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse location inventory" });
+    }
+  });
+
   // Warehouse file management endpoints
   app.get('/api/warehouses/:id/files', isAuthenticated, async (req, res) => {
     try {

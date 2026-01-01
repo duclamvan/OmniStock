@@ -479,3 +479,86 @@ export function getLocationSummary(locations: Array<{ locationType: LocationType
   
   return `${locations.length} location${locations.length !== 1 ? 's' : ''}: ${parts}`;
 }
+
+/**
+ * Segment info for visual location code display
+ */
+export interface LocationSegment {
+  label: string;
+  value: string;
+  color: string;
+  bgColor: string;
+  tooltip: string;
+}
+
+/**
+ * Parse location code into visual segments for display
+ * Returns array of segments with labels, values, colors, and tooltips
+ */
+export function parseLocationCodeToSegments(code: string): LocationSegment[] {
+  if (!code) return [];
+  
+  const parts = parseLocationCode(code);
+  if (!parts) {
+    // Return raw code as single segment if parsing fails
+    return [{
+      label: 'LOC',
+      value: code,
+      color: 'text-slate-700 dark:text-slate-300',
+      bgColor: 'bg-slate-100 dark:bg-slate-700',
+      tooltip: 'Location'
+    }];
+  }
+  
+  const segments: LocationSegment[] = [
+    {
+      label: 'WH',
+      value: parts.warehouse,
+      color: 'text-blue-700 dark:text-blue-300',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/50',
+      tooltip: 'Warehouse'
+    },
+    {
+      label: 'Aisle',
+      value: parts.aisle,
+      color: 'text-emerald-700 dark:text-emerald-300',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-900/50',
+      tooltip: 'Aisle'
+    },
+    {
+      label: 'Rack',
+      value: parts.rack,
+      color: 'text-amber-700 dark:text-amber-300',
+      bgColor: 'bg-amber-100 dark:bg-amber-900/50',
+      tooltip: 'Rack'
+    },
+    {
+      label: 'Level',
+      value: parts.level,
+      color: 'text-purple-700 dark:text-purple-300',
+      bgColor: 'bg-purple-100 dark:bg-purple-900/50',
+      tooltip: 'Level'
+    }
+  ];
+  
+  // Add bin or pallet segment if present
+  if ('bin' in parts && parts.bin) {
+    segments.push({
+      label: 'Bin',
+      value: parts.bin,
+      color: 'text-rose-700 dark:text-rose-300',
+      bgColor: 'bg-rose-100 dark:bg-rose-900/50',
+      tooltip: 'Bin'
+    });
+  } else if ('pallet' in parts && parts.pallet) {
+    segments.push({
+      label: 'Pallet',
+      value: parts.pallet,
+      color: 'text-orange-700 dark:text-orange-300',
+      bgColor: 'bg-orange-100 dark:bg-orange-900/50',
+      tooltip: 'Pallet Position'
+    });
+  }
+  
+  return segments;
+}
