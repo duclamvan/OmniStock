@@ -2,6 +2,11 @@ export default {
   title: 'Business Dashboard',
   subtitle: 'Real-time overview of your warehouse operations and business performance',
   
+  // Sales Dashboard
+  salesDashboard: 'Sales Dashboard',
+  salesInsight: 'Real-time sales intelligence and revenue performance',
+  vsYesterday: 'vs yesterday',
+  
   // Alerts
   attentionRequired: 'Attention Required',
   pendingApprovals: 'pending approvals',

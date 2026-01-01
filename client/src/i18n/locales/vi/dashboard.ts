@@ -1,6 +1,9 @@
 export default {
   title: 'Bảng điều khiển',
   subtitle: 'Tổng quan thời gian thực về hoạt động kho và hiệu suất kinh doanh',
+  salesDashboard: 'Bảng điều khiển bán hàng',
+  salesInsight: 'Thông tin bán hàng và hiệu suất doanh thu thời gian thực',
+  vsYesterday: 'so với hôm qua',
   
   // Alerts
   attentionRequired: 'Cần chú ý',

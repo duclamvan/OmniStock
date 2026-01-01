@@ -445,10 +445,10 @@ export function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="heading-dashboard">
-            {t('common:adminCommandCenter')}
+            {t('dashboard:salesDashboard')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1" data-testid="text-dashboard-subtitle">
-            {t('common:realTimeOperationalIntelligence')}
+            {t('dashboard:salesInsight')}
           </p>
         </div>
         <Badge variant="outline" className="text-sm flex items-center gap-2 w-fit">
@@ -456,6 +456,351 @@ export function Dashboard() {
           <span className="text-gray-900 dark:text-gray-100">{t('common:liveUpdates')}</span>
         </Badge>
       </div>
+
+      {/* Sales Hero Cards - Key KPIs at the top */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-today-overview">
+            <Sun className="h-5 w-5 text-yellow-500" />
+            {t('todaysOverview')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('todaysOverviewDescription')}</p>
+        </div>
+
+        {salesGrowthLoading && !salesGrowth ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Today's Revenue */}
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/20 border-blue-200 dark:border-blue-800" data-testid="card-today-revenue">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400" data-testid="label-today-revenue">{t('todayRevenue')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-revenue">
+                      {formatCurrency(salesGrowth?.todayMetrics.revenue || 0, 'EUR')}
+                    </p>
+                    {salesGrowth?.todayMetrics.changeVsYesterday !== undefined && (
+                      <div className="flex items-center gap-1 mt-2">
+                        {salesGrowth.todayMetrics.changeVsYesterday >= 0 ? (
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        )}
+                        <span className={`text-xs font-medium ${salesGrowth.todayMetrics.changeVsYesterday >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {salesGrowth.todayMetrics.changeVsYesterday >= 0 ? '+' : ''}{salesGrowth.todayMetrics.changeVsYesterday.toFixed(1)}% {t('vsYesterday')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-blue-200 dark:bg-blue-800/40 rounded-lg">
+                    <Euro className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Today's Profit */}
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/20 border-green-200 dark:border-green-800" data-testid="card-today-profit">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400" data-testid="label-today-profit">{t('todayProfit')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-profit">
+                      {formatCurrency(salesGrowth?.todayMetrics.profit || 0, 'EUR')}
+                    </p>
+                    {salesGrowth?.todayMetrics.profitChangeVsYesterday !== undefined && (
+                      <div className="flex items-center gap-1 mt-2">
+                        {salesGrowth.todayMetrics.profitChangeVsYesterday >= 0 ? (
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        )}
+                        <span className={`text-xs font-medium ${salesGrowth.todayMetrics.profitChangeVsYesterday >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {salesGrowth.todayMetrics.profitChangeVsYesterday >= 0 ? '+' : ''}{salesGrowth.todayMetrics.profitChangeVsYesterday.toFixed(1)}% {t('vsYesterday')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-green-200 dark:bg-green-800/40 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Today's Orders */}
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/20 border-purple-200 dark:border-purple-800" data-testid="card-today-orders">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400" data-testid="label-today-orders">{t('todayOrders')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-orders">
+                      {salesGrowth?.todayMetrics.orders || 0}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t('ordersPlaced')}</p>
+                  </div>
+                  <div className="p-3 bg-purple-200 dark:bg-purple-800/40 rounded-lg">
+                    <ShoppingCart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Today's AOV */}
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/20 border-orange-200 dark:border-orange-800" data-testid="card-today-aov">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400" data-testid="label-today-aov">{t('todayAOV')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-aov">
+                      {formatCurrency(salesGrowth?.todayMetrics.aov || 0, 'EUR')}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t('perTransaction')}</p>
+                  </div>
+                  <div className="p-3 bg-orange-200 dark:bg-orange-800/40 rounded-lg">
+                    <DollarSign className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Revenue & Expenses Charts - Prominently displayed */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-revenue-charts">
+            <BarChart3 className="h-5 w-5 text-blue-500" />
+            {t('revenueAndProfit')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('historicalPerformanceTrends')}</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-gray-900 dark:text-gray-100">{t('revenueAndProfit')}</CardTitle>
+              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                <option>{t('year')}</option>
+                <option>{t('month')}</option>
+                <option>{t('week')}</option>
+              </select>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<ChartSkeleton />}>
+                <RevenueChart />
+              </Suspense>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-gray-900 dark:text-gray-100">{t('totalExpenses')}</CardTitle>
+              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
+                <option>{t('thisYear')}</option>
+                <option>{t('lastYear')}</option>
+              </select>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<ChartSkeleton />}>
+                <ExpensesChart />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Fulfillment Pipeline Section */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-fulfillment-pipeline">
+            <Truck className="h-5 w-5 text-blue-500" />
+            {t('fulfillmentPipeline')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('fulfillmentPipelineDescription')}</p>
+        </div>
+
+        {pipelineLoading && !fulfillmentPipeline ? (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <>
+            {/* Pipeline Stage Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+              {/* In Queue */}
+              <Link href="/orders?status=to_fulfill">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-queue">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <ClipboardList className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('inQueue')}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-queue">
+                      {fulfillmentPipeline?.pipeline.inQueue || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {/* Picking */}
+              <Link href="/pick-pack">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-picking">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('picking')}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-picking">
+                      {fulfillmentPipeline?.pipeline.inPicking || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {/* Packing */}
+              <Link href="/pick-pack">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-packing">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Layers className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('packing')}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-packing">
+                      {fulfillmentPipeline?.pipeline.inPacking || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {/* Ready to Ship */}
+              <Link href="/orders?status=ready_to_ship">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-ready">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('readyToShip')}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-ready">
+                      {fulfillmentPipeline?.pipeline.readyToShip || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {/* Shipped (24h) */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-pipeline-shipped">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                      <Ship className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('shippedLast24h')}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-shipped">
+                    {fulfillmentPipeline?.pipeline.shippedLast24h || 0}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Metrics and Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* 24h Metrics */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    {t('last24hMetrics')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-added-24h">
+                        {fulfillmentPipeline?.metrics.addedLast24h || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersAdded')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="value-shipped-24h">
+                        {fulfillmentPipeline?.metrics.shippedLast24h || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersShipped')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-avg-processing">
+                        {fulfillmentPipeline?.metrics.avgProcessingHours || 0}h
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('avgProcessing')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-500" />
+                    {t('recentActivity')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {fulfillmentPipeline?.recentActivity.slice(0, 6).map((activity, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                        <div className="flex items-center gap-2">
+                          {activity.type === 'shipped' ? (
+                            <Ship className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <ClipboardCheck className="h-3 w-3 text-blue-500" />
+                          )}
+                          <span className="text-gray-900 dark:text-gray-100 font-medium">{activity.orderId}</span>
+                          {activity.customerName && (
+                            <span className="text-gray-500 dark:text-gray-400 text-xs truncate max-w-[100px]">
+                              {activity.customerName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={activity.type === 'shipped' ? 'default' : 'outline'} className="text-[10px]">
+                            {activity.type === 'shipped' ? t('shipped') : t('added')}
+                          </Badge>
+                          <span className="text-xs text-gray-400">
+                            {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {(!fulfillmentPipeline?.recentActivity || fulfillmentPipeline.recentActivity.length === 0) && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noRecentActivity')}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
 
       {/* Action Items Section - Quick access to pending work */}
       <section>
@@ -661,305 +1006,6 @@ export function Dashboard() {
               </Card>
             </Link>
           </div>
-        )}
-      </section>
-
-      <Separator className="bg-slate-200 dark:bg-slate-700" />
-
-      {/* Section 1: Operations Pulse */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-operations-pulse">
-            <Package className="h-5 w-5" />
-            {t('common:operationsPulse')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('common:criticalFulfillmentMetrics')}</p>
-        </div>
-        
-        {operationsLoading && !operationsPulse ? (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {/* Orders to Fulfill */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-orders-to-fulfill">{t('common:ordersToFulfill')}</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-orders-to-fulfill">
-                      {operationsPulse?.ordersAwaitingFulfillment || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:awaitingPickup')}</p>
-                  </div>
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                    <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* SLA Breach Risk */}
-            <Card className={`${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-sla-breach-risk">{t('common:slaBreachRisk')}</p>
-                    <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-sla-breach-risk">
-                      {operationsPulse?.ordersAtRiskOfSLA || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:olderthan24h')}</p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                    <AlertCircle className={`h-6 w-6 ${(operationsPulse?.ordersAtRiskOfSLA || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Today's Throughput */}
-            <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-today-throughput">{t('common:todaysThroughput')}</p>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1" data-testid="value-today-throughput">
-                      {operationsPulse?.pickPackThroughputToday || 0}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t('common:ordersFulfilled')}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Carrier Exceptions */}
-            <Card className={`${(operationsPulse?.carrierExceptions || 0) > 0 ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-carrier-exceptions">{t('common:carrierExceptions')}</p>
-                    <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-carrier-exceptions">
-                      {operationsPulse?.carrierExceptions || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('common:activeIssues')}</p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                    <Truck className={`h-6 w-6 ${(operationsPulse?.carrierExceptions || 0) > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Stock Approvals Needed */}
-            <Link href="/stock/approvals">
-              <Card className={`cursor-pointer hover:shadow-lg transition-shadow ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`} data-testid="card-stock-approvals">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid="label-stock-approvals">{t('common:stockApprovals')}</p>
-                      <p className={`text-3xl font-bold mt-1 ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`} data-testid="value-stock-approvals">
-                        {operationsPulse?.pendingStockAdjustments || 0}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                        {t('common:reviewNeeded')} <ArrowRight className="h-3 w-3" />
-                      </p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                      <ClipboardCheck className={`h-6 w-6 ${(operationsPulse?.pendingStockAdjustments || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        )}
-      </section>
-
-      <Separator className="bg-slate-200 dark:bg-slate-700" />
-
-      {/* Fulfillment Pipeline Section */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-fulfillment-pipeline">
-            <Truck className="h-5 w-5 text-blue-500" />
-            {t('fulfillmentPipeline')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('fulfillmentPipelineDescription')}</p>
-        </div>
-
-        {pipelineLoading && !fulfillmentPipeline ? (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
-          </div>
-        ) : (
-          <>
-            {/* Pipeline Stage Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-              {/* In Queue */}
-              <Link href="/orders?status=to_fulfill">
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-queue">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                        <ClipboardList className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                      </div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('inQueue')}</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-queue">
-                      {fulfillmentPipeline?.pipeline.inQueue || 0}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              {/* Picking */}
-              <Link href="/pick-pack">
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-picking">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('picking')}</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-picking">
-                      {fulfillmentPipeline?.pipeline.inPicking || 0}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              {/* Packing */}
-              <Link href="/pick-pack">
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-packing">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <Layers className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('packing')}</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-packing">
-                      {fulfillmentPipeline?.pipeline.inPacking || 0}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              {/* Ready to Ship */}
-              <Link href="/orders?status=ready_to_ship">
-                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-ready">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('readyToShip')}</p>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-ready">
-                      {fulfillmentPipeline?.pipeline.readyToShip || 0}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              {/* Shipped (24h) */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-pipeline-shipped">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                      <Ship className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('shippedLast24h')}</p>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-shipped">
-                    {fulfillmentPipeline?.pipeline.shippedLast24h || 0}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Metrics and Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* 24h Metrics */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
-                    {t('last24hMetrics')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-added-24h">
-                        {fulfillmentPipeline?.metrics.addedLast24h || 0}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersAdded')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="value-shipped-24h">
-                        {fulfillmentPipeline?.metrics.shippedLast24h || 0}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersShipped')}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-avg-processing">
-                        {fulfillmentPipeline?.metrics.avgProcessingHours || 0}h
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('avgProcessing')}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-green-500" />
-                    {t('recentActivity')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {fulfillmentPipeline?.recentActivity.slice(0, 6).map((activity, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0">
-                        <div className="flex items-center gap-2">
-                          {activity.type === 'shipped' ? (
-                            <Ship className="h-3 w-3 text-green-500" />
-                          ) : (
-                            <ClipboardCheck className="h-3 w-3 text-blue-500" />
-                          )}
-                          <span className="text-gray-900 dark:text-gray-100 font-medium">{activity.orderId}</span>
-                          {activity.customerName && (
-                            <span className="text-gray-500 dark:text-gray-400 text-xs truncate max-w-[100px]">
-                              {activity.customerName}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={activity.type === 'shipped' ? 'default' : 'outline'} className="text-[10px]">
-                            {activity.type === 'shipped' ? t('shipped') : t('added')}
-                          </Badge>
-                          <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {(!fulfillmentPipeline?.recentActivity || fulfillmentPipeline.recentActivity.length === 0) && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noRecentActivity')}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
         )}
       </section>
 
@@ -1778,71 +1824,6 @@ export function Dashboard() {
         )}
       </section>
 
-      <Separator className="bg-slate-200 dark:bg-slate-700" />
-
-      {/* Financial Analytics Section (Existing Charts) */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100" data-testid="heading-financial-analytics">
-            {t('financialAnalytics')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('historicalPerformanceTrends')}</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">{t('revenueAndProfit')}</CardTitle>
-              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>{t('year')}</option>
-                <option>{t('month')}</option>
-                <option>{t('week')}</option>
-              </select>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<ChartSkeleton />}>
-                <RevenueChart />
-              </Suspense>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">{t('totalExpenses')}</CardTitle>
-              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>{t('thisYear')}</option>
-                <option>{t('lastYear')}</option>
-              </select>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<ChartSkeleton />}>
-                <ExpensesChart />
-              </Suspense>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-gray-900 dark:text-gray-100">{t('yearlyReport')}</CardTitle>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-800 dark:bg-blue-600 rounded"></div>
-                <span className="text-sm text-slate-600 dark:text-gray-400">{t('purchased')}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-400 dark:bg-blue-300 rounded"></div>
-                <span className="text-sm text-slate-600 dark:text-gray-400">{t('soldAmount')}</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<ChartSkeleton />}>
-              <YearlyChart />
-            </Suspense>
-          </CardContent>
-        </Card>
-      </section>
     </div>
   );
 }
