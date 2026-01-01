@@ -393,6 +393,7 @@ const common = {
   purchaseOrders: 'Đơn đặt hàng',
   consolidation: 'Hợp nhất',
   internationalTransit: 'Vận chuyển quốc tế',
+  inboundShipments: 'Hàng nhập về',
   itemsToStore: 'Hàng cần lưu kho',
   employees: 'Nhân viên',
   warehouseMap: 'Sơ đồ kho',

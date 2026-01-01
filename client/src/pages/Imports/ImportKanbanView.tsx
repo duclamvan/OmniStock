@@ -344,7 +344,7 @@ export default function ImportKanbanView() {
     },
     {
       id: "international",
-      title: t('internationalTransit'),
+      title: t('inboundShipments'),
       color: "bg-orange-50 dark:bg-orange-900/20",
       icon: <Plane className="h-3.5 w-3.5" />,
       items: []

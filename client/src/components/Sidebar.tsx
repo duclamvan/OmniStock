@@ -157,7 +157,7 @@ const navigation: NavItem[] = [
       { labelKey: "kanbanDashboard", href: "/imports/kanban", namespace: "warehouse" },
       { labelKey: "purchaseOrders", href: "/purchase-orders", namespace: "warehouse" },
       { labelKey: "consolidation", href: "/consolidation", namespace: "warehouse" },
-      { labelKey: "internationalTransit", href: "/imports/international-transit", namespace: "warehouse" },
+      { labelKey: "inboundShipments", href: "/imports/inbound-shipment", namespace: "warehouse" },
     ],
   },
   {

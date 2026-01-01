@@ -303,6 +303,7 @@ const imports = {
   // Kanban View
   consolidation: 'Consolidation',
   internationalTransit: 'International Transit',
+  inboundShipments: 'Inbound Shipments',
   importOrderWorkflow: 'Import Order Workflow',
   trackOrdersDesc: 'Track orders from supplier → warehouse → consolidation → delivery',
   workflow: 'Workflow',

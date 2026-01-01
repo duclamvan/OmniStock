@@ -660,12 +660,12 @@ export default function ImportKanbanDashboard() {
     },
     {
       id: 'international',
-      title: t('internationalTransit'),
+      title: t('inboundShipments'),
       icon: <Globe className="h-4 w-4" />,
       count: activeShipments.length,
       gradient: 'from-blue-500 to-cyan-500',
       bgLight: 'bg-blue-50 dark:bg-blue-950/20',
-      link: '/imports/international-transit',
+      link: '/imports/inbound-shipment',
     },
     {
       id: 'delivered',
@@ -674,7 +674,7 @@ export default function ImportKanbanDashboard() {
       count: deliveredShipments.length,
       gradient: 'from-emerald-500 to-green-500',
       bgLight: 'bg-emerald-50 dark:bg-emerald-950/20',
-      link: '/imports/international-transit',
+      link: '/imports/inbound-shipment',
     }
   ];
 

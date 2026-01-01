@@ -312,6 +312,7 @@ const imports = {
   // Kanban View
   consolidation: 'Tổng hợp',
   internationalTransit: 'Vận chuyển quốc tế',
+  inboundShipments: 'Hàng nhập về',
   importOrderWorkflow: 'Quy trình nhập hàng',
   trackOrdersDesc: 'Theo dõi đơn hàng từ nhà cung cấp → kho → tổng hợp → giao hàng',
   workflow: 'Quy trình',

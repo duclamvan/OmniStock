@@ -534,7 +534,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
             { name: t('common:kanbanDashboard'), href: "/imports/kanban" },
             { name: t('common:purchaseOrders'), href: "/purchase-orders" },
             { name: t('common:consolidation'), href: "/consolidation" },
-            { name: t('common:internationalTransit'), href: "/imports/international-transit" },
+            { name: t('common:inboundShipments'), href: "/imports/inbound-shipment" },
             { name: t('common:landingCosts'), href: "/imports/landing-costs" },
           ],
         },

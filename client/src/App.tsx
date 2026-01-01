@@ -77,7 +77,7 @@ import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
 import CreatePurchase from "@/pages/Imports/CreatePurchase";
 import ArchivedPurchaseOrders from "@/pages/Imports/ArchivedPurchaseOrders";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
-import InternationalTransit from "@/pages/Imports/InternationalTransit";
+import InboundShipments from "@/pages/Imports/InboundShipments";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
 import LandingCostList from "@/pages/Imports/LandingCostList";
 import LandingCostDetails from "@/pages/Imports/LandingCostDetails";
@@ -363,8 +363,8 @@ function Router() {
         <Route path="/consolidation">
           {() => <ProtectedRoute requireAdmin><AtWarehouse /></ProtectedRoute>}
         </Route>
-        <Route path="/imports/international-transit">
-          {() => <ProtectedRoute requireAdmin><InternationalTransit /></ProtectedRoute>}
+        <Route path="/imports/inbound-shipment">
+          {() => <ProtectedRoute requireAdmin><InboundShipments /></ProtectedRoute>}
         </Route>
         <Route path="/imports/landing-costs/:id">
           {() => <ProtectedRoute requireAdmin><LandingCostDetails /></ProtectedRoute>}

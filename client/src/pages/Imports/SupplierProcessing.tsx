@@ -368,7 +368,7 @@ export default function SupplierProcessing() {
       title: t('movedToInternationalTransit'), 
       description: t('youCanAddTrackingLater'),
       action: (
-        <Button variant="outline" size="sm" onClick={() => setLocation('/imports/international-transit')}>
+        <Button variant="outline" size="sm" onClick={() => setLocation('/imports/inbound-shipment')}>
           {t('viewPendingShipments')}
         </Button>
       )

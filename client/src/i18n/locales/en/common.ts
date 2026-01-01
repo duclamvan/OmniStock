@@ -416,6 +416,7 @@ const common = {
   purchaseOrders: 'Purchase Orders',
   consolidation: 'Consolidation',
   internationalTransit: 'International Transit',
+  inboundShipments: 'Inbound Shipments',
   itemsToStore: 'Items To Store',
   employees: 'Employees',
   warehouseMap: 'Warehouse Map',
