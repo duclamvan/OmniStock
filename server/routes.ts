@@ -6636,6 +6636,33 @@ Important:
     }
   });
 
+  // Helper function to extract warehouse code from location code and update product's warehouseId
+  async function updateProductWarehouseFromLocationCode(productId: string, locationCode: string) {
+    try {
+      // Extract warehouse code from location code (e.g., "WH1" from "WH1-A1-R1-L1-B1")
+      const warehouseCode = locationCode.split('-')[0];
+      if (!warehouseCode) return;
+
+      // Find warehouse with matching code
+      const allWarehouses = await storage.getWarehouses();
+      const matchingWarehouse = allWarehouses.find(w => 
+        w.code === warehouseCode || w.id === warehouseCode
+      );
+
+      if (matchingWarehouse) {
+        // Use targeted SQL UPDATE to only change warehouseId, preserving all other fields
+        await db
+          .update(products)
+          .set({ warehouseId: matchingWarehouse.id, updatedAt: new Date() })
+          .where(eq(products.id, productId));
+        console.log(`📦 Auto-set product ${productId} warehouse to ${matchingWarehouse.name} (${matchingWarehouse.id}) based on location ${locationCode}`);
+      }
+    } catch (error) {
+      console.error('Failed to update product warehouse from location code:', error);
+      // Don't fail the request - this is a convenience feature
+    }
+  }
+
   // Product Locations endpoints
   app.get('/api/products/:id/locations', isAuthenticated, async (req, res) => {
     try {
@@ -6700,6 +6727,9 @@ Important:
           description: `Added location ${location.locationCode} for product with ${quantityToAdd} units`,
         });
       }
+
+      // Auto-set product warehouse based on location code (e.g., WH1 from WH1-A1-R1-L1-B1)
+      await updateProductWarehouseFromLocationCode(productId, locationData.locationCode);
 
       // Update receipt item's assignedQuantity if receiptItemId is provided
       const receiptItemId = req.body.receiptItemId;
@@ -7042,6 +7072,12 @@ Important:
         }
       }
       
+      // Auto-set product warehouse based on first location code (e.g., WH1 from WH1-A1-R1-L1-B1)
+      if (locationsToCreate.length > 0) {
+        const firstLocationCode = locationsToCreate[0].locationCode;
+        await updateProductWarehouseFromLocationCode(productId, firstLocationCode);
+      }
+
       // Single activity log for the batch operation
       await storage.createUserActivity({
         userId: "test-user",
