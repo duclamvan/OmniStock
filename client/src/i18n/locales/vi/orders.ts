@@ -368,6 +368,12 @@ const orders = {
   pickupLocation: 'Điểm nhận hàng',
   searchPickupLocation: 'Tìm theo thành phố hoặc mã bưu chính...',
   selectPickupLocation: 'Chọn điểm nhận hàng',
+  selectPickupPointOnMap: 'Chọn điểm nhận hàng trên bản đồ',
+  selectPickupPoint: 'Chọn điểm nhận hàng',
+  pplPickupDescription: 'Chọn PPL ParcelShop hoặc ParcelBox gần vị trí của bạn',
+  loadingPickupPoints: 'Đang tải bản đồ điểm nhận hàng...',
+  pplWidgetLoadError: 'Không thể tải bản đồ điểm nhận hàng. Vui lòng thử lại.',
+  poweredByPPL: 'Được hỗ trợ bởi PPL CZ',
   parcelShop: 'ParcelShop',
   parcelBox: 'ParcelBox',
   

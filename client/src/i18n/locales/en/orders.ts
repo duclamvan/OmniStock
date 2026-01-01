@@ -374,6 +374,12 @@ const orders = {
   pickupLocation: 'Pickup Location',
   searchPickupLocation: 'Search by city or zip code...',
   selectPickupLocation: 'Select a pickup location',
+  selectPickupPointOnMap: 'Select Pickup Point on Map',
+  selectPickupPoint: 'Select Pickup Point',
+  pplPickupDescription: 'Choose a PPL ParcelShop or ParcelBox near your location',
+  loadingPickupPoints: 'Loading pickup points map...',
+  pplWidgetLoadError: 'Failed to load pickup point map. Please try again.',
+  poweredByPPL: 'Powered by PPL CZ',
   parcelShop: 'ParcelShop',
   parcelBox: 'ParcelBox',
   
