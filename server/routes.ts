@@ -9064,11 +9064,20 @@ Important:
         });
       }
 
-      const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
+      const userId = req.user?.id || "unknown";
+      const order = await storage.startPickingOrder(req.params.id, employeeId || userId);
 
       if (order) {
+        // Get order items for item count
+        const orderItems = await storage.getOrderItems(req.params.id);
+        const itemCount = orderItems.length;
+        const totalQuantity = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        // Log to orderFulfillmentLogs for employee tracking
+        await storage.logFulfillmentStart(req.params.id, userId, 'pick', itemCount, totalQuantity);
+        
         await storage.createUserActivity({
-          userId: "test-user",
+          userId,
           action: 'started_picking',
           entityType: 'order',
           entityId: req.params.id,
@@ -9087,6 +9096,8 @@ Important:
   // Complete picking an order
   app.post('/api/orders/:id/pick/complete', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.id || "unknown";
+      
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
         return res.json({ 
@@ -9101,8 +9112,11 @@ Important:
       const order = await storage.completePickingOrder(req.params.id);
 
       if (order) {
+        // Log completion to orderFulfillmentLogs
+        await storage.logFulfillmentComplete(req.params.id, userId, 'pick');
+        
         await storage.createUserActivity({
-          userId: "test-user",
+          userId,
           action: 'completed_picking',
           entityType: 'order',
           entityId: req.params.id,
@@ -9122,6 +9136,7 @@ Important:
   app.post('/api/orders/:id/pack/start', isAuthenticated, async (req: any, res) => {
     try {
       const { employeeId } = req.body;
+      const userId = req.user?.id || "unknown";
 
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
@@ -9129,17 +9144,25 @@ Important:
           id: req.params.id, 
           orderId: req.params.id,
           packStatus: 'in_progress',
-          packedBy: employeeId || "test-user",
+          packedBy: employeeId || userId,
           packStartTime: new Date().toISOString(),
           message: 'Mock order packing started' 
         });
       }
 
-      const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
+      const order = await storage.startPackingOrder(req.params.id, employeeId || userId);
 
       if (order) {
+        // Get order items for item count
+        const orderItems = await storage.getOrderItems(req.params.id);
+        const itemCount = orderItems.length;
+        const totalQuantity = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        // Log to orderFulfillmentLogs for employee tracking
+        await storage.logFulfillmentStart(req.params.id, userId, 'pack', itemCount, totalQuantity);
+        
         await storage.createUserActivity({
-          userId: "test-user",
+          userId,
           action: 'started_packing',
           entityType: 'order',
           entityId: req.params.id,
@@ -9279,10 +9302,14 @@ Important:
       }
 
       const order = await storage.getOrderById(req.params.id);
+      const userId = req.user?.id || "unknown";
 
       if (order) {
+        // Log completion to orderFulfillmentLogs
+        await storage.logFulfillmentComplete(req.params.id, userId, 'pack');
+        
         await storage.createUserActivity({
-          userId: "test-user",
+          userId,
           action: 'completed_packing',
           entityType: 'order',
           entityId: req.params.id,
