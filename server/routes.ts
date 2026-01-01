@@ -2883,8 +2883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const openTickets = await db.select({
         id: tickets.id,
         ticketId: tickets.ticketId,
-        subject: tickets.subject,
-        severity: tickets.severity,
+        subject: tickets.title,
+        severity: tickets.priority,
         status: tickets.status,
         customerId: tickets.customerId,
         orderId: tickets.orderId,
