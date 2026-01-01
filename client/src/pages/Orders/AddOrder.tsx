@@ -100,6 +100,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PPLSmartPopup } from "@/components/PPLSmartPopup";
 
 // Helper function to normalize carrier names for backward compatibility
 const normalizeCarrier = (value: string): string => {
@@ -448,6 +449,7 @@ export default function AddOrder() {
   const [showPickupLocationDropdown, setShowPickupLocationDropdown] = useState(false);
   const [isLoadingPickupLocations, setIsLoadingPickupLocations] = useState(false);
   const [pickupLocationSuggestions, setPickupLocationSuggestions] = useState<any[]>([]);
+  const [showPPLSmartPopup, setShowPPLSmartPopup] = useState(false);
   
   // Mobile compact view state
   const [expandedMobileNotes, setExpandedMobileNotes] = useState<string | null>(null);
@@ -6638,77 +6640,17 @@ export default function AddOrder() {
                   </SelectContent>
                 </Select>
                 
-                {/* PPL SMART Pickup Location Selector */}
+                {/* PPL SMART Pickup Location Selector with Map Popup */}
                 {watchedShippingMethod === 'PPL CZ SMART' && (
-                  <div className="mt-2 relative">
+                  <div className="mt-2">
                     <Label className="text-xs sm:text-sm flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-orange-500" />
                       {t('orders:pickupLocation', 'Pickup Location')}
                     </Label>
-                    <div className="relative mt-1">
-                      <Input
-                        placeholder={t('orders:searchPickupLocation', 'Search by city or zip code...')}
-                        value={pickupLocationSearch}
-                        onChange={(e) => {
-                          setPickupLocationSearch(e.target.value);
-                          if (e.target.value.length >= 3) {
-                            setIsLoadingPickupLocations(true);
-                            setShowPickupLocationDropdown(true);
-                            fetch(`/api/shipping/ppl/access-points?search=${encodeURIComponent(e.target.value)}&limit=10`)
-                              .then(res => res.json())
-                              .then(data => {
-                                setPickupLocationSuggestions(data.accessPoints || []);
-                                setIsLoadingPickupLocations(false);
-                              })
-                              .catch(() => {
-                                setPickupLocationSuggestions([]);
-                                setIsLoadingPickupLocations(false);
-                              });
-                          } else {
-                            setShowPickupLocationDropdown(false);
-                            setPickupLocationSuggestions([]);
-                          }
-                        }}
-                        className="h-10 sm:h-9 text-sm"
-                      />
-                      {isLoadingPickupLocations && (
-                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                      )}
-                    </div>
                     
-                    {/* Pickup Location Dropdown */}
-                    {showPickupLocationDropdown && pickupLocationSuggestions.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {pickupLocationSuggestions.map((location: any) => (
-                          <div
-                            key={location.code}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                            onClick={() => {
-                              setSelectedPickupLocation(location);
-                              setPickupLocationSearch('');
-                              setShowPickupLocationDropdown(false);
-                            }}
-                          >
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">{location.name}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  {location.street}, {location.city} {location.zipCode}
-                                </div>
-                                <div className="text-xs text-orange-600 dark:text-orange-400">
-                                  {location.accessPointType === 'PARCEL_BOX' ? 'ParcelBox' : 'ParcelShop'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Selected Pickup Location Display */}
-                    {selectedPickupLocation && (
-                      <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-md">
+                    {/* Selected Pickup Location Display or Select Button */}
+                    {selectedPickupLocation ? (
+                      <div className="mt-1.5 p-2.5 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-md">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <MapPin className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
@@ -6717,20 +6659,61 @@ export default function AddOrder() {
                               <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
                                 {selectedPickupLocation.street}, {selectedPickupLocation.city} {selectedPickupLocation.zipCode}
                               </div>
+                              <div className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
+                                {selectedPickupLocation.accessPointType === 'PARCEL_BOX' || selectedPickupLocation.type === 'ParcelBox' ? 'ParcelBox' : 'ParcelShop'}
+                              </div>
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => setSelectedPickupLocation(null)}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/30"
+                              onClick={() => setShowPPLSmartPopup(true)}
+                              data-testid="button-change-pickup-point"
+                            >
+                              {t('common:change', 'Change')}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                              onClick={() => setSelectedPickupLocation(null)}
+                              data-testid="button-clear-pickup-point"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full mt-1.5 h-10 sm:h-9 border-2 border-dashed border-orange-300 dark:border-orange-700 hover:border-orange-400 dark:hover:border-orange-600 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-100/50 dark:hover:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                        onClick={() => setShowPPLSmartPopup(true)}
+                        data-testid="button-select-pickup-point"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {t('orders:selectPickupPointOnMap', 'Select Pickup Point on Map')}
+                      </Button>
                     )}
+                    
+                    {/* PPL Smart Popup Modal */}
+                    <PPLSmartPopup
+                      open={showPPLSmartPopup}
+                      onOpenChange={setShowPPLSmartPopup}
+                      onSelectPickupPoint={(point) => {
+                        setSelectedPickupLocation(point);
+                        setShowPPLSmartPopup(false);
+                      }}
+                      customerAddress={selectedCustomer?.street || selectedShippingAddress?.street || form.watch('street')}
+                      customerCity={selectedCustomer?.city || selectedShippingAddress?.city || form.watch('city')}
+                      customerZipCode={selectedCustomer?.zipCode || selectedShippingAddress?.zipCode || form.watch('zipCode')}
+                      language={localizationSettings?.language === 'cs' ? 'cs' : 'en'}
+                    />
                   </div>
                 )}
               </div>
