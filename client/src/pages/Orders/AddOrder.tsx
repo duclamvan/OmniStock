@@ -108,8 +108,10 @@ const normalizeCarrier = (value: string): string => {
     'GLS': 'GLS DE',
     'DHL': 'DHL DE',
     'PPL CZ': 'PPL CZ',
+    'PPL CZ SMART': 'PPL CZ SMART', // Preserve SMART shipments
     'GLS DE': 'GLS DE',
     'DHL DE': 'DHL DE',
+    'DPD': 'DPD',
   };
   return map[value] || value;
 };
@@ -901,6 +903,17 @@ export default function AddOrder() {
     }
     if (order.discountValue > 0) {
       setShowDiscount(true);
+    }
+    
+    // Pre-fill pickup location for PPL SMART orders
+    if (order.pickupLocationCode) {
+      setSelectedPickupLocation({
+        code: order.pickupLocationCode,
+        name: order.pickupLocationName,
+        street: order.pickupLocationAddress?.split(',')[0]?.trim() || '',
+        city: order.pickupLocationAddress?.split(',')[1]?.trim()?.split(' ')[0] || '',
+        zipCode: order.pickupLocationAddress?.split(',')[1]?.trim()?.split(' ').slice(1).join(' ') || '',
+      });
     }
 
     // Set orderId for the component
