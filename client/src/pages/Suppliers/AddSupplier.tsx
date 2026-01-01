@@ -597,7 +597,7 @@ export default function AddSupplier() {
                   {isEditMode ? t('common:saving') : t('common:creating')}...
                 </>
               ) : (
-                isEditMode ? t('inventory:updateSupplier') : t('inventory:addSupplier')
+                isEditMode ? (t('inventory:updateSupplier') || 'Update Supplier') : (t('inventory:addSupplier') || 'Add Supplier')
               )}
             </Button>
           </div>
