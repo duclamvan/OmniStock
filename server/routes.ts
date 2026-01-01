@@ -4316,6 +4316,42 @@ Important:
     }
   });
 
+  // Get import purchases for a specific supplier
+  app.get('/api/suppliers/:supplierId/purchases', isAuthenticated, async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+      
+      // Get supplier to match by name as well
+      const supplier = await storage.getSupplier(supplierId);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      
+      // Get all import purchases and filter by supplierId or supplier name
+      const allPurchases = await storage.getImportPurchases();
+      const supplierPurchases = allPurchases.filter(p => 
+        p.supplierId === supplierId || 
+        (p.supplier && supplier.name && p.supplier.toLowerCase().trim() === supplier.name.toLowerCase().trim())
+      );
+      
+      // Get items for each purchase to calculate totals
+      const purchasesWithItems = await Promise.all(supplierPurchases.map(async (purchase) => {
+        const items = await storage.getPurchaseItems(purchase.id);
+        return {
+          ...purchase,
+          items,
+          itemCount: items.length,
+          totalQuantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+        };
+      }));
+      
+      res.json(purchasesWithItems);
+    } catch (error) {
+      console.error("Error fetching supplier purchases:", error);
+      res.status(500).json({ message: "Failed to fetch supplier purchases" });
+    }
+  });
+
   // Supplier Files endpoints
   app.get('/api/suppliers/:supplierId/files', isAuthenticated, async (req, res) => {
     try {

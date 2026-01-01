@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import type { Supplier, Product, Purchase, SupplierFile } from "@shared/schema";
+import type { Supplier, Product, SupplierFile, ImportPurchase, PurchaseItem } from "@shared/schema";
 import { 
   ArrowLeft, 
   Pencil, 
@@ -51,8 +51,16 @@ export default function SupplierDetails() {
     queryKey: ["/api/products"],
   });
 
-  const { data: purchases = [] } = useQuery<Purchase[]>({
-    queryKey: ["/api/purchases"],
+  // Type for import purchases with items
+  type ImportPurchaseWithItems = ImportPurchase & { 
+    items: PurchaseItem[]; 
+    itemCount: number; 
+    totalQuantity: number; 
+  };
+
+  const { data: supplierPurchases = [] } = useQuery<ImportPurchaseWithItems[]>({
+    queryKey: [`/api/suppliers/${id}/purchases`],
+    enabled: !!id,
   });
 
   const { data: supplierFiles = [] } = useQuery<SupplierFile[]>({
@@ -113,15 +121,6 @@ export default function SupplierDetails() {
   // Filter products by this supplier
   const supplierProducts = products.filter(p => p.supplierId === id && p.isActive);
   
-  // Filter purchases by this supplier - only filter when supplier data is loaded
-  const supplierPurchases = supplier 
-    ? purchases.filter(p => {
-        const match = p.supplierName && supplier.name && 
-          p.supplierName.toLowerCase().trim() === supplier.name.toLowerCase().trim();
-        return match;
-      })
-    : [];
-  
   // Filter products by search term
   const filteredProducts = productSearch
     ? fuzzySearch(supplierProducts, productSearch, {
@@ -132,14 +131,20 @@ export default function SupplierDetails() {
       }).map(r => r.item)
     : supplierProducts;
   
-  // Filter purchases by search term
+  // Filter purchases by search term (search in supplier name, tracking number, or item names)
   const filteredPurchases = purchaseSearch
-    ? fuzzySearch(supplierPurchases, purchaseSearch, {
-        fields: ['productName', 'sku'],
-        threshold: 0.2,
-        fuzzy: true,
-        vietnameseNormalization: true,
-      }).map(r => r.item)
+    ? supplierPurchases.filter(purchase => {
+        const searchLower = purchaseSearch.toLowerCase();
+        // Search in purchase-level fields
+        if (purchase.supplier?.toLowerCase().includes(searchLower)) return true;
+        if (purchase.trackingNumber?.toLowerCase().includes(searchLower)) return true;
+        // Search in item names
+        if (purchase.items?.some(item => 
+          item.name?.toLowerCase().includes(searchLower) ||
+          item.sku?.toLowerCase().includes(searchLower)
+        )) return true;
+        return false;
+      })
     : supplierPurchases;
 
   if (isLoading) {
@@ -338,18 +343,25 @@ export default function SupplierDetails() {
                   {filteredPurchases.slice(0, 10).map((purchase) => (
                     <div
                       key={purchase.id}
-                      className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50/50 dark:bg-slate-700/30"
+                      className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600/30 transition-colors"
+                      onClick={() => setLocation(`/purchase-orders/edit/${purchase.id}`)}
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium text-slate-900 dark:text-slate-100">{purchase.productName}</p>
+                          <p className="font-medium text-slate-900 dark:text-slate-100">
+                            {purchase.items?.[0]?.name || purchase.supplier}
+                            {purchase.itemCount > 1 && (
+                              <span className="text-slate-500 ml-1">+{purchase.itemCount - 1} more</span>
+                            )}
+                          </p>
                           <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {t('inventory:skuPrefix')} {purchase.sku || t('inventory:naLabel')} • {t('inventory:qtyPrefix')} {purchase.quantity}
+                            {purchase.trackingNumber && `#${purchase.trackingNumber} • `}
+                            {purchase.totalQuantity} {t('inventory:items')}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-slate-900 dark:text-slate-100">
-                            {formatCurrency(parseFloat(purchase.importPrice), purchase.importCurrency)}
+                            {formatCurrency(parseFloat(purchase.totalCost || '0'), purchase.purchaseCurrency || 'USD')}
                           </p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
                             {purchase.createdAt ? formatDate(purchase.createdAt) : ''}
