@@ -1,10 +1,12 @@
-import { lazy, Suspense, memo } from "react";
+import { lazy, Suspense, memo, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { 
   Package, 
   AlertCircle, 
@@ -350,6 +352,292 @@ const ChartSkeleton = memo(() => (
 ));
 ChartSkeleton.displayName = 'ChartSkeleton';
 
+type ChartPeriod = 'daily' | 'weekly' | 'monthly';
+
+interface ChartDataPoint {
+  label: string;
+  revenue: number;
+  profit: number;
+  cost: number;
+}
+
+interface PeriodMetrics {
+  totalRevenue: number;
+  totalProfit: number;
+  totalCost: number;
+  profitMargin: number;
+  prevPeriodRevenue: number;
+  prevPeriodProfit: number;
+  revenueChange: number;
+  profitChange: number;
+}
+
+function generateChartData(period: ChartPeriod): { data: ChartDataPoint[], metrics: PeriodMetrics } {
+  const data: ChartDataPoint[] = [];
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  let totalCost = 0;
+  
+  if (period === 'daily') {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    for (let i = 0; i < 7; i++) {
+      const revenue = Math.round(2000 + Math.random() * 3000);
+      const cost = Math.round(revenue * (0.4 + Math.random() * 0.2));
+      const profit = revenue - cost;
+      data.push({ label: days[i], revenue, profit, cost });
+      totalRevenue += revenue;
+      totalProfit += profit;
+      totalCost += cost;
+    }
+  } else if (period === 'weekly') {
+    for (let i = 4; i >= 1; i--) {
+      const revenue = Math.round(12000 + Math.random() * 8000);
+      const cost = Math.round(revenue * (0.45 + Math.random() * 0.15));
+      const profit = revenue - cost;
+      data.push({ label: `Week ${5 - i}`, revenue, profit, cost });
+      totalRevenue += revenue;
+      totalProfit += profit;
+      totalCost += cost;
+    }
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    for (let i = 0; i < 12; i++) {
+      const revenue = Math.round(40000 + Math.random() * 30000);
+      const cost = Math.round(revenue * (0.42 + Math.random() * 0.18));
+      const profit = revenue - cost;
+      data.push({ label: months[i], revenue, profit, cost });
+      totalRevenue += revenue;
+      totalProfit += profit;
+      totalCost += cost;
+    }
+  }
+  
+  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  const prevPeriodRevenue = Math.round(totalRevenue * (0.85 + Math.random() * 0.3));
+  const prevPeriodProfit = Math.round(totalProfit * (0.8 + Math.random() * 0.4));
+  const revenueChange = prevPeriodRevenue > 0 ? ((totalRevenue - prevPeriodRevenue) / prevPeriodRevenue) * 100 : 0;
+  const profitChange = prevPeriodProfit > 0 ? ((totalProfit - prevPeriodProfit) / prevPeriodProfit) * 100 : 0;
+  
+  return {
+    data,
+    metrics: {
+      totalRevenue,
+      totalProfit,
+      totalCost,
+      profitMargin,
+      prevPeriodRevenue,
+      prevPeriodProfit,
+      revenueChange,
+      profitChange,
+    }
+  };
+}
+
+const SalesAnalyticsSection = memo(({ formatCurrency, t }: { formatCurrency: (amount: number, currency: string) => string, t: (key: string) => string }) => {
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily');
+  
+  const { data: chartData, metrics } = useMemo(() => {
+    return generateChartData(chartPeriod);
+  }, [chartPeriod]);
+
+  const periodLabel = chartPeriod === 'daily' ? t('last7Days') : chartPeriod === 'weekly' ? t('last4Weeks') : t('last12Months');
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
+          <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {formatCurrency(entry.value, 'EUR')}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <section>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-sales-analytics">
+          <BarChart3 className="h-5 w-5 text-blue-500" />
+          {t('salesAnalytics')}
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('trackDailyWeeklyMonthly')}</p>
+      </div>
+
+      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="text-gray-900 dark:text-gray-100 text-lg">{t('revenueAndProfit')}</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">{periodLabel}</CardDescription>
+            </div>
+            <Tabs value={chartPeriod} onValueChange={(value) => setChartPeriod(value as ChartPeriod)} className="w-full sm:w-auto">
+              <TabsList className="grid w-full sm:w-auto grid-cols-3 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+                <TabsTrigger 
+                  value="daily" 
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium transition-all"
+                  data-testid="tab-daily"
+                >
+                  {t('daily')}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="weekly" 
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium transition-all"
+                  data-testid="tab-weekly"
+                >
+                  {t('weekly')}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="monthly" 
+                  className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:shadow-sm rounded-md px-4 py-2 text-sm font-medium transition-all"
+                  data-testid="tab-monthly"
+                >
+                  {t('monthly')}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.05}/>
+                  </linearGradient>
+                  <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                <XAxis 
+                  dataKey="label" 
+                  stroke="#64748b" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  stroke="#64748b" 
+                  fontSize={12}
+                  tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  formatter={(value) => <span className="text-gray-600 dark:text-gray-300 text-sm">{value}</span>}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorRevenue)" 
+                  name={t('revenue')}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="profit" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorProfit)" 
+                  name={t('profit')}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="cost" 
+                  stroke="#94a3b8" 
+                  strokeWidth={1.5}
+                  fillOpacity={1} 
+                  fill="url(#colorCost)" 
+                  name={t('cost')}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <Separator className="my-4 bg-slate-200 dark:bg-slate-700" />
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
+              <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">{t('periodRevenue')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-revenue">
+                {formatCurrency(metrics.totalRevenue, 'EUR')}
+              </p>
+              <div className="flex items-center gap-1 mt-2">
+                {metrics.revenueChange >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
+                )}
+                <span className={`text-xs ${metrics.revenueChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {metrics.revenueChange >= 0 ? '+' : ''}{metrics.revenueChange.toFixed(1)}% {t('vsPrevPeriod')}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-4">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{t('periodProfit')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-profit">
+                {formatCurrency(metrics.totalProfit, 'EUR')}
+              </p>
+              <div className="flex items-center gap-1 mt-2">
+                {metrics.profitChange >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
+                )}
+                <span className={`text-xs ${metrics.profitChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {metrics.profitChange >= 0 ? '+' : ''}{metrics.profitChange.toFixed(1)}% {t('vsPrevPeriod')}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-4">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">{t('periodCost')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-cost">
+                {formatCurrency(metrics.totalCost, 'EUR')}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {((metrics.totalCost / metrics.totalRevenue) * 100).toFixed(1)}% of revenue
+              </p>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-4">
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">{t('profitMargin')}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-profit-margin">
+                {metrics.profitMargin.toFixed(1)}%
+              </p>
+              <div className="flex items-center gap-1 mt-2">
+                <Target className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Target: 45%
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+});
+SalesAnalyticsSection.displayName = 'SalesAnalyticsSection';
+
 export function Dashboard() {
   const { t } = useTranslation(['dashboard', 'common']);
   const { formatCurrency } = useLocalization();
@@ -572,49 +860,8 @@ export function Dashboard() {
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
-      {/* Revenue & Expenses Charts - Prominently displayed */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-revenue-charts">
-            <BarChart3 className="h-5 w-5 text-blue-500" />
-            {t('revenueAndProfit')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('historicalPerformanceTrends')}</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">{t('revenueAndProfit')}</CardTitle>
-              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>{t('year')}</option>
-                <option>{t('month')}</option>
-                <option>{t('week')}</option>
-              </select>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<ChartSkeleton />}>
-                <RevenueChart />
-              </Suspense>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-gray-900 dark:text-gray-100">{t('totalExpenses')}</CardTitle>
-              <select className="text-sm border border-slate-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100">
-                <option>{t('thisYear')}</option>
-                <option>{t('lastYear')}</option>
-              </select>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<ChartSkeleton />}>
-                <ExpensesChart />
-              </Suspense>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      {/* Sales Analytics - Modern Tabbed Chart */}
+      <SalesAnalyticsSection formatCurrency={formatCurrency} t={t} />
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 

@@ -221,4 +221,20 @@ export default {
   
   // No data
   noDataAvailable: 'Không có dữ liệu',
+  
+  // Sales Analytics Section
+  salesAnalytics: 'Phân tích bán hàng',
+  trackDailyWeeklyMonthly: 'Theo dõi hiệu suất theo ngày, tuần, tháng',
+  daily: 'Theo ngày',
+  weekly: 'Theo tuần',
+  monthly: 'Theo tháng',
+  last7Days: '7 ngày qua',
+  last4Weeks: '4 tuần qua',
+  last12Months: '12 tháng qua',
+  periodRevenue: 'Doanh thu kỳ',
+  periodProfit: 'Lợi nhuận kỳ',
+  periodCost: 'Chi phí kỳ',
+  vsPrevPeriod: 'so với kỳ trước',
+  revenue: 'Doanh thu',
+  cost: 'Chi phí',
 };

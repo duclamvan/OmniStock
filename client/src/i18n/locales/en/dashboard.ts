@@ -223,4 +223,20 @@ export default {
   
   // No data
   noDataAvailable: 'No data available',
+  
+  // Sales Analytics Section
+  salesAnalytics: 'Sales Analytics',
+  trackDailyWeeklyMonthly: 'Track daily, weekly, and monthly performance',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  last7Days: 'Last 7 Days',
+  last4Weeks: 'Last 4 Weeks',
+  last12Months: 'Last 12 Months',
+  periodRevenue: 'Period Revenue',
+  periodProfit: 'Period Profit',
+  periodCost: 'Period Cost',
+  vsPrevPeriod: 'vs prev period',
+  revenue: 'Revenue',
+  cost: 'Cost',
 };
