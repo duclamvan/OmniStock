@@ -236,6 +236,7 @@ export interface ShippingSettings {
   pplDefaultShippingPriceWithDobirka?: number;
   glsDefaultShippingPrice?: number;
   dhlDefaultShippingPrice?: number;
+  pplPackageType?: 'PRIVATE' | 'BUSINESS' | 'SMART';
 }
 
 export interface FinancialSettings {

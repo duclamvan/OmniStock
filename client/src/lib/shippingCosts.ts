@@ -1,5 +1,42 @@
 // Shipping cost calculator based on method and country
 
+// PPL CZ Tiered Pricing (prices in CZK, without VAT)
+export const PPL_CZ_PRICING = {
+  BUSINESS: [
+    { maxWeight: 2, price: 85 },
+    { maxWeight: 5, price: 91 },
+    { maxWeight: 10, price: 97 },
+    { maxWeight: 20, price: 109 },
+    { maxWeight: 31.5, price: 139 },
+  ],
+  PRIVATE: [
+    { maxWeight: 2, price: 87 },
+    { maxWeight: 5, price: 95 },
+    { maxWeight: 10, price: 101 },
+    { maxWeight: 20, price: 115 },
+    { maxWeight: 31.5, price: 147 },
+  ],
+  SMART: [
+    { maxWeight: 2, price: 63 },
+    { maxWeight: 5, price: 65 },
+    { maxWeight: 10, price: 69 },
+    { maxWeight: 20, price: 79 },
+    { maxWeight: 31.5, price: 89 },
+  ],
+};
+
+export type PPLPackageType = 'BUSINESS' | 'PRIVATE' | 'SMART';
+
+export function calculatePPLCZPrice(weightKg: number, packageType: PPLPackageType = 'PRIVATE'): number {
+  const tiers = PPL_CZ_PRICING[packageType];
+  for (const tier of tiers) {
+    if (weightKg <= tier.maxWeight) {
+      return tier.price;
+    }
+  }
+  return tiers[tiers.length - 1].price;
+}
+
 // PPL country rate type (flat rate per kg)
 export interface PPLCountryRate {
   ratePerKg: number;

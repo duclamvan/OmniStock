@@ -3041,7 +3041,7 @@ export default function PickPack() {
   const userId = user?.id;
   
   // Get settings from SettingsContext (includes isLoading state)
-  const { settings: allSettings, isLoading: settingsLoading } = useSettings();
+  const { settings: allSettings, isLoading: settingsLoading, shippingSettings } = useSettings();
   
   // View mode state for picking (card vs list) with proper cross-device sync
   const [pickingViewMode, setPickingViewMode] = useState<'card' | 'list' | null>(null);
@@ -4624,8 +4624,11 @@ export default function PickPack() {
         console.log('✅ Carton created');
       }
       
-      // Now generate the PPL label
-      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/create-labels`, {});
+      // Now generate the PPL label with package type from settings
+      const packageType = shippingSettings?.pplPackageType || 'PRIVATE';
+      const response = await apiRequest('POST', `/api/orders/${orderId}/ppl/create-labels`, {
+        packageType
+      });
       return await response.json();
     },
     onSuccess: async (data, orderId) => {

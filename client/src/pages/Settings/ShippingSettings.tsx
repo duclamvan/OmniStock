@@ -91,6 +91,7 @@ const formSchema = z.object({
   ppl_default_shipping_price: z.coerce.number().min(0).default(0),
   gls_default_shipping_price: z.coerce.number().min(0).default(0),
   dhl_default_shipping_price: z.coerce.number().min(0).default(0),
+  ppl_package_type: z.enum(['PRIVATE', 'BUSINESS', 'SMART']).default('PRIVATE'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -150,6 +151,7 @@ export default function ShippingSettings() {
       ppl_default_shipping_price: 0,
       gls_default_shipping_price: 0,
       dhl_default_shipping_price: 0,
+      ppl_package_type: 'PRIVATE',
     },
   });
 
@@ -226,6 +228,7 @@ export default function ShippingSettings() {
         ppl_default_shipping_price_with_dobirka: shippingSettings.pplDefaultShippingPriceWithDobirka ?? 150,
         gls_default_shipping_price: shippingSettings.glsDefaultShippingPrice ?? 0,
         dhl_default_shipping_price: shippingSettings.dhlDefaultShippingPrice ?? 0,
+        ppl_package_type: shippingSettings.pplPackageType ?? 'PRIVATE',
       };
       setOriginalSettings(snapshot);
       form.reset(snapshot);
@@ -322,6 +325,53 @@ export default function ShippingSettings() {
                           {t('settings:enableAutoLabelGenerationDescriptionPpl', 'Automatically generate shipping labels when orders are ready for shipment via PPL')}
                         </FormDescription>
                       </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ppl_package_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('settings:pplPackageType', 'PPL Package Type')}</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleSelectChange('ppl_package_type')(value);
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-ppl_package_type">
+                            <SelectValue placeholder={t('settings:pplPackageType', 'PPL Package Type')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="PRIVATE">
+                            <div className="flex flex-col">
+                              <span>{t('settings:pplPrivate', 'PPL PARCEL CZ PRIVATE')}</span>
+                              <span className="text-xs text-muted-foreground">{t('settings:pplPrivateDescription', 'For private/home addresses (e-shop customers)')}</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="BUSINESS">
+                            <div className="flex flex-col">
+                              <span>{t('settings:pplBusiness', 'PPL PARCEL CZ BUSINESS')}</span>
+                              <span className="text-xs text-muted-foreground">{t('settings:pplBusinessDescription', 'For business addresses (B2B)')}</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="SMART">
+                            <div className="flex flex-col">
+                              <span>{t('settings:pplSmart', 'PPL PARCEL CZ SMART')}</span>
+                              <span className="text-xs text-muted-foreground">{t('settings:pplSmartDescription', 'For ParcelShop/ParcelBox delivery')}</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {t('settings:pplPackageTypeDescription', 'Select the default PPL service type for shipping labels')}
+                      </FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
