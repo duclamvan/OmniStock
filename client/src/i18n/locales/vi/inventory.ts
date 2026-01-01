@@ -791,6 +791,8 @@ const inventory = {
   customTextHint: 'Tự động điền từ thông tin đóng gói. Để trống để dùng mặc định, hoặc nhập văn bản tùy chỉnh.',
   productsSelected: '{{count}} sản phẩm đã chọn',
   printLabels: 'In nhãn',
+  labelSizeSmall: 'Nhỏ (100×30mm)',
+  labelSizeLarge: 'Lớn (105×148mm)',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',

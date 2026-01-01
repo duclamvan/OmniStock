@@ -95,6 +95,7 @@ export default function WarehouseLabels() {
   const [viewMode, setViewMode] = useState<"saved" | "all">("all");
   const [includeVariantsFor, setIncludeVariantsFor] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "abc" | "variants">("newest");
+  const [labelSize, setLabelSize] = useState<"small" | "large">("small");
 
   const { data: labels = [], isLoading } = useQuery<WarehouseLabel[]>({
     queryKey: ["/api/warehouse-labels"],
@@ -291,10 +292,12 @@ export default function WarehouseLabels() {
     showArrowsDown?: boolean;
     showBulkInfo?: boolean;
     customText?: string;
+    labelSize?: 'small' | 'large';
   }
 
   const printProductLabels = async (products: any[], title: string, options: PrintOptions = {}) => {
-    const { showArrowsUp = false, showArrowsDown = false, showBulkInfo = true, customText = '' } = options;
+    const { showArrowsUp = false, showArrowsDown = false, showBulkInfo = true, customText = '', labelSize: optionLabelSize } = options;
+    const currentLabelSize = optionLabelSize || labelSize;
     
     const printWindow = window.open("", "_blank", "width=600,height=800");
     if (!printWindow) {
@@ -306,11 +309,279 @@ export default function WarehouseLabels() {
       return;
     }
 
-    // Generate arrows HTML
+    if (currentLabelSize === 'large') {
+      // Generate LARGE labels (105x148mm portrait)
+      const labelsWithQR = await Promise.all(
+        products.map(async (product: any) => {
+          const productCode = product.sku || product.barcode || product.id;
+          const qrUrl = generateProductQRUrl("https://wms.davie.shop", productCode);
+          const vietnameseName = product.vietnameseName || product.name;
+          const priceEur = product.priceEur ? Number(product.priceEur) : null;
+          const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
+          
+          const bulkUnitName = product.bulkUnitName || '';
+          const bulkUnitQty = product.bulkUnitQty || 0;
+          const productBulkText = (bulkUnitName && bulkUnitQty > 0) ? `${bulkUnitQty}/${bulkUnitName}` : '';
+          const displayText = customText || productBulkText;
+          const hasBulkInfo = showBulkInfo && displayText;
+
+          let qrSvg = "";
+          try {
+            qrSvg = await QRCode.toString(qrUrl, { 
+              type: "svg",
+              margin: 0,
+              width: 200,
+              errorCorrectionLevel: "M"
+            });
+          } catch (err) {
+            console.error("Failed to generate QR code for", productCode, err);
+            qrSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="200" height="200">
+              <rect width="45" height="45" fill="white"/>
+              <text x="22.5" y="22.5" text-anchor="middle" dominant-baseline="middle" font-size="6">QR</text>
+            </svg>`;
+          }
+
+          const arrowsUpHtml = showArrowsUp ? '<div class="arrows-row arrows-up">▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲</div>' : '';
+          const arrowsDownHtml = showArrowsDown ? '<div class="arrows-row arrows-down">▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼</div>' : '';
+
+          return `
+            <div class="label-wrapper">
+              ${arrowsUpHtml}
+              <div class="label-container">
+                <div class="qr-section">
+                  ${qrSvg}
+                </div>
+                <div class="name-section">
+                  <div class="vn-name">${vietnameseName}</div>
+                  <div class="en-name">${product.name}</div>
+                  ${product.sku ? `<div class="sku">${product.sku}</div>` : ""}
+                </div>
+                ${hasBulkInfo ? `
+                  <div class="bulk-section">
+                    <div class="bulk-label">Packaging</div>
+                    <div class="bulk-value">${displayText}</div>
+                  </div>
+                ` : ''}
+                <div class="price-section">
+                  ${priceEur !== null ? `
+                    <div class="price-eur-row">
+                      <span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>` : ""}
+                  ${priceCzk !== null ? `
+                    <div class="price-czk-row">
+                      <span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span>
+                    </div>` : ""}
+                  ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
+                </div>
+              </div>
+              ${arrowsDownHtml}
+            </div>
+          `;
+        })
+      );
+
+      const labelsHtml = labelsWithQR.join("");
+      const arrowHeight = 6;
+      const baseHeight = 148;
+      const totalHeight = baseHeight + (showArrowsUp ? arrowHeight : 0) + (showArrowsDown ? arrowHeight : 0);
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${title}</title>
+          <style>
+            @page {
+              size: 105mm ${totalHeight}mm;
+              margin: 0;
+            }
+            @media print {
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .label-wrapper {
+              width: 105mm;
+              display: flex;
+              flex-direction: column;
+              page-break-after: always;
+            }
+            .label-wrapper:last-child {
+              page-break-after: auto;
+            }
+            .arrows-row {
+              width: 100%;
+              height: ${arrowHeight}mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 14pt;
+              letter-spacing: -1pt;
+              overflow: hidden;
+              background: #fff1f1 !important;
+              border: 2pt solid #ef4444;
+              border-bottom: none;
+              color: #ef4444;
+              font-weight: bold;
+            }
+            .arrows-down {
+              border-top: none;
+              border-bottom: 2pt solid #ef4444;
+            }
+            .label-container {
+              width: 105mm;
+              height: 148mm;
+              display: flex;
+              flex-direction: column;
+              background: white !important;
+              color: black;
+              overflow: hidden;
+              border: 3pt solid black;
+              padding: 4mm;
+            }
+            .qr-section {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 3mm 0;
+              border-bottom: 2pt solid #e5e7eb;
+              margin-bottom: 3mm;
+            }
+            .qr-section svg {
+              width: 55mm;
+              height: 55mm;
+            }
+            .name-section {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              text-align: center;
+              padding: 2mm 0;
+            }
+            .vn-name {
+              font-weight: 900;
+              font-size: 22pt;
+              line-height: 1.2;
+              text-transform: uppercase;
+              word-break: break-word;
+              letter-spacing: -0.5pt;
+              margin-bottom: 2mm;
+            }
+            .en-name {
+              font-size: 14pt;
+              font-weight: 500;
+              line-height: 1.2;
+              color: #4b5563;
+              word-break: break-word;
+              margin-bottom: 2mm;
+            }
+            .sku {
+              font-size: 14pt;
+              line-height: 1.1;
+              color: black;
+              font-family: monospace;
+              font-weight: bold;
+              background: #f3f4f6;
+              padding: 2mm 4mm;
+              display: inline-block;
+              margin: 2mm auto 0;
+              border-radius: 2mm;
+            }
+            .bulk-section {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding: 3mm;
+              background: #f0fdf4 !important;
+              border: 1pt solid #86efac;
+              border-radius: 2mm;
+              margin: 2mm 0;
+            }
+            .bulk-label {
+              font-size: 9pt;
+              color: #166534;
+              text-transform: uppercase;
+              letter-spacing: 0.5pt;
+            }
+            .bulk-value {
+              font-size: 16pt;
+              font-weight: bold;
+              color: #166534;
+            }
+            .price-section {
+              display: flex;
+              flex-direction: column;
+              gap: 2mm;
+              margin-top: auto;
+            }
+            .price-eur-row {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: black !important;
+              padding: 4mm;
+              border-radius: 2mm;
+            }
+            .price-czk-row {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: white !important;
+              border: 2pt solid black;
+              padding: 3mm;
+              border-radius: 2mm;
+            }
+            .price-eur {
+              font-weight: 900;
+              font-size: 28pt;
+              line-height: 1;
+              color: white;
+              letter-spacing: -0.5pt;
+            }
+            .price-czk {
+              font-weight: bold;
+              font-size: 22pt;
+              line-height: 1;
+              color: black;
+              letter-spacing: -0.5pt;
+            }
+            .price-na {
+              font-size: 16pt;
+              color: #6b7280;
+              font-weight: 500;
+            }
+          </style>
+        </head>
+        <body>
+          ${labelsHtml}
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+      return;
+    }
+
+    // Generate SMALL labels (100x30mm - existing layout)
     const arrowsUpHtml = showArrowsUp ? '<div class="arrows-row arrows-up">▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲</div>' : '';
     const arrowsDownHtml = showArrowsDown ? '<div class="arrows-row arrows-down">▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼</div>' : '';
 
-    // Generate QR codes for all products in parallel
     const labelsWithQR = await Promise.all(
       products.map(async (product: any) => {
         const productCode = product.sku || product.barcode || product.id;
@@ -319,14 +590,12 @@ export default function WarehouseLabels() {
         const priceEur = product.priceEur ? Number(product.priceEur) : null;
         const priceCzk = product.priceCzk ? Number(product.priceCzk) : null;
         
-        // Get bulk info - use customText if provided, otherwise use product bulk info
         const bulkUnitName = product.bulkUnitName || '';
         const bulkUnitQty = product.bulkUnitQty || 0;
         const productBulkText = (bulkUnitName && bulkUnitQty > 0) ? `${bulkUnitQty}/${bulkUnitName}` : '';
         const displayText = customText || productBulkText;
         const hasBulkInfo = showBulkInfo && displayText;
 
-        // Generate actual QR code SVG
         let qrSvg = "";
         try {
           qrSvg = await QRCode.toString(qrUrl, { 
@@ -381,9 +650,7 @@ export default function WarehouseLabels() {
 
     const labelsHtml = labelsWithQR.join("");
     
-    // Calculate label height based on arrows
-    const hasArrows = showArrowsUp || showArrowsDown;
-    const arrowHeight = 4; // mm per arrow row
+    const arrowHeight = 4;
     const baseHeight = 30;
     const totalHeight = baseHeight + (showArrowsUp ? arrowHeight : 0) + (showArrowsDown ? arrowHeight : 0);
 
@@ -1041,6 +1308,17 @@ export default function WarehouseLabels() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Select value={labelSize} onValueChange={(v) => setLabelSize(v as 'small' | 'large')}>
+            <SelectTrigger className="w-[170px]" data-testid="select-label-size">
+              <Tag className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="small">{t("inventory:labelSizeSmall")}</SelectItem>
+              <SelectItem value="large">{t("inventory:labelSizeLarge")}</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button
             variant="outline"
             size="sm"

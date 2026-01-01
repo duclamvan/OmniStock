@@ -698,6 +698,8 @@ const inventory = {
   customTextHint: 'Auto-filled from product packaging info. Leave empty to use product default, or enter custom text.',
   productsSelected: '{{count}} product(s) selected',
   printLabels: 'Print Labels',
+  labelSizeSmall: 'Small (100×30mm)',
+  labelSizeLarge: 'Large (105×148mm)',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',
