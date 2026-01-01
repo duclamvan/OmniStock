@@ -2670,6 +2670,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fulfillment Pipeline - orders flow through fulfillment stages
+  app.get('/api/dashboard/fulfillment-pipeline', requireRole(['administrator', 'warehouse_operator']), cacheMiddleware(30000), async (req, res) => {
+    try {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Get all non-archived orders
+      const allOrders = await storage.getOrders();
+
+      // Orders in queue (to_fulfill status)
+      const inQueue = allOrders.filter(o => o.orderStatus === 'to_fulfill');
+
+      // Orders currently being picked
+      const inPicking = allOrders.filter(o => o.fulfillmentStage === 'picking' || o.pickStatus === 'in_progress');
+
+      // Orders currently being packed
+      const inPacking = allOrders.filter(o => o.fulfillmentStage === 'packing' || o.packStatus === 'in_progress');
+
+      // Orders ready to ship
+      const readyToShip = allOrders.filter(o => o.orderStatus === 'ready_to_ship');
+
+      // Orders shipped in last 24 hours
+      const shippedLast24h = allOrders.filter(o => {
+        if (o.orderStatus !== 'shipped' || !o.shippedAt) return false;
+        const shippedAt = new Date(o.shippedAt);
+        return shippedAt >= twentyFourHoursAgo;
+      });
+
+      // Orders added to fulfill in last 24 hours
+      const addedToFulfillLast24h = allOrders.filter(o => {
+        const createdAt = new Date(o.createdAt);
+        return createdAt >= twentyFourHoursAgo && 
+               (o.orderStatus === 'to_fulfill' || o.orderStatus === 'ready_to_ship' || o.orderStatus === 'shipped');
+      });
+
+      // Recent activity timeline (last 24 hours)
+      const recentActivity: Array<{ type: string; orderId: string; timestamp: string; customerName?: string }> = [];
+
+      // Add shipped orders to timeline
+      for (const order of shippedLast24h.slice(0, 10)) {
+        recentActivity.push({
+          type: 'shipped',
+          orderId: order.orderId || order.id,
+          timestamp: order.shippedAt!,
+          customerName: order.customer?.name || order.guestName
+        });
+      }
+
+      // Add recently created orders to timeline
+      for (const order of addedToFulfillLast24h.slice(0, 10)) {
+        recentActivity.push({
+          type: 'added_to_queue',
+          orderId: order.orderId || order.id,
+          timestamp: order.createdAt,
+          customerName: order.customer?.name || order.guestName
+        });
+      }
+
+      // Sort by timestamp descending
+      recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      // Calculate throughput metrics
+      const avgProcessingTimeMs = shippedLast24h.reduce((sum, o) => {
+        const created = new Date(o.createdAt).getTime();
+        const shipped = new Date(o.shippedAt!).getTime();
+        return sum + (shipped - created);
+      }, 0) / (shippedLast24h.length || 1);
+
+      const avgProcessingHours = Math.round(avgProcessingTimeMs / (1000 * 60 * 60) * 10) / 10;
+
+      res.json({
+        pipeline: {
+          inQueue: inQueue.length,
+          inPicking: inPicking.length,
+          inPacking: inPacking.length,
+          readyToShip: readyToShip.length,
+          shippedLast24h: shippedLast24h.length
+        },
+        metrics: {
+          addedLast24h: addedToFulfillLast24h.length,
+          shippedLast24h: shippedLast24h.length,
+          avgProcessingHours
+        },
+        recentActivity: recentActivity.slice(0, 15),
+        timestamp: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching fulfillment pipeline:", error);
+      res.status(500).json({ message: "Failed to fetch fulfillment pipeline" });
+    }
+  });
+
   // Sales Growth KPIs - daily/weekly trends, velocity, best sellers
   app.get('/api/dashboard/sales-growth', requireRole(['administrator']), cacheMiddleware(60000), async (req, res) => {
     try {

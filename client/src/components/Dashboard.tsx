@@ -255,6 +255,28 @@ interface SalesGrowthData {
   timestamp: string;
 }
 
+interface FulfillmentPipelineData {
+  pipeline: {
+    inQueue: number;
+    inPicking: number;
+    inPacking: number;
+    readyToShip: number;
+    shippedLast24h: number;
+  };
+  metrics: {
+    addedLast24h: number;
+    shippedLast24h: number;
+    avgProcessingHours: number;
+  };
+  recentActivity: Array<{
+    type: string;
+    orderId: string;
+    timestamp: string;
+    customerName?: string;
+  }>;
+  timestamp: string;
+}
+
 interface InventoryHealthData {
   summary: {
     totalInventoryValue: number;
@@ -401,6 +423,13 @@ export function Dashboard() {
     queryKey: ['/api/dashboard/sales-growth'],
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,
+  });
+
+  // Fulfillment Pipeline - 24h order flow
+  const { data: fulfillmentPipeline, isLoading: pipelineLoading } = useQuery<FulfillmentPipelineData>({
+    queryKey: ['/api/dashboard/fulfillment-pipeline'],
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 
   // Inventory health KPIs
@@ -752,144 +781,184 @@ export function Dashboard() {
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
-      {/* Today's Overview Section */}
+      {/* Fulfillment Pipeline Section */}
       <section>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-todays-overview">
-            <Sun className="h-5 w-5 text-yellow-500" />
-            {t('todaysOverview')}
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-fulfillment-pipeline">
+            <Truck className="h-5 w-5 text-blue-500" />
+            {t('fulfillmentPipeline')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('todaysOverviewDescription')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('fulfillmentPipelineDescription')}</p>
         </div>
 
-        {salesGrowthLoading && !salesGrowth ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+        {pipelineLoading && !fulfillmentPipeline ? (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[...Array(5)].map((_, i) => <MetricCardSkeleton key={i} />)}
           </div>
         ) : (
           <>
-            {/* Today's Metrics Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              {/* Today's Revenue */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-revenue">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayRevenue')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-revenue">
-                        {formatCurrency(salesGrowth?.todayMetrics.revenue || 0)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={`text-xs ${(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.changeVsYesterday || 0}% vs {t('yesterday')}
-                        </span>
+            {/* Pipeline Stage Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+              {/* In Queue */}
+              <Link href="/orders?status=to_fulfill">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-queue">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <ClipboardList className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                       </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('inQueue')}</p>
                     </div>
-                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <Euro className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-queue">
+                      {fulfillmentPipeline?.pipeline.inQueue || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-              {/* Today's Profit */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-profit">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayProfit')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-profit">
-                        {formatCurrency(salesGrowth?.todayMetrics.profit || 0)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={`text-xs ${(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.profitChangeVsYesterday || 0}% vs {t('yesterday')}
-                        </span>
+              {/* Picking */}
+              <Link href="/pick-pack">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-picking">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('picking')}</p>
                     </div>
-                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-picking">
+                      {fulfillmentPipeline?.pipeline.inPicking || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-              {/* Today's Orders */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-orders">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayOrders')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-orders">
-                        {salesGrowth?.todayMetrics.orders || 0}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ordersPlaced')}</p>
+              {/* Packing */}
+              <Link href="/pick-pack">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-packing">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Layers className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('packing')}</p>
                     </div>
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-packing">
+                      {fulfillmentPipeline?.pipeline.inPacking || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
 
-              {/* Today's AOV */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-aov">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayAOV')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-aov">
-                        {formatCurrency(salesGrowth?.todayMetrics.aov || 0)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('avgOrderValue')}</p>
+              {/* Ready to Ship */}
+              <Link href="/orders?status=ready_to_ship">
+                <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow" data-testid="card-pipeline-ready">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('readyToShip')}</p>
                     </div>
-                    <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-ready">
+                      {fulfillmentPipeline?.pipeline.readyToShip || 0}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              {/* Shipped (24h) */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-pipeline-shipped">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                      <Ship className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('shippedLast24h')}</p>
                   </div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-pipeline-shipped">
+                    {fulfillmentPipeline?.pipeline.shippedLast24h || 0}
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Trending Products This Month */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  <Target className="h-4 w-4 text-green-500" />
-                  {t('trendingProductsThisMonth')}
-                </CardTitle>
-                <CardDescription>{t('thisMonthTopSellers')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {salesGrowth?.topSellingProducts.slice(0, 5).map((product, index) => (
-                    <div key={product.productId} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0" data-testid={`top-product-${index}`}>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{index + 1}</Badge>
-                        <span className="text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{product.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400 text-xs">{product.unitsSold} {t('units')}</span>
-                        <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(product.revenue)}</span>
-                      </div>
+            {/* Metrics and Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* 24h Metrics */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    {t('last24hMetrics')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-added-24h">
+                        {fulfillmentPipeline?.metrics.addedLast24h || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersAdded')}</p>
                     </div>
-                  ))}
-                  {(!salesGrowth?.topSellingProducts || salesGrowth.topSellingProducts.length === 0) && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noDataAvailable')}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="value-shipped-24h">
+                        {fulfillmentPipeline?.metrics.shippedLast24h || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('ordersShipped')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-avg-processing">
+                        {fulfillmentPipeline?.metrics.avgProcessingHours || 0}h
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('avgProcessing')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-500" />
+                    {t('recentActivity')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {fulfillmentPipeline?.recentActivity.slice(0, 6).map((activity, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                        <div className="flex items-center gap-2">
+                          {activity.type === 'shipped' ? (
+                            <Ship className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <ClipboardCheck className="h-3 w-3 text-blue-500" />
+                          )}
+                          <span className="text-gray-900 dark:text-gray-100 font-medium">{activity.orderId}</span>
+                          {activity.customerName && (
+                            <span className="text-gray-500 dark:text-gray-400 text-xs truncate max-w-[100px]">
+                              {activity.customerName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={activity.type === 'shipped' ? 'default' : 'outline'} className="text-[10px]">
+                            {activity.type === 'shipped' ? t('shipped') : t('added')}
+                          </Badge>
+                          <span className="text-xs text-gray-400">
+                            {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {(!fulfillmentPipeline?.recentActivity || fulfillmentPipeline.recentActivity.length === 0) && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noRecentActivity')}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
       </section>

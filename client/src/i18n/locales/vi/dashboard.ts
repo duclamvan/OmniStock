@@ -8,7 +8,21 @@ export default {
   lowStockItems: 'sản phẩm tồn kho thấp',
   reviewApprovals: 'Xem xét phê duyệt',
   
-  // Executive Summary / Today's Overview
+  // Fulfillment Pipeline
+  fulfillmentPipeline: 'Quy trình xử lý đơn',
+  fulfillmentPipelineDescription: 'Dòng đơn hàng 24 giờ qua các giai đoạn xử lý',
+  inQueue: 'Chờ xử lý',
+  readyToShip: 'Sẵn sàng gửi',
+  shippedLast24h: 'Đã gửi (24h)',
+  last24hMetrics: '24 giờ qua',
+  ordersAdded: 'Đơn thêm mới',
+  ordersShipped: 'Đơn đã gửi',
+  avgProcessing: 'TB xử lý',
+  recentActivity: 'Hoạt động gần đây',
+  added: 'Thêm mới',
+  packing: 'Đóng gói',
+  
+  // Executive Summary / Today's Overview (legacy)
   todaysOverview: 'Tổng quan hôm nay',
   todaysOverviewDescription: 'Doanh thu, lợi nhuận và sản phẩm xu hướng thời gian thực',
   todayRevenue: 'Doanh thu hôm nay',

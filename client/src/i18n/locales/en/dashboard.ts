@@ -8,7 +8,21 @@ export default {
   lowStockItems: 'low stock items',
   reviewApprovals: 'Review Approvals',
   
-  // Executive Summary / Today's Overview
+  // Fulfillment Pipeline
+  fulfillmentPipeline: "Fulfillment Pipeline",
+  fulfillmentPipelineDescription: "24-hour order flow through fulfillment stages",
+  inQueue: "In Queue",
+  readyToShip: "Ready to Ship",
+  shippedLast24h: "Shipped (24h)",
+  last24hMetrics: "Last 24 Hours",
+  ordersAdded: "Orders Added",
+  ordersShipped: "Orders Shipped",
+  avgProcessing: "Avg Processing",
+  recentActivity: "Recent Activity",
+  added: "Added",
+  packing: "Packing",
+  
+  // Executive Summary / Today's Overview (legacy)
   todaysOverview: "Today's Overview",
   todaysOverviewDescription: "Real-time today's revenue, profit, and trending products",
   todayRevenue: "Today's Revenue",
