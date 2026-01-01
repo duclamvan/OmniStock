@@ -170,7 +170,7 @@ export function PPLSmartPopup({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] max-h-[850px] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl w-[95vw] h-[95vh] min-h-[600px] p-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-4 pt-4 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
