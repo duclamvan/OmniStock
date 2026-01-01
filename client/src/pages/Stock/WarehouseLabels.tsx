@@ -548,7 +548,6 @@ export default function WarehouseLabels() {
               color: black;
               opacity: 0.7;
               letter-spacing: -0.3pt;
-              padding-bottom: 2mm;
             }
             .price-na {
               font-size: 16pt;
@@ -670,7 +669,7 @@ export default function WarehouseLabels() {
             box-sizing: border-box;
           }
           body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
           }
           .label-wrapper {
             width: 100mm;
