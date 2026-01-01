@@ -575,7 +575,12 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
                 <YAxis 
                   stroke="#64748b" 
                   fontSize={12}
-                  tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => {
+                    if (value >= 1000) {
+                      return `€${(value / 1000).toFixed(1)}k`;
+                    }
+                    return `€${value.toFixed(0)}`;
+                  }}
                   tickLine={false}
                   axisLine={false}
                 />
