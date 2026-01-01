@@ -3743,11 +3743,26 @@ Important:
   app.get('/api/warehouses', isAuthenticated, async (req, res) => {
     try {
       const warehouses = await storage.getWarehouses();
-      const products = await storage.getProducts();
+      
+      // Calculate item counts from productLocations based on location code prefix
+      // Location codes follow format: WH1-A01-R02-L03, where WH1 is the warehouse code
+      const productLocationCounts = await db.select({
+        locationPrefix: sql<string>`SPLIT_PART(${productLocations.locationCode}, '-', 1)`,
+        totalQuantity: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)::int`
+      })
+        .from(productLocations)
+        .groupBy(sql`SPLIT_PART(${productLocations.locationCode}, '-', 1)`);
+      
+      // Create a map from warehouse code to total quantity
+      const countsByCode: Record<string, number> = {};
+      for (const row of productLocationCounts) {
+        countsByCode[row.locationPrefix] = row.totalQuantity;
+      }
 
-      // Count products per warehouse
+      // Add itemCount to each warehouse based on its code
       const warehousesWithCounts = warehouses.map(warehouse => {
-        const itemCount = products.filter(p => p.warehouseId === warehouse.id).length;
+        const warehouseCode = warehouse.code || warehouse.id || '';
+        const itemCount = countsByCode[warehouseCode] || 0;
         return {
           ...warehouse,
           itemCount
