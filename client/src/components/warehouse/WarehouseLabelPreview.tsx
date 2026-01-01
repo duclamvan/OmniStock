@@ -665,7 +665,7 @@ export default function WarehouseLabelPreview({
                 <LabelContent product={product} />
               </div>
             ) : (
-              <div className="flex justify-center items-center overflow-visible" style={{ height: "270px" }}>
+              <div className="flex justify-center items-center overflow-visible mx-auto" style={{ height: "270px", maxWidth: "280px" }}>
                 <div style={{ transform: "scale(0.65)", transformOrigin: "center center" }}>
                   <LargeLabelContent product={product} />
                 </div>
