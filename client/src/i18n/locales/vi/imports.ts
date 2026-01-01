@@ -2141,7 +2141,10 @@ const imports = {
   currencyAndPayment: 'Tiền tệ & Thanh toán',
   supplierDetails: 'Chi tiết nhà cung cấp',
   timelineSection: 'Thời gian',
+  timelineSectionDescription: 'Đặt ngày mua và thời gian xử lý',
   optionsSection: 'Tùy chọn',
+  optionsSectionDescription: 'Cấu hình gom hàng và thêm ghi chú',
+  shippingDetailsDescription: 'Chi phí vận chuyển và thông tin theo dõi',
   
   // Bulk Selection & Enhanced Table
   selectedItems: 'Đã chọn {{count}} sản phẩm',

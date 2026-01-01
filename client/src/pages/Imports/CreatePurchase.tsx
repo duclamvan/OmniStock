@@ -2469,7 +2469,7 @@ export default function CreatePurchase() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-4 sm:p-6">
               {/* Currency & Payment Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -2850,144 +2850,166 @@ export default function CreatePurchase() {
                 )}
               </div>
 
-              <Separator />
+            </CardContent>
+          </Card>
 
-              {/* Timeline Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span>{t('timelineSection')}</span>
+          {/* Timeline Card */}
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="purchase-date" className="text-xs text-muted-foreground">{t('purchaseDate')} *</Label>
-                    <Input
-                      id="purchase-date"
-                      type="datetime-local"
-                      value={purchaseDate}
-                      onChange={(e) => setPurchaseDate(e.target.value)}
-                      data-testid="input-purchase-date"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="processing" className="text-xs text-muted-foreground">{t('processingTime')}</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="processing"
-                        type="number"
-                        min="0"
-                        value={processingTime}
-                        onChange={(e) => setProcessingTime(e.target.value)}
-                        onFocus={(e) => e.target.select()}
-                        placeholder="0"
-                        className="flex-1"
-                        data-testid="input-processing-time"
-                      />
-                      <Select value={processingUnit} onValueChange={setProcessingUnit}>
-                        <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="days">{t('days')}</SelectItem>
-                          <SelectItem value="weeks">{t('weeks')}</SelectItem>
-                          <SelectItem value="months">{t('months')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                <div>
+                  <CardTitle className="text-white">{t('timelineSection')}</CardTitle>
+                  <CardDescription className="text-white/80">{t('timelineSectionDescription')}</CardDescription>
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Shipping Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <span>{t('shippingDetails')}</span>
+            </CardHeader>
+            <CardContent className="space-y-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchase-date" className="text-xs text-muted-foreground">{t('purchaseDate')} *</Label>
+                  <Input
+                    id="purchase-date"
+                    type="datetime-local"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    data-testid="input-purchase-date"
+                  />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
-                    <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
-                      <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
+                <div className="space-y-2">
+                  <Label htmlFor="processing" className="text-xs text-muted-foreground">{t('processingTime')}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="processing"
+                      type="number"
+                      min="0"
+                      value={processingTime}
+                      onChange={(e) => setProcessingTime(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      placeholder="0"
+                      className="flex-1"
+                      data-testid="input-processing-time"
+                    />
+                    <Select value={processingUnit} onValueChange={setProcessingUnit}>
+                      <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                        <SelectItem value="CNY">CNY (¥)</SelectItem>
-                        <SelectItem value="VND">VND (₫)</SelectItem>
+                        <SelectItem value="days">{t('days')}</SelectItem>
+                        <SelectItem value="weeks">{t('weeks')}</SelectItem>
+                        <SelectItem value="months">{t('months')}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
-                      <DecimalInput
-                        id="shipping"
-                        value={shippingCost}
-                        onChange={(val) => handleShippingCostChange(val)}
-                        className="pl-10"
-                        placeholder="0.00"
-                        data-testid="input-shipping"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tracking" className="text-xs text-muted-foreground">{t('trackingNumber')}</Label>
-                    <Input
-                      id="tracking"
-                      value={trackingNumber}
-                      onChange={(e) => setTrackingNumber(e.target.value)}
-                      placeholder={t('optionalTracking')}
-                      data-testid="input-tracking"
-                    />
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <Separator />
-
-              {/* Options Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Settings className="h-4 w-4 text-primary" />
-                  <span>{t('optionsSection')}</span>
+          {/* Shipping Details Card */}
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <Truck className="h-5 w-5 text-white" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="consolidation" className="text-xs text-muted-foreground">{t('consolidation')}?</Label>
-                    <Select 
-                      value={consolidation} 
-                      onValueChange={setConsolidation}
-                    >
-                      <SelectTrigger id="consolidation" data-testid="select-consolidation">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Yes">{t('yes')}</SelectItem>
-                        <SelectItem value="No">{t('no')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {purchaseCurrency === "EUR" && (
-                      <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
-                    )}
+                <div>
+                  <CardTitle className="text-white">{t('shippingDetails')}</CardTitle>
+                  <CardDescription className="text-white/80">{t('shippingDetailsDescription')}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
+                  <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
+                    <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                      <SelectItem value="CNY">CNY (¥)</SelectItem>
+                      <SelectItem value="VND">VND (₫)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
+                    <DecimalInput
+                      id="shipping"
+                      value={shippingCost}
+                      onChange={(val) => handleShippingCostChange(val)}
+                      className="pl-10"
+                      placeholder="0.00"
+                      data-testid="input-shipping"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-xs text-muted-foreground">{t('notes')}</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={t('additionalNotes')}
-                    rows={3}
-                    data-testid="textarea-notes"
+                  <Label htmlFor="tracking" className="text-xs text-muted-foreground">{t('trackingNumber')}</Label>
+                  <Input
+                    id="tracking"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder={t('optionalTracking')}
+                    data-testid="input-tracking"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Options Card */}
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <Settings className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">{t('optionsSection')}</CardTitle>
+                  <CardDescription className="text-white/80">{t('optionsSectionDescription')}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="consolidation" className="text-xs text-muted-foreground">{t('consolidation')}?</Label>
+                  <Select 
+                    value={consolidation} 
+                    onValueChange={setConsolidation}
+                  >
+                    <SelectTrigger id="consolidation" data-testid="select-consolidation">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Yes">{t('yes')}</SelectItem>
+                      <SelectItem value="No">{t('no')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {purchaseCurrency === "EUR" && (
+                    <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-xs text-muted-foreground">{t('notes')}</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('additionalNotes')}
+                  rows={3}
+                  data-testid="textarea-notes"
+                />
               </div>
             </CardContent>
           </Card>

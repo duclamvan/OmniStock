@@ -2200,7 +2200,10 @@ const imports = {
   currencyAndPayment: 'Currency & Payment',
   supplierDetails: 'Supplier Details',
   timelineSection: 'Timeline',
+  timelineSectionDescription: 'Set purchase date and processing time',
   optionsSection: 'Options',
+  optionsSectionDescription: 'Configure consolidation and add notes',
+  shippingDetailsDescription: 'Shipping cost and tracking information',
   
   // Bulk Selection & Enhanced Table
   selectedItems: '{{count}} items selected',
