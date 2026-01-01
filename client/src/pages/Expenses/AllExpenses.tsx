@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCompactNumber } from "@/lib/currencyUtils";
+import { formatCompactNumber, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { 
   Plus, 
@@ -198,10 +198,17 @@ export default function AllExpenses() {
     );
   }
 
-  // Calculate stats
-  const totalExpenses = expenses.reduce((sum, expense) => {
+  // Helper function to convert expense amount to EUR (base currency)
+  const convertToEUR = (expense: any): number => {
     const amount = parseFloat(expense.amount || '0') || 0;
-    return sum + amount;
+    const currency = (expense.currency || 'EUR') as Currency;
+    if (currency === 'EUR') return amount;
+    return convertCurrency(amount, currency, 'EUR');
+  };
+
+  // Calculate stats (all converted to EUR for accurate multi-currency totals)
+  const totalExpenses = expenses.reduce((sum, expense) => {
+    return sum + convertToEUR(expense);
   }, 0);
 
   const thisMonthExpenses = expenses.filter(expense => {
@@ -218,20 +225,17 @@ export default function AllExpenses() {
   });
 
   const thisMonthTotal = thisMonthExpenses.reduce((sum, expense) => {
-    const amount = parseFloat(expense.amount || '0') || 0;
-    return sum + amount;
+    return sum + convertToEUR(expense);
   }, 0);
 
   const pendingExpenses = expenses.filter(e => e.status === 'pending');
   const pendingTotal = pendingExpenses.reduce((sum, expense) => {
-    const amount = parseFloat(expense.amount || '0') || 0;
-    return sum + amount;
+    return sum + convertToEUR(expense);
   }, 0);
 
   const paidExpenses = expenses.filter(e => e.status === 'paid');
   const paidTotal = paidExpenses.reduce((sum, expense) => {
-    const amount = parseFloat(expense.amount || '0') || 0;
-    return sum + amount;
+    return sum + convertToEUR(expense);
   }, 0);
 
   // Get unique categories
@@ -775,15 +779,15 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        ${formatCompactNumber(totalExpenses)}
+                        €{formatCompactNumber(totalExpenses)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">€{totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allTime')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allTime')} (EUR)</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
                 <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
@@ -804,11 +808,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        ${formatCompactNumber(thisMonthTotal)}
+                        €{formatCompactNumber(thisMonthTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">${thisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">€{thisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -833,11 +837,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        ${formatCompactNumber(pendingTotal)}
+                        €{formatCompactNumber(pendingTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">${pendingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">€{pendingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -862,11 +866,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        ${formatCompactNumber(paidTotal)}
+                        €{formatCompactNumber(paidTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">${paidTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">€{paidTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
