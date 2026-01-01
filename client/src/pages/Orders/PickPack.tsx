@@ -2237,22 +2237,21 @@ function MultiLocationPicker({
       }
       
       // PRIORITY 2: If variant has a locationCode in its record, use that
+      // Always show the location even if stock is 0 - this ensures location is visible on first load
       if (variantLocationCode) {
         const pickedFromHere = itemPicks[variantLocationCode] || 0;
         const availableVirtual = Math.max(0, variantQty - totalPicked);
         
-        if (variantQty > 0 || pickedFromHere > 0) {
-          return [{
-            id: `variant-${currentItem.variantId}`,
-            locationCode: variantLocationCode,
-            quantity: variantQty,
-            isPrimary: true,
-            masterQty: variantQty,
-            virtualQty: variantQty,
-            pickedFromHere,
-            availableVirtual,
-          }];
-        }
+        return [{
+          id: `variant-${currentItem.variantId}`,
+          locationCode: variantLocationCode,
+          quantity: variantQty,
+          isPrimary: true,
+          masterQty: variantQty,
+          virtualQty: variantQty,
+          pickedFromHere,
+          availableVirtual,
+        }];
       }
       
       // PRIORITY 3: No variant-specific locations found - show out of stock or default
