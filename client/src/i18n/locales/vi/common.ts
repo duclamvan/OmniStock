@@ -461,6 +461,11 @@ const common = {
   pushNotificationsDisabled: 'Đã tắt thông báo',
   pushNotificationsDisabledDesc: 'Bạn sẽ không nhận thông báo đơn hàng nữa',
   pushNotificationsFailed: 'Không thể cập nhật cài đặt thông báo',
+  orderAlertsEnabled: 'Đã bật thông báo đơn hàng',
+  orderAlertsDisabled: 'Đã tắt thông báo đơn hàng',
+  orderAlertsEnabledDesc: 'Bạn sẽ nhận âm thanh và thông báo trình duyệt khi có đơn hàng mới',
+  orderAlertsDisabledDesc: 'Bạn sẽ không nhận thông báo đơn hàng nữa',
+  notificationPermissionDenied: 'Quyền thông báo trình duyệt đã bị từ chối. Vui lòng bật trong cài đặt trình duyệt.',
   
   // Dashboard Stats
   toPick: 'cần lấy',

@@ -101,6 +101,34 @@ export default function WarehouseDashboard() {
   const previousOrderCountRef = useRef<number | null>(null);
   const isFirstLoadRef = useRef(true);
   
+  // Order alerts - local state with localStorage persistence
+  const [orderAlertsEnabled, setOrderAlertsEnabled] = useState(() => {
+    const saved = localStorage.getItem('orderAlertsEnabled');
+    return saved === 'true';
+  });
+  
+  const handleOrderAlertsToggle = async (enabled: boolean) => {
+    if (enabled && 'Notification' in window && Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'denied') {
+        toast({
+          title: t('common:error'),
+          description: t('common:notificationPermissionDenied'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
+    setOrderAlertsEnabled(enabled);
+    localStorage.setItem('orderAlertsEnabled', String(enabled));
+    
+    toast({
+      title: enabled ? t('common:orderAlertsEnabled') : t('common:orderAlertsDisabled'),
+      description: enabled ? t('common:orderAlertsEnabledDesc') : t('common:orderAlertsDisabledDesc'),
+    });
+  };
+  
   const {
     isSupported: pushSupported,
     permission: pushPermission,
@@ -155,7 +183,7 @@ export default function WarehouseDashboard() {
     const newOrderCount = currentOrderCount - previousCount;
     
     // Only alert if there are more orders than before (new orders arrived)
-    if (newOrderCount > 0 && isPushSubscribed) {
+    if (newOrderCount > 0 && orderAlertsEnabled) {
       const result = alertNewOrders(newOrderCount, {
         title: t('common:newOrderReceived'),
         body: newOrderCount === 1 
@@ -176,7 +204,7 @@ export default function WarehouseDashboard() {
     }
     
     previousOrderCountRef.current = currentOrderCount;
-  }, [data, isLoading, isPushSubscribed, t, toast, navigate]);
+  }, [data, isLoading, orderAlertsEnabled, t, toast, navigate]);
   
   const handlePushToggle = async () => {
     try {
@@ -328,26 +356,23 @@ export default function WarehouseDashboard() {
               <div className={`w-2 h-2 rounded-full ${isFetching ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
             </div>
             
-            {/* Push Notification Toggle */}
-            {pushSupported && (
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
-                {isPushSubscribed ? (
-                  <Bell className="h-5 w-5" />
-                ) : (
-                  <BellOff className="h-5 w-5 opacity-60" />
-                )}
-                <span className="text-sm font-medium">
-                  {t('common:orderAlerts')}
-                </span>
-                <Switch
-                  checked={isPushSubscribed}
-                  onCheckedChange={handlePushToggle}
-                  disabled={isSubscribing || pushPermission === 'denied'}
-                  className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
-                  data-testid="switch-push-notifications"
-                />
-              </div>
-            )}
+            {/* Order Alerts Toggle */}
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+              {orderAlertsEnabled ? (
+                <Bell className="h-5 w-5" />
+              ) : (
+                <BellOff className="h-5 w-5 opacity-60" />
+              )}
+              <span className="text-sm font-medium">
+                {t('common:orderAlerts')}
+              </span>
+              <Switch
+                checked={orderAlertsEnabled}
+                onCheckedChange={handleOrderAlertsToggle}
+                className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
+                data-testid="switch-order-alerts"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -484,6 +484,11 @@ const common = {
   pushNotificationsDisabled: 'Push Notifications Disabled',
   pushNotificationsDisabledDesc: 'You will no longer receive order alerts',
   pushNotificationsFailed: 'Failed to update notification settings',
+  orderAlertsEnabled: 'Order Alerts Enabled',
+  orderAlertsDisabled: 'Order Alerts Disabled',
+  orderAlertsEnabledDesc: 'You will receive sound and browser notifications when new orders arrive',
+  orderAlertsDisabledDesc: 'You will no longer receive order alerts',
+  notificationPermissionDenied: 'Browser notification permission was denied. Please enable it in your browser settings.',
   
   // Dashboard Stats
   toPick: 'to pick',
