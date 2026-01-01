@@ -2800,6 +2800,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Weekly sales (last 4 weeks)
+      const weeklySales: { week: string; revenue: number; orders: number; profit: number }[] = [];
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date(thisWeekStart.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+        const weekOrders = paidOrders.filter(o => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= weekStart && orderDate <= weekEnd;
+        });
+        const revenue = weekOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+        const cost = weekOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.totalCost || '0'), o.currency || 'EUR'), 0);
+        weeklySales.push({
+          week: weekStart.toISOString().split('T')[0],
+          revenue: Math.round(revenue * 100) / 100,
+          orders: weekOrders.length,
+          profit: Math.round((revenue - cost) * 100) / 100
+        });
+      }
+
+      // Monthly sales (last 12 months)
+      const monthlySales: { month: string; revenue: number; orders: number; profit: number }[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        const monthOrders = paidOrders.filter(o => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= monthStart && orderDate <= monthEnd;
+        });
+        const revenue = monthOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+        const cost = monthOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.totalCost || '0'), o.currency || 'EUR'), 0);
+        monthlySales.push({
+          month: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`,
+          revenue: Math.round(revenue * 100) / 100,
+          orders: monthOrders.length,
+          profit: Math.round((revenue - cost) * 100) / 100
+        });
+      }
+
       // Today's metrics
       const todayOrders = paidOrders.filter(o => new Date(o.createdAt) >= today);
       const todayRevenue = todayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
@@ -2883,6 +2921,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         dailySales,
+        weeklySales,
+        monthlySales,
         todayMetrics: {
           revenue: Math.round(todayRevenue * 100) / 100,
           profit: Math.round(todayProfit * 100) / 100,

@@ -216,6 +216,8 @@ interface ActionItemsData {
 
 interface SalesGrowthData {
   dailySales: Array<{ date: string; revenue: number; orders: number; profit: number }>;
+  weeklySales: Array<{ week: string; revenue: number; orders: number; profit: number }>;
+  monthlySales: Array<{ month: string; revenue: number; orders: number; profit: number }>;
   todayMetrics: {
     revenue: number;
     profit: number;
@@ -372,73 +374,100 @@ interface PeriodMetrics {
   profitChange: number;
 }
 
-function generateChartData(period: ChartPeriod): { data: ChartDataPoint[], metrics: PeriodMetrics } {
-  const data: ChartDataPoint[] = [];
-  let totalRevenue = 0;
-  let totalProfit = 0;
-  let totalCost = 0;
-  
-  if (period === 'daily') {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    for (let i = 0; i < 7; i++) {
-      const revenue = Math.round(2000 + Math.random() * 3000);
-      const cost = Math.round(revenue * (0.4 + Math.random() * 0.2));
-      const profit = revenue - cost;
-      data.push({ label: days[i], revenue, profit, cost });
-      totalRevenue += revenue;
-      totalProfit += profit;
-      totalCost += cost;
-    }
-  } else if (period === 'weekly') {
-    for (let i = 4; i >= 1; i--) {
-      const revenue = Math.round(12000 + Math.random() * 8000);
-      const cost = Math.round(revenue * (0.45 + Math.random() * 0.15));
-      const profit = revenue - cost;
-      data.push({ label: `Week ${5 - i}`, revenue, profit, cost });
-      totalRevenue += revenue;
-      totalProfit += profit;
-      totalCost += cost;
-    }
-  } else {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (let i = 0; i < 12; i++) {
-      const revenue = Math.round(40000 + Math.random() * 30000);
-      const cost = Math.round(revenue * (0.42 + Math.random() * 0.18));
-      const profit = revenue - cost;
-      data.push({ label: months[i], revenue, profit, cost });
-      totalRevenue += revenue;
-      totalProfit += profit;
-      totalCost += cost;
-    }
-  }
-  
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-  const prevPeriodRevenue = Math.round(totalRevenue * (0.85 + Math.random() * 0.3));
-  const prevPeriodProfit = Math.round(totalProfit * (0.8 + Math.random() * 0.4));
-  const revenueChange = prevPeriodRevenue > 0 ? ((totalRevenue - prevPeriodRevenue) / prevPeriodRevenue) * 100 : 0;
-  const profitChange = prevPeriodProfit > 0 ? ((totalProfit - prevPeriodProfit) / prevPeriodProfit) * 100 : 0;
-  
-  return {
-    data,
-    metrics: {
-      totalRevenue,
-      totalProfit,
-      totalCost,
-      profitMargin,
-      prevPeriodRevenue,
-      prevPeriodProfit,
-      revenueChange,
-      profitChange,
-    }
-  };
+interface SalesAnalyticsSectionProps {
+  formatCurrency: (amount: number, currency: string) => string;
+  t: (key: string) => string;
+  salesGrowth: SalesGrowthData | undefined;
+  isLoading: boolean;
 }
 
-const SalesAnalyticsSection = memo(({ formatCurrency, t }: { formatCurrency: (amount: number, currency: string) => string, t: (key: string) => string }) => {
+const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading }: SalesAnalyticsSectionProps) => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily');
   
-  const { data: chartData, metrics } = useMemo(() => {
-    return generateChartData(chartPeriod);
-  }, [chartPeriod]);
+  const { chartData, metrics } = useMemo(() => {
+    if (!salesGrowth) {
+      return { 
+        chartData: [], 
+        metrics: { 
+          totalRevenue: 0, totalProfit: 0, totalCost: 0, profitMargin: 0,
+          prevPeriodRevenue: 0, prevPeriodProfit: 0, revenueChange: 0, profitChange: 0
+        } 
+      };
+    }
+
+    let data: ChartDataPoint[] = [];
+    let totalRevenue = 0;
+    let totalProfit = 0;
+    let totalCost = 0;
+    let prevPeriodRevenue = 0;
+    let prevPeriodProfit = 0;
+
+    if (chartPeriod === 'daily' && salesGrowth.dailySales) {
+      data = salesGrowth.dailySales.map(day => {
+        const cost = day.revenue - day.profit;
+        return {
+          label: new Date(day.date).toLocaleDateString('en', { weekday: 'short' }),
+          revenue: day.revenue,
+          profit: day.profit,
+          cost: cost
+        };
+      });
+      totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
+      totalProfit = data.reduce((sum, d) => sum + d.profit, 0);
+      totalCost = data.reduce((sum, d) => sum + d.cost, 0);
+      prevPeriodRevenue = salesGrowth.weeklyComparison?.lastWeekRevenue || 0;
+      prevPeriodProfit = prevPeriodRevenue * (salesGrowth.todayMetrics?.profit && salesGrowth.todayMetrics?.revenue 
+        ? salesGrowth.todayMetrics.profit / Math.max(salesGrowth.todayMetrics.revenue, 1) : 0.3);
+    } else if (chartPeriod === 'weekly' && salesGrowth.weeklySales) {
+      data = salesGrowth.weeklySales.map((week, index) => {
+        const cost = week.revenue - week.profit;
+        return {
+          label: `Week ${index + 1}`,
+          revenue: week.revenue,
+          profit: week.profit,
+          cost: cost
+        };
+      });
+      totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
+      totalProfit = data.reduce((sum, d) => sum + d.profit, 0);
+      totalCost = data.reduce((sum, d) => sum + d.cost, 0);
+      prevPeriodRevenue = salesGrowth.monthlyComparison?.lastMonthRevenue || 0;
+      prevPeriodProfit = prevPeriodRevenue * 0.3;
+    } else if (chartPeriod === 'monthly' && salesGrowth.monthlySales) {
+      data = salesGrowth.monthlySales.map(month => {
+        const cost = month.revenue - month.profit;
+        return {
+          label: new Date(month.month + '-01').toLocaleDateString('en', { month: 'short' }),
+          revenue: month.revenue,
+          profit: month.profit,
+          cost: cost
+        };
+      });
+      totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
+      totalProfit = data.reduce((sum, d) => sum + d.profit, 0);
+      totalCost = data.reduce((sum, d) => sum + d.cost, 0);
+      prevPeriodRevenue = salesGrowth.monthlyComparison?.lastMonthRevenue || 0;
+      prevPeriodProfit = prevPeriodRevenue * 0.3;
+    }
+
+    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+    const revenueChange = prevPeriodRevenue > 0 ? ((totalRevenue - prevPeriodRevenue) / prevPeriodRevenue) * 100 : 0;
+    const profitChange = prevPeriodProfit > 0 ? ((totalProfit - prevPeriodProfit) / prevPeriodProfit) * 100 : 0;
+
+    return {
+      chartData: data,
+      metrics: {
+        totalRevenue,
+        totalProfit,
+        totalCost,
+        profitMargin,
+        prevPeriodRevenue,
+        prevPeriodProfit,
+        revenueChange,
+        profitChange
+      }
+    };
+  }, [salesGrowth, chartPeriod]);
 
   const periodLabel = chartPeriod === 'daily' ? t('last7Days') : chartPeriod === 'weekly' ? t('last4Weeks') : t('last12Months');
 
@@ -457,6 +486,21 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t }: { formatCurrency: (am
     }
     return null;
   };
+
+  if (isLoading && !salesGrowth) {
+    return (
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-sales-analytics">
+            <BarChart3 className="h-5 w-5 text-blue-500" />
+            {t('salesAnalytics')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('trackDailyWeeklyMonthly')}</p>
+        </div>
+        <ChartSkeleton />
+      </section>
+    );
+  }
 
   return (
     <section>
@@ -861,7 +905,7 @@ export function Dashboard() {
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
       {/* Sales Analytics - Modern Tabbed Chart */}
-      <SalesAnalyticsSection formatCurrency={formatCurrency} t={t} />
+      <SalesAnalyticsSection formatCurrency={formatCurrency} t={t} salesGrowth={salesGrowth} isLoading={salesGrowthLoading} />
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
