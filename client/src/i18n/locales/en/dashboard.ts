@@ -37,7 +37,7 @@ export default {
   ordersPlaced: "orders placed",
   trendingProductsThisMonth: "Trending Products This Month",
   thisMonthTopSellers: "Best sellers based on revenue",
-  profit: 'profit',
+  profit: 'Profit',
   toFulfill: 'To Fulfill',
   ofTotal: 'of {{count}} today',
   fulfillmentRate: 'Fulfillment Rate',
