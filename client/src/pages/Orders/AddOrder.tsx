@@ -2735,6 +2735,23 @@ export default function AddOrder() {
       const variant = productVariants.find(v => v.id === variantId);
       if (!variant) continue;
       
+      // Get variant's currency-matched import cost for profit calculation
+      let variantLandingCost = 0;
+      if (selectedCurrency === 'CZK' && variant.importCostCzk) {
+        variantLandingCost = parseFloat(variant.importCostCzk);
+      } else if (selectedCurrency === 'EUR' && variant.importCostEur) {
+        variantLandingCost = parseFloat(variant.importCostEur);
+      } else if (selectedCurrency === 'USD' && variant.importCostUsd) {
+        variantLandingCost = parseFloat(variant.importCostUsd);
+      } else if (selectedCurrency === 'VND' && variant.importCostVnd) {
+        variantLandingCost = parseFloat(variant.importCostVnd);
+      } else if (selectedCurrency === 'CNY' && variant.importCostCny) {
+        variantLandingCost = parseFloat(variant.importCostCny);
+      } else {
+        // Fallback: use any available cost
+        variantLandingCost = parseFloat(variant.importCostCzk || variant.importCostEur || variant.importCostUsd || variant.importCostVnd || variant.importCostCny || '0');
+      }
+      
       // Use product's price since variants don't have their own selling price (considering sale type)
       let productPrice = 0;
       const currentSaleType = form.watch('saleType') || 'retail';
@@ -2796,7 +2813,7 @@ export default function AddOrder() {
             discountPercentage: 0,
             tax: 0,
             total: 0,
-            landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+            landingCost: variantLandingCost || null,
             image: variant.photo || selectedProductForVariant.image || null,
             appliedDiscountId: availableFreeSlot.discountId,
             appliedDiscountLabel: availableFreeSlot.discountName,
@@ -2848,7 +2865,7 @@ export default function AddOrder() {
             discountPercentage: discountPct,
             tax: 0,
             total: productPrice * paidQty - discountAmount,
-            landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+            landingCost: variantLandingCost || null,
             image: variant.photo || selectedProductForVariant.image || null,
             appliedDiscountId: discountId,
             appliedDiscountLabel: discountLabel || null,
@@ -2920,7 +2937,7 @@ export default function AddOrder() {
           discountPercentage: discountPct,
           tax: 0,
           total: productPrice * quantity - discountAmount,
-          landingCost: parseFloat(variant.importCostEur || variant.importCostCzk || '0') || null,
+          landingCost: variantLandingCost || null,
           image: variant.photo || selectedProductForVariant.image || null,
           appliedDiscountId: discountId,
           appliedDiscountLabel: discountLabel || null,
