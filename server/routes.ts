@@ -88,7 +88,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { normalizePhone } from '@shared/utils/phoneNormalizer';
-import { eq, desc, and, sql, inArray, or, ilike, isNull, lt, gt } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -4281,8 +4281,9 @@ Important:
       // Use the warehouse.code if available, otherwise try to infer from the warehouse ID
       const warehouseCode = warehouse.code || warehouse.id;
 
-      // Use optimized single query to get all locations with product info for this warehouse
+      // Use optimized single query to get all locations with product/variant info for this warehouse
       // Join productLocations with products where products.warehouseId matches
+      // Also include variant info when variantId is set
       const locationsWithProducts = await db
         .select({
           locationId: productLocations.id,
@@ -4295,10 +4296,38 @@ Important:
           productName: products.name,
           productSku: products.sku,
           productImage: products.imageUrl,
+          variantId: productLocations.variantId,
+          variantName: productVariants.name,
+          variantSku: productVariants.sku,
+          variantImage: productVariants.imageUrl,
         })
         .from(productLocations)
         .innerJoin(products, eq(productLocations.productId, products.id))
+        .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
         .where(eq(products.warehouseId, warehouseId));
+
+      // Also get variants with their own locationCode (stored directly on variant, not in productLocations)
+      const variantsWithOwnLocations = await db
+        .select({
+          variantId: productVariants.id,
+          variantName: productVariants.name,
+          variantSku: productVariants.sku,
+          variantImage: productVariants.imageUrl,
+          locationCode: productVariants.locationCode,
+          quantity: productVariants.quantity,
+          productId: products.id,
+          productName: products.name,
+          productSku: products.sku,
+          productImage: products.imageUrl,
+        })
+        .from(productVariants)
+        .innerJoin(products, eq(productVariants.productId, products.id))
+        .where(
+          and(
+            eq(products.warehouseId, warehouseId),
+            isNotNull(productVariants.locationCode)
+          )
+        );
 
       // Filter locations that match the warehouse code prefix
       interface LocationWithProduct {
@@ -4312,9 +4341,14 @@ Important:
         productSku: string;
         productImage?: string | null;
         notes?: string | null;
+        variantId?: string | null;
+        variantName?: string | null;
+        variantSku?: string | null;
+        variantImage?: string | null;
       }
 
-      const allLocations: LocationWithProduct[] = locationsWithProducts
+      // Process product locations (including those with variants)
+      const productLocationsList: LocationWithProduct[] = locationsWithProducts
         .filter(loc => {
           // Extract warehouse code from location code (first segment)
           const locWarehouseCode = loc.locationCode.split('-')[0];
@@ -4327,11 +4361,51 @@ Important:
           locationType: loc.locationType || 'warehouse',
           isPrimary: loc.isPrimary || false,
           productId: loc.productId,
-          productName: loc.productName,
-          productSku: loc.productSku || '',
-          productImage: loc.productImage,
+          productName: loc.variantId ? `${loc.productName} - ${loc.variantName}` : loc.productName,
+          productSku: loc.variantId ? (loc.variantSku || loc.productSku || '') : (loc.productSku || ''),
+          productImage: loc.variantId ? (loc.variantImage || loc.productImage) : loc.productImage,
           notes: loc.notes,
+          variantId: loc.variantId,
+          variantName: loc.variantName,
+          variantSku: loc.variantSku,
+          variantImage: loc.variantImage,
         }));
+
+      // Process variants with their own locationCode (stored directly on variant table)
+      // Avoid duplicates - only include if not already in productLocations
+      const existingLocationKeys = new Set(
+        productLocationsList.map(loc => `${loc.productId}-${loc.variantId || 'null'}-${loc.locationCode}`)
+      );
+
+      const variantLocationsList: LocationWithProduct[] = variantsWithOwnLocations
+        .filter(v => {
+          if (!v.locationCode) return false;
+          // Extract warehouse code from location code (first segment)
+          const locWarehouseCode = v.locationCode.split('-')[0];
+          if (locWarehouseCode !== warehouseCode && locWarehouseCode !== warehouse.code) return false;
+          // Check for duplicates
+          const key = `${v.productId}-${v.variantId}-${v.locationCode}`;
+          return !existingLocationKeys.has(key);
+        })
+        .map(v => ({
+          locationId: `variant-${v.variantId}`,
+          locationCode: v.locationCode!,
+          quantity: v.quantity || 0,
+          locationType: 'warehouse',
+          isPrimary: false,
+          productId: v.productId,
+          productName: `${v.productName} - ${v.variantName}`,
+          productSku: v.variantSku || v.productSku || '',
+          productImage: v.variantImage || v.productImage,
+          notes: null,
+          variantId: v.variantId,
+          variantName: v.variantName,
+          variantSku: v.variantSku,
+          variantImage: v.variantImage,
+        }));
+
+      // Merge both lists
+      const allLocations: LocationWithProduct[] = [...productLocationsList, ...variantLocationsList];
 
       // Parse location codes and build hierarchical structure
       interface HierarchicalLocation {
