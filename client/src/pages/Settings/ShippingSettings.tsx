@@ -47,8 +47,8 @@ const DEFAULT_PPL_RATES = {
 const formSchema = z.object({
   ppl_default_sender_address: z.string().default(''),
   ppl_enable_auto_label: z.boolean().default(false),
-  ppl_max_package_weight_kg: z.coerce.number().min(0).default(50),
-  ppl_max_package_dimensions_cm: z.string().default('200x80x60'),
+  ppl_max_package_weight_kg: z.coerce.number().min(0).max(31.5).default(31.5),
+  ppl_max_package_dimensions_cm: z.string().default('120x60x60'),
   ppl_shipping_rates: z.string().default(JSON.stringify(DEFAULT_PPL_RATES)),
   country_carrier_mapping: z.string().default('{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}'),
   gls_default_sender_address: z.string().default(''),
@@ -107,8 +107,8 @@ export default function ShippingSettings() {
     defaultValues: {
       ppl_default_sender_address: '',
       ppl_enable_auto_label: false,
-      ppl_max_package_weight_kg: 50,
-      ppl_max_package_dimensions_cm: '200x80x60',
+      ppl_max_package_weight_kg: 31.5,
+      ppl_max_package_dimensions_cm: '120x60x60',
       ppl_shipping_rates: JSON.stringify(DEFAULT_PPL_RATES),
       country_carrier_mapping: '{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}',
       gls_default_sender_address: '',
@@ -183,8 +183,8 @@ export default function ShippingSettings() {
       const snapshot = {
         ppl_default_sender_address: toJsonString(shippingSettings.pplDefaultSenderAddress),
         ppl_enable_auto_label: shippingSettings.pplEnableAutoLabel,
-        ppl_max_package_weight_kg: shippingSettings.pplMaxPackageWeightKg ?? 50,
-        ppl_max_package_dimensions_cm: shippingSettings.pplMaxPackageDimensionsCm ?? '200x80x60',
+        ppl_max_package_weight_kg: shippingSettings.pplMaxPackageWeightKg ?? 31.5,
+        ppl_max_package_dimensions_cm: shippingSettings.pplMaxPackageDimensionsCm ?? '120x60x60',
         ppl_shipping_rates: toJsonString(shippingSettings.pplShippingRates || DEFAULT_PPL_RATES),
         country_carrier_mapping: toJsonString(shippingSettings.countryCarrierMapping || {"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}),
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
@@ -452,13 +452,13 @@ export default function ShippingSettings() {
                             onBlur={handleTextBlur('ppl_max_package_weight_kg')}
                             type="number"
                             min="0"
-                            max="50"
+                            max="31.5"
                             step="0.1"
-                            placeholder="50"
+                            placeholder="31.5"
                             data-testid="input-ppl_max_package_weight_kg"
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:pplMaxWeightDescription', 'Maximum weight limit for PPL packages (up to 50kg)')}</FormDescription>
+                        <FormDescription>{t('settings:pplMaxWeightDescription', 'Maximum weight limit for PPL packages (up to 31.5kg)')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -478,11 +478,11 @@ export default function ShippingSettings() {
                               markPendingChange('ppl_max_package_dimensions_cm');
                             }}
                             onBlur={handleTextBlur('ppl_max_package_dimensions_cm')}
-                            placeholder="200x80x60"
+                            placeholder="120x60x60"
                             data-testid="input-ppl_max_package_dimensions_cm"
                           />
                         </FormControl>
-                        <FormDescription>{t('settings:pplMaxDimensionsDescription', 'Maximum dimensions in LxWxH format for PPL packages')}</FormDescription>
+                        <FormDescription>{t('settings:pplMaxDimensionsDescription', 'Maximum dimensions 120×60×60 cm, girth+length max 360 cm')}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -561,66 +561,56 @@ export default function ShippingSettings() {
                     const configuredCountries = Object.keys(parsedRates.countries || {});
                     const unconfiguredCountries = availableCountries.filter(c => !configuredCountries.includes(c));
                     
+                    const pplTieredPricing = {
+                      BUSINESS: [
+                        { maxWeight: 2, price: 85 },
+                        { maxWeight: 5, price: 91 },
+                        { maxWeight: 10, price: 97 },
+                        { maxWeight: 20, price: 109 },
+                        { maxWeight: 31.5, price: 139 },
+                      ],
+                      PRIVATE: [
+                        { maxWeight: 2, price: 87 },
+                        { maxWeight: 5, price: 95 },
+                        { maxWeight: 10, price: 101 },
+                        { maxWeight: 20, price: 115 },
+                        { maxWeight: 31.5, price: 147 },
+                      ],
+                      SMART: [
+                        { maxWeight: 2, price: 63 },
+                        { maxWeight: 5, price: 65 },
+                        { maxWeight: 10, price: 69 },
+                        { maxWeight: 20, price: 79 },
+                        { maxWeight: 31.5, price: 89 },
+                      ],
+                    };
+                    
                     return (
                       <FormItem>
                         <div className="space-y-6">
-                          {/* Country Rates */}
+                          {/* Tiered Pricing Reference */}
                           <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium">{t('settings:countryShippingRatesCzk', 'Country Shipping Rates (CZK)')}</h4>
-                              {unconfiguredCountries.length > 0 && (
-                                <Select onValueChange={(v) => addCountry(v)}>
-                                  <SelectTrigger className="w-40" data-testid="select-add-country">
-                                    <SelectValue placeholder={t('settings:addCountry', 'Add Country')} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {unconfiguredCountries.map(code => (
-                                      <SelectItem key={code} value={code}>
-                                        {countryFlags[code]} {countryNames[code]}
-                                      </SelectItem>
+                            <h4 className="font-medium">{t('settings:pplTieredPricing', 'PPL CZ Weight-Based Pricing (CZK)')}</h4>
+                            <p className="text-xs text-muted-foreground">{t('settings:pplTieredPricingNote', 'Fixed pricing tiers based on package weight - prices are set by PPL contract')}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {Object.entries(pplTieredPricing).map(([type, tiers]) => (
+                                <div key={type} className="rounded-lg border bg-muted/30 p-3">
+                                  <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                    {type === 'BUSINESS' && '🏢'}
+                                    {type === 'PRIVATE' && '🏠'}
+                                    {type === 'SMART' && '📦'}
+                                    {type}
+                                  </h5>
+                                  <div className="space-y-1">
+                                    {tiers.map((tier) => (
+                                      <div key={tier.maxWeight} className="flex justify-between text-xs">
+                                        <span className="text-muted-foreground">{t('settings:upToWeight', 'up to {{weight}} kg', { weight: tier.maxWeight })}</span>
+                                        <span className="font-medium">{tier.price} CZK</span>
+                                      </div>
                                     ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                            <div className="space-y-2">
-                              {configuredCountries.map((code) => {
-                                const rate = parsedRates.countries[code];
-                                return (
-                                  <div key={code} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                                    <span className="text-lg w-8">{countryFlags[code] || '🌍'}</span>
-                                    <span className="text-sm font-medium flex-1">{countryNames[code] || code}</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-muted-foreground">{t('settings:perKgLabel', 'Per kg')}</span>
-                                      <Input
-                                        type="number"
-                                        value={rate?.ratePerKg || 0}
-                                        onChange={(e) => updateCountryRate(code, 'ratePerKg', parseDecimal(e.target.value))}
-                                        onKeyDown={handleDecimalKeyDown}
-                                        onBlur={handleTextBlur('ppl_shipping_rates')}
-                                        className="w-20"
-                                        min="0"
-                                        step="1"
-                                        data-testid={`input-${code}-rateperkg`}
-                                      />
-                                      <span className="text-xs text-muted-foreground">{t('settings:czkPerKg', 'CZK/kg')}</span>
-                                    </div>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="ml-auto text-destructive hover:text-destructive"
-                                      onClick={() => removeCountry(code)}
-                                      data-testid={`button-remove-${code}`}
-                                    >
-                                      ✕
-                                    </Button>
                                   </div>
-                                );
-                              })}
-                              {configuredCountries.length === 0 && (
-                                <p className="text-sm text-muted-foreground italic p-3">{t('settings:noCountriesConfigured', 'No countries configured')}</p>
-                              )}
+                                </div>
+                              ))}
                             </div>
                           </div>
                           
