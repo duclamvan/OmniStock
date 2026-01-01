@@ -44,6 +44,7 @@ import {
   productCostHistory,
   products,
   productBundles,
+  bundleItems,
   productLocations,
   productVariants,
   purchaseItems,
@@ -11904,27 +11905,127 @@ Important:
           
           // CRITICAL: Capture landing cost snapshot at time of sale for accurate profit calculation
           // This ensures historical orders maintain their correct profit even when product costs change
-          let landingCostSnapshot = null;
+          // Handles: regular products, variants, bundles, free items, virtual products
+          let landingCostSnapshot: number | null = null;
           let productBulkUnitQty = item.bulkUnitQty || null;
           let productBulkUnitName = item.bulkUnitName || null;
           // Virtual SKU fields - to be copied from product for allocation tracking
           let isVirtual = false;
           let masterProductId: string | null = null;
           let inventoryDeductionRatio: string | null = null;
+          let variantSku: string | null = null;
           
+          // Helper function to get cost from a product/variant based on currency priority
+          // Supports all currencies: CZK, EUR, USD, VND, CNY
+          const getCostFromEntity = (entity: any, currency: string): number | null => {
+            // Priority 1: latestLandingCost (includes freight/duty, always preferred)
+            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
+              return parseFloat(entity.latestLandingCost);
+            }
+            // Priority 2: importCost matching order currency
+            const currencyFieldMap: Record<string, string> = {
+              'CZK': 'importCostCzk',
+              'EUR': 'importCostEur',
+              'USD': 'importCostUsd',
+              'VND': 'importCostVnd',
+              'CNY': 'importCostCny',
+            };
+            const currencyField = currencyFieldMap[currency];
+            if (currencyField && entity[currencyField] && parseFloat(entity[currencyField]) > 0) {
+              return parseFloat(entity[currencyField]);
+            }
+            // Priority 3: Fallback to any available cost (prefer CZK as base currency)
+            const fallbackOrder = ['importCostCzk', 'importCostEur', 'importCostUsd', 'importCostVnd', 'importCostCny'];
+            for (const field of fallbackOrder) {
+              if (entity[field] && parseFloat(entity[field]) > 0) {
+                return parseFloat(entity[field]);
+              }
+            }
+            return null;
+          };
+          
+          // CASE 1: Variant item - get variant-specific cost first, fall back to parent product
+          if (item.variantId) {
+            try {
+              const variantResult = await db.select().from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
+              if (variantResult.length > 0) {
+                const variant = variantResult[0];
+                variantSku = variant.sku || null;
+                // Try to get variant-specific cost
+                const variantCost = getCostFromEntity(variant, order.currency || 'CZK');
+                if (variantCost !== null) {
+                  landingCostSnapshot = variantCost;
+                }
+              }
+            } catch (err) {
+              console.error('Failed to fetch variant for cost snapshot:', err);
+            }
+          }
+          
+          // CASE 2: Bundle item - calculate total cost from bundle components
+          // Optimized: batch fetch all variants and products needed for the bundle
+          if (item.bundleId && landingCostSnapshot === null) {
+            try {
+              const bundleItemsResult = await db.select().from(bundleItems).where(eq(bundleItems.bundleId, item.bundleId));
+              
+              if (bundleItemsResult.length > 0) {
+                // Collect all variant and product IDs needed
+                const variantIds = bundleItemsResult.filter(bi => bi.variantId).map(bi => bi.variantId as string);
+                const productIds = bundleItemsResult.filter(bi => bi.productId).map(bi => bi.productId as string);
+                
+                // Batch fetch variants and products in 2 queries instead of N queries
+                const variantsMap = new Map<string, any>();
+                const productsMap = new Map<string, any>();
+                
+                if (variantIds.length > 0) {
+                  const variantsResult = await db.select().from(productVariants).where(inArray(productVariants.id, variantIds));
+                  for (const v of variantsResult) {
+                    variantsMap.set(v.id, v);
+                  }
+                }
+                
+                if (productIds.length > 0) {
+                  const productsResult = await db.select().from(products).where(inArray(products.id, productIds));
+                  for (const p of productsResult) {
+                    productsMap.set(p.id, p);
+                  }
+                }
+                
+                // Calculate bundle cost using cached data
+                let bundleCost = 0;
+                for (const bundleItem of bundleItemsResult) {
+                  const componentQty = bundleItem.quantity || 1;
+                  let componentCost: number | null = null;
+                  
+                  // Check variant cost first
+                  if (bundleItem.variantId && variantsMap.has(bundleItem.variantId)) {
+                    componentCost = getCostFromEntity(variantsMap.get(bundleItem.variantId), order.currency || 'CZK');
+                  }
+                  // Fall back to product cost
+                  if (componentCost === null && bundleItem.productId && productsMap.has(bundleItem.productId)) {
+                    componentCost = getCostFromEntity(productsMap.get(bundleItem.productId), order.currency || 'CZK');
+                  }
+                  if (componentCost !== null) {
+                    bundleCost += componentCost * componentQty;
+                  }
+                }
+                if (bundleCost > 0) {
+                  landingCostSnapshot = bundleCost;
+                }
+              }
+            } catch (err) {
+              console.error('Failed to calculate bundle cost:', err);
+            }
+          }
+          
+          // CASE 3: Regular product (or variant/bundle fallback) - get product cost
           if (item.productId) {
             try {
               const product = await storage.getProductById(item.productId);
               if (product) {
-                // Priority: latestLandingCost (includes freight/duty) > importCost by currency
-                if (product.latestLandingCost) {
-                  landingCostSnapshot = parseFloat(product.latestLandingCost);
-                } else if (order.currency === 'CZK' && product.importCostCzk) {
-                  landingCostSnapshot = parseFloat(product.importCostCzk);
-                } else if (order.currency === 'EUR' && product.importCostEur) {
-                  landingCostSnapshot = parseFloat(product.importCostEur);
-                } else if (product.importCostUsd) {
-                  landingCostSnapshot = parseFloat(product.importCostUsd);
+                // Only use product cost if we don't have variant or bundle cost
+                if (landingCostSnapshot === null) {
+                  landingCostSnapshot = getCostFromEntity(product, order.currency || 'CZK');
                 }
                 // Copy bulk unit fields from product if not provided
                 if (!productBulkUnitQty && product.bulkUnitQty) {
@@ -11938,6 +12039,17 @@ Important:
                   isVirtual = true;
                   masterProductId = product.masterProductId;
                   inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
+                  // For virtual products, get cost from master product if not set
+                  if (landingCostSnapshot === null) {
+                    const masterProduct = await storage.getProductById(product.masterProductId);
+                    if (masterProduct) {
+                      const masterCost = getCostFromEntity(masterProduct, order.currency || 'CZK');
+                      if (masterCost !== null) {
+                        const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+                        landingCostSnapshot = masterCost * ratio;
+                      }
+                    }
+                  }
                 }
               }
             } catch (err) {
@@ -11945,18 +12057,8 @@ Important:
             }
           }
           
-          // Fetch variant SKU if variantId is provided
-          let variantSku: string | null = null;
-          if (item.variantId) {
-            try {
-              const variant = await db.select().from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
-              if (variant.length > 0 && variant[0].sku) {
-                variantSku = variant[0].sku;
-              }
-            } catch (err) {
-              console.error('Failed to fetch variant SKU:', err);
-            }
-          }
+          // Ensure cost is captured for free products too (cost can be > 0 even if price is 0)
+          // landingCostSnapshot is null only if we couldn't find any cost data
 
           const orderItem = {
             orderId: order.id,
