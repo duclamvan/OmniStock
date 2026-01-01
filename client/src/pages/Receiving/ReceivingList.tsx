@@ -6733,9 +6733,10 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // For direct PO shipments (no consolidation), fall back to receiptItems
-  const itemCount = (shipment.items?.length || 0) > 0 
-    ? shipment.items.length 
-    : (shipment.receiptItems?.length || 0);
+  const displayItems = (shipment.items?.length || 0) > 0 
+    ? shipment.items 
+    : (shipment.receiptItems || []);
+  const itemCount = displayItems.length;
 
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
@@ -6939,15 +6940,15 @@ function CompletedShipmentCard({ shipment, isAdministrator }: { shipment: any; i
       {isExpanded && (
         <CardContent className="p-0 border-t">
           <div className="p-3 md:p-4 space-y-3">
-            {shipment.items && shipment.items.length > 0 && (
+            {displayItems.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {shipment.items.map((item: any, idx: number) => (
+                  {displayItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
                         <span className="text-foreground font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity || item.receivedQuantity || 1}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
@@ -7155,9 +7156,10 @@ function ArchivedShipmentCard({ shipment, isAdministrator }: { shipment: any; is
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // For direct PO shipments (no consolidation), fall back to receiptItems
-  const itemCount = (shipment.items?.length || 0) > 0 
-    ? shipment.items.length 
-    : (shipment.receiptItems?.length || 0);
+  const displayItems = (shipment.items?.length || 0) > 0 
+    ? shipment.items 
+    : (shipment.receiptItems || []);
+  const itemCount = displayItems.length;
 
   const deleteShipmentMutation = useMutation({
     mutationFn: async () => {
@@ -7232,15 +7234,15 @@ function ArchivedShipmentCard({ shipment, isAdministrator }: { shipment: any; is
       {isExpanded && (
         <CardContent className="p-0 border-t">
           <div className="p-3 md:p-4 space-y-3">
-            {shipment.items && shipment.items.length > 0 && (
+            {displayItems.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-foreground">{t('items')}:</h4>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {shipment.items.map((item: any, idx: number) => (
+                  {displayItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex flex-col gap-1 text-sm p-2 bg-muted/30 rounded">
                       <div className="flex justify-between items-start gap-2">
                         <span className="text-foreground font-medium">{item.productName || item.name}</span>
-                        <span className="font-semibold text-foreground shrink-0">×{item.quantity}</span>
+                        <span className="font-semibold text-foreground shrink-0">×{item.quantity || item.receivedQuantity || 1}</span>
                       </div>
                       {item.category && (
                         <span className="text-xs text-muted-foreground">{item.category}</span>
