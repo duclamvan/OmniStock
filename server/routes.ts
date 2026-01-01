@@ -17531,7 +17531,14 @@ Important:
       const recipientCountryCode = getCountryCode(shippingAddress.country || 'CZ');
       let productType: string;
 
-      if (recipientCountryCode === 'CZ') {
+      // Check if this is a PPL SMART shipment (pickup location)
+      const isSmartShipment = order.shippingMethod === 'PPL CZ SMART' || order.pickupLocationCode;
+      
+      if (isSmartShipment) {
+        // PPL SMART - delivery to ParcelShop/ParcelBox pickup location
+        // SMAR product type is for SMART service with pickup location
+        productType = 'SMAR';
+      } else if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
         productType = hasCOD ? 'BUSD' : 'BUSS';
       } else {

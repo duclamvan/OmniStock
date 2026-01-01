@@ -979,6 +979,10 @@ export const orders = pgTable("orders", {
   pplShipmentNumbers: text("ppl_shipment_numbers").array(), // Array of PPL shipment tracking numbers
   pplLabelData: jsonb("ppl_label_data"), // Stores label info: {batchId, shipmentNumbers, labelUrl, createdAt}
   pplStatus: varchar("ppl_status"), // 'pending', 'created', 'cancelled', 'error'
+  // PPL SMART pickup location fields
+  pickupLocationCode: varchar("pickup_location_code"), // ParcelShop/ParcelBox code for PPL SMART
+  pickupLocationName: varchar("pickup_location_name"), // Display name of pickup location
+  pickupLocationAddress: text("pickup_location_address"), // Full address of pickup location
   // COD (Cash on Delivery) fields
   codAmount: decimal("cod_amount", { precision: 10, scale: 2 }),
   codCurrency: varchar("cod_currency"),

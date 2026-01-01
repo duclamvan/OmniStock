@@ -437,6 +437,13 @@ export default function AddOrder() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   
+  // PPL SMART pickup location state
+  const [selectedPickupLocation, setSelectedPickupLocation] = useState<any>(null);
+  const [pickupLocationSearch, setPickupLocationSearch] = useState("");
+  const [showPickupLocationDropdown, setShowPickupLocationDropdown] = useState(false);
+  const [isLoadingPickupLocations, setIsLoadingPickupLocations] = useState(false);
+  const [pickupLocationSuggestions, setPickupLocationSuggestions] = useState<any[]>([]);
+  
   // Mobile compact view state
   const [expandedMobileNotes, setExpandedMobileNotes] = useState<string | null>(null);
   const [mobileImagePopup, setMobileImagePopup] = useState<{ open: boolean; src: string; alt: string }>({ open: false, src: '', alt: '' });
