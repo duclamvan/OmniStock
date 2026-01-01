@@ -536,7 +536,7 @@ export default function LandingCostDetails() {
 
   if (isLoading || !shipment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-fuchsia-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950 p-4">
+      <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950 p-4">
         <div className="max-w-2xl mx-auto space-y-4">
           <Skeleton className="h-12 w-2/3 rounded-xl" />
           <Skeleton className="h-24 w-full rounded-2xl" />
@@ -570,15 +570,15 @@ export default function LandingCostDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/50 via-white to-fuchsia-50/50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
-      <div className="max-w-2xl mx-auto px-4 py-4 pb-24">
+    <div className="min-h-screen bg-slate-50/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950">
+      <div className="max-w-6xl mx-auto px-4 py-4 pb-24">
         
         {/* Back Button */}
         <Link href="/imports/landing-costs">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground hover:bg-rose-100/50 dark:hover:bg-rose-900/20" 
+            className="mb-4 -ml-2 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800" 
             data-testid="button-back-to-list"
           >
             <ArrowLeft className="h-4 w-4 mr-1.5" />
@@ -587,12 +587,12 @@ export default function LandingCostDetails() {
         </Link>
 
         {/* Header Card - Shipment Info */}
-        <Card className="mb-4 border-0 shadow-lg shadow-rose-100/50 dark:shadow-none bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm overflow-hidden">
-          <div className="h-1.5 bg-gradient-to-r from-rose-400 via-fuchsia-400 to-purple-400" />
+        <Card className="mb-4 border-0 shadow-lg shadow-slate-200/50 dark:shadow-none bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm overflow-hidden">
+          <div className="h-1.5 bg-blue-500" />
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-rose-100 to-fuchsia-100 dark:from-rose-900/30 dark:to-fuchsia-900/30 flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -604,21 +604,21 @@ export default function LandingCostDetails() {
                   </Badge>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <Truck className="h-3.5 w-3.5 text-rose-500" />
+                    <Truck className="h-3.5 w-3.5 text-blue-500" />
                     <span className="truncate">{shipment.carrier}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5 text-fuchsia-500" />
+                    <Package className="h-3.5 w-3.5 text-slate-500" />
                     <span>{shipment.itemCount} {t('items') || 'items'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-purple-500" />
+                    <MapPin className="h-3.5 w-3.5 text-slate-500" />
                     <span className="truncate">{shipment.origin} → {shipment.destination}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-indigo-500" />
+                    <Calendar className="h-3.5 w-3.5 text-slate-500" />
                     <span>{format(new Date(shipment.createdAt), 'MMM d, yyyy')}</span>
                   </div>
                 </div>
@@ -638,22 +638,22 @@ export default function LandingCostDetails() {
 
         {/* Items Section */}
         {landingCostPreview && landingCostPreview.items && landingCostPreview.items.length > 0 && (
-          <Card className="border-0 shadow-lg shadow-rose-100/50 dark:shadow-none bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm overflow-hidden mb-4">
+          <Card className="border-0 shadow-lg shadow-slate-200/50 dark:shadow-none bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm overflow-hidden mb-4">
             <CardHeader className="pb-3 pt-4 px-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-100 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30">
-                    <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                    <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   {t('landedCostPerItem') || 'Landed Cost Per Item'}
-                  <Badge variant="secondary" className="ml-1 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                  <Badge variant="secondary" className="ml-1 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
                     {landingCostPreview.items.length}
                   </Badge>
                 </CardTitle>
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   onClick={() => refetchPreview()}
                   data-testid="button-refresh"
                 >
@@ -681,7 +681,7 @@ export default function LandingCostDetails() {
                       }
                       setSelectedItems(newSelected);
                     }}
-                    className="border-rose-300 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
+                    className="border-slate-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                     data-testid="checkbox-select-all"
                   />
                   <Label htmlFor="select-all" className="text-xs cursor-pointer text-muted-foreground">
@@ -696,7 +696,7 @@ export default function LandingCostDetails() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 text-xs border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-300 dark:hover:bg-rose-900/20"
+                      className="h-8 text-xs border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       onClick={handleAddSelectedToInventory}
                       disabled={addToInventoryMutation.isPending}
                       data-testid="button-add-selected"
@@ -713,7 +713,7 @@ export default function LandingCostDetails() {
                   {changedPricesCount > 0 && (
                     <Button
                       size="sm"
-                      className="h-8 text-xs bg-gradient-to-r from-rose-500 to-fuchsia-500 hover:from-rose-600 hover:to-fuchsia-600 text-white shadow-md shadow-rose-200/50 dark:shadow-none"
+                      className="h-8 text-xs bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-200/50 dark:shadow-none"
                       onClick={handleSaveAllPrices}
                       disabled={saveAllPricesMutation.isPending}
                       data-testid="button-save-prices"
@@ -802,14 +802,14 @@ export default function LandingCostDetails() {
                                         setSelectedItems(newSelected);
                                       }}
                                       disabled={!!subProduct}
-                                      className="mt-1 border-rose-300 data-[state=checked]:bg-rose-500"
+                                      className="mt-1 border-slate-300 data-[state=checked]:bg-blue-500"
                                       data-testid={`checkbox-item-${orderItem.sku}`}
                                     />
                                     {orderItem.imageUrl ? (
-                                      <img src={orderItem.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg flex-shrink-0 ring-2 ring-rose-100 dark:ring-rose-900" />
+                                      <img src={orderItem.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg flex-shrink-0 ring-2 ring-slate-200 dark:ring-slate-700" />
                                     ) : (
-                                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-100 to-fuchsia-100 dark:from-rose-900/30 dark:to-fuchsia-900/30 flex items-center justify-center flex-shrink-0">
-                                        <Package className="h-5 w-5 text-rose-400" />
+                                      <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                        <Package className="h-5 w-5 text-slate-400" />
                                       </div>
                                     )}
                                     <div className="flex-1 min-w-0">
@@ -818,7 +818,7 @@ export default function LandingCostDetails() {
                                         <code className="text-[10px] font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
                                           {orderItem.sku}
                                         </code>
-                                        <span className="text-xs font-medium text-fuchsia-600 dark:text-fuchsia-400">×{orderItem.quantity}</span>
+                                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">×{orderItem.quantity}</span>
                                         {!subProduct && (
                                           <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
                                             <AlertCircle className="h-2.5 w-2.5 mr-1" />
@@ -832,7 +832,7 @@ export default function LandingCostDetails() {
                                     </div>
                                   </div>
 
-                                  <div className="grid grid-cols-4 gap-2 mb-3">
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                                     <div className="rounded-lg p-2 bg-sky-50 dark:bg-sky-900/20 text-center">
                                       <div className="text-[10px] text-sky-600 dark:text-sky-400 font-medium mb-0.5">Cost</div>
                                       <div className="text-xs font-bold text-sky-700 dark:text-sky-300">€{parseFloat(orderItem.unitPrice || '0').toFixed(2)}</div>
@@ -861,7 +861,7 @@ export default function LandingCostDetails() {
                                         value={subDisplayPriceEUR}
                                         onChange={(val) => handlePriceChange(orderItem.sku, subProduct?.id || 0, 'EUR', val)}
                                         onBlur={() => handlePriceBlur(orderItem.sku)}
-                                        className="h-9 text-sm rounded-lg border-rose-200 focus:border-rose-400 focus:ring-rose-400"
+                                        className="h-9 text-sm rounded-lg border-slate-200 focus:border-blue-400 focus:ring-blue-300"
                                         data-testid={`input-price-eur-${orderItem.sku}`}
                                       />
                                     </div>
@@ -875,14 +875,14 @@ export default function LandingCostDetails() {
                                         value={Math.round(subDisplayPriceCZK)}
                                         onChange={(val) => handlePriceChange(orderItem.sku, subProduct?.id || 0, 'CZK', val)}
                                         onBlur={() => handlePriceBlur(orderItem.sku)}
-                                        className="h-9 text-sm rounded-lg border-rose-200 focus:border-rose-400 focus:ring-rose-400"
+                                        className="h-9 text-sm rounded-lg border-slate-200 focus:border-blue-400 focus:ring-blue-300"
                                         data-testid={`input-price-czk-${orderItem.sku}`}
                                       />
                                     </div>
                                     {subProduct && subHasChanges && (
                                       <Button
                                         size="sm"
-                                        className="h-9 px-3 mt-auto bg-gradient-to-r from-rose-500 to-fuchsia-500 hover:from-rose-600 hover:to-fuchsia-600"
+                                        className="h-9 px-3 mt-auto bg-blue-500 hover:bg-blue-600"
                                         onClick={() => handleSaveSinglePrice(orderItem.sku)}
                                         disabled={savePriceMutation.isPending}
                                         data-testid={`button-save-price-${orderItem.sku}`}
@@ -922,21 +922,21 @@ export default function LandingCostDetails() {
                               setSelectedItems(newSelected);
                             }}
                             disabled={!!product}
-                            className="mt-1 border-rose-300 data-[state=checked]:bg-rose-500"
+                            className="mt-1 border-slate-300 data-[state=checked]:bg-blue-500"
                             data-testid={`checkbox-item-${item.sku}`}
                           />
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt="" className="w-14 h-14 object-cover rounded-xl flex-shrink-0 ring-2 ring-rose-100 dark:ring-rose-900" />
+                            <img src={item.imageUrl} alt="" className="w-14 h-14 object-cover rounded-xl flex-shrink-0 ring-2 ring-slate-200 dark:ring-slate-700" />
                           ) : (
-                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-100 to-fuchsia-100 dark:from-rose-900/30 dark:to-fuchsia-900/30 flex items-center justify-center flex-shrink-0">
-                              <Package className="h-6 w-6 text-rose-400" />
+                            <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                              <Package className="h-6 w-6 text-slate-400" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-semibold text-sm text-gray-900 dark:text-white leading-snug">{item.name}</h4>
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-rose-500" />}
+                                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />}
                                 {isSaved && !hasChanges && !isSaving && <CheckCircle className="h-4 w-4 text-emerald-500" />}
                               </div>
                             </div>
@@ -944,7 +944,7 @@ export default function LandingCostDetails() {
                               <code className="text-[10px] font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
                                 {item.sku}
                               </code>
-                              <span className="text-xs font-semibold text-fuchsia-600 dark:text-fuchsia-400">×{item.quantity.toLocaleString()}</span>
+                              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">×{item.quantity.toLocaleString()}</span>
                               {!product && (
                                 <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
                                   <AlertCircle className="h-2.5 w-2.5 mr-1" />
@@ -1007,13 +1007,13 @@ export default function LandingCostDetails() {
                         )}
 
                         {/* Price Summary Cards */}
-                        <div className="grid grid-cols-4 gap-2 mb-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                           <div className="rounded-xl p-2.5 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 text-center">
                             <CircleDollarSign className="h-3.5 w-3.5 mx-auto mb-1 text-sky-500" />
                             <div className="text-[10px] text-sky-600 dark:text-sky-400 font-medium">{t('purchasePrice') || 'Cost'}</div>
                             <div className="text-xs font-bold text-sky-700 dark:text-sky-300 mt-0.5">€{item.unitPrice.toFixed(2)}</div>
                           </div>
-                          <div className="rounded-xl p-2.5 bg-gradient-to-br from-purple-50 to-fuchsia-50 dark:from-purple-900/20 dark:to-fuchsia-900/20 text-center">
+                          <div className="rounded-xl p-2.5 bg-slate-50 dark:bg-slate-800/50 text-center">
                             <Tag className="h-3.5 w-3.5 mx-auto mb-1 text-purple-500" />
                             <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">{t('landedCost') || 'Landed'}</div>
                             <div className="text-xs font-bold text-purple-700 dark:text-purple-300 mt-0.5">€{item.landingCostPerUnit.toFixed(2)}</div>
@@ -1047,7 +1047,7 @@ export default function LandingCostDetails() {
                               value={displayPriceEUR}
                               onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'EUR', val)}
                               onBlur={() => handlePriceBlur(item.sku)}
-                              className="h-10 text-sm rounded-xl border-rose-200 focus:border-rose-400 focus:ring-rose-400 dark:border-gray-700"
+                              className="h-10 text-sm rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-300 dark:border-gray-700"
                               data-testid={`input-price-eur-${item.sku}`}
                             />
                           </div>
@@ -1063,14 +1063,14 @@ export default function LandingCostDetails() {
                               value={Math.round(displayPriceCZK)}
                               onChange={(val) => handlePriceChange(item.sku, product?.id || 0, 'CZK', val)}
                               onBlur={() => handlePriceBlur(item.sku)}
-                              className="h-10 text-sm rounded-xl border-rose-200 focus:border-rose-400 focus:ring-rose-400 dark:border-gray-700"
+                              className="h-10 text-sm rounded-xl border-slate-200 focus:border-blue-400 focus:ring-blue-300 dark:border-gray-700"
                               data-testid={`input-price-czk-${item.sku}`}
                             />
                           </div>
                           {product && hasChanges && (
                             <Button
                               size="sm"
-                              className="h-10 px-4 mt-auto rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-500 hover:from-rose-600 hover:to-fuchsia-600 shadow-md shadow-rose-200/50 dark:shadow-none"
+                              className="h-10 px-4 mt-auto rounded-xl bg-blue-500 hover:bg-blue-600 shadow-md shadow-blue-200/50 dark:shadow-none"
                               onClick={() => handleSaveSinglePrice(item.sku)}
                               disabled={savePriceMutation.isPending}
                               data-testid={`button-save-price-${item.sku}`}
@@ -1126,8 +1126,8 @@ export default function LandingCostDetails() {
         {!isLoadingPreview && landingCostPreview && landingCostPreview.items.length === 0 && (
           <Card className="mb-4 border-0 shadow-lg bg-white/80 dark:bg-gray-900/80">
             <CardContent className="py-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-rose-100 to-fuchsia-100 dark:from-rose-900/30 dark:to-fuchsia-900/30 flex items-center justify-center">
-                <Package className="h-8 w-8 text-rose-400" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Package className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
                 {t('noItemsFound') || 'No Items Found'}

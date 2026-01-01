@@ -22,37 +22,9 @@ interface ObjectUploaderProps {
   children: ReactNode;
 }
 
-/**
- * A file upload component that renders as a button and provides a modal interface for
- * file management.
- * 
- * Features:
- * - Renders as a customizable button that opens a file upload modal
- * - Provides a modal interface for:
- *   - File selection
- *   - File preview
- *   - Upload progress tracking
- *   - Upload status display
- * 
- * The component uses Uppy under the hood to handle all file upload functionality.
- * All file management features are automatically handled by the Uppy dashboard modal.
- * 
- * @param props - Component props
- * @param props.maxNumberOfFiles - Maximum number of files allowed to be uploaded
- *   (default: 1)
- * @param props.maxFileSize - Maximum file size in bytes (default: 10MB)
- * @param props.onGetUploadParameters - Function to get upload parameters (method and URL).
- *   Typically used to fetch a presigned URL from the backend server for direct-to-S3
- *   uploads.
- * @param props.onComplete - Callback function called when upload is complete. Typically
- *   used to make post-upload API calls to update server state and set object ACL
- *   policies.
- * @param props.buttonClassName - Optional CSS class name for the button
- * @param props.children - Content to be rendered inside the button
- */
 export function ObjectUploader({
   maxNumberOfFiles = 1,
-  maxFileSize = 10485760, // 10MB default
+  maxFileSize = 10485760,
   onGetUploadParameters,
   onComplete,
   buttonClassName,
@@ -87,6 +59,62 @@ export function ObjectUploader({
 
   return (
     <div>
+      <style>{`
+        .uppy-Dashboard-inner {
+          border-radius: 16px !important;
+          border: 1px solid hsl(var(--border)) !important;
+          background: hsl(var(--background)) !important;
+        }
+        .uppy-Dashboard-AddFiles {
+          border: 2px dashed hsl(var(--border)) !important;
+          border-radius: 12px !important;
+          background: hsl(var(--muted) / 0.3) !important;
+        }
+        .uppy-Dashboard-AddFiles:hover {
+          border-color: hsl(var(--primary)) !important;
+          background: hsl(var(--muted) / 0.5) !important;
+        }
+        .uppy-Dashboard-AddFiles-title {
+          font-size: 14px !important;
+          color: hsl(var(--foreground)) !important;
+        }
+        .uppy-Dashboard-note {
+          font-size: 12px !important;
+          color: hsl(var(--muted-foreground)) !important;
+        }
+        .uppy-Dashboard-browse {
+          color: hsl(var(--primary)) !important;
+        }
+        .uppy-DashboardContent-bar {
+          background: hsl(var(--muted)) !important;
+          border-bottom: 1px solid hsl(var(--border)) !important;
+        }
+        .uppy-DashboardContent-title {
+          color: hsl(var(--foreground)) !important;
+        }
+        .uppy-Dashboard-Item {
+          border-radius: 8px !important;
+        }
+        .uppy-StatusBar {
+          background: hsl(var(--muted)) !important;
+        }
+        .uppy-StatusBar-actionBtn--upload {
+          background: hsl(var(--primary)) !important;
+          border-radius: 8px !important;
+        }
+        @media (max-width: 640px) {
+          .uppy-Dashboard-inner {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+          }
+          .uppy-Dashboard-overlay {
+            background: rgba(0, 0, 0, 0.6) !important;
+          }
+        }
+      `}</style>
       <Button onClick={() => setShowModal(true)} className={buttonClassName}>
         {children}
       </Button>

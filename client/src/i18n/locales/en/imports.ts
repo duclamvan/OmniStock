@@ -136,6 +136,7 @@ const imports = {
   calculationType: 'Calculation Type',
   sellingPrice: 'Selling Price',
   currentPrice: 'Current Price',
+  margin: 'Margin',
   savePrice: 'Save Price',
   priceUpdated: 'Price Updated',
   priceUpdateFailed: 'Price Update Failed',
