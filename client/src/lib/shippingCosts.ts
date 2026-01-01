@@ -47,13 +47,91 @@ export interface PPLCountryRate {
 export interface PPLCODFee {
   fee: number;
   currency: string;
+  percentFee?: number;
+  thresholdCzk?: number;
+}
+
+export interface PPLSurcharges {
+  mytne?: number;
+  fuelSurchargePercent?: number;
+  insurancePercent?: number;
+  insuranceMinFee?: number;
+  oversizedFee?: number;
 }
 
 export interface PPLShippingRates {
   countries?: Record<string, PPLCountryRate>;
   codFees?: {
     cash?: PPLCODFee;
-    card?: PPLCODFee;
+    card?: PPLCODFee & { percentFee?: number; thresholdCzk?: number };
+  };
+  surcharges?: PPLSurcharges;
+}
+
+export interface PPLShippingCostBreakdown {
+  basePrice: number;
+  mytne: number;
+  fuelSurcharge: number;
+  codFee: number;
+  insurance: number;
+  oversized: number;
+  total: number;
+}
+
+export function calculatePPLCZTotalCost(
+  weightKg: number,
+  packageType: PPLPackageType = 'PRIVATE',
+  options: {
+    isCod?: boolean;
+    codPaymentType?: 'cash' | 'card';
+    declaredValue?: number;
+    isOversized?: boolean;
+    rates?: PPLShippingRates;
+  } = {}
+): PPLShippingCostBreakdown {
+  const { isCod = false, codPaymentType = 'cash', declaredValue = 0, isOversized = false, rates } = options;
+  
+  const basePrice = calculatePPLCZPrice(weightKg, packageType);
+  
+  const surcharges = rates?.surcharges || {};
+  const mytne = surcharges.mytne || 0;
+  
+  const fuelSurchargePercent = surcharges.fuelSurchargePercent || 0;
+  const fuelSurcharge = Math.round((basePrice * fuelSurchargePercent) / 100);
+  
+  let codFee = 0;
+  if (isCod && rates?.codFees) {
+    const codConfig = codPaymentType === 'card' ? rates.codFees.card : rates.codFees.cash;
+    if (codConfig) {
+      codFee = codConfig.fee || 0;
+      if (codPaymentType === 'card' && codConfig.percentFee && codConfig.thresholdCzk) {
+        if (declaredValue > codConfig.thresholdCzk) {
+          codFee += Math.round((declaredValue - codConfig.thresholdCzk) * (codConfig.percentFee / 100));
+        }
+      }
+    }
+  }
+  
+  let insurance = 0;
+  if (declaredValue > 0 && surcharges.insurancePercent) {
+    insurance = Math.max(
+      surcharges.insuranceMinFee || 0,
+      Math.round((declaredValue * surcharges.insurancePercent) / 100)
+    );
+  }
+  
+  const oversized = isOversized ? (surcharges.oversizedFee || 0) : 0;
+  
+  const total = basePrice + mytne + fuelSurcharge + codFee + insurance + oversized;
+  
+  return {
+    basePrice,
+    mytne,
+    fuelSurcharge,
+    codFee,
+    insurance,
+    oversized,
+    total,
   };
 }
 

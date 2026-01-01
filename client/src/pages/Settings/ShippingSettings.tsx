@@ -535,6 +535,14 @@ export default function ShippingSettings() {
                       markPendingChange('ppl_shipping_rates');
                     };
                     
+                    const updateSurcharge = (key: string, value: number) => {
+                      const newRates = { ...parsedRates };
+                      if (!newRates.surcharges) newRates.surcharges = {};
+                      newRates.surcharges[key] = value;
+                      field.onChange(JSON.stringify(newRates, null, 2));
+                      markPendingChange('ppl_shipping_rates');
+                    };
+                    
                     const addCountry = (countryCode: string) => {
                       const newRates = { ...parsedRates };
                       if (!newRates.countries[countryCode]) {
@@ -687,6 +695,131 @@ export default function ShippingSettings() {
                             <p className="text-xs text-muted-foreground">
                               {t('settings:codFeesDescription', 'Configure cash on delivery fees for different payment methods')}
                             </p>
+                          </div>
+                          
+                          {/* Surcharges Section */}
+                          <div className="space-y-3">
+                            <h4 className="font-medium">{t('settings:pplSurcharges', 'Additional Surcharges')}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Mýtné (Toll Fee) */}
+                              <div className="p-3 rounded-lg border bg-muted/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-lg">🛣️</span>
+                                  <span className="text-sm font-medium flex-1">{t('settings:mytne', 'Mýtné (Toll Fee)')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.surcharges?.mytne || 0}
+                                    onChange={(e) => updateSurcharge('mytne', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
+                                    className="w-24"
+                                    min="0"
+                                    step="1"
+                                    data-testid="input-ppl-mytne"
+                                  />
+                                  <span className="text-sm text-muted-foreground">CZK</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings:mytneDescription', 'Highway toll surcharge per package')}</p>
+                              </div>
+                              
+                              {/* Fuel Surcharge */}
+                              <div className="p-3 rounded-lg border bg-muted/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-lg">⛽</span>
+                                  <span className="text-sm font-medium flex-1">{t('settings:fuelSurcharge', 'Fuel Surcharge')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.surcharges?.fuelSurchargePercent || 0}
+                                    onChange={(e) => updateSurcharge('fuelSurchargePercent', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
+                                    className="w-20"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    data-testid="input-ppl-fuel-surcharge"
+                                  />
+                                  <span className="text-sm text-muted-foreground">%</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings:fuelSurchargeDescription', 'Percentage of base price for fuel costs')}</p>
+                              </div>
+                              
+                              {/* Oversized Package Fee */}
+                              <div className="p-3 rounded-lg border bg-muted/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-lg">📐</span>
+                                  <span className="text-sm font-medium flex-1">{t('settings:oversizedFee', 'Oversized Package Fee')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    value={parsedRates.surcharges?.oversizedFee || 0}
+                                    onChange={(e) => updateSurcharge('oversizedFee', parseDecimal(e.target.value))}
+                                    onKeyDown={handleDecimalKeyDown}
+                                    onBlur={handleTextBlur('ppl_shipping_rates')}
+                                    className="w-24"
+                                    min="0"
+                                    step="1"
+                                    data-testid="input-ppl-oversized-fee"
+                                  />
+                                  <span className="text-sm text-muted-foreground">CZK</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings:oversizedFeeDescription', 'Surcharge for packages exceeding standard dimensions')}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Insurance Section */}
+                          <div className="space-y-3">
+                            <h4 className="font-medium">{t('settings:pplInsurance', 'Insurance')}</h4>
+                            <div className="p-3 rounded-lg border bg-muted/30">
+                              <div className="flex items-center gap-3 mb-3">
+                                <span className="text-lg">🛡️</span>
+                                <span className="text-sm font-medium">{t('settings:insuranceSettings', 'Insurance Settings')}</span>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label className="text-sm">{t('settings:insurancePercent', 'Insurance Rate')}</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      value={parsedRates.surcharges?.insurancePercent || 0}
+                                      onChange={(e) => updateSurcharge('insurancePercent', parseDecimal(e.target.value))}
+                                      onKeyDown={handleDecimalKeyDown}
+                                      onBlur={handleTextBlur('ppl_shipping_rates')}
+                                      className="w-20"
+                                      min="0"
+                                      max="100"
+                                      step="0.01"
+                                      data-testid="input-ppl-insurance-percent"
+                                    />
+                                    <span className="text-sm text-muted-foreground">{t('settings:ofDeclaredValue', '% of declared value')}</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm">{t('settings:minimumInsuranceFee', 'Minimum Fee')}</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      value={parsedRates.surcharges?.insuranceMinFee || 0}
+                                      onChange={(e) => updateSurcharge('insuranceMinFee', parseDecimal(e.target.value))}
+                                      onKeyDown={handleDecimalKeyDown}
+                                      onBlur={handleTextBlur('ppl_shipping_rates')}
+                                      className="w-24"
+                                      min="0"
+                                      step="1"
+                                      data-testid="input-ppl-insurance-min-fee"
+                                    />
+                                    <span className="text-sm text-muted-foreground">CZK</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2">{t('settings:insuranceDescription', 'Insurance fee based on declared shipment value (higher of percentage or minimum)')}</p>
+                            </div>
                           </div>
                         </div>
                         <FormMessage />
