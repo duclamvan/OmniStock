@@ -24,6 +24,7 @@ export default {
   fulfillmentRate: 'Tỷ lệ hoàn thành',
   profitMargin: 'Biên lợi nhuận',
   thisMonth: 'Tháng này',
+  yesterday: 'hôm qua',
   
   // Pick & Pack Flow
   pickPackFlow: 'Quy trình Lấy & Đóng gói',
@@ -100,4 +101,107 @@ export default {
   hoursAgo: '{{count}} giờ',
   daysAgo: '{{count}} ngày',
   andMore: '+{{count}} khác',
+  
+  // Financial Control Section
+  currencyDistribution: 'Phân bổ tiền tệ',
+  thisMonthVsLastMonth: 'Tháng này so với tháng trước',
+  current: 'Hiện tại',
+  previous: 'Trước đó',
+  perTransaction: 'mỗi giao dịch',
+  agedReceivables: 'Công nợ quá hạn',
+  
+  // Inventory Risk Section
+  inventoryRiskAlerts: 'Cảnh báo rủi ro tồn kho',
+  stockIssuesRequiringAttention: 'Vấn đề tồn kho cần chú ý',
+  lowStockProducts: 'Sản phẩm tồn kho thấp',
+  overAllocatedSkus: 'SKU phân bổ quá mức',
+  agingInventory: 'Hàng tồn lâu',
+  ninetyDaysNoMovement: '90+ ngày không di chuyển',
+  inboundBacklog: 'Hàng chờ nhập',
+  supplierDelays: 'Chậm trễ nhà cung cấp',
+  viewAll: 'Xem tất cả',
+  reconcile: 'Đối soát',
+  processReceipts: 'Xử lý phiếu nhận',
+  reviewShipments: 'Xem xét lô hàng',
+  
+  // Fulfillment Efficiency Section
+  fulfillmentEfficiency: 'Hiệu quả xử lý',
+  pickPackPerformanceMetrics: 'Chỉ số hiệu suất lấy & đóng gói',
+  pickErrorsThisMonth: 'Lỗi lấy hàng tháng này',
+  aiCartonRecommendations: 'Gợi ý thùng AI',
+  ordersUsedAiSuggestions: 'đơn dùng gợi ý AI',
+  carrierOnTimeDelivery: 'Giao đúng hẹn',
+  targetDeliveryRate: 'Mục tiêu: 95% tỷ lệ giao',
+  orderStageDistribution: 'Phân bổ giai đoạn đơn',
+  
+  // Customer & Support Section
+  customerAndSupport: 'Khách hàng & Hỗ trợ',
+  customerMetricsAndTickets: 'Chỉ số khách hàng và phiếu hỗ trợ',
+  topCustomersThisMonth: 'Khách hàng hàng đầu tháng này',
+  activeSupportTickets: 'Phiếu hỗ trợ đang mở',
+  low: 'thấp',
+  medium: 'trung bình',
+  high: 'cao',
+  urgent: 'khẩn cấp',
+  codCollectionStatus: 'Trạng thái thu COD',
+  paid: 'đã thanh toán',
+  failed: 'thất bại',
+  customerRetentionRate: 'Tỷ lệ giữ chân khách',
+  ninetyDayCohort: 'Nhóm 90 ngày',
+  
+  // System Alerts Section
+  systemAlertsAndActivity: 'Cảnh báo hệ thống & Hoạt động',
+  criticalAlertsAndActivities: 'Cảnh báo quan trọng và hoạt động gần đây',
+  recentMajorActivities: 'Hoạt động lớn gần đây',
+  majorActivitiesFromAllUsers: 'Hoạt động lớn từ tất cả người dùng',
+  returnsSpikeDetection: 'Phát hiện tăng đột biến trả hàng',
+  thisWeek: 'Tuần này',
+  lastWeek: 'Tuần trước',
+  trend: 'Xu hướng',
+  integrationHealth: 'Tình trạng tích hợp',
+  orderProcessing: 'Xử lý đơn hàng',
+  healthy: 'tốt',
+  unknown: 'không rõ',
+  recentOrders: 'Đơn hàng gần đây',
+  recentActivityFeed: 'Nguồn hoạt động gần đây',
+  
+  // Inventory Health Section
+  inventoryHealth: 'Sức khỏe tồn kho',
+  inventoryHealthDescription: 'Mức tồn kho và chỉ số luân chuyển',
+  inventoryTurnover: 'Vòng quay tồn kho',
+  annualized: 'theo năm',
+  daysOfSupply: 'Số ngày cung ứng',
+  currentStock: 'tồn kho hiện tại',
+  sellThroughRate: 'Tỷ lệ bán qua',
+  last30Days: '30 ngày qua',
+  totalInventoryValue: 'Tổng giá trị tồn kho',
+  units: 'đơn vị',
+  stockHealthDistribution: 'Phân bổ sức khỏe tồn kho',
+  lowStock: 'Tồn thấp',
+  outOfStock: 'Hết hàng',
+  overstocked: 'Tồn thừa',
+  slowMoving: 'Chậm bán',
+  reorderAlerts: 'Cảnh báo đặt lại',
+  productsNeedingReorder: 'Sản phẩm cần đặt lại',
+  inStock: 'trong kho',
+  allProductsWellStocked: 'Tất cả sản phẩm đủ hàng',
+  
+  // Financial Analytics Section
+  financialAnalytics: 'Phân tích tài chính',
+  historicalPerformanceTrends: 'Xu hướng hiệu suất lịch sử',
+  revenueAndProfit: 'Doanh thu & Lợi nhuận',
+  totalExpenses: 'Tổng chi phí',
+  yearlyReport: 'Báo cáo năm',
+  soldAmount: 'Số lượng bán',
+  purchased: 'Đã mua',
+  
+  // Time periods
+  week: 'tuần',
+  month: 'tháng',
+  year: 'năm',
+  thisYear: 'Năm nay',
+  lastYear: 'Năm trước',
+  
+  // No data
+  noDataAvailable: 'Không có dữ liệu',
 };

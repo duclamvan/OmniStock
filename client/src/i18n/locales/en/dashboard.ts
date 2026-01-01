@@ -24,6 +24,7 @@ export default {
   fulfillmentRate: 'Fulfillment Rate',
   profitMargin: 'Profit Margin',
   thisMonth: 'This month',
+  yesterday: 'yesterday',
   
   // Pick & Pack Flow
   pickPackFlow: 'Pick & Pack Flow',
@@ -100,4 +101,107 @@ export default {
   hoursAgo: '{{count}}h',
   daysAgo: '{{count}}d',
   andMore: '+{{count}} more',
+  
+  // Financial Control Section
+  currencyDistribution: 'Currency Distribution',
+  thisMonthVsLastMonth: 'This month vs last month',
+  current: 'Current',
+  previous: 'Previous',
+  perTransaction: 'per transaction',
+  agedReceivables: 'Aged Receivables',
+  
+  // Inventory Risk Section
+  inventoryRiskAlerts: 'Inventory Risk Alerts',
+  stockIssuesRequiringAttention: 'Stock issues requiring attention',
+  lowStockProducts: 'Low Stock Products',
+  overAllocatedSkus: 'Over-Allocated SKUs',
+  agingInventory: 'Aging Inventory',
+  ninetyDaysNoMovement: '90+ days no movement',
+  inboundBacklog: 'Inbound Backlog',
+  supplierDelays: 'Supplier Delays',
+  viewAll: 'View all',
+  reconcile: 'Reconcile',
+  processReceipts: 'Process receipts',
+  reviewShipments: 'Review shipments',
+  
+  // Fulfillment Efficiency Section
+  fulfillmentEfficiency: 'Fulfillment Efficiency',
+  pickPackPerformanceMetrics: 'Pick & pack performance metrics',
+  pickErrorsThisMonth: 'Pick Errors This Month',
+  aiCartonRecommendations: 'AI Carton Recommendations',
+  ordersUsedAiSuggestions: 'orders used AI suggestions',
+  carrierOnTimeDelivery: 'Carrier On-Time Delivery',
+  targetDeliveryRate: 'Target: 95% delivery rate',
+  orderStageDistribution: 'Order Stage Distribution',
+  
+  // Customer & Support Section
+  customerAndSupport: 'Customer & Support',
+  customerMetricsAndTickets: 'Customer metrics and support tickets',
+  topCustomersThisMonth: 'Top Customers This Month',
+  activeSupportTickets: 'Active Support Tickets',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  urgent: 'urgent',
+  codCollectionStatus: 'COD Collection Status',
+  paid: 'paid',
+  failed: 'failed',
+  customerRetentionRate: 'Customer Retention Rate',
+  ninetyDayCohort: '90-day cohort',
+  
+  // System Alerts Section
+  systemAlertsAndActivity: 'System Alerts & Activity',
+  criticalAlertsAndActivities: 'Critical alerts and recent activities',
+  recentMajorActivities: 'Recent Major Activities',
+  majorActivitiesFromAllUsers: 'Major activities from all users',
+  returnsSpikeDetection: 'Returns Spike Detection',
+  thisWeek: 'This week',
+  lastWeek: 'Last week',
+  trend: 'Trend',
+  integrationHealth: 'Integration Health',
+  orderProcessing: 'Order processing',
+  healthy: 'healthy',
+  unknown: 'unknown',
+  recentOrders: 'Recent orders',
+  recentActivityFeed: 'Recent Activity Feed',
+  
+  // Inventory Health Section
+  inventoryHealth: 'Inventory Health',
+  inventoryHealthDescription: 'Stock levels and turnover metrics',
+  inventoryTurnover: 'Inventory Turnover',
+  annualized: 'annualized',
+  daysOfSupply: 'Days of Supply',
+  currentStock: 'current stock',
+  sellThroughRate: 'Sell-Through Rate',
+  last30Days: 'last 30 days',
+  totalInventoryValue: 'Total Inventory Value',
+  units: 'units',
+  stockHealthDistribution: 'Stock Health Distribution',
+  lowStock: 'Low Stock',
+  outOfStock: 'Out of Stock',
+  overstocked: 'Overstocked',
+  slowMoving: 'Slow Moving',
+  reorderAlerts: 'Reorder Alerts',
+  productsNeedingReorder: 'Products needing reorder',
+  inStock: 'in stock',
+  allProductsWellStocked: 'All products well stocked',
+  
+  // Financial Analytics Section
+  financialAnalytics: 'Financial Analytics',
+  historicalPerformanceTrends: 'Historical performance trends',
+  revenueAndProfit: 'Revenue & Profit',
+  totalExpenses: 'Total Expenses',
+  yearlyReport: 'Yearly Report',
+  soldAmount: 'Sold amount',
+  purchased: 'Purchased',
+  
+  // Time periods
+  week: 'week',
+  month: 'month',
+  year: 'year',
+  thisYear: 'This year',
+  lastYear: 'Last year',
+  
+  // No data
+  noDataAvailable: 'No data available',
 };
