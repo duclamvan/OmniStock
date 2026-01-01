@@ -5834,9 +5834,12 @@ Important:
             .where(eq(products.id, product.id))
             .limit(1);
 
+          // Return currency-tagged import costs - never use latestLandingCost as it has unknown currency
           return {
             ...product,
-            landingCost: productWithCost?.latestLandingCost || null
+            importCostCzk: productWithCost?.importCostCzk || null,
+            importCostEur: productWithCost?.importCostEur || null,
+            importCostUsd: productWithCost?.importCostUsd || null,
           };
         }));
 
@@ -5901,10 +5904,13 @@ Important:
         }
       }
 
-      // Add latest_landing_cost and availability to the product object
+      // Add currency-tagged import costs and availability to the product object
+      // NOTE: We don't use latestLandingCost as it has unknown currency
       const productData = {
         ...product,
-        latest_landing_cost: productWithCost?.latestLandingCost || null,
+        importCostCzk: productWithCost?.importCostCzk || null,
+        importCostEur: productWithCost?.importCostEur || null,
+        importCostUsd: productWithCost?.importCostUsd || null,
         allocatedQuantity: allocated,
         availableQuantity: available
       };
@@ -11634,9 +11640,10 @@ Important:
               .where(eq(products.id, item.productId))
               .limit(1);
 
+            // Keep the stored landingCost from order item (captured at sale time with correct currency)
+            // Only enhance image if missing
             return {
               ...item,
-              landingCost: productData?.latestLandingCost || null,
               // If order item doesn't have image, populate from product
               image: item.image || productData?.imageUrl || null
             };
@@ -11723,10 +11730,11 @@ Important:
             .where(eq(products.id, item.productId))
             .limit(1);
 
+          // Keep the stored landingCost from order item (captured at sale time with correct currency)
+          // Only enhance productName and image if missing
           return {
             ...item,
             productName: item.productName || productData?.name || 'Unknown Product',
-            landingCost: productData?.latestLandingCost || null,
             image: item.image || productData?.imageUrl || null
           };
         }

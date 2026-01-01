@@ -2486,7 +2486,7 @@ export default function AddOrder() {
           discountPercentage: 0,
           tax: 0,
           total: 0,
-          landingCost: product.landingCost || product.latestLandingCost || null,
+          landingCost: null, // Cost is captured server-side with correct currency
           image: product.image || product.imageUrl || null,
           appliedDiscountId: availableFreeSlot.discountId,
           appliedDiscountLabel: availableFreeSlot.discountName,
@@ -2566,7 +2566,7 @@ export default function AddOrder() {
           discountPercentage: discountPct,
           tax: 0,
           total: productPrice - discountAmount,
-          landingCost: product.landingCost || product.latestLandingCost || null,
+          landingCost: null, // Cost is captured server-side with correct currency
           image: product.image || product.imageUrl || null,
           appliedDiscountId: discountId,
           appliedDiscountLabel: discountLabel || null,
