@@ -100,61 +100,57 @@ export function PPLSmartPopup({
           document.head.appendChild(link);
         }
 
-        if (!scriptLoadedRef.current) {
-          await new Promise<void>((resolve, reject) => {
-            if (document.getElementById("ppl-widget-script")) {
-              scriptLoadedRef.current = true;
-              resolve();
-              return;
-            }
-
-            const script = document.createElement("script");
-            script.id = "ppl-widget-script";
-            script.src = "https://www.ppl.cz/sources/map/main.js";
-            script.async = true;
-            script.onload = () => {
-              scriptLoadedRef.current = true;
-              resolve();
-            };
-            script.onerror = () => reject(new Error("Failed to load PPL widget script"));
-            document.body.appendChild(script);
-          });
+        const existingScript = document.getElementById("ppl-widget-script");
+        if (existingScript) {
+          existingScript.remove();
         }
+        scriptLoadedRef.current = false;
 
         if (!eventListenerAddedRef.current) {
           document.addEventListener("ppl-parcelshop-map", handlePickupPointSelected as EventListener);
           eventListenerAddedRef.current = true;
         }
 
-        setTimeout(() => {
-          if (containerRef.current) {
-            const addressString = buildAddressString();
-            containerRef.current.innerHTML = "";
-            
-            const widgetDiv = document.createElement("div");
-            widgetDiv.id = "ppl-parcelshop-map";
-            widgetDiv.setAttribute("data-language", language);
-            widgetDiv.setAttribute("data-mode", "default");
-            widgetDiv.setAttribute("data-country", "cz");
-            widgetDiv.setAttribute("data-countries", "cz,sk");
-            widgetDiv.setAttribute("data-address", addressString);
-            widgetDiv.style.height = "500px";
-            widgetDiv.style.width = "100%";
-            
-            containerRef.current.appendChild(widgetDiv);
-            
-            const checkWidget = () => {
-              if ((window as any).pplWidget || containerRef.current?.querySelector("iframe, .ppl-widget, .leaflet-container")) {
-                setIsLoading(false);
-              } else {
-                setTimeout(checkWidget, 100);
-              }
-            };
-            
-            setTimeout(checkWidget, 500);
-            setTimeout(() => setIsLoading(false), 3000);
+        if (containerRef.current) {
+          const addressString = buildAddressString();
+          containerRef.current.innerHTML = "";
+          
+          const widgetDiv = document.createElement("div");
+          widgetDiv.id = "ppl-parcelshop-map";
+          widgetDiv.setAttribute("data-language", language);
+          widgetDiv.setAttribute("data-mode", "default");
+          widgetDiv.setAttribute("data-country", "cz");
+          widgetDiv.setAttribute("data-countries", "cz,sk");
+          widgetDiv.setAttribute("data-address", addressString);
+          widgetDiv.style.height = "500px";
+          widgetDiv.style.width = "100%";
+          
+          containerRef.current.appendChild(widgetDiv);
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.id = "ppl-widget-script";
+          script.src = "https://www.ppl.cz/sources/map/main.js";
+          script.async = true;
+          script.onload = () => {
+            scriptLoadedRef.current = true;
+            resolve();
+          };
+          script.onerror = () => reject(new Error("Failed to load PPL widget script"));
+          document.body.appendChild(script);
+        });
+
+        const checkWidget = () => {
+          if (containerRef.current?.querySelector("iframe, .ppl-widget, .leaflet-container, canvas, svg")) {
+            setIsLoading(false);
+          } else {
+            setTimeout(checkWidget, 100);
           }
-        }, 100);
+        };
+        
+        setTimeout(checkWidget, 500);
+        setTimeout(() => setIsLoading(false), 3000);
       } catch (error) {
         console.error("Error loading PPL widget:", error);
         setWidgetError(t("orders:pplWidgetLoadError", "Failed to load pickup point map. Please try again."));
