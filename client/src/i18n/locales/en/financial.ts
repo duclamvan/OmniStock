@@ -574,6 +574,7 @@ const financial = {
   everyMonthsOnDay: 'Every {{interval}} {{months}} on day {{day}}',
   everyYearsOn: 'Every {{interval}} {{years}} on {{month}} {{day}}',
   configureRecurringOptions: 'Configure recurring options above',
+  expenseRecordPurpose: 'This expense record is for internal accounting purposes only.',
   
   // Payment Methods (already have some, adding missing)
   paypal: 'PayPal',

@@ -574,6 +574,7 @@ const financial = {
   everyMonthsOnDay: 'Mỗi {{interval}} {{months}} vào ngày {{day}}',
   everyYearsOn: 'Mỗi {{interval}} {{years}} vào {{month}} {{day}}',
   configureRecurringOptions: 'Cấu hình tùy chọn lặp lại ở trên',
+  expenseRecordPurpose: 'Bản ghi chi phí này chỉ dành cho mục đích kế toán nội bộ.',
   
   // Payment Methods (already have some, adding missing)
   paypal: 'PayPal',

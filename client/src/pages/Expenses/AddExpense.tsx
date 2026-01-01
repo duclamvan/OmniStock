@@ -256,6 +256,23 @@ export default function AddExpense() {
     }
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case 'cash':
+        return t('cash');
+      case 'bank_transfer':
+        return t('bankTransfer');
+      case 'credit_card':
+        return t('creditCard');
+      case 'paypal':
+        return t('paypal');
+      case 'other':
+        return t('other');
+      default:
+        return method;
+    }
+  };
+
   // Loading state for edit mode
   if (isEditMode && isLoadingExpense) {
     return (
@@ -302,6 +319,16 @@ export default function AddExpense() {
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{isEditMode ? t('updateExpenseDetails') : t('businessExpenseRecord')}</p>
                 </div>
               </div>
+              <Button
+                type="submit"
+                size="sm"
+                className="hidden sm:flex"
+                disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                data-testid="button-header-save"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isEditMode ? t('common:update') : t('common:save')}
+              </Button>
             </div>
           </div>
         </div>
@@ -889,8 +916,8 @@ export default function AddExpense() {
                             {getPaymentMethodIcon(form.watch("paymentMethod"))}
                             {t('payment')}
                           </span>
-                          <span className="font-medium text-slate-900 dark:text-white capitalize text-sm">
-                            {form.watch("paymentMethod").replace('_', ' ')}
+                          <span className="font-medium text-slate-900 dark:text-white text-sm">
+                            {getPaymentMethodLabel(form.watch("paymentMethod"))}
                           </span>
                         </div>
 
