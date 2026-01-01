@@ -2077,19 +2077,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory Dashboard - Real-time visual dashboard for all users
+  // Enhanced with variant quantities, forecasting, and reorder recommendations
   app.get('/api/dashboard/inventory', isAuthenticated, cacheMiddleware(30000), async (req, res) => {
     try {
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const oneEightyDaysAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+      const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
       // Get all active products
       const allProducts = await storage.getProducts();
       const activeProducts = allProducts.filter(p => p.isActive !== false);
 
+      // Get all product variants for variant-aware calculations
+      const allVariants = await db.select().from(productVariants);
+      
+      // Get all bundles to exclude virtual products from physical stock calculations
+      const allBundles = await db.select().from(productBundles);
+      const bundleSkus = new Set(allBundles.map(b => b.sku).filter(Boolean));
+      
+      // Filter out virtual products (bundles) from physical stock calculations
+      const physicalProducts = activeProducts.filter(p => !bundleSkus.has(p.sku));
+
       // Helper function to get product value in EUR
-      // Uses EUR price if available, otherwise converts CZK to EUR
-      const CZK_TO_EUR_RATE = 0.04; // Approximate rate: 1 CZK = 0.04 EUR
+      const CZK_TO_EUR_RATE = 0.04;
       const getProductValueEur = (product: any): number => {
         const priceEur = parseFloat(product.priceEur || '0');
         if (priceEur > 0) return priceEur;
@@ -2100,23 +2112,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return 0;
       };
 
-      // Calculate total inventory value (converted to EUR)
-      let totalInventoryValue = 0;
-      let totalUnits = 0;
-      activeProducts.forEach(p => {
-        const qty = p.quantity || 0;
-        const priceEur = getProductValueEur(p);
-        totalInventoryValue += qty * priceEur;
-        totalUnits += qty;
+      // Create variant map by product ID for efficient lookups
+      const variantsByProduct = new Map<string, typeof allVariants>();
+      allVariants.forEach(v => {
+        const existing = variantsByProduct.get(v.productId) || [];
+        existing.push(v);
+        variantsByProduct.set(v.productId, existing);
       });
 
+      // Calculate total inventory including variants
+      let totalInventoryValue = 0;
+      let totalUnits = 0;
+      let totalVariantUnits = 0;
+      let totalProductUnits = 0;
+      
+      physicalProducts.forEach(p => {
+        const productQty = p.quantity || 0;
+        const productVariantsList = variantsByProduct.get(p.id) || [];
+        const variantQty = productVariantsList.reduce((sum, v) => sum + (v.quantity || 0), 0);
+        
+        const priceEur = getProductValueEur(p);
+        const totalQty = productQty + variantQty;
+        
+        totalInventoryValue += totalQty * priceEur;
+        totalUnits += totalQty;
+        totalProductUnits += productQty;
+        totalVariantUnits += variantQty;
+      });
+
+      // Calculate total SKUs (products + variants)
+      const totalSKUs = physicalProducts.length + allVariants.length;
+
+      // Helper to get effective quantity (product + variants)
+      const getEffectiveQuantity = (product: any): number => {
+        const productQty = product.quantity || 0;
+        const variants = variantsByProduct.get(product.id) || [];
+        return productQty + variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+      };
+
       // Low stock products - supports none, percentage, and amount types
-      const lowStockProducts = activeProducts.filter(p => {
-        const quantity = p.quantity || 0;
+      const lowStockProducts = physicalProducts.filter(p => {
+        const quantity = getEffectiveQuantity(p);
         const alertType = p.lowStockAlertType || 'percentage';
         const alertValue = p.lowStockAlert || 45;
         
-        // Skip products with 'none' alert type
         if (alertType === 'none') return false;
         
         if (alertType === 'percentage') {
@@ -2128,25 +2167,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Out of stock products
-      const outOfStockProducts = activeProducts.filter(p => (p.quantity || 0) === 0);
-
-      // Overstocked products (quantity > maxStockLevel)
-      const overstockedProducts = activeProducts.filter(p => {
-        const maxStock = p.maxStockLevel || 0;
-        return maxStock > 0 && (p.quantity || 0) > maxStock;
+      // Low stock variants (separate from products)
+      const lowStockVariants = allVariants.filter(v => {
+        const quantity = v.quantity || 0;
+        const parent = physicalProducts.find(p => p.id === v.productId);
+        if (!parent) return false;
+        
+        const alertType = parent.lowStockAlertType || 'percentage';
+        const alertValue = parent.lowStockAlert || 45;
+        
+        if (alertType === 'none') return false;
+        
+        if (alertType === 'percentage') {
+          const maxStock = parent.maxStockLevel || 100;
+          const threshold = Math.ceil((maxStock * alertValue) / 100);
+          return quantity <= threshold && quantity > 0;
+        } else {
+          return quantity <= alertValue && quantity > 0;
+        }
       });
 
-      // Healthy stock (not low, not out, not over)
-      const healthyStockProducts = activeProducts.filter(p => {
-        const quantity = p.quantity || 0;
+      // Out of stock products (including variants check)
+      const outOfStockProducts = physicalProducts.filter(p => getEffectiveQuantity(p) === 0);
+
+      // Overstocked products
+      const overstockedProducts = physicalProducts.filter(p => {
+        const maxStock = p.maxStockLevel || 0;
+        return maxStock > 0 && getEffectiveQuantity(p) > maxStock;
+      });
+
+      // Healthy stock
+      const healthyStockProducts = physicalProducts.filter(p => {
+        const quantity = getEffectiveQuantity(p);
         if (quantity === 0) return false;
         
         const alertType = p.lowStockAlertType || 'percentage';
         const alertValue = p.lowStockAlert || 45;
         const maxStock = p.maxStockLevel || 100;
         
-        // Products with 'none' alert type are considered healthy (no low stock check)
         let isLow = false;
         if (alertType !== 'none') {
           if (alertType === 'percentage') {
@@ -2161,14 +2219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return !isLow && !isOver;
       });
 
-      // Stock by category
+      // Stock by category (with variants)
       const allCategories = await storage.getCategories();
       const stockByCategory = allCategories.map(cat => {
-        const catProducts = activeProducts.filter(p => p.categoryId === cat.id);
-        const totalQty = catProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        const catProducts = physicalProducts.filter(p => p.categoryId === cat.id);
+        const totalQty = catProducts.reduce((sum, p) => sum + getEffectiveQuantity(p), 0);
         const totalValue = catProducts.reduce((sum, p) => {
           const priceEur = getProductValueEur(p);
-          return sum + (p.quantity || 0) * priceEur;
+          return sum + getEffectiveQuantity(p) * priceEur;
         }, 0);
         return {
           id: cat.id,
@@ -2179,14 +2237,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }).filter(c => c.productCount > 0).sort((a, b) => b.totalValue - a.totalValue);
 
-      // Stock by warehouse
+      // Stock by warehouse (with variants)
       const allWarehouses = await storage.getWarehouses();
       const stockByWarehouse = allWarehouses.map(wh => {
-        const whProducts = activeProducts.filter(p => p.warehouseId === wh.id);
-        const totalQty = whProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        const whProducts = physicalProducts.filter(p => p.warehouseId === wh.id);
+        const totalQty = whProducts.reduce((sum, p) => sum + getEffectiveQuantity(p), 0);
         const totalValue = whProducts.reduce((sum, p) => {
           const priceEur = getProductValueEur(p);
-          return sum + (p.quantity || 0) * priceEur;
+          return sum + getEffectiveQuantity(p) * priceEur;
         }, 0);
         return {
           id: wh.id,
@@ -2197,14 +2255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }).filter(w => w.productCount > 0);
 
-      // Slow-moving inventory (no updates in 90 days with stock > 0)
-      const slowMovingProducts = activeProducts.filter(p => {
+      // Slow-moving inventory
+      const slowMovingProducts = physicalProducts.filter(p => {
         const lastUpdated = new Date(p.updatedAt || p.createdAt || now);
-        return lastUpdated < ninetyDaysAgo && (p.quantity || 0) > 0;
+        return lastUpdated < ninetyDaysAgo && getEffectiveQuantity(p) > 0;
       });
 
-      // Fast-moving products (based on unitsSold)
-      const fastMovingProducts = [...activeProducts]
+      // Fast-moving products
+      const fastMovingProducts = [...physicalProducts]
         .filter(p => (p.unitsSold || 0) > 0)
         .sort((a, b) => (b.unitsSold || 0) - (a.unitsSold || 0))
         .slice(0, 10)
@@ -2212,11 +2270,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: p.id,
           name: p.name,
           sku: p.sku,
-          quantity: p.quantity || 0,
+          quantity: getEffectiveQuantity(p),
           unitsSold: p.unitsSold || 0
         }));
 
-      // Stock status distribution for pie chart
+      // Stock distribution
       const stockDistribution = {
         healthy: healthyStockProducts.length,
         lowStock: lowStockProducts.length,
@@ -2224,19 +2282,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         overstocked: overstockedProducts.length
       };
 
-      // Top low stock products for action
+      // Top low stock products (including variant info)
       const topLowStockProducts = lowStockProducts
-        .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
+        .sort((a, b) => getEffectiveQuantity(a) - getEffectiveQuantity(b))
         .slice(0, 10)
         .map(p => ({
           id: p.id,
           name: p.name,
           sku: p.sku,
-          quantity: p.quantity || 0,
+          quantity: getEffectiveQuantity(p),
+          productQuantity: p.quantity || 0,
+          variantQuantity: (variantsByProduct.get(p.id) || []).reduce((sum, v) => sum + (v.quantity || 0), 0),
           minStockLevel: p.minStockLevel || 0,
           lowStockAlert: p.lowStockAlert || 45,
           categoryName: allCategories.find(c => c.id === p.categoryId)?.name
         }));
+
+      // Top low stock variants
+      const topLowStockVariants = lowStockVariants
+        .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
+        .slice(0, 10)
+        .map(v => {
+          const parent = physicalProducts.find(p => p.id === v.productId);
+          return {
+            id: v.id,
+            name: v.name,
+            sku: v.sku,
+            quantity: v.quantity || 0,
+            parentProductId: v.productId,
+            parentProductName: parent?.name,
+            parentProductSku: parent?.sku
+          };
+        });
 
       // Pending incoming shipments count
       const pendingPurchases = await db.select({ count: sql<number>`count(*)` })
@@ -2250,23 +2327,257 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       const incomingShipmentsCount = pendingPurchases[0]?.count || 0;
 
+      // ========== SALES VELOCITY & FORECASTING ==========
+      // Query order items with completed orders for sales analysis
+      const completedOrderStatuses = ['completed', 'shipped', 'delivered'];
+      
+      // Get sales data for different time periods
+      const salesDataQuery = await db.select({
+        productId: orderItems.productId,
+        variantId: orderItems.variantId,
+        quantity: orderItems.quantity,
+        createdAt: orders.createdAt
+      })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(
+          and(
+            inArray(orders.orderStatus, completedOrderStatuses),
+            eq(orders.isArchived, false),
+            sql`${orders.createdAt} >= ${oneYearAgo.toISOString()}`
+          )
+        );
+
+      // Calculate sales by product/variant for different periods
+      const salesByProductId = new Map<string, { last30: number; last90: number; last180: number; lastYear: number }>();
+      const salesByVariantId = new Map<string, { last30: number; last90: number; last180: number; lastYear: number }>();
+      
+      salesDataQuery.forEach(item => {
+        const itemDate = new Date(item.createdAt || now);
+        const qty = item.quantity || 0;
+        
+        // Track by product
+        if (item.productId) {
+          const existing = salesByProductId.get(item.productId) || { last30: 0, last90: 0, last180: 0, lastYear: 0 };
+          if (itemDate >= thirtyDaysAgo) existing.last30 += qty;
+          if (itemDate >= ninetyDaysAgo) existing.last90 += qty;
+          if (itemDate >= oneEightyDaysAgo) existing.last180 += qty;
+          existing.lastYear += qty;
+          salesByProductId.set(item.productId, existing);
+        }
+        
+        // Track by variant
+        if (item.variantId) {
+          const existing = salesByVariantId.get(item.variantId) || { last30: 0, last90: 0, last180: 0, lastYear: 0 };
+          if (itemDate >= thirtyDaysAgo) existing.last30 += qty;
+          if (itemDate >= ninetyDaysAgo) existing.last90 += qty;
+          if (itemDate >= oneEightyDaysAgo) existing.last180 += qty;
+          existing.lastYear += qty;
+          salesByVariantId.set(item.variantId, existing);
+        }
+      });
+
+      // Calculate average daily sales velocity
+      const getDailyVelocity = (sales: { last30: number; last90: number; last180: number; lastYear: number }) => ({
+        daily30: sales.last30 / 30,
+        daily90: sales.last90 / 90,
+        daily180: sales.last180 / 180,
+        dailyYear: sales.lastYear / 365
+      });
+
+      // Calculate stock coverage (days of supply) for each product
+      const productCoverage: Array<{
+        id: string;
+        name: string;
+        sku: string;
+        currentStock: number;
+        velocity30: number;
+        velocity90: number;
+        coverageDays30: number | null;
+        coverageDays90: number | null;
+        runsOutIn30Days: boolean;
+        runsOutIn90Days: boolean;
+        runsOutIn180Days: boolean;
+      }> = [];
+
+      physicalProducts.forEach(p => {
+        const sales = salesByProductId.get(p.id) || { last30: 0, last90: 0, last180: 0, lastYear: 0 };
+        const velocity = getDailyVelocity(sales);
+        const currentStock = getEffectiveQuantity(p);
+        
+        const coverageDays30 = velocity.daily30 > 0 ? currentStock / velocity.daily30 : null;
+        const coverageDays90 = velocity.daily90 > 0 ? currentStock / velocity.daily90 : null;
+        
+        productCoverage.push({
+          id: p.id,
+          name: p.name || '',
+          sku: p.sku || '',
+          currentStock,
+          velocity30: Math.round(velocity.daily30 * 100) / 100,
+          velocity90: Math.round(velocity.daily90 * 100) / 100,
+          coverageDays30: coverageDays30 !== null ? Math.round(coverageDays30) : null,
+          coverageDays90: coverageDays90 !== null ? Math.round(coverageDays90) : null,
+          runsOutIn30Days: coverageDays90 !== null && coverageDays90 <= 30,
+          runsOutIn90Days: coverageDays90 !== null && coverageDays90 <= 90,
+          runsOutIn180Days: coverageDays90 !== null && coverageDays90 <= 180
+        });
+      });
+
+      // Products running out soon
+      const runsOutIn30Days = productCoverage.filter(p => p.runsOutIn30Days);
+      const runsOutIn90Days = productCoverage.filter(p => p.runsOutIn90Days);
+      const runsOutIn180Days = productCoverage.filter(p => p.runsOutIn180Days);
+
+      // Calculate aggregate forecasts
+      const calculateForecast = (days: number, label: string) => {
+        let expectedSales = 0;
+        let stockNeeds = 0;
+        let shortfallProducts: Array<{ id: string; name: string; sku: string; shortfall: number }> = [];
+        
+        physicalProducts.forEach(p => {
+          const sales = salesByProductId.get(p.id) || { last30: 0, last90: 0, last180: 0, lastYear: 0 };
+          const velocity = getDailyVelocity(sales);
+          const dailyRate = velocity.daily90 || velocity.daily30 || 0;
+          const projectedSales = dailyRate * days;
+          const currentStock = getEffectiveQuantity(p);
+          
+          expectedSales += projectedSales;
+          stockNeeds += Math.max(0, projectedSales - currentStock);
+          
+          if (projectedSales > currentStock && dailyRate > 0) {
+            shortfallProducts.push({
+              id: p.id,
+              name: p.name || '',
+              sku: p.sku || '',
+              shortfall: Math.round(projectedSales - currentStock)
+            });
+          }
+        });
+        
+        return {
+          period: label,
+          days,
+          expectedSales: Math.round(expectedSales),
+          stockNeeds: Math.round(stockNeeds),
+          potentialShortfalls: shortfallProducts.length,
+          shortfallProducts: shortfallProducts.sort((a, b) => b.shortfall - a.shortfall).slice(0, 10)
+        };
+      };
+
+      const forecasts = {
+        nextSeason: calculateForecast(90, 'Next 90 Days'),
+        halfYear: calculateForecast(180, 'Next 180 Days'),
+        nextYear: calculateForecast(365, 'Next Year')
+      };
+
+      // ========== REORDER RECOMMENDATIONS ==========
+      // Products that need reordering based on velocity and lead time (default 14 days)
+      const DEFAULT_LEAD_TIME_DAYS = 14;
+      
+      const reorderNow: Array<{ id: string; name: string; sku: string; currentStock: number; velocity: number; daysUntilOut: number | null; suggestedQty: number }> = [];
+      const reorderSoon: Array<{ id: string; name: string; sku: string; currentStock: number; velocity: number; daysUntilOut: number | null; suggestedQty: number }> = [];
+      
+      physicalProducts.forEach(p => {
+        const sales = salesByProductId.get(p.id) || { last30: 0, last90: 0, last180: 0, lastYear: 0 };
+        const velocity = getDailyVelocity(sales);
+        const dailyRate = velocity.daily90 || velocity.daily30 || 0;
+        const currentStock = getEffectiveQuantity(p);
+        const daysUntilOut = dailyRate > 0 ? currentStock / dailyRate : null;
+        
+        if (dailyRate > 0 && daysUntilOut !== null) {
+          const reorderPoint = dailyRate * DEFAULT_LEAD_TIME_DAYS;
+          const suggestedQty = Math.ceil(dailyRate * 90); // 90 days of stock
+          
+          if (daysUntilOut <= DEFAULT_LEAD_TIME_DAYS) {
+            reorderNow.push({
+              id: p.id,
+              name: p.name || '',
+              sku: p.sku || '',
+              currentStock,
+              velocity: Math.round(dailyRate * 100) / 100,
+              daysUntilOut: Math.round(daysUntilOut),
+              suggestedQty
+            });
+          } else if (daysUntilOut <= DEFAULT_LEAD_TIME_DAYS * 2) {
+            reorderSoon.push({
+              id: p.id,
+              name: p.name || '',
+              sku: p.sku || '',
+              currentStock,
+              velocity: Math.round(dailyRate * 100) / 100,
+              daysUntilOut: Math.round(daysUntilOut),
+              suggestedQty
+            });
+          }
+        }
+      });
+
+      // Clearance candidates (high stock, low velocity)
+      const clearanceCandidates = productCoverage
+        .filter(p => p.coverageDays90 !== null && p.coverageDays90 > 365 && p.currentStock > 0)
+        .sort((a, b) => (b.coverageDays90 || 0) - (a.coverageDays90 || 0))
+        .slice(0, 10)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          currentStock: p.currentStock,
+          coverageDays: p.coverageDays90
+        }));
+
+      // Variant breakdown stats
+      const variantBreakdown = {
+        totalVariants: allVariants.length,
+        totalVariantUnits: totalVariantUnits,
+        variantsWithStock: allVariants.filter(v => (v.quantity || 0) > 0).length,
+        variantsOutOfStock: allVariants.filter(v => (v.quantity || 0) === 0).length,
+        lowStockVariants: lowStockVariants.length
+      };
+
+      // Action items summary
+      const actionItems = {
+        reorderNow: reorderNow.sort((a, b) => (a.daysUntilOut || 999) - (b.daysUntilOut || 999)).slice(0, 15),
+        reorderSoon: reorderSoon.sort((a, b) => (a.daysUntilOut || 999) - (b.daysUntilOut || 999)).slice(0, 15),
+        clearanceCandidates,
+        slowMovers: slowMovingProducts.slice(0, 10).map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          quantity: getEffectiveQuantity(p),
+          lastUpdated: p.updatedAt
+        }))
+      };
+
       res.json({
         summary: {
-          totalProducts: activeProducts.length,
+          totalProducts: physicalProducts.length,
+          totalSKUs,
           totalUnits,
+          totalProductUnits,
+          totalVariantUnits,
           totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
           healthyStock: healthyStockProducts.length,
           lowStock: lowStockProducts.length,
           outOfStock: outOfStockProducts.length,
           overstocked: overstockedProducts.length,
           slowMoving: slowMovingProducts.length,
-          incomingShipments: incomingShipmentsCount
+          incomingShipments: incomingShipmentsCount,
+          virtualProductsExcluded: allBundles.length
         },
         stockDistribution,
         stockByCategory: stockByCategory.slice(0, 8),
         stockByWarehouse,
         topLowStockProducts,
+        topLowStockVariants,
         fastMovingProducts,
+        variantBreakdown,
+        forecasts,
+        stockCoverage: {
+          runsOutIn30Days: runsOutIn30Days.slice(0, 15),
+          runsOutIn90Days: runsOutIn90Days.slice(0, 15),
+          runsOutIn180Days: runsOutIn180Days.slice(0, 15)
+        },
+        actionItems,
         timestamp: now.toISOString()
       });
     } catch (error) {
