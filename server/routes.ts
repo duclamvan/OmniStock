@@ -18218,6 +18218,13 @@ Important:
         // PPL SMART - delivery to ParcelShop/ParcelBox pickup location
         // SMAR product type is for SMART service with pickup location
         productType = 'SMAR';
+        
+        // Ensure parcelShopCode is present for SMAR product
+        if (!order.pickupLocationCode) {
+          return res.status(400).json({ 
+            error: 'Pickup location code is required for PPL SMART service. Please select a pickup point first.' 
+          });
+        }
       } else if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
         productType = hasCOD ? 'BUSD' : 'BUSS';
@@ -18300,9 +18307,9 @@ Important:
           }
         };
         
-        // Add parcelShopCode for PPL SMART shipments
+        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase)
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.parcelShopCode = order.pickupLocationCode;
+          shipment.ParcelShopCode = order.pickupLocationCode;
           console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
         }
 
@@ -18352,9 +18359,9 @@ Important:
           ]
         };
         
-        // Add parcelShopCode for PPL SMART shipments
+        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase)
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.parcelShopCode = order.pickupLocationCode;
+          singleShipment.ParcelShopCode = order.pickupLocationCode;
           console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
         }
 
