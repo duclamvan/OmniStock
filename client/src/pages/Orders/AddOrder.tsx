@@ -229,6 +229,9 @@ interface BuyXGetYAllocation {
   discountName: string;
   categoryId: string | null;
   categoryName?: string;
+  productId: string | null;
+  productName?: string;
+  isProductScope: boolean;
   buyQty: number;
   getQty: number;
   totalPaidItems: number;
@@ -3402,6 +3405,8 @@ export default function AddOrder() {
 
     return {
       subtotal: rawSubtotal,
+      discountAmount: actualDiscount,
+      tax: calculated.taxAmount,
       taxAmount: calculated.taxAmount,
       storeCreditApplied: storeCreditApplied,
       grandTotal: totalBeforeStoreCredit - storeCreditApplied,
@@ -3585,16 +3590,18 @@ export default function AddOrder() {
       return;
     }
 
-    // Find all active Buy X Get Y discounts with category scope
+    // Find all active Buy X Get Y discounts (category-scoped or product-scoped)
     const buyXGetYDiscounts = discounts.filter((d: any) => {
       // Check status is active
       if (d.status !== 'active') return false;
       // Must be buy_x_get_y type
       if (d.type !== 'buy_x_get_y') return false;
-      // Must be category-scoped for this allocation system (accept both 'specific_category' and 'category')
-      if (d.applicationScope !== 'specific_category' && d.applicationScope !== 'category') return false;
-      // Must have a categoryId
-      if (!d.categoryId) return false;
+      // Must be category-scoped OR product-scoped
+      const validScopes = ['specific_category', 'category', 'specific_product'];
+      if (!validScopes.includes(d.applicationScope)) return false;
+      // Category scope needs categoryId, product scope needs productId
+      if ((d.applicationScope === 'specific_category' || d.applicationScope === 'category') && !d.categoryId) return false;
+      if (d.applicationScope === 'specific_product' && !d.productId) return false;
       
       // Check date validity
       const today = new Date();
@@ -3616,14 +3623,22 @@ export default function AddOrder() {
     // Calculate allocations for each Buy X Get Y discount
     const allocations: BuyXGetYAllocation[] = buyXGetYDiscounts.map((discount: any) => {
       const categoryId = discount.categoryId?.toString() || null;
+      const productId = discount.productId?.toString() || null;
       const buyQty = discount.buyQuantity || 1;
       const getQty = discount.getQuantity || 1;
+      const isProductScope = discount.applicationScope === 'specific_product';
       
-      // Count paid items in this category (excluding free items)
+      // Count paid items matching the discount scope (excluding free items)
       const paidItems = orderItems.filter(item => {
         if (item.isFreeItem) return false;
-        if (!item.categoryId) return false;
-        return item.categoryId.toString() === categoryId;
+        if (isProductScope) {
+          // For product-scoped discount, match by productId
+          return item.productId === productId;
+        } else {
+          // For category-scoped discount, match by categoryId
+          if (!item.categoryId) return false;
+          return item.categoryId.toString() === categoryId;
+        }
       });
       
       const totalPaidItems = paidItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -3634,8 +3649,12 @@ export default function AddOrder() {
       // Count already assigned free items
       const assignedFreeItems = orderItems.filter(item => {
         if (!item.isFreeItem) return false;
-        if (!item.categoryId) return false;
-        return item.categoryId.toString() === categoryId && item.appliedDiscountId === discount.id;
+        if (isProductScope) {
+          return item.productId === productId && item.appliedDiscountId === discount.id;
+        } else {
+          if (!item.categoryId) return false;
+          return item.categoryId.toString() === categoryId && item.appliedDiscountId === discount.id;
+        }
       });
       
       const freeItemsAssigned = assignedFreeItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -3646,6 +3665,9 @@ export default function AddOrder() {
         discountName: discount.name,
         categoryId,
         categoryName: discount.categoryName || 'Category',
+        productId,
+        productName: discount.productName || 'Product',
+        isProductScope,
         buyQty,
         getQty,
         totalPaidItems,
@@ -3667,12 +3689,19 @@ export default function AddOrder() {
       const updatedItems = items.map(item => {
         // Skip free items (they already have discount info)
         if (item.isFreeItem) return item;
-        if (!item.categoryId) return item;
         
-        // Find if this item's category has an active buy_x_get_y allocation
-        const allocation = buyXGetYAllocations.find(
-          alloc => alloc.categoryId === item.categoryId?.toString() && alloc.freeItemsEarned > 0
-        );
+        // Find if this item has an active buy_x_get_y allocation (by category OR by product)
+        const allocation = buyXGetYAllocations.find(alloc => {
+          if (alloc.freeItemsEarned === 0) return false;
+          if (alloc.isProductScope) {
+            // Product-scoped: match by productId
+            return alloc.productId === item.productId;
+          } else {
+            // Category-scoped: match by categoryId
+            if (!item.categoryId) return false;
+            return alloc.categoryId === item.categoryId?.toString();
+          }
+        });
         
         if (allocation) {
           // Check if we need to update this item
@@ -3685,7 +3714,7 @@ export default function AddOrder() {
               appliedDiscountId: allocation.discountId,
               appliedDiscountType: 'buy_x_get_y',
               appliedDiscountLabel: allocation.discountName,
-              appliedDiscountScope: 'specific_category',
+              appliedDiscountScope: allocation.isProductScope ? 'specific_product' : 'specific_category',
             };
           }
         } else {
@@ -6163,7 +6192,9 @@ export default function AddOrder() {
                                     </Badge>
                                   </div>
                                   <span className="text-xs text-green-600 dark:text-green-400">
-                                    {t('orders:addProductFromCategory', { category: alloc.categoryName })}
+                                    {alloc.isProductScope 
+                                      ? t('orders:addSameProductForFree', { product: alloc.productName })
+                                      : t('orders:addProductFromCategory', { category: alloc.categoryName })}
                                   </span>
                                 </div>
                               </div>
@@ -6482,7 +6513,9 @@ export default function AddOrder() {
                             </Badge>
                           </div>
                           <p className="text-[10px] text-green-600 dark:text-green-400 mt-0.5 line-clamp-1">
-                            {t('orders:addProductFromCategory', { category: alloc.categoryName })}
+                            {alloc.isProductScope 
+                              ? t('orders:addSameProductForFree', { product: alloc.productName })
+                              : t('orders:addProductFromCategory', { category: alloc.categoryName })}
                           </p>
                         </div>
                       </div>

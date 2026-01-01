@@ -872,6 +872,7 @@ const orders = {
   buyXGetYOffer: 'Buy X Get Y Offer',
   getFreeItems: 'Get {{count}} FREE',
   addProductFromCategory: 'Add a product from {{category}} category',
+  addSameProductForFree: 'Add more {{product}} for free',
   totalRoundedUp: 'Total Rounded Up',
   adjustmentAmount: 'Adjustment: {{amount}}',
   totalAlreadyWhole: 'Total is already a whole number',

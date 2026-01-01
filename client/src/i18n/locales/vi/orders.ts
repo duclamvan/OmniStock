@@ -876,6 +876,7 @@ const orders = {
   buyXGetYOffer: 'Khuyến mãi Mua X Tặng Y',
   getFreeItems: 'Được tặng {{count}} MIỄN PHÍ',
   addProductFromCategory: 'Thêm sản phẩm từ danh mục {{category}}',
+  addSameProductForFree: 'Thêm {{product}} miễn phí',
   totalRoundedUp: 'Đã làm tròn lên tổng',
   adjustmentAmount: 'Điều chỉnh: {{amount}}',
   totalAlreadyWhole: 'Tổng đã là số nguyên',
