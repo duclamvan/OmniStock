@@ -364,6 +364,13 @@ const orders = {
   codCurrency: 'Tiền tệ COD',
   enableCod: 'Bật COD',
   
+  // PPL SMART Pickup Location
+  pickupLocation: 'Điểm nhận hàng',
+  searchPickupLocation: 'Tìm theo thành phố hoặc mã bưu chính...',
+  selectPickupLocation: 'Chọn điểm nhận hàng',
+  parcelShop: 'ParcelShop',
+  parcelBox: 'ParcelBox',
+  
   // Customer Selection & Creation
   searchCustomer: 'Tìm khách hàng',
   searchCustomerPlaceholder: 'Tìm theo tên, email, SĐT, hoặc dán link Facebook...',

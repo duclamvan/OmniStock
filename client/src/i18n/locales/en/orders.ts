@@ -370,6 +370,13 @@ const orders = {
   codCurrency: 'COD Currency',
   enableCod: 'Enable COD',
   
+  // PPL SMART Pickup Location
+  pickupLocation: 'Pickup Location',
+  searchPickupLocation: 'Search by city or zip code...',
+  selectPickupLocation: 'Select a pickup location',
+  parcelShop: 'ParcelShop',
+  parcelBox: 'ParcelBox',
+  
   // Customer Selection & Creation
   searchCustomer: 'Search Customer',
   searchCustomerPlaceholder: 'Search by name, email, phone, or paste Facebook URL...',
