@@ -109,7 +109,7 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
   );
 }
 
-export function LargeLabelContent({ product }: { product: LabelProduct | null }) {
+export function LargeLabelContentRaw({ product }: { product: LabelProduct | null }) {
   if (!product) return null;
 
   const productCode = product.sku || product.barcode || product.id;
@@ -127,8 +127,6 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
         fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif", 
         width: "148mm",
         height: "105mm",
-        transform: "scale(0.38)", 
-        transformOrigin: "top left",
         border: "3pt solid black",
         display: "grid",
         gridTemplateColumns: "30mm 1fr",
@@ -254,6 +252,9 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
     </div>
   );
 }
+
+// Alias for backwards compatibility
+export const LargeLabelContent = LargeLabelContentRaw;
 
 export default function WarehouseLabelPreview({
   open,
@@ -669,8 +670,10 @@ export default function WarehouseLabelPreview({
                 <LabelContent product={product} />
               </div>
             ) : (
-              <div className="w-full flex justify-center" style={{ minHeight: "180px" }}>
-                <LargeLabelContent product={product} />
+              <div className="w-full flex justify-center items-center" style={{ height: "160px" }}>
+                <div style={{ transform: "scale(0.38)", transformOrigin: "center center", width: "148mm", height: "105mm" }}>
+                  <LargeLabelContent product={product} />
+                </div>
               </div>
             )}
           </div>

@@ -403,7 +403,7 @@ export default function WarehouseLabels() {
               box-sizing: border-box;
             }
             body {
-              font-family: Arial, Helvetica, sans-serif;
+              font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
               background: white;
               color: black;
             }
@@ -442,109 +442,118 @@ export default function WarehouseLabels() {
             .label-container {
               flex: 1;
               height: 105mm;
-              display: flex;
-              flex-direction: row;
+              display: grid;
+              grid-template-columns: 30mm 1fr;
+              grid-template-rows: 1fr 24mm;
               background: white !important;
               color: black;
               overflow: hidden;
               border: 3pt solid black;
             }
             .left-section {
-              width: 42mm;
+              grid-row: 1 / 3;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
               border-right: 2pt solid black;
               padding: 3mm;
+              gap: 2mm;
             }
             .qr-box {
-              width: 35mm;
-              height: 35mm;
+              width: 24mm;
+              height: 24mm;
               display: flex;
               align-items: center;
               justify-content: center;
             }
             .qr-box svg {
-              width: 35mm;
-              height: 35mm;
+              width: 24mm;
+              height: 24mm;
             }
             .sku-box {
-              margin-top: 2mm;
-              font-size: 12pt;
+              font-size: 9pt;
               font-weight: 900;
-              font-family: monospace;
+              font-family: 'Courier New', monospace;
               text-align: center;
               word-break: break-all;
-              color: black;
+              padding: 1.5mm 2mm;
+              background: black;
+              color: white;
+              width: 100%;
+              letter-spacing: -0.3pt;
             }
             .right-section {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              padding: 4mm 5mm;
-            }
-            .name-area {
-              flex: 1;
+              padding: 4mm 5mm 3mm 5mm;
               display: flex;
               flex-direction: column;
               justify-content: center;
               gap: 2mm;
+              overflow: hidden;
+            }
+            .name-area {
+              display: contents;
             }
             .product-name {
               font-weight: 900;
-              font-size: 36pt;
-              line-height: 1.05;
+              font-size: 38pt;
+              line-height: 1.0;
               text-transform: uppercase;
               word-break: break-word;
-              letter-spacing: -0.5pt;
+              letter-spacing: -1pt;
               color: black;
             }
             .product-name-en {
               font-size: 20pt;
               font-weight: 600;
-              font-style: italic;
-              line-height: 1.15;
-              color: black;
+              line-height: 1.1;
+              letter-spacing: 0.5pt;
+              text-transform: uppercase;
+              color: #444;
               word-break: break-word;
-              border-left: 3pt solid black;
-              padding-left: 3mm;
+              border-top: 1pt solid black;
+              padding-top: 2mm;
+              margin-top: 1mm;
             }
             .bottom-row {
+              grid-column: 2;
               display: flex;
               align-items: center;
               justify-content: space-between;
               gap: 5mm;
               border-top: 3pt solid black;
-              padding-top: 4mm;
-              margin-top: 4mm;
-              min-height: 22mm;
+              padding: 0 5mm;
+              background: white;
             }
             .bulk-box {
-              font-size: 16pt;
+              font-size: 14pt;
               font-weight: 900;
               color: black;
-              border: 3pt solid black;
-              padding: 3mm 5mm;
+              border: 2pt solid black;
+              padding: 2mm 4mm;
             }
             .price-area {
               display: flex;
               flex-direction: column;
               align-items: flex-end;
-              gap: 1mm;
+              gap: 0;
+              margin-left: auto;
             }
             .price-eur {
               font-weight: 900;
               font-size: 32pt;
               line-height: 1;
               color: black;
+              letter-spacing: -0.5pt;
             }
             .price-czk {
-              font-weight: bold;
-              font-size: 26pt;
-              line-height: 1;
+              font-weight: 700;
+              font-size: 22pt;
+              line-height: 1.1;
               color: black;
-              letter-spacing: -0.5pt;
+              opacity: 0.7;
+              letter-spacing: -0.3pt;
+              padding-bottom: 2mm;
             }
             .price-na {
               font-size: 16pt;
