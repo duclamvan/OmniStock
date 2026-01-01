@@ -3482,3 +3482,189 @@ export const insertHistoricalOrderSchema = createInsertSchema(historicalOrders, 
 
 export type HistoricalOrder = typeof historicalOrders.$inferSelect;
 export type InsertHistoricalOrder = z.infer<typeof insertHistoricalOrderSchema>;
+
+// ============================================
+// GAMIFICATION - Employee Performance Tracking
+// ============================================
+
+// Badge Definitions - master list of available badges
+export const badgeDefinitions = pgTable("badge_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(), // 'speed_demon', 'perfect_packer', etc.
+  name: varchar("name").notNull(), // Display name
+  nameVi: varchar("name_vi"), // Vietnamese name
+  nameCz: varchar("name_cz"), // Czech name
+  nameDe: varchar("name_de"), // German name
+  description: text("description").notNull(),
+  descriptionVi: text("description_vi"),
+  descriptionCz: text("description_cz"),
+  descriptionDe: text("description_de"),
+  icon: varchar("icon").notNull().default("Award"), // Lucide icon name
+  color: varchar("color").notNull().default("gold"), // gold, silver, bronze, blue, green, purple
+  category: varchar("category").notNull().default("general"), // speed, accuracy, volume, streak, special
+  tier: integer("tier").notNull().default(1), // 1=bronze, 2=silver, 3=gold
+  pointsRequired: integer("points_required"), // Points needed to earn this badge
+  criteria: jsonb("criteria").notNull(), // { type: 'orders_picked', threshold: 100, timeframe: 'all_time' }
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBadgeDefinitionSchema = createInsertSchema(badgeDefinitions, {
+  code: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  icon: z.string().default("Award"),
+  color: z.string().default("gold"),
+  category: z.string().default("general"),
+  tier: z.number().int().min(1).max(3).default(1),
+  criteria: z.object({
+    type: z.string(),
+    threshold: z.number(),
+    timeframe: z.string().optional(),
+    conditions: z.any().optional(),
+  }),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type BadgeDefinition = typeof badgeDefinitions.$inferSelect;
+export type InsertBadgeDefinition = z.infer<typeof insertBadgeDefinitionSchema>;
+
+// Employee Badges - tracks which badges each employee has earned
+export const employeeBadges = pgTable("employee_badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  badgeId: varchar("badge_id").notNull().references(() => badgeDefinitions.id, { onDelete: "cascade" }),
+  awardedAt: timestamp("awarded_at").notNull().defaultNow(),
+  awardedFor: text("awarded_for"), // Description of what earned the badge
+  metadata: jsonb("metadata"), // Additional context { ordersCompleted: 100, avgTime: 5.2 }
+}, (table) => ({
+  uniqueUserBadge: unique().on(table.userId, table.badgeId),
+}));
+
+export const insertEmployeeBadgeSchema = createInsertSchema(employeeBadges, {
+  userId: z.string(),
+  badgeId: z.string(),
+  awardedFor: z.string().optional(),
+  metadata: z.any().optional(),
+}).omit({
+  id: true,
+  awardedAt: true,
+});
+
+export type EmployeeBadge = typeof employeeBadges.$inferSelect;
+export type InsertEmployeeBadge = z.infer<typeof insertEmployeeBadgeSchema>;
+
+// Employee Points - running totals for gamification
+export const employeePoints = pgTable("employee_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  totalPoints: integer("total_points").notNull().default(0),
+  weeklyPoints: integer("weekly_points").notNull().default(0),
+  monthlyPoints: integer("monthly_points").notNull().default(0),
+  // Cumulative stats
+  totalOrdersPicked: integer("total_orders_picked").notNull().default(0),
+  totalOrdersPacked: integer("total_orders_packed").notNull().default(0),
+  totalItemsPicked: integer("total_items_picked").notNull().default(0),
+  totalItemsPacked: integer("total_items_packed").notNull().default(0),
+  // Speed metrics (in seconds)
+  avgPickTimeSeconds: decimal("avg_pick_time_seconds", { precision: 10, scale: 2 }),
+  avgPackTimeSeconds: decimal("avg_pack_time_seconds", { precision: 10, scale: 2 }),
+  fastestPickSeconds: integer("fastest_pick_seconds"),
+  fastestPackSeconds: integer("fastest_pack_seconds"),
+  // Accuracy
+  pickAccuracyRate: decimal("pick_accuracy_rate", { precision: 5, scale: 2 }).default("100.00"), // Percentage
+  packAccuracyRate: decimal("pack_accuracy_rate", { precision: 5, scale: 2 }).default("100.00"),
+  // Streaks
+  currentStreak: integer("current_streak").notNull().default(0), // Consecutive days meeting target
+  longestStreak: integer("longest_streak").notNull().default(0),
+  lastActiveDate: date("last_active_date"),
+  // Level system
+  level: integer("level").notNull().default(1),
+  experiencePoints: integer("experience_points").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueUserPoints: unique().on(table.userId),
+}));
+
+export const insertEmployeePointsSchema = createInsertSchema(employeePoints, {
+  userId: z.string(),
+  totalPoints: z.number().int().default(0),
+}).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type EmployeePoints = typeof employeePoints.$inferSelect;
+export type InsertEmployeePoints = z.infer<typeof insertEmployeePointsSchema>;
+
+// Performance Events - immutable log of all performance-related actions
+export const performanceEvents = pgTable("performance_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventType: varchar("event_type").notNull(), // 'order_picked', 'order_packed', 'badge_earned', 'streak_achieved', etc.
+  orderId: varchar("order_id").references(() => orders.id, { onDelete: "set null" }),
+  pointsEarned: integer("points_earned").notNull().default(0),
+  bonusPoints: integer("bonus_points").notNull().default(0), // Extra points for speed/quality
+  bonusReason: varchar("bonus_reason"), // 'fast_pick', 'perfect_accuracy', etc.
+  durationSeconds: integer("duration_seconds"), // How long the action took
+  itemCount: integer("item_count"), // Number of items in the order
+  metadata: jsonb("metadata"), // Additional context
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPerformanceEventSchema = createInsertSchema(performanceEvents, {
+  userId: z.string(),
+  eventType: z.string(),
+  orderId: z.string().optional(),
+  pointsEarned: z.number().int().default(0),
+  bonusPoints: z.number().int().default(0),
+  bonusReason: z.string().optional(),
+  durationSeconds: z.number().int().optional(),
+  itemCount: z.number().int().optional(),
+  metadata: z.any().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type PerformanceEvent = typeof performanceEvents.$inferSelect;
+export type InsertPerformanceEvent = z.infer<typeof insertPerformanceEventSchema>;
+
+// Daily Performance Snapshots - aggregated daily stats for historical tracking
+export const dailyPerformanceSnapshots = pgTable("daily_performance_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  snapshotDate: date("snapshot_date").notNull(),
+  ordersPicked: integer("orders_picked").notNull().default(0),
+  ordersPacked: integer("orders_packed").notNull().default(0),
+  itemsPicked: integer("items_picked").notNull().default(0),
+  itemsPacked: integer("items_packed").notNull().default(0),
+  pointsEarned: integer("points_earned").notNull().default(0),
+  avgPickTimeSeconds: decimal("avg_pick_time_seconds", { precision: 10, scale: 2 }),
+  avgPackTimeSeconds: decimal("avg_pack_time_seconds", { precision: 10, scale: 2 }),
+  errorsCount: integer("errors_count").notNull().default(0),
+  // Target achievement
+  dailyTargetMet: boolean("daily_target_met").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueUserDate: unique().on(table.userId, table.snapshotDate),
+}));
+
+export const insertDailyPerformanceSnapshotSchema = createInsertSchema(dailyPerformanceSnapshots, {
+  userId: z.string(),
+  snapshotDate: z.string(),
+  ordersPicked: z.number().int().default(0),
+  ordersPacked: z.number().int().default(0),
+  itemsPicked: z.number().int().default(0),
+  itemsPacked: z.number().int().default(0),
+  pointsEarned: z.number().int().default(0),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type DailyPerformanceSnapshot = typeof dailyPerformanceSnapshots.$inferSelect;
+export type InsertDailyPerformanceSnapshot = z.infer<typeof insertDailyPerformanceSnapshotSchema>;
