@@ -18307,12 +18307,14 @@ Important:
           }
         };
         
-        // Add parcelShopCode for PPL SMART shipments (strip letter prefix like "KM" - API expects numeric only)
+        // Add parcelShopCode for PPL SMART shipments - must be nested in services.parcelShopDelivery
         if (isSmartShipment && order.pickupLocationCode) {
-          // Strip any letter prefix (e.g., "KM12135002" -> "12135002")
-          const numericCode = order.pickupLocationCode.replace(/^[A-Za-z]+/, '');
-          shipment.parcelShopCode = numericCode;
-          console.log(`🏪 PPL SMART: Using pickup location parcelShopCode=${numericCode} (original: ${order.pickupLocationCode})`);
+          shipment.services = {
+            parcelShopDelivery: {
+              parcelShopCode: order.pickupLocationCode
+            }
+          };
+          console.log(`🏪 PPL SMART: Using pickup location in services.parcelShopDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         shipments.push(shipment);
@@ -18361,12 +18363,14 @@ Important:
           ]
         };
         
-        // Add parcelShopCode for PPL SMART shipments (strip letter prefix like "KM" - API expects numeric only)
+        // Add parcelShopCode for PPL SMART shipments - must be nested in services.parcelShopDelivery
         if (isSmartShipment && order.pickupLocationCode) {
-          // Strip any letter prefix (e.g., "KM12135002" -> "12135002")
-          const numericCode = order.pickupLocationCode.replace(/^[A-Za-z]+/, '');
-          singleShipment.parcelShopCode = numericCode;
-          console.log(`🏪 PPL SMART: Using pickup location parcelShopCode=${numericCode} (original: ${order.pickupLocationCode})`);
+          singleShipment.services = {
+            parcelShopDelivery: {
+              parcelShopCode: order.pickupLocationCode
+            }
+          };
+          console.log(`🏪 PPL SMART: Using pickup location in services.parcelShopDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
