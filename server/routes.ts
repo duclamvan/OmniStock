@@ -17619,6 +17619,12 @@ Important:
             }))
           }
         };
+        
+        // Add parcelShopCode for PPL SMART shipments
+        if (isSmartShipment && order.pickupLocationCode) {
+          shipment.parcelShopCode = order.pickupLocationCode;
+          console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
+        }
 
         shipments.push(shipment);
         console.log(`✓ Created shipment SET:`, JSON.stringify(shipment.shipmentSet, null, 2));
@@ -17665,6 +17671,12 @@ Important:
             }
           ]
         };
+        
+        // Add parcelShopCode for PPL SMART shipments
+        if (isSmartShipment && order.pickupLocationCode) {
+          singleShipment.parcelShopCode = order.pickupLocationCode;
+          console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
+        }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
 
