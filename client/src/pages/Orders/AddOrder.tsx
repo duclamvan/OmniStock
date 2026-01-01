@@ -462,39 +462,69 @@ export default function AddOrder() {
   const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
   const [quickVariantInput, setQuickVariantInput] = useState("");
   
-  // Parse quick variant input like "23, 43-5, 67-2" or "23, 43 - 5 pcs, 67 - 2"
+  // Parse quick variant input - supports:
+  // - Single: "23" (1pc of variant 23)
+  // - Range: "1-10" (1pc each of variants 1,2,3,...,10)
+  // - Quantity: "23x5" or "23*5" (5pcs of variant 23)
   const parseQuickVariantInput = useCallback((input: string) => {
     if (!input.trim() || productVariants.length === 0) return;
     
     const newQuantities: {[key: string]: number} = {};
     
+    // Helper to find variant by number
+    const findVariantByNumber = (num: string) => {
+      return productVariants.find(v => {
+        const name = v.name?.toString() || '';
+        const barcode = v.barcode?.toString() || '';
+        const nameNumbers = name.match(/\d+/g);
+        return (
+          name === num ||
+          barcode === num ||
+          (nameNumbers && nameNumbers.includes(num))
+        );
+      });
+    };
+    
     // Split by comma and process each segment
     const segments = input.split(',').map(s => s.trim()).filter(Boolean);
     
     for (const segment of segments) {
-      // Match patterns like: "23", "23-5", "23 - 5", "23 - 5pcs", "23 - 5 lo", "23-5pcs"
-      const match = segment.match(/^(\d+)\s*(?:[-–]\s*(\d+)\s*(?:pcs|lo|ks|pc)?)?$/i);
-      
-      if (match) {
-        const variantNumber = match[1];
-        const quantity = match[2] ? parseInt(match[2]) : 1;
-        
-        // Find variant by matching number in name (e.g., "Color 23" matches "23")
-        // Or by exact name match, or by barcode
-        const variant = productVariants.find(v => {
-          const name = v.name?.toString() || '';
-          const barcode = v.barcode?.toString() || '';
-          // Extract numbers from variant name
-          const nameNumbers = name.match(/\d+/g);
-          return (
-            name === variantNumber ||
-            barcode === variantNumber ||
-            (nameNumbers && nameNumbers.includes(variantNumber))
-          );
-        });
-        
+      // First check for quantity format: "23x5", "23*5", "23 x 5", "23 * 5"
+      const qtyMatch = segment.match(/^(\d+)\s*[x*]\s*(\d+)$/i);
+      if (qtyMatch) {
+        const variantNumber = qtyMatch[1];
+        const quantity = parseInt(qtyMatch[2]) || 1;
+        const variant = findVariantByNumber(variantNumber);
         if (variant) {
           newQuantities[variant.id] = (newQuantities[variant.id] || 0) + quantity;
+        }
+        continue;
+      }
+      
+      // Check for range format: "1-10" (range of variants)
+      const rangeMatch = segment.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (rangeMatch) {
+        const startNum = parseInt(rangeMatch[1]);
+        const endNum = parseInt(rangeMatch[2]);
+        
+        // If start < end, treat as range
+        if (startNum < endNum) {
+          for (let i = startNum; i <= endNum; i++) {
+            const variant = findVariantByNumber(String(i));
+            if (variant) {
+              newQuantities[variant.id] = (newQuantities[variant.id] || 0) + 1;
+            }
+          }
+          continue;
+        }
+      }
+      
+      // Single number: "23" (1pc of variant 23)
+      const singleMatch = segment.match(/^(\d+)$/);
+      if (singleMatch) {
+        const variant = findVariantByNumber(singleMatch[1]);
+        if (variant) {
+          newQuantities[variant.id] = (newQuantities[variant.id] || 0) + 1;
         }
       }
     }
@@ -8122,7 +8152,23 @@ export default function AddOrder() {
                           {variant.availableQuantity ?? variant.quantity}
                         </Badge>
                       </div>
-                      <div>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setVariantQuantities(prev => ({
+                            ...prev,
+                            [variant.id]: (prev[variant.id] || 0) + 1
+                          }))}
+                          className="h-8 w-6 text-[10px] font-medium bg-muted hover:bg-muted/80 rounded-l border text-center"
+                        >+1</button>
+                        <button
+                          type="button"
+                          onClick={() => setVariantQuantities(prev => ({
+                            ...prev,
+                            [variant.id]: (prev[variant.id] || 0) + 10
+                          }))}
+                          className="h-8 w-7 text-[10px] font-medium bg-muted hover:bg-muted/80 border-y text-center"
+                        >+10</button>
                         <Input
                           type="number"
                           min="0"
@@ -8147,7 +8193,7 @@ export default function AddOrder() {
                               }
                             }
                           }}
-                          className="text-right h-8 text-xs md:text-sm"
+                          className="text-right h-8 w-12 text-xs rounded-l-none"
                           data-testid={`input-variant-quantity-${variant.id}`}
                         />
                       </div>

@@ -507,8 +507,8 @@ const orders = {
   addSelectedVariants: 'Add Selected Variants',
   addSelectedBundles: 'Add Selected Bundles',
   quickVariantEntry: 'Quick Entry',
-  quickVariantPlaceholder: '23, 43-5, 67-2...',
-  quickVariantHint: 'Format: number (1pc), number-qty (e.g., 23-5 = 5pcs of variant 23)',
+  quickVariantPlaceholder: '1-10, 23, 45x5...',
+  quickVariantHint: 'Format: 1-10 (range), 23 (1pc), 45x5 (5pcs of #45)',
   apply: 'Apply',
   showingVariants: '{{count}} variants available',
   

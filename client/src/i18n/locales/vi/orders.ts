@@ -501,8 +501,8 @@ const orders = {
   addSelectedVariants: 'Thêm biến thể đã chọn',
   addSelectedBundles: 'Thêm combo đã chọn',
   quickVariantEntry: 'Nhập nhanh',
-  quickVariantPlaceholder: '23, 43-5, 67-2...',
-  quickVariantHint: 'Định dạng: số (1c), số-sl (VD: 23-5 = 5c biến thể 23)',
+  quickVariantPlaceholder: '1-10, 23, 45x5...',
+  quickVariantHint: 'Định dạng: 1-10 (dải), 23 (1c), 45x5 (5c #45)',
   apply: 'Áp dụng',
   showingVariants: '{{count}} biến thể có sẵn',
   
