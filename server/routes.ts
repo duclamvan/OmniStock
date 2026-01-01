@@ -4248,7 +4248,43 @@ Important:
   app.get('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
       const suppliers = await storage.getSuppliers();
-      res.json(suppliers);
+      const purchases = await storage.getImportPurchases();
+      
+      // Calculate totalPurchased and lastPurchaseDate for each supplier
+      // Only count purchases that have been received (status: delivered, shipped, or at_warehouse)
+      const receivedStatuses = ['delivered', 'shipped', 'at_warehouse'];
+      
+      const enrichedSuppliers = suppliers.map(supplier => {
+        // Get all purchases for this supplier (can be linked by supplierId or supplier name)
+        const supplierPurchases = purchases.filter(p => 
+          (p.supplierId === supplier.id || p.supplier === supplier.name) &&
+          receivedStatuses.includes(p.status)
+        );
+        
+        // Calculate total value from received purchases
+        const totalPurchased = supplierPurchases.reduce((sum, p) => {
+          const amount = parseFloat(p.totalPaid || p.purchaseTotal || '0');
+          return sum + amount;
+        }, 0);
+        
+        // Get the most recent purchase date
+        let lastPurchaseDate: Date | null = null;
+        for (const p of supplierPurchases) {
+          const pDate = p.createdAt ? new Date(p.createdAt) : null;
+          if (pDate && (!lastPurchaseDate || pDate > lastPurchaseDate)) {
+            lastPurchaseDate = pDate;
+          }
+        }
+        
+        return {
+          ...supplier,
+          totalPurchased: totalPurchased.toFixed(2),
+          lastPurchaseDate: lastPurchaseDate?.toISOString() || null,
+          purchaseCount: supplierPurchases.length
+        };
+      });
+      
+      res.json(enrichedSuppliers);
     } catch (error) {
       console.error("Error fetching suppliers:", error);
       res.status(500).json({ message: "Failed to fetch suppliers" });
