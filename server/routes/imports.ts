@@ -2584,6 +2584,7 @@ router.post("/purchases", async (req, res) => {
     
     const purchaseData = {
       supplier: req.body.supplier,
+      supplierId: req.body.supplierId || null,
       trackingNumber: req.body.trackingNumber || null,
       estimatedArrival: req.body.estimatedArrival ? new Date(req.body.estimatedArrival) : null,
       notes: req.body.notes || null,

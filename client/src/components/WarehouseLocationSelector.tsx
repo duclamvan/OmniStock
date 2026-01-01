@@ -307,10 +307,19 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
     setPallet(value);
   }, []);
 
-  // Helper to extract short code from warehouse ID (pattern: WH-{code}-{random})
-  const extractWarehouseCode = useCallback((warehouseId: string): string => {
-    const match = warehouseId.match(/^WH-([A-Za-z0-9]+)-/);
-    return match ? match[1] : warehouseId;
+  // Get warehouse code - prefer the code field, fallback to extracting from ID for legacy data
+  const getWarehouseCode = useCallback((warehouse: { id: string; code?: string | null }): string => {
+    // Use the code field directly if available
+    if (warehouse.code) return warehouse.code;
+    // Fallback for legacy data: try to extract from ID patterns
+    // Pattern 1: "WH-CODE-random" -> CODE
+    const oldMatch = warehouse.id.match(/^WH-([A-Za-z0-9]+)-/);
+    if (oldMatch) return oldMatch[1];
+    // Pattern 2: "CODE-random" -> CODE
+    const newMatch = warehouse.id.match(/^([A-Za-z0-9]+)-/);
+    if (newMatch) return newMatch[1];
+    // Fallback to ID itself
+    return warehouse.id;
   }, []);
 
   // Generate warehouse options from fetched data
@@ -326,15 +335,15 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
       return dateA - dateB;
     });
     
-    // Extract short code from warehouse ID (e.g., "WH-WH1-ABC123" -> "WH1")
+    // Use the code field directly (with fallback for legacy data)
     return sortedWarehouses.map((warehouse, index) => {
-      const shortCode = extractWarehouseCode(warehouse.id);
+      const shortCode = getWarehouseCode(warehouse);
       return {
         value: shortCode,
         label: `${warehouse.name || t('warehouse:warehouseNumber', { number: index + 1 })} (${shortCode})`
       };
     });
-  }, [warehousesData, t, extractWarehouseCode]);
+  }, [warehousesData, t, getWarehouseCode]);
 
   const aisleOptions = useMemo(() => getAisleOptions(), []);
   const rackOptions = useMemo(() => getRackOptions(), []);

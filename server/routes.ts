@@ -3606,8 +3606,8 @@ Important:
       const body = req.body;
       const warehouseData = {
         ...body,
-        // Generate ID if not provided (format: WH-XX-YYY)
-        id: body.id || `WH-${body.code || 'NEW'}-${Date.now().toString(36).toUpperCase()}`,
+        // Generate ID using the code directly (format: CODE-timestamp)
+        id: body.id || `${body.code || 'WH'}-${Date.now().toString(36).toUpperCase()}`,
         // Convert floorArea from number to string if provided
         floorArea: body.floorArea !== undefined && body.floorArea !== null && body.floorArea !== '' 
           ? String(body.floorArea) 

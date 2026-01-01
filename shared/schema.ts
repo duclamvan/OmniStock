@@ -101,6 +101,7 @@ export const categories = pgTable("categories", {
 export const importPurchases = pgTable("import_purchases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   supplier: text("supplier").notNull(),
+  supplierId: varchar("supplier_id").references(() => suppliers.id), // Links to suppliers table
   location: text("location").notNull().default("China"), // Europe, USA, China, Vietnam
   trackingNumber: text("tracking_number"),
   estimatedArrival: timestamp("estimated_arrival"),

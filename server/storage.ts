@@ -3939,6 +3939,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [result] = await db.insert(warehouses).values({
         id: warehouse.id || `WH-${Date.now()}`,
+        code: warehouse.code,
         name: warehouse.name,
         location: warehouse.location,
         address: warehouse.address,
@@ -3968,6 +3969,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const updateData: any = {};
 
+      if (warehouse.code !== undefined) updateData.code = warehouse.code;
       if (warehouse.name !== undefined) updateData.name = warehouse.name;
       if (warehouse.location !== undefined) updateData.location = warehouse.location;
       if (warehouse.address !== undefined) updateData.address = warehouse.address;
