@@ -16,12 +16,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar as CalendarIcon, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, ArrowDown, ArrowUp, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar as CalendarIcon, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, ArrowDown, ArrowUp, Info, RefreshCw, FileText, Archive, ArchiveRestore, Trash2, RotateCcw, FileSpreadsheet } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
+import { exportToXLSX } from "@/lib/exportUtils";
 
 interface EasyPostEvent {
   time: string;
@@ -227,6 +228,14 @@ export default function InternationalTransit() {
   const [detectedEndCarrier, setDetectedEndCarrier] = useState<string>('');
   const [selectedEtaDate, setSelectedEtaDate] = useState<Date | undefined>(undefined);
   const [viewTab, setViewTab] = useState<'active' | 'archived'>('active');
+  
+  // Archived tab state variables
+  const [archivedSearchQuery, setArchivedSearchQuery] = useState("");
+  const [archivedFilterType, setArchivedFilterType] = useState<string>('all');
+  const [archivedFilterStatus, setArchivedFilterStatus] = useState<string>('all');
+  const [archivedSortBy, setArchivedSortBy] = useState<'delivery' | 'type' | 'status' | 'created' | 'name'>('created');
+  const [archivedSortDirection, setArchivedSortDirection] = useState<'asc' | 'desc'>('desc');
+  
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
   const [shipmentToUndo, setShipmentToUndo] = useState<Shipment | null>(null);
   const [consolidationToDelete, setConsolidationToDelete] = useState<PendingShipment | null>(null);
@@ -1147,6 +1156,107 @@ export default function InternationalTransit() {
     
     return false;
   });
+
+  // Flatten all archived shipments from grouped weeks
+  const allArchivedShipments = useMemo(() => {
+    return archivedWeeks.flatMap(week => week.shipments);
+  }, [archivedWeeks]);
+
+  // Filter and sort archived shipments
+  const filteredArchivedShipments = useMemo(() => {
+    let filtered = allArchivedShipments;
+    
+    // Apply search filter
+    if (archivedSearchQuery) {
+      const query = archivedSearchQuery.toLowerCase();
+      filtered = filtered.filter(shipment => {
+        if (shipment.trackingNumber?.toLowerCase().includes(query)) return true;
+        if (shipment.shipmentName?.toLowerCase().includes(query)) return true;
+        if (shipment.carrier?.toLowerCase().includes(query)) return true;
+        if (shipment.origin?.toLowerCase().includes(query)) return true;
+        if (shipment.destination?.toLowerCase().includes(query)) return true;
+        if (shipment.status?.toLowerCase().includes(query)) return true;
+        if (shipment.endCarrier?.toLowerCase().includes(query)) return true;
+        if (shipment.endTrackingNumber?.toLowerCase().includes(query)) return true;
+        if (shipment.items?.some((item: any) => item.name?.toLowerCase().includes(query))) return true;
+        return false;
+      });
+    }
+    
+    // Apply type filter
+    if (archivedFilterType !== 'all') {
+      filtered = filtered.filter(s => s.shipmentType === archivedFilterType);
+    }
+    
+    // Apply status filter
+    if (archivedFilterStatus !== 'all') {
+      filtered = filtered.filter(s => s.status === archivedFilterStatus);
+    }
+    
+    // Sort shipments
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (archivedSortBy) {
+        case 'delivery':
+          const dateA = a.estimatedDelivery || a.deliveredAt || new Date(a.createdAt).toISOString();
+          const dateB = b.estimatedDelivery || b.deliveredAt || new Date(b.createdAt).toISOString();
+          comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
+          break;
+        case 'created':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'name':
+          const nameA = a.shipmentName || a.trackingNumber || '';
+          const nameB = b.shipmentName || b.trackingNumber || '';
+          comparison = nameA.localeCompare(nameB);
+          break;
+        case 'type':
+          comparison = (a.shipmentType || '').localeCompare(b.shipmentType || '');
+          break;
+        case 'status':
+          const statusOrder = { 'pending': 0, 'in transit': 1, 'delivered': 2 };
+          comparison = (statusOrder[a.status as keyof typeof statusOrder] || 0) - 
+                 (statusOrder[b.status as keyof typeof statusOrder] || 0);
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      return archivedSortDirection === 'desc' ? -comparison : comparison;
+    });
+    
+    return sorted;
+  }, [allArchivedShipments, archivedSearchQuery, archivedFilterType, archivedFilterStatus, archivedSortBy, archivedSortDirection]);
+
+  // Export archived shipments to Excel
+  const handleExportArchivedXLSX = () => {
+    if (filteredArchivedShipments.length === 0) {
+      toast({ title: t('warning'), description: t('noDataToExport'), variant: "destructive" });
+      return;
+    }
+    
+    const exportData = filteredArchivedShipments.map(shipment => ({
+      'Name': shipment.shipmentName || shipment.trackingNumber,
+      'Tracking Number': shipment.trackingNumber,
+      'Carrier': shipment.carrier,
+      'End Carrier': shipment.endCarrier || '',
+      'End Tracking': shipment.endTrackingNumber || '',
+      'Origin': shipment.origin,
+      'Destination': shipment.destination,
+      'Type': shipment.shipmentType,
+      'Status': shipment.status,
+      'Shipping Cost': shipment.shippingCost,
+      'Currency': shipment.shippingCostCurrency,
+      'Weight': shipment.totalWeight,
+      'Items Count': shipment.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 0,
+      'Created': shipment.createdAt,
+      'Delivered': shipment.deliveredAt || '',
+    }));
+    
+    exportToXLSX(exportData, 'archived_shipments', t('archivedShipments'));
+    toast({ title: t('success'), description: t('exportSuccess') });
+  };
 
   if (isLoading) {
     return (
@@ -2487,79 +2597,426 @@ export default function InternationalTransit() {
 
         {/* Archived Shipments Tab */}
         <TabsContent value="archived" className="mt-4">
-          {isLoadingArchived ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : archivedWeeks.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Archive className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t('noArchivedShipments')}</h3>
-                <p className="text-muted-foreground text-center max-w-md">
-                  {t('noArchivedShipmentsDescription')}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {archivedWeeks.map((week) => (
-                <Card key={week.week}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Calendar className="h-5 w-5 text-muted-foreground" />
-                          {t('weekLabel')} {week.week}
-                        </CardTitle>
-                        <CardDescription>
-                          {t('archivedOn')} {week.archivedAt ? format(new Date(week.archivedAt), 'MMM dd, yyyy HH:mm') : '—'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="secondary" className="text-sm">
-                        {week.count} {week.count === 1 ? t('shipment') : t('shipmentsPlural')}
-                      </Badge>
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Archive className="h-5 w-5 text-muted-foreground" />
+                      {t('archivedShipments')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('previouslyCompletedShipments')} ({allArchivedShipments.length} {t('total')})
+                    </CardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-export-archived">
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        {t('export')}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportArchivedXLSX}>
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        {t('exportToExcel')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                {/* Search and Filters */}
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder={t('searchArchivedShipments')}
+                      value={archivedSearchQuery}
+                      onChange={(e) => setArchivedSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-archived"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                      <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <Select value={archivedFilterType} onValueChange={setArchivedFilterType}>
+                        <SelectTrigger className="w-full text-xs sm:text-sm">
+                          <SelectValue placeholder={t('filterByTypeLabel')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                              {t('allShipmentsFilter')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="general_air_ddp">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('general_air_ddp', 'h-4 w-4')}
+                              {t('airGeneralLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sensitive_air_ddp">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sensitive_air_ddp', 'h-4 w-4')}
+                              {t('airSensitiveLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="general_express">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('general_express', 'h-4 w-4')}
+                              {t('expressGeneralLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sensitive_express">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sensitive_express', 'h-4 w-4')}
+                              {t('expressSensitiveLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="general_railway">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('general_railway', 'h-4 w-4')}
+                              {t('railwayGeneralLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sensitive_railway">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sensitive_railway', 'h-4 w-4')}
+                              {t('railwaySensitiveLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="general_sea">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('general_sea', 'h-4 w-4')}
+                              {t('seaGeneralLabel')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sensitive_sea">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sensitive_sea', 'h-4 w-4')}
+                              {t('seaSensitiveLabel')}
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {week.shipments.map((shipment) => (
-                        <div 
-                          key={shipment.id} 
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            {getShipmentTypeIcon(shipment.shipmentType || '', 'h-5 w-5')}
-                            <div>
-                              <p className="font-medium">{shipment.shipmentName || shipment.trackingNumber}</p>
-                              <p className="text-xs text-muted-foreground">
+                    
+                    <div className="flex items-center gap-2 flex-1 min-w-[120px]">
+                      <Select value={archivedFilterStatus} onValueChange={setArchivedFilterStatus}>
+                        <SelectTrigger className="w-full text-xs sm:text-sm">
+                          <SelectValue placeholder={t('status')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('allStatus')}</SelectItem>
+                          <SelectItem value="pending">{t('pending')}</SelectItem>
+                          <SelectItem value="in transit">{t('inTransit')}</SelectItem>
+                          <SelectItem value="delivered">{t('delivered')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                      <Select value={archivedSortBy} onValueChange={(value: any) => setArchivedSortBy(value)}>
+                        <SelectTrigger className="w-full text-xs sm:text-sm">
+                          <SelectValue placeholder={t('sortBy')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="created">{t('createdDate')}</SelectItem>
+                          <SelectItem value="delivery">{t('deliveryDate')}</SelectItem>
+                          <SelectItem value="name">{t('shipmentName')}</SelectItem>
+                          <SelectItem value="type">{t('shipmentType')}</SelectItem>
+                          <SelectItem value="status">{t('status')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => setArchivedSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        data-testid="button-toggle-archived-sort-direction"
+                      >
+                        {archivedSortDirection === 'desc' ? (
+                          <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUp className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingArchived ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredArchivedShipments.length === 0 ? (
+                <div className="text-center py-8">
+                  <Archive className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    {archivedSearchQuery || archivedFilterType !== 'all' || archivedFilterStatus !== 'all' 
+                      ? t('noMatchingArchivedShipments') 
+                      : t('noArchivedShipments')}
+                  </h3>
+                  <p className="text-muted-foreground text-center max-w-md mx-auto">
+                    {archivedSearchQuery || archivedFilterType !== 'all' || archivedFilterStatus !== 'all'
+                      ? t('tryAdjustingFilters')
+                      : t('noArchivedShipmentsDescription')}
+                  </p>
+                  {(archivedSearchQuery || archivedFilterType !== 'all' || archivedFilterStatus !== 'all') && (
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => {
+                        setArchivedSearchQuery('');
+                        setArchivedFilterType('all');
+                        setArchivedFilterStatus('all');
+                      }}
+                      data-testid="button-clear-archived-filters"
+                    >
+                      {t('clearFilters')}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('shipment')}</TableHead>
+                          <TableHead>{t('route')}</TableHead>
+                          <TableHead>{t('type')}</TableHead>
+                          <TableHead>{t('status')}</TableHead>
+                          <TableHead>{t('carrier')}</TableHead>
+                          <TableHead className="text-right">{t('actions')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredArchivedShipments.map((shipment) => (
+                          <TableRow 
+                            key={shipment.id} 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => setViewShipmentDetails(shipment)}
+                            data-testid={`archived-shipment-row-${shipment.id}`}
+                          >
+                            <TableCell>
+                              <div className="font-medium">{shipment.shipmentName || shipment.trackingNumber}</div>
+                              <div className="text-xs text-muted-foreground">{shipment.trackingNumber}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">{shipment.origin} → {shipment.destination}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getShipmentTypeIcon(shipment.shipmentType || '', 'h-4 w-4')}
+                                <span className="text-xs hidden lg:inline">{shipment.shipmentType?.replace(/_/g, ' ')}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={shipment.status}
+                                onValueChange={(status) => 
+                                  updateTrackingMutation.mutate({ 
+                                    shipmentId: shipment.id, 
+                                    data: { status, ...(status === 'delivered' ? { deliveredAt: new Date().toISOString() } : {}) }
+                                  })
+                                }
+                              >
+                                <SelectTrigger 
+                                  className={`h-7 text-xs font-medium w-[100px] ${
+                                    shipment.status === 'delivered' 
+                                      ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/50 dark:border-green-800 dark:text-green-300' 
+                                      : shipment.status === 'in transit' 
+                                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300' 
+                                        : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-300'
+                                  }`}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">{t('pending')}</SelectItem>
+                                  <SelectItem value="in transit">{t('inTransit')}</SelectItem>
+                                  <SelectItem value="delivered">{t('delivered')}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-xs">{shipment.endCarrier || shipment.carrier || '—'}</span>
+                            </TableCell>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => unarchiveMutation.mutate(shipment.id)}
+                                  disabled={unarchiveMutation.isPending}
+                                  data-testid={`button-unarchive-${shipment.id}`}
+                                >
+                                  <ArchiveRestore className="h-3 w-3 mr-1" />
+                                  {t('restore')}
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => {
+                                      setSelectedShipment(shipment);
+                                      setDetectedEndCarrier('');
+                                      setSelectedEtaDate(shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery) : undefined);
+                                      setIsShipmentFormOpen(true);
+                                    }}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      {t('editShipment')}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => syncEasyPostMutation.mutate(shipment.id)}>
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      {t('syncTracking')}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => setShipmentToDelete(shipment)}
+                                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {t('deleteShipment')}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
+                    {filteredArchivedShipments.map((shipment) => (
+                      <Card 
+                        key={shipment.id} 
+                        className="group hover:shadow-md transition-all duration-200 border border-border/50 hover:border-border cursor-pointer"
+                        onClick={() => setViewShipmentDetails(shipment)}
+                        data-testid={`archived-shipment-card-${shipment.id}`}
+                      >
+                        <CardContent className="p-4">
+                          {/* Header: Title + Status */}
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {getShipmentTypeIcon(shipment.shipmentType || '', 'h-4 w-4')}
+                                <h3 className="font-semibold text-sm truncate">
+                                  {shipment.shipmentName || shipment.trackingNumber}
+                                </h3>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                 {shipment.origin} → {shipment.destination}
                               </p>
                             </div>
+                            
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={shipment.status}
+                                onValueChange={(status) => 
+                                  updateTrackingMutation.mutate({ 
+                                    shipmentId: shipment.id, 
+                                    data: { status, ...(status === 'delivered' ? { deliveredAt: new Date().toISOString() } : {}) }
+                                  })
+                                }
+                              >
+                                <SelectTrigger 
+                                  className={`h-7 text-xs font-medium min-w-[90px] ${
+                                    shipment.status === 'delivered' 
+                                      ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/50 dark:border-green-800 dark:text-green-300' 
+                                      : shipment.status === 'in transit' 
+                                        ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-300' 
+                                        : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-300'
+                                  }`}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">{t('pending')}</SelectItem>
+                                  <SelectItem value="in transit">{t('inTransit')}</SelectItem>
+                                  <SelectItem value="delivered">{t('delivered')}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge className={shipment.status === 'delivered' ? 'bg-green-100 text-green-800' : shipment.status === 'in transit' ? 'bg-cyan-100 text-cyan-800' : 'bg-amber-100 text-amber-800'}>
-                              {shipment.status}
-                            </Badge>
+                          
+                          {/* Tracking & Carrier */}
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                            <span>{shipment.trackingNumber}</span>
+                            {shipment.endCarrier && (
+                              <>
+                                <span>•</span>
+                                <span>{shipment.endCarrier}</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
+                              className="flex-1 h-8 text-xs"
                               onClick={() => unarchiveMutation.mutate(shipment.id)}
                               disabled={unarchiveMutation.isPending}
-                              data-testid={`button-unarchive-${shipment.id}`}
+                              data-testid={`button-unarchive-mobile-${shipment.id}`}
                             >
-                              <ArchiveRestore className="h-4 w-4 mr-1" />
+                              <ArchiveRestore className="h-3 w-3 mr-1" />
                               {t('restore')}
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedShipment(shipment);
+                                  setDetectedEndCarrier('');
+                                  setSelectedEtaDate(shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery) : undefined);
+                                  setIsShipmentFormOpen(true);
+                                }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  {t('editShipment')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => syncEasyPostMutation.mutate(shipment.id)}>
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  {t('syncTracking')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => setShipmentToDelete(shipment)}
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t('deleteShipment')}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
