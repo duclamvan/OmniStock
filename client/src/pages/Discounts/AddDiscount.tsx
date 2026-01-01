@@ -467,7 +467,7 @@ export default function AddDiscount() {
                   {t('common:startDate')} <span className="text-destructive">*</span>
                 </Label>
                 <Input 
-                  type="datetime-local"
+                  type="date"
                   {...form.register("startDate")}
                   className="h-10"
                   data-testid="input-startDate"
@@ -482,7 +482,7 @@ export default function AddDiscount() {
                   {t('common:endDate')} <span className="text-destructive">*</span>
                 </Label>
                 <Input 
-                  type="datetime-local"
+                  type="date"
                   {...form.register("endDate")}
                   className="h-10"
                   data-testid="input-endDate"
