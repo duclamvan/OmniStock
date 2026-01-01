@@ -1720,6 +1720,9 @@ export class DatabaseStorage implements IStorage {
         allocated: 'allocated',
         attachmentUrl: 'attachment_url',
         billerId: 'biller_id',
+        pickupLocationCode: 'pickup_location_code',
+        pickupLocationName: 'pickup_location_name',
+        pickupLocationAddress: 'pickup_location_address',
       };
       
       for (const [field, column] of Object.entries(fieldToColumn)) {
