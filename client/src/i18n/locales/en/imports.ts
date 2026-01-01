@@ -2368,6 +2368,12 @@ const imports = {
   quickSelectionApplied: 'Applied to {{count}} variants',
   noVariantsToSelect: 'No variants available to select',
   applyToAll: 'Apply to All ({{count}})',
+  applyToSelected: 'Apply to Selected ({{count}})',
+  variantPattern: 'Variant Pattern (Optional)',
+  patternHelp: 'Enter comma-separated numbers (4,5,6,7,33,67) or ranges (20-60). Leave empty to select all.',
+  invalidPattern: 'Invalid pattern format',
+  noVariantsMatchPattern: 'No variants match the specified pattern',
+  quickSelectionPatternHelp: 'Will apply to {{count}} matching variants based on their numbers.',
   autofilling: 'Autofilling...',
   
   // CostsPanel - Complete Cost Breakdown Section

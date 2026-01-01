@@ -2298,6 +2298,12 @@ const imports = {
   quickSelectionApplied: 'Đã áp dụng cho {{count}} biến thể',
   noVariantsToSelect: 'Không có biến thể nào để chọn',
   applyToAll: 'Áp dụng tất cả ({{count}})',
+  applyToSelected: 'Áp dụng đã chọn ({{count}})',
+  variantPattern: 'Mẫu biến thể (Tùy chọn)',
+  patternHelp: 'Nhập số phân cách bằng dấu phẩy (4,5,6,7,33,67) hoặc khoảng (20-60). Để trống để chọn tất cả.',
+  invalidPattern: 'Định dạng mẫu không hợp lệ',
+  noVariantsMatchPattern: 'Không có biến thể nào khớp với mẫu đã chỉ định',
+  quickSelectionPatternHelp: 'Sẽ áp dụng cho {{count}} biến thể phù hợp dựa trên số của chúng.',
   autofilling: 'Đang điền tự động...',
   
   // Variant-aware import workflow

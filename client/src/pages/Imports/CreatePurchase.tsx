@@ -439,6 +439,7 @@ export default function CreatePurchase() {
   const [quickSelectDialogOpen, setQuickSelectDialogOpen] = useState(false);
   const [quickSelectQuantity, setQuickSelectQuantity] = useState(1);
   const [quickSelectUnitPrice, setQuickSelectUnitPrice] = useState(0);
+  const [quickSelectPattern, setQuickSelectPattern] = useState(""); // e.g. "4,5,6,7,33,67" or "20-60"
   
   // Existing product variants state (for selecting from parent product)
   const [existingVariants, setExistingVariants] = useState<Array<{
@@ -1732,7 +1733,47 @@ export default function CreatePurchase() {
     }
   };
   
-  // Quick Selection - select all variants and apply quantity/price
+  // Parse quick selection pattern (comma-separated numbers and/or ranges like "4,5,6,7,33,67" or "20-60")
+  const parseQuickSelectPattern = (pattern: string): number[] => {
+    if (!pattern.trim()) return [];
+    
+    const numbers: number[] = [];
+    const parts = pattern.split(',').map(p => p.trim()).filter(Boolean);
+    
+    for (const part of parts) {
+      // Check if it's a range like "20-60"
+      const rangeMatch = part.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = parseInt(rangeMatch[1]);
+        const end = parseInt(rangeMatch[2]);
+        if (!isNaN(start) && !isNaN(end)) {
+          for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+            if (!numbers.includes(i)) numbers.push(i);
+          }
+        }
+      } else {
+        // It's a single number
+        const num = parseInt(part);
+        if (!isNaN(num) && !numbers.includes(num)) {
+          numbers.push(num);
+        }
+      }
+    }
+    
+    return numbers.sort((a, b) => a - b);
+  };
+  
+  // Extract number from variant name (e.g. "Size 42" => 42, "Variant 5" => 5)
+  const extractVariantNumber = (name: string): number | null => {
+    const matches = name.match(/\d+/g);
+    if (matches && matches.length > 0) {
+      // Use the last number found in the name (typically the size/variant number)
+      return parseInt(matches[matches.length - 1]);
+    }
+    return null;
+  };
+  
+  // Quick Selection - select variants by pattern and apply quantity/price
   const applyQuickSelection = () => {
     if (variants.length === 0) {
       toast({
@@ -1743,22 +1784,58 @@ export default function CreatePurchase() {
       return;
     }
     
-    // Select all variants
-    setSelectedVariants(variants.map(v => v.id));
+    let targetVariants = variants;
     
-    // Apply quantity and price to all variants
-    const updatedVariants = variants.map(v => ({
-      ...v,
-      quantity: quickSelectQuantity,
-      unitPrice: quickSelectUnitPrice
-    }));
+    // If pattern is specified, filter variants by pattern
+    if (quickSelectPattern.trim()) {
+      const targetNumbers = parseQuickSelectPattern(quickSelectPattern);
+      if (targetNumbers.length === 0) {
+        toast({
+          title: t('error'),
+          description: t('invalidPattern'),
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      targetVariants = variants.filter(v => {
+        const variantNum = extractVariantNumber(v.name);
+        return variantNum !== null && targetNumbers.includes(variantNum);
+      });
+      
+      if (targetVariants.length === 0) {
+        toast({
+          title: t('error'),
+          description: t('noVariantsMatchPattern'),
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Select the target variants
+    setSelectedVariants(targetVariants.map(v => v.id));
+    
+    // Apply quantity and price to target variants
+    const targetIds = new Set(targetVariants.map(v => v.id));
+    const updatedVariants = variants.map(v => {
+      if (targetIds.has(v.id)) {
+        return {
+          ...v,
+          quantity: quickSelectQuantity,
+          unitPrice: quickSelectUnitPrice
+        };
+      }
+      return v;
+    });
     setVariants(updatedVariants);
     
     // Reset and close dialog
     setQuickSelectDialogOpen(false);
+    setQuickSelectPattern("");
     toast({
       title: t('success'),
-      description: t('quickSelectionApplied', { count: variants.length }),
+      description: t('quickSelectionApplied', { count: targetVariants.length }),
     });
   };
   
@@ -5749,6 +5826,18 @@ export default function CreatePurchase() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('variantPattern')}</Label>
+              <Input
+                value={quickSelectPattern}
+                onChange={(e) => setQuickSelectPattern(e.target.value)}
+                placeholder="4,5,6,7,33,67 or 20-60"
+                data-testid="input-quick-select-pattern"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('patternHelp')}
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('quantityPerVariant')}</Label>
@@ -5772,16 +5861,23 @@ export default function CreatePurchase() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-              {t('quickSelectionHelp')}
+              {quickSelectPattern.trim() 
+                ? t('quickSelectionPatternHelp', { count: parseQuickSelectPattern(quickSelectPattern).length })
+                : t('quickSelectionHelp')}
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setQuickSelectDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setQuickSelectDialogOpen(false);
+              setQuickSelectPattern("");
+            }}>
               {t('cancel')}
             </Button>
             <Button onClick={applyQuickSelection} disabled={variants.length === 0}>
               <Zap className="h-4 w-4 mr-2" />
-              {t('applyToAll', { count: variants.length })}
+              {quickSelectPattern.trim() 
+                ? t('applyToSelected', { count: parseQuickSelectPattern(quickSelectPattern).length })
+                : t('applyToAll', { count: variants.length })}
             </Button>
           </DialogFooter>
         </DialogContent>
