@@ -634,7 +634,7 @@ export default function WarehouseLabelPreview({
 
   return (
     <DialogWrapper open={open} onOpenChange={onOpenChange}>
-      <ContentWrapper className={isMobile ? "max-h-[85vh]" : labelSize === "large" ? "max-w-[750px] w-[min(90vw,750px)]" : "max-w-[450px]"}>
+      <ContentWrapper className={isMobile ? "max-h-[85vh]" : labelSize === "large" ? "max-w-[420px]" : "max-w-[420px]"}>
         <HeaderWrapper>
           <TitleWrapper className="text-left flex items-center gap-2">
             <Printer className="h-5 w-5" />
