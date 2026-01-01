@@ -977,12 +977,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
-  // Calculate profit for each order
+  // Calculate profit for each order (matching server-side formula)
+  // Profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost)
   const calculateOrderProfit = (order: any) => {
-    const revenue = parseFloat(order.grandTotal || '0');
-    // Use the stored totalCost on the order (calculated at order creation/update)
+    const grandTotal = parseFloat(order.grandTotal || '0');
     const totalCost = parseFloat(order.totalCost || '0');
-    const profit = revenue - totalCost;
+    const tax = parseFloat(order.tax || '0');
+    const discount = parseFloat(order.discount || '0');
+    const shippingPaid = parseFloat(order.shippingCost || '0');
+    const actualShippingCost = parseFloat(order.actualShippingCost || shippingPaid);
+    // Exclude tax, discount, and shipping differential from profit
+    const profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost);
     return profit;
   };
 
