@@ -17810,7 +17810,7 @@ Important:
 
       // Redirect to the existing PPL label creation endpoint
       // This creates labels for all cartons in the order
-      const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
+      const { createPPLShipment, getPPLOrderByReference, getPPLLabel } = await import('./services/pplService');
 
       // Get order details
       const order = await storage.getOrderById(orderId);
@@ -18005,28 +18005,30 @@ Important:
         });
       }
 
-      // PPL API is asynchronous - poll batch status to get tracking numbers
+      // PPL API is asynchronous - query GET /order endpoint to get tracking numbers (shipmentNumbers)
       if (shipmentNumbers.length === 0) {
-        console.log('📡 Polling PPL batch status for tracking numbers...');
+        console.log('📡 Querying PPL order by referenceId for tracking numbers...');
+        const referenceId = order.orderId;
         // Retry a few times with delay - PPL may need time to process
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 1s, 2s, 3s delays
-            const batchStatus = await getPPLBatchStatus(batchId);
-            console.log(`📡 Batch status attempt ${attempt}:`, JSON.stringify(batchStatus, null, 2));
+            const orders = await getPPLOrderByReference(referenceId);
+            console.log(`📡 Order query attempt ${attempt}:`, JSON.stringify(orders, null, 2));
             
-            if (batchStatus.items && batchStatus.items.length > 0) {
-              shipmentNumbers = batchStatus.items
-                .filter(item => item.shipmentNumber)
-                .map(item => item.shipmentNumber!);
-              
-              if (shipmentNumbers.length > 0) {
-                console.log('✅ Extracted shipment numbers from batch status:', shipmentNumbers);
-                break;
+            // Extract shipmentNumbers from the order response
+            for (const ord of orders) {
+              if (ord.shipmentNumbers && Array.isArray(ord.shipmentNumbers)) {
+                shipmentNumbers.push(...ord.shipmentNumbers);
               }
             }
+            
+            if (shipmentNumbers.length > 0) {
+              console.log('✅ Extracted shipment numbers from order query:', shipmentNumbers);
+              break;
+            }
           } catch (pollError) {
-            console.warn(`⚠️ Batch status polling attempt ${attempt} failed:`, pollError);
+            console.warn(`⚠️ Order query attempt ${attempt} failed:`, pollError);
           }
         }
       }
@@ -18100,7 +18102,7 @@ Important:
   app.post('/api/orders/:orderId/ppl/create-labels', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
-      const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
+      const { createPPLShipment, getPPLOrderByReference, getPPLLabel } = await import('./services/pplService');
 
       // Get order details
       const order = await storage.getOrderById(orderId);
@@ -18395,20 +18397,29 @@ Important:
       const batchId = batchResult.batchId;
       console.log(`✅ PPL batch created: ${batchId}`);
 
-      // Get shipment numbers from batch status (with fallback if API fails)
+      // Get shipment numbers from GET /order endpoint using referenceId
+      // This is the correct PPL API method to retrieve tracking numbers (shipmentNumbers)
       let shipmentNumbers: string[] = [];
       try {
-        const batchStatus = await getPPLBatchStatus(batchId);
-        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
-        if (batchStatus.items && Array.isArray(batchStatus.items)) {
-          shipmentNumbers = batchStatus.items
-            .filter(item => item.shipmentNumber)
-            .map(item => item.shipmentNumber!);
-          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
+        console.log(`📦 Querying PPL order by referenceId: ${referenceId}`);
+        const orders = await getPPLOrderByReference(referenceId);
+        console.log('📦 PPL Order response:', JSON.stringify(orders, null, 2));
+        
+        // Extract shipmentNumbers from the order response
+        for (const order of orders) {
+          if (order.shipmentNumbers && Array.isArray(order.shipmentNumbers)) {
+            shipmentNumbers.push(...order.shipmentNumbers);
+          }
+        }
+        
+        if (shipmentNumbers.length > 0) {
+          console.log('✅ Extracted shipment numbers from order:', shipmentNumbers);
+        } else {
+          console.log('⚠️ No shipmentNumbers in order response yet');
         }
       } catch (statusError) {
-        // PPL status API sometimes fails - continue with label retrieval anyway
-        console.log('⚠️ PPL batch status check failed, attempting to retrieve label directly:', statusError);
+        // PPL order query might fail if order not yet fully processed
+        console.log('⚠️ PPL order query failed, will use placeholder:', statusError);
       }
 
       // Get the label PDF

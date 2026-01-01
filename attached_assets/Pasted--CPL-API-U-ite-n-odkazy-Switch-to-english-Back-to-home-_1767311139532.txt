@@ -1,0 +1,403 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+Seznam výdejních míst
+GET
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+Získání informace o objednávce přepravy
+GET
+OrderBatch
+Slouží k vytvoření objednávky. Odpověď je v header (Location)
+POST
+Získaní stavu objednávky
+GET
+OrderEvent
+Zrušení objednání svozu nebo balíku z libovolné adresy
+POST
+Slouží k získání informací (trackingu) k zásilce
+GET
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+Order
+Získání informace o objednávce přepravy
+GET
+/order
+Maintainer:
+Not configured
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Query Params
+Name
+Type
+Required
+Description
+ShipmentNumbers
+array[string]
+Číslo/čísla balíků
+<= 50 items
+CustomerReferences
+array[string]
+Reference odesílatele
+<= 50 items
+OrderReferences
+array[string]
+Odpovídá hodnotám referenceId z requestu POST order/batch
+<= 50 items
+OrderNumbers
+array[string]
+Číslo objednávky
+<= 50 items
+OrderIds
+array[integer <int32>]
+ID objednávky
+<= 50 items
+DateFrom
+string <date-time>
+Datum od
+DateTo
+string <date-time>
+Datum do
+SendDate
+string <date-time>
+Datum odeslání
+ProductType
+string 
+Typ produktu
+OrderStates
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Enum.OrderStates)
+Stav objednávky
+Allowed values:
+None
+Created
+PickedUp
+NotPickedUp
+Canceled
+OrderType
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Enum.OrderType)
+Typ objednávky
+Allowed values:
+CollectionOrder
+TransportOrder
+Limit
+integer <int32>
+>= 1
+<= 1000
+Offset
+integer <int32>
+>= 0
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Request Code Samples
+GET /order?ShipmentNumbers=null&CustomerReferences=null&OrderReferences=null&OrderNumbers=null&OrderIds=null&DateFrom=null&DateTo=null&SendDate=null&ProductType=null&OrderStates=null&OrderType=null&Limit=null&Offset=null HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Authorization: Bearer <token>
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+X-Paging-Total-Items-Count
+string 
+optional
+Total items in result
+X-Paging-Offset
+string 
+optional
+Paging offset
+X-Paging-Limit
+string 
+optional
+Page size
+Body
+orderNumber
+string  | 
+null 
+optional
+Číslo objednávky
+orderState
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Enum.OrderStates)
+Eps.Api.MyApi2.Web.Models.Enum.OrderStates
+optional
+Stav objednávky
+Allowed values:
+None
+Created
+PickedUp
+NotPickedUp
+Canceled
+orderType
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Enum.OrderType)
+Eps.Api.MyApi2.Web.Models.Enum.OrderType
+optional
+Typ objednávky
+Allowed values:
+CollectionOrder
+TransportOrder
+referenceId
+string  | 
+null 
+optional
+Reference Id
+shipmentCount
+integer <int32>
+optional
+Počet zásilek
+realShipmentCount
+integer <int32>
+optional
+Skutečný počet zásilek
+email
+string  | 
+null 
+optional
+Email
+note
+string  | 
+null 
+optional
+Poznámka
+customerReference
+string  | 
+null 
+optional
+Zákaznická reference
+productType
+string  | 
+null 
+optional
+Typ produktu
+sendDate
+string <date-time> | 
+null 
+optional
+Datum vyzvednutí zadané objednatelem
+realCollectionDate
+string <date-time> | 
+null 
+optional
+Skutečné datum vyzvednutí
+deliveryDateTime
+string <date-time> | 
+null 
+optional
+Datum doručení
+sender
+optional
+Odesílatel
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+optional
+Jméno
+name2
+string  | 
+null 
+optional
+street
+string  | 
+null 
+optional
+Ulice
+city
+string  | 
+null 
+optional
+Město
+zipCode
+string  | 
+null 
+optional
+PSČ
+country
+string  | 
+null 
+optional
+Země
+contact
+string  | 
+null 
+optional
+Kontakt
+phone
+string  | 
+null 
+optional
+Telefon
+email
+string  | 
+null 
+optional
+Email
+recipient
+optional
+Příjemce
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+optional
+Jméno
+name2
+string  | 
+null 
+optional
+street
+string  | 
+null 
+optional
+Ulice
+city
+string  | 
+null 
+optional
+Město
+zipCode
+string  | 
+null 
+optional
+PSČ
+country
+string  | 
+null 
+optional
+Země
+contact
+string  | 
+null 
+optional
+Kontakt
+phone
+string  | 
+null 
+optional
+Telefon
+email
+string  | 
+null 
+optional
+Email
+shipmentNumbers
+array[string] | 
+null 
+optional
+Zásilky na objednávce
+Example
+{
+    "orderNumber": "string",
+    "orderState": "None",
+    "orderType": "CollectionOrder",
+    "referenceId": "string",
+    "shipmentCount": 0,
+    "realShipmentCount": 0,
+    "email": "string",
+    "note": "string",
+    "customerReference": "string",
+    "productType": "string",
+    "sendDate": "2019-08-24T14:15:22.123Z",
+    "realCollectionDate": "2019-08-24T14:15:22.123Z",
+    "deliveryDateTime": "2019-08-24T14:15:22.123Z",
+    "sender": {
+        "name": "string",
+        "name2": "string",
+        "street": "string",
+        "city": "string",
+        "zipCode": "string",
+        "country": "string",
+        "contact": "string",
+        "phone": "string",
+        "email": "string"
+    },
+    "recipient": {
+        "name": "string",
+        "name2": "string",
+        "street": "string",
+        "city": "string",
+        "zipCode": "string",
+        "country": "string",
+        "contact": "string",
+        "phone": "string",
+        "email": "string"
+    },
+    "shipmentNumbers": [
+        "string"
+    ]
+}
+🟠400
+Bad Request
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 4 months ago
+Previous
+Order
+Next
+OrderBatch

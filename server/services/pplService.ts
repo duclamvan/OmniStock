@@ -193,6 +193,26 @@ export interface PPLLabel {
   format: string;
 }
 
+// Response from GET /order endpoint
+export interface PPLOrderResponse {
+  orderNumber?: string;
+  orderState?: string;
+  orderType?: string;
+  referenceId?: string;
+  shipmentCount?: number;
+  realShipmentCount?: number;
+  email?: string;
+  note?: string;
+  customerReference?: string;
+  productType?: string;
+  sendDate?: string;
+  realCollectionDate?: string;
+  deliveryDateTime?: string;
+  sender?: any;
+  recipient?: any;
+  shipmentNumbers?: string[]; // This is what we need - actual tracking numbers!
+}
+
 /**
  * Create PPL shipment(s)
  * Returns batchId, location, and any tracking numbers included in the response
@@ -311,6 +331,58 @@ export async function createPPLShipment(request: PPLCreateShipmentRequest): Prom
  */
 export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus> {
   return pplRequest<PPLBatchStatus>('GET', `/shipment/batch/${batchId}`);
+}
+
+/**
+ * Get PPL order info by referenceId
+ * This is the correct way to get shipmentNumbers (tracking numbers) from PPL
+ * Uses GET /order with OrderReferences query param
+ */
+export async function getPPLOrderByReference(referenceId: string): Promise<PPLOrderResponse[]> {
+  const token = await getPPLAccessToken();
+  
+  const maxRetries = 5;
+  const retryDelay = 2000;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.get(
+        `${PPL_BASE_URL}/order`,
+        {
+          params: {
+            OrderReferences: [referenceId]
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Accept-Language': 'cs-CZ'
+          }
+        }
+      );
+      
+      console.log(`✅ PPL Order query successful (attempt ${attempt}):`, JSON.stringify(response.data, null, 2));
+      
+      // API returns array of orders
+      if (Array.isArray(response.data)) {
+        return response.data as PPLOrderResponse[];
+      }
+      
+      // Single order response
+      return [response.data as PPLOrderResponse];
+    } catch (error: any) {
+      console.log(`⚠️ PPL Order query attempt ${attempt}/${maxRetries} failed:`, error.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`   Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        console.error('❌ All PPL Order query attempts failed');
+        throw error;
+      }
+    }
+  }
+  
+  return [];
 }
 
 
