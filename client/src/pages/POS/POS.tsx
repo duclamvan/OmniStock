@@ -413,14 +413,17 @@ export default function POS() {
   }, [customers, selectedCustomerId]);
 
   useEffect(() => {
-    if (!selectedWarehouse && warehouses.length > 0) {
-      const defaultId = (posSettings as any)?.defaultWarehouseId;
-      const warehouseToSelect = defaultId 
-        ? warehouses.find((w: any) => w.id === defaultId) || warehouses[0]
-        : warehouses[0];
-      setSelectedWarehouse(warehouseToSelect.id);
+    if (warehouses.length > 0) {
+      const currentWarehouseExists = selectedWarehouse && warehouses.some((w: any) => w.id === selectedWarehouse);
+      if (!currentWarehouseExists) {
+        const defaultId = (posSettings as any)?.defaultWarehouseId;
+        const warehouseToSelect = defaultId 
+          ? warehouses.find((w: any) => w.id === defaultId) || warehouses[0]
+          : warehouses[0];
+        setSelectedWarehouse(warehouseToSelect.id);
+      }
     }
-  }, [posSettings, selectedWarehouse, warehouses]);
+  }, [posSettings, warehouses]);
 
   useEffect(() => {
     if (cart.length === 0) return;
@@ -890,7 +893,7 @@ export default function POS() {
           {/* Category Filter */}
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-28 sm:w-36 h-10 sm:h-14 order-2 text-xs sm:text-sm" data-testid="select-category">
-              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
