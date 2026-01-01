@@ -153,7 +153,7 @@ const addOrderSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
-  shippingMethod: z.enum(['PPL', 'PPL CZ', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD']).transform(normalizeCarrier).optional(),
+  shippingMethod: z.enum(['PPL', 'PPL CZ', 'PPL CZ SMART', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD']).transform(normalizeCarrier).optional(),
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer'], {
     errorMap: () => ({ message: 'Please select a valid payment method: Bank Transfer, PayPal, COD, or Cash' })
   }).transform(val => val === 'Transfer' ? 'Bank Transfer' : val).optional(),
@@ -6573,6 +6573,7 @@ export default function AddOrder() {
                   <SelectContent>
                     <SelectItem value="GLS DE">GLS DE</SelectItem>
                     <SelectItem value="PPL CZ">PPL CZ</SelectItem>
+                    <SelectItem value="PPL CZ SMART">PPL CZ SMART (Výdejní místo)</SelectItem>
                     <SelectItem value="DHL DE">DHL DE</SelectItem>
                     <SelectItem value="DPD">DPD</SelectItem>
                   </SelectContent>

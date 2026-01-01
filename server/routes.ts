@@ -15754,7 +15754,29 @@ Important:
   });
 
   // PPL Shipping API routes
-  const { createPPLShipment, getPPLBatchStatus, getPPLLabel } = await import('./services/pplService');
+  const { createPPLShipment, getPPLBatchStatus, getPPLLabel, searchPPLAccessPoints } = await import('./services/pplService');
+
+  // Search PPL Access Points (ParcelShops/ParcelBoxes) for PPL SMART service
+  app.get('/api/shipping/ppl/access-points', isAuthenticated, async (req, res) => {
+    try {
+      const { city, zipCode, country, limit, offset } = req.query;
+      
+      const accessPoints = await searchPPLAccessPoints({
+        city: city as string,
+        zipCode: zipCode as string,
+        country: (country as string) || 'CZ',
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0
+      });
+      
+      res.json(accessPoints);
+    } catch (error) {
+      console.error('Failed to search PPL access points:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to search access points' 
+      });
+    }
+  });
 
   // Test PPL connection
   app.get('/api/shipping/test-connection', isAuthenticated, async (req, res) => {

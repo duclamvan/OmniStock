@@ -409,3 +409,78 @@ export async function cancelPPLShipment(shipmentNumber: string): Promise<void> {
 export async function getPPLShipmentTracking(shipmentNumber: string): Promise<any> {
   return pplRequest('GET', `/shipment/${shipmentNumber}`);
 }
+
+// PPL Access Point (ParcelShop/ParcelBox) types
+export interface PPLAccessPoint {
+  code: string;
+  name: string;
+  name2?: string;
+  street: string;
+  city: string;
+  zipCode: string;
+  country: string;
+  gpsLat?: number;
+  gpsLon?: number;
+  accessPointType?: string; // 'PARCELSHOP' | 'PARCELBOX'
+  openingHours?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface PPLAccessPointSearchParams {
+  city?: string;
+  zipCode?: string;
+  country?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Search PPL Access Points (ParcelShops and ParcelBoxes)
+ * Used for PPL SMART service to allow customers to pick up packages
+ */
+export async function searchPPLAccessPoints(params: PPLAccessPointSearchParams): Promise<PPLAccessPoint[]> {
+  const token = await getPPLAccessToken();
+  
+  const queryParams = new URLSearchParams();
+  if (params.city) queryParams.append('city', params.city);
+  if (params.zipCode) queryParams.append('zipCode', params.zipCode);
+  if (params.country) queryParams.append('country', params.country || 'CZ');
+  if (params.limit) queryParams.append('limit', params.limit.toString());
+  if (params.offset) queryParams.append('offset', params.offset.toString());
+  
+  try {
+    const response = await axios.get(
+      `${PPL_BASE_URL}/accessPoint?${queryParams.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Accept-Language': 'cs-CZ'
+        }
+      }
+    );
+    
+    // Map response to our interface
+    const accessPoints = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+    
+    return accessPoints.map((ap: any) => ({
+      code: ap.code || ap.accessPointCode,
+      name: ap.name || ap.accessPointName,
+      name2: ap.name2,
+      street: ap.street || ap.address?.street,
+      city: ap.city || ap.address?.city,
+      zipCode: ap.zipCode || ap.address?.zipCode,
+      country: ap.country || ap.address?.country || 'CZ',
+      gpsLat: ap.gpsLat || ap.gps?.lat,
+      gpsLon: ap.gpsLon || ap.gps?.lon,
+      accessPointType: ap.accessPointType || ap.type,
+      openingHours: ap.openingHours,
+      phone: ap.phone,
+      email: ap.email
+    }));
+  } catch (error: any) {
+    console.error('Failed to search PPL access points:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Failed to search PPL access points');
+  }
+}
