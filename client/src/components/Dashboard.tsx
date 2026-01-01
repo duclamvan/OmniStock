@@ -329,7 +329,7 @@ const ChartSkeleton = memo(() => (
 ChartSkeleton.displayName = 'ChartSkeleton';
 
 export function Dashboard() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['dashboard', 'common']);
   const { formatCurrency } = useLocalization();
   
   // Query all dashboard endpoints
