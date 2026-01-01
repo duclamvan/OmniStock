@@ -11917,7 +11917,7 @@ Important:
           
           // Helper function to get cost from a product/variant based on currency priority
           // Supports all currencies: CZK, EUR, USD, VND, CNY
-          // CRITICAL: Prioritize currency-specific importCost first since latestLandingCost may be outdated
+          // CRITICAL: Only use currency-tagged importCost fields - latestLandingCost has unknown currency and causes errors
           const getCostFromEntity = (entity: any, currency: string): number | null => {
             const currencyFieldMap: Record<string, string> = {
               'CZK': 'importCostCzk',
@@ -11926,16 +11926,14 @@ Important:
               'VND': 'importCostVnd',
               'CNY': 'importCostCny',
             };
-            // Priority 1: importCost matching order currency (most reliable for that currency)
+            // Priority 1: importCost matching order currency (always most reliable)
             const currencyField = currencyFieldMap[currency];
             if (currencyField && entity[currencyField] && parseFloat(entity[currencyField]) > 0) {
               return parseFloat(entity[currencyField]);
             }
-            // Priority 2: latestLandingCost (may include freight/duty but could be outdated)
-            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
-              return parseFloat(entity.latestLandingCost);
-            }
-            // Priority 3: Fallback to any available importCost (prefer CZK as base currency)
+            // Priority 2: Fallback to any available importCost (prefer CZK as base currency)
+            // NOTE: We intentionally skip latestLandingCost here because it has unknown currency
+            // and using EUR cost for CZK order (or vice versa) causes incorrect profit calculations
             const fallbackOrder = ['importCostCzk', 'importCostEur', 'importCostUsd', 'importCostVnd', 'importCostCny'];
             for (const field of fallbackOrder) {
               if (entity[field] && parseFloat(entity[field]) > 0) {
