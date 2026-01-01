@@ -8803,7 +8803,7 @@ export default function PickPack() {
                       </div>
                     </div>
                   )}
-                  <div className="pb-2">
+                  <div className="pb-2 pt-2">
                     <ScrollArea className="h-[400px] w-full">
                       <div className="space-y-2 px-2 pr-3">
                       {activePackingOrder.items.map((item, index) => {
