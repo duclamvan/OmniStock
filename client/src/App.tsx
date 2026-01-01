@@ -94,6 +94,7 @@ import CustomReport from "@/pages/Reports/CustomReport";
 import Settings from "@/pages/Settings";
 import Employees from "@/pages/Employees";
 import EmployeeDetail from "@/pages/Employees/EmployeeDetail";
+import Leaderboard from "@/pages/Leaderboard";
 import ActivityLog from "@/pages/ActivityLog";
 import Profile from "@/pages/Profile";
 import UserSettings from "@/pages/UserSettings";
@@ -394,6 +395,10 @@ function Router() {
         </Route>
         <Route path="/employees">
           {() => <ProtectedRoute requireAdmin><Employees /></ProtectedRoute>}
+        </Route>
+        {/* Leaderboard Route */}
+        <Route path="/leaderboard">
+          {() => <ProtectedRoute><Leaderboard /></ProtectedRoute>}
         </Route>
         {/* Activity Log Route */}
         <Route path="/activity-log/:userId">
