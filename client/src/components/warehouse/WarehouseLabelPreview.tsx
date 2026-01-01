@@ -122,45 +122,132 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
   return (
     <div
       id="warehouse-label-large-print"
-      className="w-[148mm] h-[105mm] flex flex-row items-stretch bg-white text-black overflow-hidden border-[3pt] border-black"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif", transform: "scale(0.4)", transformOrigin: "top left" }}
+      className="bg-white text-black overflow-hidden"
+      style={{ 
+        fontFamily: "'Arial Narrow', Arial, Helvetica, sans-serif", 
+        width: "148mm",
+        height: "105mm",
+        transform: "scale(0.38)", 
+        transformOrigin: "top left",
+        border: "3pt solid black",
+        display: "grid",
+        gridTemplateColumns: "30mm 1fr",
+        gridTemplateRows: "1fr 24mm"
+      }}
     >
-      <div className="flex-shrink-0 w-[42mm] flex flex-col items-center justify-center p-[3mm] bg-white border-r-[2pt] border-black">
+      {/* Left Spine - QR + SKU */}
+      <div style={{
+        gridRow: "1 / 3",
+        borderRight: "2pt solid black",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "3mm",
+        gap: "2mm",
+        background: "repeating-linear-gradient(45deg, transparent, transparent 2mm, rgba(0,0,0,0.03) 2mm, rgba(0,0,0,0.03) 4mm)"
+      }}>
         <QRCodeSVG
           value={qrUrl}
-          size={130}
+          size={85}
           level="M"
           includeMargin={false}
         />
-        <div className="mt-[2mm] text-[12pt] font-black font-mono text-center break-all">
+        <div style={{
+          fontSize: "9pt",
+          fontWeight: 900,
+          fontFamily: "monospace",
+          textAlign: "center",
+          wordBreak: "break-all",
+          padding: "1.5mm 2mm",
+          background: "black",
+          color: "white",
+          width: "100%",
+          letterSpacing: "-0.3pt"
+        }}>
           {product.sku || productCode}
         </div>
       </div>
 
-      <div className="flex-1 p-[4mm] flex flex-col">
-        <div className="flex-1 flex flex-col justify-center gap-[2mm]">
-          <div className="font-black text-[36pt] leading-[1.05] uppercase break-words tracking-[-0.5pt]">
-            {vietnameseName}
+      {/* Main Content Area */}
+      <div style={{
+        padding: "4mm 5mm 3mm 5mm",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "2mm",
+        overflow: "hidden"
+      }}>
+        {/* Vietnamese Name - Primary */}
+        <div style={{
+          fontWeight: 900,
+          fontSize: "38pt",
+          lineHeight: 1.0,
+          textTransform: "uppercase",
+          letterSpacing: "-1pt",
+          wordBreak: "break-word"
+        }}>
+          {vietnameseName}
+        </div>
+        
+        {/* English Name - Secondary */}
+        {vietnameseName !== englishName && (
+          <div style={{
+            fontSize: "20pt",
+            fontWeight: 600,
+            lineHeight: 1.1,
+            letterSpacing: "0.5pt",
+            textTransform: "uppercase",
+            opacity: 0.7,
+            wordBreak: "break-word",
+            borderTop: "1pt solid black",
+            paddingTop: "2mm",
+            marginTop: "1mm"
+          }}>
+            {englishName}
           </div>
-          {vietnameseName !== englishName && (
-            <div className="text-[20pt] font-semibold italic break-words border-l-[3pt] border-black pl-[3mm]">
-              {englishName}
+        )}
+      </div>
+
+      {/* Bottom Strap - Price Zone */}
+      <div style={{
+        borderTop: "3pt solid black",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        padding: "0 5mm",
+        gap: "6mm",
+        background: "black"
+      }}>
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: "0"
+        }}>
+          {priceEur !== null && (
+            <div style={{
+              fontWeight: 900,
+              fontSize: "32pt",
+              lineHeight: 1,
+              color: "white",
+              letterSpacing: "-0.5pt"
+            }}>
+              €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           )}
-        </div>
-        <div className="flex items-center justify-between gap-[5mm] border-t-[3pt] border-black pt-[4mm] mt-[4mm] min-h-[22mm]">
-          <div className="price-area flex flex-col items-end gap-[1mm] ml-auto">
-            {priceEur !== null && (
-              <div className="font-black text-[32pt] leading-none">
-                €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            )}
-            {priceCzk !== null && (
-              <div className="font-bold text-[26pt] leading-none tracking-[-0.5pt]">
-                {priceCzk.toLocaleString("cs-CZ")} Kč
-              </div>
-            )}
-          </div>
+          {priceCzk !== null && (
+            <div style={{
+              fontWeight: 700,
+              fontSize: "22pt",
+              lineHeight: 1.1,
+              color: "white",
+              opacity: 0.85,
+              letterSpacing: "-0.3pt"
+            }}>
+              {priceCzk.toLocaleString("cs-CZ")} Kč
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -383,7 +470,7 @@ export default function WarehouseLabelPreview({
     }
 
     // Generate QR code as data URL
-    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 0 });
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0 });
 
     const printWindow = window.open("", "_blank", "width=600,height=450");
     if (!printWindow) return;
@@ -405,7 +492,7 @@ export default function WarehouseLabelPreview({
             box-sizing: border-box;
           }
           body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
             width: 148mm;
             height: 105mm;
             overflow: hidden;
@@ -413,117 +500,115 @@ export default function WarehouseLabelPreview({
           .label-container {
             width: 148mm;
             height: 105mm;
-            display: flex;
-            flex-direction: row;
-            align-items: stretch;
+            display: grid;
+            grid-template-columns: 30mm 1fr;
+            grid-template-rows: 1fr 24mm;
             background: white;
             color: black;
             overflow: hidden;
             border: 3pt solid black;
           }
-          .qr-section {
-            flex-shrink: 0;
-            width: 42mm;
+          .qr-spine {
+            grid-row: 1 / 3;
+            border-right: 2pt solid black;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 3mm;
-            background: white;
-            border-right: 2pt solid black;
+            gap: 2mm;
           }
-          .qr-section img {
-            width: 35mm;
-            height: 35mm;
+          .qr-spine img {
+            width: 24mm;
+            height: 24mm;
           }
-          .sku-code {
-            margin-top: 2mm;
-            font-size: 12pt;
+          .sku-plate {
+            font-size: 9pt;
             font-weight: 900;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             text-align: center;
             word-break: break-all;
-            color: black;
+            padding: 1.5mm 2mm;
+            background: black;
+            color: white;
+            width: 100%;
+            letter-spacing: -0.3pt;
           }
-          .right-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 4mm 5mm;
-          }
-          .name-area {
-            flex: 1;
+          .content-area {
+            padding: 4mm 5mm 3mm 5mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: 2mm;
+            overflow: hidden;
           }
-          .product-name {
+          .vn-name {
             font-weight: 900;
-            font-size: 36pt;
-            line-height: 1.05;
+            font-size: 38pt;
+            line-height: 1.0;
             text-transform: uppercase;
             word-break: break-word;
-            letter-spacing: -0.5pt;
+            letter-spacing: -1pt;
             color: black;
           }
-          .product-name-en {
+          .en-name {
             font-size: 20pt;
             font-weight: 600;
-            font-style: italic;
-            line-height: 1.15;
-            color: black;
+            line-height: 1.1;
+            letter-spacing: 0.5pt;
+            text-transform: uppercase;
+            color: #444;
             word-break: break-word;
-            border-left: 3pt solid black;
-            padding-left: 3mm;
+            border-top: 1pt solid black;
+            padding-top: 2mm;
+            margin-top: 1mm;
           }
-          .bottom-row {
+          .price-strap {
+            border-top: 3pt solid black;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 5mm;
-            border-top: 3pt solid black;
-            padding-top: 4mm;
-            margin-top: 4mm;
-            min-height: 22mm;
+            padding: 0 5mm;
+            gap: 6mm;
+            background: black;
           }
-          .price-area {
+          .price-stack {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 1mm;
+            gap: 0;
           }
           .price-eur {
             font-weight: 900;
             font-size: 32pt;
             line-height: 1;
-            color: black;
+            color: white;
+            letter-spacing: -0.5pt;
           }
           .price-czk {
-            font-weight: bold;
-            font-size: 26pt;
-            line-height: 1;
-            color: black;
-            letter-spacing: -0.5pt;
+            font-weight: 700;
+            font-size: 22pt;
+            line-height: 1.1;
+            color: white;
+            opacity: 0.85;
+            letter-spacing: -0.3pt;
           }
         </style>
       </head>
       <body>
         <div class="label-container">
-          <div class="qr-section">
+          <div class="qr-spine">
             <img src="${qrDataUrl}" alt="QR Code" />
-            <div class="sku-code">${product.sku || productCode}</div>
+            <div class="sku-plate">${product.sku || productCode}</div>
           </div>
-          <div class="right-section">
-            <div class="name-area">
-              <div class="product-name">${vietnameseName}</div>
-              ${vietnameseName !== englishName ? `<div class="product-name-en">${englishName}</div>` : ''}
-            </div>
-            <div class="bottom-row">
-              <div class="price-area">
-                ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ''}
-                ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ''}
-              </div>
+          <div class="content-area">
+            <div class="vn-name">${vietnameseName}</div>
+            ${vietnameseName !== englishName ? `<div class="en-name">${englishName}</div>` : ''}
+          </div>
+          <div class="price-strap">
+            <div class="price-stack">
+              ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ''}
+              ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ''}
             </div>
           </div>
         </div>
