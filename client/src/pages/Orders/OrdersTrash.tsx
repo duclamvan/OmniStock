@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -7,6 +7,8 @@ import { useLocalization } from "@/contexts/LocalizationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -18,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package, Search, ArrowUpDown, Calendar } from "lucide-react";
 
 // Component to display order items for a trashed order
 function OrderItemsList({ orderId, currency }: { orderId: string; currency: string }) {
@@ -54,6 +56,8 @@ function OrderItemsList({ orderId, currency }: { orderId: string; currency: stri
   );
 }
 
+type SortOption = 'deleted_desc' | 'deleted_asc' | 'created_desc' | 'created_asc' | 'orderId_asc' | 'orderId_desc';
+
 export default function OrdersTrash() {
   const { t } = useTranslation(['orders', 'common']);
   const [, navigate] = useLocation();
@@ -61,10 +65,46 @@ export default function OrdersTrash() {
   const { formatCurrency, formatDate } = useLocalization();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('deleted_desc');
 
   const { data: trashedOrders = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/orders/trash'],
   });
+
+  const filteredAndSortedOrders = useMemo(() => {
+    let result = [...trashedOrders];
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter((order: any) => {
+        const orderId = (order.orderId || '').toLowerCase();
+        const customerName = (order.customer?.name || order.guestName || '').toLowerCase();
+        return orderId.includes(query) || customerName.includes(query);
+      });
+    }
+    
+    result.sort((a: any, b: any) => {
+      switch (sortBy) {
+        case 'deleted_desc':
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        case 'deleted_asc':
+          return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+        case 'created_desc':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'created_asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'orderId_asc':
+          return (a.orderId || '').localeCompare(b.orderId || '');
+        case 'orderId_desc':
+          return (b.orderId || '').localeCompare(a.orderId || '');
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  }, [trashedOrders, searchQuery, sortBy]);
 
   const restoreMutation = useMutation({
     mutationFn: async (orderId: string) => {
@@ -155,6 +195,36 @@ export default function OrdersTrash() {
         </div>
       </div>
 
+      {/* Search and Sort Controls */}
+      {trashedOrders.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={t('orders:searchTrash')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-trash"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-full sm:w-[200px]" data-testid="select-sort-trash">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="deleted_desc">{t('orders:sortDeletedNewest')}</SelectItem>
+              <SelectItem value="deleted_asc">{t('orders:sortDeletedOldest')}</SelectItem>
+              <SelectItem value="created_desc">{t('orders:sortCreatedNewest')}</SelectItem>
+              <SelectItem value="created_asc">{t('orders:sortCreatedOldest')}</SelectItem>
+              <SelectItem value="orderId_desc">{t('orders:sortOrderIdDesc')}</SelectItem>
+              <SelectItem value="orderId_asc">{t('orders:sortOrderIdAsc')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {trashedOrders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -167,9 +237,21 @@ export default function OrdersTrash() {
             </p>
           </CardContent>
         </Card>
+      ) : filteredAndSortedOrders.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Search className="h-12 w-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+            <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t('orders:noSearchResults')}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400">
+              {t('orders:tryDifferentSearch')}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
-          {trashedOrders.map((order: any) => (
+          {filteredAndSortedOrders.map((order: any) => (
             <Card key={order.id} className="border-slate-200 dark:border-slate-700">
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -183,6 +265,10 @@ export default function OrdersTrash() {
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 space-y-0.5">
                       <p>{order.customer?.name || t('orders:walkInCustomer')}</p>
+                      <p className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>{t('orders:orderDate')}: {formatDate(order.createdAt)}</span>
+                      </p>
                       <p>
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                           {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}

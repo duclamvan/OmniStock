@@ -1960,6 +1960,16 @@ const orders = {
   permanentDeleteTitle: 'Xóa vĩnh viễn đơn hàng?',
   permanentDeleteWarning: 'Hành động này không thể hoàn tác. Đơn hàng {{orderId}} sẽ bị xóa vĩnh viễn và tồn kho sẽ được khôi phục.',
   deletedOn: 'Đã xóa',
+  orderDate: 'Ngày đặt hàng',
+  searchTrash: 'Tìm theo mã đơn hoặc khách hàng...',
+  noSearchResults: 'Không tìm thấy kết quả',
+  tryDifferentSearch: 'Thử từ khóa khác',
+  sortDeletedNewest: 'Xóa: Mới nhất',
+  sortDeletedOldest: 'Xóa: Cũ nhất',
+  sortCreatedNewest: 'Tạo: Mới nhất',
+  sortCreatedOldest: 'Tạo: Cũ nhất',
+  sortOrderIdDesc: 'Mã đơn: Z-A',
+  sortOrderIdAsc: 'Mã đơn: A-Z',
   
 } as const;
 

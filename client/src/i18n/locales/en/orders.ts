@@ -1972,6 +1972,16 @@ const orders = {
   permanentDeleteTitle: 'Permanently Delete Order?',
   permanentDeleteWarning: 'This action cannot be undone. Order {{orderId}} will be permanently deleted and inventory will be restored.',
   deletedOn: 'Deleted',
+  orderDate: 'Order Date',
+  searchTrash: 'Search by order ID or customer...',
+  noSearchResults: 'No Results Found',
+  tryDifferentSearch: 'Try a different search term',
+  sortDeletedNewest: 'Deleted: Newest First',
+  sortDeletedOldest: 'Deleted: Oldest First',
+  sortCreatedNewest: 'Created: Newest First',
+  sortCreatedOldest: 'Created: Oldest First',
+  sortOrderIdDesc: 'Order ID: Z-A',
+  sortOrderIdAsc: 'Order ID: A-Z',
   
 } as const;
 
