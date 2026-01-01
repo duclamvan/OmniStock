@@ -27,6 +27,7 @@ The project uses PostgreSQL with Neon serverless driver and Drizzle ORM. The sch
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation.
 - **System Utilities**: Files management, automatic lossless image compression to WebP, robust fuzzy search with diacritics normalization, a generic DataTable component, reporting, and a comprehensive settings management system.
 - **Maintenance Mode**: System-wide safety switch allowing administrators access during updates while blocking other users.
+- **Employee Performance & Gamification**: Gamified performance tracking for warehouse staff with point system (10 base points per order, 1 per item, speed bonuses), 11 badge types (volume, speed, streak, level), leaderboard with daily/weekly/monthly/all-time periods, and XP-based leveling (100 XP per level). Integrated into pick/pack workflow for automatic tracking.
 
 # External Dependencies
 
