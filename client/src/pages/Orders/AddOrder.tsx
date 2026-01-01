@@ -1715,9 +1715,12 @@ export default function AddOrder() {
     }
   }, [selectedCustomer]);
 
-  // Auto-select carrier based on customer's country
+  // Auto-select carrier based on customer's country (only for new orders, not when editing)
   useEffect(() => {
     if (!selectedCustomer) return;
+    
+    // Skip auto-selection when editing an existing order - preserve the saved shipping method
+    if (isEditMode) return;
     
     // Get the customer's country (from customer record or shipping address)
     const customerCountry = selectedShippingAddress?.country || selectedCustomer.country;
@@ -1760,7 +1763,7 @@ export default function AddOrder() {
         console.log(`[AddOrder] Auto-selected carrier ${mappedCarrier} for country ${customerCountry} (${countryCode})`);
       }
     }
-  }, [selectedCustomer, selectedShippingAddress, shippingSettings?.countryCarrierMapping]);
+  }, [selectedCustomer, selectedShippingAddress, shippingSettings?.countryCarrierMapping, isEditMode]);
 
   // Track previous currency to detect manual tax rate overrides
   const prevCurrencyRef = useRef<string>(watchedCurrency);

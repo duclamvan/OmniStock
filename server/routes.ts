@@ -18307,9 +18307,9 @@ Important:
           }
         };
         
-        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase)
+        // Add parcelShopCode for PPL SMART shipments (PPL API uses camelCase)
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.ParcelShopCode = order.pickupLocationCode;
+          shipment.parcelShopCode = order.pickupLocationCode;
           console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
         }
 
@@ -18359,9 +18359,9 @@ Important:
           ]
         };
         
-        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase)
+        // Add parcelShopCode for PPL SMART shipments (PPL API uses camelCase)
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.ParcelShopCode = order.pickupLocationCode;
+          singleShipment.parcelShopCode = order.pickupLocationCode;
           console.log(`🏪 PPL SMART: Using pickup location ${order.pickupLocationCode}`);
         }
 
