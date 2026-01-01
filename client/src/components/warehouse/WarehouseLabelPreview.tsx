@@ -642,13 +642,10 @@ export default function WarehouseLabelPreview({
           </TitleWrapper>
         </HeaderWrapper>
 
-        <div className={`${isMobile ? "px-4 pb-4" : "py-4"} space-y-4`}>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground flex-1">
-              {t("inventory:warehouseLabelDesc")}
-            </p>
+        <div className={`${isMobile ? "px-3 pb-3" : "py-2 px-1"} space-y-2`}>
+          <div className="flex items-center justify-end gap-2">
             <Select value={labelSize} onValueChange={(v) => setLabelSize(v as "small" | "large")}>
-              <SelectTrigger className="w-[160px]" data-testid="select-label-size">
+              <SelectTrigger className="w-[180px] h-8 text-sm" data-testid="select-label-size">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -662,13 +659,13 @@ export default function WarehouseLabelPreview({
             </Select>
           </div>
 
-          <div className={`flex justify-center bg-gray-50 dark:bg-gray-900 rounded-lg ${labelSize === "large" ? "p-6" : "py-4"}`}>
+          <div className={`flex justify-center bg-gray-50 dark:bg-gray-900 rounded ${labelSize === "large" ? "p-2" : "py-3"}`}>
             {labelSize === "small" ? (
               <div className="transform scale-90 origin-center">
                 <LabelContent product={product} />
               </div>
             ) : (
-              <div className="flex justify-center items-center overflow-visible" style={{ height: "290px" }}>
+              <div className="flex justify-center items-center overflow-visible" style={{ height: "270px" }}>
                 <div style={{ transform: "scale(0.65)", transformOrigin: "center center" }}>
                   <LargeLabelContent product={product} />
                 </div>
@@ -677,7 +674,7 @@ export default function WarehouseLabelPreview({
           </div>
 
           <div className="text-xs text-muted-foreground text-center">
-            {t("inventory:labelDimensions")}: {labelSize === "small" ? "100mm × 30mm" : "148mm × 105mm"}
+            {labelSize === "small" ? "100mm × 30mm" : "148mm × 105mm"}
           </div>
         </div>
 
