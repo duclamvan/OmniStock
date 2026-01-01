@@ -2140,6 +2140,7 @@ const imports = {
   // Order Details Card Section Headers
   currencyAndPayment: 'Tiền tệ & Thanh toán',
   supplierDetails: 'Chi tiết nhà cung cấp',
+  supplierAndDates: 'Nhà cung cấp & Ngày',
   timelineSection: 'Thời gian',
   timelineSectionDescription: 'Đặt ngày mua và thời gian xử lý',
   optionsSection: 'Tùy chọn',

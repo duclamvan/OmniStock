@@ -36,7 +36,7 @@ import {
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, User, Clock, Search, MoreVertical, Edit, X, RotateCcw,
   Copy, PackagePlus, ListPlus, Loader2, ChevronDown, ChevronUp, ChevronRight, Upload, ImageIcon, Settings, Scale,
-  Barcode, MapPin, ClipboardPaste, PlusCircle, Pencil, Zap, ClipboardList
+  Barcode, MapPin, ClipboardPaste, PlusCircle, Pencil, Zap, ClipboardList, Building2
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -2430,15 +2430,15 @@ export default function CreatePurchase() {
         <div className="space-y-6">
           {/* Order Details */}
           <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <ClipboardList className="h-5 w-5 text-white" />
+                  <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                    <ClipboardList className={cn("h-5 w-5", accentColors.textAccent)} />
                   </div>
                   <div>
-                    <CardTitle className="text-white">{t('orderDetails')}</CardTitle>
-                    <CardDescription className="text-white/80">{t('basicDetailsSupplier')}</CardDescription>
+                    <CardTitle className="text-foreground">{t('orderDetails')}</CardTitle>
+                    <CardDescription className="text-muted-foreground">{t('basicDetailsSupplier')}</CardDescription>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2472,10 +2472,12 @@ export default function CreatePurchase() {
             <CardContent className="space-y-6 p-4 sm:p-6">
               {/* Currency & Payment Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <span>{t('currencyAndPayment')}</span>
-                </div>
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <DollarSign className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('currencyAndPayment')}</span>
+                </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="purchase-currency" className="text-xs text-muted-foreground">{t('purchaseCurrency')} *</Label>
@@ -2589,12 +2591,14 @@ export default function CreatePurchase() {
 
               <Separator />
 
-              {/* Supplier Section */}
+              {/* Supplier & Dates Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <User className="h-4 w-4 text-primary" />
-                  <span>{t('supplierDetails')}</span>
-                </div>
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <Building2 className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('supplierAndDates')}</span>
+                </h4>
                 <div className="space-y-2">
                   <Label htmlFor="supplier" className="text-xs text-muted-foreground">{t('supplierName')} *</Label>
                   <div className="relative" ref={supplierDropdownRef}>
@@ -2848,182 +2852,156 @@ export default function CreatePurchase() {
                     </div>
                   </div>
                 )}
-              </div>
-
-            </CardContent>
-          </Card>
-
-          {/* Timeline Card */}
-          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <Calendar className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-white">{t('timelineSection')}</CardTitle>
-                  <CardDescription className="text-white/80">{t('timelineSectionDescription')}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 p-4 sm:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="purchase-date" className="text-xs text-muted-foreground">{t('purchaseDate')} *</Label>
-                  <Input
-                    id="purchase-date"
-                    type="datetime-local"
-                    value={purchaseDate}
-                    onChange={(e) => setPurchaseDate(e.target.value)}
-                    data-testid="input-purchase-date"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="processing" className="text-xs text-muted-foreground">{t('processingTime')}</Label>
-                  <div className="flex gap-2">
+                {/* Date Fields - Part of Supplier & Dates Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase-date" className="text-xs text-muted-foreground">{t('purchaseDate')} *</Label>
                     <Input
-                      id="processing"
-                      type="number"
-                      min="0"
-                      value={processingTime}
-                      onChange={(e) => setProcessingTime(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      placeholder="0"
-                      className="flex-1"
-                      data-testid="input-processing-time"
+                      id="purchase-date"
+                      type="datetime-local"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                      data-testid="input-purchase-date"
                     />
-                    <Select value={processingUnit} onValueChange={setProcessingUnit}>
-                      <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="processing" className="text-xs text-muted-foreground">{t('processingTime')}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="processing"
+                        type="number"
+                        min="0"
+                        value={processingTime}
+                        onChange={(e) => setProcessingTime(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="0"
+                        className="flex-1"
+                        data-testid="input-processing-time"
+                      />
+                      <Select value={processingUnit} onValueChange={setProcessingUnit}>
+                        <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">{t('days')}</SelectItem>
+                          <SelectItem value="weeks">{t('weeks')}</SelectItem>
+                          <SelectItem value="months">{t('months')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Shipping Details Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <Truck className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('shippingDetails')}</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
+                    <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
+                      <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="days">{t('days')}</SelectItem>
-                        <SelectItem value="weeks">{t('weeks')}</SelectItem>
-                        <SelectItem value="months">{t('months')}</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                        <SelectItem value="CNY">CNY (¥)</SelectItem>
+                        <SelectItem value="VND">VND (₫)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Shipping Details Card */}
-          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <Truck className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-white">{t('shippingDetails')}</CardTitle>
-                  <CardDescription className="text-white/80">{t('shippingDetailsDescription')}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 p-4 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shipping-currency" className="text-xs text-muted-foreground">{t('shippingCurrency')}</Label>
-                  <Select value={shippingCurrency} onValueChange={setShippingCurrency}>
-                    <SelectTrigger id="shipping-currency" data-testid="select-shipping-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                      <SelectItem value="CNY">CNY (¥)</SelectItem>
-                      <SelectItem value="VND">VND (₫)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
-                    <DecimalInput
-                      id="shipping"
-                      value={shippingCost}
-                      onChange={(val) => handleShippingCostChange(val)}
-                      className="pl-10"
-                      placeholder="0.00"
-                      data-testid="input-shipping"
+                  <div className="space-y-2">
+                    <Label htmlFor="shipping" className="text-xs text-muted-foreground">{t('shippingCost')}</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(shippingCurrency)}</span>
+                      <DecimalInput
+                        id="shipping"
+                        value={shippingCost}
+                        onChange={(val) => handleShippingCostChange(val)}
+                        className="pl-10"
+                        placeholder="0.00"
+                        data-testid="input-shipping"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tracking" className="text-xs text-muted-foreground">{t('trackingNumber')}</Label>
+                    <Input
+                      id="tracking"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder={t('optionalTracking')}
+                      data-testid="input-tracking"
                     />
                   </div>
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Options Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <Settings className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('optionsSection')}</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="consolidation" className="text-xs text-muted-foreground">{t('consolidation')}?</Label>
+                    <Select 
+                      value={consolidation} 
+                      onValueChange={setConsolidation}
+                    >
+                      <SelectTrigger id="consolidation" data-testid="select-consolidation">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Yes">{t('yes')}</SelectItem>
+                        <SelectItem value="No">{t('no')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {purchaseCurrency === "EUR" && (
+                      <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
+                    )}
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tracking" className="text-xs text-muted-foreground">{t('trackingNumber')}</Label>
-                  <Input
-                    id="tracking"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder={t('optionalTracking')}
-                    data-testid="input-tracking"
+                  <Label htmlFor="notes" className="text-xs text-muted-foreground">{t('notes')}</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={t('additionalNotes')}
+                    rows={3}
+                    data-testid="textarea-notes"
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Options Card */}
-          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <Settings className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-white">{t('optionsSection')}</CardTitle>
-                  <CardDescription className="text-white/80">{t('optionsSectionDescription')}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 p-4 sm:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="consolidation" className="text-xs text-muted-foreground">{t('consolidation')}?</Label>
-                  <Select 
-                    value={consolidation} 
-                    onValueChange={setConsolidation}
-                  >
-                    <SelectTrigger id="consolidation" data-testid="select-consolidation">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yes">{t('yes')}</SelectItem>
-                      <SelectItem value="No">{t('no')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {purchaseCurrency === "EUR" && (
-                    <p className="text-xs text-muted-foreground">{t('autoSelectedNoForEUR')}</p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs text-muted-foreground">{t('notes')}</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('additionalNotes')}
-                  rows={3}
-                  data-testid="textarea-notes"
-                />
-              </div>
             </CardContent>
           </Card>
 
           {/* Add Item Form */}
           <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+            <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <Package className="h-5 w-5 text-white" />
+                <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                  <Package className={cn("h-5 w-5", accentColors.textAccent)} />
                 </div>
                 <div>
-                  <CardTitle className="text-white">{t('addItems')}</CardTitle>
-                  <CardDescription className="text-white/80">{t('addProductsToPurchase')}</CardDescription>
+                  <CardTitle className="text-foreground">{t('addItems')}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{t('addProductsToPurchase')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -4185,18 +4163,20 @@ export default function CreatePurchase() {
           {/* Items Table */}
           {items.length > 0 && (
             <Card className={cn("shadow-sm overflow-hidden", accentColors.border)}>
-              <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      {t('orderItems')}
-                    </CardTitle>
-                    <CardDescription className="text-white/80">{t('reviewManageItems')}</CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                      <Package className={cn("h-5 w-5", accentColors.textAccent)} />
+                    </div>
+                    <div>
+                      <CardTitle className="text-foreground">{t('orderItems')}</CardTitle>
+                      <CardDescription className="text-muted-foreground">{t('reviewManageItems')}</CardDescription>
+                    </div>
                   </div>
                   {selectedItems.length > 0 && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30">
-                      <span className="text-sm font-medium text-white">
+                    <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border", accentColors.selectedBg, accentColors.border)}>
+                      <span className={cn("text-sm font-medium", accentColors.textAccent)}>
                         {t('selectedItems', { count: selectedItems.length })}
                       </span>
                       <div className="flex items-center gap-1 ml-2">
@@ -4204,7 +4184,7 @@ export default function CreatePurchase() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedItems([])}
-                          className="h-7 px-2 text-xs text-white hover:bg-white/20 hover:text-white"
+                          className="h-7 px-2 text-xs"
                           data-testid="button-clear-selection"
                         >
                           <X className="h-3 w-3 mr-1" />
@@ -4212,8 +4192,9 @@ export default function CreatePurchase() {
                         </Button>
                         <Button
                           size="sm"
+                          variant="destructive"
                           onClick={() => setDeleteConfirmOpen(true)}
-                          className="h-7 px-2 text-xs bg-red-500/80 hover:bg-red-500 text-white border-0"
+                          className="h-7 px-2 text-xs"
                           data-testid="button-delete-selected"
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
@@ -4914,13 +4895,13 @@ export default function CreatePurchase() {
         <div className="xl:sticky xl:top-6 h-fit space-y-6">
           {/* Status Selection - Compact Dropdown */}
           <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+            <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <Clock className="h-5 w-5 text-white" />
+                <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                  <Clock className={cn("h-5 w-5", accentColors.textAccent)} />
                 </div>
                 <div>
-                  <CardTitle className="text-white">{t('orderStatus')}</CardTitle>
+                  <CardTitle className="text-foreground">{t('orderStatus')}</CardTitle>
                 </div>
               </div>
             </CardHeader>
@@ -4967,22 +4948,22 @@ export default function CreatePurchase() {
 
           {/* Order Summary */}
           <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <Calculator className="h-5 w-5 text-white" />
+                  <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                    <Calculator className={cn("h-5 w-5", accentColors.textAccent)} />
                   </div>
                   <div>
-                    <CardTitle className="text-white">{t('orderSummary')}</CardTitle>
-                    <CardDescription className="text-white/80">
+                    <CardTitle className="text-foreground">{t('orderSummary')}</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       {purchaseCurrency} → {paymentCurrency}
                     </CardDescription>
                   </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -5192,13 +5173,13 @@ export default function CreatePurchase() {
           
           {/* Multi-Currency Comparison Card */}
           <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)} data-testid="card-currency-comparison">
-            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+            <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white/20">
-                  <DollarSign className="h-5 w-5 text-white" />
+                <div className={cn("p-2 rounded-lg", accentColors.selectedBg)}>
+                  <DollarSign className={cn("h-5 w-5", accentColors.textAccent)} />
                 </div>
                 <div>
-                  <CardTitle className="text-white">{t('currencyComparison')}</CardTitle>
+                  <CardTitle className="text-foreground">{t('currencyComparison')}</CardTitle>
                 </div>
               </div>
             </CardHeader>

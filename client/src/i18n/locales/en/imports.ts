@@ -2199,6 +2199,7 @@ const imports = {
   // Order Details Card Section Headers
   currencyAndPayment: 'Currency & Payment',
   supplierDetails: 'Supplier Details',
+  supplierAndDates: 'Supplier & Dates',
   timelineSection: 'Timeline',
   timelineSectionDescription: 'Set purchase date and processing time',
   optionsSection: 'Options',
