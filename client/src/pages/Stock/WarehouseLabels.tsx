@@ -348,23 +348,21 @@ export default function WarehouseLabels() {
             <div class="label-wrapper">
               ${arrowsUpHtml}
               <div class="label-container">
-                <div class="left-section">
+                <div class="left-spine">
                   <div class="qr-box">
                     ${qrSvg}
                   </div>
-                  <div class="sku-box">${product.sku || productCode}</div>
+                  <div class="sku-plate">${product.sku || productCode}</div>
                 </div>
-                <div class="right-section">
-                  <div class="name-area">
-                    <div class="product-name">${vietnameseName}</div>
-                    ${vietnameseName !== product.name ? `<div class="product-name-en">${product.name}</div>` : ''}
-                  </div>
-                  <div class="bottom-row">
-                    ${hasBulkInfo ? `<div class="bulk-box">${displayText}</div>` : ''}
-                    <div class="price-area">
-                      ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ""}
-                      ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ""}
-                    </div>
+                <div class="content-area">
+                  <div class="product-name">${vietnameseName}</div>
+                  ${vietnameseName !== product.name ? `<div class="product-name-en">${product.name}</div>` : ''}
+                </div>
+                <div class="price-strap">
+                  ${hasBulkInfo ? `<div class="bulk-box">${displayText}</div>` : ''}
+                  <div class="price-stack">
+                    ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ""}
+                    ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ""}
                   </div>
                 </div>
               </div>
@@ -450,7 +448,7 @@ export default function WarehouseLabels() {
               overflow: hidden;
               border: 3pt solid black;
             }
-            .left-section {
+            .left-spine {
               grid-row: 1 / 3;
               display: flex;
               flex-direction: column;
@@ -471,7 +469,7 @@ export default function WarehouseLabels() {
               width: 20mm;
               height: 20mm;
             }
-            .sku-box {
+            .sku-plate {
               font-size: 9pt;
               font-weight: 900;
               font-family: 'Courier New', monospace;
@@ -483,16 +481,13 @@ export default function WarehouseLabels() {
               width: 100%;
               letter-spacing: -0.3pt;
             }
-            .right-section {
+            .content-area {
               padding: 4mm 5mm 3mm 5mm;
               display: flex;
               flex-direction: column;
               justify-content: center;
               gap: 2mm;
               overflow: hidden;
-            }
-            .name-area {
-              display: contents;
             }
             .product-name {
               font-weight: 900;
@@ -515,7 +510,7 @@ export default function WarehouseLabels() {
               padding-top: 2mm;
               margin-top: 1mm;
             }
-            .bottom-row {
+            .price-strap {
               grid-column: 2;
               display: flex;
               align-items: center;
@@ -532,7 +527,7 @@ export default function WarehouseLabels() {
               border: 2pt solid black;
               padding: 2mm 4mm;
             }
-            .price-area {
+            .price-stack {
               display: flex;
               flex-direction: column;
               align-items: flex-end;
