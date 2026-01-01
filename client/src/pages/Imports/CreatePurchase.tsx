@@ -144,6 +144,18 @@ export default function CreatePurchase() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Theme accent colors based on mode (Add = blue, Edit = amber)
+  const accentColors = {
+    headerBg: isEditMode ? 'bg-amber-600 dark:bg-amber-700' : 'bg-slate-700 dark:bg-slate-800',
+    primaryBtn: isEditMode ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white',
+    secondaryBtn: isEditMode ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-300' : 'bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300',
+    border: isEditMode ? 'border-amber-200 dark:border-amber-800' : 'border-slate-200 dark:border-slate-700',
+    borderAccent: isEditMode ? 'border-amber-400 dark:border-amber-600' : 'border-blue-400 dark:border-blue-600',
+    focusRing: isEditMode ? 'focus:border-amber-400 focus:ring-amber-300' : 'focus:border-blue-400 focus:ring-blue-300',
+    selectedBg: isEditMode ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-blue-50 dark:bg-blue-900/20',
+    textAccent: isEditMode ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400',
+  };
   const productDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -1001,7 +1013,8 @@ export default function CreatePurchase() {
       barcode: product.barcode || "",
       categoryId: product.categoryId,
       category: (product as any).categoryName || product.category || "",
-      unitType: 'selling'
+      unitType: 'selling',
+      binLocation: product.warehouseLocation || currentItem.binLocation || "TBA"
     });
     setSelectedProduct(product);
     setProductImageFile(null);
@@ -2898,17 +2911,24 @@ export default function CreatePurchase() {
           </Card>
 
           {/* Add Item Form */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>{t('addItems')}</CardTitle>
-              <CardDescription>{t('addProductsToPurchase')}</CardDescription>
+          <Card className={cn("shadow-sm border-0 ring-1 overflow-hidden", accentColors.border)}>
+            <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/20">
+                  <Package className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">{t('addItems')}</CardTitle>
+                  <CardDescription className="text-white/80">{t('addProductsToPurchase')}</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-4 sm:p-6">
               {/* Product Selection Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  {/* Product Image */}
-                  <div className="flex-shrink-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  {/* Product Image - Enhanced with gradient border */}
+                  <div className="flex-shrink-0 mx-auto sm:mx-0">
                     <div className="relative group">
                       {(selectedProduct?.imageUrl || productImagePreview) ? (
                         <label className="cursor-pointer block">
@@ -2919,13 +2939,13 @@ export default function CreatePurchase() {
                             onChange={handleImageUpload}
                             data-testid="input-product-image-change"
                           />
-                          <div className="relative">
+                          <div className="relative p-1 rounded-xl bg-slate-200 dark:bg-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/30">
                             <img
                               src={productImagePreview || selectedProduct?.imageUrl}
                               alt={selectedProduct?.name || t('productPreview')}
-                              className="w-20 h-20 object-contain rounded-lg border-2 border-primary/30 bg-slate-50"
+                              className="w-24 h-24 sm:w-20 sm:h-20 object-contain rounded-lg bg-white dark:bg-slate-900"
                             />
-                            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute inset-1 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                               <Upload className="h-5 w-5 text-white" />
                             </div>
                           </div>
@@ -2934,7 +2954,7 @@ export default function CreatePurchase() {
                               type="button"
                               size="sm"
                               variant="destructive"
-                              className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 z-10"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 z-10 shadow-md"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -2955,9 +2975,9 @@ export default function CreatePurchase() {
                             onChange={handleImageUpload}
                             data-testid="input-product-image"
                           />
-                          <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
-                            <Upload className="h-6 w-6 text-gray-400 mb-1" />
-                            <p className="text-[10px] text-gray-500 text-center px-1">
+                          <div className="w-24 h-24 sm:w-20 sm:h-20 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center hover:border-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
+                            <Upload className="h-6 w-6 text-slate-400 dark:text-slate-500 mb-1" />
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center px-1 font-medium">
                               {currentItem.name ? t('uploadImage') : t('selectProductFirst')}
                             </p>
                           </div>
@@ -3134,16 +3154,16 @@ export default function CreatePurchase() {
                 
                 {/* Selected Product Info Panel */}
                 {selectedProduct && (
-                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className={cn("rounded-xl border p-4 space-y-3 shadow-sm", accentColors.border, accentColors.selectedBg)}>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">{t('productInfo')}</span>
+                      <span className={cn("text-xs font-semibold", accentColors.textAccent)}>{t('productInfo')}</span>
                       {selectedProduct.warehouseLocation && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        <span className={cn("text-xs text-white px-2.5 py-1 rounded-full font-medium shadow-sm", isEditMode ? "bg-amber-500" : "bg-blue-500")}>
                           {selectedProduct.warehouseLocation}
                         </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                       <div>
                         <span className="text-xs text-muted-foreground block">{t('currentStock')}</span>
                         <span className={cn(
@@ -3186,14 +3206,16 @@ export default function CreatePurchase() {
               
               {/* Quantity & Pricing Section */}
               {!showVariantAllocations && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Calculator className="h-4 w-4 text-muted-foreground" />
-                  {t('quantityAndPricing')}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <Calculator className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('quantityAndPricing')}</span>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="quantity" className="text-xs">{t('quantity')} *</Label>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quantity" className="text-xs font-medium">{t('quantity')} *</Label>
                     <Input
                       id="quantity"
                       type="number"
@@ -3201,18 +3223,18 @@ export default function CreatePurchase() {
                       value={currentItem.quantity}
                       onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 1})}
                       onFocus={(e) => e.target.select()}
-                      className="h-9"
+                      className="h-10 sm:h-9 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                       data-testid="input-quantity"
                     />
                   </div>
                   {selectedProduct?.bulkUnitName && (
-                    <div className="space-y-1">
-                      <Label htmlFor="unitType" className="text-xs">{t('purchaseUnit')}</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="unitType" className="text-xs font-medium">{t('purchaseUnit')}</Label>
                       <Select
                         value={currentItem.unitType || 'selling'}
                         onValueChange={(value: 'selling' | 'bulk') => setCurrentItem({...currentItem, unitType: value})}
                       >
-                        <SelectTrigger id="unitType" className="h-9" data-testid="select-unit-type">
+                        <SelectTrigger id="unitType" className="h-10 sm:h-9 border-slate-200 dark:border-slate-700" data-testid="select-unit-type">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -3226,13 +3248,13 @@ export default function CreatePurchase() {
                       </Select>
                     </div>
                   )}
-                  <div className="space-y-1">
-                    <Label htmlFor="unitPrice" className="text-xs">{t('cost')} ({purchaseCurrency}) *</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="unitPrice" className="text-xs font-medium">{t('cost')} ({purchaseCurrency}) *</Label>
                     <DecimalInput
                       id="unitPrice"
                       value={currentItem.unitPrice || 0}
                       onChange={(val) => setCurrentItem({...currentItem, unitPrice: val})}
-                      className="h-9"
+                      className="h-10 sm:h-9 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                       data-testid="input-unit-price"
                     />
                     {selectedProduct && ((selectedProduct as any).importCostUSD || (selectedProduct as any).importCostEUR) && (
@@ -3252,8 +3274,8 @@ export default function CreatePurchase() {
                       </p>
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="cartons" className="text-xs">{t('cartonsOptional')}</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cartons" className="text-xs font-medium">{t('cartonsOptional')}</Label>
                     <Input
                       id="cartons"
                       type="number"
@@ -3262,7 +3284,7 @@ export default function CreatePurchase() {
                       onChange={(e) => setCurrentItem({...currentItem, cartons: e.target.value ? parseInt(e.target.value) : undefined})}
                       onFocus={(e) => e.target.select()}
                       placeholder={t('cartonsPlaceholder')}
-                      className="h-9"
+                      className="h-10 sm:h-9 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                       data-testid="input-cartons"
                     />
                   </div>
@@ -3286,15 +3308,17 @@ export default function CreatePurchase() {
               )}
               
               {/* Physical Properties Section */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  {t('physicalProperties')}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <Scale className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('physicalProperties')}</span>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="weight" className="text-xs">{t('weight')}</Label>
-                    <div className="flex gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="weight" className="text-xs font-medium">{t('weight')}</Label>
+                    <div className="flex gap-2">
                       <DecimalInput
                         id="weight"
                         value={currentItem.weight || 0}
@@ -3305,14 +3329,14 @@ export default function CreatePurchase() {
                             document.getElementById('dimensions')?.focus();
                           }
                         }}
-                        className="h-9 flex-1"
+                        className="h-10 sm:h-9 flex-1 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                         data-testid="input-weight"
                       />
                       <Select
                         value={currentItem.weightUnit || 'kg'}
                         onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => setCurrentItem({...currentItem, weightUnit: value})}
                       >
-                        <SelectTrigger className="h-9 w-[70px]" data-testid="select-weight-unit">
+                        <SelectTrigger className="h-10 sm:h-9 w-[70px] border-slate-200 dark:border-slate-700" data-testid="select-weight-unit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -3325,9 +3349,9 @@ export default function CreatePurchase() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t('dimensions')}</Label>
-                    <div className="flex gap-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">{t('dimensions')}</Label>
+                    <div className="flex gap-1.5">
                       <Input
                         id="length"
                         type="number"
@@ -3336,7 +3360,7 @@ export default function CreatePurchase() {
                         value={currentItem.length || ''}
                         onChange={(e) => setCurrentItem({...currentItem, length: parseFloat(e.target.value) || 0})}
                         placeholder="L"
-                        className="h-9 w-16"
+                        className="h-10 sm:h-9 w-14 sm:w-16 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                         data-testid="input-length"
                       />
                       <Input
@@ -3347,7 +3371,7 @@ export default function CreatePurchase() {
                         value={currentItem.width || ''}
                         onChange={(e) => setCurrentItem({...currentItem, width: parseFloat(e.target.value) || 0})}
                         placeholder="W"
-                        className="h-9 w-16"
+                        className="h-10 sm:h-9 w-14 sm:w-16 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                         data-testid="input-width"
                       />
                       <Input
@@ -3366,14 +3390,14 @@ export default function CreatePurchase() {
                           }
                         }}
                         placeholder="H"
-                        className="h-9 w-16"
+                        className="h-10 sm:h-9 w-14 sm:w-16 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                         data-testid="input-height"
                       />
                       <Select
                         value={currentItem.dimensionUnit || 'cm'}
                         onValueChange={(value: 'mm' | 'cm' | 'in') => setCurrentItem({...currentItem, dimensionUnit: value})}
                       >
-                        <SelectTrigger className="h-9 w-[60px]" data-testid="select-dimension-unit">
+                        <SelectTrigger className="h-10 sm:h-9 w-[60px] border-slate-200 dark:border-slate-700" data-testid="select-dimension-unit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -3384,11 +3408,11 @@ export default function CreatePurchase() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="category" className="text-xs">{t('category')}</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="category" className="text-xs font-medium">{t('category')}</Label>
                     <div className="relative" ref={categoryDropdownRef}>
                       <div 
-                        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="flex h-10 sm:h-9 w-full items-center justify-between rounded-md border border-slate-200 dark:border-slate-700 bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400/20"
                         onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
                         data-testid="select-category"
                       >
@@ -3439,21 +3463,23 @@ export default function CreatePurchase() {
               </div>
               
               {/* Additional Details Section */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  {t('additionalDetails')}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <div className={cn("p-1.5 rounded-lg", accentColors.selectedBg)}>
+                    <MapPin className={cn("h-4 w-4", accentColors.textAccent)} />
+                  </div>
+                  <span className={accentColors.textAccent}>{t('additionalDetails')}</span>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="binLocation" className="text-xs">{t('storageLocation')}</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="binLocation" className="text-xs font-medium">{t('storageLocation')}</Label>
                     <div className="flex gap-2">
                       <Input
                         id="binLocation"
                         value={currentItem.binLocation || ""}
                         onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
                         placeholder={t('storageLocationExample')}
-                        className="h-9 flex-1"
+                        className="h-10 sm:h-9 flex-1 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                         data-testid="input-bin-location"
                       />
                       <Button
@@ -3462,26 +3488,26 @@ export default function CreatePurchase() {
                         disabled={!currentItem.name || suggestingLocation}
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-1.5 px-2.5"
+                        className={cn("h-10 sm:h-9 gap-1.5 px-3", accentColors.border, "hover:bg-slate-100 dark:hover:bg-slate-800")}
                         data-testid="button-suggest-location"
                       >
                         {suggestingLocation ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Search className="h-4 w-4" />
+                          <Zap className={cn("h-4 w-4", accentColors.textAccent)} />
                         )}
                         <span className="hidden sm:inline">{t('aiSuggest')}</span>
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="itemNotes" className="text-xs">{t('itemNotes')}</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="itemNotes" className="text-xs font-medium">{t('itemNotes')}</Label>
                     <Input
                       id="itemNotes"
                       value={currentItem.notes}
                       onChange={(e) => setCurrentItem({...currentItem, notes: e.target.value})}
                       placeholder={t('optionalNotes')}
-                      className="h-9"
+                      className="h-10 sm:h-9 border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                       data-testid="input-item-notes"
                     />
                   </div>
@@ -3490,36 +3516,55 @@ export default function CreatePurchase() {
               
               {/* Variants Toggle */}
               {currentItem.name && (
-                <div className="flex items-center space-x-2">
+                <div className={cn("flex items-center space-x-3 p-3 rounded-xl border", accentColors.selectedBg, accentColors.border)}>
                   <Checkbox
                     id="show-variants"
                     checked={showVariants}
                     onCheckedChange={(checked) => setShowVariants(!!checked)}
+                    className={cn("border-slate-300 dark:border-slate-600", isEditMode ? "data-[state=checked]:bg-amber-500" : "data-[state=checked]:bg-blue-500")}
                   />
-                  <Label htmlFor="show-variants" className="text-sm font-medium">
+                  <Label htmlFor="show-variants" className="text-sm font-medium cursor-pointer">
                     {t('addAsMultipleVariants')}
                   </Label>
                 </div>
               )}
               
-              {/* Variants Section */}
+              {/* Variants Section - Clean Professional Design */}
               {showVariants && currentItem.name && (
                 <Collapsible
                   open={variantsSectionExpanded}
                   onOpenChange={setVariantsSectionExpanded}
-                  className="border rounded-lg bg-muted/20"
+                  className={cn("border rounded-xl overflow-hidden shadow-sm", accentColors.border)}
                 >
                   <CollapsibleTrigger asChild>
-                    <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/40 transition-colors">
-                      <div className="flex items-center gap-2">
-                        {variantsSectionExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
+                    <div className={cn(
+                      "flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer transition-all duration-300",
+                      variantsSectionExpanded 
+                        ? cn(accentColors.headerBg, "text-white")
+                        : "bg-muted/30 hover:bg-muted/50"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-2 rounded-lg",
+                          variantsSectionExpanded ? "bg-white/20" : accentColors.selectedBg
+                        )}>
+                          {variantsSectionExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-white" />
+                          ) : (
+                            <ChevronRight className={accentColors.textAccent + " h-4 w-4"} />
+                          )}
+                        </div>
                         <div className="space-y-0.5">
-                          <h4 className="text-sm font-medium">{t('productVariants')}</h4>
-                          <p className="text-xs text-muted-foreground">
+                          <h4 className={cn(
+                            "text-sm font-semibold",
+                            variantsSectionExpanded ? "text-white" : "text-foreground"
+                          )}>
+                            {t('productVariants')}
+                          </h4>
+                          <p className={cn(
+                            "text-xs",
+                            variantsSectionExpanded ? "text-white/80" : "text-muted-foreground"
+                          )}>
                             {variants.length > 0 
                               ? `${variants.length} ${t('variants')} - ${t('addVariantsOf')} ${currentItem.name}`
                               : `${t('addVariantsOf')} ${currentItem.name}`
@@ -3527,45 +3572,62 @@ export default function CreatePurchase() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                      
+                      {/* Action Buttons - Responsive Layout */}
+                      <div className="flex gap-2 mt-3 sm:mt-0 flex-wrap" onClick={(e) => e.stopPropagation()}>
                         {selectedProduct && loadingExistingVariants && (
-                          <Button type="button" size="sm" variant="outline" disabled>
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            {t('loading')}
+                          <Button type="button" size="sm" variant="secondary" disabled className="opacity-70">
+                            <Loader2 className="h-4 w-4 animate-spin sm:mr-1" />
+                            <span className="hidden sm:inline">{t('loading')}</span>
                           </Button>
                         )}
                         <Button
                           type="button"
                           size="sm"
-                          variant="outline"
                           onClick={() => setVariantDialogOpen(true)}
+                          className={cn(
+                            "transition-all duration-200",
+                            variantsSectionExpanded 
+                              ? "bg-white/20 hover:bg-white/30 text-white border-white/30" 
+                              : accentColors.primaryBtn
+                          )}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t('addVariant')}
+                          <Plus className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">{t('addVariant')}</span>
                         </Button>
                         <Button
                           type="button"
                           size="sm"
-                          variant="outline"
                           onClick={() => setSeriesDialogOpen(true)}
+                          className={cn(
+                            "transition-all duration-200",
+                            variantsSectionExpanded 
+                              ? "bg-white/20 hover:bg-white/30 text-white border-white/30" 
+                              : accentColors.primaryBtn
+                          )}
                         >
-                          <ListPlus className="h-4 w-4 mr-1" />
-                          {t('addSeries')}
+                          <ListPlus className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">{t('addSeries')}</span>
                         </Button>
                         {variants.length > 0 && (
                           <Button
                             type="button"
                             size="sm"
-                            variant="outline"
                             onClick={() => {
                               setQuickSelectQuantity(1);
                               setQuickSelectUnitPrice(currentItem.unitPrice || 0);
                               setQuickSelectDialogOpen(true);
                             }}
                             data-testid="button-quick-selection"
+                            className={cn(
+                              "transition-all duration-200",
+                              variantsSectionExpanded 
+                                ? "bg-white/20 hover:bg-white/30 text-white border-white/30" 
+                                : accentColors.primaryBtn
+                            )}
                           >
-                            <Zap className="h-4 w-4 mr-1" />
-                            {t('quickSelection')}
+                            <Zap className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{t('quickSelection')}</span>
                           </Button>
                         )}
                       </div>
@@ -3573,20 +3635,22 @@ export default function CreatePurchase() {
                   </CollapsibleTrigger>
                   
                   <CollapsibleContent>
-                    {/* Variants Table */}
+                    {/* Variants Content */}
                     {variants.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                    <div className="p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/30">
+                      {/* Header with Selection and Quick Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             checked={selectedVariants.length === variants.length && variants.length > 0}
                             onCheckedChange={toggleSelectAllVariants}
+                            className={cn("border-slate-300 dark:border-slate-600", isEditMode ? "data-[state=checked]:bg-amber-500" : "data-[state=checked]:bg-blue-500")}
                           />
-                          <span className="text-sm text-muted-foreground">
+                          <span className={cn("text-sm font-medium", accentColors.textAccent)}>
                             {selectedVariants.length > 0 ? `${selectedVariants.length} ${t('selected')}` : `${variants.length} ${t('variants')}`}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {/* Quick Fill Dropdown */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -3594,14 +3658,15 @@ export default function CreatePurchase() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                className={cn("border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600", accentColors.border)}
                                 data-testid="button-quick-fill"
                               >
-                                <Zap className="h-4 w-4 mr-1" />
-                                {t('quickFill')}
+                                <Zap className={cn("h-4 w-4 sm:mr-1", accentColors.textAccent)} />
+                                <span className="hidden sm:inline">{t('quickFill')}</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
-                              <DropdownMenuLabel>{t('fillQuantity')}</DropdownMenuLabel>
+                              <DropdownMenuLabel className={accentColors.textAccent}>{t('fillQuantity')}</DropdownMenuLabel>
                               <div className="flex flex-wrap gap-1 px-2 pb-2">
                                 {[1, 5, 10, 20, 50, 100].map((val) => (
                                   <Button
@@ -3609,7 +3674,7 @@ export default function CreatePurchase() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
                                     onClick={() => quickFillSelectedVariants(val, 'quantity')}
                                     data-testid={`button-quick-fill-qty-${val}`}
                                   >
@@ -3618,7 +3683,7 @@ export default function CreatePurchase() {
                                 ))}
                               </div>
                               <DropdownMenuSeparator />
-                              <DropdownMenuLabel>{t('fillCost')}</DropdownMenuLabel>
+                              <DropdownMenuLabel className="text-purple-600">{t('fillCost')}</DropdownMenuLabel>
                               <div className="flex flex-wrap gap-1 px-2 pb-2">
                                 {[0.5, 1, 2, 5, 10].map((val) => (
                                   <Button
@@ -3626,7 +3691,7 @@ export default function CreatePurchase() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-2 text-xs hover:bg-purple-50 hover:border-purple-300 hover:text-purple-600"
                                     onClick={() => quickFillSelectedVariants(val, 'unitPrice')}
                                     data-testid={`button-quick-fill-cost-${val}`}
                                   >
@@ -3640,8 +3705,9 @@ export default function CreatePurchase() {
                                   setQuickFillField('quantity');
                                   setQuickFillDialogOpen(true);
                                 }}
+                                className="hover:bg-slate-100 dark:hover:bg-slate-800"
                               >
-                                <ClipboardList className="h-4 w-4 mr-2" />
+                                <ClipboardList className="h-4 w-4 mr-2 text-slate-500 dark:text-slate-400" />
                                 {t('pasteQtyList')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -3649,8 +3715,9 @@ export default function CreatePurchase() {
                                   setQuickFillField('unitPrice');
                                   setQuickFillDialogOpen(true);
                                 }}
+                                className="hover:bg-purple-50"
                               >
-                                <ClipboardList className="h-4 w-4 mr-2" />
+                                <ClipboardList className="h-4 w-4 mr-2 text-purple-500" />
                                 {t('pasteCostList')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -3661,45 +3728,206 @@ export default function CreatePurchase() {
                             variant="outline"
                             size="sm"
                             onClick={() => setBarcodePasteDialogOpen(true)}
+                            className={cn("border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600", accentColors.border)}
                             data-testid="button-paste-barcodes"
                           >
-                            <ClipboardPaste className="h-4 w-4 mr-1" />
-                            {t('pasteBarcodeList')}
+                            <ClipboardPaste className={cn("h-4 w-4 sm:mr-1", accentColors.textAccent)} />
+                            <span className="hidden sm:inline">{t('pasteBarcodeList')}</span>
                           </Button>
                           {selectedVariants.length > 0 && (
-                            <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              {t('delete')} ({selectedVariants.length})
+                            <Button 
+                              type="button" 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={bulkDeleteVariants}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">{t('delete')}</span>
+                              <span className="ml-1">({selectedVariants.length})</span>
                             </Button>
                           )}
                         </div>
                       </div>
                       
-                      <div className="border rounded-lg overflow-x-auto">
-                        <Table className="min-w-[650px] text-sm">
+                      {/* Mobile Card Layout */}
+                      <div className="md:hidden space-y-3">
+                        {variants.map((variant, index) => (
+                          <div
+                            key={variant.id}
+                            className={cn(
+                              "rounded-xl border overflow-hidden transition-all duration-200",
+                              selectedVariants.includes(variant.id)
+                                ? cn(accentColors.borderAccent, accentColors.selectedBg, "shadow-md")
+                                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm"
+                            )}
+                          >
+                            {/* Card Header with Variant Name and Selection */}
+                            <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <Checkbox
+                                  checked={selectedVariants.includes(variant.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedVariants([...selectedVariants, variant.id]);
+                                    } else {
+                                      setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                    }
+                                  }}
+                                  className={cn("border-slate-300 dark:border-slate-600 flex-shrink-0", isEditMode ? "data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500" : "data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500")}
+                                />
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={cn("inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold flex-shrink-0", isEditMode ? "bg-amber-500" : "bg-blue-500")}>
+                                    {index + 1}
+                                  </span>
+                                  <span className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                                    {variant.name}
+                                  </span>
+                                </div>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-gray-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {index < variants.length - 1 && (
+                                    <>
+                                      <DropdownMenuItem onClick={() => fillDownVariantValue(variant.id, 'quantity')}>
+                                        <ChevronDown className="h-4 w-4 mr-2" />
+                                        {t('fillDown')} {t('qty')}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => fillDownVariantValue(variant.id, 'unitPrice')}>
+                                        <ChevronDown className="h-4 w-4 mr-2" />
+                                        {t('fillDown')} {t('cost')}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                    </>
+                                  )}
+                                  <DropdownMenuItem 
+                                    onClick={() => removeVariant(variant.id)}
+                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {t('delete')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            
+                            {/* Card Body */}
+                            <div className="p-3 space-y-3">
+                              {/* SKU and Barcode Row */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">{t('sku')}</Label>
+                                  <Input
+                                    value={variant.sku}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, sku: e.target.value} : v
+                                      ));
+                                    }}
+                                    className="h-9 text-sm border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
+                                    placeholder={t('sku')}
+                                    data-testid={`input-variant-sku-${variant.id}`}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">{t('barcode')}</Label>
+                                  <Input
+                                    value={variant.barcode}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, barcode: e.target.value} : v
+                                      ));
+                                    }}
+                                    className="h-9 text-sm border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
+                                    placeholder={t('barcode')}
+                                    data-testid={`input-variant-barcode-${variant.id}`}
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Quantity and Cost Row */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">{t('qty')}</Label>
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={variant.quantity}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9]/g, '');
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, quantity: parseInt(val) || 0} : v
+                                      ));
+                                    }}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-9 text-sm text-center font-medium border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400 bg-slate-50/50 dark:bg-slate-900/50"
+                                    data-testid={`input-variant-qty-${variant.id}`}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground mb-1 block">{t('cost')}</Label>
+                                  <DecimalInput
+                                    value={variant.unitPrice}
+                                    onChange={(val) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, unitPrice: val} : v
+                                      ));
+                                    }}
+                                    className="h-9 text-sm text-right font-medium border-purple-200 focus:border-purple-400 focus:ring-purple-400 bg-purple-50/50 dark:bg-purple-950/20"
+                                    data-testid={`input-variant-price-${variant.id}`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Desktop Table Layout */}
+                      <div className="hidden md:block border rounded-xl overflow-hidden shadow-sm">
+                        <Table className="text-sm">
                           <TableHeader>
-                            <TableRow className="h-8">
-                              <TableHead className="w-8 p-2 align-middle">
+                            <TableRow className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                              <TableHead className="w-10 p-3 align-middle">
                                 <div className="flex items-center justify-center">
                                   <Checkbox
                                     checked={selectedVariants.length === variants.length && variants.length > 0}
                                     onCheckedChange={toggleSelectAllVariants}
-                                    className="h-3.5 w-3.5"
+                                    className={cn("h-4 w-4 border-slate-300 dark:border-slate-600", isEditMode ? "data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500" : "data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500")}
                                   />
                                 </div>
                               </TableHead>
-                              <TableHead className="min-w-[100px] p-2">{t('variantName')}</TableHead>
-                              <TableHead className="min-w-[120px] p-2">{t('sku')}</TableHead>
-                              <TableHead className="min-w-[100px] p-2">{t('barcode')}</TableHead>
-                              <TableHead className="text-center w-14 p-2">{t('qty')}</TableHead>
-                              <TableHead className="text-right w-16 p-2">{t('cost')}</TableHead>
-                              <TableHead className="w-8 p-2"></TableHead>
+                              <TableHead className="min-w-[140px] p-3 font-semibold text-slate-700 dark:text-slate-300">{t('variantName')}</TableHead>
+                              <TableHead className="min-w-[140px] p-3 font-semibold text-slate-700 dark:text-slate-300">{t('sku')}</TableHead>
+                              <TableHead className="min-w-[120px] p-3 font-semibold text-slate-700 dark:text-slate-300">{t('barcode')}</TableHead>
+                              <TableHead className="text-center w-24 p-3 font-semibold text-slate-600 dark:text-slate-400">{t('qty')}</TableHead>
+                              <TableHead className="text-right w-28 p-3 font-semibold text-purple-600 dark:text-purple-400">{t('cost')}</TableHead>
+                              <TableHead className="w-12 p-3"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {variants.map((variant) => (
-                              <TableRow key={variant.id} className="h-8">
-                                <TableCell className="p-2 align-middle">
+                            {variants.map((variant, index) => (
+                              <TableRow 
+                                key={variant.id} 
+                                className={cn(
+                                  "transition-colors",
+                                  selectedVariants.includes(variant.id)
+                                    ? accentColors.selectedBg
+                                    : "hover:bg-slate-100/50 dark:hover:bg-slate-800/50",
+                                  index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50/50 dark:bg-gray-900/50"
+                                )}
+                              >
+                                <TableCell className="p-3 align-middle">
                                   <div className="flex items-center justify-center">
                                     <Checkbox
                                       checked={selectedVariants.includes(variant.id)}
@@ -3710,12 +3938,19 @@ export default function CreatePurchase() {
                                           setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
                                         }
                                       }}
-                                      className="h-3.5 w-3.5"
+                                      className={cn("h-4 w-4 border-slate-300 dark:border-slate-600", isEditMode ? "data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500" : "data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500")}
                                     />
                                   </div>
                                 </TableCell>
-                                <TableCell className="font-medium p-2 text-sm">{variant.name}</TableCell>
-                                <TableCell className="p-2">
+                                <TableCell className="p-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold", isEditMode ? "bg-amber-500" : "bg-blue-500")}>
+                                      {index + 1}
+                                    </span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{variant.name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-3">
                                   <Input
                                     value={variant.sku}
                                     onChange={(e) => {
@@ -3723,12 +3958,12 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, sku: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-6 w-full text-xs"
+                                    className="h-8 w-full text-xs border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                                     placeholder={t('sku')}
                                     data-testid={`input-variant-sku-${variant.id}`}
                                   />
                                 </TableCell>
-                                <TableCell className="p-2">
+                                <TableCell className="p-3">
                                   <Input
                                     value={variant.barcode}
                                     onChange={(e) => {
@@ -3736,13 +3971,13 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, barcode: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-6 w-full text-xs"
+                                    className="h-8 w-full text-xs border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400"
                                     placeholder={t('barcode')}
                                     data-testid={`input-variant-barcode-${variant.id}`}
                                   />
                                 </TableCell>
-                                <TableCell className="p-2">
-                                  <div className="flex items-center gap-0.5 group">
+                                <TableCell className="p-3">
+                                  <div className="flex items-center justify-center gap-1 group">
                                     <Input
                                       type="text"
                                       inputMode="numeric"
@@ -3754,16 +3989,16 @@ export default function CreatePurchase() {
                                         ));
                                       }}
                                       onFocus={(e) => e.target.select()}
-                                      className="h-6 w-12 text-center text-xs"
+                                      className="h-8 w-16 text-center text-xs font-medium border-slate-200 dark:border-slate-700 focus:border-blue-400 focus:ring-blue-300 dark:focus:border-blue-500 dark:focus:ring-blue-400 bg-slate-50/50 dark:bg-slate-900/50"
                                       data-testid={`input-variant-qty-${variant.id}`}
                                     />
-                                    {variants.indexOf(variant) < variants.length - 1 && (
+                                    {index < variants.length - 1 && (
                                       <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => fillDownVariantValue(variant.id, 'quantity')}
-                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300"
                                         title={t('fillDown')}
                                       >
                                         <ChevronDown className="h-3 w-3" />
@@ -3771,8 +4006,8 @@ export default function CreatePurchase() {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="p-2">
-                                  <div className="flex items-center gap-0.5 group">
+                                <TableCell className="p-3">
+                                  <div className="flex items-center justify-end gap-1 group">
                                     <DecimalInput
                                       value={variant.unitPrice}
                                       onChange={(val) => {
@@ -3780,16 +4015,16 @@ export default function CreatePurchase() {
                                           v.id === variant.id ? {...v, unitPrice: val} : v
                                         ));
                                       }}
-                                      className="h-6 w-14 text-right text-xs"
+                                      className="h-8 w-20 text-right text-xs font-medium border-purple-200 focus:border-purple-400 focus:ring-purple-400 bg-purple-50/50 dark:bg-purple-950/20"
                                       data-testid={`input-variant-price-${variant.id}`}
                                     />
-                                    {variants.indexOf(variant) < variants.length - 1 && (
+                                    {index < variants.length - 1 && (
                                       <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => fillDownVariantValue(variant.id, 'unitPrice')}
-                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-purple-100 hover:text-purple-600"
                                         title={t('fillDown')}
                                       >
                                         <ChevronDown className="h-3 w-3" />
@@ -3797,16 +4032,16 @@ export default function CreatePurchase() {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="p-2">
+                                <TableCell className="p-3">
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeVariant(variant.id)}
-                                    className="h-6 w-6 p-1"
+                                    className="h-7 w-7 p-1 hover:bg-red-100 hover:text-red-600 transition-colors"
                                     data-testid={`button-remove-variant-${variant.id}`}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -3845,16 +4080,19 @@ export default function CreatePurchase() {
 
           {/* Items Table */}
           {items.length > 0 && (
-            <Card className="shadow-sm">
-              <CardHeader>
+            <Card className={cn("shadow-sm overflow-hidden", accentColors.border)}>
+              <CardHeader className={cn(accentColors.headerBg, "text-white pb-4")}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>{t('orderItems')}</CardTitle>
-                    <CardDescription>{t('reviewManageItems')}</CardDescription>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      {t('orderItems')}
+                    </CardTitle>
+                    <CardDescription className="text-white/80">{t('reviewManageItems')}</CardDescription>
                   </div>
                   {selectedItems.length > 0 && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
-                      <span className="text-sm font-medium text-primary">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30">
+                      <span className="text-sm font-medium text-white">
                         {t('selectedItems', { count: selectedItems.length })}
                       </span>
                       <div className="flex items-center gap-1 ml-2">
@@ -3862,17 +4100,16 @@ export default function CreatePurchase() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setSelectedItems([])}
-                          className="h-7 px-2 text-xs"
+                          className="h-7 px-2 text-xs text-white hover:bg-white/20 hover:text-white"
                           data-testid="button-clear-selection"
                         >
                           <X className="h-3 w-3 mr-1" />
                           {t('clearSelection')}
                         </Button>
                         <Button
-                          variant="destructive"
                           size="sm"
                           onClick={() => setDeleteConfirmOpen(true)}
-                          className="h-7 px-2 text-xs"
+                          className="h-7 px-2 text-xs bg-red-500/80 hover:bg-red-500 text-white border-0"
                           data-testid="button-delete-selected"
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
@@ -3886,7 +4123,7 @@ export default function CreatePurchase() {
               <CardContent className="p-0 lg:p-6">
                 {/* Mobile/Tablet View - Card Layout */}
                 <div className="lg:hidden">
-                  <div className="divide-y">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {items.map((item, index) => (
                       <Collapsible 
                         key={item.id}
@@ -3894,9 +4131,10 @@ export default function CreatePurchase() {
                         onOpenChange={() => toggleCardExpand(item.id)}
                       >
                         <div className={cn(
-                          "p-4 transition-colors",
-                          index % 2 === 1 && "bg-muted/30",
-                          "hover:bg-muted/50"
+                          "p-4 transition-all duration-200",
+                          index % 2 === 1 && "bg-slate-50/50 dark:bg-slate-900/50",
+                          "hover:bg-slate-100/60 dark:hover:bg-slate-800/50",
+                          selectedItems.includes(item.id) && cn("ring-2 ring-inset", accentColors.borderAccent, accentColors.selectedBg)
                         )}>
                           <div className="flex gap-3">
                             {/* Checkbox */}
@@ -3904,6 +4142,7 @@ export default function CreatePurchase() {
                               <Checkbox
                                 checked={selectedItems.includes(item.id)}
                                 onCheckedChange={() => toggleSelectItem(item.id)}
+                                className={cn("border-slate-300 dark:border-slate-600", isEditMode ? "data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500" : "data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500")}
                                 data-testid={`checkbox-item-mobile-${item.id}`}
                               />
                             </div>
@@ -3911,7 +4150,7 @@ export default function CreatePurchase() {
                             {/* Product Image - Clickable */}
                             <div className="flex-shrink-0">
                               <div 
-                                className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary hover:bg-muted/80 transition-all group relative"
+                                className={cn("w-[60px] h-[60px] rounded-xl border-2 border-slate-200/60 dark:border-slate-700/40 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden cursor-pointer hover:shadow-lg hover:shadow-slate-200/30 dark:hover:shadow-slate-900/30 transition-all group relative", accentColors.border)}
                                 onClick={() => {
                                   const input = document.createElement('input');
                                   input.type = 'file';
@@ -3940,9 +4179,9 @@ export default function CreatePurchase() {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <Package className="h-6 w-6 text-muted-foreground" />
+                                  <Package className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                                 )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center", isEditMode ? "bg-amber-500/60" : "bg-blue-500/60")}>
                                   <ImageIcon className="h-4 w-4 text-white" />
                                 </div>
                               </div>
@@ -3961,11 +4200,12 @@ export default function CreatePurchase() {
                                       );
                                       setItems(updatedItems);
                                     }}
-                                    className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input focus:px-2 focus:py-1 focus:ring-2 focus:ring-primary/20"
+                                    className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-background focus:border-slate-300 dark:focus:border-slate-600 focus:px-2 focus:py-1 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-400/30"
                                     placeholder={t('itemNamePlaceholder')}
                                   />
                                   {item.unitType === 'bulk' && item.cartons && item.bulkUnitQty && (
-                                    <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                                    <span className={cn("inline-flex items-center mt-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-sm", isEditMode ? "bg-amber-500" : "bg-blue-500")}>
+                                      <Package className="h-3 w-3 mr-1" />
                                       {t('bulkUnit', { cartons: item.cartons, quantity: item.cartons * item.bulkUnitQty })}
                                     </span>
                                   )}
@@ -3975,20 +4215,20 @@ export default function CreatePurchase() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-8 w-8 text-muted-foreground"
+                                      className={cn("h-9 w-9 transition-all hover:bg-slate-100 dark:hover:bg-slate-800", accentColors.textAccent)}
                                       data-testid={`button-expand-${item.id}`}
                                     >
                                       {expandedCards.includes(item.id) ? (
-                                        <ChevronUp className="h-4 w-4" />
+                                        <ChevronUp className="h-5 w-5" />
                                       ) : (
-                                        <ChevronDown className="h-4 w-4" />
+                                        <ChevronDown className="h-5 w-5" />
                                       )}
                                     </Button>
                                   </CollapsibleTrigger>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="h-9 w-9 text-red-400 hover:text-white hover:bg-red-500 transition-all"
                                     onClick={() => removeItem(item.id)}
                                     data-testid={`button-remove-item-mobile-${item.id}`}
                                   >
@@ -3998,9 +4238,9 @@ export default function CreatePurchase() {
                               </div>
                             
                               {/* Quantity and Price Row - Always Visible */}
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm text-muted-foreground">{t('qty')}:</span>
+                              <div className="flex items-center gap-3 py-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('qty')}:</span>
                                   <Input
                                     type="number"
                                     value={item.quantity}
@@ -4011,27 +4251,33 @@ export default function CreatePurchase() {
                                       updateItemsWithShipping(updatedItems);
                                     }}
                                     onFocus={(e) => e.target.select()}
-                                    className="h-7 w-16 text-sm text-center border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="h-8 w-16 text-sm text-center font-semibold border-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-400/30 rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     min="1"
                                   />
                                 </div>
                               
                                 <div className="ml-auto text-right">
-                                  <div className="text-sm font-medium">
+                                  <div className="text-sm font-bold text-purple-700 dark:text-purple-300">
                                     {item.totalPrice.toFixed(2)} {purchaseCurrency}
                                   </div>
-                                  <div className="text-xs text-green-600">
+                                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                     +ship: {item.costWithShipping.toFixed(2)} {purchaseCurrency}
                                   </div>
                                 </div>
                               </div>
                               
                               {/* Collapsible Content - Extended Details */}
-                              <CollapsibleContent className="space-y-3 pt-2">
+                              <CollapsibleContent className="space-y-3 pt-3">
+                                {/* Gradient Section Divider */}
+                                <div className="h-px bg-slate-200 dark:bg-slate-700 rounded-full" />
+                                
                                 {/* SKU and Category */}
                                 <div className="flex items-center gap-2 text-sm flex-wrap">
                                   {item.sku && (
-                                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded">SKU: {item.sku}</span>
+                                    <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium", accentColors.selectedBg, accentColors.textAccent)}>
+                                      <Barcode className="h-3 w-3 inline mr-1" />
+                                      {item.sku}
+                                    </span>
                                   )}
                                   <Select
                                     value={item.categoryId?.toString() || ""}
@@ -4050,7 +4296,7 @@ export default function CreatePurchase() {
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input text-sm px-2">
+                                    <SelectTrigger className="h-7 w-auto border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-400/30 text-sm px-2.5 rounded-full">
                                       <SelectValue placeholder={t('category')} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -4070,8 +4316,11 @@ export default function CreatePurchase() {
                                 </div>
                                 
                                 {/* Price Edit */}
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm text-muted-foreground">{t('price')}:</span>
+                                <div className="flex items-center gap-2 p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg">
+                                  <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                                    <DollarSign className="h-4 w-4 inline" />
+                                    {t('price')}:
+                                  </span>
                                   <div className="flex items-center gap-1">
                                     <Input
                                       type="number"
@@ -4085,89 +4334,94 @@ export default function CreatePurchase() {
                                       }}
                                       onKeyDown={handleDecimalKeyDown}
                                       onFocus={(e) => e.target.select()}
-                                      className="h-7 w-20 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      className="h-8 w-24 text-sm text-right font-semibold border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-400/30 rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       step="0.01"
                                       min="0"
                                     />
-                                    <span className="text-xs text-muted-foreground">{purchaseCurrency}</span>
+                                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400">{purchaseCurrency}</span>
                                   </div>
                                 </div>
                                 
-                                {/* Weight */}
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <span className="text-sm text-muted-foreground">{t('weight')}:</span>
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={item.weight}
-                                      onChange={(e) => {
-                                        const updatedItems = items.map(i => 
-                                          i.id === item.id ? {...i, weight: parseDecimal(e.target.value)} : i
-                                        );
-                                        setItems(updatedItems);
-                                      }}
-                                      onKeyDown={handleDecimalKeyDown}
-                                      onFocus={(e) => e.target.select()}
-                                      className="h-7 w-16 text-sm text-right border bg-background hover:border-primary/50 focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      step="0.01"
-                                      min="0"
-                                    />
-                                    <Select
-                                      value={item.weightUnit || 'kg'}
-                                      onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => {
-                                        const updatedItems = items.map(i => 
-                                          i.id === item.id ? {...i, weightUnit: value} : i
-                                        );
-                                        setItems(updatedItems);
-                                      }}
-                                    >
-                                      <SelectTrigger className="h-7 w-16 text-xs border bg-background px-2">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="mg">mg</SelectItem>
-                                        <SelectItem value="g">g</SelectItem>
-                                        <SelectItem value="kg">kg</SelectItem>
-                                        <SelectItem value="oz">oz</SelectItem>
-                                        <SelectItem value="lb">lb</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  {item.weight > 0 && item.quantity > 1 && (
-                                    <span className="text-xs text-muted-foreground">
-                                      (= {(item.weight * item.quantity).toFixed(2)} {item.weightUnit || 'kg'} total)
+                                {/* Weight & Dimensions Row */}
+                                <div className="flex items-center gap-3 flex-wrap p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                                      <Scale className="h-4 w-4 inline mr-0.5" />
+                                      {t('weight')}:
                                     </span>
-                                  )}
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        value={item.weight}
+                                        onChange={(e) => {
+                                          const updatedItems = items.map(i => 
+                                            i.id === item.id ? {...i, weight: parseDecimal(e.target.value)} : i
+                                          );
+                                          setItems(updatedItems);
+                                        }}
+                                        onKeyDown={handleDecimalKeyDown}
+                                        onFocus={(e) => e.target.select()}
+                                        className="h-8 w-16 text-sm text-right font-medium border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-300/30 dark:focus:ring-blue-400/30 rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        step="0.01"
+                                        min="0"
+                                      />
+                                      <Select
+                                        value={item.weightUnit || 'kg'}
+                                        onValueChange={(value: 'mg' | 'g' | 'kg' | 'oz' | 'lb') => {
+                                          const updatedItems = items.map(i => 
+                                            i.id === item.id ? {...i, weightUnit: value} : i
+                                          );
+                                          setItems(updatedItems);
+                                        }}
+                                      >
+                                        <SelectTrigger className="h-8 w-16 text-xs border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 rounded-lg">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="mg">mg</SelectItem>
+                                          <SelectItem value="g">g</SelectItem>
+                                          <SelectItem value="kg">kg</SelectItem>
+                                          <SelectItem value="oz">oz</SelectItem>
+                                          <SelectItem value="lb">lb</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    {item.weight > 0 && item.quantity > 1 && (
+                                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                        (= {(item.weight * item.quantity).toFixed(2)} {item.weightUnit || 'kg'} total)
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                             
                                 {/* Dimensions */}
                                 {item.dimensions && (
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className={cn("text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5", accentColors.selectedBg, accentColors.textAccent)}>
+                                    <MapPin className="h-3.5 w-3.5" />
                                     {t('dimensions')}: {item.dimensions}
                                   </div>
                                 )}
                                 
                                 {/* Notes */}
                                 {item.notes && (
-                                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                                  <div className={cn("text-xs text-gray-600 dark:text-gray-400 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 p-3 rounded-lg border-l-3", accentColors.borderAccent)}>
                                     {item.notes}
                                   </div>
                                 )}
                                 
                                 {/* Nested Variants */}
                                 {item.hasVariants && item.variantAllocations && item.variantAllocations.length > 0 && (
-                                  <div className="mt-3 border-l-2 border-primary/30 pl-3 space-y-1.5">
-                                    <div className="text-xs font-medium text-primary flex items-center gap-1">
-                                      <Package className="h-3 w-3" />
+                                  <div className={cn("mt-3 border-l-3 pl-3 space-y-1.5 p-2 rounded-r-lg", accentColors.borderAccent, accentColors.selectedBg)}>
+                                    <div className={cn("text-xs font-semibold flex items-center gap-1.5", accentColors.textAccent)}>
+                                      <Package className={cn("h-3.5 w-3.5", accentColors.textAccent)} />
                                       {t('includedVariants', { count: item.variantAllocations.length })}
                                     </div>
                                     {item.variantAllocations.map((variant, vIdx) => (
-                                      <div key={variant.variantId || vIdx} className="flex items-center justify-between text-xs bg-muted/30 px-2 py-1.5 rounded">
-                                        <span className="text-gray-700 dark:text-gray-300">{variant.variantName}</span>
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                          <span>{t('qty')}: {variant.quantity}</span>
-                                          <span>•</span>
-                                          <span>{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
+                                      <div key={variant.variantId || vIdx} className={cn("flex items-center justify-between text-xs bg-white/60 dark:bg-gray-900/60 px-3 py-2 rounded-lg border border-slate-200/50 dark:border-slate-700/30")}>
+                                        <span className="font-medium text-gray-800 dark:text-gray-200">{variant.variantName}</span>
+                                        <div className={cn("flex items-center gap-2 font-medium", accentColors.textAccent)}>
+                                          <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{t('qty')}: {variant.quantity}</span>
+                                          <span className="bg-purple-100 dark:bg-purple-900/40 px-1.5 py-0.5 rounded">{variant.unitPrice.toFixed(2)} {purchaseCurrency}</span>
                                         </div>
                                       </div>
                                     ))}
@@ -4181,24 +4435,24 @@ export default function CreatePurchase() {
                     ))}
                     
                     {/* Mobile Totals */}
-                    <div className="p-4 bg-muted/30">
+                    <div className={cn("p-4", accentColors.selectedBg)}>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>{t('totalItems')}:</span>
-                          <span className="font-medium">{totalQuantity}</span>
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">{t('totalItems')}:</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300">{totalQuantity}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span>{t('subtotal')}:</span>
-                          <span className="font-medium">{subtotal.toFixed(2)} {purchaseCurrency}</span>
+                          <span className={cn("font-medium", accentColors.textAccent)}>{t('subtotal')}:</span>
+                          <span className={cn("font-bold", accentColors.textAccent)}>{subtotal.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span>{t('shipping')}:</span>
-                          <span className="font-medium">{shippingCost.toFixed(2)} {purchaseCurrency}</span>
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">{t('shipping')}:</span>
+                          <span className="font-bold text-purple-700 dark:text-purple-300">{shippingCost.toFixed(2)} {purchaseCurrency}</span>
                         </div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between">
-                          <span className="font-semibold">{t('totalWithShipping')}:</span>
-                          <span className="font-semibold text-green-600">{grandTotalInPurchaseCurrency.toFixed(2)} {purchaseCurrency}</span>
+                        <div className="h-px bg-slate-200 dark:bg-slate-700 my-3" />
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">{t('totalWithShipping')}:</span>
+                          <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{grandTotalInPurchaseCurrency.toFixed(2)} {purchaseCurrency}</span>
                         </div>
                       </div>
                     </div>
