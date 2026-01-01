@@ -493,7 +493,7 @@ export default function AddReturn() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card className="ring-1 ring-border shadow-sm">
+            <Card className="bg-card ring-1 ring-border shadow-sm">
               <CardContent className="p-4 md:p-6 space-y-6">
                 <div>
                   <div className="flex items-center gap-2 text-lg font-semibold mb-4">
@@ -1073,7 +1073,7 @@ export default function AddReturn() {
             </Card>
 
             {selectedOrder && (
-              <Card className="ring-1 ring-border shadow-sm">
+              <Card className="bg-card ring-1 ring-border shadow-sm">
                 <CardContent className="p-4">
                   <h3 className="font-semibold mb-3">{t('inventory:originalOrderDetails')}</h3>
                   <div className="space-y-2 text-sm">
@@ -1105,7 +1105,7 @@ export default function AddReturn() {
             )}
 
             {watchCustomerId && customerOrders.length > 0 && (
-              <Card className="ring-1 ring-border shadow-sm">
+              <Card className="bg-card ring-1 ring-border shadow-sm">
                 <CardContent className="p-4">
                   <h3 className="font-semibold mb-3">{t('inventory:customerOrderHistory')}</h3>
                   <div className="max-h-48 overflow-y-auto space-y-2">
