@@ -124,7 +124,7 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
       id="warehouse-label-large-print"
       className="bg-white text-black overflow-hidden"
       style={{ 
-        fontFamily: "'Arial Narrow', Arial, Helvetica, sans-serif", 
+        fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif", 
         width: "148mm",
         height: "105mm",
         transform: "scale(0.38)", 
@@ -217,7 +217,7 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
         justifyContent: "flex-end",
         padding: "0 5mm",
         gap: "6mm",
-        background: "black"
+        background: "white"
       }}>
         <div style={{
           display: "flex",
@@ -230,7 +230,7 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
               fontWeight: 900,
               fontSize: "32pt",
               lineHeight: 1,
-              color: "white",
+              color: "black",
               letterSpacing: "-0.5pt"
             }}>
               €{priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -241,8 +241,8 @@ export function LargeLabelContent({ product }: { product: LabelProduct | null })
               fontWeight: 700,
               fontSize: "22pt",
               lineHeight: 1.1,
-              color: "white",
-              opacity: 0.85,
+              color: "black",
+              opacity: 0.7,
               letterSpacing: "-0.3pt",
               paddingBottom: "2mm"
             }}>
@@ -493,7 +493,7 @@ export default function WarehouseLabelPreview({
             box-sizing: border-box;
           }
           body {
-            font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
             width: 148mm;
             height: 105mm;
             overflow: hidden;
@@ -571,7 +571,7 @@ export default function WarehouseLabelPreview({
             justify-content: flex-end;
             padding: 0 5mm;
             gap: 6mm;
-            background: black;
+            background: white;
           }
           .price-stack {
             display: flex;
@@ -583,15 +583,15 @@ export default function WarehouseLabelPreview({
             font-weight: 900;
             font-size: 32pt;
             line-height: 1;
-            color: white;
+            color: black;
             letter-spacing: -0.5pt;
           }
           .price-czk {
             font-weight: 700;
             font-size: 22pt;
             line-height: 1.1;
-            color: white;
-            opacity: 0.85;
+            color: black;
+            opacity: 0.7;
             letter-spacing: -0.3pt;
             padding-bottom: 2mm;
           }
