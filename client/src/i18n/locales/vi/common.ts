@@ -302,6 +302,8 @@ const common = {
   activeSupportTickets: 'Ticket hỗ trợ',
   pendingCod: 'COD chờ thu',
   customerRetention: 'Giữ chân khách hàng',
+  customerRetentionRate: 'Tỷ lệ giữ chân khách hàng',
+  ninetyDayCohort: 'Nhóm khách hàng 90 ngày',
   recentMajorActivities: 'Hoạt động quan trọng gần đây',
   majorActivitiesFromAllUsers: 'Hoạt động quan trọng từ tất cả người dùng',
   

@@ -325,6 +325,8 @@ const common = {
   activeSupportTickets: 'Active Support Tickets',
   pendingCod: 'Pending COD',
   customerRetention: 'Customer Retention',
+  customerRetentionRate: 'Customer Retention Rate',
+  ninetyDayCohort: '90-day cohort',
   recentMajorActivities: 'Recent Major Activities',
   majorActivitiesFromAllUsers: 'Major activities from all users',
   
