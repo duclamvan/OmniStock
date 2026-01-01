@@ -18307,14 +18307,15 @@ Important:
           }
         };
         
-        // Add parcelShopCode for PPL SMART shipments - must be nested in services.parcelShopDelivery
+        // Add parcelShopCode for PPL SMART shipments - services is an array of ServiceModel objects
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.services = {
-            parcelShopDelivery: {
+          shipment.services = [
+            {
+              code: "PS",  // ParcelShop service code
               parcelShopCode: order.pickupLocationCode
             }
-          };
-          console.log(`🏪 PPL SMART: Using pickup location in services.parcelShopDelivery.parcelShopCode=${order.pickupLocationCode}`);
+          ];
+          console.log(`🏪 PPL SMART: Using services array with code=PS, parcelShopCode=${order.pickupLocationCode}`);
         }
 
         shipments.push(shipment);
@@ -18363,14 +18364,15 @@ Important:
           ]
         };
         
-        // Add parcelShopCode for PPL SMART shipments - must be nested in services.parcelShopDelivery
+        // Add parcelShopCode for PPL SMART shipments - services is an array of ServiceModel objects
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.services = {
-            parcelShopDelivery: {
+          singleShipment.services = [
+            {
+              code: "PS",  // ParcelShop service code
               parcelShopCode: order.pickupLocationCode
             }
-          };
-          console.log(`🏪 PPL SMART: Using pickup location in services.parcelShopDelivery.parcelShopCode=${order.pickupLocationCode}`);
+          ];
+          console.log(`🏪 PPL SMART: Using services array with code=PS, parcelShopCode=${order.pickupLocationCode}`);
         }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
