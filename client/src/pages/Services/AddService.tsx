@@ -80,6 +80,7 @@ interface ServiceItem {
   totalPrice: string;
   customProductName?: string;
   isCustom?: boolean;
+  cost?: string;
 }
 
 interface Customer {
@@ -309,6 +310,24 @@ export default function AddService() {
         unitPrice: '0',
         totalPrice: '0',
         isCustom: false,
+      },
+    ]);
+    setProductSearchTerms(prev => ({ ...prev, [newIndex]: '' }));
+  };
+
+  const addCustomServiceItem = () => {
+    const newIndex = serviceItems.length;
+    setServiceItems([
+      ...serviceItems,
+      {
+        productId: null,
+        productName: '',
+        sku: null,
+        quantity: 1,
+        unitPrice: '0',
+        totalPrice: '0',
+        isCustom: true,
+        cost: '0',
       },
     ]);
     setProductSearchTerms(prev => ({ ...prev, [newIndex]: '' }));
@@ -858,16 +877,29 @@ export default function AddService() {
                         {t('financial:addPartsFromInventory')}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={addServiceItem}
-                      size="sm"
-                      className="shadow-md w-full sm:w-auto"
-                      data-testid="button-add-part"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('financial:addPart')}
-                    </Button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button
+                        type="button"
+                        onClick={addServiceItem}
+                        size="sm"
+                        className="shadow-md flex-1 sm:flex-initial"
+                        data-testid="button-add-part"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t('financial:addPart')}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={addCustomServiceItem}
+                        size="sm"
+                        variant="outline"
+                        className="shadow-md flex-1 sm:flex-initial"
+                        data-testid="button-add-custom-part"
+                      >
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        {t('financial:addCustomPart')}
+                      </Button>
+                    </div>
                   </div>
 
                   {serviceItems.length === 0 ? (
@@ -897,30 +929,45 @@ export default function AddService() {
                         return (
                           <div
                             key={index}
-                            className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-sm transition-shadow"
+                            className={cn(
+                              "border rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-sm transition-shadow",
+                              item.isCustom 
+                                ? "border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10" 
+                                : "border-slate-200 dark:border-slate-700"
+                            )}
                             data-testid={`part-row-${index}`}
                           >
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
-                              {/* Product Name with Autocomplete - 5 cols */}
-                              <div className="md:col-span-5 relative">
-                                <Label className="text-xs font-medium mb-1.5 block">{t('financial:productName')}</Label>
+                            {item.isCustom && (
+                              <div className="flex items-center gap-1 mb-2 text-xs text-amber-600 dark:text-amber-400">
+                                <Edit3 className="h-3 w-3" />
+                                <span className="font-medium">{t('financial:customPart')}</span>
+                              </div>
+                            )}
+                            <div className={cn(
+                              "grid grid-cols-1 gap-3 items-start",
+                              item.isCustom ? "md:grid-cols-12" : "md:grid-cols-12"
+                            )}>
+                              {/* Product Name - 4 cols for custom, 5 cols for inventory */}
+                              <div className={cn("relative", item.isCustom ? "md:col-span-3" : "md:col-span-5")}>
+                                <Label className="text-xs font-medium mb-1.5 block">
+                                  {item.isCustom ? t('financial:itemName') : t('financial:productName')}
+                                </Label>
                                 <Input
-                                  placeholder={t('financial:clickToSelectOrType')}
+                                  placeholder={item.isCustom ? t('financial:enterCustomPartName') : t('financial:clickToSelectOrType')}
                                   autoComplete="off"
                                   autoCorrect="off"
                                   autoCapitalize="off"
                                   spellCheck={false}
                                   value={searchTerm}
                                   onChange={(e) => handleProductNameChange(index, e.target.value)}
-                                  onFocus={() => setOpenDropdownIndex(index)}
+                                  onFocus={() => !item.isCustom && setOpenDropdownIndex(index)}
                                   onBlur={() => {
-                                    // Delay closing to allow click on dropdown items
                                     setTimeout(() => setOpenDropdownIndex(null), 200);
                                   }}
                                   data-testid={`input-product-name-${index}`}
                                   className="w-full"
                                 />
-                                {showSuggestions && (
+                                {showSuggestions && !item.isCustom && (
                                   <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-64 overflow-auto">
                                     {searchTerm.length === 0 && (
                                       <div className="px-3 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600 sticky top-0">
@@ -945,8 +992,8 @@ export default function AddService() {
                                 )}
                               </div>
 
-                              {/* Quantity - 2 cols */}
-                              <div className="md:col-span-2">
+                              {/* Quantity */}
+                              <div className={cn(item.isCustom ? "md:col-span-1" : "md:col-span-2")}>
                                 <Label className="text-xs font-medium mb-1.5 block">{t('financial:qty')}</Label>
                                 <Input
                                   type="number"
@@ -958,8 +1005,25 @@ export default function AddService() {
                                 />
                               </div>
 
-                              {/* Unit Price - 2 cols */}
-                              <div className="md:col-span-2">
+                              {/* Cost - Only for custom parts */}
+                              {item.isCustom && (
+                                <div className="md:col-span-2">
+                                  <Label className="text-xs font-medium mb-1.5 block">{t('financial:cost')} ({currencySymbol})</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={item.cost || '0'}
+                                    onChange={(e) => updateServiceItem(index, 'cost', e.target.value)}
+                                    onKeyDown={handleDecimalKeyDown}
+                                    data-testid={`input-cost-${index}`}
+                                    className="bg-amber-50 dark:bg-amber-900/20"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Unit Price */}
+                              <div className={cn(item.isCustom ? "md:col-span-2" : "md:col-span-2")}>
                                 <Label className="text-xs font-medium mb-1.5 block">{t('financial:price')} ({currencySymbol})</Label>
                                 <Input
                                   type="number"
@@ -972,8 +1036,8 @@ export default function AddService() {
                                 />
                               </div>
 
-                              {/* Total - 2 cols */}
-                              <div className="md:col-span-2">
+                              {/* Total */}
+                              <div className={cn(item.isCustom ? "md:col-span-2" : "md:col-span-2")}>
                                 <Label className="text-xs font-medium mb-1.5 block">{t('common:total')} ({currencySymbol})</Label>
                                 <Input
                                   type="text"
@@ -985,8 +1049,8 @@ export default function AddService() {
                                 />
                               </div>
 
-                              {/* Remove Button - 1 col */}
-                              <div className="md:col-span-1 flex items-end">
+                              {/* Remove Button */}
+                              <div className={cn("flex items-end", item.isCustom ? "md:col-span-2" : "md:col-span-1")}>
                                 <Button
                                   type="button"
                                   variant="ghost"

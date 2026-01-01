@@ -624,6 +624,11 @@ const financial = {
   addFirstPart: 'Thêm phụ tùng đầu tiên',
   selectProduct: 'Chọn sản phẩm',
   customPartName: 'Tên phụ tùng tùy chỉnh',
+  addCustomPart: 'Thêm tùy chỉnh',
+  customPart: 'Phụ tùng tùy chỉnh',
+  itemName: 'Tên mặt hàng',
+  enterCustomPartName: 'Nhập tên phụ tùng...',
+  cost: 'Giá vốn',
   
   // Service Labor
   labor: 'Nhân công',

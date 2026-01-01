@@ -624,6 +624,11 @@ const financial = {
   addFirstPart: 'Add your first part to this service',
   selectProduct: 'Select product',
   customPartName: 'Custom Part Name',
+  addCustomPart: 'Add Custom Part',
+  customPart: 'Custom Part',
+  itemName: 'Item Name',
+  enterCustomPartName: 'Enter custom part name...',
+  cost: 'Cost',
   
   // Service Labor
   labor: 'Labor',
