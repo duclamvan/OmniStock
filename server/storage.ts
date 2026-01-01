@@ -1821,7 +1821,7 @@ export class DatabaseStorage implements IStorage {
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(users, eq(orders.billerId, users.id))
-      .where(eq(orders.customerId, customerId))
+      .where(and(eq(orders.customerId, customerId), eq(orders.isArchived, false)))
       .orderBy(desc(orders.createdAt));
 
       return ordersData.map(row => ({

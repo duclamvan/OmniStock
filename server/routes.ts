@@ -2287,10 +2287,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return r.reason === 'picking_error' && createdAt >= thisMonthStart;
       });
 
-      // AI carton recommendations used
+      // AI carton recommendations used (exclude deleted orders)
       const thisMonthOrders = await db.select()
         .from(orders)
-        .where(sql`${orders.createdAt} >= ${thisMonthStart.toISOString()}`);
+        .where(
+          and(
+            eq(orders.isArchived, false),
+            sql`${orders.createdAt} >= ${thisMonthStart.toISOString()}`
+          )
+        );
 
       const ordersWithAIPlans = await db.select()
         .from(orderCartonPlans)
@@ -2479,10 +2484,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         )
         .limit(10);
 
-      // Integration health status (simplified - check for recent order processing)
+      // Integration health status (simplified - check for recent order processing, exclude deleted)
       const recentOrders = await db.select()
         .from(orders)
-        .where(sql`${orders.createdAt} >= ${twentyFourHoursAgo.toISOString()}`)
+        .where(
+          and(
+            eq(orders.isArchived, false),
+            sql`${orders.createdAt} >= ${twentyFourHoursAgo.toISOString()}`
+          )
+        )
         .limit(100);
 
       const integrationHealth = {
@@ -3244,15 +3254,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get order statistics for each customer with separate COUNT query
       const customersWithStats = await Promise.all(
         customerResults.map(async (customer) => {
-          // Separate COUNT query for accurate total order count
+          // Separate COUNT query for accurate total order count (exclude deleted)
           const [countResult] = await db
             .select({ count: sql<number>`COUNT(*)::int` })
             .from(orders)
-            .where(eq(orders.customerId, customer.id));
+            .where(
+              and(
+                eq(orders.customerId, customer.id),
+                eq(orders.isArchived, false)
+              )
+            );
 
           const totalOrders = countResult?.count || 0;
 
-          // Get recent orders (limited to 3 for display)
+          // Get recent orders (limited to 3 for display, exclude deleted)
           const customerOrders = await db
             .select({
               id: orders.id,
@@ -3263,7 +3278,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               orderStatus: orders.orderStatus
             })
             .from(orders)
-            .where(eq(orders.customerId, customer.id))
+            .where(
+              and(
+                eq(orders.customerId, customer.id),
+                eq(orders.isArchived, false)
+              )
+            )
             .orderBy(desc(orders.createdAt))
             .limit(3);
 
@@ -3300,7 +3320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // STEP: Search for orders by orderId (supports partial number matching like "3870" -> "ORD-251113-3870")
+      // STEP: Search for orders by orderId (supports partial number matching like "3870" -> "ORD-251113-3870", exclude deleted)
       const orderCandidates = await db
         .select({
           id: orders.id,
@@ -3313,7 +3333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(orders)
         .where(
-          sql`LOWER(${orders.orderId}) LIKE ${`%${normalizedQuery.toLowerCase()}%`}`
+          and(
+            eq(orders.isArchived, false),
+            sql`LOWER(${orders.orderId}) LIKE ${`%${normalizedQuery.toLowerCase()}%`}`
+          )
         )
         .orderBy(desc(orders.createdAt))
         .limit(10);
