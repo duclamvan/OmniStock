@@ -49,7 +49,7 @@ export function LabelContent({ product }: { product: LabelProduct | null }) {
     <div
       id="warehouse-label-print"
       className="w-[100mm] h-[30mm] flex flex-row items-stretch bg-white text-black overflow-hidden border-2 border-black print:border-2 box-border"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      style={{ fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" }}
     >
       <div className="flex-shrink-0 w-[22mm] flex items-center justify-center p-[1.5mm] bg-white border-r-2 border-black">
         <QRCodeSVG
@@ -309,7 +309,7 @@ export default function WarehouseLabelPreview({
             box-sizing: border-box;
           }
           body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
             width: 100mm;
             height: 30mm;
             overflow: hidden;
