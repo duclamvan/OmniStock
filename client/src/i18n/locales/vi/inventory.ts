@@ -792,7 +792,7 @@ const inventory = {
   productsSelected: '{{count}} sản phẩm đã chọn',
   printLabels: 'In nhãn',
   labelSizeSmall: 'Nhỏ (100×30mm)',
-  labelSizeLarge: 'Lớn (105×148mm)',
+  labelSizeLarge: 'Lớn (148×105mm)',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',

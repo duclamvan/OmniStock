@@ -310,7 +310,7 @@ export default function WarehouseLabels() {
     }
 
     if (currentLabelSize === 'large') {
-      // Generate LARGE labels (105x148mm portrait)
+      // Generate LARGE labels (148x105mm landscape, black & white thermal)
       const labelsWithQR = await Promise.all(
         products.map(async (product: any) => {
           const productCode = product.sku || product.barcode || product.id;
@@ -341,37 +341,31 @@ export default function WarehouseLabels() {
             </svg>`;
           }
 
-          const arrowsUpHtml = showArrowsUp ? '<div class="arrows-row arrows-up">▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲</div>' : '';
-          const arrowsDownHtml = showArrowsDown ? '<div class="arrows-row arrows-down">▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼</div>' : '';
+          const arrowsUpHtml = showArrowsUp ? '<div class="arrows-row arrows-up">▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲</div>' : '';
+          const arrowsDownHtml = showArrowsDown ? '<div class="arrows-row arrows-down">▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼</div>' : '';
 
           return `
             <div class="label-wrapper">
               ${arrowsUpHtml}
               <div class="label-container">
-                <div class="qr-section">
-                  ${qrSvg}
-                </div>
-                <div class="name-section">
-                  <div class="vn-name">${vietnameseName}</div>
-                  <div class="en-name">${product.name}</div>
-                  ${product.sku ? `<div class="sku">${product.sku}</div>` : ""}
-                </div>
-                ${hasBulkInfo ? `
-                  <div class="bulk-section">
-                    <div class="bulk-label">Packaging</div>
-                    <div class="bulk-value">${displayText}</div>
+                <div class="left-section">
+                  <div class="qr-box">
+                    ${qrSvg}
                   </div>
-                ` : ''}
-                <div class="price-section">
-                  ${priceEur !== null ? `
-                    <div class="price-eur-row">
-                      <span class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>` : ""}
-                  ${priceCzk !== null ? `
-                    <div class="price-czk-row">
-                      <span class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</span>
-                    </div>` : ""}
-                  ${priceEur === null && priceCzk === null ? `<div class="price-czk-row"><span class="price-na">N/A</span></div>` : ""}
+                  <div class="sku-box">${product.sku || productCode}</div>
+                </div>
+                <div class="right-section">
+                  <div class="name-area">
+                    <div class="product-name">${vietnameseName}</div>
+                    ${vietnameseName !== product.name ? `<div class="product-name-en">${product.name}</div>` : ''}
+                  </div>
+                  <div class="bottom-row">
+                    ${hasBulkInfo ? `<div class="bulk-box">${displayText}</div>` : ''}
+                    <div class="price-area">
+                      ${priceEur !== null ? `<div class="price-eur">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ""}
+                      ${priceCzk !== null ? `<div class="price-czk">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ""}
+                    </div>
+                  </div>
                 </div>
               </div>
               ${arrowsDownHtml}
@@ -382,8 +376,8 @@ export default function WarehouseLabels() {
 
       const labelsHtml = labelsWithQR.join("");
       const arrowHeight = 6;
-      const baseHeight = 148;
-      const totalHeight = baseHeight + (showArrowsUp ? arrowHeight : 0) + (showArrowsDown ? arrowHeight : 0);
+      const baseWidth = 148;
+      const totalWidth = baseWidth + (showArrowsUp ? arrowHeight : 0) + (showArrowsDown ? arrowHeight : 0);
 
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -393,7 +387,7 @@ export default function WarehouseLabels() {
           <title>${title}</title>
           <style>
             @page {
-              size: 105mm ${totalHeight}mm;
+              size: 148mm 105mm;
               margin: 0;
             }
             @media print {
@@ -410,146 +404,136 @@ export default function WarehouseLabels() {
             }
             body {
               font-family: Arial, Helvetica, sans-serif;
+              background: white;
+              color: black;
             }
             .label-wrapper {
-              width: 105mm;
+              width: 148mm;
+              height: 105mm;
               display: flex;
-              flex-direction: column;
+              flex-direction: row;
               page-break-after: always;
             }
             .label-wrapper:last-child {
               page-break-after: auto;
             }
             .arrows-row {
-              width: 100%;
-              height: ${arrowHeight}mm;
+              width: ${arrowHeight}mm;
+              height: 105mm;
               display: flex;
               align-items: center;
               justify-content: center;
+              writing-mode: vertical-rl;
+              text-orientation: mixed;
               font-size: 14pt;
               letter-spacing: -1pt;
               overflow: hidden;
-              background: #fff1f1 !important;
-              border: 2pt solid #ef4444;
-              border-bottom: none;
-              color: #ef4444;
-              font-weight: bold;
+              background: white !important;
+              border: 2pt solid black;
+              color: black;
+              font-weight: 900;
+            }
+            .arrows-up {
+              border-right: none;
             }
             .arrows-down {
-              border-top: none;
-              border-bottom: 2pt solid #ef4444;
+              border-left: none;
             }
             .label-container {
-              width: 105mm;
-              height: 148mm;
+              flex: 1;
+              height: 105mm;
               display: flex;
-              flex-direction: column;
+              flex-direction: row;
               background: white !important;
               color: black;
               overflow: hidden;
               border: 3pt solid black;
+            }
+            .left-section {
+              width: 42mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              border-right: 2pt solid black;
+              padding: 3mm;
+            }
+            .qr-box {
+              width: 35mm;
+              height: 35mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .qr-box svg {
+              width: 35mm;
+              height: 35mm;
+            }
+            .sku-box {
+              margin-top: 2mm;
+              font-size: 12pt;
+              font-weight: 900;
+              font-family: monospace;
+              text-align: center;
+              word-break: break-all;
+              color: black;
+            }
+            .right-section {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
               padding: 4mm;
             }
-            .qr-section {
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              padding: 3mm 0;
-              border-bottom: 2pt solid #e5e7eb;
-              margin-bottom: 3mm;
-            }
-            .qr-section svg {
-              width: 55mm;
-              height: 55mm;
-            }
-            .name-section {
+            .name-area {
               flex: 1;
               display: flex;
               flex-direction: column;
               justify-content: center;
-              text-align: center;
-              padding: 2mm 0;
             }
-            .vn-name {
+            .product-name {
               font-weight: 900;
-              font-size: 22pt;
-              line-height: 1.2;
+              font-size: 28pt;
+              line-height: 1.1;
               text-transform: uppercase;
               word-break: break-word;
               letter-spacing: -0.5pt;
-              margin-bottom: 2mm;
-            }
-            .en-name {
-              font-size: 14pt;
-              font-weight: 500;
-              line-height: 1.2;
-              color: #4b5563;
-              word-break: break-word;
-              margin-bottom: 2mm;
-            }
-            .sku {
-              font-size: 14pt;
-              line-height: 1.1;
               color: black;
-              font-family: monospace;
-              font-weight: bold;
-              background: #f3f4f6;
-              padding: 2mm 4mm;
-              display: inline-block;
-              margin: 2mm auto 0;
-              border-radius: 2mm;
             }
-            .bulk-section {
+            .product-name-en {
+              font-size: 14pt;
+              font-weight: 700;
+              line-height: 1.2;
+              color: black;
+              word-break: break-word;
+              margin-top: 2mm;
+            }
+            .bottom-row {
               display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              padding: 3mm;
-              background: #f0fdf4 !important;
-              border: 1pt solid #86efac;
-              border-radius: 2mm;
-              margin: 2mm 0;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 4mm;
+              border-top: 2pt solid black;
+              padding-top: 3mm;
+              margin-top: 3mm;
             }
-            .bulk-label {
-              font-size: 9pt;
-              color: #166534;
-              text-transform: uppercase;
-              letter-spacing: 0.5pt;
-            }
-            .bulk-value {
-              font-size: 16pt;
-              font-weight: bold;
-              color: #166534;
-            }
-            .price-section {
-              display: flex;
-              flex-direction: column;
-              gap: 2mm;
-              margin-top: auto;
-            }
-            .price-eur-row {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: black !important;
-              padding: 4mm;
-              border-radius: 2mm;
-            }
-            .price-czk-row {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: white !important;
+            .bulk-box {
+              font-size: 14pt;
+              font-weight: 900;
+              color: black;
               border: 2pt solid black;
-              padding: 3mm;
-              border-radius: 2mm;
+              padding: 2mm 4mm;
+            }
+            .price-area {
+              display: flex;
+              flex-direction: column;
+              align-items: flex-end;
+              gap: 1mm;
             }
             .price-eur {
               font-weight: 900;
-              font-size: 28pt;
+              font-size: 26pt;
               line-height: 1;
-              color: white;
-              letter-spacing: -0.5pt;
+              color: black;
             }
             .price-czk {
               font-weight: bold;
