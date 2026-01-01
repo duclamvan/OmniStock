@@ -369,7 +369,7 @@ export default function WarehouseDashboard() {
               <Switch
                 checked={orderAlertsEnabled}
                 onCheckedChange={handleOrderAlertsToggle}
-                className="data-[state=checked]:bg-white data-[state=checked]:text-blue-600"
+                className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-white/30 [&>span]:data-[state=checked]:bg-white"
                 data-testid="switch-order-alerts"
               />
             </div>
