@@ -26,14 +26,15 @@ import {
   Plus,
   Loader2
 } from "lucide-react";
-import { useState, useEffect } from 'react';
-import { Link } from "wouter";
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from "wouter";
 import { formatDate } from "@/lib/currencyUtils";
 import { useTranslation } from 'react-i18next';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
+import { alertNewOrders } from "@/lib/orderAlertSound";
 
 interface WarehouseDashboardData {
   ordersToPickPack: Array<{
@@ -86,6 +87,7 @@ export default function WarehouseDashboard() {
   const { t, i18n } = useTranslation(['common', 'warehouse']);
   const { toast } = useToast();
   const { isAdministrator } = useAuth();
+  const [, navigate] = useLocation();
   const [timeSinceUpdate, setTimeSinceUpdate] = useState('');
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -95,6 +97,9 @@ export default function WarehouseDashboard() {
     type: 'general',
     dueAt: ''
   });
+  
+  const previousOrderCountRef = useRef<number | null>(null);
+  const isFirstLoadRef = useRef(true);
   
   const {
     isSupported: pushSupported,
@@ -132,6 +137,46 @@ export default function WarehouseDashboard() {
     const interval = setInterval(updateTimeSince, 1000);
     return () => clearInterval(interval);
   }, [dataUpdatedAt, t]);
+  
+  // Detect new orders and trigger alerts
+  useEffect(() => {
+    if (isLoading || !data) return;
+    
+    const currentOrderCount = (data.pickPackStats?.pending || 0) + (data.pickPackStats?.picking || 0);
+    
+    // Skip first load to avoid alert on page open
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
+      previousOrderCountRef.current = currentOrderCount;
+      return;
+    }
+    
+    const previousCount = previousOrderCountRef.current ?? 0;
+    const newOrderCount = currentOrderCount - previousCount;
+    
+    // Only alert if there are more orders than before (new orders arrived)
+    if (newOrderCount > 0 && isPushSubscribed) {
+      const result = alertNewOrders(newOrderCount, {
+        title: t('common:newOrderReceived'),
+        body: newOrderCount === 1 
+          ? t('common:oneNewOrderToPick') 
+          : t('common:multipleNewOrdersToPick', { count: newOrderCount }),
+        onNotificationClick: () => navigate('/pick-pack')
+      });
+      
+      // Show in-app toast notification
+      if (result.soundPlayed || result.browserNotificationShown) {
+        toast({
+          title: t('common:newOrderReceived'),
+          description: newOrderCount === 1 
+            ? t('common:oneNewOrderToPick') 
+            : t('common:multipleNewOrdersToPick', { count: newOrderCount }),
+        });
+      }
+    }
+    
+    previousOrderCountRef.current = currentOrderCount;
+  }, [data, isLoading, isPushSubscribed, t, toast, navigate]);
   
   const handlePushToggle = async () => {
     try {
