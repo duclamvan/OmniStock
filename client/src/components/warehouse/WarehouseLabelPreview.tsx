@@ -147,7 +147,7 @@ export function LargeLabelContentRaw({ product }: { product: LabelProduct | null
       }}>
         <QRCodeSVG
           value={qrUrl}
-          size={85}
+          size={70}
           level="M"
           includeMargin={false}
         />
@@ -472,7 +472,7 @@ export default function WarehouseLabelPreview({
     }
 
     // Generate QR code as data URL
-    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 150, margin: 0 });
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 120, margin: 0 });
 
     const printWindow = window.open("", "_blank", "width=600,height=450");
     if (!printWindow) return;
@@ -521,8 +521,8 @@ export default function WarehouseLabelPreview({
             gap: 2mm;
           }
           .qr-spine img {
-            width: 24mm;
-            height: 24mm;
+            width: 20mm;
+            height: 20mm;
           }
           .sku-plate {
             font-size: 9pt;

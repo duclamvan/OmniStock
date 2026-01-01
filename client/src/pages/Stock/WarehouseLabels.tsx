@@ -461,15 +461,15 @@ export default function WarehouseLabels() {
               gap: 2mm;
             }
             .qr-box {
-              width: 24mm;
-              height: 24mm;
+              width: 20mm;
+              height: 20mm;
               display: flex;
               align-items: center;
               justify-content: center;
             }
             .qr-box svg {
-              width: 24mm;
-              height: 24mm;
+              width: 20mm;
+              height: 20mm;
             }
             .sku-box {
               font-size: 9pt;
