@@ -2691,6 +2691,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Today's metrics
       const todayOrders = paidOrders.filter(o => new Date(o.createdAt) >= today);
       const todayRevenue = todayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+      const todayCost = todayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.totalCost || '0'), o.currency || 'EUR'), 0);
+      const todayProfit = todayRevenue - todayCost;
 
       // Yesterday's comparison
       const yesterdayOrders = paidOrders.filter(o => {
@@ -2698,6 +2700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return orderDate >= yesterday && orderDate < today;
       });
       const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.grandTotal || '0'), o.currency || 'EUR'), 0);
+      const yesterdayCost = yesterdayOrders.reduce((sum, o) => sum + convertToEur(parseFloat(o.totalCost || '0'), o.currency || 'EUR'), 0);
+      const yesterdayProfit = yesterdayRevenue - yesterdayCost;
 
       // This week vs last week
       const thisWeekOrders = paidOrders.filter(o => new Date(o.createdAt) >= thisWeekStart);
@@ -2769,9 +2773,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dailySales,
         todayMetrics: {
           revenue: Math.round(todayRevenue * 100) / 100,
+          profit: Math.round(todayProfit * 100) / 100,
           orders: todayOrders.length,
           aov: Math.round(todayAOV * 100) / 100,
-          changeVsYesterday: yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 10000) / 100 : 0
+          changeVsYesterday: yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 10000) / 100 : 0,
+          profitChangeVsYesterday: yesterdayProfit > 0 ? Math.round(((todayProfit - yesterdayProfit) / yesterdayProfit) * 10000) / 100 : (todayProfit > 0 ? 100 : 0)
         },
         weeklyComparison: {
           thisWeekRevenue: Math.round(thisWeekRevenue * 100) / 100,

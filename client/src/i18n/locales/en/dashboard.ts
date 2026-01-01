@@ -8,8 +8,16 @@ export default {
   lowStockItems: 'low stock items',
   reviewApprovals: 'Review Approvals',
   
-  // Executive Summary
+  // Executive Summary / Today's Overview
+  todaysOverview: "Today's Overview",
+  todaysOverviewDescription: "Real-time today's revenue, profit, and trending products",
   todayRevenue: "Today's Revenue",
+  todayProfit: "Today's Profit",
+  todayOrders: "Today's Orders",
+  todayAOV: "Today's AOV",
+  ordersPlaced: "orders placed",
+  trendingProductsThisMonth: "Trending Products This Month",
+  thisMonthTopSellers: "Best sellers based on revenue",
   profit: 'profit',
   toFulfill: 'To Fulfill',
   ofTotal: 'of {{count}} today',

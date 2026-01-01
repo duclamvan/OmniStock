@@ -8,8 +8,16 @@ export default {
   lowStockItems: 'sản phẩm tồn kho thấp',
   reviewApprovals: 'Xem xét phê duyệt',
   
-  // Executive Summary
+  // Executive Summary / Today's Overview
+  todaysOverview: 'Tổng quan hôm nay',
+  todaysOverviewDescription: 'Doanh thu, lợi nhuận và sản phẩm xu hướng thời gian thực',
   todayRevenue: 'Doanh thu hôm nay',
+  todayProfit: 'Lợi nhuận hôm nay',
+  todayOrders: 'Đơn hàng hôm nay',
+  todayAOV: 'AOV hôm nay',
+  ordersPlaced: 'đơn hàng',
+  trendingProductsThisMonth: 'Sản phẩm xu hướng tháng này',
+  thisMonthTopSellers: 'Bán chạy nhất theo doanh thu',
   profit: 'lợi nhuận',
   toFulfill: 'Cần xử lý',
   ofTotal: 'trong {{count}} hôm nay',

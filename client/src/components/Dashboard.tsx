@@ -35,7 +35,8 @@ import {
   BarChart3,
   Layers,
   RefreshCw,
-  Clock
+  Clock,
+  Sun
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLocalization } from "@/contexts/LocalizationContext";
@@ -215,9 +216,11 @@ interface SalesGrowthData {
   dailySales: Array<{ date: string; revenue: number; orders: number; profit: number }>;
   todayMetrics: {
     revenue: number;
+    profit: number;
     orders: number;
     aov: number;
     changeVsYesterday: number;
+    profitChangeVsYesterday: number;
   };
   weeklyComparison: {
     thisWeekRevenue: number;
@@ -744,6 +747,150 @@ export function Dashboard() {
               </Card>
             </Link>
           </div>
+        )}
+      </section>
+
+      <Separator className="bg-slate-200 dark:bg-slate-700" />
+
+      {/* Today's Overview Section */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-todays-overview">
+            <Sun className="h-5 w-5 text-yellow-500" />
+            {t('todaysOverview')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('todaysOverviewDescription')}</p>
+        </div>
+
+        {salesGrowthLoading && !salesGrowth ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <>
+            {/* Today's Metrics Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              {/* Today's Revenue */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-revenue">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayRevenue')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-revenue">
+                        {formatCurrency(salesGrowth?.todayMetrics.revenue || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={`text-xs ${(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.changeVsYesterday || 0}% vs {t('yesterday')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <Euro className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Today's Profit */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-profit">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayProfit')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-profit">
+                        {formatCurrency(salesGrowth?.todayMetrics.profit || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={`text-xs ${(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {(salesGrowth?.todayMetrics.profitChangeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.profitChangeVsYesterday || 0}% vs {t('yesterday')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Today's Orders */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-orders">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayOrders')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-orders">
+                        {salesGrowth?.todayMetrics.orders || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ordersPlaced')}</p>
+                    </div>
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Today's AOV */}
+              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-aov">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('todayAOV')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-aov">
+                        {formatCurrency(salesGrowth?.todayMetrics.aov || 0)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('avgOrderValue')}</p>
+                    </div>
+                    <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                      <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Trending Products This Month */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Target className="h-4 w-4 text-green-500" />
+                  {t('trendingProductsThisMonth')}
+                </CardTitle>
+                <CardDescription>{t('thisMonthTopSellers')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {salesGrowth?.topSellingProducts.slice(0, 5).map((product, index) => (
+                    <div key={product.productId} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0" data-testid={`top-product-${index}`}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{index + 1}</Badge>
+                        <span className="text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{product.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">{product.unitsSold} {t('units')}</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(product.revenue)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!salesGrowth?.topSellingProducts || salesGrowth.topSellingProducts.length === 0) && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noDataAvailable')}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </section>
 
@@ -1369,192 +1516,6 @@ export function Dashboard() {
               </CardContent>
             </Card>
           </div>
-        )}
-      </section>
-
-      <Separator className="bg-slate-200 dark:bg-slate-700" />
-
-      {/* Sales Growth KPIs Section */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-sales-growth">
-            <BarChart3 className="h-5 w-5 text-green-500" />
-            {t('salesGrowth')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('salesGrowthDescription')}</p>
-        </div>
-
-        {salesGrowthLoading && !salesGrowth ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <MetricCardSkeleton key={i} />)}
-          </div>
-        ) : (
-          <>
-            {/* Sales Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {/* Today's Revenue */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-today-revenue">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('todayRevenue')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-today-revenue">
-                        {formatCurrency(salesGrowth?.todayMetrics.revenue || 0)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={`text-xs ${(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {(salesGrowth?.todayMetrics.changeVsYesterday || 0) >= 0 ? '+' : ''}{salesGrowth?.todayMetrics.changeVsYesterday || 0}% vs {t('yesterday')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                      <Euro className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* This Week Revenue */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-week-revenue">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('thisWeek')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-week-revenue">
-                        {formatCurrency(salesGrowth?.weeklyComparison.thisWeekRevenue || 0)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={`text-xs ${(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {(salesGrowth?.weeklyComparison.changePercent || 0) >= 0 ? '+' : ''}{salesGrowth?.weeklyComparison.changePercent || 0}% vs {t('lastWeek')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* This Month Revenue */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-month-revenue">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('thisMonth')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-month-revenue">
-                        {formatCurrency(salesGrowth?.monthlyComparison.thisMonthRevenue || 0)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={`text-xs ${(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {(salesGrowth?.monthlyComparison.changePercent || 0) >= 0 ? '+' : ''}{salesGrowth?.monthlyComparison.changePercent || 0}% vs {t('lastMonth')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                      <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Sales Velocity */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" data-testid="card-sales-velocity">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t('salesVelocity')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-sales-velocity">
-                        {salesGrowth?.salesVelocity.ordersPerDay || 0}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('ordersPerDay')}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                      <Activity className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* AOV and Top Products */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Average Order Value */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-blue-500" />
-                    {t('averageOrderValue')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('today')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-today">
-                      {formatCurrency(salesGrowth?.averageOrderValue.today || 0)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('thisWeek')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-week">
-                      {formatCurrency(salesGrowth?.averageOrderValue.thisWeek || 0)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('thisMonth')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100" data-testid="value-aov-month">
-                      {formatCurrency(salesGrowth?.averageOrderValue.thisMonth || 0)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Top Selling Products */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-green-500" />
-                    {t('topSellingProducts')}
-                  </CardTitle>
-                  <CardDescription>{t('last30Days')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {salesGrowth?.topSellingProducts.slice(0, 5).map((product, index) => (
-                      <div key={product.productId} className="flex items-center justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-700 last:border-0" data-testid={`top-product-${index}`}>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">{index + 1}</Badge>
-                          <span className="text-gray-900 dark:text-gray-100 truncate max-w-[150px]">{product.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400 text-xs">{product.unitsSold} {t('units')}</span>
-                          <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(product.revenue)}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {(!salesGrowth?.topSellingProducts || salesGrowth.topSellingProducts.length === 0) && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('noDataAvailable')}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
         )}
       </section>
 
