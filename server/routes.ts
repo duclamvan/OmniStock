@@ -11917,12 +11917,8 @@ Important:
           
           // Helper function to get cost from a product/variant based on currency priority
           // Supports all currencies: CZK, EUR, USD, VND, CNY
+          // CRITICAL: Prioritize currency-specific importCost first since latestLandingCost may be outdated
           const getCostFromEntity = (entity: any, currency: string): number | null => {
-            // Priority 1: latestLandingCost (includes freight/duty, always preferred)
-            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
-              return parseFloat(entity.latestLandingCost);
-            }
-            // Priority 2: importCost matching order currency
             const currencyFieldMap: Record<string, string> = {
               'CZK': 'importCostCzk',
               'EUR': 'importCostEur',
@@ -11930,11 +11926,16 @@ Important:
               'VND': 'importCostVnd',
               'CNY': 'importCostCny',
             };
+            // Priority 1: importCost matching order currency (most reliable for that currency)
             const currencyField = currencyFieldMap[currency];
             if (currencyField && entity[currencyField] && parseFloat(entity[currencyField]) > 0) {
               return parseFloat(entity[currencyField]);
             }
-            // Priority 3: Fallback to any available cost (prefer CZK as base currency)
+            // Priority 2: latestLandingCost (may include freight/duty but could be outdated)
+            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
+              return parseFloat(entity.latestLandingCost);
+            }
+            // Priority 3: Fallback to any available importCost (prefer CZK as base currency)
             const fallbackOrder = ['importCostCzk', 'importCostEur', 'importCostUsd', 'importCostVnd', 'importCostCny'];
             for (const field of fallbackOrder) {
               if (entity[field] && parseFloat(entity[field]) > 0) {
