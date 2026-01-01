@@ -61,7 +61,12 @@ import {
   Phone,
   Mail,
   ClipboardList,
-  Eye
+  Eye,
+  Search,
+  Filter,
+  ArrowUpDown,
+  X,
+  ChevronDown
 } from "lucide-react";
 import {
   Tooltip,
@@ -113,6 +118,13 @@ export default function Employees() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  
+  // Search, filter, and sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Fetch employees
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
@@ -351,6 +363,77 @@ export default function Employees() {
 
   const totalAnnualPayroll = totalMonthlyPayroll * 12;
 
+  // Get unique departments for filter
+  const departments = Array.from(new Set(employees.map(e => e.department).filter(Boolean))) as string[];
+
+  // Filter and sort employees
+  const filteredAndSortedEmployees = employees
+    .filter(employee => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          employee.firstName?.toLowerCase().includes(query) ||
+          employee.lastName?.toLowerCase().includes(query) ||
+          employee.employeeId?.toLowerCase().includes(query) ||
+          employee.email?.toLowerCase().includes(query) ||
+          employee.position?.toLowerCase().includes(query) ||
+          employee.department?.toLowerCase().includes(query) ||
+          employee.phone?.includes(query);
+        if (!matchesSearch) return false;
+      }
+      // Status filter
+      if (statusFilter !== "all" && employee.status !== statusFilter) return false;
+      // Department filter
+      if (departmentFilter !== "all" && employee.department !== departmentFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          break;
+        case "employeeId":
+          comparison = (a.employeeId || "").localeCompare(b.employeeId || "");
+          break;
+        case "hireDate":
+          comparison = new Date(a.hireDate).getTime() - new Date(b.hireDate).getTime();
+          break;
+        case "salary":
+          const salaryA = typeof a.salary === 'string' ? parseFloat(a.salary) : a.salary;
+          const salaryB = typeof b.salary === 'string' ? parseFloat(b.salary) : b.salary;
+          comparison = salaryA - salaryB;
+          break;
+        case "department":
+          comparison = (a.department || "").localeCompare(b.department || "");
+          break;
+        case "position":
+          comparison = (a.position || "").localeCompare(b.position || "");
+          break;
+        default:
+          comparison = 0;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || departmentFilter !== "all";
+  
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setDepartmentFilter("all");
+  };
+
+  const toggleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Header */}
@@ -421,12 +504,107 @@ export default function Employees() {
       {/* Employees Table */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3 px-4 md:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              {t('system:allEmployees')}
-              <Badge variant="secondary" className="ml-1">{employees.length}</Badge>
-            </CardTitle>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                {t('system:allEmployees')}
+                <Badge variant="secondary" className="ml-1">
+                  {filteredAndSortedEmployees.length}
+                  {hasActiveFilters && ` / ${employees.length}`}
+                </Badge>
+              </CardTitle>
+            </div>
+            
+            {/* Search and Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('common:searchEmployees') || "Search employees..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9"
+                  data-testid="input-search-employees"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Filters */}
+              <div className="flex gap-2 flex-wrap">
+                {/* Status Filter */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]" data-testid="select-status-filter">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder={t('common:status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common:allStatuses') || "All Statuses"}</SelectItem>
+                    <SelectItem value="active">{t('system:active')}</SelectItem>
+                    <SelectItem value="on_leave">{t('system:onLeave')}</SelectItem>
+                    <SelectItem value="terminated">{t('system:terminated')}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Department Filter */}
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-[160px]" data-testid="select-department-filter">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder={t('system:department')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common:allDepartments') || "All Departments"}</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept!}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Sort Dropdown */}
+                <Select value={`${sortField}-${sortDirection}`} onValueChange={(value) => {
+                  const [field, direction] = value.split('-');
+                  setSortField(field);
+                  setSortDirection(direction as "asc" | "desc");
+                }}>
+                  <SelectTrigger className="w-[160px]" data-testid="select-sort">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder={t('common:sortBy') || "Sort by"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name-asc">{t('common:name')} (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">{t('common:name')} (Z-A)</SelectItem>
+                    <SelectItem value="hireDate-asc">{t('system:hireDate')} ↑</SelectItem>
+                    <SelectItem value="hireDate-desc">{t('system:hireDate')} ↓</SelectItem>
+                    <SelectItem value="salary-asc">{t('system:salary')} ↑</SelectItem>
+                    <SelectItem value="salary-desc">{t('system:salary')} ↓</SelectItem>
+                    <SelectItem value="department-asc">{t('system:department')} (A-Z)</SelectItem>
+                    <SelectItem value="department-desc">{t('system:department')} (Z-A)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Clear Filters Button */}
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="text-muted-foreground hover:text-foreground"
+                    data-testid="button-clear-filters"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    {t('common:clearFilters') || "Clear"}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 md:p-6 md:pt-0">
@@ -448,11 +626,23 @@ export default function Employees() {
                 {t('system:addEmployee')}
               </Button>
             </div>
+          ) : filteredAndSortedEmployees.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">{t('common:noResultsFound') || "No results found"}</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('common:tryAdjustingFilters') || "Try adjusting your search or filters"}
+              </p>
+              <Button variant="outline" onClick={clearAllFilters}>
+                <X className="h-4 w-4 mr-2" />
+                {t('common:clearFilters') || "Clear Filters"}
+              </Button>
+            </div>
           ) : (
             <>
               {/* Mobile Card View */}
               <div className="sm:hidden space-y-4 px-4 py-4">
-                {employees.map((employee) => (
+                {filteredAndSortedEmployees.map((employee) => (
                   <div 
                     key={employee.id} 
                     className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4"
@@ -599,7 +789,7 @@ export default function Employees() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {employees.map((employee) => (
+                    {filteredAndSortedEmployees.map((employee) => (
                       <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
                         <TableCell data-testid={`text-id-${employee.id}`}>
                           <div className="font-mono text-sm">{employee.employeeId}</div>
