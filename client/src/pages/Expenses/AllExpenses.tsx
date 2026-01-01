@@ -91,6 +91,17 @@ export default function AllExpenses() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Display currency for overview stats with localStorage persistence
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>(() => {
+    const saved = localStorage.getItem('expensesDisplayCurrency');
+    return (saved as Currency) || 'EUR';
+  });
+
+  // Update localStorage when display currency changes
+  useEffect(() => {
+    localStorage.setItem('expensesDisplayCurrency', displayCurrency);
+  }, [displayCurrency]);
 
   // Column visibility state with localStorage persistence
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -198,17 +209,29 @@ export default function AllExpenses() {
     );
   }
 
-  // Helper function to convert expense amount to EUR (base currency)
-  const convertToEUR = (expense: any): number => {
+  // Helper function to convert expense amount to display currency
+  const convertToDisplayCurrency = (expense: any): number => {
     const amount = parseFloat(expense.amount || '0') || 0;
     const currency = (expense.currency || 'EUR') as Currency;
-    if (currency === 'EUR') return amount;
-    return convertCurrency(amount, currency, 'EUR');
+    if (currency === displayCurrency) return amount;
+    return convertCurrency(amount, currency, displayCurrency);
   };
 
-  // Calculate stats (all converted to EUR for accurate multi-currency totals)
+  // Get currency symbol for display currency
+  const getDisplayCurrencySymbol = (): string => {
+    const symbols: Record<Currency, string> = {
+      EUR: '€',
+      CZK: 'Kč',
+      USD: '$',
+      VND: '₫',
+      CNY: '¥',
+    };
+    return symbols[displayCurrency] || displayCurrency;
+  };
+
+  // Calculate stats (all converted to display currency for accurate multi-currency totals)
   const totalExpenses = expenses.reduce((sum, expense) => {
-    return sum + convertToEUR(expense);
+    return sum + convertToDisplayCurrency(expense);
   }, 0);
 
   const thisMonthExpenses = expenses.filter(expense => {
@@ -225,17 +248,17 @@ export default function AllExpenses() {
   });
 
   const thisMonthTotal = thisMonthExpenses.reduce((sum, expense) => {
-    return sum + convertToEUR(expense);
+    return sum + convertToDisplayCurrency(expense);
   }, 0);
 
   const pendingExpenses = expenses.filter(e => e.status === 'pending');
   const pendingTotal = pendingExpenses.reduce((sum, expense) => {
-    return sum + convertToEUR(expense);
+    return sum + convertToDisplayCurrency(expense);
   }, 0);
 
   const paidExpenses = expenses.filter(e => e.status === 'paid');
   const paidTotal = paidExpenses.reduce((sum, expense) => {
-    return sum + convertToEUR(expense);
+    return sum + convertToDisplayCurrency(expense);
   }, 0);
 
   // Get unique categories
@@ -758,6 +781,36 @@ export default function AllExpenses() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          {/* Currency Switcher for Overview Stats */}
+          <Select value={displayCurrency} onValueChange={(value) => setDisplayCurrency(value as Currency)}>
+            <SelectTrigger className="w-[100px] sm:w-[110px]" data-testid="select-display-currency">
+              <SelectValue>
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  {displayCurrency}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EUR">
+                <span className="flex items-center gap-2">€ EUR</span>
+              </SelectItem>
+              <SelectItem value="CZK">
+                <span className="flex items-center gap-2">Kč CZK</span>
+              </SelectItem>
+              <SelectItem value="USD">
+                <span className="flex items-center gap-2">$ USD</span>
+              </SelectItem>
+              <SelectItem value="VND">
+                <span className="flex items-center gap-2">₫ VND</span>
+              </SelectItem>
+              <SelectItem value="CNY">
+                <span className="flex items-center gap-2">¥ CNY</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          
           <Button onClick={() => navigate('/expenses/add')} className="w-full sm:w-auto" data-testid="button-add-expense">
             <Plus className="h-4 w-4 mr-2" />
             {t('addExpense')}
@@ -779,15 +832,15 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        €{formatCompactNumber(totalExpenses)}
+                        {getDisplayCurrencySymbol()}{formatCompactNumber(totalExpenses)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">€{totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">{getDisplayCurrencySymbol()}{totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allTime')} (EUR)</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('allTime')} ({displayCurrency})</p>
               </div>
               <div className="flex-shrink-0 p-2 sm:p-2.5 md:p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950">
                 <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-cyan-600 dark:text-cyan-400" />
@@ -808,11 +861,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        €{formatCompactNumber(thisMonthTotal)}
+                        {getDisplayCurrencySymbol()}{formatCompactNumber(thisMonthTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">€{thisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">{getDisplayCurrencySymbol()}{thisMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -837,11 +890,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        €{formatCompactNumber(pendingTotal)}
+                        {getDisplayCurrencySymbol()}{formatCompactNumber(pendingTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">€{pendingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">{getDisplayCurrencySymbol()}{pendingTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -866,11 +919,11 @@ export default function AllExpenses() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                        €{formatCompactNumber(paidTotal)}
+                        {getDisplayCurrencySymbol()}{formatCompactNumber(paidTotal)}
                       </p>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="font-mono">€{paidTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono">{getDisplayCurrencySymbol()}{paidTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
