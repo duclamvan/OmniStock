@@ -185,7 +185,7 @@ export function PPLSmartPopup({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 relative overflow-hidden min-h-0">
+        <div className="flex-1 relative overflow-auto min-h-0">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
               <div className="flex flex-col items-center gap-3">
