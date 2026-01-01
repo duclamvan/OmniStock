@@ -18307,10 +18307,12 @@ Important:
           }
         };
         
-        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase like CodPrice/CodCurrency)
+        // Add parcelShopCode for PPL SMART shipments (strip letter prefix like "KM" - API expects numeric only)
         if (isSmartShipment && order.pickupLocationCode) {
-          shipment.ParcelShopCode = order.pickupLocationCode;
-          console.log(`🏪 PPL SMART: Using pickup location ParcelShopCode=${order.pickupLocationCode}`);
+          // Strip any letter prefix (e.g., "KM12135002" -> "12135002")
+          const numericCode = order.pickupLocationCode.replace(/^[A-Za-z]+/, '');
+          shipment.parcelShopCode = numericCode;
+          console.log(`🏪 PPL SMART: Using pickup location parcelShopCode=${numericCode} (original: ${order.pickupLocationCode})`);
         }
 
         shipments.push(shipment);
@@ -18359,10 +18361,12 @@ Important:
           ]
         };
         
-        // Add ParcelShopCode for PPL SMART shipments (PPL API uses PascalCase like CodPrice/CodCurrency)
+        // Add parcelShopCode for PPL SMART shipments (strip letter prefix like "KM" - API expects numeric only)
         if (isSmartShipment && order.pickupLocationCode) {
-          singleShipment.ParcelShopCode = order.pickupLocationCode;
-          console.log(`🏪 PPL SMART: Using pickup location ParcelShopCode=${order.pickupLocationCode}`);
+          // Strip any letter prefix (e.g., "KM12135002" -> "12135002")
+          const numericCode = order.pickupLocationCode.replace(/^[A-Za-z]+/, '');
+          singleShipment.parcelShopCode = numericCode;
+          console.log(`🏪 PPL SMART: Using pickup location parcelShopCode=${numericCode} (original: ${order.pickupLocationCode})`);
         }
 
         // Weight removed as per user requirement - PPL doesn't need weight input
