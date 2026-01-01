@@ -170,8 +170,8 @@ export function PPLSmartPopup({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[700px] p-0 overflow-hidden">
-        <DialogHeader className="px-4 pt-4 pb-2 border-b">
+      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] max-h-[850px] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-4 pt-4 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-orange-500" />
@@ -185,7 +185,7 @@ export function PPLSmartPopup({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 relative overflow-hidden" style={{ height: "calc(100% - 80px)" }}>
+        <div className="flex-1 relative overflow-hidden min-h-0">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
               <div className="flex flex-col items-center gap-3">
@@ -227,7 +227,7 @@ export function PPLSmartPopup({
           />
         </div>
 
-        <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between">
+        <div className="px-4 py-3 border-t bg-muted/30 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ExternalLink className="h-3.5 w-3.5" />
             <span>{t("orders:poweredByPPL", "Powered by PPL CZ")}</span>
