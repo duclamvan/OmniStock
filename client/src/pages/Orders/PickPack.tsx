@@ -1562,7 +1562,13 @@ function PickingListView({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // STEP 1: First merge items by SKU (items with notes kept separate)
+  // Use variantSku first (for variants), then sku, normalized to uppercase for consistent matching
   const mergedItems = useMemo(() => {
+    const normalizeSku = (item: OrderItem): string => {
+      const raw = item.variantSku || item.sku || '';
+      return raw.trim().toUpperCase() || item.id;
+    };
+    
     const skuMergeMap = new Map<string, { 
       mergedItem: OrderItem; 
       originalIds: string[];
@@ -1579,7 +1585,7 @@ function PickingListView({
         // Items with notes kept separate
         itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as OrderItem);
       } else {
-        const mergeKey = item.sku || item.id;
+        const mergeKey = normalizeSku(item);
         if (skuMergeMap.has(mergeKey)) {
           const existing = skuMergeMap.get(mergeKey)!;
           existing.originalIds.push(item.id);
@@ -1650,8 +1656,24 @@ function PickingListView({
       }
     });
     
-    // Calculate first/last color numbers for each group
+    // Calculate first/last color numbers for each group AND sort items by colorNumber
     groups.forEach(group => {
+      // Sort items within each group by colorNumber (1-200), then by creation order
+      group.items.sort((a, b) => {
+        const aNum = a.colorNumber ? parseInt(a.colorNumber.replace(/\D/g, ''), 10) : Infinity;
+        const bNum = b.colorNumber ? parseInt(b.colorNumber.replace(/\D/g, ''), 10) : Infinity;
+        if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) {
+          return aNum - bNum;
+        }
+        // Fallback to firstItemIndex if no color number
+        return 0;
+      });
+      
+      // Update firstItem to be the first after sorting
+      if (group.items.length > 0) {
+        group.firstItem = group.items[0];
+      }
+      
       const sortedColors = group.colorNumbers
         .filter(Boolean)
         .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
@@ -2270,7 +2292,13 @@ function GroupedPickingListView({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // STEP 1: First merge items by SKU (items with notes kept separate)
+  // Use variantSku first (for variants), then sku, normalized to uppercase for consistent matching
   const mergedItems = useMemo(() => {
+    const normalizeSku = (item: OrderItem): string => {
+      const raw = item.variantSku || item.sku || '';
+      return raw.trim().toUpperCase() || item.id;
+    };
+    
     const skuMergeMap = new Map<string, { 
       mergedItem: OrderItem; 
       originalIds: string[];
@@ -2285,7 +2313,7 @@ function GroupedPickingListView({
       } else if (item.notes && item.notes.trim()) {
         itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as OrderItem);
       } else {
-        const mergeKey = item.sku || item.id;
+        const mergeKey = normalizeSku(item);
         if (skuMergeMap.has(mergeKey)) {
           const existing = skuMergeMap.get(mergeKey)!;
           existing.originalIds.push(item.id);
@@ -2352,8 +2380,23 @@ function GroupedPickingListView({
       }
     });
     
-    // Calculate first/last color numbers
+    // Calculate first/last color numbers AND sort items by colorNumber
     groups.forEach(group => {
+      // Sort items within each group by colorNumber (1-200), then by creation order
+      group.items.sort((a, b) => {
+        const aNum = a.colorNumber ? parseInt(a.colorNumber.replace(/\D/g, ''), 10) : Infinity;
+        const bNum = b.colorNumber ? parseInt(b.colorNumber.replace(/\D/g, ''), 10) : Infinity;
+        if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) {
+          return aNum - bNum;
+        }
+        return 0;
+      });
+      
+      // Update firstItem to be the first after sorting
+      if (group.items.length > 0) {
+        group.firstItem = group.items[0];
+      }
+      
       const colorNumbers = group.items
         .map(i => i.colorNumber)
         .filter(Boolean)
@@ -2368,7 +2411,7 @@ function GroupedPickingListView({
     });
     
     return Array.from(groups.values());
-  }, [order.items, currentItem?.id, recentlyScannedItemId]);
+  }, [mergedItems, currentItem?.id, recentlyScannedItemId]);
   
   const toggleGroup = (productId: string) => {
     setExpandedGroups(prev => {
