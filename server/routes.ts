@@ -12100,7 +12100,8 @@ Important:
             serviceId: item.serviceId || null,
             bundleId: item.bundleId || null,
             variantId: item.variantId || null,
-            variantSku: variantSku || null,
+            variantSku: variantSku || item.variantSku || null,
+            variantName: item.variantName || null,
             productName: item.productName || '',
             sku: item.sku || null,
             quantity: item.quantity || 1,
@@ -12112,12 +12113,18 @@ Important:
             tax: String(item.tax || 0),
             total: String(item.total || price || 0),
             image: item.image || null,
+            notes: item.notes || null,
             landingCost: landingCostSnapshot !== null ? String(landingCostSnapshot) : null,
             bulkUnitQty: productBulkUnitQty || null,
             bulkUnitName: productBulkUnitName || null,
             isVirtual: isVirtual || false,
             masterProductId: masterProductId || null,
             inventoryDeductionRatio: inventoryDeductionRatio || null,
+            appliedDiscountId: item.appliedDiscountId || null,
+            appliedDiscountLabel: item.appliedDiscountLabel || null,
+            appliedDiscountType: item.appliedDiscountType || null,
+            appliedDiscountScope: item.appliedDiscountScope || null,
+            freeItemsCount: item.freeItemsCount || null,
           });
         }
         
