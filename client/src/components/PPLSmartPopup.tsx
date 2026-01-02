@@ -176,7 +176,7 @@ export function PPLSmartPopup({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 relative overflow-auto">
           {status === 'loading' && (
             <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
               <div className="flex flex-col items-center gap-3">
@@ -215,8 +215,13 @@ export function PPLSmartPopup({
             key={widgetKey}
             ref={containerRef}
             id="ppl-parcelshop-map" 
-            className="w-full h-full"
-            style={{ minHeight: '500px' }}
+            className="w-full"
+            style={{ 
+              minHeight: '120%',
+              transform: 'scale(0.9)',
+              transformOrigin: 'top center',
+              paddingBottom: '80px'
+            }}
             data-address={[customerAddress, customerCity, customerZipCode].filter(Boolean).join(', ') || undefined}
             data-country="cz"
             data-language="cs"
