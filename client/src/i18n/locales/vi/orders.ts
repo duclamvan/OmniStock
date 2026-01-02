@@ -1438,6 +1438,7 @@ const orders = {
   
   // Additional UI Labels
   pickingItem: 'Lấy sản phẩm',
+  pickingProduct: 'Đang lấy sản phẩm',
   nextItem: 'Sản phẩm tiếp theo',
   bundleItems: 'Sản phẩm combo',
   pickingAccuracy: 'Độ chính xác lấy hàng',

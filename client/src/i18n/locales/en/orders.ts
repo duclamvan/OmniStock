@@ -1450,6 +1450,7 @@ const orders = {
   
   // Additional UI Labels
   pickingItem: 'Picking Item',
+  pickingProduct: 'Picking Product',
   nextItem: 'Next Item',
   bundleItems: 'Bundle Items',
   pickingAccuracy: 'Picking Accuracy',

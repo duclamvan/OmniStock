@@ -2509,12 +2509,18 @@ function GroupedPickingListView({
                               {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
                             
-                            {/* Variant details - Name + SKU */}
+                            {/* Variant details - Name + Location + SKU */}
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                {item.variantName || item.productName}
+                                {item.variantName && item.variantName !== item.sku ? item.variantName : item.productName}
                               </p>
-                              <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded inline-block mt-0.5">{item.sku}</span>
+                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 text-xs font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded">
+                                  <MapPin className="h-3 w-3" />
+                                  <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation || t('noLocation')} />
+                                </span>
+                                <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">{item.sku}</span>
+                              </div>
                             </div>
                             
                             {/* Quantity */}
