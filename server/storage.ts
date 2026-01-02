@@ -370,6 +370,7 @@ export interface IStorage {
   getOrderItemById(id: string): Promise<OrderItem | undefined>;
   getAllOrderItems(): Promise<OrderItem[]>;
   createOrderItem(item: any): Promise<OrderItem>;
+  createOrderItemsBulk(items: any[]): Promise<OrderItem[]>;
   updateOrderItem(id: string, item: any): Promise<OrderItem | undefined>;
   deleteOrderItem(id: string): Promise<boolean>;
   deleteOrderItems(orderId: string): Promise<boolean>;
@@ -392,10 +393,14 @@ export interface IStorage {
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
   getProductVariant(id: string): Promise<ProductVariant | undefined>;
+  getProductVariantsByIds(ids: string[]): Promise<Map<string, ProductVariant>>;
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
   deleteProductVariantsBulk(ids: string[]): Promise<number>;
+  
+  // Batch product operations
+  getProductsByIds(ids: string[]): Promise<Map<string, Product>>;
 
   // AI Location Suggestions
   getAiLocationSuggestionByProduct(productId: string): Promise<AiLocationSuggestion | undefined>;
@@ -2198,6 +2203,17 @@ export class DatabaseStorage implements IStorage {
     return newItem;
   }
 
+  async createOrderItemsBulk(items: any[]): Promise<OrderItem[]> {
+    if (items.length === 0) return [];
+    try {
+      const createdItems = await db.insert(orderItems).values(items).returning();
+      return createdItems;
+    } catch (error) {
+      console.error('Error bulk creating order items:', error);
+      throw error;
+    }
+  }
+
   async updateOrderItem(id: string, item: any): Promise<OrderItem | undefined> {
     try {
       const [updatedItem] = await db.update(orderItems).set(item).where(eq(orderItems.id, id)).returning();
@@ -2571,6 +2587,42 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching product variant:', error);
       return undefined;
+    }
+  }
+
+  async getProductVariantsByIds(ids: string[]): Promise<Map<string, ProductVariant>> {
+    const result = new Map<string, ProductVariant>();
+    if (ids.length === 0) return result;
+    try {
+      const variants = await db
+        .select()
+        .from(productVariants)
+        .where(inArray(productVariants.id, ids));
+      for (const v of variants) {
+        result.set(v.id, v);
+      }
+      return result;
+    } catch (error) {
+      console.error('Error batch fetching product variants:', error);
+      return result;
+    }
+  }
+
+  async getProductsByIds(ids: string[]): Promise<Map<string, Product>> {
+    const result = new Map<string, Product>();
+    if (ids.length === 0) return result;
+    try {
+      const productsResult = await db
+        .select()
+        .from(products)
+        .where(inArray(products.id, ids));
+      for (const p of productsResult) {
+        result.set(p.id, p);
+      }
+      return result;
+    } catch (error) {
+      console.error('Error batch fetching products:', error);
+      return result;
     }
   }
 

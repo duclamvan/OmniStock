@@ -11903,10 +11903,10 @@ Important:
 
       const order = await storage.createOrder(data);
 
-      // Create order items with landing cost snapshot
+      // Create order items with landing cost snapshot - OPTIMIZED BATCH VERSION
       if (items && items.length > 0) {
-        console.log('Creating order items, items received:', JSON.stringify(items));
-        console.log('Order ID:', order.id, 'Order Currency:', order.currency);
+        console.log(`[Batch] Creating ${items.length} order items for order ${order.id}`);
+        const batchStartTime = Date.now();
         
         // Fetch live exchange rates for currency conversion (EUR is base)
         let exchangeRates: Record<string, number> = { EUR: 1, CZK: 25.2, USD: 1.08, VND: 27000, CNY: 7.8 };
@@ -11922,251 +11922,218 @@ Important:
           console.warn('Failed to fetch live exchange rates, using defaults:', err);
         }
         
-        for (const item of items) {
-          // Map frontend price field to schema fields
-          const price = item.price || 0; // Default to 0 if price is undefined
+        // Helper function to get cost from a product/variant based on order currency
+        const getCostFromEntity = (entity: any, currency: string, rates: Record<string, number>): number | null => {
+          const currencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
+          const landingCostFieldMap: Record<string, string> = {
+            'CZK': 'landingCostCzk', 'EUR': 'landingCostEur', 'USD': 'landingCostUsd',
+            'VND': 'landingCostVnd', 'CNY': 'landingCostCny',
+          };
+          const importCostFieldMap: Record<string, string> = {
+            'CZK': 'importCostCzk', 'EUR': 'importCostEur', 'USD': 'importCostUsd',
+            'VND': 'importCostVnd', 'CNY': 'importCostCny',
+          };
           
-          // CRITICAL: Capture landing cost snapshot at time of sale for accurate profit calculation
-          // This ensures historical orders maintain their correct profit even when product costs change
-          // Handles: regular products, variants, bundles, free items, virtual products
+          // Priority 1: Direct currency match for landing cost
+          const landingCostField = landingCostFieldMap[currency];
+          if (landingCostField && entity[landingCostField] && parseFloat(entity[landingCostField]) > 0) {
+            return parseFloat(entity[landingCostField]);
+          }
+          // Priority 2: Direct currency match for import cost
+          const importCostField = importCostFieldMap[currency];
+          if (importCostField && entity[importCostField] && parseFloat(entity[importCostField]) > 0) {
+            return parseFloat(entity[importCostField]);
+          }
+          // Priority 3: Convert from any available currency
+          for (const sourceCurrency of currencies) {
+            if (sourceCurrency === currency) continue;
+            const sourceLandingField = landingCostFieldMap[sourceCurrency];
+            if (sourceLandingField && entity[sourceLandingField] && parseFloat(entity[sourceLandingField]) > 0) {
+              const sourceCost = parseFloat(entity[sourceLandingField]);
+              const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (rates[sourceCurrency] || 1));
+              const eurToTarget = currency === 'EUR' ? 1 : (rates[currency] || 1);
+              return sourceCost * sourceToEur * eurToTarget;
+            }
+          }
+          for (const sourceCurrency of currencies) {
+            if (sourceCurrency === currency) continue;
+            const sourceImportField = importCostFieldMap[sourceCurrency];
+            if (sourceImportField && entity[sourceImportField] && parseFloat(entity[sourceImportField]) > 0) {
+              const sourceCost = parseFloat(entity[sourceImportField]);
+              const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (rates[sourceCurrency] || 1));
+              const eurToTarget = currency === 'EUR' ? 1 : (rates[currency] || 1);
+              return sourceCost * sourceToEur * eurToTarget;
+            }
+          }
+          // Priority 4: Legacy latestLandingCost (EUR-based)
+          if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
+            const eurCost = parseFloat(entity.latestLandingCost);
+            return currency === 'EUR' ? eurCost : eurCost * (rates[currency] || 1);
+          }
+          return null;
+        };
+        
+        // STEP 1: Collect all IDs needed for batch fetching
+        const allVariantIds = new Set<string>();
+        const allProductIds = new Set<string>();
+        const allBundleIds = new Set<string>();
+        
+        for (const item of items) {
+          if (item.variantId) allVariantIds.add(item.variantId);
+          if (item.productId) allProductIds.add(item.productId);
+          if (item.bundleId) allBundleIds.add(item.bundleId);
+        }
+        
+        // STEP 2: Batch fetch all variants and products in parallel
+        const [variantsMap, productsMap] = await Promise.all([
+          storage.getProductVariantsByIds(Array.from(allVariantIds)),
+          storage.getProductsByIds(Array.from(allProductIds)),
+        ]);
+        
+        // STEP 3: For virtual products, collect master product IDs and fetch them
+        const masterProductIds = new Set<string>();
+        for (const [, product] of productsMap) {
+          if (product.isVirtual && product.masterProductId && !productsMap.has(product.masterProductId)) {
+            masterProductIds.add(product.masterProductId);
+          }
+        }
+        if (masterProductIds.size > 0) {
+          const masterProductsMap = await storage.getProductsByIds(Array.from(masterProductIds));
+          for (const [id, p] of masterProductsMap) {
+            productsMap.set(id, p);
+          }
+        }
+        
+        // STEP 4: Batch fetch all bundle items for bundles
+        const bundleItemsMap = new Map<string, any[]>();
+        if (allBundleIds.size > 0) {
+          const bundleItemsResult = await db.select().from(bundleItems).where(inArray(bundleItems.bundleId, Array.from(allBundleIds)));
+          for (const bi of bundleItemsResult) {
+            if (!bundleItemsMap.has(bi.bundleId)) {
+              bundleItemsMap.set(bi.bundleId, []);
+            }
+            bundleItemsMap.get(bi.bundleId)!.push(bi);
+            // Collect variant/product IDs from bundle items
+            if (bi.variantId && !variantsMap.has(bi.variantId)) allVariantIds.add(bi.variantId);
+            if (bi.productId && !productsMap.has(bi.productId)) allProductIds.add(bi.productId);
+          }
+          // Fetch any additional variants/products needed for bundles
+          const additionalVariantIds = Array.from(allVariantIds).filter(id => !variantsMap.has(id));
+          const additionalProductIds = Array.from(allProductIds).filter(id => !productsMap.has(id));
+          if (additionalVariantIds.length > 0 || additionalProductIds.length > 0) {
+            const [addlVariants, addlProducts] = await Promise.all([
+              additionalVariantIds.length > 0 ? storage.getProductVariantsByIds(additionalVariantIds) : new Map(),
+              additionalProductIds.length > 0 ? storage.getProductsByIds(additionalProductIds) : new Map(),
+            ]);
+            for (const [id, v] of addlVariants) variantsMap.set(id, v);
+            for (const [id, p] of addlProducts) productsMap.set(id, p);
+          }
+        }
+        
+        console.log(`[Batch] Fetched ${variantsMap.size} variants, ${productsMap.size} products, ${bundleItemsMap.size} bundles in ${Date.now() - batchStartTime}ms`);
+        
+        // STEP 5: Build order items array using cached data
+        const orderItemsToInsert: any[] = [];
+        const orderCurrency = order.currency || 'CZK';
+        
+        for (const item of items) {
+          const price = item.price || 0;
           let landingCostSnapshot: number | null = null;
           let productBulkUnitQty = item.bulkUnitQty || null;
           let productBulkUnitName = item.bulkUnitName || null;
-          // Virtual SKU fields - to be copied from product for allocation tracking
           let isVirtual = false;
           let masterProductId: string | null = null;
           let inventoryDeductionRatio: string | null = null;
           let variantSku: string | null = null;
           
-          // Helper function to get cost from a product/variant based on order currency
-          // Uses landing cost fields first (full cost with freight/duty), then falls back to import cost
-          // CRITICAL: Converts from ANY available currency when order currency field is not available
-          const getCostFromEntity = (entity: any, currency: string, exchangeRates: Record<string, number>): number | null => {
-            const currencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
-            const landingCostFieldMap: Record<string, string> = {
-              'CZK': 'landingCostCzk',
-              'EUR': 'landingCostEur',
-              'USD': 'landingCostUsd',
-              'VND': 'landingCostVnd',
-              'CNY': 'landingCostCny',
-            };
-            const importCostFieldMap: Record<string, string> = {
-              'CZK': 'importCostCzk',
-              'EUR': 'importCostEur',
-              'USD': 'importCostUsd',
-              'VND': 'importCostVnd',
-              'CNY': 'importCostCny',
-            };
-            
-            // Priority 1: Use landingCost matching order currency (full cost with freight, duty, etc.)
-            const landingCostField = landingCostFieldMap[currency];
-            if (landingCostField && entity[landingCostField] && parseFloat(entity[landingCostField]) > 0) {
-              return parseFloat(entity[landingCostField]);
-            }
-            
-            // Priority 2: Use importCost matching order currency (just the import cost)
-            const importCostField = importCostFieldMap[currency];
-            if (importCostField && entity[importCostField] && parseFloat(entity[importCostField]) > 0) {
-              return parseFloat(entity[importCostField]);
-            }
-            
-            // Priority 3: Convert from ANY available currency (check all currencies)
-            // Try landing costs first, then import costs
-            // Exchange rates from Frankfurter API are EUR-based: 1 EUR = X target currency
-            // To convert: source → EUR (divide by source rate), EUR → target (multiply by target rate)
-            for (const sourceCurrency of currencies) {
-              if (sourceCurrency === currency) continue; // Already checked above
-              
-              const sourceLandingField = landingCostFieldMap[sourceCurrency];
-              if (sourceLandingField && entity[sourceLandingField] && parseFloat(entity[sourceLandingField]) > 0) {
-                const sourceCost = parseFloat(entity[sourceLandingField]);
-                // Convert: source currency -> EUR -> target currency
-                // If source is EUR, sourceToEur = 1; otherwise divide by source rate
-                const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (exchangeRates[sourceCurrency] || 1));
-                // If target is EUR, eurToTarget = 1; otherwise multiply by target rate
-                const eurToTarget = currency === 'EUR' ? 1 : (exchangeRates[currency] || 1);
-                const convertedCost = sourceCost * sourceToEur * eurToTarget;
-                console.log(`[LandingCost] Converted ${sourceCost} ${sourceCurrency} → ${convertedCost.toFixed(4)} ${currency} (via EUR, rates: ${sourceCurrency}=${exchangeRates[sourceCurrency]}, ${currency}=${exchangeRates[currency]})`);
-                return convertedCost;
-              }
-            }
-            
-            for (const sourceCurrency of currencies) {
-              if (sourceCurrency === currency) continue;
-              
-              const sourceImportField = importCostFieldMap[sourceCurrency];
-              if (sourceImportField && entity[sourceImportField] && parseFloat(entity[sourceImportField]) > 0) {
-                const sourceCost = parseFloat(entity[sourceImportField]);
-                // Convert: source currency -> EUR -> target currency
-                const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (exchangeRates[sourceCurrency] || 1));
-                const eurToTarget = currency === 'EUR' ? 1 : (exchangeRates[currency] || 1);
-                const convertedCost = sourceCost * sourceToEur * eurToTarget;
-                console.log(`[LandingCost] Converted importCost ${sourceCost} ${sourceCurrency} → ${convertedCost.toFixed(4)} ${currency}`);
-                return convertedCost;
-              }
-            }
-            
-            // Priority 4: Use latestLandingCost (assumed to be EUR-based for safety)
-            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
-              const eurCost = parseFloat(entity.latestLandingCost);
-              if (currency === 'EUR') {
-                return eurCost;
-              }
-              const eurToTarget = exchangeRates[currency] || 1;
-              return eurCost * eurToTarget;
-            }
-            
-            return null;
-          };
+          // CASE 1: Variant item - use cached variant
+          if (item.variantId && variantsMap.has(item.variantId)) {
+            const variant = variantsMap.get(item.variantId)!;
+            variantSku = variant.sku || null;
+            const variantCost = getCostFromEntity(variant, orderCurrency, exchangeRates);
+            if (variantCost !== null) landingCostSnapshot = variantCost;
+          }
           
-          // CASE 1: Variant item - get variant-specific cost first, fall back to parent product
-          if (item.variantId) {
-            try {
-              const variantResult = await db.select().from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
-              if (variantResult.length > 0) {
-                const variant = variantResult[0];
-                variantSku = variant.sku || null;
-                // Try to get variant-specific cost
-                const variantCost = getCostFromEntity(variant, order.currency || 'CZK', exchangeRates);
-                if (variantCost !== null) {
-                  landingCostSnapshot = variantCost;
+          // CASE 2: Bundle item - calculate from cached bundle items
+          if (item.bundleId && landingCostSnapshot === null && bundleItemsMap.has(item.bundleId)) {
+            const bundleItemsList = bundleItemsMap.get(item.bundleId)!;
+            let bundleCost = 0;
+            for (const bi of bundleItemsList) {
+              const componentQty = bi.quantity || 1;
+              let componentCost: number | null = null;
+              if (bi.variantId && variantsMap.has(bi.variantId)) {
+                componentCost = getCostFromEntity(variantsMap.get(bi.variantId), orderCurrency, exchangeRates);
+              }
+              if (componentCost === null && bi.productId && productsMap.has(bi.productId)) {
+                componentCost = getCostFromEntity(productsMap.get(bi.productId), orderCurrency, exchangeRates);
+              }
+              if (componentCost !== null) bundleCost += componentCost * componentQty;
+            }
+            if (bundleCost > 0) landingCostSnapshot = bundleCost;
+          }
+          
+          // CASE 3: Regular product - use cached product
+          if (item.productId && productsMap.has(item.productId)) {
+            const product = productsMap.get(item.productId)!;
+            if (landingCostSnapshot === null) {
+              landingCostSnapshot = getCostFromEntity(product, orderCurrency, exchangeRates);
+            }
+            if (!productBulkUnitQty && product.bulkUnitQty) productBulkUnitQty = product.bulkUnitQty;
+            if (!productBulkUnitName && product.bulkUnitName) productBulkUnitName = product.bulkUnitName;
+            // Virtual product handling
+            if (product.isVirtual && product.masterProductId) {
+              isVirtual = true;
+              masterProductId = product.masterProductId;
+              inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
+              if (landingCostSnapshot === null && productsMap.has(product.masterProductId)) {
+                const masterCost = getCostFromEntity(productsMap.get(product.masterProductId), orderCurrency, exchangeRates);
+                if (masterCost !== null) {
+                  landingCostSnapshot = masterCost * parseFloat(product.inventoryDeductionRatio || '1');
                 }
               }
-            } catch (err) {
-              console.error('Failed to fetch variant for cost snapshot:', err);
             }
           }
           
-          // CASE 2: Bundle item - calculate total cost from bundle components
-          // Optimized: batch fetch all variants and products needed for the bundle
-          if (item.bundleId && landingCostSnapshot === null) {
-            try {
-              const bundleItemsResult = await db.select().from(bundleItems).where(eq(bundleItems.bundleId, item.bundleId));
-              
-              if (bundleItemsResult.length > 0) {
-                // Collect all variant and product IDs needed
-                const variantIds = bundleItemsResult.filter(bi => bi.variantId).map(bi => bi.variantId as string);
-                const productIds = bundleItemsResult.filter(bi => bi.productId).map(bi => bi.productId as string);
-                
-                // Batch fetch variants and products in 2 queries instead of N queries
-                const variantsMap = new Map<string, any>();
-                const productsMap = new Map<string, any>();
-                
-                if (variantIds.length > 0) {
-                  const variantsResult = await db.select().from(productVariants).where(inArray(productVariants.id, variantIds));
-                  for (const v of variantsResult) {
-                    variantsMap.set(v.id, v);
-                  }
-                }
-                
-                if (productIds.length > 0) {
-                  const productsResult = await db.select().from(products).where(inArray(products.id, productIds));
-                  for (const p of productsResult) {
-                    productsMap.set(p.id, p);
-                  }
-                }
-                
-                // Calculate bundle cost using cached data
-                let bundleCost = 0;
-                for (const bundleItem of bundleItemsResult) {
-                  const componentQty = bundleItem.quantity || 1;
-                  let componentCost: number | null = null;
-                  
-                  // Check variant cost first
-                  if (bundleItem.variantId && variantsMap.has(bundleItem.variantId)) {
-                    componentCost = getCostFromEntity(variantsMap.get(bundleItem.variantId), order.currency || 'CZK', exchangeRates);
-                  }
-                  // Fall back to product cost
-                  if (componentCost === null && bundleItem.productId && productsMap.has(bundleItem.productId)) {
-                    componentCost = getCostFromEntity(productsMap.get(bundleItem.productId), order.currency || 'CZK', exchangeRates);
-                  }
-                  if (componentCost !== null) {
-                    bundleCost += componentCost * componentQty;
-                  }
-                }
-                if (bundleCost > 0) {
-                  landingCostSnapshot = bundleCost;
-                }
-              }
-            } catch (err) {
-              console.error('Failed to calculate bundle cost:', err);
-            }
-          }
-          
-          // CASE 3: Regular product (or variant/bundle fallback) - get product cost
-          if (item.productId) {
-            try {
-              const product = await storage.getProductById(item.productId);
-              if (product) {
-                // Only use product cost if we don't have variant or bundle cost
-                if (landingCostSnapshot === null) {
-                  landingCostSnapshot = getCostFromEntity(product, order.currency || 'CZK', exchangeRates);
-                }
-                // Copy bulk unit fields from product if not provided
-                if (!productBulkUnitQty && product.bulkUnitQty) {
-                  productBulkUnitQty = product.bulkUnitQty;
-                }
-                if (!productBulkUnitName && product.bulkUnitName) {
-                  productBulkUnitName = product.bulkUnitName;
-                }
-                // Copy virtual SKU fields for allocation tracking
-                if (product.isVirtual && product.masterProductId) {
-                  isVirtual = true;
-                  masterProductId = product.masterProductId;
-                  inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
-                  // For virtual products, get cost from master product if not set
-                  if (landingCostSnapshot === null) {
-                    const masterProduct = await storage.getProductById(product.masterProductId);
-                    if (masterProduct) {
-                      const masterCost = getCostFromEntity(masterProduct, order.currency || 'CZK', exchangeRates);
-                      if (masterCost !== null) {
-                        const ratio = parseFloat(product.inventoryDeductionRatio || '1');
-                        landingCostSnapshot = masterCost * ratio;
-                      }
-                    }
-                  }
-                }
-              }
-            } catch (err) {
-              console.error('Failed to fetch product for landing cost snapshot:', err);
-            }
-          }
-          
-          // Ensure cost is captured for free products too (cost can be > 0 even if price is 0)
-          // landingCostSnapshot is null only if we couldn't find any cost data
-
-          const orderItem = {
+          orderItemsToInsert.push({
             orderId: order.id,
-            productId: item.productId,
-            serviceId: item.serviceId,
+            productId: item.productId || null,
+            serviceId: item.serviceId || null,
             bundleId: item.bundleId || null,
             variantId: item.variantId || null,
-            variantSku: variantSku,
-            productName: item.productName,
-            sku: item.sku,
+            variantSku: variantSku || null,
+            productName: item.productName || '',
+            sku: item.sku || null,
             quantity: item.quantity || 1,
-            price: String(price), // Main price field (required)
-            unitPrice: String(price), // Original price
-            appliedPrice: String(price), // Applied price (same as original for now)
-            currency: order.currency, // Use order's currency
+            price: String(price || 0),
+            unitPrice: String(price || 0),
+            appliedPrice: String(price || 0),
+            currency: order.currency || 'CZK',
             discount: String(item.discount || 0),
             tax: String(item.tax || 0),
-            total: String(item.total || price),
+            total: String(item.total || price || 0),
             image: item.image || null,
-            landingCost: landingCostSnapshot ? String(landingCostSnapshot) : null, // Cost snapshot at sale time
-            bulkUnitQty: productBulkUnitQty, // Bulk unit quantity for carton display
-            bulkUnitName: productBulkUnitName, // Bulk unit name (e.g., "carton")
-            // Virtual SKU fields for allocation tracking
-            isVirtual: isVirtual,
-            masterProductId: masterProductId,
-            inventoryDeductionRatio: inventoryDeductionRatio,
-          };
-          console.log('Creating order item:', JSON.stringify(orderItem));
-          try {
-            const createdItem = await storage.createOrderItem(orderItem);
-            console.log('Successfully created order item:', createdItem?.id);
-          } catch (itemError) {
-            console.error('Failed to create order item:', itemError);
+            landingCost: landingCostSnapshot !== null ? String(landingCostSnapshot) : null,
+            bulkUnitQty: productBulkUnitQty || null,
+            bulkUnitName: productBulkUnitName || null,
+            isVirtual: isVirtual || false,
+            masterProductId: masterProductId || null,
+            inventoryDeductionRatio: inventoryDeductionRatio || null,
+          });
+        }
+        
+        // STEP 6: Bulk insert all order items in one query
+        try {
+          await storage.createOrderItemsBulk(orderItemsToInsert);
+          console.log(`[Batch] Inserted ${orderItemsToInsert.length} order items in ${Date.now() - batchStartTime}ms total`);
+        } catch (bulkError) {
+          console.error('Failed to bulk insert order items, falling back to individual inserts:', bulkError);
+          // Fallback: insert items one by one if bulk fails
+          for (const oi of orderItemsToInsert) {
+            try {
+              await storage.createOrderItem(oi);
+            } catch (itemErr) {
+              console.error('Failed to create order item:', itemErr);
+            }
           }
         }
       } else {
@@ -12278,70 +12245,98 @@ Important:
         storage.invalidateAllocatedQuantitiesCache();
       }
 
-      // Update order items if provided
+      // Update order items if provided - OPTIMIZED BATCH VERSION
       if (items && Array.isArray(items)) {
-        // Delete existing items and add new ones
+        console.log(`[Batch] Updating ${items.length} order items for order ${req.params.id}`);
+        const batchStartTime = Date.now();
+        
+        // Delete existing items
         await storage.deleteOrderItems(req.params.id);
-
-        // Add new items
+        
+        // Get order currency once
+        const orderDetail = await storage.getOrderById(req.params.id);
+        const orderCurrency = orderDetail?.currency || 'CZK';
+        
+        // Collect all product IDs for batch fetching
+        const allProductIds = new Set<string>();
         for (const item of items) {
-          const orderDetail = await storage.getOrderById(req.params.id);
-          
-          // Get product fields including bulk units and virtual SKU info
+          if (item.productId) allProductIds.add(item.productId);
+        }
+        
+        // Batch fetch all products
+        const productsMap = await storage.getProductsByIds(Array.from(allProductIds));
+        
+        // Collect master product IDs for virtual products
+        const masterProductIds = new Set<string>();
+        for (const [, product] of productsMap) {
+          if (product.isVirtual && product.masterProductId && !productsMap.has(product.masterProductId)) {
+            masterProductIds.add(product.masterProductId);
+          }
+        }
+        if (masterProductIds.size > 0) {
+          const masterProductsMap = await storage.getProductsByIds(Array.from(masterProductIds));
+          for (const [id, p] of masterProductsMap) {
+            productsMap.set(id, p);
+          }
+        }
+        
+        // Build order items using cached data
+        const orderItemsToInsert: any[] = [];
+        for (const item of items) {
           let itemBulkUnitQty = item.bulkUnitQty || null;
           let itemBulkUnitName = item.bulkUnitName || null;
           let isVirtual = false;
           let masterProductId: string | null = null;
           let inventoryDeductionRatio: string | null = null;
           
-          if (item.productId) {
-            try {
-              const product = await storage.getProductById(item.productId);
-              if (product) {
-                if (!itemBulkUnitQty && product.bulkUnitQty) {
-                  itemBulkUnitQty = product.bulkUnitQty;
-                }
-                if (!itemBulkUnitName && product.bulkUnitName) {
-                  itemBulkUnitName = product.bulkUnitName;
-                }
-                // Copy virtual SKU fields for allocation tracking
-                if (product.isVirtual && product.masterProductId) {
-                  isVirtual = true;
-                  masterProductId = product.masterProductId;
-                  inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
-                }
-              }
-            } catch (err) {
-              console.error('Failed to fetch product for item fields:', err);
+          if (item.productId && productsMap.has(item.productId)) {
+            const product = productsMap.get(item.productId)!;
+            if (!itemBulkUnitQty && product.bulkUnitQty) itemBulkUnitQty = product.bulkUnitQty;
+            if (!itemBulkUnitName && product.bulkUnitName) itemBulkUnitName = product.bulkUnitName;
+            if (product.isVirtual && product.masterProductId) {
+              isVirtual = true;
+              masterProductId = product.masterProductId;
+              inventoryDeductionRatio = product.inventoryDeductionRatio || '1';
             }
           }
           
-          await storage.createOrderItem({
+          orderItemsToInsert.push({
             orderId: req.params.id,
-            productId: item.productId,
+            productId: item.productId || null,
             serviceId: item.serviceId || null,
             bundleId: item.bundleId || null,
             variantId: item.variantId || null,
             variantName: item.variantName || null,
-            productName: item.productName,
-            sku: item.sku,
-            quantity: item.quantity,
-            price: String(item.price || 0), // Main price field (required)
+            productName: item.productName || '',
+            sku: item.sku || null,
+            quantity: item.quantity || 1,
+            price: String(item.price || 0),
             unitPrice: String(item.price || 0),
             appliedPrice: String(item.price || 0),
-            currency: orderDetail?.currency || 'CZK',
+            currency: orderCurrency || 'CZK',
             discount: String(item.discount || 0),
             tax: String(item.tax || 0),
-            total: String(item.total || 0),
+            total: String(item.total || item.price || 0),
             landingCost: item.landingCost ? String(item.landingCost) : null,
             notes: item.notes || null,
             image: item.image || null,
-            bulkUnitQty: itemBulkUnitQty,
-            bulkUnitName: itemBulkUnitName,
-            isVirtual: isVirtual,
-            masterProductId: masterProductId,
-            inventoryDeductionRatio: inventoryDeductionRatio,
+            bulkUnitQty: itemBulkUnitQty || null,
+            bulkUnitName: itemBulkUnitName || null,
+            isVirtual: isVirtual || false,
+            masterProductId: masterProductId || null,
+            inventoryDeductionRatio: inventoryDeductionRatio || null,
           });
+        }
+        
+        // Bulk insert all items
+        try {
+          await storage.createOrderItemsBulk(orderItemsToInsert);
+          console.log(`[Batch] Updated ${orderItemsToInsert.length} order items in ${Date.now() - batchStartTime}ms`);
+        } catch (bulkError) {
+          console.error('Failed to bulk insert, falling back to individual:', bulkError);
+          for (const oi of orderItemsToInsert) {
+            await storage.createOrderItem(oi);
+          }
         }
         
         // Invalidate allocated quantities cache when order items change
