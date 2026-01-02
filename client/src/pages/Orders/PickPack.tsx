@@ -15151,10 +15151,13 @@ export default function PickPack() {
                                       {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                                     </div>
                                     
-                                    {/* Variant Name */}
+                                    {/* Variant Name + Location */}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-xs font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
                                         {item.variantName || item.productName}
+                                      </p>
+                                      <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                        📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                       </p>
                                     </div>
                                     
@@ -15555,7 +15558,7 @@ export default function PickPack() {
             })()}
             
             <div className="space-y-2 xl:space-y-3">
-              {/* Consolidate service items: show only non-service items + one unified Service Bill if any service items exist */}
+              {/* Group items by productId and show parent product with variant count */}
               {(() => {
                 const productItems = activePickingOrder.items.filter(item => !item.serviceId);
                 const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
@@ -15563,31 +15566,75 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Create consolidated display items: products first, then one Service Bill entry
-                const displayItems = hasServiceItems 
-                  ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent, _originalIndex: productItems.length }]
-                  : productItems;
+                // Group product items by productId
+                const productGroups = new Map<string, typeof productItems>();
+                productItems.forEach(item => {
+                  const key = item.productId || item.id;
+                  if (!productGroups.has(key)) {
+                    productGroups.set(key, []);
+                  }
+                  productGroups.get(key)!.push(item);
+                });
                 
-                return displayItems.map((item: any, displayIndex) => {
-                  const isServiceBill = item._isConsolidatedService;
-                  const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
-                  const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
+                // Convert to display groups
+                const displayGroups: Array<{
+                  type: 'product' | 'service';
+                  items: typeof productItems;
+                  parentName: string;
+                  firstItem: typeof productItems[0];
+                  pickedCount: number;
+                  totalCount: number;
+                  allPicked: boolean;
+                  hasCurrent: boolean;
+                }> = [];
+                
+                productGroups.forEach((items, productId) => {
+                  const parentName = items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
+                  const pickedCount = items.filter(i => i.pickedQuantity >= i.quantity).length;
+                  displayGroups.push({
+                    type: 'product',
+                    items,
+                    parentName: items.length > 1 ? parentName : items[0].productName,
+                    firstItem: items[0],
+                    pickedCount,
+                    totalCount: items.length,
+                    allPicked: pickedCount === items.length,
+                    hasCurrent: items.some(i => currentItem?.id === i.id)
+                  });
+                });
+                
+                // Add service bill if exists
+                if (hasServiceItems) {
+                  displayGroups.push({
+                    type: 'service',
+                    items: serviceItems,
+                    parentName: 'Service Bill',
+                    firstItem: serviceItems[0],
+                    pickedCount: serviceItems.filter(i => i.pickedQuantity >= i.quantity).length,
+                    totalCount: serviceItems.length,
+                    allPicked: allServicesPicked,
+                    hasCurrent: anyServiceCurrent
+                  });
+                }
+                
+                return displayGroups.map((group, displayIndex) => {
+                  const isPicked = group.allPicked;
+                  const isCurrent = group.hasCurrent;
+                  const isMultiVariant = group.items.length > 1;
                   
-                  // Find the actual index in the original items array for navigation
-                  const actualItemIndex = isServiceBill 
-                    ? activePickingOrder.items.findIndex(i => i.serviceId)
-                    : activePickingOrder.items.findIndex(i => i.id === item.id);
+                  // Find the actual index for navigation (first unpicked item in group, or first item)
+                  const targetItem = group.items.find(i => i.pickedQuantity < i.quantity) || group.items[0];
+                  const actualItemIndex = activePickingOrder.items.findIndex(i => i.id === targetItem.id);
                   
                   return (
                     <Card 
-                      key={isServiceBill ? 'service-bill-consolidated' : item.id} 
+                      key={group.type === 'service' ? 'service-bill-consolidated' : group.firstItem.productId || group.firstItem.id} 
                       className={`cursor-pointer transition-all transform hover:scale-[1.02] ${
                         isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
                         isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-xl ring-2 ring-blue-300' : 
                         'bg-white hover:shadow-lg border-2 border-gray-200 hover:border-blue-300'
                       }`}
                       onClick={() => {
-                        // Navigate to this item
                         if (actualItemIndex >= 0) {
                           setManualItemIndex(actualItemIndex);
                           playSound('scan');
@@ -15612,8 +15659,7 @@ export default function PickPack() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            {isServiceBill ? (
-                              /* Service Bill - Unified display */
+                            {group.type === 'service' ? (
                               <div className="text-center py-1">
                                 <p className={`font-bold text-sm xl:text-base ${
                                   isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
@@ -15623,26 +15669,34 @@ export default function PickPack() {
                                 </p>
                               </div>
                             ) : (
-                              /* Regular product display */
                               <>
                                 <p className={`font-semibold text-xs xl:text-sm truncate ${
                                   isPicked ? 'text-green-700 dark:text-green-200 line-through' : 
-                                  isCurrent ? 'text-blue-700 dark:text-blue-100' : 'text-gray-800'
+                                  isCurrent ? 'text-blue-700 dark:text-blue-100' : 'text-gray-800 dark:text-gray-200'
                                 }`}>
-                                  {item.productName}
+                                  {group.parentName}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
+                                {isMultiVariant && (
+                                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5">
+                                    {group.items.length} {t('variants')}
+                                  </p>
+                                )}
+                                {!isMultiVariant && (
+                                  <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
+                                )}
                                 <div className="flex items-center justify-between mt-2">
-                                  <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 text-gray-600'
-                                  }`}>
-                                    📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
-                                  </span>
-                                  <span className={`text-xs xl:text-sm font-bold ${
+                                  {!isMultiVariant && (
+                                    <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
+                                      isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                    }`}>
+                                      📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
+                                    </span>
+                                  )}
+                                  <span className={`text-xs xl:text-sm font-bold ${isMultiVariant ? 'ml-auto' : ''} ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
-                                    isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600'
+                                    isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
                                   }`}>
-                                    {item.pickedQuantity}/{item.quantity}
+                                    {group.pickedCount}/{group.totalCount}
                                   </span>
                                 </div>
                               </>
