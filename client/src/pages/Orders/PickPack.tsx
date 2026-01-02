@@ -15356,7 +15356,25 @@ export default function PickPack() {
       variantSku: item.variantSku,
       normalizedKey: normalizeSku(item),
       qty: item.quantity,
-      hasNotes: !!(item.notes && item.notes.trim())
+      hasNotes: !!(item.notes && item.notes.trim()),
+      serviceId: item.serviceId,
+      isFreeItem: (item as any).isFreeItem
+    })));
+    
+    // DEBUG: Specifically find Acrylic Powder items
+    const acrylicItems = activePickingOrder.items.filter(i => 
+      i.productName?.toLowerCase().includes('acrylic') || 
+      i.sku?.includes('ACR-BODA')
+    );
+    console.log('🧪 ACRYLIC POWDER ITEMS:', acrylicItems.map(i => ({
+      id: i.id,
+      name: i.productName,
+      sku: i.sku,
+      variantSku: i.variantSku,
+      qty: i.quantity,
+      serviceId: i.serviceId,
+      notes: i.notes,
+      isFreeItem: (i as any).isFreeItem
     })));
     
     activePickingOrder.items.forEach(item => {
