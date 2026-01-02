@@ -86,6 +86,11 @@ interface OrderItemWithDimensions {
   appliedDiscountLabel?: string | null;
   appliedDiscountType?: string | null;
   freeItemsCount?: number;
+  // Origin tracking
+  fromBundle?: string;
+  isBulkExpanded?: boolean;
+  bulkUnitQty?: number;
+  isServicePart?: boolean;
 }
 
 export interface PackingOptions {
@@ -135,6 +140,64 @@ export function classifyItemsByPackaging(orderItems: any[]): {
   return {
     cartonNeededItems,
     nylonWrapItems
+  };
+}
+
+function normalizeWeightAndDimensions(
+  weightKg: number,
+  lengthCm: number,
+  widthCm: number,
+  heightCm: number,
+  productName: string
+): { weightKg: number; lengthCm: number; widthCm: number; heightCm: number; wasNormalized: boolean } {
+  let wasNormalized = false;
+  let normalizedWeight = weightKg;
+  let normalizedLength = lengthCm;
+  let normalizedWidth = widthCm;
+  let normalizedHeight = heightCm;
+  
+  const volumeCm3 = lengthCm * widthCm * heightCm;
+  const isSmallItem = productName.toLowerCase().match(/polish|gel|nail|bottle|15ml|10ml|5ml|brush|file|tip|lamp|led|uv/i);
+  
+  if (weightKg > 5 && volumeCm3 < 5000 && isSmallItem) {
+    normalizedWeight = weightKg / 1000;
+    console.log(`⚠️ Weight normalization: ${productName} - converted ${weightKg}kg → ${normalizedWeight}kg (likely entered in grams)`);
+    wasNormalized = true;
+  }
+  
+  if (weightKg > 50 && volumeCm3 < 50000) {
+    normalizedWeight = weightKg / 1000;
+    console.log(`⚠️ Weight normalization: ${productName} - converted ${weightKg}kg → ${normalizedWeight}kg (unrealistic weight for size)`);
+    wasNormalized = true;
+  }
+  
+  if (lengthCm > 100 && widthCm > 100 && heightCm > 100 && isSmallItem) {
+    normalizedLength = lengthCm / 10;
+    normalizedWidth = widthCm / 10;
+    normalizedHeight = heightCm / 10;
+    console.log(`⚠️ Dimension normalization: ${productName} - converted ${lengthCm}×${widthCm}×${heightCm}cm → ${normalizedLength}×${normalizedWidth}×${normalizedHeight}cm (likely entered in mm)`);
+    wasNormalized = true;
+  }
+  
+  if (lengthCm > 200 || widthCm > 200 || heightCm > 200) {
+    if (lengthCm > 200) normalizedLength = lengthCm / 10;
+    if (widthCm > 200) normalizedWidth = widthCm / 10;
+    if (heightCm > 200) normalizedHeight = heightCm / 10;
+    console.log(`⚠️ Dimension normalization: ${productName} - dimensions exceed 200cm, likely mm input`);
+    wasNormalized = true;
+  }
+  
+  normalizedWeight = Math.max(0.001, Math.min(50, normalizedWeight));
+  normalizedLength = Math.max(0.5, Math.min(150, normalizedLength));
+  normalizedWidth = Math.max(0.5, Math.min(150, normalizedWidth));
+  normalizedHeight = Math.max(0.5, Math.min(150, normalizedHeight));
+  
+  return {
+    weightKg: normalizedWeight,
+    lengthCm: normalizedLength,
+    widthCm: normalizedWidth,
+    heightCm: normalizedHeight,
+    wasNormalized
   };
 }
 
@@ -206,11 +269,26 @@ export async function optimizeCartonPacking(
       const existingHeight = product.unitHeightCm || product.height;
 
       if (existingWeight && existingLength && existingWidth && existingHeight) {
-        weightKg = parseFloat(existingWeight.toString());
-        lengthCm = parseFloat(existingLength.toString());
-        widthCm = parseFloat(existingWidth.toString());
-        heightCm = parseFloat(existingHeight.toString());
-        console.log(`Using existing dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg`);
+        const rawWeight = parseFloat(existingWeight.toString());
+        const rawLength = parseFloat(existingLength.toString());
+        const rawWidth = parseFloat(existingWidth.toString());
+        const rawHeight = parseFloat(existingHeight.toString());
+        
+        const normalized = normalizeWeightAndDimensions(
+          rawWeight, rawLength, rawWidth, rawHeight,
+          product.name || orderItem.productName || 'Unknown'
+        );
+        
+        weightKg = normalized.weightKg;
+        lengthCm = normalized.lengthCm;
+        widthCm = normalized.widthCm;
+        heightCm = normalized.heightCm;
+        
+        if (normalized.wasNormalized) {
+          console.log(`Normalized dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg (original: ${rawLength}x${rawWidth}x${rawHeight}cm, ${rawWeight}kg)`);
+        } else {
+          console.log(`Using existing dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg`);
+        }
       } else {
         console.log(`Missing dimensions for product ${product.id}, using AI inference`);
         const inferred = await inferProductWeightDimensions(product);
@@ -536,9 +614,9 @@ export async function optimizeCartonPacking(
         suggestions.push(`⚠ ${invalidCartons.length} carton(s) exceed ${carrierConstraints.carrierName} limits`);
       }
       
-      const parcelSizes = cartons.map(c => c.recommendedParcelSize?.name).filter(Boolean);
+      const parcelSizes = cartons.map(c => c.recommendedParcelSize?.name).filter(Boolean) as string[];
       if (parcelSizes.length > 0) {
-        const uniqueSizes = [...new Set(parcelSizes)];
+        const uniqueSizes = Array.from(new Set(parcelSizes));
         suggestions.push(`📦 Recommended ${carrierConstraints.carrierName} sizes: ${uniqueSizes.join(', ')}`);
       }
       
