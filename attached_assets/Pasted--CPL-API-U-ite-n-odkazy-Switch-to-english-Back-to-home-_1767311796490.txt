@@ -1,0 +1,153 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+/shipment/batch/connectSet
+Maintainer:
+Not configured
+Tato metoda slouží ke spojování zásilek do sady.
+K tomu, aby bylo možné slučovat zásilky do sady je nutné abyste při zakládání zásilky, kterou budete chtít později sloučit do sady, uvedli v POST shipment/batch request body příznak "additionallyAdded": true a do externích čísel uvedli externí číslo ESPN. Takto vytvořenou zásilku bude možné slučovat pomocí této metody do sady s dalšími stejně založenými zásilkami.
+Podmínky pro slučování
+lze slučovat zásilky pouze stejného productType
+lze slučovat i zásilky, které už byli založeny v sadě
+nelze slučovat zásilky s dobírkou
+zásilky lze slučovat pouze do doby dokud nejsou převedeny do fyzického stavu (oskenování při naložení)
+nelze slučovat zásilky typu Smart2Box
+lze slučovat pouze zásilky posílané v rámci Česke republiky (v budoucnu budeme tuto metodu rozšiřovat i pro zahraniční zásilky)
+Výše uvedené podmínky musí splňovat všechny spojované zásilky. Pokud ne, neproběhne ani částečné spojení a metoda se vyhodnotí jako chybná.
+Pro lepší představu procesu spojování nahlédněte do příkladů, kde je detailně popsáno spojení zásilek.
+Request
+Authorization
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+object 
+Language specification, default language: cs-CZ
+X-Correlation-ID
+object 
+Correlation Id of request
+X-LogLevel
+object 
+The forced log level
+Body Params
+application/json-patch+json
+Connection hierarchy model
+customerId
+integer <int32>
+required
+Customer ID
+>= 1
+externalSetNumber
+string 
+required
+Extení číslo pro sadu zásilek.
+Je to stejné číslo které vkládáte v shipment/batch do hodnoty klíče externalNumber
+>= 1 characters
+shipmentNumbers
+array[string]
+required
+Čísla zásilek která mají tvořit sadu
+>= 2 items
+Example
+{
+    "customerId": 1,
+    "externalSetNumber": "string",
+    "shipmentNumbers": [
+        "string",
+        "string"
+    ]
+}
+Request Code Samples
+POST /shipment/batch/connectSet HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Content-Type: application/json-patch+json
+Content-Length: 132
+
+{
+    "customerId": 1,
+    "externalSetNumber": "string",
+    "shipmentNumbers": [
+        "string",
+        "string"
+    ]
+}
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Body
+Represents the result of a hierarchy connection operation.
+masterShipmentNumber
+string  | 
+null 
+optional
+Číslo nosne zásilky
+shipmentNumbers
+array[string] | 
+null 
+optional
+Seznam všech spojených zásilek
+Example
+{
+    "masterShipmentNumber": "string",
+    "shipmentNumbers": [
+        "string"
+    ]
+}
+🟠400
+Bad Request
+🟠401
+Unauthorized
+🟠403
+Forbidden
+🟠409
+409
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 3 months ago
+Previous
+ShipmentBatch
+Next
+Vytvoření zásilky

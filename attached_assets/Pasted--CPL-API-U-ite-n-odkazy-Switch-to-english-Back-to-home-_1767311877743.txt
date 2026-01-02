@@ -1,0 +1,776 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+Slouží k vytvoření objednávky. Odpověď je v header (Location)
+POST
+Získaní stavu objednávky
+GET
+OrderEvent
+Slouží k získání informací (trackingu) k zásilce
+GET
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+storno zásilky
+POST
+úprava kontaktu
+POST
+VersionInformation
+Shipment
+Slouží k získání informací (trackingu) k zásilce
+GET
+/shipment
+Maintainer:
+Not configured
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Query Params
+Name
+Type
+Required
+Description
+ShipmentNumbers
+array[string]
+Čísla zásilek
+<= 50 items
+InvoiceNumbers
+array[string]
+Čísla zakázek
+<= 50 items
+CustomerReferences
+array[string]
+Zákaznická reference
+<= 50 items
+VariableSymbols
+array[string]
+Variabilní symbol
+<= 50 items
+DateFrom
+string <date-time>
+Datum od
+DateTo
+string <date-time>
+Datum do
+ShipmentStates
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Shipment.ShipmentStates)
+Stavy zásilek
+Allowed values:
+None
+Undelivered
+Delivered
+PickedUpFromSender
+DeliveredToPickupPoint
+OutForDelivery
+NotDelivered
+CodPaidDate
+BackToSender
+Rejected
+DataShipment
+Active
+Canceled
+Dormant
+Limit
+integer <int32>
+>= 1
+<= 1000
+Offset
+integer <int32>
+>= 0
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Request Code Samples
+GET /shipment?ShipmentNumbers=null&InvoiceNumbers=null&CustomerReferences=null&VariableSymbols=null&DateFrom=null&DateTo=null&ShipmentStates=null&Limit=null&Offset=null HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Authorization: Bearer <token>
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+X-Paging-Total-Items-Count
+string 
+optional
+Total items in result
+X-Paging-Offset
+string 
+optional
+Paging offset
+X-Paging-Limit
+string 
+optional
+Page size
+Body
+Array of:
+shipmentNumber
+string  | 
+null 
+optional
+Číslo zásilky
+productType
+string  | 
+null 
+optional
+Typ produktu viz /codelist/product
+productTypeChanged
+boolean 
+optional
+Pokud je true znamená to, že byl productType změněn
+note
+string  | 
+null 
+optional
+Poznámka
+depot
+string  | 
+null 
+optional
+Sklad
+integratorId
+integer <int32> | 
+null 
+optional
+IntegratorId
+lastUpdateDate
+string <date-time> | 
+null 
+optional
+Datum poslední aktualizace
+shipmentState
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.Shipment.ShipmentStates)
+Eps.Api.MyApi2.Web.Models.Shipment.ShipmentStates
+optional
+Stav zásilky
+Allowed values:
+None
+Undelivered
+Delivered
+PickedUpFromSender
+DeliveredToPickupPoint
+OutForDelivery
+NotDelivered
+CodPaidDate
+BackToSender
+Rejected
+DataShipment
+Active
+Canceled
+Dormant
+shipmentSet
+optional
+One of:
+
+object
+
+EmptyNullableObject
+masterShipmentNumber
+string  | 
+null 
+optional
+Číslo nosné zásilky
+shipmentsInSet
+integer <int32>
+optional
+Počet zásilek v sadě
+shipmentInSetNumber
+integer <int32>
+optional
+Pozice zásilky v sadě
+sender
+optional
+Odesílatel
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+optional
+Jméno
+name2
+string  | 
+null 
+optional
+street
+string  | 
+null 
+optional
+Ulice
+city
+string  | 
+null 
+optional
+Město
+zipCode
+string  | 
+null 
+optional
+PSČ
+country
+string  | 
+null 
+optional
+Země
+contact
+string  | 
+null 
+optional
+Kontakt
+phone
+string  | 
+null 
+optional
+Telefon
+email
+string  | 
+null 
+optional
+Email
+recipient
+optional
+Příjemce
+One of:
+
+Eps.Api.MyApi2.Web.Models.Shipment.ShipmentAddressModel
+
+EmptyNullableObject
+object
+AddressBaseModel
+name
+string  | 
+null 
+optional
+Name
+name2
+string  | 
+null 
+optional
+Name2
+street
+string  | 
+null 
+optional
+Street
+city
+string  | 
+null 
+optional
+City
+zipCode
+string  | 
+null 
+optional
+ZipCode
+country
+string  | 
+null 
+optional
+Country
+contact
+string  | 
+null 
+optional
+Contact
+phone
+string  | 
+null 
+optional
+Phone
+email
+string  | 
+null 
+optional
+Email
+specificDelivery
+optional
+Specifické požadavky na doručení
+One of:
+
+object
+
+EmptyNullableObject
+specificDeliveryDate
+string <date-time> | 
+null 
+optional
+Specifické datum doručení
+specificDeliveryTimeFrom
+string <date-span> | 
+null 
+optional
+Specifický čas doručení -Od
+specificDeliveryTimeTo
+string <date-span> | 
+null 
+optional
+Specifický čas doručení -Do
+specificTakeDate
+string <date-time> | 
+null 
+optional
+Specifické datum převzetí
+specificTakeTimeFrom
+string <date-span> | 
+null 
+optional
+Specifické datum převzetí -Od
+specificTakeTimeTo
+string <date-span> | 
+null 
+optional
+Specifické datum převzetí -Do
+accessPointCode
+string  | 
+null 
+optional
+1.
+ProductType pouze PRIV, PRID, CONN, COND, SMAR, SMAD !!
+2.
+Validace proti seznamu, který vrací metoda AccessPoint
+externalNumbers
+array [object]  | 
+null 
+optional
+Externí čísla
+externalNumber
+string  | 
+null 
+optional
+Externí číslo
+code
+string  | 
+null 
+optional
+Kód externího čísla
+services
+array [object]  | 
+null 
+optional
+Služby
+additionalParameters
+array [object]  | 
+null 
+optional
+Další parametry
+code
+string  | 
+null 
+optional
+Kód
+price
+number <double> | 
+null 
+optional
+Cena
+priceCurrency
+string  | 
+null 
+optional
+Měna
+trackAndTrace
+optional
+Trackování zásilky
+One of:
+
+object
+
+EmptyNullableObject
+externalShipmentId
+string  | 
+null 
+optional
+Externí číslo zásilky -platí pro zahraniční zásilky
+partnerUrl
+string  | 
+null 
+optional
+Trackovací URL
+lastEventCode
+string  | 
+null 
+optional
+Kód poslední události
+lastEventDate
+string <date-time> | 
+null 
+optional
+Datum poslední události
+lastEventName
+string  | 
+null 
+optional
+Jméno poslední události
+events
+array [object]  | 
+null 
+optional
+události při trackování zásilky
+shipmentWeightInfo
+optional
+Informace o hmotnosti
+One of:
+
+object
+
+EmptyNullableObject
+weight
+number <double> | 
+null 
+optional
+hmotnost
+weighedDate
+string <date-time> | 
+null 
+optional
+datum vážení
+paymentInfo
+optional
+Informace o platbě
+One of:
+
+object
+
+EmptyNullableObject
+paidByCard
+boolean 
+optional
+true/false určení zda je platba kartou
+codPaidDate
+string <date-time> | 
+null 
+optional
+datum zaplacení dobírky
+invoiceNumber
+string  | 
+null 
+optional
+číslo faktury
+bankAccount
+string  | 
+null 
+optional
+bankovní účet
+bankCode
+string  | 
+null 
+optional
+bankovní kód
+codBankStatementDate
+string <date-time> | 
+null 
+optional
+codCurrency
+string  | 
+null 
+optional
+měna dobírky
+codPaymentAccDate
+string <date-time> | 
+null 
+optional
+codPrice
+number <double> | 
+null 
+optional
+cena
+codVariableSymbol
+string  | 
+null 
+optional
+variabilní symbol dobírky
+specificSymbol
+string  | 
+null 
+optional
+specifický symbol
+deliveryFeature
+optional
+One of:
+
+object
+
+EmptyNullableObject
+loadDate
+string <date-time> | 
+null 
+optional
+Datum naložení zásilky pro doručení
+delivDate
+string <date-time> | 
+null 
+optional
+Datum doručení
+delivPerson
+string  | 
+null 
+optional
+Příjemce
+notDelivDate
+string <date-time> | 
+null 
+optional
+Datum nedoručení
+outDepDate
+string <date-time> | 
+null 
+optional
+Přijetí na doručovací depo
+hubDate
+string <date-time> | 
+null 
+optional
+Příjem na centrálu
+deliveryToAccessPoint
+boolean 
+optional
+True/false určení zda bude zásilka doručena na výdejní místo
+backShipmentFeature
+optional
+One of:
+
+object
+
+EmptyNullableObject
+backDate
+string <date-time> | 
+null 
+optional
+Datum odeslání zpět
+dormantShipmentFeature
+optional
+One of:
+
+object
+
+EmptyNullableObject
+dormantShipmentNumber
+string  | 
+null 
+optional
+Číslo zpětné zásilky
+dormantShipmentNumberActive
+boolean  | 
+null 
+optional
+true/false informuje zda je zpětná zásilka aktivní
+accessPointFeature
+optional
+One of:
+
+object
+
+EmptyNullableObject
+accessPointDaysInStorage
+integer <int32> | 
+null 
+optional
+Počet dnů na výdejním místě
+accessPointDaysInStorageRemain
+integer <int32> | 
+null 
+optional
+Počet zbyvajících dnů uložení zásilky na výdejním místě
+accessPointHoursInStorageRemain
+integer <int32> | 
+null 
+optional
+Počet zbyvajících hodin uložení zásilky na výdejním místě
+routingFeature
+optional
+One of:
+
+object
+
+EmptyNullableObject
+routingNumber
+string  | 
+null 
+optional
+Číslo trasy
+Example
+[
+    {
+        "shipmentNumber": "string",
+        "productType": "string",
+        "productTypeChanged": true,
+        "note": "string",
+        "depot": "string",
+        "integratorId": 0,
+        "lastUpdateDate": "2019-08-24T14:15:22.123Z",
+        "shipmentState": "None",
+        "shipmentSet": {
+            "masterShipmentNumber": "string",
+            "shipmentsInSet": 0,
+            "shipmentInSetNumber": 0
+        },
+        "sender": {
+            "name": "string",
+            "name2": "string",
+            "street": "string",
+            "city": "string",
+            "zipCode": "string",
+            "country": "string",
+            "contact": "string",
+            "phone": "string",
+            "email": "string"
+        },
+        "recipient": {
+            "name": "string",
+            "name2": "string",
+            "street": "string",
+            "city": "string",
+            "zipCode": "string",
+            "country": "string",
+            "contact": "string",
+            "phone": "string",
+            "email": "string"
+        },
+        "specificDelivery": {
+            "specificDeliveryDate": "2019-08-24T14:15:22.123Z",
+            "specificDeliveryTimeFrom": "string",
+            "specificDeliveryTimeTo": "string",
+            "specificTakeDate": "2019-08-24T14:15:22.123Z",
+            "specificTakeTimeFrom": "string",
+            "specificTakeTimeTo": "string",
+            "accessPointCode": "string"
+        },
+        "externalNumbers": [
+            {
+                "externalNumber": "string",
+                "code": "string"
+            }
+        ],
+        "services": [
+            {
+                "additionalParameters": [
+                    {}
+                ],
+                "code": "string",
+                "price": 0,
+                "priceCurrency": "string"
+            }
+        ],
+        "trackAndTrace": {
+            "externalShipmentId": "string",
+            "partnerUrl": "string",
+            "lastEventCode": "string",
+            "lastEventDate": "2019-08-24T14:15:22.123Z",
+            "lastEventName": "string",
+            "events": [
+                {}
+            ]
+        },
+        "shipmentWeightInfo": {
+            "weight": 0,
+            "weighedDate": "2019-08-24T14:15:22.123Z"
+        },
+        "paymentInfo": {
+            "paidByCard": true,
+            "codPaidDate": "2019-08-24T14:15:22.123Z",
+            "invoiceNumber": "string",
+            "bankAccount": "string",
+            "bankCode": "string",
+            "codBankStatementDate": "2019-08-24T14:15:22.123Z",
+            "codCurrency": "string",
+            "codPaymentAccDate": "2019-08-24T14:15:22.123Z",
+            "codPrice": 0,
+            "codVariableSymbol": "string",
+            "specificSymbol": "string"
+        },
+        "deliveryFeature": {
+            "loadDate": "2019-08-24T14:15:22.123Z",
+            "delivDate": "2019-08-24T14:15:22.123Z",
+            "delivPerson": "string",
+            "notDelivDate": "2019-08-24T14:15:22.123Z",
+            "outDepDate": "2019-08-24T14:15:22.123Z",
+            "hubDate": "2019-08-24T14:15:22.123Z",
+            "deliveryToAccessPoint": true
+        },
+        "backShipmentFeature": {
+            "backDate": "2019-08-24T14:15:22.123Z"
+        },
+        "dormantShipmentFeature": {
+            "dormantShipmentNumber": "string",
+            "dormantShipmentNumberActive": true
+        },
+        "accessPointFeature": {
+            "accessPointDaysInStorage": 0,
+            "accessPointDaysInStorageRemain": 0,
+            "accessPointHoursInStorageRemain": 0
+        },
+        "routingFeature": {
+            "routingNumber": "string"
+        }
+    }
+]
+🟠400
+Bad Request
+🟠404
+Record Not Found
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 11 months ago
+Previous
+Zrušení objednání svozu nebo balíku z libovolné adresy
+Next
+ShipmentBatch

@@ -1,0 +1,141 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Získání etikety
+GET
+/shipment/batch/{batchId}/label
+Maintainer:
+Not configured
+Význam a použití
+Tato metoda vrací vygenerovanou etiketu.
+Aby bylo možné úspěšně zavolat metodu, je nutné použít batchId, které se získá z hlavičky Location v odpovědi na požadavek POST shipment/batch.
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Path Params
+Name
+Type
+Required
+Description
+batchId
+string <uuid>
+Batch id z metody POST shipment/batch
+Query Params
+Name
+Type
+Required
+Description
+PageSize
+enum<string> 
+(Eps.Api.MyApi2.Business.Enums.ConstPageSize)
+Rozměr stránky
+Allowed values:
+Default
+A4
+Position
+integer <int32>
+Pozice na stránce
+>= 1
+<= 4
+limit
+integer <int32>
+The limit
+>= 1
+<= 200
+offset
+integer <int32>
+The offset
+>= 0
+OrderBy
+Seřaď položky podle definovaných polí. Pro vícenásobné řazení použij názvy polí oddělené čárkou. Použij "-" pro sestupné řazení (např.: OrderBy=field1,-field2).
+Řaditelná pole: ShipmentNumber, ReferenceId, viz také schéma.Eps.Api.MyApi2.Web.Controllers.ShipmentBatchController.GetShipmentBatchLabel.OrderBy.enum
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Request Code Samples
+GET /shipment/batch//label?PageSize=null&Position=null&limit=null&offset=null&OrderBy=null HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Authorization: Bearer <token>
+Content-Type: text/plain
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Body
+file 
+optional
+Example
+"string"
+🟠400
+Bad Request
+🟠404
+Record Not Found
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 11 months ago
+Previous
+Získání stavu importu zásilky
+Next
+ShipmentEvent

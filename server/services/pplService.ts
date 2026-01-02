@@ -213,6 +213,47 @@ export interface PPLOrderResponse {
   shipmentNumbers?: string[]; // This is what we need - actual tracking numbers!
 }
 
+// Response from GET /shipment endpoint
+export interface PPLShipmentResponse {
+  shipmentNumber?: string;
+  productType?: string;
+  productTypeChanged?: boolean;
+  note?: string;
+  depot?: string;
+  integratorId?: number;
+  lastUpdateDate?: string;
+  shipmentState?: string;
+  shipmentSet?: {
+    masterShipmentNumber?: string;
+    shipmentsInSet?: number;
+    shipmentInSetNumber?: number;
+  };
+  sender?: any;
+  recipient?: any;
+  specificDelivery?: any;
+  externalNumbers?: Array<{
+    externalNumber?: string;
+    code?: string;
+  }>;
+  services?: any[];
+  trackAndTrace?: {
+    externalShipmentId?: string;
+    partnerUrl?: string;
+    lastEventCode?: string;
+    lastEventDate?: string;
+    lastEventName?: string;
+    events?: any[];
+  };
+  shipmentWeightInfo?: {
+    weight?: number;
+    weighedDate?: string;
+  };
+  paymentInfo?: {
+    paidByCard?: boolean;
+    codPaidDate?: string;
+  };
+}
+
 /**
  * Create PPL shipment(s)
  * Returns batchId, location, and any tracking numbers included in the response
@@ -334,11 +375,11 @@ export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus
 }
 
 /**
- * Get PPL order info by referenceId
- * This is the correct way to get shipmentNumbers (tracking numbers) from PPL
- * Uses GET /order with OrderReferences query param
+ * Get PPL shipment info by customer reference (our referenceId)
+ * Uses GET /shipment with CustomerReferences query param
+ * Returns shipment details including shipmentNumber (tracking number)
  */
-export async function getPPLOrderByReference(referenceId: string): Promise<PPLOrderResponse[]> {
+export async function getPPLShipmentByReference(referenceId: string): Promise<PPLShipmentResponse[]> {
   const token = await getPPLAccessToken();
   
   const maxRetries = 5;
@@ -346,15 +387,13 @@ export async function getPPLOrderByReference(referenceId: string): Promise<PPLOr
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Use paramsSerializer to handle array parameters correctly for PPL API
       const response = await axios.get(
-        `${PPL_BASE_URL}/order`,
+        `${PPL_BASE_URL}/shipment`,
         {
           params: {
-            OrderReferences: referenceId // Send as single value, not array
+            CustomerReferences: referenceId
           },
           paramsSerializer: (params) => {
-            // PPL API expects multiple query params with same name for arrays
             const searchParams = new URLSearchParams();
             for (const [key, value] of Object.entries(params)) {
               if (Array.isArray(value)) {
@@ -373,24 +412,24 @@ export async function getPPLOrderByReference(referenceId: string): Promise<PPLOr
         }
       );
       
-      console.log(`✅ PPL Order query successful (attempt ${attempt}):`, JSON.stringify(response.data, null, 2));
+      console.log(`✅ PPL Shipment query successful (attempt ${attempt}):`, JSON.stringify(response.data, null, 2));
       
-      // API returns array of orders
+      // API returns array of shipments
       if (Array.isArray(response.data)) {
-        return response.data as PPLOrderResponse[];
+        return response.data as PPLShipmentResponse[];
       }
       
-      // Single order response
-      return [response.data as PPLOrderResponse];
+      // Single shipment response
+      return [response.data as PPLShipmentResponse];
     } catch (error: any) {
-      console.log(`⚠️ PPL Order query attempt ${attempt}/${maxRetries} failed:`, error.message);
+      console.log(`⚠️ PPL Shipment query attempt ${attempt}/${maxRetries} failed:`, error.message);
       console.log(`   Error details:`, error.response?.data);
       
       if (attempt < maxRetries) {
         console.log(`   Retrying in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       } else {
-        console.error('❌ All PPL Order query attempts failed');
+        console.error('❌ All PPL Shipment query attempts failed');
         throw error;
       }
     }

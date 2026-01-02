@@ -1,0 +1,201 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Slouží k úpravě výstupního formátu štítku
+PUT
+/shipment/batch/{batchId}
+Maintainer:
+Not configured
+Význam a použití
+Pomocí této metody lze měnit formát štítku a to zadáním upraveného labelSettings objektu z metody POST shipment/batch.
+Optimalizace získávání štítků
+Pro zpracování velkého množství štítků (např. tisk na formát A4) je proces výpočetně náročný. Proto je pro tisk štítků implementována cache.
+Nad A4 to je 5 minut
+Pro jednoduché štítky 60 s.
+Proto pokud chcete zpracování štítků po zavolání metody PUT výrazně urychlit, doporučujeme místo opakovaného volání metody GET shipment/batch/{batchId}/label použít metodu data, která vrací štítky pro jednotlivé zásilky a je zde nastavena cache na 1s.
+Výhody metody data
+Metoda je dostupná v response body volání GET shipment/batch/{batchId} jako hodnota klíče labelUrl.
+Při konverzi do formátu ZPL se přímo vrací ZPL, takže není nutné převádět Base64 → ZPL, jako je tomu u metody label.
+Nevýhody metody data
+Vrací pouze jednotlivý štítek. Pokud budete mít v GET/shipment/batch/batchId více zásilek budete muset metodu zavolat pro každou zásilku zvlášť
+Vrací štítek pouze ve formátu default to znamená, že pokud budete metodou PUT měnit pouze pozici štítku (např z default na A4), tak tuto metodu nepoužívejte.
+Doporučený postup
+1.
+Zavolejte metodu PUT pro vytvoření nebo aktualizaci batch.
+2.
+Zavolejte GET shipment/batch/{batchId}.
+V odpovědi je k dispozici nový dataGUID v metodě data viz obrázek.
+image.png
+Tento identifikátor se mění po každém volání metody PUT.
+Můžete buď:
+porovnat nový GUID s předchozím (pokud si ho ukládáte), nebo
+nastavit minimální prodlevu mezi metodami PUT a GET.
+3.
+Zavolejte metodu data s novým GUID pro získání štítku kde bude aktualizovaný formát.
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Path Params
+Name
+Type
+Required
+Description
+batchId
+string <uuid>
+batch id z metody POST shipment/batch
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Body Params
+application/json
+UpdateShipmentBatchModel
+returnChannel
+optional
+One of:
+
+Eps.Api.MyApi2.Web.Models.ShipmentBatch.ReturnChannelModel
+
+EmptyNullableObject
+object
+ReturnChannelModel
+type
+optional
+address
+string  | 
+null 
+optional
+Pokud je vybrán Type = Email, pak zde vyplňovat email příjemce etikety Délka: 100
+<= 100 characters
+labelSettings
+object 
+(Eps.Api.MyApi2.Web.Models.ShipmentBatch.LabelSettingsModel)
+Eps.Api.MyApi2.Web.Models.ShipmentBatch.LabelSettingsModel
+required
+LabelSettingsModel
+format
+enum<string> 
+(Eps.Api.MyApi2.Web.Constants.ConstLabelFormat)
+Eps.Api.MyApi2.Web.Constants.ConstLabelFormat
+optional
+Label format
+Allowed values:
+Zpl
+Pdf
+Jpeg
+Png
+Svg
+dpi
+integer <int32> | 
+null 
+optional
+Volba DPI pro ZPL
+>= 203
+<= 1200
+completeLabelSettings
+optional
+Example
+{
+    "labelSettings": {
+        "format": "Pdf",
+        "completeLabelSettings": {
+            "isCompleteLabelRequested": true,
+            "pageSize": "A4"
+        }
+    }
+}
+Request Code Samples
+PUT /shipment/batch/ HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Authorization: Bearer <token>
+Content-Type: application/json
+Content-Length: 177
+
+{
+    "labelSettings": {
+        "format": "Pdf",
+        "completeLabelSettings": {
+            "isCompleteLabelRequested": true,
+            "pageSize": "A4"
+        }
+    }
+}
+Responses
+🟢204
+No Content
+application/json
+No Content
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Body
+object
+ 
+Example
+{}
+🟠400
+Bad Request
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 4 months ago
+Previous
+Vytvoření zásilky
+Next
+Získání stavu importu zásilky

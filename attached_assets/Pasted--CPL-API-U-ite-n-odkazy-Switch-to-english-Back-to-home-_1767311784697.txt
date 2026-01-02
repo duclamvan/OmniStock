@@ -1,0 +1,79 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Skupina metod ShipmentBatch slouží k vytváření, tisku a kontrole zásilek. Patří sem následující metody:
+POST /shipment/batch
+GET /shipment/batch/{batchId}
+GET/shipment/batch/{batchId}/label
+PUT /shipment/batch/{batchId}
+POST /shipment/batch/connectSet
+V následujících tabulkách jsou uvedeny enumy které se používají v požadavcích nebo zobrazují odpovědích metod ShipmentBatch.
+Stavy importů
+Stavy importů jsou zobrazovány v odpovědi na volání metody GET shipment/batch/{batchId} a vyjadřují stav vytvořené zásilky.
+Název	Popis
+Accepted	Požadavek přijat
+InProcess	Zpracovává se
+Complete	Hotovo
+Error	Chyba
+ReturnChannelModel - Type
+Tento enum se zadává do body metody POST shipment/batch kde se kódy zadávají do returnChannel.type.
+Název	Kód	Popis
+None		Výstupem je URL
+Email	Email	Výstupem je email
+LabelSettingModel – Label format
+Kódy z labelSettingsModel se zadávají do body metody POST shipment/batch v klíči labelSettings.format.
+Název	Kód	Popis
+Pdf	Pdf	PDF dokument
+Zpl	Zpl	ZPL instrukce
+Jpeg	Jpeg	JPEG obrázek
+Svg	Svg	Grafický soubor
+Png	Png	Grafický soubor
+Formát etiket
+Formáty etiket se používají v metodě POST shipment/batch v klíči labelSettings.completeLabelSettings.pageSize kde určují formát etikety při tisku.
+Název	Kód	Popis
+None	-	Defaultním typem je 150x100
+Default	Default	Defaultním typem je 150x100
+Stránka A4	A4	Stránka A4 – možnost volit pozice 1-4 (position) Bez názvu.png
+Typy Adres
+Popis	Kód	Platné pro produkt	Podmínka
+Adresa pro vrácení nedoručených zásilek	BP	BUSS, BUSD, DOPD, DOPD, COPL, BUED, PRIV,PRID, CONN, COND	
+Adresa/služba pro vrácení return zásilek	RETD	PRIV, PRID, RETD, SMAR, SMAD	Pouze s produkty PPL Parcel CZ Private + dob
+Adresa/služba pro vrácení Return connect zásilek	RETC	CONN, COND, SMEU, SMED, RECI, RECE	Pouze s produkty Parcel Connect
+Modified at 3 months ago
+Previous
+Slouží k získání informací (trackingu) k zásilce
+Next
+Slouží ke spojení sad zásilek
+On this page
+Stavy importů
+ReturnChannelModel - Type
+LabelSettingModel – Label format
+Formát etiket
+Typy Adres

@@ -1,0 +1,197 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Získání stavu importu zásilky
+GET
+/shipment/batch/{batchId}
+Maintainer:
+Not configured
+Význam a použití
+Tato metoda vrací stav zpracování zásilky a v případě stavu "Complete" pak vrátí URL (hromadné nebo k jednotlivému balíku) pro stažení vygenerované etikety.
+Aby bylo možné úspěšně zavolat metodu, je nutné použít batchId, které se získá z hlavičky Location v odpovědi na požadavek POST shipment/batch.
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Path Params
+Name
+Type
+Required
+Description
+batchId
+string <uuid>
+batch id z metody POST shipment/batch
+Query Params
+Name
+Type
+Required
+Description
+OrderBy
+Seřaďte položky podle definovaných polí. Pro vícenásobné řazení použijte názvy polí oddělené čárkou. Použijte "-" pro sestupné pořadí (např.: OrderBy=field1,-field2).
+Řaditelná pole: ShipmentNumber, ReferenceId, viz také schéma.Eps.Api.MyApi2.Web.Controllers.ShipmentBatchController.GetShipmentBatch.OrderBy.enum
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Request Code Samples
+GET /shipment/batch/?OrderBy=null HTTP/1.1
+Host: 
+Accept-Language: 
+X-Correlation-ID: 
+X-LogLevel: 
+Authorization: Bearer <token>
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Body
+completeLabel
+optional
+obsahuje všechny etikety založené zásilky
+One of:
+
+Eps.Api.MyApi2.Web.Models.ShipmentBatch.CompleteLabelModel
+
+EmptyNullableObject
+object
+CompleteLabelModel
+labelUrls
+array[string <uri>] | 
+null 
+optional
+LabelUrls
+items
+array [object]  | 
+null 
+optional
+Items
+referenceId
+string  | 
+null 
+optional
+Reference Id
+shipmentNumber
+string  | 
+null 
+optional
+číslo zásilky
+insuranceCurrency
+string  | 
+null 
+optional
+měna pojištění
+insurancePrice
+number <double> | 
+null 
+optional
+cena pojištění
+labelUrl
+string <uri> | 
+null 
+optional
+url daného štítku - metoda data
+importState
+enum<string> 
+(Eps.Api.MyApi2.Business.Enums.ConstImportState)
+Eps.Api.MyApi2.Business.Enums.ConstImportState
+optional
+stav (complete, in process....)
+Allowed values:
+Accepted
+InProcess
+Complete
+Error
+errorMessage
+string  | 
+null 
+optional
+chybová zpráva
+errorCode
+string  | 
+null 
+optional
+kód chyby
+relatedItems
+array [object]  | 
+null 
+optional
+přidružené položky (např. return zásilka apod.)
+Examples
+status200 - importState: "InProcess"
+status 200 - importState: "Complete"
+"items": [
+    {
+        "referenceId": "1",
+        "importState": "InProcess",
+        "relatedItems": []
+    }
+]
+}
+🟠400
+Bad Request
+🟠404
+Record Not Found
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 5 months ago
+Previous
+Slouží k úpravě výstupního formátu štítku
+Next
+Získání etikety
