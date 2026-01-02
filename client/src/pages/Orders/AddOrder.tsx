@@ -63,6 +63,7 @@ import {
   Copy,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   TrendingUp,
   ArrowUpCircle,
   MessageSquare,
@@ -461,6 +462,9 @@ export default function AddOrder() {
   const [productVariants, setProductVariants] = useState<any[]>([]);
   const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
   const [quickVariantInput, setQuickVariantInput] = useState("");
+  
+  // Expanded variant groups state - tracks which parent products are expanded in the order items table
+  const [expandedVariantGroups, setExpandedVariantGroups] = useState<Set<string>>(new Set());
   
   // Parse quick variant input - supports:
   // - Single: "23" (1pc of variant 23)
@@ -3471,6 +3475,97 @@ export default function AddOrder() {
   const calculateTax = () => totals.taxAmount;
   const calculateGrandTotal = () => totals.grandTotal;
 
+  // Group order items by parent product when there are more than 5 variants
+  const VARIANT_GROUP_THRESHOLD = 5;
+  
+  interface VariantGroup {
+    parentProductId: string;
+    parentProductName: string;
+    parentImage: string | null;
+    variants: OrderItem[];
+    totalQuantity: number;
+    totalPrice: number;
+    totalLandingCost: number | null;
+    averagePrice: number;
+  }
+  
+  const { groupedItems, variantGroups } = useMemo(() => {
+    // Group items by parent product ID (only those with variantId)
+    const variantsByParent = new Map<string, OrderItem[]>();
+    const nonVariantItems: OrderItem[] = [];
+    
+    orderItems.forEach(item => {
+      if (item.variantId && item.productId) {
+        const existing = variantsByParent.get(item.productId) || [];
+        variantsByParent.set(item.productId, [...existing, item]);
+      } else {
+        nonVariantItems.push(item);
+      }
+    });
+    
+    // Build the grouped items array
+    const result: (OrderItem | { isGroupHeader: true; group: VariantGroup })[] = [];
+    const groups: VariantGroup[] = [];
+    
+    // First add non-variant items
+    nonVariantItems.forEach(item => result.push(item));
+    
+    // Then process variant groups
+    variantsByParent.forEach((variants, parentProductId) => {
+      if (variants.length > VARIANT_GROUP_THRESHOLD) {
+        // Create a group header
+        const totalQuantity = variants.reduce((sum, v) => sum + v.quantity, 0);
+        const totalPrice = variants.reduce((sum, v) => sum + v.total, 0);
+        const totalLandingCost = variants.some(v => v.landingCost != null) 
+          ? variants.reduce((sum, v) => sum + (v.landingCost || 0) * v.quantity, 0)
+          : null;
+        
+        // Get the base product name (without variant suffix)
+        const firstVariant = variants[0];
+        const baseProductName = firstVariant.productName.replace(/\s*-\s*[^-]+$/, '');
+        
+        const group: VariantGroup = {
+          parentProductId,
+          parentProductName: baseProductName || firstVariant.productName,
+          parentImage: firstVariant.image || null,
+          variants,
+          totalQuantity,
+          totalPrice,
+          totalLandingCost,
+          averagePrice: totalQuantity > 0 ? totalPrice / totalQuantity : 0,
+        };
+        
+        groups.push(group);
+        result.push({ isGroupHeader: true, group });
+      } else {
+        // Add variants individually if less than threshold
+        variants.forEach(item => result.push(item));
+      }
+    });
+    
+    return { groupedItems: result, variantGroups: groups };
+  }, [orderItems]);
+  
+  // Toggle variant group expansion
+  const toggleVariantGroup = useCallback((parentProductId: string) => {
+    setExpandedVariantGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(parentProductId)) {
+        next.delete(parentProductId);
+      } else {
+        next.add(parentProductId);
+      }
+      return next;
+    });
+  }, []);
+  
+  // Remove all variants in a group
+  const removeVariantGroup = useCallback((parentProductId: string) => {
+    setOrderItems(items => items.filter(item => 
+      !(item.variantId && item.productId === parentProductId)
+    ));
+  }, []);
+
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
     const orderData = {
       ...data,
@@ -5917,7 +6012,199 @@ export default function AddOrder() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orderItems.map((item, index) => (
+                        {groupedItems.map((entry, index) => {
+                          if ('isGroupHeader' in entry) {
+                            const group = entry.group;
+                            const isExpanded = expandedVariantGroups.has(group.parentProductId);
+                            return (
+                              <Fragment key={`group-${group.parentProductId}`}>
+                                {/* Variant Group Header Row */}
+                                <TableRow 
+                                  className="bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                                  onClick={() => toggleVariantGroup(group.parentProductId)}
+                                  data-testid={`variant-group-${group.parentProductId}`}
+                                >
+                                  <TableCell className="py-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 relative">
+                                        {group.parentImage ? (
+                                          <img 
+                                            src={group.parentImage} 
+                                            alt={group.parentProductName}
+                                            className="w-12 h-12 object-contain rounded border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900"
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded border border-blue-200 dark:border-blue-700 flex items-center justify-center">
+                                            <Package className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                                          </div>
+                                        )}
+                                        <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                          {group.variants.length}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col gap-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          {isExpanded ? (
+                                            <ChevronDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                          ) : (
+                                            <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                          )}
+                                          <span className="font-medium text-blue-900 dark:text-blue-100">
+                                            {group.parentProductName}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-600">
+                                            {group.variants.length} {t('orders:variants', 'variants')}
+                                          </Badge>
+                                          <span className="text-xs text-blue-600 dark:text-blue-400">
+                                            {isExpanded ? t('orders:clickToCollapse', 'Click to collapse') : t('orders:clickToExpand', 'Click to expand')}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center align-middle">
+                                    <span className="font-semibold text-blue-700 dark:text-blue-300">{group.totalQuantity}</span>
+                                  </TableCell>
+                                  <TableCell className="text-right align-middle">
+                                    <div className="flex flex-col items-end gap-0.5">
+                                      <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                        {formatCurrency(group.totalPrice, form.watch('currency'))}
+                                      </span>
+                                      <span className="text-xs text-blue-500 dark:text-blue-400">
+                                        ~{formatCurrency(group.averagePrice, form.watch('currency'))}/{t('orders:each', 'each')}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  {showDiscountColumn && (
+                                    <TableCell className="text-right align-middle">
+                                      <span className="text-blue-500 dark:text-blue-400">-</span>
+                                    </TableCell>
+                                  )}
+                                  {showVatColumn && (
+                                    <TableCell className="text-right align-middle">
+                                      <span className="text-blue-500 dark:text-blue-400">-</span>
+                                    </TableCell>
+                                  )}
+                                  <TableCell className="text-center">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeVariantGroup(group.parentProductId);
+                                      }}
+                                      className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                      data-testid={`button-remove-group-${group.parentProductId}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                                {/* Expanded Variant Rows */}
+                                {isExpanded && group.variants.map((item, variantIndex) => (
+                                  <Fragment key={item.id}>
+                                    <TableRow 
+                                      className={`${item.isFreeItem 
+                                        ? 'bg-green-50 dark:bg-green-950/30' 
+                                        : 'bg-slate-50/50 dark:bg-slate-900/30'} border-l-4 border-l-blue-400 dark:border-l-blue-600`}
+                                      data-testid={`order-item-${item.id}`}
+                                    >
+                                      <TableCell className="py-2 pl-8">
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex flex-col gap-0.5">
+                                            <div className="flex items-center gap-1.5">
+                                              <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700">
+                                                {item.variantName}
+                                              </Badge>
+                                              {item.isFreeItem && (
+                                                <Badge className="text-xs px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600">
+                                                  {t('orders:freeItem')}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                              {item.sku ? `SKU: ${item.sku}` : ''}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-center align-middle">
+                                        <MathInput
+                                          min={1}
+                                          value={item.quantity}
+                                          onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
+                                          isInteger={true}
+                                          className="w-14 h-8 text-center text-sm"
+                                          data-testid={`input-quantity-${item.id}`}
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-right align-middle">
+                                        {item.isFreeItem ? (
+                                          <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
+                                        ) : (
+                                          <MathInput
+                                            min={0}
+                                            step={0.01}
+                                            value={item.price}
+                                            onChange={(val) => updateOrderItem(item.id, 'price', val)}
+                                            className="w-16 h-8 text-right text-sm"
+                                            data-testid={`input-price-${item.id}`}
+                                          />
+                                        )}
+                                      </TableCell>
+                                      {showDiscountColumn && (
+                                        <TableCell className="text-right align-middle">
+                                          <div className="flex items-center justify-end gap-1">
+                                            <MathInput
+                                              min={0}
+                                              max={100}
+                                              step={1}
+                                              value={item.discountPercentage}
+                                              onChange={(val) => updateOrderItem(item.id, 'discountPercentage', val)}
+                                              className="w-12 h-8 text-right text-sm"
+                                              data-testid={`input-discount-${item.id}`}
+                                            />
+                                            <span className="text-xs text-muted-foreground">%</span>
+                                          </div>
+                                        </TableCell>
+                                      )}
+                                      {showVatColumn && (
+                                        <TableCell className="text-right align-middle">
+                                          <MathInput
+                                            min={0}
+                                            step={0.01}
+                                            value={item.tax}
+                                            onChange={(val) => updateOrderItem(item.id, 'tax', val)}
+                                            className="w-14 h-8 text-right text-sm"
+                                            data-testid={`input-vat-${item.id}`}
+                                          />
+                                        </TableCell>
+                                      )}
+                                      <TableCell className="text-center">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeOrderItem(item.id)}
+                                          className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                          data-testid={`button-remove-${item.id}`}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  </Fragment>
+                                ))}
+                              </Fragment>
+                            );
+                          }
+                          
+                          // Regular item (non-grouped)
+                          const item = entry as OrderItem;
+                          return (
                           <Fragment key={item.id}>
                           <TableRow 
                             className={item.isFreeItem 
@@ -6226,7 +6513,8 @@ export default function AddOrder() {
                             </TableRow>
                           )}
                           </Fragment>
-                        ))}
+                          );
+                        })}
                         {/* Placeholder rows for available free slots (Buy X Get Y) */}
                         {buyXGetYAllocations.filter(alloc => alloc.remainingFreeSlots > 0).map((alloc) => (
                           <TableRow key={`free-slot-${alloc.discountId}`} className="bg-green-50/50 dark:bg-green-950/20 border-2 border-dashed border-green-300 dark:border-green-700">
