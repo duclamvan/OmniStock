@@ -743,7 +743,7 @@ export default function AllReturns() {
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-            <CardTitle className="text-lg">{t('inventory:filtersAndSearch')}</CardTitle>
+            <CardTitle className="text-lg">{t('inventory:filtersAndSearch', 'Filters & Search')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
