@@ -1,0 +1,73 @@
+If you already have the `batchId` (which is often synonymous with `shipmentId` in the PPL/CPL REST API) and need to retrieve the tracking number later, you must query the **Shipment Details** endpoint.
+
+Here is how to fetch the `parcelNumber` (Tracking Number) using your saved `batchId`.
+
+### 1. The API Endpoint
+
+You need to make a `GET` request to the shipment resource using the ID.
+
+* **Endpoint:** `GET /shipment/{id}`
+* **What it returns:** The full JSON object of the shipment, including the `packages` list where the tracking number lives.
+
+### 2. Python Implementation for Replit
+
+Add this function to your PPL helper file.
+
+```python
+def get_tracking_from_id(token, shipment_id):
+    """
+    Fetches the Parcel Number (Tracking Number) for a given Shipment/Batch ID.
+    """
+    # 1. Define the endpoint
+    url = f"{BASE_URL}/shipment/{shipment_id}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        # 2. Send GET request
+        resp = requests.get(url, headers=headers)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            
+            # 3. Extract the tracking number
+            # PPL shipments can have multiple packages, so it's a list.
+            # We usually want the first one [0].
+            if 'packages' in data and len(data['packages']) > 0:
+                tracking_number = data['packages'][0].get('parcelNumber')
+                return tracking_number
+            else:
+                print("⚠️ No packages found in this shipment.")
+                return None
+        else:
+            print(f"❌ Error fetching details: {resp.status_code} - {resp.text}")
+            return None
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+```
+
+### 3. Usage Example
+
+```python
+# Assuming you already have your token and the batch_id from your database
+batch_id = "12345678-abcd-9012-efgh-345678901234" 
+
+tracking_number = get_tracking_from_id(token, batch_id)
+
+if tracking_number:
+    print(f"📦 Tracking Number: {tracking_number}")
+    # Save it to your database now!
+
+```
+
+### 4. Important Terminology Note
+
+In the PPL CPL API:
+
+* **`parcelNumber`**: This is the **Tracking Number** (e.g., `40580012345`). This is what you send to the customer.
+* **`id`**: This is the internal UUID (Shipment/Batch ID). You use this to talk to the API (to print labels or get details), but **do not** send this to the customer; they cannot track the package with it.

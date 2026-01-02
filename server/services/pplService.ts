@@ -539,6 +539,73 @@ export async function getPPLBatchStatus(batchId: string): Promise<PPLBatchStatus
 }
 
 /**
+ * Get tracking number(s) from shipment ID using GET /shipment/{id}
+ * The batchId from shipment creation can be used as the shipment ID
+ * Returns parcelNumber from packages array - this is the actual tracking number
+ */
+export async function getTrackingFromShipmentId(shipmentId: string): Promise<string[]> {
+  const token = await getPPLAccessToken();
+  
+  const maxRetries = 5;
+  const retryDelay = 2000;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.get(
+        `${PPL_BASE_URL}/shipment/${shipmentId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log(`✅ PPL Shipment details retrieved (attempt ${attempt}):`, JSON.stringify(response.data, null, 2));
+      
+      const data = response.data;
+      
+      // Extract parcelNumber from packages array
+      if (data.packages && Array.isArray(data.packages) && data.packages.length > 0) {
+        const trackingNumbers = data.packages
+          .map((pkg: any) => pkg.parcelNumber)
+          .filter((num: string | undefined) => num);
+        
+        if (trackingNumbers.length > 0) {
+          console.log(`✅ Found tracking numbers from packages: ${trackingNumbers.join(', ')}`);
+          return trackingNumbers;
+        }
+      }
+      
+      // Fallback: check for shipmentNumber at root level
+      if (data.shipmentNumber) {
+        console.log(`✅ Found tracking number from shipmentNumber: ${data.shipmentNumber}`);
+        return [data.shipmentNumber];
+      }
+      
+      console.log(`⚠️ No tracking numbers found in shipment ${shipmentId} response`);
+      return [];
+    } catch (error: any) {
+      console.log(`⚠️ PPL Shipment details attempt ${attempt}/${maxRetries} failed:`, error.message);
+      if (error.response?.data) {
+        console.log(`   Response:`, JSON.stringify(error.response.data, null, 2));
+      }
+      
+      if (attempt < maxRetries) {
+        console.log(`   Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        console.error('❌ All PPL Shipment details attempts failed');
+        return [];
+      }
+    }
+  }
+  
+  return [];
+}
+
+/**
  * Get PPL shipment info by customer reference (our referenceId)
  * Uses GET /shipment with CustomerReferences query param
  * Returns shipment details including shipmentNumber (tracking number)
