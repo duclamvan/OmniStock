@@ -1737,6 +1737,366 @@ function PickingListView({
   );
 }
 
+// Helper function to generate smart ranges from color numbers
+// e.g., [1,2,3,5,6,7,10] => "1-3, 5-7, 10"
+function generateSmartRange(colorNumbers: (string | null | undefined)[]): string {
+  const numericColors = colorNumbers
+    .filter(Boolean)
+    .map(c => parseInt(c!.replace(/\D/g, ''), 10))
+    .filter(n => !isNaN(n))
+    .sort((a, b) => a - b);
+  
+  if (numericColors.length === 0) return '';
+  if (numericColors.length === 1) return `#${numericColors[0]}`;
+  
+  const ranges: string[] = [];
+  let rangeStart = numericColors[0];
+  let rangeEnd = numericColors[0];
+  
+  for (let i = 1; i < numericColors.length; i++) {
+    if (numericColors[i] === rangeEnd + 1) {
+      rangeEnd = numericColors[i];
+    } else {
+      ranges.push(rangeStart === rangeEnd ? `${rangeStart}` : `${rangeStart}-${rangeEnd}`);
+      rangeStart = numericColors[i];
+      rangeEnd = numericColors[i];
+    }
+  }
+  ranges.push(rangeStart === rangeEnd ? `${rangeStart}` : `${rangeStart}-${rangeEnd}`);
+  
+  return ranges.join(', ');
+}
+
+// GroupedPickingListView - Groups items by parent product with collapsible variant lists
+interface GroupedPickingListViewProps {
+  order: PickPackOrder;
+  currentItem: OrderItem | undefined;
+  onUpdatePickedItem: (itemId: string, quantity: number) => void;
+  onItemClick: (index: number) => void;
+  recentlyScannedItemId: string | null;
+  onToggleFullPick: (item: OrderItem) => void;
+}
+
+interface ProductGroup {
+  productId: string;
+  productName: string;
+  image?: string;
+  items: OrderItem[];
+  totalQuantity: number;
+  pickedQuantity: number;
+  colorRange: string;
+  originalIndices: number[];
+}
+
+function GroupedPickingListView({ 
+  order, 
+  currentItem, 
+  onUpdatePickedItem, 
+  onItemClick,
+  recentlyScannedItemId,
+  onToggleFullPick
+}: GroupedPickingListViewProps) {
+  const { t } = useTranslation('orders');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  
+  // Group items by productId
+  const productGroups = useMemo(() => {
+    const groups = new Map<string, ProductGroup>();
+    
+    order.items.forEach((item, index) => {
+      const key = item.productId || item.id;
+      
+      if (groups.has(key)) {
+        const group = groups.get(key)!;
+        group.items.push(item);
+        group.totalQuantity += item.quantity;
+        group.pickedQuantity += item.pickedQuantity;
+        group.originalIndices.push(index);
+      } else {
+        groups.set(key, {
+          productId: key,
+          productName: item.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim(),
+          image: item.image,
+          items: [item],
+          totalQuantity: item.quantity,
+          pickedQuantity: item.pickedQuantity,
+          colorRange: '',
+          originalIndices: [index]
+        });
+      }
+    });
+    
+    // Calculate color ranges for each group
+    groups.forEach((group) => {
+      const colorNumbers = group.items.map(i => i.colorNumber);
+      group.colorRange = generateSmartRange(colorNumbers);
+    });
+    
+    return Array.from(groups.values());
+  }, [order.items]);
+  
+  const toggleGroup = (productId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+  
+  const pickAllInGroup = (group: ProductGroup) => {
+    group.items.forEach(item => {
+      if (item.pickedQuantity < item.quantity) {
+        onUpdatePickedItem(item.id, item.quantity);
+      }
+    });
+  };
+  
+  return (
+    <div className="space-y-3">
+      {/* Overall Progress Header */}
+      <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            {t('pickingProgress')}
+          </h3>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-purple-600 dark:bg-purple-700 text-white font-bold text-xs px-2 py-0.5">
+              {productGroups.length} {t('products') || 'products'}
+            </Badge>
+            <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
+              {order.pickedItems} / {order.totalItems}
+            </Badge>
+          </div>
+        </div>
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+            style={{ width: `${(order.pickedItems / order.totalItems) * 100}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+          {Math.round((order.pickedItems / order.totalItems) * 100)}% {t('complete') || 'complete'}
+        </p>
+      </div>
+
+      {/* Separator */}
+      <div className="flex items-center gap-3 py-2">
+        <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          {t('groupedByProduct') || 'Grouped by Product'}
+        </span>
+        <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+      </div>
+
+      {/* Grouped Product Cards */}
+      <div className="space-y-3">
+        {productGroups.map((group) => {
+          const isExpanded = expandedGroups.has(group.productId);
+          const allPicked = group.pickedQuantity >= group.totalQuantity;
+          const isPartiallyPicked = group.pickedQuantity > 0 && group.pickedQuantity < group.totalQuantity;
+          const hasCurrentItem = group.items.some(i => i.id === currentItem?.id);
+          
+          // Determine card styling
+          let cardBg = 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700';
+          if (allPicked) {
+            cardBg = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-600';
+          } else if (isPartiallyPicked) {
+            cardBg = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600';
+          }
+          
+          const currentHighlight = hasCurrentItem ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1' : '';
+          
+          return (
+            <div 
+              key={group.productId}
+              className={`${cardBg} ${currentHighlight} border-2 rounded-xl overflow-hidden shadow-sm`}
+            >
+              {/* Group Header - Clickable to expand */}
+              <div 
+                className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                onClick={() => toggleGroup(group.productId)}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Product Image */}
+                  <div className="flex-shrink-0 relative">
+                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shadow-md border-2 ${
+                      allPicked ? 'border-green-500 dark:border-green-400' : 
+                      isPartiallyPicked ? 'border-yellow-500 dark:border-yellow-400' : 
+                      'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {group.image ? (
+                        <img src={group.image} alt={group.productName} className={`w-full h-full object-cover ${allPicked ? 'opacity-60' : ''}`} />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <Package className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 dark:text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    {allPicked && (
+                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
+                        <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold text-base sm:text-lg leading-snug line-clamp-2 ${
+                          allPicked ? 'text-green-700 dark:text-green-300 line-through' : 'text-gray-900 dark:text-gray-100'
+                        }`}>
+                          {group.productName}
+                        </p>
+                        
+                        {/* Smart Color Range */}
+                        {group.colorRange && (
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <Badge className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-600 text-xs font-mono">
+                              Colors: {group.colorRange}
+                            </Badge>
+                          </div>
+                        )}
+                        
+                        {/* Variants count */}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {group.items.length} {group.items.length === 1 ? t('variant') || 'variant' : t('variants') || 'variants'}
+                        </p>
+                      </div>
+                      
+                      {/* Quantity Badge */}
+                      <Badge className={`text-base sm:text-lg font-bold px-2.5 sm:px-3 py-1 ${
+                        allPicked ? 'bg-green-600 dark:bg-green-700 text-white' : 
+                        isPartiallyPicked ? 'bg-yellow-500 dark:bg-yellow-600 text-white' : 
+                        'bg-gray-700 dark:bg-gray-600 text-white'
+                      }`}>
+                        {group.pickedQuantity}/{group.totalQuantity}
+                      </Badge>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          allPicked ? 'bg-green-500' : isPartiallyPicked ? 'bg-yellow-500' : 'bg-gray-400'
+                        }`}
+                        style={{ width: `${(group.pickedQuantity / group.totalQuantity) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Expand/Collapse Arrow */}
+                  <div className="flex-shrink-0 mt-2">
+                    {isExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Expanded Variant List */}
+              {isExpanded && (
+                <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  {/* Quick Pick All Button */}
+                  {!allPicked && (
+                    <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                      <Button
+                        size="sm"
+                        className="w-full h-9 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          pickAllInGroup(group);
+                        }}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {t('pickAll') || 'Pick All'} ({group.items.length})
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Variant Items List */}
+                  <div className="max-h-80 overflow-y-auto">
+                    {group.items.map((item, idx) => {
+                      const originalIndex = group.originalIndices[idx];
+                      const isPicked = item.pickedQuantity >= item.quantity;
+                      const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+                      const isCurrent = currentItem?.id === item.id;
+                      const isRecentlyScanned = recentlyScannedItemId === item.id;
+                      
+                      let itemBg = 'bg-white dark:bg-gray-900';
+                      if (isPicked) itemBg = 'bg-green-50 dark:bg-green-900/30';
+                      else if (isPartial) itemBg = 'bg-yellow-50 dark:bg-yellow-900/30';
+                      
+                      return (
+                        <div
+                          key={item.id}
+                          className={`${itemBg} ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''} ${isRecentlyScanned ? 'animate-pulse' : ''} 
+                            p-2.5 border-b border-gray-200 dark:border-gray-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFullPick(item);
+                            onItemClick(originalIndex);
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Color Number or Index */}
+                            <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm ${
+                              isPicked ? 'bg-green-500 text-white' : 
+                              isPartial ? 'bg-yellow-500 text-white' : 
+                              'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                            }`}>
+                              {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
+                            </div>
+                            
+                            {/* Variant Name */}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {item.variantName || item.productName}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span className="font-mono">{item.sku}</span>
+                                {item.warehouseLocation && (
+                                  <span className="flex items-center gap-0.5">
+                                    <MapPin className="h-3 w-3" />
+                                    {item.warehouseLocation}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Quantity & Status */}
+                            <div className="flex-shrink-0 flex items-center gap-2">
+                              <Badge className={`text-xs font-bold px-2 py-0.5 ${
+                                isPicked ? 'bg-green-600 text-white' : 
+                                isPartial ? 'bg-yellow-500 text-white' : 
+                                'bg-gray-600 text-white'
+                              }`}>
+                                {item.pickedQuantity}/{item.quantity}
+                              </Badge>
+                              {isPicked && <Check className="h-5 w-5 text-green-500" strokeWidth={3} />}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // Component: Location selector for picking - allows employee to select which location to pick from
 function PickingLocationSelector({ 
   currentItem, 
@@ -14468,17 +14828,28 @@ export default function PickPack() {
             {/* Left Panel - Current Item Focus (Card View) or Full List View */}
             <div className="flex-1">
             {!allItemsPicked && pickingViewMode === 'list' ? (
-              /* LIST VIEW - Show all items in table format */
+              /* LIST VIEW - Show all items in table format (use grouped view for 50+ items) */
               <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
                 <div className="flex-1 p-4 overflow-auto">
-                  <PickingListView 
-                    order={activePickingOrder}
-                    currentItem={currentItem}
-                    onUpdatePickedItem={updatePickedItem}
-                    onItemClick={setManualItemIndex}
-                    recentlyScannedItemId={recentlyScannedItemId}
-                    onToggleFullPick={toggleFullPick}
-                  />
+                  {activePickingOrder.items.length >= 50 ? (
+                    <GroupedPickingListView 
+                      order={activePickingOrder}
+                      currentItem={currentItem}
+                      onUpdatePickedItem={updatePickedItem}
+                      onItemClick={setManualItemIndex}
+                      recentlyScannedItemId={recentlyScannedItemId}
+                      onToggleFullPick={toggleFullPick}
+                    />
+                  ) : (
+                    <PickingListView 
+                      order={activePickingOrder}
+                      currentItem={currentItem}
+                      onUpdatePickedItem={updatePickedItem}
+                      onItemClick={setManualItemIndex}
+                      recentlyScannedItemId={recentlyScannedItemId}
+                      onToggleFullPick={toggleFullPick}
+                    />
+                  )}
                 </div>
               </div>
             ) : !allItemsPicked && currentItem ? (
@@ -14872,14 +15243,25 @@ export default function PickPack() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3 font-medium">
                     {t('tapItemsToModify') || 'Tap items below to modify if needed'}
                   </p>
-                  <PickingListView 
-                    order={activePickingOrder}
-                    currentItem={currentItem}
-                    onUpdatePickedItem={updatePickedItem}
-                    onItemClick={setManualItemIndex}
-                    recentlyScannedItemId={recentlyScannedItemId}
-                    onToggleFullPick={toggleFullPick}
-                  />
+                  {activePickingOrder.items.length >= 50 ? (
+                    <GroupedPickingListView 
+                      order={activePickingOrder}
+                      currentItem={currentItem}
+                      onUpdatePickedItem={updatePickedItem}
+                      onItemClick={setManualItemIndex}
+                      recentlyScannedItemId={recentlyScannedItemId}
+                      onToggleFullPick={toggleFullPick}
+                    />
+                  ) : (
+                    <PickingListView 
+                      order={activePickingOrder}
+                      currentItem={currentItem}
+                      onUpdatePickedItem={updatePickedItem}
+                      onItemClick={setManualItemIndex}
+                      recentlyScannedItemId={recentlyScannedItemId}
+                      onToggleFullPick={toggleFullPick}
+                    />
+                  )}
                 </div>
               </div>
             ) : (
