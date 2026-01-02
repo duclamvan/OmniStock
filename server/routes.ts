@@ -18628,6 +18628,21 @@ Important:
         const singleShipmentData = shipments[0];
         
         // Build the single shipment request for POST /shipment
+        // For international shipments (CONN/COND), weight is REQUIRED
+        const isInternational = recipientCountryCode !== 'CZ';
+        const cartonWeight = cartons[0]?.weight ? parseFloat(cartons[0].weight) : null;
+        
+        // Build package with weight for international shipments
+        const packageData: any = { referenceId: `${singleShipmentData.referenceId}-1` };
+        if (isInternational && cartonWeight && cartonWeight > 0) {
+          packageData.weight = cartonWeight;
+          console.log(`📦 International shipment: Adding weight ${cartonWeight} kg to package`);
+        } else if (isInternational && (!cartonWeight || cartonWeight <= 0)) {
+          // For international, default to 1kg if no weight specified
+          packageData.weight = 1;
+          console.log(`⚠️ International shipment: No carton weight, using default 1 kg`);
+        }
+        
         const singleShipmentRequest = {
           productType: singleShipmentData.productType,
           referenceId: singleShipmentData.referenceId,
@@ -18649,7 +18664,7 @@ Important:
             phone: singleShipmentData.sender.phone,
             email: singleShipmentData.sender.email
           } : undefined,
-          packages: [{ referenceId: `${singleShipmentData.referenceId}-1` }],
+          packages: [packageData],
           ...(singleShipmentData.cashOnDelivery ? {
             cashOnDelivery: {
               price: singleShipmentData.cashOnDelivery.codPrice,
