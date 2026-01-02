@@ -3594,6 +3594,34 @@ export default function AddOrder() {
     });
   }, []);
 
+  // Autofill all variants in a group with the first variant's quantity
+  const autofillVariantGroupQuantity = useCallback((parentProductId: string) => {
+    setOrderItems(items => {
+      // Find all variants for this parent product
+      const groupVariants = items.filter(item => 
+        item.variantId && item.productId === parentProductId
+      );
+      
+      if (groupVariants.length < 2) return items;
+      
+      // Get the first variant's quantity
+      const firstVariantQuantity = groupVariants[0].quantity;
+      
+      // Update all variants with the first variant's quantity
+      return items.map(item => {
+        if (item.variantId && item.productId === parentProductId) {
+          const total = (item.price * firstVariantQuantity) - (item.discount || 0);
+          return {
+            ...item,
+            quantity: firstVariantQuantity,
+            total
+          };
+        }
+        return item;
+      });
+    });
+  }, []);
+
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
     const orderData = {
       ...data,
@@ -6116,35 +6144,19 @@ export default function AddOrder() {
                                     </TableCell>
                                   )}
                                   <TableCell className="text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          autofillVariantGroupPrice(group.parentProductId);
-                                        }}
-                                        className="h-9 w-9 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
-                                        data-testid={`button-autofill-group-${group.parentProductId}`}
-                                        title={t('orders:autofillPrice', 'Fill all with first price')}
-                                      >
-                                        <Copy className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          removeVariantGroup(group.parentProductId);
-                                        }}
-                                        className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                                        data-testid={`button-remove-group-${group.parentProductId}`}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeVariantGroup(group.parentProductId);
+                                      }}
+                                      className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                      data-testid={`button-remove-group-${group.parentProductId}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </TableCell>
                                 </TableRow>
                                 {/* Expanded Variant Rows */}
@@ -6178,28 +6190,58 @@ export default function AddOrder() {
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-center align-middle">
-                                        <MathInput
-                                          min={1}
-                                          value={item.quantity}
-                                          onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
-                                          isInteger={true}
-                                          className="w-14 h-8 text-center text-sm"
-                                          data-testid={`input-quantity-${item.id}`}
-                                        />
+                                        <div className="flex items-center justify-center gap-1">
+                                          <MathInput
+                                            min={1}
+                                            value={item.quantity}
+                                            onChange={(val) => updateOrderItem(item.id, 'quantity', val)}
+                                            isInteger={true}
+                                            className="w-14 h-8 text-center text-sm"
+                                            data-testid={`input-quantity-${item.id}`}
+                                          />
+                                          {variantIndex === 0 && group.variants.length > 1 && (
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => autofillVariantGroupQuantity(group.parentProductId)}
+                                              className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                                              data-testid={`button-autofill-qty-${group.parentProductId}`}
+                                              title={t('orders:autofillQuantity', 'Fill all with this quantity')}
+                                            >
+                                              <Copy className="h-3.5 w-3.5" />
+                                            </Button>
+                                          )}
+                                        </div>
                                       </TableCell>
                                       <TableCell className="text-right align-middle">
-                                        {item.isFreeItem ? (
-                                          <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
-                                        ) : (
-                                          <MathInput
-                                            min={0}
-                                            step={0.01}
-                                            value={item.price}
-                                            onChange={(val) => updateOrderItem(item.id, 'price', val)}
-                                            className="w-16 h-8 text-right text-sm"
-                                            data-testid={`input-price-${item.id}`}
-                                          />
-                                        )}
+                                        <div className="flex items-center justify-end gap-1">
+                                          {item.isFreeItem ? (
+                                            <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(0, form.watch('currency'))}</span>
+                                          ) : (
+                                            <MathInput
+                                              min={0}
+                                              step={0.01}
+                                              value={item.price}
+                                              onChange={(val) => updateOrderItem(item.id, 'price', val)}
+                                              className="w-16 h-8 text-right text-sm"
+                                              data-testid={`input-price-${item.id}`}
+                                            />
+                                          )}
+                                          {variantIndex === 0 && group.variants.length > 1 && !item.isFreeItem && (
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => autofillVariantGroupPrice(group.parentProductId)}
+                                              className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                                              data-testid={`button-autofill-price-${group.parentProductId}`}
+                                              title={t('orders:autofillPrice', 'Fill all with this price')}
+                                            >
+                                              <Copy className="h-3.5 w-3.5" />
+                                            </Button>
+                                          )}
+                                        </div>
                                       </TableCell>
                                       {showDiscountColumn && (
                                         <TableCell className="text-right align-middle">
