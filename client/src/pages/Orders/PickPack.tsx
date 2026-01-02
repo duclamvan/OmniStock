@@ -15180,65 +15180,67 @@ export default function PickPack() {
       image: string | null;
     }> = [];
     
-    const productGroupMap = new Map<string, typeof activePickingOrder.items>();
+    // STEP 1: First merge ALL items with same SKU across entire order (before grouping by productId)
+    // This ensures items like 5x + 1x of same SKU get combined regardless of their productId
+    const globalSkuMergeMap = new Map<string, { 
+      mergedItem: typeof activePickingOrder.items[0]; 
+      originalIds: string[];
+      totalQty: number;
+      pickedQty: number;
+    }>();
     const serviceItems: typeof activePickingOrder.items = [];
     
     activePickingOrder.items.forEach(item => {
       if (item.serviceId) {
         serviceItems.push(item);
       } else {
-        const groupKey = item.productId || getParentProductName(item.productName);
-        if (!productGroupMap.has(groupKey)) {
-          productGroupMap.set(groupKey, []);
-        }
-        productGroupMap.get(groupKey)!.push(item);
-      }
-    });
-    
-    // Convert product groups - merge items with same SKU within each group
-    productGroupMap.forEach((items, groupId) => {
-      // Merge items with same SKU (same variant appearing multiple times as separate line items)
-      const skuMergeMap = new Map<string, { 
-        mergedItem: typeof items[0]; 
-        originalIds: string[];
-        totalQty: number;
-        pickedQty: number;
-      }>();
-      
-      items.forEach(item => {
-        const mergeKey = item.sku || item.id; // Use SKU as merge key, fallback to id if no SKU
-        if (skuMergeMap.has(mergeKey)) {
-          const existing = skuMergeMap.get(mergeKey)!;
+        // Use SKU as the global merge key
+        const mergeKey = item.sku || item.id;
+        if (globalSkuMergeMap.has(mergeKey)) {
+          const existing = globalSkuMergeMap.get(mergeKey)!;
           existing.originalIds.push(item.id);
           existing.totalQty += item.quantity;
           existing.pickedQty += item.pickedQuantity;
-          // Update the merged item's quantities
+          // Update merged item with combined quantities
           existing.mergedItem = {
             ...existing.mergedItem,
             quantity: existing.totalQty,
             pickedQuantity: existing.pickedQty,
-            // Store original IDs for picking updates
             _mergedFromIds: existing.originalIds
           } as typeof item;
         } else {
-          skuMergeMap.set(mergeKey, {
+          globalSkuMergeMap.set(mergeKey, {
             mergedItem: { ...item, _mergedFromIds: [item.id] } as typeof item,
             originalIds: [item.id],
             totalQty: item.quantity,
             pickedQty: item.pickedQuantity
           });
         }
-      });
-      
-      // Get merged items list
-      const mergedItems = Array.from(skuMergeMap.values()).map(v => v.mergedItem);
-      
-      const totalQty = mergedItems.reduce((sum, i) => sum + i.quantity, 0);
-      const pickedQty = mergedItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
+      }
+    });
+    
+    // Get all merged product items
+    const allMergedItems = Array.from(globalSkuMergeMap.values()).map(v => v.mergedItem);
+    
+    // STEP 2: Now group merged items by productId for display
+    const productGroupMap = new Map<string, typeof allMergedItems>();
+    
+    allMergedItems.forEach(item => {
+      const groupKey = item.productId || getParentProductName(item.productName);
+      if (!productGroupMap.has(groupKey)) {
+        productGroupMap.set(groupKey, []);
+      }
+      productGroupMap.get(groupKey)!.push(item);
+    });
+    
+    // Convert product groups to parentGroups array
+    productGroupMap.forEach((items, groupId) => {
+      const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+      const pickedQty = items.reduce((sum, i) => sum + i.pickedQuantity, 0);
       const parentName = getParentProductName(items[0].productName);
       
-      // Calculate color range from merged items
-      const colorNumbers = mergedItems
+      // Calculate color range from items
+      const colorNumbers = items
         .map(i => i.colorNumber)
         .filter(Boolean)
         .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
@@ -15249,13 +15251,13 @@ export default function PickPack() {
         type: 'product',
         groupId,
         parentName,
-        items: mergedItems,
+        items,
         totalQuantity: totalQty,
         pickedQuantity: pickedQty,
         allPicked: pickedQty >= totalQty,
         firstColorNumber: colorNumbers.length > 0 ? colorNumbers[0].original : null,
         lastColorNumber: colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null,
-        variantCount: mergedItems.length,
+        variantCount: items.length,
         image: items[0].image || null
       });
     });
@@ -16045,7 +16047,7 @@ export default function PickPack() {
                                 }}
                               >
                                 <CheckCircle2 className="h-5 w-5 mr-2" />
-                                {t('pickAll') || 'Pick All'} ({currentGroup.variantCount})
+                                {t('pickAll') || 'Pick All'} ({currentGroup.totalQuantity})
                               </Button>
                             </div>
                           )}
