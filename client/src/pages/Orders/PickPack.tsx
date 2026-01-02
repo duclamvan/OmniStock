@@ -3967,6 +3967,7 @@ export default function PickPack() {
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [manualItemIndex, setManualItemIndex] = useState(0);
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const [showForceFinishButton, setShowForceFinishButton] = useState(false);
   const [isCompletingPacking, setIsCompletingPacking] = useState(false);
@@ -15141,9 +15142,92 @@ export default function PickPack() {
   // Active Picking View - Full Screen
   if (activePickingOrder) {
     const progress = (activePickingOrder.pickedItems / activePickingOrder.totalItems) * 100;
-    // Use manual index instead of auto-finding next unpicked item
+    
+    // Create parent product groups for navigation (group by productId, services are consolidated)
+    const parentGroups: Array<{
+      type: 'product' | 'service';
+      groupId: string;
+      parentName: string;
+      items: typeof activePickingOrder.items;
+      totalQuantity: number;
+      pickedQuantity: number;
+      allPicked: boolean;
+      firstColorNumber: string | null;
+      lastColorNumber: string | null;
+      variantCount: number;
+      image: string | null;
+    }> = [];
+    
+    const productGroupMap = new Map<string, typeof activePickingOrder.items>();
+    const serviceItems: typeof activePickingOrder.items = [];
+    
+    activePickingOrder.items.forEach(item => {
+      if (item.serviceId) {
+        serviceItems.push(item);
+      } else {
+        const groupKey = item.productId || getParentProductName(item.productName);
+        if (!productGroupMap.has(groupKey)) {
+          productGroupMap.set(groupKey, []);
+        }
+        productGroupMap.get(groupKey)!.push(item);
+      }
+    });
+    
+    // Convert product groups
+    productGroupMap.forEach((items, groupId) => {
+      const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+      const pickedQty = items.reduce((sum, i) => sum + i.pickedQuantity, 0);
+      const parentName = getParentProductName(items[0].productName);
+      
+      // Calculate color range
+      const colorNumbers = items
+        .map(i => i.colorNumber)
+        .filter(Boolean)
+        .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
+        .filter(c => !isNaN(c.numeric))
+        .sort((a, b) => a.numeric - b.numeric);
+      
+      parentGroups.push({
+        type: 'product',
+        groupId,
+        parentName,
+        items,
+        totalQuantity: totalQty,
+        pickedQuantity: pickedQty,
+        allPicked: pickedQty >= totalQty,
+        firstColorNumber: colorNumbers.length > 0 ? colorNumbers[0].original : null,
+        lastColorNumber: colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null,
+        variantCount: items.length,
+        image: items[0].image || null
+      });
+    });
+    
+    // Add consolidated service group if there are service items
+    if (serviceItems.length > 0) {
+      const serviceTotalQty = serviceItems.reduce((sum, i) => sum + i.quantity, 0);
+      const servicePickedQty = serviceItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
+      parentGroups.push({
+        type: 'service',
+        groupId: 'services',
+        parentName: t('serviceBill') || 'Service Bill',
+        items: serviceItems,
+        totalQuantity: serviceTotalQty,
+        pickedQuantity: servicePickedQty,
+        allPicked: servicePickedQty >= serviceTotalQty,
+        firstColorNumber: null,
+        lastColorNumber: null,
+        variantCount: serviceItems.length,
+        image: null
+      });
+    }
+    
+    // Get current group based on group index (handle empty orders)
+    const safeGroupIndex = parentGroups.length > 0 ? Math.max(0, Math.min(currentGroupIndex, parentGroups.length - 1)) : 0;
+    const currentGroup = parentGroups.length > 0 ? parentGroups[safeGroupIndex] : null;
+    
+    // For legacy compatibility, currentItem is the first item in the current group
     const currentItemIndex = manualItemIndex;
-    const currentItem = activePickingOrder.items[currentItemIndex] || null;
+    const currentItem = currentGroup?.items[0] || activePickingOrder.items[currentItemIndex] || null;
     const hasUnpickedItems = activePickingOrder.items.some(item => item.pickedQuantity < item.quantity);
     const allItemsPicked = activePickingOrder.items.every(item => item.pickedQuantity >= item.quantity);
 
@@ -15243,8 +15327,8 @@ export default function PickPack() {
                       <Package className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/80 text-xs font-medium">{t('pickingItem')}</p>
-                      <p className="text-white text-lg font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                      <p className="text-white/80 text-xs font-medium">{t('pickingProduct') || t('pickingItem')}</p>
+                      <p className="text-white text-lg font-black">{safeGroupIndex + 1} / {parentGroups.length}</p>
                     </div>
                   </div>
                   {currentItem?.pickedQuantity === currentItem?.quantity && (
@@ -15383,7 +15467,7 @@ export default function PickPack() {
                     </div>
                     <div>
                       <p className="text-white/80 text-sm font-medium">{t('pickingItem')}</p>
-                      <p className="text-white text-2xl font-black">{currentItemIndex + 1} / {activePickingOrder.items.length}</p>
+                      <p className="text-white text-2xl font-black">{safeGroupIndex + 1} / {parentGroups.length}</p>
                     </div>
                   </div>
                   {currentItem?.pickedQuantity === currentItem?.quantity && (
@@ -15718,267 +15802,204 @@ export default function PickPack() {
                 const variantCount = sameSkuItems.length;
                 
                 return (
-              <div className="h-full flex flex-col bg-gray-50">
+              <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
                 
                 <div className="flex-1 p-4 space-y-4 overflow-auto">
-                      {/* Streamlined Product Display - Hero Image Layout */}
+                      {/* Group-Based Product Display */}
+                      {currentGroup && (
                       <div className="space-y-4">
-                        {/* Hero Product Image - Always Large and Prominent with fixed height to prevent layout jump */}
+                        {/* Hero Product Image */}
                         <div 
-                          className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm flex items-center justify-center"
-                          onClick={() => handleImageClick(currentItem.id)}
+                          className="relative bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm flex items-center justify-center"
+                          onClick={() => currentGroup.items[0] && handleImageClick(currentGroup.items[0].id)}
                         >
                           <div className="w-full h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-gray-50 dark:from-gray-800 to-gray-100 dark:to-gray-900 cursor-pointer p-4">
                             <div className="w-full h-full flex items-center justify-center">
-                              {currentItem.image ? (
+                              {currentGroup.image ? (
                                 <img 
-                                  src={currentItem.image} 
-                                  alt={currentItem.productName}
+                                  src={currentGroup.image} 
+                                  alt={currentGroup.parentName}
                                   className="max-w-full max-h-full w-auto h-auto object-contain"
                                 />
-                              ) : currentItem.serviceId ? (
-                                <Wrench className="h-24 w-24 sm:h-32 sm:w-32 text-purple-300 dark:text-purple-500 dark:text-purple-400" />
+                              ) : currentGroup.type === 'service' ? (
+                                <Wrench className="h-24 w-24 sm:h-32 sm:w-32 text-purple-300 dark:text-purple-500" />
                               ) : (
-                                <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
+                                <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300 dark:text-gray-600" />
                               )}
                             </div>
-                            {/* Overlay Badge for Quick Info - Shows merged quantity */}
-                            <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
-                              {mergedPickedQty}/{mergedQty}
+                            {/* Overlay Badge for Quick Info */}
+                            <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-bold z-10 ${
+                              currentGroup.allPicked ? 'bg-green-500 text-white' : 'bg-black/75 text-white'
+                            }`}>
+                              {currentGroup.pickedQuantity}/{currentGroup.totalQuantity}
                             </div>
                           </div>
                         </div>
                         
-                        {/* Service Bill Details - Simplified */}
-                        {currentItem.serviceId ? (
-                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 p-6 text-center">
-                            <p className="text-sm font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-2">Service Bill</p>
-                            <h2 className="text-3xl sm:text-4xl font-black text-purple-700 dark:text-purple-400 mb-3">
-                              #{activePickingOrder.orderId}
-                            </h2>
-                            <p className="text-lg sm:text-xl font-bold">
-                              <span className="text-purple-900 dark:text-purple-100 font-black">{activePickingOrder.customerName}</span>
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-                            {/* Parent Product Name */}
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 leading-tight">
-                              {getParentProductName(currentItem.productName)}
-                            </h2>
-                            {/* Color range and variant info for multi-variant products */}
-                            {(() => {
-                              const productId = currentItem.productId;
-                              const relatedItems = productId 
-                                ? activePickingOrder.items.filter(item => item.productId === productId && !item.serviceId)
-                                : [];
-                              const colorNumbers = relatedItems
-                                .map(i => i.colorNumber)
-                                .filter(Boolean)
-                                .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
-                                .filter(c => !isNaN(c.numeric))
-                                .sort((a, b) => a.numeric - b.numeric);
-                              const firstColor = colorNumbers.length > 0 ? colorNumbers[0].original : null;
-                              const lastColor = colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null;
-                              const hasMultipleVariants = relatedItems.length > 1;
-                              
-                              return (
-                                <div className="flex gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap items-center">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-blue-600 dark:text-blue-400">({mergedQty}x)</span>
-                                    {hasMultipleVariants && firstColor && lastColor && (
-                                      <span className="text-purple-600 dark:text-purple-400 font-mono font-medium">
-                                        #{firstColor} → #{lastColor}
-                                      </span>
-                                    )}
-                                    {hasMultipleVariants && (
-                                      <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium">
-                                        {relatedItems.length} {t('variants')}
-                                      </Badge>
-                                    )}
-                                    {!hasMultipleVariants && currentItem.colorNumber && (
-                                      <span className="text-gray-500 dark:text-gray-400 font-mono">#{currentItem.colorNumber}</span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Hash className="h-4 w-4 text-gray-400" />
-                                    <span className="font-mono">{currentItem.sku}</span>
-                                  </div>
-                                  {currentItem.barcode && currentItem.barcode !== currentItem.sku && (
-                                    <div className="flex items-center gap-1">
-                                      <ScanLine className="h-4 w-4 text-gray-400" />
-                                      <span className="font-mono">{currentItem.barcode}</span>
-                                    </div>
-                                  )}
-                                  {currentItem.bulkUnitQty && mergedQty >= currentItem.bulkUnitQty && (
-                                    <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
-                                      <Box className="h-2.5 w-2.5 mr-0.5" />
-                                      {Math.floor(mergedQty / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                                    </Badge>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Related Variants Panel - Show when item belongs to a product group */}
-                      {(() => {
-                        // Find related variants (same productId) and sort by color number
-                        const productId = currentItem.productId;
-                        const extractColorNumber = (item: typeof currentItem): number => {
-                          // First try colorNumber field
-                          if (item.colorNumber) {
-                            const num = parseInt(item.colorNumber, 10);
-                            if (!isNaN(num)) return num;
-                          }
-                          // Fallback: extract from product/variant name
-                          const nameMatch = (item.variantName || item.productName || '').match(/(?:Color|Colour)\s*(\d+)/i);
-                          if (nameMatch) {
-                            return parseInt(nameMatch[1], 10);
-                          }
-                          return 999999; // No color number - sort to end
-                        };
-                        
-                        const relatedItems = productId 
-                          ? activePickingOrder.items
-                              .filter(item => item.productId === productId)
-                              .sort((a, b) => extractColorNumber(a) - extractColorNumber(b))
-                          : [];
-                        
-                        // Merge items with same SKU
-                        const skuMergedMap = new Map<string, {
-                          sku: string;
-                          totalQty: number;
-                          pickedQty: number;
-                          itemIds: string[];
-                          displayName: string;
-                          colorNumber: string | null;
-                          productId: string | null;
-                          variantId: string | null;
-                          variantLocationCode: string | null;
-                          warehouseLocation: string | null;
-                          firstItemIndex: number;
-                        }>();
-                        
-                        relatedItems.forEach((item) => {
-                          const sku = item.sku || item.id;
-                          const existing = skuMergedMap.get(sku);
-                          const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
-                          if (existing) {
-                            existing.totalQty += item.quantity;
-                            existing.pickedQty += item.pickedQuantity;
-                            existing.itemIds.push(item.id);
-                            if (itemIndex < existing.firstItemIndex) {
-                              existing.firstItemIndex = itemIndex;
-                            }
-                          } else {
-                            skuMergedMap.set(sku, {
-                              sku,
-                              totalQty: item.quantity,
-                              pickedQty: item.pickedQuantity,
-                              itemIds: [item.id],
-                              displayName: item.variantName || item.productName,
-                              colorNumber: item.colorNumber || null,
-                              productId: item.productId || null,
-                              variantId: item.variantId || null,
-                              variantLocationCode: item.variantLocationCode || null,
-                              warehouseLocation: item.warehouseLocation || null,
-                              firstItemIndex: itemIndex
-                            });
-                          }
-                        });
-                        
-                        const mergedVariants = Array.from(skuMergedMap.values());
-                        const hasMultipleVariants = mergedVariants.length > 1;
-                        
-                        if (!hasMultipleVariants || currentItem.serviceId) return null;
-                        
-                        // Calculate group stats from merged items
-                        const totalQuantity = mergedVariants.reduce((sum, m) => sum + m.totalQty, 0);
-                        const pickedQuantity = mergedVariants.reduce((sum, m) => sum + m.pickedQty, 0);
-                        const allPicked = pickedQuantity >= totalQuantity;
-                        const parentName = currentItem.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
-                        
-                        return (
-                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
-                            {/* Group Header */}
-                            <div className="p-3 bg-purple-100 dark:bg-purple-900/50 border-b border-purple-200 dark:border-purple-700">
+                        {/* Consolidated Service Card - All services in one view */}
+                        {currentGroup.type === 'service' ? (
+                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-purple-100 dark:to-purple-900/50 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
+                            {/* Service Header */}
+                            <div className="p-4 bg-purple-100 dark:bg-purple-900/50 border-b border-purple-200 dark:border-purple-700">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                  <span className="font-bold text-purple-900 dark:text-purple-200 text-sm">{parentName}</span>
+                                  <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                  <span className="font-bold text-purple-900 dark:text-purple-200 text-lg">{t('serviceBill') || 'Service Bill'}</span>
                                 </div>
-                                <Badge className={`px-2 py-0.5 text-xs font-bold ${allPicked ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'}`}>
-                                  {pickedQuantity}/{totalQuantity}
+                                <Badge className={`px-3 py-1 text-sm font-bold ${currentGroup.allPicked ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'}`}>
+                                  {currentGroup.pickedQuantity}/{currentGroup.totalQuantity}
                                 </Badge>
                               </div>
-                              <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                {mergedVariants.length} {t('variants')}
-                              </div>
+                              <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                                {t('orderForCustomer') || 'Order'}: <span className="font-bold">{activePickingOrder.customerName}</span>
+                              </p>
                             </div>
                             
-                            {/* Pick All Button - Batch update all items in single state change */}
-                            {!allPicked && (
-                              <div className="p-2 border-b border-purple-200 dark:border-purple-700">
+                            {/* Service Items List - No individual picking needed */}
+                            <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+                              {currentGroup.items.map((serviceItem, idx) => (
+                                <div key={serviceItem.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{serviceItem.productName}</p>
+                                      {serviceItem.notes && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic truncate">{serviceItem.notes}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-2">
+                                      <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{serviceItem.quantity}x</span>
+                                      <span className="text-sm font-mono text-gray-600 dark:text-gray-400">{Number(serviceItem.price || 0).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Complete All Services Button */}
+                            {!currentGroup.allPicked && (
+                              <div className="p-4 border-t border-purple-200 dark:border-purple-700">
                                 <Button
-                                  size="sm"
-                                  className="w-full h-9 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-sm"
+                                  size="lg"
+                                  className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                                   onClick={() => {
-                                    // Get all item IDs from merged variants that are not fully picked
-                                    const allItemIds = mergedVariants
-                                      .filter(m => m.pickedQty < m.totalQty)
-                                      .flatMap(m => m.itemIds);
-                                    if (allItemIds.length === 0) return;
-                                    
-                                    // Create updated items array with all variants set to full quantity
                                     const updatedItems = activePickingOrder.items.map(i => {
-                                      if (allItemIds.includes(i.id)) {
+                                      if (currentGroup.items.some(gi => gi.id === i.id)) {
                                         return { ...i, pickedQuantity: i.quantity };
                                       }
                                       return i;
                                     });
-                                    
-                                    // Single state update for all items
                                     setActivePickingOrder({
                                       ...activePickingOrder,
                                       items: updatedItems,
                                       pickedItems: updatedItems.reduce((sum, i) => sum + i.pickedQuantity, 0)
                                     });
-                                    
                                     playSound('success');
                                   }}
                                 >
-                                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  {t('pickAll')} ({mergedVariants.length})
+                                  <CheckCircle2 className="h-6 w-6 mr-2" />
+                                  {t('markServicesComplete') || 'Mark Services Complete'}
                                 </Button>
                               </div>
                             )}
                             
-                            {/* Variant List - Merged by SKU */}
-                            <div className="max-h-48 overflow-y-auto">
-                              {mergedVariants.map((merged, idx) => {
-                                const isPicked = merged.pickedQty >= merged.totalQty;
-                                const isPartial = merged.pickedQty > 0 && merged.pickedQty < merged.totalQty;
-                                const isCurrent = merged.itemIds.includes(currentItem.id);
+                            {currentGroup.allPicked && (
+                              <div className="p-4 border-t border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30">
+                                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
+                                  <CheckCircle className="h-6 w-6" />
+                                  <span className="font-bold text-lg">{t('servicesComplete') || 'All Services Complete'}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Product Group Card */
+                          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                            {/* Parent Product Name */}
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 leading-tight">
+                              {currentGroup.parentName}
+                            </h2>
+                            {/* Color range and variant info */}
+                            <div className="flex gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-blue-600 dark:text-blue-400">({currentGroup.totalQuantity}x)</span>
+                                {currentGroup.variantCount > 1 && currentGroup.firstColorNumber && currentGroup.lastColorNumber && (
+                                  <span className="text-purple-600 dark:text-purple-400 font-mono font-medium">
+                                    #{currentGroup.firstColorNumber} → #{currentGroup.lastColorNumber}
+                                  </span>
+                                )}
+                                {currentGroup.variantCount > 1 && (
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium">
+                                    {currentGroup.variantCount} {t('variants')}
+                                  </Badge>
+                                )}
+                                {currentGroup.variantCount === 1 && currentGroup.items[0]?.colorNumber && (
+                                  <span className="text-gray-500 dark:text-gray-400 font-mono">#{currentGroup.items[0].colorNumber}</span>
+                                )}
+                              </div>
+                              {currentGroup.variantCount === 1 && (
+                                <div className="flex items-center gap-1">
+                                  <Hash className="h-4 w-4 text-gray-400" />
+                                  <span className="font-mono">{currentGroup.items[0]?.sku}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      )}
+
+                      {/* Variant Picker Panel - For product groups with variants */}
+                      {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount > 1 && (
+                        <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
+                          {/* Pick All Button */}
+                          {!currentGroup.allPicked && (
+                            <div className="p-3 border-b border-purple-200 dark:border-purple-700">
+                              <Button
+                                size="lg"
+                                className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-base"
+                                onClick={() => {
+                                  const updatedItems = activePickingOrder.items.map(i => {
+                                    if (currentGroup.items.some(gi => gi.id === i.id)) {
+                                      return { ...i, pickedQuantity: i.quantity };
+                                    }
+                                    return i;
+                                  });
+                                  setActivePickingOrder({
+                                    ...activePickingOrder,
+                                    items: updatedItems,
+                                    pickedItems: updatedItems.reduce((sum, i) => sum + i.pickedQuantity, 0)
+                                  });
+                                  playSound('success');
+                                }}
+                              >
+                                <CheckCircle2 className="h-5 w-5 mr-2" />
+                                {t('pickAll') || 'Pick All'} ({currentGroup.variantCount})
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {/* Variant List */}
+                          <div className="max-h-64 overflow-y-auto">
+                            {currentGroup.items
+                              .sort((a, b) => {
+                                const aNum = parseInt(a.colorNumber || '999999', 10);
+                                const bNum = parseInt(b.colorNumber || '999999', 10);
+                                return aNum - bNum;
+                              })
+                              .map((item, idx) => {
+                                const isPicked = item.pickedQuantity >= item.quantity;
+                                const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
                                 
                                 return (
                                   <div
-                                    key={merged.sku}
-                                    className={`h-12 p-2 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer flex items-center gap-2 transition-all duration-150 ease-out
-                                      ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}
-                                      ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
+                                    key={item.id}
+                                    className={`p-3 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer flex items-center gap-3 transition-all duration-150
+                                      ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                    onClick={() => {
                                       if (!isPicked) {
-                                        // Update all items in this merged group
-                                        const updatedItems = activePickingOrder.items.map(i => {
-                                          if (merged.itemIds.includes(i.id)) {
-                                            return { ...i, pickedQuantity: i.quantity };
-                                          }
-                                          return i;
-                                        });
+                                        const updatedItems = activePickingOrder.items.map(i => 
+                                          i.id === item.id ? { ...i, pickedQuantity: i.quantity } : i
+                                        );
                                         setActivePickingOrder({
                                           ...activePickingOrder,
                                           items: updatedItems,
@@ -15986,94 +16007,115 @@ export default function PickPack() {
                                         });
                                         playSound('success');
                                       }
-                                      setManualItemIndex(merged.firstItemIndex);
                                     }}
                                   >
                                     {/* Color Number Badge */}
-                                    <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs transition-colors duration-150 ${
+                                    <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm ${
                                       isPicked ? 'bg-green-500 text-white' : 
                                       isPartial ? 'bg-yellow-500 text-white' : 
-                                      isCurrent ? 'bg-blue-500 text-white' :
                                       'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
                                     }`}>
-                                      {merged.colorNumber ? `#${merged.colorNumber}` : idx + 1}
+                                      {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                                     </div>
                                     
-                                    {/* Variant Name + Location */}
+                                    {/* Variant Info + Location */}
                                     <div className="flex-1 min-w-0">
-                                      <p className={`text-xs font-medium truncate transition-all duration-150 ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                        {merged.displayName}
+                                      <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                        {item.variantName || item.productName}
                                       </p>
-                                      <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                                        📍 <ItemPrimaryLocation productId={merged.productId} variantId={merged.variantId} variantLocationCode={merged.variantLocationCode} fallbackLocation={merged.warehouseLocation} />
-                                      </p>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-xs text-gray-500 font-mono">
+                                          📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                                        </span>
+                                        <span className="text-xs text-gray-400 font-mono">{item.sku}</span>
+                                      </div>
                                     </div>
                                     
-                                    {/* Status - Fixed width to prevent layout shift */}
-                                    <div className="flex-shrink-0 w-10 text-xs font-bold flex justify-end">
+                                    {/* Status */}
+                                    <div className="flex-shrink-0 flex items-center gap-2">
+                                      <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{item.quantity}x</span>
                                       {isPicked ? (
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <CheckCircle className="h-5 w-5 text-green-500" />
                                       ) : (
-                                        <span className="text-gray-500">{merged.pickedQty}/{merged.totalQty}</span>
+                                        <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                                       )}
                                     </div>
                                   </div>
                                 );
                               })}
+                          </div>
+                          
+                          {/* All Picked Success State */}
+                          {currentGroup.allPicked && (
+                            <div className="p-4 border-t border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30">
+                              <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
+                                <CheckCircle className="h-6 w-6" />
+                                <span className="font-bold text-lg">{t('allVariantsPicked') || 'All Items Picked'}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Carton/Bulk Unit Details - Shows for single-item groups with bulk units */}
+                      {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount <= 1 && (() => {
+                        const firstItem = currentGroup.items[0];
+                        if (!firstItem || !firstItem.bulkUnitQty || firstItem.bulkUnitQty <= 0 || firstItem.quantity < firstItem.bulkUnitQty) return null;
+                        return (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
+                            <Box className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
+                              {Math.floor(firstItem.quantity / firstItem.bulkUnitQty)} {firstItem.bulkUnitName || t('carton') || 'carton'}{Math.floor(firstItem.quantity / firstItem.bulkUnitQty) !== 1 ? 's' : ''}
+                              {firstItem.quantity % firstItem.bulkUnitQty > 0 && (
+                                <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
+                                  + {firstItem.quantity % firstItem.bulkUnitQty} {t('pieces') || 'pcs'}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Shipping Notes - Collect all notes from items in current group */}
+                      {currentGroup && (() => {
+                        const allNotes = currentGroup.items.filter(item => item.notes).map(item => item.notes);
+                        if (allNotes.length === 0) return null;
+                        return (
+                          <div className="bg-amber-50 dark:bg-amber-900/30 border-3 border-amber-500 rounded-lg p-4 shadow-lg">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="bg-amber-500 rounded-full p-2">
+                                  <AlertCircle className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                  🟡 {t('shippingNotes') || 'Shipping Notes'}
+                                </h3>
+                                <p className="text-base lg:text-lg font-semibold text-amber-900 leading-relaxed whitespace-pre-wrap">
+                                  {allNotes.join('\n')}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         );
                       })()}
 
-                      {/* Carton/Bulk Unit Details - Shows how many cartons to pick (Hidden for services) */}
-                      {!currentItem.serviceId && currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">
-                          <Box className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                          <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
-                            {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || t('carton') || 'carton'}{Math.floor(currentItem.quantity / currentItem.bulkUnitQty) !== 1 ? 's' : ''}
-                            {currentItem.quantity % currentItem.bulkUnitQty > 0 && (
-                              <span className="text-amber-600 dark:text-amber-400 font-medium ml-1">
-                                + {currentItem.quantity % currentItem.bulkUnitQty} {t('pieces') || 'pcs'}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Shipping Notes - Important Picking Instructions */}
-                      {currentItem.notes && (
-                        <div className="bg-amber-50 dark:bg-amber-900/30 border-3 border-amber-500 rounded-lg p-4 shadow-lg">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="bg-amber-50 dark:bg-amber-900/300 rounded-full p-2">
-                                <AlertCircle className="h-5 w-5 text-white" />
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                🟡 Shipping Notes
-                              </h3>
-                              <p className="text-base lg:text-lg font-semibold text-amber-900 leading-relaxed whitespace-pre-wrap">
-                                {currentItem.notes}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Bundle Items Picker - For gel polish colors etc */}
-                      {currentItem.isBundle && currentItem.bundleItems && currentItem.bundleItems.length > 0 ? (
+                      {/* Bundle Items Picker - For single bundle products */}
+                      {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount <= 1 && currentGroup.items[0]?.isBundle && currentGroup.items[0]?.bundleItems && currentGroup.items[0].bundleItems.length > 0 && (() => {
+                        const bundleItem0 = currentGroup.items[0];
+                        return (
                         <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-pink-50 dark:to-pink-900/30 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-purple-400 dark:border-purple-700 shadow-xl">
                           <div className="flex items-center justify-between mb-4">
                             <p className="text-base lg:text-xl font-black text-purple-800 dark:text-purple-200 uppercase tracking-wider">{t('bundleItems')}</p>
                             <Badge className="bg-purple-600 text-white dark:bg-purple-700 px-3 py-1">
-                              {bundlePickedItems[currentItem.id]?.size || 0} / {currentItem.bundleItems.length} {t('picked')}
+                              {bundlePickedItems[bundleItem0.id]?.size || 0} / {bundleItem0.bundleItems!.length} {t('picked')}
                             </Badge>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                            {currentItem.bundleItems.map((bundleItem) => {
-                              const isPicked = bundlePickedItems[currentItem.id]?.has(bundleItem.id) || false;
+                            {bundleItem0.bundleItems!.map((bundleItem) => {
+                              const isPicked = bundlePickedItems[bundleItem0.id]?.has(bundleItem.id) || false;
                               
                               return (
                                 <div
@@ -16084,14 +16126,13 @@ export default function PickPack() {
                                       : 'bg-white border-gray-300 hover:border-purple-400 dark:hover:border-purple-700 dark:border-purple-700 hover:shadow-md'
                                   }`}
                                   onClick={() => {
-                                    const currentPicked = bundlePickedItems[currentItem.id] || new Set();
+                                    const currentPicked = bundlePickedItems[bundleItem0.id] || new Set();
                                     const newPicked = new Set(currentPicked);
                                     
                                     if (isPicked) {
                                       newPicked.delete(bundleItem.id);
                                     } else {
                                       newPicked.add(bundleItem.id);
-                                      // Play success sound if enabled
                                       if (audioEnabled) {
                                         const audio = new Audio('/success.mp3');
                                         audio.play().catch(() => {});
@@ -16100,16 +16141,14 @@ export default function PickPack() {
                                     
                                     setBundlePickedItems({
                                       ...bundlePickedItems,
-                                      [currentItem.id]: newPicked
+                                      [bundleItem0.id]: newPicked
                                     });
                                     
-                                    // Update the picked quantity based on bundle completion
-                                    const allPicked = newPicked.size === currentItem.bundleItems?.length;
-                                    updatePickedItem(currentItem.id, allPicked ? currentItem.quantity : 0);
+                                    const allPicked = newPicked.size === bundleItem0.bundleItems?.length;
+                                    updatePickedItem(bundleItem0.id, allPicked ? bundleItem0.quantity : 0);
                                   }}
                                 >
                                   <div className="flex items-start gap-2">
-                                    {/* Item Image - Bundle items don't have images */}
                                     <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                                       <div className="w-full h-full flex items-center justify-center">
                                         <Package className="h-8 w-8 text-gray-400" />
@@ -16125,7 +16164,6 @@ export default function PickPack() {
                                       <div className="text-sm font-medium text-gray-800 truncate">
                                         {bundleItem.name}
                                       </div>
-                                      {/* Fetch real location from product locations API */}
                                       <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                         <MapPin className="h-3 w-3" />
                                         <ItemPrimaryLocation productId={bundleItem.productId} variantId={bundleItem.variantId} fallbackLocation={bundleItem.location || 'N/A'} />
@@ -16148,7 +16186,7 @@ export default function PickPack() {
                             })}
                           </div>
                           
-                          {bundlePickedItems[currentItem.id]?.size === currentItem.bundleItems?.length && (
+                          {bundlePickedItems[bundleItem0.id]?.size === bundleItem0.bundleItems?.length && (
                             <Alert className="mt-4 bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700 shadow-md">
                               <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-emerald-700 dark:text-emerald-200" />
                               <AlertDescription className="text-emerald-800 dark:text-emerald-200 font-semibold text-sm lg:text-base">
@@ -16157,18 +16195,17 @@ export default function PickPack() {
                             </Alert>
                           )}
                           
-                          {/* Quick Pick All Bundle Items */}
-                          {(!bundlePickedItems[currentItem.id] || bundlePickedItems[currentItem.id].size < (currentItem.bundleItems?.length || 0)) && (
+                          {(!bundlePickedItems[bundleItem0.id] || bundlePickedItems[bundleItem0.id].size < (bundleItem0.bundleItems?.length || 0)) && (
                             <Button 
                               size="lg" 
                               className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 dark:from-purple-500 to-pink-600 dark:to-pink-500 hover:from-purple-700 dark:hover:from-purple-600 hover:to-pink-700 dark:hover:to-pink-600 text-white shadow-lg"
                               onClick={() => {
-                                const allIds = new Set(currentItem.bundleItems?.map(item => item.id) || []);
+                                const allIds = new Set(bundleItem0.bundleItems?.map(item => item.id) || []);
                                 setBundlePickedItems({
                                   ...bundlePickedItems,
-                                  [currentItem.id]: allIds
+                                  [bundleItem0.id]: allIds
                                 });
-                                updatePickedItem(currentItem.id, currentItem.quantity);
+                                updatePickedItem(bundleItem0.id, bundleItem0.quantity);
                                 if (audioEnabled) {
                                   const audio = new Audio('/success.mp3');
                                   audio.play().catch(() => {});
@@ -16180,60 +16217,51 @@ export default function PickPack() {
                             </Button>
                           )}
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                        {/* Multi-Location Picker - Only show for single-variant products */}
-                        {/* For multi-variant products, picking happens through the variant panel above */}
-                        {(() => {
-                          const productId = currentItem.productId;
-                          const relatedVariantCount = productId 
-                            ? activePickingOrder.items.filter(item => item.productId === productId && !item.serviceId).length
-                            : 1;
-                          
-                          // Hide MultiLocationPicker for multi-variant products - picking is done via variant panel
-                          if (relatedVariantCount > 1 && !currentItem.serviceId) {
-                            return null;
-                          }
-                          
-                          return (
+                        );
+                      })()}
+
+                      {/* Multi-Location Picker - Only show for single-item product groups */}
+                      {currentGroup && currentGroup.type === 'product' && currentGroup.variantCount <= 1 && currentGroup.items[0] && !currentGroup.items[0].isBundle && (() => {
+                        const singleItem = currentGroup.items[0];
+                        return (
+                          <div className="space-y-4">
                             <MultiLocationPicker
-                              currentItem={currentItem}
+                              currentItem={singleItem}
                               pickedFromLocations={pickedFromLocations}
                               setPickedFromLocations={setPickedFromLocations}
                               updatePickedItem={updatePickedItem}
                               t={t}
-                              mergedQuantity={mergedQty}
-                              sameSkuItems={sameSkuItems.map(i => ({ id: i.id, quantity: i.quantity, pickedQuantity: i.pickedQuantity }))}
+                              mergedQuantity={singleItem.quantity}
+                              sameSkuItems={[{ id: singleItem.id, quantity: singleItem.quantity, pickedQuantity: singleItem.pickedQuantity }]}
                             />
-                          );
-                        })()}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })()}
                       
-                      {/* Item Navigation Buttons */}
+                      {/* Product Navigation Buttons - Navigate by parent product group */}
                       <div className="space-y-6">
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
-                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 rounded-lg"
                             onClick={() => {
-                              setManualItemIndex(Math.max(0, currentItemIndex - 1));
+                              setCurrentGroupIndex(Math.max(0, safeGroupIndex - 1));
                             }}
-                            disabled={currentItemIndex === 0}
+                            disabled={safeGroupIndex === 0}
                           >
                             <ChevronLeft className="h-4 w-4 mr-1" />
-                            Previous
+                            {t('previousProduct') || 'Previous'}
                           </Button>
                           
                           <Button
                             variant="outline"
-                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 disabled:opacity-30 rounded-lg"
+                            className="flex-1 h-11 text-sm font-semibold border-2 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 rounded-lg"
                             onClick={() => {
-                              setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
+                              setCurrentGroupIndex(Math.min(parentGroups.length - 1, safeGroupIndex + 1));
                             }}
-                            disabled={currentItemIndex === activePickingOrder.items.length - 1}
+                            disabled={safeGroupIndex === parentGroups.length - 1}
                           >
-                            Next
+                            {t('nextProduct') || 'Next'}
                             <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         </div>
