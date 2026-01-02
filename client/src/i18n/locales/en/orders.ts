@@ -2014,6 +2014,12 @@ const orders = {
   sortCreatedOldest: 'Created: Oldest First',
   sortOrderIdDesc: 'Order ID: Z-A',
   sortOrderIdAsc: 'Order ID: A-Z',
+  deleteAllPermanently: 'Delete All Permanently',
+  deleteAllPermanentlyTitle: 'Delete All Orders Permanently?',
+  deleteAllPermanentlyWarning: 'This action cannot be undone. All {{count}} orders will be permanently deleted and their inventory will be restored.',
+  allOrdersDeleted: 'All Orders Deleted',
+  trashEmptied: 'Trash has been emptied successfully',
+  deleteAllError: 'Failed to delete some orders',
   
   // Pick & Pack - Group Navigation
   previousProduct: 'Previous',

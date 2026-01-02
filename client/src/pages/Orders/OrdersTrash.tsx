@@ -20,7 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package, Search, ArrowUpDown, Calendar } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Trash2, Undo2, AlertTriangle, Package, Search, ArrowUpDown, Calendar, MoreVertical } from "lucide-react";
 
 // Component to display order items for a trashed order
 function OrderItemsList({ orderId, currency }: { orderId: string; currency: string }) {
@@ -65,6 +66,7 @@ export default function OrdersTrash() {
   const { formatCurrency, formatDate } = useLocalization();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<any>(null);
+  const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('deleted_desc');
 
@@ -149,6 +151,30 @@ export default function OrdersTrash() {
     },
   });
 
+  const deleteAllPermanentlyMutation = useMutation({
+    mutationFn: async () => {
+      for (const order of trashedOrders) {
+        await apiRequest('DELETE', `/api/orders/${order.id}/permanent`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/trash'] });
+      toast({
+        title: t('orders:allOrdersDeleted'),
+        description: t('orders:trashEmptied'),
+      });
+      setDeleteAllConfirmOpen(false);
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/trash'] });
+      toast({
+        title: t('common:error'),
+        description: t('orders:deleteAllError'),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRestore = (orderId: string) => {
     restoreMutation.mutate(orderId);
   };
@@ -180,19 +206,40 @@ export default function OrdersTrash() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} data-testid="button-back">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Trash2 className="h-6 w-6 sm:h-8 sm:w-8 text-slate-500" />
-            {t('orders:trash')}
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {t('orders:trashDescription')}
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/orders')} data-testid="button-back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Trash2 className="h-6 w-6 sm:h-8 sm:w-8 text-slate-500" />
+              {t('orders:trash')}
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {t('orders:trashDescription')}
+            </p>
+          </div>
         </div>
+        {trashedOrders.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" data-testid="button-trash-menu">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                onClick={() => setDeleteAllConfirmOpen(true)}
+                data-testid="menu-delete-all-permanently"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('orders:deleteAllPermanently')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Search and Sort Controls */}
@@ -326,6 +373,30 @@ export default function OrdersTrash() {
               className="bg-red-600 hover:bg-red-700"
             >
               {t('orders:deletePermanently')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={setDeleteAllConfirmOpen}>
+        <AlertDialogContent className="z-[1200]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              {t('orders:deleteAllPermanentlyTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('orders:deleteAllPermanentlyWarning', { count: trashedOrders.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteAllPermanentlyMutation.mutate()}
+              disabled={deleteAllPermanentlyMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteAllPermanentlyMutation.isPending ? t('common:deleting') : t('orders:deleteAllPermanently')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

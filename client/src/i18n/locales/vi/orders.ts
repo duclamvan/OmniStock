@@ -2002,6 +2002,12 @@ const orders = {
   sortCreatedOldest: 'Tạo: Cũ nhất',
   sortOrderIdDesc: 'Mã đơn: Z-A',
   sortOrderIdAsc: 'Mã đơn: A-Z',
+  deleteAllPermanently: 'Xóa tất cả vĩnh viễn',
+  deleteAllPermanentlyTitle: 'Xóa vĩnh viễn tất cả đơn hàng?',
+  deleteAllPermanentlyWarning: 'Hành động này không thể hoàn tác. Tất cả {{count}} đơn hàng sẽ bị xóa vĩnh viễn và tồn kho sẽ được khôi phục.',
+  allOrdersDeleted: 'Đã xóa tất cả đơn hàng',
+  trashEmptied: 'Đã dọn sạch thùng rác',
+  deleteAllError: 'Không thể xóa một số đơn hàng',
   
   // Pick & Pack - Group Navigation
   previousProduct: 'Trước',
