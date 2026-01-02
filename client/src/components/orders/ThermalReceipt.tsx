@@ -355,10 +355,29 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
 export function useOrderReceiptData(order: any, currency: string = 'EUR'): ReceiptData | null {
   if (!order) return null;
   
-  const items: ReceiptItem[] = (order.items || []).map((item: any) => ({
-    name: item.productName || item.name || 'Item',
-    quantity: item.quantity || 1,
-    price: parseFloat(item.unitPrice || item.price || '0')
+  const getParentName = (name: string) => {
+    const match = name.match(/^(.+?)\s*[-–—]\s*(?:Color|Màu|Size|Kích thước|Variant|Biến thể)\s*.+$/i);
+    return match ? match[1].trim() : name;
+  };
+  
+  const grouped = (order.items || []).reduce((acc: Record<string, { name: string; totalQty: number; totalPrice: number; variantCount: number }>, item: any) => {
+    const parentName = getParentName(item.productName || item.name || 'Item');
+    const itemQty = item.quantity || 1;
+    const itemPrice = parseFloat(item.unitPrice || item.price || '0');
+    
+    if (!acc[parentName]) {
+      acc[parentName] = { name: parentName, totalQty: 0, totalPrice: 0, variantCount: 0 };
+    }
+    acc[parentName].totalQty += itemQty;
+    acc[parentName].totalPrice += itemPrice * itemQty;
+    acc[parentName].variantCount += 1;
+    return acc;
+  }, {});
+  
+  const items: ReceiptItem[] = Object.values(grouped).map((g: any) => ({
+    name: g.variantCount > 1 ? `${g.name} (${g.variantCount} loại)` : g.name,
+    quantity: g.totalQty,
+    price: g.totalQty > 0 ? g.totalPrice / g.totalQty : 0
   }));
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
