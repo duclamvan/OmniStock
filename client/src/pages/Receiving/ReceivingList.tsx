@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6619,7 +6620,7 @@ function ShipmentReportDialog({
                   </div>
                   {showLabelsSection && (
                     <div className="p-3 space-y-3">
-                      {/* Actions - Inline with explicit pointer events */}
+                      {/* Actions - Print Selected */}
                       <div className="flex items-center justify-between gap-2 relative" style={{ zIndex: 9999, pointerEvents: 'auto' }}>
                         <Button 
                           variant="ghost" 
@@ -6666,46 +6667,151 @@ function ShipmentReportDialog({
                         </div>
                       </div>
                       
-                      {/* Items list - Compact */}
-                      <div className="space-y-1">
-                        {reportData.items
-                          .filter(item => item.locations.length > 0)
-                          .map((item) => (
-                            <div 
-                              key={item.receiptItemId} 
-                              className={`p-2 rounded cursor-pointer transition-all flex items-center gap-2 ${
-                                selectedItemsForLabels.has(String(item.receiptItemId))
-                                  ? 'bg-green-50 dark:bg-green-900/20 ring-1 ring-green-500'
-                                  : 'hover:bg-muted/50'
-                              }`}
-                              onClick={() => toggleItemForLabel(String(item.receiptItemId))}
-                            >
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                                selectedItemsForLabels.has(String(item.receiptItemId))
-                                  ? 'bg-green-500 border-green-500'
-                                  : 'border-gray-300 dark:border-gray-600'
-                              }`}>
-                                {selectedItemsForLabels.has(String(item.receiptItemId)) && (
-                                  <Check className="h-2.5 w-2.5 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm truncate block">{item.productName}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">{item.sku || '-'}</span>
-                              </div>
-                              <div className="text-right shrink-0 text-xs">
-                                <div className="font-semibold">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
-                                <div className="text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
-                              </div>
-                              <div className="flex flex-wrap gap-0.5 shrink-0 max-w-28">
-                                {item.locations.map((loc, idx) => (
-                                  <span key={idx} className="text-[10px] font-mono bg-muted px-1 py-0.5 rounded">
-                                    {loc.locationCode}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                      {/* Items grouped by parent product with collapsible dropdowns */}
+                      <div className="space-y-2">
+                        {(() => {
+                          const itemsWithLocations = reportData.items.filter(item => item.locations.length > 0);
+                          const extractParentName = (name: string) => {
+                            const parts = name.split(' - ');
+                            return parts.length > 1 ? parts[0] : name;
+                          };
+                          const grouped = itemsWithLocations.reduce((acc, item) => {
+                            const parentName = extractParentName(item.productName);
+                            if (!acc[parentName]) {
+                              acc[parentName] = [];
+                            }
+                            acc[parentName].push(item);
+                            return acc;
+                          }, {} as Record<string, typeof itemsWithLocations>);
+                          
+                          return Object.entries(grouped).map(([parentName, items]) => {
+                            const groupItemIds = items.map(i => String(i.receiptItemId));
+                            const allSelected = groupItemIds.every(id => selectedItemsForLabels.has(id));
+                            const someSelected = groupItemIds.some(id => selectedItemsForLabels.has(id));
+                            const isMultiVariant = items.length > 1;
+                            
+                            const toggleGroup = () => {
+                              setSelectedItemsForLabels(prev => {
+                                const next = new Set(prev);
+                                if (allSelected) {
+                                  groupItemIds.forEach(id => next.delete(id));
+                                } else {
+                                  groupItemIds.forEach(id => next.add(id));
+                                }
+                                return next;
+                              });
+                            };
+                            
+                            const printGroupLabels = (e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              setSelectedItemsForLabels(new Set(groupItemIds));
+                              setTimeout(() => printLabels(), 100);
+                            };
+                            
+                            const printSingleLabel = (e: React.MouseEvent, itemId: string) => {
+                              e.stopPropagation();
+                              setSelectedItemsForLabels(new Set([itemId]));
+                              setTimeout(() => printLabels(), 100);
+                            };
+                            
+                            return (
+                              <Collapsible key={parentName} defaultOpen={!isMultiVariant}>
+                                <div className={`border rounded-lg overflow-hidden ${someSelected ? 'ring-1 ring-green-500' : ''}`}>
+                                  <CollapsibleTrigger asChild>
+                                    <div className={`flex items-center gap-2 p-2 cursor-pointer transition-colors ${
+                                      allSelected ? 'bg-green-50 dark:bg-green-900/20' : 'hover:bg-muted/50'
+                                    }`}>
+                                      <div 
+                                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                          allSelected ? 'bg-green-500 border-green-500' :
+                                          someSelected ? 'bg-green-300 border-green-400' :
+                                          'border-gray-300 dark:border-gray-600'
+                                        }`}
+                                        onClick={(e) => { e.stopPropagation(); toggleGroup(); }}
+                                      >
+                                        {(allSelected || someSelected) && (
+                                          <Check className="h-2.5 w-2.5 text-white" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-sm font-medium truncate block">{parentName}</span>
+                                        {isMultiVariant && (
+                                          <span className="text-[10px] text-muted-foreground">{items.length} variants</span>
+                                        )}
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 px-2 text-xs shrink-0"
+                                        onClick={printGroupLabels}
+                                      >
+                                        <Printer className="h-3 w-3 mr-1" />
+                                        {t('printLabels')}
+                                      </Button>
+                                      {isMultiVariant && (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                      )}
+                                    </div>
+                                  </CollapsibleTrigger>
+                                  
+                                  <CollapsibleContent>
+                                    <div className="border-t divide-y divide-border">
+                                      {items.map((item) => (
+                                        <div 
+                                          key={item.receiptItemId} 
+                                          className={`p-2 pl-8 flex items-center gap-2 transition-colors ${
+                                            selectedItemsForLabels.has(String(item.receiptItemId))
+                                              ? 'bg-green-50/50 dark:bg-green-900/10'
+                                              : 'hover:bg-muted/30'
+                                          }`}
+                                        >
+                                          <div 
+                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 cursor-pointer ${
+                                              selectedItemsForLabels.has(String(item.receiptItemId))
+                                                ? 'bg-green-500 border-green-500'
+                                                : 'border-gray-300 dark:border-gray-600'
+                                            }`}
+                                            onClick={() => toggleItemForLabel(String(item.receiptItemId))}
+                                          >
+                                            {selectedItemsForLabels.has(String(item.receiptItemId)) && (
+                                              <Check className="h-2 w-2 text-white" />
+                                            )}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <span className="text-xs truncate block">{item.productName}</span>
+                                            <span className="text-[9px] text-muted-foreground font-mono">{item.sku || '-'}</span>
+                                          </div>
+                                          <div className="text-right shrink-0 text-[10px]">
+                                            <div className="font-semibold">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
+                                            <div className="text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
+                                          </div>
+                                          <div className="flex flex-wrap gap-0.5 shrink-0 max-w-20">
+                                            {item.locations.slice(0, 2).map((loc, idx) => (
+                                              <span key={idx} className="text-[9px] font-mono bg-muted px-1 py-0.5 rounded">
+                                                {loc.locationCode}
+                                              </span>
+                                            ))}
+                                            {item.locations.length > 2 && (
+                                              <span className="text-[9px] text-muted-foreground">+{item.locations.length - 2}</span>
+                                            )}
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0 shrink-0"
+                                            onClick={(e) => printSingleLabel(e, String(item.receiptItemId))}
+                                          >
+                                            <Printer className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </CollapsibleContent>
+                                </div>
+                              </Collapsible>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   )}
