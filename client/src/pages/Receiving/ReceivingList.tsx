@@ -6769,9 +6769,17 @@ function ShipmentReportDialog({
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <span className="text-sm font-medium truncate block">{parentName}</span>
-                                        {isMultiVariant && (
-                                          <span className="text-[10px] text-muted-foreground">{items.length} variants</span>
-                                        )}
+                                        {(() => {
+                                          // Count total variants across all items
+                                          let totalVariants = 0;
+                                          items.forEach((item) => {
+                                            const uniqueVariants = new Set(item.locations.map((loc: any) => loc.variantId || loc.sku || 'default'));
+                                            totalVariants += uniqueVariants.size || 1;
+                                          });
+                                          return totalVariants > 1 && (
+                                            <span className="text-[10px] text-muted-foreground">{totalVariants} {t('variants')}</span>
+                                          );
+                                        })()}
                                       </div>
                                       <Button
                                         size="sm"
@@ -6789,56 +6797,94 @@ function ShipmentReportDialog({
                                   </CollapsibleTrigger>
                                   
                                   <CollapsibleContent>
-                                    <div className="border-t divide-y divide-border">
-                                      {items.map((item) => (
-                                        <div 
-                                          key={item.receiptItemId} 
-                                          className={`p-2 pl-8 flex items-center gap-2 transition-colors ${
-                                            selectedItemsForLabels.has(String(item.receiptItemId))
-                                              ? 'bg-green-50/50 dark:bg-green-900/10'
-                                              : 'hover:bg-muted/30'
-                                          }`}
-                                        >
+                                    <div className="border-t divide-y divide-border max-h-96 overflow-y-auto">
+                                      {(() => {
+                                        // Expand all variants from all items in this group
+                                        const allVariants: Array<{
+                                          variantKey: string;
+                                          variantName: string;
+                                          sku: string;
+                                          locations: Array<{locationCode: string; quantity: number}>;
+                                          totalQty: number;
+                                          receiptItemId: string;
+                                          prices: any;
+                                        }> = [];
+                                        
+                                        items.forEach((item) => {
+                                          // Group locations by variant
+                                          const variantGroups: Record<string, typeof allVariants[0]> = {};
+                                          item.locations.forEach((loc: any) => {
+                                            const key = loc.variantId || loc.sku || item.sku || 'default';
+                                            if (!variantGroups[key]) {
+                                              variantGroups[key] = {
+                                                variantKey: key,
+                                                variantName: loc.variantName || item.productName,
+                                                sku: loc.sku || item.sku || '-',
+                                                locations: [],
+                                                totalQty: 0,
+                                                receiptItemId: String(item.receiptItemId),
+                                                prices: item.prices
+                                              };
+                                            }
+                                            variantGroups[key].locations.push({ locationCode: loc.locationCode, quantity: loc.quantity || 1 });
+                                            variantGroups[key].totalQty += loc.quantity || 1;
+                                          });
+                                          Object.values(variantGroups).forEach(v => allVariants.push(v));
+                                        });
+                                        
+                                        return allVariants.map((variant, vIdx) => (
                                           <div 
-                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 cursor-pointer ${
-                                              selectedItemsForLabels.has(String(item.receiptItemId))
-                                                ? 'bg-green-500 border-green-500'
-                                                : 'border-gray-300 dark:border-gray-600'
+                                            key={`${variant.receiptItemId}-${variant.variantKey}-${vIdx}`}
+                                            className={`p-2 pl-8 flex items-center gap-2 transition-colors ${
+                                              selectedItemsForLabels.has(variant.receiptItemId)
+                                                ? 'bg-green-50/50 dark:bg-green-900/10'
+                                                : 'hover:bg-muted/30'
                                             }`}
-                                            onClick={() => toggleItemForLabel(String(item.receiptItemId))}
                                           >
-                                            {selectedItemsForLabels.has(String(item.receiptItemId)) && (
-                                              <Check className="h-2 w-2 text-white" />
-                                            )}
+                                            <div 
+                                              className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 cursor-pointer ${
+                                                selectedItemsForLabels.has(variant.receiptItemId)
+                                                  ? 'bg-green-500 border-green-500'
+                                                  : 'border-gray-300 dark:border-gray-600'
+                                              }`}
+                                              onClick={() => toggleItemForLabel(variant.receiptItemId)}
+                                            >
+                                              {selectedItemsForLabels.has(variant.receiptItemId) && (
+                                                <Check className="h-2 w-2 text-white" />
+                                              )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <span className="text-xs truncate block">{variant.variantName}</span>
+                                              <span className="text-[9px] text-muted-foreground font-mono">{variant.sku}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
+                                              ×{variant.totalQty}
+                                            </span>
+                                            <div className="text-right shrink-0 text-[10px]">
+                                              <div className="font-semibold">{formatPrice(variant.prices?.priceCzk, 'CZK')}</div>
+                                              <div className="text-muted-foreground">{formatPrice(variant.prices?.priceEur, 'EUR')}</div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-0.5 shrink-0 max-w-24">
+                                              {variant.locations.slice(0, 2).map((loc, idx) => (
+                                                <span key={idx} className="text-[9px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded">
+                                                  {loc.locationCode}
+                                                </span>
+                                              ))}
+                                              {variant.locations.length > 2 && (
+                                                <span className="text-[9px] text-muted-foreground">+{variant.locations.length - 2}</span>
+                                              )}
+                                            </div>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 w-6 p-0 shrink-0"
+                                              onClick={(e) => printSingleLabel(e, variant.receiptItemId)}
+                                            >
+                                              <Printer className="h-3 w-3" />
+                                            </Button>
                                           </div>
-                                          <div className="flex-1 min-w-0">
-                                            <span className="text-xs truncate block">{item.productName}</span>
-                                            <span className="text-[9px] text-muted-foreground font-mono">{item.sku || '-'}</span>
-                                          </div>
-                                          <div className="text-right shrink-0 text-[10px]">
-                                            <div className="font-semibold">{formatPrice(item.prices?.priceCzk, 'CZK')}</div>
-                                            <div className="text-muted-foreground">{formatPrice(item.prices?.priceEur, 'EUR')}</div>
-                                          </div>
-                                          <div className="flex flex-wrap gap-0.5 shrink-0 max-w-20">
-                                            {item.locations.slice(0, 2).map((loc, idx) => (
-                                              <span key={idx} className="text-[9px] font-mono bg-muted px-1 py-0.5 rounded">
-                                                {loc.locationCode}
-                                              </span>
-                                            ))}
-                                            {item.locations.length > 2 && (
-                                              <span className="text-[9px] text-muted-foreground">+{item.locations.length - 2}</span>
-                                            )}
-                                          </div>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 w-6 p-0 shrink-0"
-                                            onClick={(e) => printSingleLabel(e, String(item.receiptItemId))}
-                                          >
-                                            <Printer className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      ))}
+                                        ));
+                                      })()}
                                     </div>
                                   </CollapsibleContent>
                                 </div>
