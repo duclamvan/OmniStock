@@ -14,6 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { 
   Box, 
   Package, 
@@ -25,7 +30,8 @@ import {
   Ruler,
   CheckCircle2,
   XCircle,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
@@ -124,7 +130,7 @@ export function AICartonPackingPanel({
               </div>
               <div className="space-y-1.5">
                 {packingPlan.cartons.map((carton: any, index: number) => (
-                  <div key={index}>
+                  <Collapsible key={index} className="group">
                     <div 
                       className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border"
                       data-testid={`carton-summary-${index + 1}`}
@@ -204,74 +210,77 @@ export function AICartonPackingPanel({
                         >
                           {(carton.utilization || carton.volumeUtilization) ? `${(carton.utilization || carton.volumeUtilization).toFixed(0)}%` : '0%'}
                         </Badge>
+                        {carton.items && carton.items.length > 0 && (
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                            </Button>
+                          </CollapsibleTrigger>
+                        )}
                       </div>
                     </div>
-                    {/* Show items inside this carton */}
                     {carton.items && carton.items.length > 0 && (
-                      <div className="mt-2 pl-8 space-y-1">
-                        {carton.items.map((item: any, itemIdx: number) => (
-                          <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400">
-                            <div className="flex justify-between items-start">
-                              <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
-                                  {/* Show bundle origin badge */}
-                                  {item.fromBundle && (
-                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                      📦 {item.fromBundle}
-                                    </Badge>
+                      <CollapsibleContent>
+                        <div className="mt-2 pl-8 space-y-1 pb-2">
+                          {carton.items.map((item: any, itemIdx: number) => (
+                            <div key={itemIdx} className="text-xs text-gray-600 dark:text-gray-400">
+                              <div className="flex justify-between items-start">
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{item.productName || item.name}</span>
+                                    {item.fromBundle && (
+                                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                        📦 {item.fromBundle}
+                                      </Badge>
+                                    )}
+                                    {item.isBulkExpanded && (
+                                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
+                                        📦 {item.bulkUnitQty}x bulk
+                                      </Badge>
+                                    )}
+                                    {item.isServicePart && (
+                                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700">
+                                        🔧 {t('servicePart') || 'Service Part'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {(item.lengthCm && item.widthCm && item.heightCm) && (
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-500">
+                                      {item.lengthCm}×{item.widthCm}×{item.heightCm} cm
+                                    </span>
                                   )}
-                                  {/* Show bulk unit badge */}
-                                  {item.isBulkExpanded && (
-                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
-                                      📦 {item.bulkUnitQty}x bulk
-                                    </Badge>
-                                  )}
-                                  {/* Show service part badge */}
-                                  {item.isServicePart && (
-                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700">
-                                      🔧 {t('servicePart') || 'Service Part'}
-                                    </Badge>
+                                  {item.appliedDiscountLabel && (
+                                    <span className="text-[10px] text-green-600 dark:text-green-400 flex items-center gap-1">
+                                      🏷️ {item.appliedDiscountLabel}
+                                      {typeof item.discountPercentage === 'number' && item.discountPercentage > 0 && (
+                                        <span className="text-green-700 dark:text-green-300">
+                                          (-{item.discountPercentage < 1 
+                                            ? parseFloat(item.discountPercentage.toFixed(1)) 
+                                            : Math.round(item.discountPercentage)}%)
+                                        </span>
+                                      )}
+                                      {item.freeItemsCount && item.freeItemsCount > 0 && (
+                                        <span className="text-green-700 dark:text-green-300">
+                                          +{item.freeItemsCount} {t('free') || 'free'}
+                                        </span>
+                                      )}
+                                    </span>
                                   )}
                                 </div>
-                                {/* Show dimensions if available */}
-                                {(item.lengthCm && item.widthCm && item.heightCm) && (
-                                  <span className="text-[10px] text-gray-500 dark:text-gray-500">
-                                    {item.lengthCm}×{item.widthCm}×{item.heightCm} cm
-                                  </span>
-                                )}
-                                {/* Show discount if applied */}
-                                {item.appliedDiscountLabel && (
-                                  <span className="text-[10px] text-green-600 dark:text-green-400 flex items-center gap-1">
-                                    🏷️ {item.appliedDiscountLabel}
-                                    {typeof item.discountPercentage === 'number' && item.discountPercentage > 0 && (
-                                      <span className="text-green-700 dark:text-green-300">
-                                        (-{item.discountPercentage < 1 
-                                          ? parseFloat(item.discountPercentage.toFixed(1)) 
-                                          : Math.round(item.discountPercentage)}%)
-                                      </span>
-                                    )}
-                                    {item.freeItemsCount && item.freeItemsCount > 0 && (
-                                      <span className="text-green-700 dark:text-green-300">
-                                        +{item.freeItemsCount} {t('free') || 'free'}
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
+                                <span className="text-right whitespace-nowrap">
+                                  {t('itemQuantityWeight', { 
+                                    quantity: item.quantity, 
+                                    weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
+                                  })}
+                                  {(item.isEstimated || item.aiEstimated) && <span className="ml-1 text-yellow-600">*</span>}
+                                </span>
                               </div>
-                              <span className="text-right whitespace-nowrap">
-                                {t('itemQuantityWeight', { 
-                                  quantity: item.quantity, 
-                                  weight: item.weight?.toFixed(2) || item.weightKg?.toFixed(2) || '0' 
-                                })}
-                                {(item.isEstimated || item.aiEstimated) && <span className="ml-1 text-yellow-600">*</span>}
-                              </span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
                     )}
-                  </div>
+                  </Collapsible>
                 ))}
               </div>
             </div>
