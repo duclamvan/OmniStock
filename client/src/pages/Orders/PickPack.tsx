@@ -15062,10 +15062,26 @@ export default function PickPack() {
 
                       {/* Related Variants Panel - Show when item belongs to a product group */}
                       {(() => {
-                        // Find related variants (same productId)
+                        // Find related variants (same productId) and sort by color number
                         const productId = currentItem.productId;
+                        const extractColorNumber = (item: typeof currentItem): number => {
+                          // First try colorNumber field
+                          if (item.colorNumber) {
+                            const num = parseInt(item.colorNumber, 10);
+                            if (!isNaN(num)) return num;
+                          }
+                          // Fallback: extract from product/variant name
+                          const nameMatch = (item.variantName || item.productName || '').match(/(?:Color|Colour)\s*(\d+)/i);
+                          if (nameMatch) {
+                            return parseInt(nameMatch[1], 10);
+                          }
+                          return 999999; // No color number - sort to end
+                        };
+                        
                         const relatedItems = productId 
-                          ? activePickingOrder.items.filter(item => item.productId === productId)
+                          ? activePickingOrder.items
+                              .filter(item => item.productId === productId)
+                              .sort((a, b) => extractColorNumber(a) - extractColorNumber(b))
                           : [];
                         const hasMultipleVariants = relatedItems.length > 1;
                         
@@ -15095,18 +15111,33 @@ export default function PickPack() {
                               </div>
                             </div>
                             
-                            {/* Pick All Button */}
+                            {/* Pick All Button - Batch update all items in single state change */}
                             {!allPicked && (
                               <div className="p-2 border-b border-purple-200 dark:border-purple-700">
                                 <Button
                                   size="sm"
                                   className="w-full h-9 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-sm"
                                   onClick={() => {
-                                    relatedItems.forEach(item => {
-                                      if (item.pickedQuantity < item.quantity) {
-                                        updatePickedItem(item.id, item.quantity);
+                                    // Batch update all related items in a single state change
+                                    const itemsToUpdate = relatedItems.filter(item => item.pickedQuantity < item.quantity);
+                                    if (itemsToUpdate.length === 0) return;
+                                    
+                                    // Create updated items array with all variants set to full quantity
+                                    const updatedItems = activePickingOrder.items.map(i => {
+                                      const matchingItem = itemsToUpdate.find(u => u.id === i.id);
+                                      if (matchingItem) {
+                                        return { ...i, pickedQuantity: i.quantity };
                                       }
+                                      return i;
                                     });
+                                    
+                                    // Single state update for all items
+                                    setActivePickingOrder({
+                                      ...activePickingOrder,
+                                      items: updatedItems,
+                                      pickedItems: updatedItems.reduce((sum, i) => sum + i.pickedQuantity, 0)
+                                    });
+                                    
                                     playSound('success');
                                   }}
                                 >
@@ -15116,7 +15147,7 @@ export default function PickPack() {
                               </div>
                             )}
                             
-                            {/* Variant List */}
+                            {/* Variant List - Stable layout with smooth transitions */}
                             <div className="max-h-48 overflow-y-auto">
                               {relatedItems.map((item, idx) => {
                                 const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
@@ -15124,16 +15155,14 @@ export default function PickPack() {
                                 const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
                                 const isCurrent = item.id === currentItem.id;
                                 
-                                let itemBg = 'bg-white dark:bg-gray-900';
-                                if (isPicked) itemBg = 'bg-green-50 dark:bg-green-900/30';
-                                else if (isPartial) itemBg = 'bg-yellow-50 dark:bg-yellow-900/30';
-                                
                                 return (
                                   <div
                                     key={item.id}
-                                    className={`${itemBg} ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''} 
-                                      p-2 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2`}
-                                    onClick={() => {
+                                    className={`h-12 p-2 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer flex items-center gap-2 transition-all duration-150 ease-out
+                                      ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}
+                                      ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       if (!isPicked) {
                                         updatePickedItem(item.id, item.quantity);
                                         playSound('success');
@@ -15142,7 +15171,7 @@ export default function PickPack() {
                                     }}
                                   >
                                     {/* Color Number Badge */}
-                                    <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${
+                                    <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs transition-colors duration-150 ${
                                       isPicked ? 'bg-green-500 text-white' : 
                                       isPartial ? 'bg-yellow-500 text-white' : 
                                       isCurrent ? 'bg-blue-500 text-white' :
@@ -15153,7 +15182,7 @@ export default function PickPack() {
                                     
                                     {/* Variant Name + Location */}
                                     <div className="flex-1 min-w-0">
-                                      <p className={`text-xs font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                      <p className={`text-xs font-medium truncate transition-all duration-150 ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
                                         {item.variantName || item.productName}
                                       </p>
                                       <p className="text-[10px] text-gray-500 font-mono mt-0.5">
@@ -15161,8 +15190,8 @@ export default function PickPack() {
                                       </p>
                                     </div>
                                     
-                                    {/* Status */}
-                                    <div className="flex-shrink-0 text-xs font-bold">
+                                    {/* Status - Fixed width to prevent layout shift */}
+                                    <div className="flex-shrink-0 w-10 text-xs font-bold flex justify-end">
                                       {isPicked ? (
                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                       ) : (
