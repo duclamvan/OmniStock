@@ -3390,10 +3390,10 @@ function MultiLocationPicker({
                   {t('quantity', 'Qty')}: <span className="font-bold text-gray-900 dark:text-gray-100">{currentItem.quantity}</span>
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {t('price', 'Price')}: <span className="font-bold text-purple-700 dark:text-purple-300">{currentItem.price?.toFixed(2)}</span>
+                  {t('price', 'Price')}: <span className="font-bold text-purple-700 dark:text-purple-300">{Number(currentItem.price || 0).toFixed(2)}</span>
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {t('total', 'Total')}: <span className="font-bold text-green-700 dark:text-green-300">{((currentItem.price || 0) * currentItem.quantity).toFixed(2)}</span>
+                  {t('total', 'Total')}: <span className="font-bold text-green-700 dark:text-green-300">{(Number(currentItem.price || 0) * currentItem.quantity).toFixed(2)}</span>
                 </span>
               </div>
             </div>
@@ -15761,33 +15761,64 @@ export default function PickPack() {
                             </p>
                           </div>
                         ) : (
-                          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
-                              {currentItem.productName}
+                          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                            {/* Parent Product Name */}
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 leading-tight">
+                              {getParentProductName(currentItem.productName)}
                             </h2>
-                            <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
-                              <div className="flex items-center gap-1">
-                                <span className="font-bold text-blue-600">({mergedQty}x)</span>
-                                {variantCount > 1 && <span className="text-gray-500">({variantCount} {t('variants')})</span>}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Hash className="h-4 w-4 text-gray-400" />
-                                <span className="font-mono">{currentItem.sku}</span>
-                              </div>
-                              {currentItem.barcode && currentItem.barcode !== currentItem.sku && (
-                                <div className="flex items-center gap-1">
-                                  <ScanLine className="h-4 w-4 text-gray-400" />
-                                  <span className="font-mono">{currentItem.barcode}</span>
+                            {/* Color range and variant info for multi-variant products */}
+                            {(() => {
+                              const productId = currentItem.productId;
+                              const relatedItems = productId 
+                                ? activePickingOrder.items.filter(item => item.productId === productId && !item.serviceId)
+                                : [];
+                              const colorNumbers = relatedItems
+                                .map(i => i.colorNumber)
+                                .filter(Boolean)
+                                .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
+                                .filter(c => !isNaN(c.numeric))
+                                .sort((a, b) => a.numeric - b.numeric);
+                              const firstColor = colorNumbers.length > 0 ? colorNumbers[0].original : null;
+                              const lastColor = colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null;
+                              const hasMultipleVariants = relatedItems.length > 1;
+                              
+                              return (
+                                <div className="flex gap-3 text-sm text-gray-600 dark:text-gray-400 flex-wrap items-center">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-blue-600 dark:text-blue-400">({mergedQty}x)</span>
+                                    {hasMultipleVariants && firstColor && lastColor && (
+                                      <span className="text-purple-600 dark:text-purple-400 font-mono font-medium">
+                                        #{firstColor} → #{lastColor}
+                                      </span>
+                                    )}
+                                    {hasMultipleVariants && (
+                                      <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 font-medium">
+                                        {relatedItems.length} {t('variants')}
+                                      </Badge>
+                                    )}
+                                    {!hasMultipleVariants && currentItem.colorNumber && (
+                                      <span className="text-gray-500 dark:text-gray-400 font-mono">#{currentItem.colorNumber}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Hash className="h-4 w-4 text-gray-400" />
+                                    <span className="font-mono">{currentItem.sku}</span>
+                                  </div>
+                                  {currentItem.barcode && currentItem.barcode !== currentItem.sku && (
+                                    <div className="flex items-center gap-1">
+                                      <ScanLine className="h-4 w-4 text-gray-400" />
+                                      <span className="font-mono">{currentItem.barcode}</span>
+                                    </div>
+                                  )}
+                                  {currentItem.bulkUnitQty && mergedQty >= currentItem.bulkUnitQty && (
+                                    <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
+                                      <Box className="h-2.5 w-2.5 mr-0.5" />
+                                      {Math.floor(mergedQty / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                    </Badge>
+                                  )}
                                 </div>
-                              )}
-                              {/* Carton Badge - shown when merged quantity >= bulkUnitQty */}
-                              {currentItem.bulkUnitQty && mergedQty >= currentItem.bulkUnitQty && (
-                                <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
-                                  <Box className="h-2.5 w-2.5 mr-0.5" />
-                                  {Math.floor(mergedQty / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
-                                </Badge>
-                              )}
-                            </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
@@ -16151,16 +16182,31 @@ export default function PickPack() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                        {/* Multi-Location Picker - Pick from multiple locations with stock enforcement */}
-                        <MultiLocationPicker
-                          currentItem={currentItem}
-                          pickedFromLocations={pickedFromLocations}
-                          setPickedFromLocations={setPickedFromLocations}
-                          updatePickedItem={updatePickedItem}
-                          t={t}
-                          mergedQuantity={mergedQty}
-                          sameSkuItems={sameSkuItems.map(i => ({ id: i.id, quantity: i.quantity, pickedQuantity: i.pickedQuantity }))}
-                        />
+                        {/* Multi-Location Picker - Only show for single-variant products */}
+                        {/* For multi-variant products, picking happens through the variant panel above */}
+                        {(() => {
+                          const productId = currentItem.productId;
+                          const relatedVariantCount = productId 
+                            ? activePickingOrder.items.filter(item => item.productId === productId && !item.serviceId).length
+                            : 1;
+                          
+                          // Hide MultiLocationPicker for multi-variant products - picking is done via variant panel
+                          if (relatedVariantCount > 1 && !currentItem.serviceId) {
+                            return null;
+                          }
+                          
+                          return (
+                            <MultiLocationPicker
+                              currentItem={currentItem}
+                              pickedFromLocations={pickedFromLocations}
+                              setPickedFromLocations={setPickedFromLocations}
+                              updatePickedItem={updatePickedItem}
+                              t={t}
+                              mergedQuantity={mergedQty}
+                              sameSkuItems={sameSkuItems.map(i => ({ id: i.id, quantity: i.quantity, pickedQuantity: i.pickedQuantity }))}
+                            />
+                          );
+                        })()}
                         </div>
                       )}
                       
