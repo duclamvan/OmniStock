@@ -1891,11 +1891,19 @@ function PickingListView({
                 )}
               </div>
               
-              {/* Expanded Variant List for multi-variant groups */}
+              {/* Expanded Variant List for multi-variant groups - Sorted by color number 1-200, then oldest to newest */}
               {isMultiVariant && expandedGroups.has(group.productId) && (
                 <div className="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
                   <div className="space-y-1">
-                    {items.map((item, idx) => {
+                    {[...items]
+                      .map((item, originalIdx) => ({ item, originalIdx }))
+                      .sort((a, b) => {
+                        const aNum = parseInt((a.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
+                        const bNum = parseInt((b.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
+                        if (aNum !== bNum) return aNum - bNum;
+                        return a.originalIdx - b.originalIdx;
+                      })
+                      .map(({ item }, idx) => {
                       const originalIndex = order.items.findIndex(i => i.id === item.id);
                       const itemIsPicked = item.pickedQuantity >= item.quantity;
                       const itemIsPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
@@ -16042,15 +16050,19 @@ export default function PickPack() {
                             </div>
                           )}
                           
-                          {/* Variant List */}
+                          {/* Variant List - Sorted by color number 1-200, then oldest to newest */}
                           <div className="max-h-64 overflow-y-auto">
-                            {currentGroup.items
+                            {[...currentGroup.items]
+                              .map((item, originalIdx) => ({ item, originalIdx }))
                               .sort((a, b) => {
-                                const aNum = parseInt(a.colorNumber || '999999', 10);
-                                const bNum = parseInt(b.colorNumber || '999999', 10);
-                                return aNum - bNum;
+                                // Primary: sort by color number 1-200
+                                const aNum = parseInt((a.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
+                                const bNum = parseInt((b.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
+                                if (aNum !== bNum) return aNum - bNum;
+                                // Secondary: oldest (lowest index) to newest (highest index)
+                                return a.originalIdx - b.originalIdx;
                               })
-                              .map((item, idx) => {
+                              .map(({ item }, idx) => {
                                 const isPicked = item.pickedQuantity >= item.quantity;
                                 const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
                                 
