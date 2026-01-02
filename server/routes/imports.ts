@@ -544,6 +544,27 @@ async function getLandedCostForItem(
           
           // Total landed cost = unit price + freight + insurance per unit
           landingCostPerUnit = itemUnitPriceEur + freightPerUnit + insurancePerUnit;
+
+          // Update variant costs if applicable
+          if (thisItem.variantAllocations && Array.isArray(thisItem.variantAllocations)) {
+            const allocations = thisItem.variantAllocations as any[];
+            for (const alloc of allocations) {
+              if (alloc.variantId) {
+                await tx.update(productVariants)
+                  .set({
+                    latestLandingCost: landingCostPerUnit.toString(),
+                    landingCostEur: landingCostPerUnit.toString(),
+                    landingCostCzk: (landingCostPerUnit * eurToCzk).toString(),
+                    landingCostVnd: (landingCostPerUnit * eurToVnd).toString(),
+                    landingCostCny: (landingCostPerUnit * eurToCny).toString(),
+                    landingCostUsd: (landingCostPerUnit * eurToUsd).toString(),
+                    updatedAt: new Date()
+                  })
+                  .where(eq(productVariants.id, alloc.variantId));
+              }
+            }
+          }
+          
           source = 'shipment_level_costs' as any;
           
           console.log(`[getLandedCostForItem] Custom item ${itemId} from shipment ${shipmentId}: ` +
@@ -565,7 +586,8 @@ async function getLandedCostForItem(
         .select({ 
           landingCostUnitBase: purchaseItems.landingCostUnitBase,
           unitPrice: purchaseItems.unitPrice,
-          purchaseId: purchaseItems.purchaseId
+          purchaseId: purchaseItems.purchaseId,
+          variantAllocations: purchaseItems.variantAllocations
         })
         .from(purchaseItems)
         .where(eq(purchaseItems.id, itemId));
@@ -577,6 +599,27 @@ async function getLandedCostForItem(
         // Total landed cost = unit price (EUR) + landing cost portion (EUR)
         // unitPrice parameter is already in EUR (converted before this call)
         landingCostPerUnit = unitPrice + landingCostPortion;
+
+        // Update variant costs if applicable
+        if (purchaseItem.variantAllocations && Array.isArray(purchaseItem.variantAllocations)) {
+          const allocations = purchaseItem.variantAllocations as any[];
+          for (const alloc of allocations) {
+            if (alloc.variantId) {
+              await tx.update(productVariants)
+                .set({
+                  latestLandingCost: landingCostPerUnit.toString(),
+                  landingCostEur: landingCostPerUnit.toString(),
+                  landingCostCzk: (landingCostPerUnit * eurToCzk).toString(),
+                  landingCostVnd: (landingCostPerUnit * eurToVnd).toString(),
+                  landingCostCny: (landingCostPerUnit * eurToCny).toString(),
+                  landingCostUsd: (landingCostPerUnit * eurToUsd).toString(),
+                  updatedAt: new Date()
+                })
+                .where(eq(productVariants.id, alloc.variantId));
+            }
+          }
+        }
+        
         source = 'purchase_item';
         
         console.log(`[getLandedCostForItem] Purchase item ${itemId}: unitPrice=${unitPrice.toFixed(4)} EUR + landingCostPortion=${landingCostPortion.toFixed(4)} EUR = total ${landingCostPerUnit.toFixed(4)} EUR`);

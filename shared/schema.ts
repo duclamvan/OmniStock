@@ -841,6 +841,11 @@ export const productVariants = pgTable("product_variants", {
   importCostCzk: decimal("import_cost_czk", { precision: 10, scale: 2 }),
   importCostEur: decimal("import_cost_eur", { precision: 10, scale: 2 }),
   imageUrl: varchar("image_url"),
+  landingCostEur: decimal("landing_cost_eur", { precision: 12, scale: 4 }),
+  landingCostCzk: decimal("landing_cost_czk", { precision: 12, scale: 4 }),
+  landingCostVnd: decimal("landing_cost_vnd", { precision: 12, scale: 4 }),
+  landingCostCny: decimal("landing_cost_cny", { precision: 12, scale: 4 }),
+  landingCostUsd: decimal("landing_cost_usd", { precision: 12, scale: 4 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
