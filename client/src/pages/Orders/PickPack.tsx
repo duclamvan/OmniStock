@@ -9445,7 +9445,7 @@ export default function PickPack() {
                                         }
                                       }}
                                     >
-                                      {allVerified ? <><Check className="h-3 w-3 mr-1" />{t('orders:packDone') || t('done')}</> : <><CheckCircle2 className="h-3 w-3 mr-1" />{t('orders:verifyAll') || 'All'}</>}
+                                      {allVerified ? <><Check className="h-3 w-3 mr-1" />{t('orders:packDone')}</> : <><CheckCircle2 className="h-3 w-3 mr-1" />{t('orders:verifyAll')}</>}
                                     </Button>
                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                       {isGroupExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
