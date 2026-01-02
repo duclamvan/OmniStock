@@ -18608,7 +18608,14 @@ Important:
           console.log(`🏪 PPL SMART: specificDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
-        // Weight removed as per user requirement - PPL doesn't need weight input
+        // Add weight for international shipments (CONN/COND) - required by PPL API
+        if (recipientCountryCode !== 'CZ') {
+          const cartonWeight = cartons[0]?.weight ? parseFloat(cartons[0].weight) : 1;
+          singleShipment.weightedPackageInfo = {
+            weight: cartonWeight > 0 ? cartonWeight : 1
+          };
+          console.log(`📦 International batch shipment: Adding weightedPackageInfo.weight = ${singleShipment.weightedPackageInfo.weight} kg`);
+        }
 
         shipments.push(singleShipment);
       }
@@ -18620,9 +18627,13 @@ Important:
       let shipmentId: string = '';
 
       // 🆕 NEW APPROACH: Use POST /shipment for single cartons (returns tracking number immediately)
-      // Use batch endpoint for multi-carton shipmentSet OR for SMART products (which may not work with single endpoint)
+      // Use batch endpoint for multi-carton shipmentSet, SMART products, or international shipments
       // SMART products need batch endpoint due to specificDelivery format differences
-      if (cartons.length === 1 && shipments.length === 1 && !isSmartShipment) {
+      // International shipments (CONN/COND) need batch endpoint as POST /shipment may not support them
+      const isInternational = recipientCountryCode !== 'CZ';
+      const useSingleEndpoint = cartons.length === 1 && shipments.length === 1 && !isSmartShipment && !isInternational;
+      
+      if (useSingleEndpoint) {
         console.log('🚀 Creating PPL single shipment (POST /shipment) - tracking number returned immediately!');
         
         const singleShipmentData = shipments[0];
