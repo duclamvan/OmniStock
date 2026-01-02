@@ -15348,6 +15348,17 @@ export default function PickPack() {
       return raw.trim().toUpperCase() || item.id;
     };
     
+    // DEBUG: Log ALL items with their SKU values before merging
+    console.log('🔍 ALL ITEMS SKU DEBUG:', activePickingOrder.items.map(item => ({
+      id: item.id.substring(0, 8),
+      name: item.productName?.substring(0, 30),
+      sku: item.sku,
+      variantSku: item.variantSku,
+      normalizedKey: normalizeSku(item),
+      qty: item.quantity,
+      hasNotes: !!(item.notes && item.notes.trim())
+    })));
+    
     activePickingOrder.items.forEach(item => {
       if (item.serviceId) {
         serviceItems.push(item);
