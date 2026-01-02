@@ -49,6 +49,7 @@ export function PPLSmartPopup({
 }: PPLSmartPopupProps) {
   const { t } = useTranslation(["orders", "common"]);
   const [status, setStatus] = useState<LoadStatus>('loading');
+  const [widgetKey, setWidgetKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptLoadedRef = useRef(false);
 
@@ -73,6 +74,8 @@ export function PPLSmartPopup({
   useEffect(() => {
     if (!open) return;
 
+    setWidgetKey(prev => prev + 1);
+
     const loadWidget = async () => {
       setStatus('loading');
 
@@ -85,25 +88,24 @@ export function PPLSmartPopup({
           document.head.appendChild(link);
         }
 
-        if (!scriptLoadedRef.current) {
-          await new Promise<void>((resolve, reject) => {
-            if (document.getElementById('ppl-widget-script')) {
-              resolve();
-              return;
-            }
-            
-            const script = document.createElement('script');
-            script.id = 'ppl-widget-script';
-            script.src = 'https://www.ppl.cz/sources/map/main.js';
-            script.async = true;
-            script.onload = () => {
-              scriptLoadedRef.current = true;
-              resolve();
-            };
-            script.onerror = () => reject(new Error('Failed to load PPL widget script'));
-            document.body.appendChild(script);
-          });
+        const existingScript = document.getElementById('ppl-widget-script');
+        if (existingScript) {
+          existingScript.remove();
         }
+        scriptLoadedRef.current = false;
+
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.id = 'ppl-widget-script';
+          script.src = 'https://www.ppl.cz/sources/map/main.js';
+          script.async = true;
+          script.onload = () => {
+            scriptLoadedRef.current = true;
+            resolve();
+          };
+          script.onerror = () => reject(new Error('Failed to load PPL widget script'));
+          document.body.appendChild(script);
+        });
 
         setTimeout(() => {
           setStatus('loaded');
@@ -210,6 +212,7 @@ export function PPLSmartPopup({
           )}
 
           <div 
+            key={widgetKey}
             ref={containerRef}
             id="ppl-parcelshop-map" 
             className="w-full h-full"
