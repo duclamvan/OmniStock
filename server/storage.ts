@@ -6999,6 +6999,10 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(asc(dailyPerformanceSnapshots.snapshotDate));
   }
+  async getProductVariant(id: string): Promise<ProductVariant | undefined> {
+    const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, id));
+    return variant;
+  }
 }
 
 export const storage = new DatabaseStorage();

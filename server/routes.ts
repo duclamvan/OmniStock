@@ -12112,6 +12112,12 @@ Important:
         for (const item of orderItems) {
           if (item.landingCost) {
             totalCost += parseFloat(item.landingCost) * (item.quantity || 1);
+          } else if (item.variantId) {
+            // Fallback: fetch landing cost from variant if not snapshot in item
+            const variant = await storage.getProductVariant(item.variantId);
+            if (variant && variant.landingCostEur) {
+              totalCost += parseFloat(variant.landingCostEur) * (item.quantity || 1);
+            }
           }
         }
         if (totalCost > 0) {
