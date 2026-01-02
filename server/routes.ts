@@ -18700,11 +18700,7 @@ Important:
             zipCode: singleShipmentData.recipient.zipCode,
             country: singleShipmentData.recipient.country,
             phone: singleShipmentData.recipient.phone,
-            email: singleShipmentData.recipient.email,
-            ...(isSmartShipment && order.pickupLocationCode ? {
-              type: 'ParcelShop' as const,
-              parcelShopId: order.pickupLocationCode
-            } : {})
+            email: singleShipmentData.recipient.email
           },
           sender: singleShipmentData.sender ? {
             name: singleShipmentData.sender.name,
@@ -18721,6 +18717,11 @@ Important:
               price: singleShipmentData.cashOnDelivery.codPrice,
               currency: singleShipmentData.cashOnDelivery.codCurrency,
               variableSymbol: singleShipmentData.cashOnDelivery.codVarSym
+            }
+          } : {}),
+          ...(isSmartShipment && order.pickupLocationCode ? {
+            specificDelivery: {
+              parcelShopCode: order.pickupLocationCode
             }
           } : {}),
           note: singleShipmentData.note

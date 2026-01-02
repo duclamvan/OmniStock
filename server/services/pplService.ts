@@ -266,8 +266,6 @@ export interface PPLSingleShipmentRequest {
     country: string;
     phone?: string;
     email?: string;
-    type?: 'Address' | 'ParcelShop';
-    parcelShopId?: string;
   };
   sender?: {
     name: string;
@@ -286,6 +284,9 @@ export interface PPLSingleShipmentRequest {
     price: number;
     currency: string;
     variableSymbol?: string;
+  };
+  specificDelivery?: {
+    parcelShopCode?: string;
   };
   note?: string;
 }
