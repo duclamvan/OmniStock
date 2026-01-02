@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Loader2, Search, Store, Package, Clock, CreditCard, Banknote, Check } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, Loader2, Search, Store, Package, Clock, CreditCard, Banknote, Check, List, Map, RefreshCw } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+const shopIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const boxIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const alzaIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const selectedIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 interface PPLPickupPoint {
   code: string;
@@ -67,6 +106,14 @@ interface PPLSmartPopupProps {
   language?: "cs" | "en";
 }
 
+function MapUpdater({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, 13);
+  }, [center, map]);
+  return null;
+}
+
 export function PPLSmartPopup({
   open,
   onOpenChange,
@@ -75,9 +122,12 @@ export function PPLSmartPopup({
   customerZipCode,
 }: PPLSmartPopupProps) {
   const { t } = useTranslation(["orders", "common"]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedPoint, setSelectedPoint] = useState<PPLAccessPoint | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [mapCenter, setMapCenter] = useState<[number, number]>([49.8175, 15.473]);
 
   useEffect(() => {
     if (open) {
@@ -86,10 +136,11 @@ export function PPLSmartPopup({
     }
   }, [open, customerCity, customerZipCode]);
 
-  const { data: accessPoints, isLoading, error } = useQuery<PPLAccessPoint[]>({
+  const { data: accessPoints, isLoading, error, refetch, isFetching } = useQuery<PPLAccessPoint[]>({
     queryKey: ["/api/shipping/ppl/access-points"],
     enabled: open,
     staleTime: 1000 * 60 * 30,
+    retry: 2,
   });
 
   const filteredPoints = useMemo(() => {
@@ -115,8 +166,23 @@ export function PPLSmartPopup({
     return filtered.slice(0, 100);
   }, [accessPoints, selectedType, searchQuery]);
 
+  const pointsWithGps = useMemo(() => {
+    return filteredPoints.filter(p => p.gps?.latitude && p.gps?.longitude);
+  }, [filteredPoints]);
+
+  useEffect(() => {
+    if (pointsWithGps.length > 0 && viewMode === "map") {
+      const avgLat = pointsWithGps.reduce((sum, p) => sum + (p.gps?.latitude || 0), 0) / pointsWithGps.length;
+      const avgLng = pointsWithGps.reduce((sum, p) => sum + (p.gps?.longitude || 0), 0) / pointsWithGps.length;
+      setMapCenter([avgLat, avgLng]);
+    }
+  }, [pointsWithGps, viewMode]);
+
   const handleSelectPoint = (point: PPLAccessPoint) => {
     setSelectedPoint(point);
+    if (point.gps?.latitude && point.gps?.longitude) {
+      setMapCenter([point.gps.latitude, point.gps.longitude]);
+    }
   };
 
   const handleConfirmSelection = () => {
@@ -136,6 +202,11 @@ export function PPLSmartPopup({
       onSelectPickupPoint(pickupPoint);
       onOpenChange(false);
     }
+  };
+
+  const handleRetry = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/shipping/ppl/access-points"] });
+    refetch();
   };
 
   const formatWorkHours = (workHours?: PPLAccessPoint["workHours"]) => {
@@ -180,6 +251,20 @@ export function PPLSmartPopup({
     }
   };
 
+  const getMarkerIcon = (point: PPLAccessPoint) => {
+    if (selectedPoint?.accessPointCode === point.accessPointCode) {
+      return selectedIcon;
+    }
+    switch (point.accessPointType) {
+      case "ParcelShop":
+        return shopIcon;
+      case "AlzaBox":
+        return alzaIcon;
+      default:
+        return boxIcon;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] max-h-[800px] p-0 overflow-hidden flex flex-col">
@@ -207,27 +292,49 @@ export function PPLSmartPopup({
                 data-testid="input-search-pickup-points"
               />
             </div>
-            <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full sm:w-auto">
-              <TabsList className="grid grid-cols-4 w-full sm:w-auto">
-                <TabsTrigger value="all" className="text-xs" data-testid="tab-all-points">
-                  {t("common:all", "All")}
-                </TabsTrigger>
-                <TabsTrigger value="ParcelShop" className="text-xs" data-testid="tab-parcelshop">
-                  <Store className="h-3 w-3 mr-1" />
-                  Shop
-                </TabsTrigger>
-                <TabsTrigger value="ParcelBox" className="text-xs" data-testid="tab-parcelbox">
-                  <Package className="h-3 w-3 mr-1" />
-                  Box
-                </TabsTrigger>
-                <TabsTrigger value="AlzaBox" className="text-xs" data-testid="tab-alzabox">
-                  Alza
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex gap-2">
+              <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full sm:w-auto">
+                <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+                  <TabsTrigger value="all" className="text-xs" data-testid="tab-all-points">
+                    {t("common:all", "All")}
+                  </TabsTrigger>
+                  <TabsTrigger value="ParcelShop" className="text-xs" data-testid="tab-parcelshop">
+                    <Store className="h-3 w-3 mr-1" />
+                    Shop
+                  </TabsTrigger>
+                  <TabsTrigger value="ParcelBox" className="text-xs" data-testid="tab-parcelbox">
+                    <Package className="h-3 w-3 mr-1" />
+                    Box
+                  </TabsTrigger>
+                  <TabsTrigger value="AlzaBox" className="text-xs" data-testid="tab-alzabox">
+                    Alza
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="flex border rounded-md">
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="rounded-r-none"
+                  data-testid="button-view-list"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "map" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("map")}
+                  className="rounded-l-none"
+                  data-testid="button-view-map"
+                >
+                  <Map className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {isLoading ? (
+          {isLoading || isFetching ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -238,102 +345,180 @@ export function PPLSmartPopup({
             </div>
           ) : error ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <p>{t("orders:errorLoadingPickupPoints", "Failed to load pickup points")}</p>
-                <p className="text-sm mt-1">{t("common:pleaseTryAgain", "Please try again later")}</p>
+              <div className="text-center">
+                <p className="text-muted-foreground">{t("orders:errorLoadingPickupPoints", "Failed to load pickup points")}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t("common:pleaseTryAgain", "Please try again later")}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  className="mt-3"
+                  data-testid="button-retry-pickup-points"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {t("common:retry", "Retry")}
+                </Button>
               </div>
             </div>
           ) : (
             <>
-              <div className="text-sm text-muted-foreground">
-                {filteredPoints.length > 0 ? (
-                  <>
-                    {t("orders:showingPickupPoints", "Showing {{count}} pickup points", { count: filteredPoints.length })}
-                    {filteredPoints.length === 100 && ` (${t("common:limitedResults", "limited to first 100")})`}
-                  </>
-                ) : (
-                  t("orders:noPickupPointsFound", "No pickup points found")
+              <div className="text-sm text-muted-foreground flex items-center justify-between">
+                <span>
+                  {filteredPoints.length > 0 ? (
+                    <>
+                      {t("orders:showingPickupPoints", "Showing {{count}} pickup points", { count: filteredPoints.length })}
+                      {filteredPoints.length === 100 && ` (${t("common:limitedResults", "limited to first 100")})`}
+                    </>
+                  ) : (
+                    t("orders:noPickupPointsFound", "No pickup points found")
+                  )}
+                </span>
+                {viewMode === "map" && (
+                  <span className="text-xs">
+                    {pointsWithGps.length} {t("common:withLocation", "with location")}
+                  </span>
                 )}
               </div>
               
-              <ScrollArea className="flex-1 -mx-4 px-4">
-                <div className="space-y-2 pb-4">
-                  {filteredPoints.map((point) => (
-                    <div
-                      key={point.accessPointCode}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedPoint?.accessPointCode === point.accessPointCode
-                          ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
-                          : "hover:border-gray-400 dark:hover:border-gray-600"
-                      }`}
-                      onClick={() => handleSelectPoint(point)}
-                      data-testid={`pickup-point-${point.accessPointCode}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium truncate">{point.name}</span>
-                            <Badge className={`text-xs ${getTypeBadgeColor(point.accessPointType)}`}>
-                              {getTypeIcon(point.accessPointType)}
-                              <span className="ml-1">{point.accessPointType}</span>
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {point.street}, {point.city} {point.zipCode}
-                          </div>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-                            {point.activeCardPayment && (
-                              <span className="flex items-center gap-1">
-                                <CreditCard className="h-3 w-3" />
-                                {t("orders:cardPayment", "Card")}
-                              </span>
-                            )}
-                            {point.activeCashPayment && (
-                              <span className="flex items-center gap-1">
-                                <Banknote className="h-3 w-3" />
-                                {t("orders:cashPayment", "Cash")}
-                              </span>
-                            )}
-                            {point.workHours && point.workHours.length > 0 && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span className="truncate max-w-[200px]" title={formatWorkHours(point.workHours) || ""}>
-                                  {formatWorkHours(point.workHours)}
+              {viewMode === "list" ? (
+                <ScrollArea className="flex-1 -mx-4 px-4">
+                  <div className="space-y-2 pb-4">
+                    {filteredPoints.map((point) => (
+                      <div
+                        key={point.accessPointCode}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPoint?.accessPointCode === point.accessPointCode
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                            : "hover:border-gray-400 dark:hover:border-gray-600"
+                        }`}
+                        onClick={() => handleSelectPoint(point)}
+                        data-testid={`pickup-point-${point.accessPointCode}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium truncate">{point.name}</span>
+                              <Badge className={`text-xs ${getTypeBadgeColor(point.accessPointType)}`}>
+                                {getTypeIcon(point.accessPointType)}
+                                <span className="ml-1">{point.accessPointType}</span>
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {point.street}, {point.city} {point.zipCode}
+                            </div>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                              {point.activeCardPayment && (
+                                <span className="flex items-center gap-1">
+                                  <CreditCard className="h-3 w-3" />
+                                  {t("orders:cardPayment", "Card")}
                                 </span>
-                              </span>
-                            )}
+                              )}
+                              {point.activeCashPayment && (
+                                <span className="flex items-center gap-1">
+                                  <Banknote className="h-3 w-3" />
+                                  {t("orders:cashPayment", "Cash")}
+                                </span>
+                              )}
+                              {point.workHours && point.workHours.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span className="truncate max-w-[200px]" title={formatWorkHours(point.workHours) || ""}>
+                                    {formatWorkHours(point.workHours)}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          {selectedPoint?.accessPointCode === point.accessPointCode && (
+                            <div className="flex-shrink-0">
+                              <Check className="h-5 w-5 text-orange-500" />
+                            </div>
+                          )}
                         </div>
-                        {selectedPoint?.accessPointCode === point.accessPointCode && (
-                          <div className="flex-shrink-0">
-                            <Check className="h-5 w-5 text-orange-500" />
-                          </div>
-                        )}
                       </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="flex-1 rounded-lg overflow-hidden border">
+                  {pointsWithGps.length > 0 ? (
+                    <MapContainer
+                      center={mapCenter}
+                      zoom={10}
+                      style={{ height: "100%", width: "100%" }}
+                      scrollWheelZoom={true}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <MapUpdater center={mapCenter} />
+                      {pointsWithGps.map((point) => (
+                        <Marker
+                          key={point.accessPointCode}
+                          position={[point.gps!.latitude!, point.gps!.longitude!]}
+                          icon={getMarkerIcon(point)}
+                          eventHandlers={{
+                            click: () => handleSelectPoint(point),
+                          }}
+                        >
+                          <Popup>
+                            <div className="min-w-[200px]">
+                              <div className="font-semibold">{point.name}</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {point.street}, {point.city} {point.zipCode}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {point.accessPointType}
+                              </div>
+                              <Button
+                                size="sm"
+                                className="w-full mt-2 bg-orange-500 hover:bg-orange-600"
+                                onClick={() => handleSelectPoint(point)}
+                              >
+                                {t("orders:selectThisPoint", "Select")}
+                              </Button>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      {t("orders:noPointsWithLocation", "No pickup points with location data available")}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </ScrollArea>
+              )}
             </>
           )}
         </div>
 
-        <div className="border-t p-4 flex justify-end gap-2 flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-cancel-pickup"
-          >
-            {t("common:cancel", "Cancel")}
-          </Button>
-          <Button
-            onClick={handleConfirmSelection}
-            disabled={!selectedPoint}
-            className="bg-orange-500 hover:bg-orange-600"
-            data-testid="button-confirm-pickup"
-          >
-            {t("orders:confirmSelection", "Confirm Selection")}
-          </Button>
+        <div className="border-t p-4 flex justify-between items-center flex-shrink-0">
+          <div className="text-sm text-muted-foreground">
+            {selectedPoint && (
+              <span>
+                {t("common:selected", "Selected")}: <strong>{selectedPoint.name}</strong>
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-cancel-pickup"
+            >
+              {t("common:cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={handleConfirmSelection}
+              disabled={!selectedPoint}
+              className="bg-orange-500 hover:bg-orange-600"
+              data-testid="button-confirm-pickup"
+            >
+              {t("orders:confirmSelection", "Confirm Selection")}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
