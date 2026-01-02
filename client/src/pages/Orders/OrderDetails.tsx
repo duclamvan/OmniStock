@@ -1114,7 +1114,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           </div>
                         </div>
                         {/* Expanded Variants */}
-                        {isExpanded && group.variants.map((variantItem: any, variantIndex: number) => {
+                        {isExpanded && [...group.variants].sort((a: any, b: any) => {
+                          // Extract color number from variant name (e.g., "Color 1", "Color 200")
+                          const getColorNum = (item: any) => {
+                            const name = item.variantName || item.productName || '';
+                            const match = name.match(/(?:Color|Colour)\s*(\d+)/i);
+                            return match ? parseInt(match[1], 10) : 999999;
+                          };
+                          return getColorNum(a) - getColorNum(b);
+                        }).map((variantItem: any, variantIndex: number) => {
                           const variantUnitPrice = parseFloat(variantItem.unitPrice) || parseFloat(variantItem.price) || 0;
                           const variantTotal = variantUnitPrice * (variantItem.quantity || 1) - (parseFloat(variantItem.discount) || 0);
                           const isLastVariant = variantIndex === group.variants.length - 1;
