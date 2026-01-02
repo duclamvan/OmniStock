@@ -1750,6 +1750,8 @@ const orders = {
   showBarcode: 'Hiện máy quét barcode',
   clickToMarkVerified: 'Nhấp để đánh dấu tất cả đã xác minh',
   clickToUnverifyAll: 'Nhấp để bỏ xác minh tất cả',
+  verifyAll: 'Xác nhận tất cả',
+  packDone: 'Xong',
   completePackingReadyForShipping: 'Hoàn tất đóng gói - Sẵn sàng vận chuyển',
   completeAllStepsToFinishPacking: 'Hoàn thành tất cả các bước để kết thúc đóng gói',
   forceFinishPacking: 'Hoàn tất bắt buộc (Bỏ qua kiểm tra)',

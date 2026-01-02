@@ -1766,6 +1766,8 @@ const orders = {
   showBarcode: 'Show barcode scanner',
   clickToMarkVerified: 'Click to mark all items as verified',
   clickToUnverifyAll: 'Click to unverify all items',
+  verifyAll: 'Verify All',
+  packDone: 'Done',
   
   // PickPack.tsx - Status & Totals
   dateColon: 'Date:',
