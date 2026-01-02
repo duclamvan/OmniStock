@@ -3476,7 +3476,7 @@ export default function AddOrder() {
   const calculateGrandTotal = () => totals.grandTotal;
 
   // Group order items by parent product when there are more than 5 variants
-  const VARIANT_GROUP_THRESHOLD = 5;
+  const VARIANT_GROUP_THRESHOLD = 1; // Group variants when 2+ of same parent (threshold is > 1)
   
   interface VariantGroup {
     parentProductId: string;
