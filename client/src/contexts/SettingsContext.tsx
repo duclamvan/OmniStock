@@ -234,6 +234,8 @@ export interface ShippingSettings {
   defaultInsuranceValue?: number;
   pplDefaultShippingPrice?: number;
   pplDefaultShippingPriceWithDobirka?: number;
+  pplDefaultShippingPriceSmart?: number;
+  pplDefaultShippingPriceSmartWithDobirka?: number;
   glsDefaultShippingPrice?: number;
   dhlDefaultShippingPrice?: number;
   pplPackageType?: 'PRIVATE' | 'BUSINESS' | 'SMART';
