@@ -189,6 +189,7 @@ interface OrderItem {
   serviceId?: string;
   variantId?: string;
   variantName?: string;
+  variantSku?: string | null;
   bundleId?: string;
   productName: string;
   sku: string;
@@ -212,6 +213,8 @@ interface OrderItem {
   isFreeItem?: boolean;
   originalPrice?: number;
   isServicePart?: boolean;
+  availableQuantity?: number;
+  stockQuantity?: number;
   // Virtual SKU fields - product deducts from master product's inventory
   isVirtual?: boolean;
   masterProductId?: string | null;
@@ -3979,6 +3982,107 @@ export default function AddOrder() {
       });
       
       return hasChanges ? updatedItems : items;
+    });
+  }, [buyXGetYAllocations]);
+
+  // Auto-manage free items for Buy X Get Y discounts
+  // - For PRODUCT-scoped discounts: auto-add using the same product
+  // - For CATEGORY-scoped discounts: auto-add using the first matching paid product from that category
+  // - Automatically adjusts (adds/removes) free items when paid quantity changes
+  useEffect(() => {
+    if (buyXGetYAllocations.length === 0) return;
+    
+    setOrderItems(currentItems => {
+      let itemsChanged = false;
+      let updatedItems = [...currentItems];
+      
+      for (const alloc of buyXGetYAllocations) {
+        // Find existing free items for this allocation
+        const existingFreeItems = updatedItems.filter(item => {
+          if (!item.isFreeItem || item.appliedDiscountId !== alloc.discountId) return false;
+          if (alloc.isProductScope) {
+            return item.productId === alloc.productId;
+          } else {
+            return item.categoryId?.toString() === alloc.categoryId;
+          }
+        });
+        const currentFreeQty = existingFreeItems.reduce((sum, item) => sum + item.quantity, 0);
+        const targetFreeQty = alloc.freeItemsEarned;
+        
+        if (currentFreeQty < targetFreeQty) {
+          // Need to add more free items
+          const qtyToAdd = targetFreeQty - currentFreeQty;
+          
+          // Find a paid item to use as template
+          const templateItem = updatedItems.find(item => {
+            if (item.isFreeItem) return false;
+            if (alloc.isProductScope) {
+              return item.productId === alloc.productId;
+            } else {
+              return item.categoryId?.toString() === alloc.categoryId;
+            }
+          });
+          
+          if (templateItem) {
+            const freeItem: OrderItem = {
+              id: Math.random().toString(36).substr(2, 9),
+              productId: templateItem.productId,
+              variantId: templateItem.variantId || undefined,
+              variantName: templateItem.variantName || undefined,
+              variantSku: templateItem.variantSku || undefined,
+              productName: templateItem.productName,
+              sku: templateItem.sku,
+              quantity: qtyToAdd,
+              price: 0,
+              originalPrice: templateItem.price,
+              discount: 0,
+              discountPercentage: 0,
+              tax: 0,
+              total: 0,
+              landingCost: templateItem.landingCost || null,
+              image: templateItem.image || null,
+              appliedDiscountId: alloc.discountId,
+              appliedDiscountLabel: alloc.discountName,
+              appliedDiscountType: 'buy_x_get_y',
+              appliedDiscountScope: alloc.isProductScope ? 'specific_product' : 'specific_category',
+              categoryId: templateItem.categoryId,
+              isFreeItem: true,
+              availableQuantity: templateItem.availableQuantity,
+            };
+            updatedItems.push(freeItem);
+            itemsChanged = true;
+          }
+        } else if (currentFreeQty > targetFreeQty) {
+          // Need to remove excess free items
+          let qtyToRemove = currentFreeQty - targetFreeQty;
+          
+          // Remove from the end (most recently added)
+          for (let i = updatedItems.length - 1; i >= 0 && qtyToRemove > 0; i--) {
+            const item = updatedItems[i];
+            const matchesAllocation = item.isFreeItem && item.appliedDiscountId === alloc.discountId && (
+              alloc.isProductScope 
+                ? item.productId === alloc.productId 
+                : item.categoryId?.toString() === alloc.categoryId
+            );
+            
+            if (matchesAllocation) {
+              if (item.quantity <= qtyToRemove) {
+                // Remove entire item
+                qtyToRemove -= item.quantity;
+                updatedItems.splice(i, 1);
+                itemsChanged = true;
+              } else {
+                // Reduce quantity
+                updatedItems[i] = { ...item, quantity: item.quantity - qtyToRemove };
+                qtyToRemove = 0;
+                itemsChanged = true;
+              }
+            }
+          }
+        }
+      }
+      
+      return itemsChanged ? updatedItems : currentItems;
     });
   }, [buyXGetYAllocations]);
 
