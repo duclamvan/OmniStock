@@ -3645,6 +3645,7 @@ export default function PickPack() {
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Record<string, number>>({});
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
+  const [expandedVariantGroups, setExpandedVariantGroups] = useState<Set<string>>(new Set()); // Track expanded variant groups in pack view
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [selectedPickingLocations, setSelectedPickingLocations] = useState<Record<string, string>>({}); // itemId -> selected locationCode
   const [pickedFromLocations, setPickedFromLocations] = useState<Record<string, Record<string, number>>>({}); // itemId -> locationCode -> picked qty
@@ -9299,36 +9300,244 @@ export default function PickPack() {
                   <div className="pb-2 pt-2">
                     <ScrollArea className="h-[400px] w-full">
                       <div className="space-y-2 px-2 pr-3">
-                      {activePackingOrder.items.map((item, index) => {
-                        const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
-                        const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
-                        const isExpanded = expandedBundles.has(item.id);
-                        const bundleComponentsVerified = isBundle ? item.bundleItems?.filter((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity).length || 0 : 0;
-                        const totalBundleComponents = isBundle ? item.bundleItems?.length || 0 : 0;
-                        const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
-                        const hasNotes = item.notes || item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
+                      {/* Group items by productId for variant grouping */}
+                      {(() => {
+                        // Group items by productId
+                        const productGroups = new Map<string, typeof activePackingOrder.items>();
+                        activePackingOrder.items.forEach(item => {
+                          const key = item.productId || item.id;
+                          if (!productGroups.has(key)) {
+                            productGroups.set(key, []);
+                          }
+                          productGroups.get(key)!.push(item);
+                        });
                         
-                        const isRecentlyScanned = recentlyScannedItemId === item.id;
+                        // Sort variants within each group by color number
+                        const extractColorNum = (item: any): number => {
+                          if (item.colorNumber) {
+                            const num = parseInt(item.colorNumber, 10);
+                            return isNaN(num) ? 999999 : num;
+                          }
+                          const match = item.productName?.match(/(?:Color|Colour)\s*(\d+)/i);
+                          return match ? parseInt(match[1], 10) : 999999;
+                        };
                         
-                        return (
-                          <div 
-                            key={item.id} 
-                            className={`relative p-3 rounded-lg border-2 transition-all duration-300 ${
-                              isRecentlyScanned
-                                ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-700 shadow-lg scale-105 ring-4 ring-yellow-200 dark:ring-yellow-700 animate-pulse'
-                                : isVerified || (isBundle && allBundleComponentsVerified)
-                                ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 shadow-sm' 
-                                : 'bg-white border-gray-300 shadow-sm'
-                            }`}
-                          >
-                            {(item.notes || item.shipmentNotes) && !(isVerified || (isBundle && allBundleComponentsVerified)) && (
-                              <div className="absolute -top-2 -right-2 z-50">
-                                <div className={`${item.shipmentNotes ? 'bg-red-50 dark:bg-red-900/300' : 'bg-amber-50 dark:bg-amber-900/300'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
-                                  <AlertTriangle className="h-3 w-3" />
-                                  {item.shipmentNotes ? 'SPECIAL' : 'NOTE'}
+                        productGroups.forEach((items) => {
+                          items.sort((a, b) => extractColorNum(a) - extractColorNum(b));
+                        });
+                        
+                        let groupIndex = 0;
+                        return Array.from(productGroups.entries()).map(([productId, groupItems]) => {
+                          const isMultiVariant = groupItems.length > 1;
+                          const firstItem = groupItems[0];
+                          const parentName = isMultiVariant 
+                            ? firstItem.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim()
+                            : firstItem.productName;
+                          const isGroupExpanded = expandedVariantGroups.has(productId);
+                          const verifiedCount = groupItems.filter(item => {
+                            const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
+                            if (isBundle) {
+                              return item.bundleItems?.every((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity);
+                            }
+                            return (verifiedItems[item.id] || 0) >= item.quantity;
+                          }).length;
+                          const allVerified = verifiedCount === groupItems.length;
+                          const hasAnyNotes = groupItems.some(item => item.notes || item.shipmentNotes);
+                          const currentGroupIndex = ++groupIndex;
+                          
+                          if (isMultiVariant) {
+                            // Render grouped variants with dropdown
+                            return (
+                              <div key={productId} className={`relative rounded-lg border-2 transition-all duration-300 overflow-hidden ${
+                                allVerified
+                                  ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
+                                  : 'bg-white dark:bg-gray-900 border-purple-300 dark:border-purple-700'
+                              }`}>
+                                {hasAnyNotes && !allVerified && (
+                                  <div className="absolute -top-2 -right-2 z-50">
+                                    <div className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      NOTE
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Group Header - Clickable to expand/collapse */}
+                                <div 
+                                  className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedVariantGroups);
+                                    if (isGroupExpanded) {
+                                      newExpanded.delete(productId);
+                                    } else {
+                                      newExpanded.add(productId);
+                                    }
+                                    setExpandedVariantGroups(newExpanded);
+                                  }}
+                                >
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">
+                                    {currentGroupIndex}
+                                  </div>
+                                  <div className="relative flex-shrink-0">
+                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
+                                      {firstItem.image ? (
+                                        <img src={firstItem.image} alt={parentName} className="w-full h-full object-contain" />
+                                      ) : (
+                                        <Package className="h-6 w-6 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
+                                      allVerified ? 'bg-green-600 text-white' : 'bg-purple-600 text-white'
+                                    }`}>
+                                      {allVerified ? <CheckCircle className="h-4 w-4" /> : groupItems.length}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`font-semibold text-sm leading-tight truncate ${allVerified ? 'text-green-700 dark:text-green-300 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                      {parentName}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <Badge className={`text-xs px-2 py-0.5 ${allVerified ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'}`}>
+                                        {verifiedCount}/{groupItems.length} {t('variants') || 'variants'}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    {/* Verify All Button */}
+                                    <Button
+                                      variant={allVerified ? "default" : "outline"}
+                                      size="sm"
+                                      className={`h-8 px-3 text-xs font-bold ${
+                                        allVerified
+                                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                          : 'border-purple-400 text-purple-700 hover:bg-purple-50'
+                                      }`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (allVerified) {
+                                          setVerifiedItems(prev => {
+                                            const newItems = { ...prev };
+                                            groupItems.forEach(item => {
+                                              if (item.isBundle && item.bundleItems) {
+                                                item.bundleItems.forEach((bi: any) => {
+                                                  newItems[`${item.id}-${bi.id}`] = 0;
+                                                });
+                                              } else {
+                                                newItems[item.id] = 0;
+                                              }
+                                            });
+                                            return newItems;
+                                          });
+                                        } else {
+                                          setVerifiedItems(prev => {
+                                            const newItems = { ...prev };
+                                            groupItems.forEach(item => {
+                                              if (item.isBundle && item.bundleItems) {
+                                                item.bundleItems.forEach((bi: any) => {
+                                                  newItems[`${item.id}-${bi.id}`] = bi.quantity;
+                                                });
+                                              } else {
+                                                newItems[item.id] = item.quantity;
+                                              }
+                                            });
+                                            return newItems;
+                                          });
+                                          playSound('success');
+                                        }
+                                      }}
+                                    >
+                                      {allVerified ? <><Check className="h-3 w-3 mr-1" />{t('done')}</> : <><CheckCircle2 className="h-3 w-3 mr-1" />{t('verifyAll') || 'All'}</>}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      {isGroupExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                    </Button>
+                                  </div>
                                 </div>
+                                
+                                {/* Expanded Variant List */}
+                                {isGroupExpanded && (
+                                  <div className="border-t border-purple-200 dark:border-purple-700 max-h-64 overflow-y-auto">
+                                    {groupItems.map((item, idx) => {
+                                      const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
+                                      const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
+                                      const isRecentlyScanned = recentlyScannedItemId === item.id;
+                                      
+                                      return (
+                                        <div
+                                          key={item.id}
+                                          className={`h-14 px-3 py-2 border-b last:border-b-0 border-purple-100 dark:border-purple-800 flex items-center gap-3 transition-all duration-150 cursor-pointer
+                                            ${isRecentlyScanned ? 'bg-yellow-100 dark:bg-yellow-900/30 ring-2 ring-yellow-400' : isVerified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                          onClick={() => {
+                                            if (!isVerified && !isBundle) {
+                                              const newCount = item.quantity > 4 ? item.quantity : Math.min((verifiedItems[item.id] || 0) + 1, item.quantity);
+                                              setVerifiedItems(prev => ({ ...prev, [item.id]: newCount }));
+                                              playSound('scan');
+                                            }
+                                          }}
+                                        >
+                                          <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs transition-colors ${
+                                            isVerified ? 'bg-green-500 text-white' : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                                          }`}>
+                                            {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-medium truncate ${isVerified ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                              {item.variantName || item.productName}
+                                            </p>
+                                            <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
+                                              <span>📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} /></span>
+                                              {item.sku && <span className="font-mono">• {item.sku}</span>}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2 flex-shrink-0">
+                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.quantity}×</span>
+                                            <div className="w-8 flex justify-center">
+                                              {isVerified ? (
+                                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                              ) : (
+                                                <span className="text-xs text-gray-500">{verifiedItems[item.id] || 0}/{item.quantity}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            );
+                          }
+                          
+                          // Single item - render as before
+                          const item = firstItem;
+                          const index = currentGroupIndex - 1;
+                          const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
+                          const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
+                          const isExpanded = expandedBundles.has(item.id);
+                          const bundleComponentsVerified = isBundle ? item.bundleItems?.filter((bi: any) => (verifiedItems[`${item.id}-${bi.id}`] || 0) >= bi.quantity).length || 0 : 0;
+                          const totalBundleComponents = isBundle ? item.bundleItems?.length || 0 : 0;
+                          const allBundleComponentsVerified = isBundle && bundleComponentsVerified === totalBundleComponents;
+                          const hasNotes = item.notes || item.shipmentNotes || item.packingInstructionsText || item.packingInstructionsImage;
+                          const isRecentlyScanned = recentlyScannedItemId === item.id;
+                          
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`relative p-3 rounded-lg border-2 transition-all duration-300 ${
+                                isRecentlyScanned
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-700 shadow-lg scale-105 ring-4 ring-yellow-200 dark:ring-yellow-700 animate-pulse'
+                                  : isVerified || (isBundle && allBundleComponentsVerified)
+                                  ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 shadow-sm' 
+                                  : 'bg-white border-gray-300 shadow-sm'
+                              }`}
+                            >
+                              {(item.notes || item.shipmentNotes) && !(isVerified || (isBundle && allBundleComponentsVerified)) && (
+                                <div className="absolute -top-2 -right-2 z-50">
+                                  <div className={`${item.shipmentNotes ? 'bg-red-500' : 'bg-amber-500'} text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {item.shipmentNotes ? 'SPECIAL' : 'NOTE'}
+                                  </div>
+                                </div>
+                              )}
 
                             {/* Mobile Layout - Stack vertically */}
                             <div className="sm:hidden">
@@ -9823,7 +10032,8 @@ export default function PickPack() {
                             )}
                           </div>
                         );
-                      })}
+                      });
+                    })()}
                     </div>
                   </ScrollArea>
                 </div>
