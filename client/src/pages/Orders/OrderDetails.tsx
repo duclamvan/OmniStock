@@ -1081,7 +1081,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   <Package className="h-6 w-6 text-blue-500 dark:text-blue-400" />
                                 </div>
                               )}
-                              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
                                 {group.variants.length}
                               </div>
                             </div>

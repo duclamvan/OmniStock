@@ -3566,6 +3566,34 @@ export default function AddOrder() {
     ));
   }, []);
 
+  // Autofill all variants in a group with the first variant's price
+  const autofillVariantGroupPrice = useCallback((parentProductId: string) => {
+    setOrderItems(items => {
+      // Find all variants for this parent product
+      const groupVariants = items.filter(item => 
+        item.variantId && item.productId === parentProductId
+      );
+      
+      if (groupVariants.length < 2) return items;
+      
+      // Get the first variant's price
+      const firstVariantPrice = groupVariants[0].price;
+      
+      // Update all variants with the first variant's price
+      return items.map(item => {
+        if (item.variantId && item.productId === parentProductId) {
+          const total = (firstVariantPrice * item.quantity) - (item.discount || 0);
+          return {
+            ...item,
+            price: firstVariantPrice,
+            total
+          };
+        }
+        return item;
+      });
+    });
+  }, []);
+
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
     const orderData = {
       ...data,
@@ -6038,7 +6066,7 @@ export default function AddOrder() {
                                             <Package className="h-6 w-6 text-blue-500 dark:text-blue-400" />
                                           </div>
                                         )}
-                                        <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
                                           {group.variants.length}
                                         </div>
                                       </div>
@@ -6088,19 +6116,35 @@ export default function AddOrder() {
                                     </TableCell>
                                   )}
                                   <TableCell className="text-center">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeVariantGroup(group.parentProductId);
-                                      }}
-                                      className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                                      data-testid={`button-remove-group-${group.parentProductId}`}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          autofillVariantGroupPrice(group.parentProductId);
+                                        }}
+                                        className="h-9 w-9 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                                        data-testid={`button-autofill-group-${group.parentProductId}`}
+                                        title={t('orders:autofillPrice', 'Fill all with first price')}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeVariantGroup(group.parentProductId);
+                                        }}
+                                        className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                        data-testid={`button-remove-group-${group.parentProductId}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                                 {/* Expanded Variant Rows */}
