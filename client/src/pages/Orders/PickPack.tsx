@@ -15386,6 +15386,18 @@ export default function PickPack() {
       ...itemsWithNotes
     ];
     
+    // DEBUG: Log merge results
+    console.log('🔍 SKU Merge Debug:', {
+      originalItemCount: activePickingOrder.items.length,
+      mergedItemCount: allMergedItems.length,
+      mergeMapSize: globalSkuMergeMap.size,
+      mergeMapEntries: Array.from(globalSkuMergeMap.entries()).map(([key, val]) => ({
+        key,
+        totalQty: val.totalQty,
+        originalIds: val.originalIds.length
+      }))
+    });
+    
     // STEP 2: Now group merged items by productId for display
     const productGroupMap = new Map<string, typeof allMergedItems>();
     
