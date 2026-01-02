@@ -2691,7 +2691,7 @@ function MultiLocationPicker({
   updatePickedItem,
   t,
   mergedQuantity,
-  sameSkuItemIds
+  sameSkuItems
 }: {
   currentItem: OrderItem;
   pickedFromLocations: Record<string, Record<string, number>>; // itemId -> locationCode -> picked qty
@@ -2699,7 +2699,7 @@ function MultiLocationPicker({
   updatePickedItem: (itemId: string, pickedQty: number, locationCode?: string) => void;
   t: (key: string, fallback?: string) => string;
   mergedQuantity?: number; // Total quantity across all items with same SKU
-  sameSkuItemIds?: string[]; // IDs of all items with the same SKU
+  sameSkuItems?: Array<{ id: string; quantity: number; pickedQuantity: number }>; // Items with same SKU
 }) {
   // For virtual products, check the master product's stock
   const isVirtual = currentItem.isVirtual && currentItem.masterProductId;
@@ -2727,24 +2727,30 @@ function MultiLocationPicker({
   // No need to fetch variant data separately - it's included in the pick-pack response
   const isLoading = locationsLoading;
 
-  // Get picked quantities for this item (or all items with same SKU if merged)
-  const itemPicks = pickedFromLocations[currentItem.id] || {};
+  // Check if this is a merged SKU scenario
+  const isMergedSku = sameSkuItems && sameSkuItems.length > 1;
+  
+  // For merged SKU items: aggregate location picks across all same-SKU items
+  // This gives us the total picked from each location across all items
+  const itemPicks = useMemo(() => {
+    if (isMergedSku && sameSkuItems) {
+      // Aggregate all location picks from all same-SKU items
+      const aggregated: Record<string, number> = {};
+      sameSkuItems.forEach(item => {
+        const itemLocations = pickedFromLocations[item.id] || {};
+        Object.entries(itemLocations).forEach(([loc, qty]) => {
+          aggregated[loc] = (aggregated[loc] || 0) + qty;
+        });
+      });
+      return aggregated;
+    }
+    return pickedFromLocations[currentItem.id] || {};
+  }, [isMergedSku, sameSkuItems, pickedFromLocations, currentItem.id]);
 
-  // Calculate total picked across all locations for this item
-  const itemTotalPicked = useMemo(() => {
+  // Calculate total picked from the aggregated location map
+  const totalPicked = useMemo(() => {
     return Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
   }, [itemPicks]);
-
-  // For merged SKU items: calculate total picked across ALL items with same SKU
-  const totalPicked = useMemo(() => {
-    if (sameSkuItemIds && sameSkuItemIds.length > 1) {
-      return sameSkuItemIds.reduce((sum, itemId) => {
-        const picks = pickedFromLocations[itemId] || {};
-        return sum + Object.values(picks).reduce((s, qty) => s + qty, 0);
-      }, 0);
-    }
-    return itemTotalPicked;
-  }, [sameSkuItemIds, pickedFromLocations, itemTotalPicked]);
 
   // Use merged quantity if provided, otherwise fall back to current item quantity
   const targetQuantity = mergedQuantity ?? currentItem.quantity;
@@ -2910,7 +2916,8 @@ function MultiLocationPicker({
   const isServiceItem = !!currentItem.serviceId && !currentItem.productId;
 
   // Set picked quantity at current location to an ABSOLUTE value
-  // This is called with the desired NEW total at this location (not a delta)
+  // For merged SKU items: location tracking is aggregated in current item's slot,
+  // and picked quantities are distributed across all same-SKU items
   const setPickedAtLocation = (newQtyAtLocation: number) => {
     if (!selectedLocation) return;
     
@@ -2919,14 +2926,14 @@ function MultiLocationPicker({
       .filter(([loc]) => loc !== selectedLocationCode)
       .reduce((sum, [, q]) => sum + q, 0);
     
-    // Maximum allowed at this location = order quantity - picks from other locations
-    const maxAllowedAtThisLocation = currentItem.quantity - otherPicks;
+    // Maximum allowed = merged target quantity - picks from other locations
+    const maxAllowedAtThisLocation = targetQuantity - otherPicks;
     
     // Clamp new quantity to [0, min(available, maxAllowed)]
     const clampedQty = Math.max(0, Math.min(
       newQtyAtLocation,
       selectedLocation.virtualQty, // Can't pick more than available at this location
-      maxAllowedAtThisLocation // Can't exceed order quantity minus other locations' picks
+      maxAllowedAtThisLocation // Can't exceed merged target
     ));
 
     const newItemPicks = {
@@ -2939,20 +2946,94 @@ function MultiLocationPicker({
       delete newItemPicks[selectedLocationCode];
     }
 
-    setPickedFromLocations({
-      ...pickedFromLocations,
-      [currentItem.id]: newItemPicks
-    });
-
     const newTotalPicked = Object.values(newItemPicks).reduce((sum, q) => sum + q, 0);
-    const newRemainingToPick = currentItem.quantity - newTotalPicked;
-    updatePickedItem(currentItem.id, newTotalPicked, selectedLocationCode);
+    
+    // For merged SKU items: apply delta-based updates to preserve multi-location history
+    // Only modify the changed location, don't touch other locations
+    if (isMergedSku && sameSkuItems) {
+      const newPickedFromLocations = { ...pickedFromLocations };
+      
+      // Calculate the old aggregate quantity at this location
+      const oldLocationQty = sameSkuItems.reduce((sum, item) => {
+        const itemLocs = pickedFromLocations[item.id] || {};
+        return sum + (itemLocs[selectedLocationCode] || 0);
+      }, 0);
+      
+      // Calculate delta: how much to add/remove at this location
+      const newLocationQty = newItemPicks[selectedLocationCode] || 0;
+      const delta = newLocationQty - oldLocationQty;
+      
+      if (delta > 0) {
+        // ADDING picks: distribute to items with remaining capacity
+        let remaining = delta;
+        for (const item of sameSkuItems) {
+          if (remaining <= 0) break;
+          
+          const itemLocs = { ...(pickedFromLocations[item.id] || {}) };
+          const itemTotal = Object.values(itemLocs).reduce((s, q) => s + q, 0);
+          const itemCapacity = item.quantity;
+          const availableSpace = itemCapacity - itemTotal;
+          
+          if (availableSpace > 0) {
+            const take = Math.min(remaining, availableSpace);
+            itemLocs[selectedLocationCode] = (itemLocs[selectedLocationCode] || 0) + take;
+            remaining -= take;
+            newPickedFromLocations[item.id] = itemLocs;
+            
+            const newItemTotal = Object.values(itemLocs).reduce((s, q) => s + q, 0);
+            updatePickedItem(item.id, newItemTotal, selectedLocationCode);
+          }
+        }
+      } else if (delta < 0) {
+        // REMOVING picks: remove from items in reverse order (last to first)
+        let remaining = Math.abs(delta);
+        for (let i = sameSkuItems.length - 1; i >= 0; i--) {
+          if (remaining <= 0) break;
+          
+          const item = sameSkuItems[i];
+          const itemLocs = { ...(pickedFromLocations[item.id] || {}) };
+          const atThisLoc = itemLocs[selectedLocationCode] || 0;
+          
+          if (atThisLoc > 0) {
+            const remove = Math.min(remaining, atThisLoc);
+            itemLocs[selectedLocationCode] = atThisLoc - remove;
+            remaining -= remove;
+            
+            // Clean up zero entries
+            if (itemLocs[selectedLocationCode] <= 0) {
+              delete itemLocs[selectedLocationCode];
+            }
+            
+            if (Object.keys(itemLocs).length > 0) {
+              newPickedFromLocations[item.id] = itemLocs;
+            } else {
+              delete newPickedFromLocations[item.id];
+            }
+            
+            const newItemTotal = Object.values(itemLocs).reduce((s, q) => s + q, 0);
+            updatePickedItem(item.id, newItemTotal, selectedLocationCode);
+          }
+        }
+      }
+      
+      setPickedFromLocations(newPickedFromLocations);
+    } else {
+      // Single item: store location data using item ID
+      const newPickedFromLocations = {
+        ...pickedFromLocations,
+        [currentItem.id]: newItemPicks
+      };
+      setPickedFromLocations(newPickedFromLocations);
+      updatePickedItem(currentItem.id, newTotalPicked, selectedLocationCode);
+    }
+    
+    // Calculate remaining based on merged target for auto-switch logic
+    const newRemainingToPick = targetQuantity - newTotalPicked;
 
     // Auto-switch to next location if this one is exhausted and we still need more
-    // Recalculate availability after update
     const newAvailableHere = selectedLocation.virtualQty - clampedQty;
     if (newAvailableHere <= 0 && newRemainingToPick > 0) {
-      // Find next location with stock (recalculate from fresh data)
+      // Find next location with stock
       const nextLocation = locationOptions.find(loc => {
         if (loc.locationCode === selectedLocationCode) return false;
         const pickedFromLoc = newItemPicks[loc.locationCode] || 0;
@@ -2971,26 +3052,37 @@ function MultiLocationPicker({
     setPickedAtLocation(newQty);
   };
 
-  // Pick all from current location
+  // Pick all from current location (up to merged target quantity for same-SKU items)
   const pickAllFromLocation = () => {
     if (!selectedLocation) return;
     // Calculate what to set: fill up to max allowed or available, whichever is less
     const otherPicks = Object.entries(itemPicks)
       .filter(([loc]) => loc !== selectedLocationCode)
       .reduce((sum, [, q]) => sum + q, 0);
-    const maxAllowed = currentItem.quantity - otherPicks;
+    // Use merged target quantity to allow picking all same-SKU items at once
+    const maxAllowed = targetQuantity - otherPicks;
     const targetQty = Math.min(selectedLocation.virtualQty, maxAllowed);
     if (targetQty > selectedLocation.pickedFromHere) {
       setPickedAtLocation(targetQty);
     }
   };
 
-  // Reset all picks for this item
+  // Reset all picks for this item (and all same-SKU items if merged)
   const resetAllPicks = () => {
     const newPicks = { ...pickedFromLocations };
-    delete newPicks[currentItem.id];
+    
+    if (isMergedSku && sameSkuItems) {
+      // Reset all same-SKU items' location maps and pickedQuantity
+      sameSkuItems.forEach(item => {
+        delete newPicks[item.id];
+        updatePickedItem(item.id, 0);
+      });
+    } else {
+      delete newPicks[currentItem.id];
+      updatePickedItem(currentItem.id, 0);
+    }
+    
     setPickedFromLocations(newPicks);
-    updatePickedItem(currentItem.id, 0);
   };
 
   if (isLoading) {
@@ -7819,6 +7911,9 @@ export default function PickPack() {
   };
 
   // Update item picked quantity and reduce stock from selected location
+  // NOTE: When called from MultiLocationPicker with a locationCode, location tracking
+  // is already handled by the picker (keyed by SKU for merged items), so we skip
+  // redundant location updates here to avoid conflicts.
   const updatePickedItem = (itemId: string, pickedQty: number, locationCode?: string) => {
     if (!activePickingOrder) return;
 
@@ -7842,10 +7937,11 @@ export default function PickPack() {
     // Get selected location from the picker (do NOT use legacy warehouseLocation field)
     const selectedLocation = locationCode || selectedPickingLocations[itemId];
     
-    // Update pickedFromLocations state if we have a location and quantity changed
-    // This tracks exactly which locations were picked from
+    // Location tracking is handled by MultiLocationPicker when locationCode is provided
+    // (it uses SKU-keyed entries for merged items). Only update here for legacy paths
+    // that don't go through MultiLocationPicker.
     let updatedLocations = pickedFromLocations;
-    if (selectedLocation && qtyChange !== 0) {
+    if (!locationCode && selectedLocation && qtyChange !== 0) {
       const itemPicks = pickedFromLocations[itemId] || {};
       const currentPicked = itemPicks[selectedLocation] || 0;
       const newPicked = Math.max(0, currentPicked + qtyChange);
@@ -7862,7 +7958,7 @@ export default function PickPack() {
     }
     
     // Always save progress to localStorage (quantities and locations)
-    savePickedProgress(activePickingOrder.id, updatedItems, updatedLocations);
+    savePickedProgress(activePickingOrder.id, updatedItems, pickedFromLocations);
 
     // Save to database in real-time (for non-mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
@@ -15795,7 +15891,7 @@ export default function PickPack() {
                           updatePickedItem={updatePickedItem}
                           t={t}
                           mergedQuantity={mergedQty}
-                          sameSkuItemIds={sameSkuItems.map(i => i.id)}
+                          sameSkuItems={sameSkuItems.map(i => ({ id: i.id, quantity: i.quantity, pickedQuantity: i.pickedQuantity }))}
                         />
                         </div>
                       )}
@@ -16023,14 +16119,15 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Group product items by productId, then merge by SKU within each group
-                const productGroups = new Map<string, typeof productItems>();
+                // Group product items by SKU to merge same-SKU items for display
+                // This ensures items with same SKU show combined quantities
+                const skuGroups = new Map<string, typeof productItems>();
                 productItems.forEach(item => {
-                  const key = item.productId || item.id;
-                  if (!productGroups.has(key)) {
-                    productGroups.set(key, []);
+                  const skuKey = item.sku || item.id;
+                  if (!skuGroups.has(skuKey)) {
+                    skuGroups.set(skuKey, []);
                   }
-                  productGroups.get(key)!.push(item);
+                  skuGroups.get(skuKey)!.push(item);
                 });
                 
                 // Convert to display groups with merged SKU quantities
@@ -16046,35 +16143,20 @@ export default function PickPack() {
                   hasCurrent: boolean;
                 }> = [];
                 
-                productGroups.forEach((items, productId) => {
-                  // Merge items with same SKU within this product group
-                  const skuMap = new Map<string, { totalQty: number, pickedQty: number }>();
-                  items.forEach(item => {
-                    if (skuMap.has(item.sku)) {
-                      const existing = skuMap.get(item.sku)!;
-                      existing.totalQty += item.quantity;
-                      existing.pickedQty += item.pickedQuantity;
-                    } else {
-                      skuMap.set(item.sku, { totalQty: item.quantity, pickedQty: item.pickedQuantity });
-                    }
-                  });
-                  
-                  // Calculate totals from merged SKUs
-                  let totalQty = 0, pickedQty = 0;
-                  skuMap.forEach(sku => {
-                    totalQty += sku.totalQty;
-                    pickedQty += sku.pickedQty;
-                  });
+                skuGroups.forEach((items, sku) => {
+                  // Calculate merged totals for all items with same SKU
+                  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+                  const pickedQty = items.reduce((sum, item) => sum + item.pickedQuantity, 0);
                   
                   const parentName = items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
                   displayGroups.push({
                     type: 'product',
                     items,
-                    parentName: skuMap.size > 1 ? parentName : items[0].productName,
+                    parentName: items.length > 1 ? parentName : items[0].productName,
                     firstItem: items[0],
                     totalQty,
                     pickedQty,
-                    variantCount: skuMap.size,
+                    variantCount: items.length,
                     allPicked: pickedQty >= totalQty,
                     hasCurrent: items.some(i => currentItem?.id === i.id)
                   });
