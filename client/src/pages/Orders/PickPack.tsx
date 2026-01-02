@@ -15348,37 +15348,12 @@ export default function PickPack() {
       return raw.trim().toUpperCase() || item.id;
     };
     
-    // DEBUG: Log ALL items with their SKU values before merging
-    console.log('🔍 ALL ITEMS SKU DEBUG:', activePickingOrder.items.map(item => ({
-      id: item.id.substring(0, 8),
-      name: item.productName?.substring(0, 30),
-      sku: item.sku,
-      variantSku: item.variantSku,
-      normalizedKey: normalizeSku(item),
-      qty: item.quantity,
-      hasNotes: !!(item.notes && item.notes.trim()),
-      serviceId: item.serviceId,
-      isFreeItem: (item as any).isFreeItem
-    })));
-    
-    // DEBUG: Specifically find Acrylic Powder items
-    const acrylicItems = activePickingOrder.items.filter(i => 
-      i.productName?.toLowerCase().includes('acrylic') || 
-      i.sku?.includes('ACR-BODA')
-    );
-    console.log('🧪 ACRYLIC POWDER ITEMS:', acrylicItems.map(i => ({
-      id: i.id,
-      name: i.productName,
-      sku: i.sku,
-      variantSku: i.variantSku,
-      qty: i.quantity,
-      serviceId: i.serviceId,
-      notes: i.notes,
-      isFreeItem: (i as any).isFreeItem
-    })));
-    
     activePickingOrder.items.forEach(item => {
-      if (item.serviceId) {
+      // An item is a "pure service" only if it has serviceId AND no productId
+      // Free items from discounts may incorrectly have serviceId but should still merge
+      const isPureService = item.serviceId && !item.productId;
+      
+      if (isPureService) {
         serviceItems.push(item);
       } else if (item.notes && item.notes.trim()) {
         // Items with notes are kept separate - don't merge them
@@ -15414,18 +15389,6 @@ export default function PickPack() {
       ...Array.from(globalSkuMergeMap.values()).map(v => v.mergedItem),
       ...itemsWithNotes
     ];
-    
-    // DEBUG: Log merge results
-    console.log('🔍 SKU Merge Debug:', {
-      originalItemCount: activePickingOrder.items.length,
-      mergedItemCount: allMergedItems.length,
-      mergeMapSize: globalSkuMergeMap.size,
-      mergeMapEntries: Array.from(globalSkuMergeMap.entries()).map(([key, val]) => ({
-        key,
-        totalQty: val.totalQty,
-        originalIds: val.originalIds.length
-      }))
-    });
     
     // STEP 2: Now group merged items by productId for display
     const productGroupMap = new Map<string, typeof allMergedItems>();
