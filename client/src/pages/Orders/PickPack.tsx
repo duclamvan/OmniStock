@@ -15423,13 +15423,58 @@ export default function PickPack() {
                               .filter(item => item.productId === productId)
                               .sort((a, b) => extractColorNumber(a) - extractColorNumber(b))
                           : [];
-                        const hasMultipleVariants = relatedItems.length > 1;
+                        
+                        // Merge items with same SKU
+                        const skuMergedMap = new Map<string, {
+                          sku: string;
+                          totalQty: number;
+                          pickedQty: number;
+                          itemIds: string[];
+                          displayName: string;
+                          colorNumber: string | null;
+                          productId: string | null;
+                          variantId: string | null;
+                          variantLocationCode: string | null;
+                          warehouseLocation: string | null;
+                          firstItemIndex: number;
+                        }>();
+                        
+                        relatedItems.forEach((item) => {
+                          const sku = item.sku || item.id;
+                          const existing = skuMergedMap.get(sku);
+                          const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+                          if (existing) {
+                            existing.totalQty += item.quantity;
+                            existing.pickedQty += item.pickedQuantity;
+                            existing.itemIds.push(item.id);
+                            if (itemIndex < existing.firstItemIndex) {
+                              existing.firstItemIndex = itemIndex;
+                            }
+                          } else {
+                            skuMergedMap.set(sku, {
+                              sku,
+                              totalQty: item.quantity,
+                              pickedQty: item.pickedQuantity,
+                              itemIds: [item.id],
+                              displayName: item.variantName || item.productName,
+                              colorNumber: item.colorNumber || null,
+                              productId: item.productId || null,
+                              variantId: item.variantId || null,
+                              variantLocationCode: item.variantLocationCode || null,
+                              warehouseLocation: item.warehouseLocation || null,
+                              firstItemIndex: itemIndex
+                            });
+                          }
+                        });
+                        
+                        const mergedVariants = Array.from(skuMergedMap.values());
+                        const hasMultipleVariants = mergedVariants.length > 1;
                         
                         if (!hasMultipleVariants || currentItem.serviceId) return null;
                         
-                        // Calculate group stats
-                        const totalQuantity = relatedItems.reduce((sum, item) => sum + item.quantity, 0);
-                        const pickedQuantity = relatedItems.reduce((sum, item) => sum + item.pickedQuantity, 0);
+                        // Calculate group stats from merged items
+                        const totalQuantity = mergedVariants.reduce((sum, m) => sum + m.totalQty, 0);
+                        const pickedQuantity = mergedVariants.reduce((sum, m) => sum + m.pickedQty, 0);
                         const allPicked = pickedQuantity >= totalQuantity;
                         const parentName = currentItem.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
                         
@@ -15447,7 +15492,7 @@ export default function PickPack() {
                                 </Badge>
                               </div>
                               <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                {relatedItems.length} {t('variants')}
+                                {mergedVariants.length} {t('variants')}
                               </div>
                             </div>
                             
@@ -15458,14 +15503,15 @@ export default function PickPack() {
                                   size="sm"
                                   className="w-full h-9 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-sm"
                                   onClick={() => {
-                                    // Batch update all related items in a single state change
-                                    const itemsToUpdate = relatedItems.filter(item => item.pickedQuantity < item.quantity);
-                                    if (itemsToUpdate.length === 0) return;
+                                    // Get all item IDs from merged variants that are not fully picked
+                                    const allItemIds = mergedVariants
+                                      .filter(m => m.pickedQty < m.totalQty)
+                                      .flatMap(m => m.itemIds);
+                                    if (allItemIds.length === 0) return;
                                     
                                     // Create updated items array with all variants set to full quantity
                                     const updatedItems = activePickingOrder.items.map(i => {
-                                      const matchingItem = itemsToUpdate.find(u => u.id === i.id);
-                                      if (matchingItem) {
+                                      if (allItemIds.includes(i.id)) {
                                         return { ...i, pickedQuantity: i.quantity };
                                       }
                                       return i;
@@ -15482,32 +15528,42 @@ export default function PickPack() {
                                   }}
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  {t('pickAll')} ({relatedItems.length})
+                                  {t('pickAll')} ({mergedVariants.length})
                                 </Button>
                               </div>
                             )}
                             
-                            {/* Variant List - Stable layout with smooth transitions */}
+                            {/* Variant List - Merged by SKU */}
                             <div className="max-h-48 overflow-y-auto">
-                              {relatedItems.map((item, idx) => {
-                                const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
-                                const isPicked = item.pickedQuantity >= item.quantity;
-                                const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
-                                const isCurrent = item.id === currentItem.id;
+                              {mergedVariants.map((merged, idx) => {
+                                const isPicked = merged.pickedQty >= merged.totalQty;
+                                const isPartial = merged.pickedQty > 0 && merged.pickedQty < merged.totalQty;
+                                const isCurrent = merged.itemIds.includes(currentItem.id);
                                 
                                 return (
                                   <div
-                                    key={item.id}
+                                    key={merged.sku}
                                     className={`h-12 p-2 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer flex items-center gap-2 transition-all duration-150 ease-out
                                       ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}
                                       ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (!isPicked) {
-                                        updatePickedItem(item.id, item.quantity);
+                                        // Update all items in this merged group
+                                        const updatedItems = activePickingOrder.items.map(i => {
+                                          if (merged.itemIds.includes(i.id)) {
+                                            return { ...i, pickedQuantity: i.quantity };
+                                          }
+                                          return i;
+                                        });
+                                        setActivePickingOrder({
+                                          ...activePickingOrder,
+                                          items: updatedItems,
+                                          pickedItems: updatedItems.reduce((sum, i) => sum + i.pickedQuantity, 0)
+                                        });
                                         playSound('success');
                                       }
-                                      setManualItemIndex(itemIndex);
+                                      setManualItemIndex(merged.firstItemIndex);
                                     }}
                                   >
                                     {/* Color Number Badge */}
@@ -15517,16 +15573,16 @@ export default function PickPack() {
                                       isCurrent ? 'bg-blue-500 text-white' :
                                       'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
                                     }`}>
-                                      {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
+                                      {merged.colorNumber ? `#${merged.colorNumber}` : idx + 1}
                                     </div>
                                     
                                     {/* Variant Name + Location */}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-xs font-medium truncate transition-all duration-150 ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                        {item.variantName || item.productName}
+                                        {merged.displayName}
                                       </p>
                                       <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                                        📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                                        📍 <ItemPrimaryLocation productId={merged.productId} variantId={merged.variantId} variantLocationCode={merged.variantLocationCode} fallbackLocation={merged.warehouseLocation} />
                                       </p>
                                     </div>
                                     
@@ -15535,7 +15591,7 @@ export default function PickPack() {
                                       {isPicked ? (
                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                       ) : (
-                                        <span className="text-gray-500">{item.pickedQuantity}/{item.quantity}</span>
+                                        <span className="text-gray-500">{merged.pickedQty}/{merged.totalQty}</span>
                                       )}
                                     </div>
                                   </div>
