@@ -19710,12 +19710,14 @@ Important:
 
       // Enrich items with product information and expand bundles/bulk units
       const expandedItems: any[] = [];
+      const skippedItems: { name: string; reason: string }[] = [];
       
       for (const item of items) {
         // Skip pure service items (serviceId without productId - they have no physical weight/dimensions)
         // But include service parts (items with both serviceId AND productId - these are physical products)
         if (item.serviceId && !item.productId) {
           console.log(`Skipping pure service item "${item.productName}" - no physical packing needed`);
+          skippedItems.push({ name: item.productName || 'Service item', reason: 'service' });
           continue;
         }
         
@@ -19747,6 +19749,7 @@ Important:
             }
           } else {
             console.log(`Bundle ${item.bundleId} not found, skipping`);
+            skippedItems.push({ name: item.productName || `Bundle ${item.bundleId}`, reason: 'bundle_not_found' });
           }
           continue;
         }
@@ -19804,10 +19807,16 @@ Important:
           }
         } else {
           console.log(`Item "${item.productName}" has no productId or bundleId, skipping`);
+          skippedItems.push({ name: item.productName || 'Unknown item', reason: 'no_product_id' });
         }
       }
       
       const enrichedItems = expandedItems;
+      
+      // Log skipped items summary
+      if (skippedItems.length > 0) {
+        console.log(`Skipped ${skippedItems.length} items from packing: ${skippedItems.map(s => `${s.name} (${s.reason})`).join(', ')}`);
+      }
 
       // Fetch all packing cartons - first try dedicated table, then fall back to packing materials
       let cartons = await storage.getPackingCartons();
@@ -19889,7 +19898,10 @@ Important:
         carrierCode: packingPlan.carrierCode,
         carrierConstraints: packingPlan.carrierConstraints,
         estimatedShippingCost: packingPlan.estimatedShippingCost,
-        shippingCurrency: packingPlan.shippingCurrency
+        shippingCurrency: packingPlan.shippingCurrency,
+        skippedItems: skippedItems.length > 0 ? skippedItems : undefined,
+        itemsProcessed: enrichedItems.length,
+        itemsSkipped: skippedItems.length
       });
     } catch (error) {
       console.error('Error optimizing packing:', error);

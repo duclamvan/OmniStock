@@ -7038,6 +7038,7 @@ export default function AddOrder() {
             currency={form.watch('currency')}
             orderItems={orderItems}
             onAddManualCarton={handleAddManualCarton}
+            onResetPacking={() => setPackingPlan(null)}
           />
         )}
 

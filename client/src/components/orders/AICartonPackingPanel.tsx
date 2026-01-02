@@ -24,7 +24,8 @@ import {
   Plus,
   Ruler,
   CheckCircle2,
-  XCircle
+  XCircle,
+  RotateCcw
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ interface AICartonPackingPanelProps {
   currency: string;
   orderItems: any[];
   onAddManualCarton?: () => void;
+  onResetPacking?: () => void;
 }
 
 export function AICartonPackingPanel({
@@ -44,7 +46,8 @@ export function AICartonPackingPanel({
   isLoading,
   currency,
   orderItems,
-  onAddManualCarton
+  onAddManualCarton,
+  onResetPacking
 }: AICartonPackingPanelProps) {
   const { t } = useTranslation('orders');
   
@@ -92,6 +95,20 @@ export function AICartonPackingPanel({
                 </>
               )}
             </Button>
+            {packingPlan && packingPlan.cartons && packingPlan.cartons.length > 0 && onResetPacking && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onResetPacking}
+                disabled={isLoading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
+                data-testid="button-reset-packing"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                {t('reset', 'Reset')}
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
