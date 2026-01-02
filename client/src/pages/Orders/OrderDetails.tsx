@@ -155,6 +155,9 @@ export default function OrderDetails() {
   const [isProductDocsOpen, setIsProductDocsOpen] = useState(true);
   const [isUploadedFilesOpen, setIsUploadedFilesOpen] = useState(true);
   const [isShippingLabelsOpen, setIsShippingLabelsOpen] = useState(true);
+  
+  // Expanded variant groups state - tracks which parent products are expanded
+  const [expandedVariantGroups, setExpandedVariantGroups] = useState<Set<string>>(new Set());
 
   // Get shipping settings for tracking
   const { shippingSettings, generalSettings } = useSettings();
@@ -380,6 +383,81 @@ export default function OrderDetails() {
       dhl: `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`,
     };
     return carrierUrls[carrier?.toLowerCase()] || null;
+  };
+
+  // Group order items by parent product when there are more than 5 variants
+  const VARIANT_GROUP_THRESHOLD = 5;
+  
+  interface VariantGroup {
+    parentProductId: string;
+    parentProductName: string;
+    parentImage: string | null;
+    variants: any[];
+    totalQuantity: number;
+    totalPrice: number;
+  }
+  
+  const { groupedItems, variantGroups } = useMemo(() => {
+    const items = order?.items || [];
+    const variantsByParent = new Map<string, any[]>();
+    const nonVariantItems: any[] = [];
+    
+    items.forEach((item: any) => {
+      if (item.variantId && item.productId) {
+        const existing = variantsByParent.get(item.productId) || [];
+        variantsByParent.set(item.productId, [...existing, item]);
+      } else {
+        nonVariantItems.push(item);
+      }
+    });
+    
+    const result: (any | { isGroupHeader: true; group: VariantGroup })[] = [];
+    const groups: VariantGroup[] = [];
+    
+    nonVariantItems.forEach(item => result.push(item));
+    
+    variantsByParent.forEach((variants, parentProductId) => {
+      if (variants.length > VARIANT_GROUP_THRESHOLD) {
+        const totalQuantity = variants.reduce((sum: number, v: any) => sum + (parseInt(v.quantity) || 0), 0);
+        const totalPrice = variants.reduce((sum: number, v: any) => {
+          const unitPrice = parseFloat(v.unitPrice) || parseFloat(v.price) || 0;
+          const qty = parseInt(v.quantity) || 0;
+          const discount = parseFloat(v.discount) || 0;
+          return sum + (unitPrice * qty) - discount;
+        }, 0);
+        
+        const firstVariant = variants[0];
+        const baseProductName = firstVariant.productName?.replace(/\s*-\s*[^-]+$/, '') || firstVariant.productName;
+        
+        const group: VariantGroup = {
+          parentProductId,
+          parentProductName: baseProductName,
+          parentImage: firstVariant.image || null,
+          variants,
+          totalQuantity,
+          totalPrice,
+        };
+        
+        groups.push(group);
+        result.push({ isGroupHeader: true, group });
+      } else {
+        variants.forEach(item => result.push(item));
+      }
+    });
+    
+    return { groupedItems: result, variantGroups: groups };
+  }, [order?.items]);
+  
+  const toggleVariantGroup = (parentProductId: string) => {
+    setExpandedVariantGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(parentProductId)) {
+        next.delete(parentProductId);
+      } else {
+        next.add(parentProductId);
+      }
+      return next;
+    });
   };
 
   // Prevent OrderDetails from rendering on pick-pack page
@@ -976,7 +1054,101 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
             <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
               <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {order.items?.map((item: any, index: number) => {
+                {groupedItems.map((entry: any, index: number) => {
+                  // Handle variant group headers
+                  if (entry.isGroupHeader) {
+                    const group = entry.group as VariantGroup;
+                    const isExpanded = expandedVariantGroups.has(group.parentProductId);
+                    
+                    return (
+                      <div key={`group-${group.parentProductId}`}>
+                        {/* Group Header */}
+                        <div 
+                          className="px-3 sm:px-6 py-3 sm:py-4 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                          onClick={() => toggleVariantGroup(group.parentProductId)}
+                          data-testid={`variant-group-${group.parentProductId}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 relative">
+                              {group.parentImage ? (
+                                <img 
+                                  src={group.parentImage} 
+                                  alt={group.parentProductName}
+                                  className="w-12 h-12 object-contain rounded border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded border border-blue-200 dark:border-blue-700 flex items-center justify-center">
+                                  <Package className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                                </div>
+                              )}
+                              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                {group.variants.length}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                )}
+                                <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">
+                                  {group.parentProductName}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                                <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-600">
+                                  {group.variants.length} {t('orders:variants', 'variants')}
+                                </Badge>
+                                <span className="text-xs text-blue-600 dark:text-blue-400">
+                                  {isExpanded ? t('orders:clickToCollapse', 'Click to collapse') : t('orders:clickToExpand', 'Click to expand')}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders:qtyColon')} <span className="font-bold text-blue-700 dark:text-blue-300">{group.totalQuantity}</span></p>
+                              <p className="font-bold text-base text-blue-600 dark:text-blue-400">
+                                {formatCurrency(group.totalPrice, order.currency || 'EUR')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Expanded Variants */}
+                        {isExpanded && group.variants.map((variantItem: any, variantIndex: number) => {
+                          const variantUnitPrice = parseFloat(variantItem.unitPrice) || parseFloat(variantItem.price) || 0;
+                          const variantTotal = variantUnitPrice * (variantItem.quantity || 1) - (parseFloat(variantItem.discount) || 0);
+                          return (
+                            <div 
+                              key={variantItem.id || variantIndex} 
+                              className="px-3 sm:px-6 py-2 sm:py-3 bg-slate-50/50 dark:bg-slate-900/30 border-l-4 border-l-blue-400 dark:border-l-blue-600"
+                            >
+                              <div className="flex items-center justify-between gap-3 pl-4">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700">
+                                    {variantItem.variantName || variantItem.productName}
+                                  </Badge>
+                                  {variantItem.sku && (
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">{variantItem.sku}</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-sm">
+                                  <span className="text-slate-600 dark:text-slate-400">
+                                    {variantItem.quantity}× {formatCurrency(variantUnitPrice, order.currency || 'EUR')}
+                                  </span>
+                                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {formatCurrency(variantTotal, order.currency || 'EUR')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+                  
+                  // Regular item rendering
+                  const item = entry;
                   const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.price) || 0;
                   // Detect promotional free items (price = 0)
                   const isPromotionalFreeItem = unitPrice === 0 && item.quantity > 0;
