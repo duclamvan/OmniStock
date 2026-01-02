@@ -26,7 +26,7 @@ interface PPLSmartPopupProps {
   language?: "cs" | "en";
 }
 
-const PPL_MAP_URL = 'https://www.ppl.cz/mapa-ppl-parcelshops';
+const PPL_MAP_URL = 'https://www.ppl.cz/mapa-vydejnich-mist';
 
 function isMobile(): boolean {
   return window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
