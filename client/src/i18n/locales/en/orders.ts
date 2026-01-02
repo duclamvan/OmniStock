@@ -2014,6 +2014,17 @@ const orders = {
   sortOrderIdDesc: 'Order ID: Z-A',
   sortOrderIdAsc: 'Order ID: A-Z',
   
+  // Pick & Pack - Group Navigation
+  previousProduct: 'Previous',
+  nextProduct: 'Next',
+  serviceBill: 'Service Items',
+  allVariantsPicked: 'All Items Picked',
+  markServicesComplete: 'Mark Services Complete',
+  lines: 'lines',
+  groupedByProduct: 'Grouped by Product',
+  itemsToPick: 'Items to Pick',
+  pickingProgress: 'Picking Progress',
+  
 } as const;
 
 export default orders;

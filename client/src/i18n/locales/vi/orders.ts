@@ -2002,6 +2002,17 @@ const orders = {
   sortOrderIdDesc: 'Mã đơn: Z-A',
   sortOrderIdAsc: 'Mã đơn: A-Z',
   
+  // Pick & Pack - Group Navigation
+  previousProduct: 'Trước',
+  nextProduct: 'Sau',
+  serviceBill: 'Dịch vụ',
+  allVariantsPicked: 'Đã lấy tất cả',
+  markServicesComplete: 'Hoàn thành dịch vụ',
+  lines: 'dòng',
+  groupedByProduct: 'Theo sản phẩm',
+  itemsToPick: 'Sản phẩm cần lấy',
+  pickingProgress: 'Tiến độ lấy hàng',
+  
 } as const;
 
 export default orders;
