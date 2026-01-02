@@ -15903,47 +15903,60 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Merge product items by SKU for simpler display
-                const mergedBySkuMap = new Map<string, { item: typeof productItems[0], totalQty: number, pickedQty: number, ids: string[] }>();
+                // Group product items by productId, then merge by SKU within each group
+                const productGroups = new Map<string, typeof productItems>();
                 productItems.forEach(item => {
-                  const key = item.sku;
-                  if (mergedBySkuMap.has(key)) {
-                    const existing = mergedBySkuMap.get(key)!;
-                    existing.totalQty += item.quantity;
-                    existing.pickedQty += item.pickedQuantity;
-                    existing.ids.push(item.id);
-                  } else {
-                    mergedBySkuMap.set(key, { 
-                      item, 
-                      totalQty: item.quantity, 
-                      pickedQty: item.pickedQuantity,
-                      ids: [item.id]
-                    });
+                  const key = item.productId || item.id;
+                  if (!productGroups.has(key)) {
+                    productGroups.set(key, []);
                   }
+                  productGroups.get(key)!.push(item);
                 });
                 
-                // Convert to display groups (one per unique SKU)
+                // Convert to display groups with merged SKU quantities
                 const displayGroups: Array<{
                   type: 'product' | 'service';
+                  items: typeof productItems;
                   parentName: string;
                   firstItem: typeof productItems[0];
                   totalQty: number;
                   pickedQty: number;
+                  variantCount: number;
                   allPicked: boolean;
                   hasCurrent: boolean;
-                  itemIds: string[];
                 }> = [];
                 
-                mergedBySkuMap.forEach((merged) => {
+                productGroups.forEach((items, productId) => {
+                  // Merge items with same SKU within this product group
+                  const skuMap = new Map<string, { totalQty: number, pickedQty: number }>();
+                  items.forEach(item => {
+                    if (skuMap.has(item.sku)) {
+                      const existing = skuMap.get(item.sku)!;
+                      existing.totalQty += item.quantity;
+                      existing.pickedQty += item.pickedQuantity;
+                    } else {
+                      skuMap.set(item.sku, { totalQty: item.quantity, pickedQty: item.pickedQuantity });
+                    }
+                  });
+                  
+                  // Calculate totals from merged SKUs
+                  let totalQty = 0, pickedQty = 0;
+                  skuMap.forEach(sku => {
+                    totalQty += sku.totalQty;
+                    pickedQty += sku.pickedQty;
+                  });
+                  
+                  const parentName = items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
                   displayGroups.push({
                     type: 'product',
-                    parentName: merged.item.productName,
-                    firstItem: merged.item,
-                    totalQty: merged.totalQty,
-                    pickedQty: merged.pickedQty,
-                    allPicked: merged.pickedQty >= merged.totalQty,
-                    hasCurrent: merged.ids.some(id => currentItem?.id === id),
-                    itemIds: merged.ids
+                    items,
+                    parentName: skuMap.size > 1 ? parentName : items[0].productName,
+                    firstItem: items[0],
+                    totalQty,
+                    pickedQty,
+                    variantCount: skuMap.size,
+                    allPicked: pickedQty >= totalQty,
+                    hasCurrent: items.some(i => currentItem?.id === i.id)
                   });
                 });
                 
@@ -15953,22 +15966,25 @@ export default function PickPack() {
                   const servicePickedQty = serviceItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
                   displayGroups.push({
                     type: 'service',
+                    items: serviceItems,
                     parentName: 'Service Bill',
                     firstItem: serviceItems[0],
                     totalQty: serviceTotalQty,
                     pickedQty: servicePickedQty,
+                    variantCount: serviceItems.length,
                     allPicked: servicePickedQty >= serviceTotalQty,
-                    hasCurrent: anyServiceCurrent,
-                    itemIds: serviceItems.map(i => i.id)
+                    hasCurrent: anyServiceCurrent
                   });
                 }
                 
                 return displayGroups.map((group, displayIndex) => {
                   const isPicked = group.allPicked;
                   const isCurrent = group.hasCurrent;
+                  const isMultiVariant = group.variantCount > 1;
                   
-                  // Find the actual index for navigation
-                  const actualItemIndex = activePickingOrder.items.findIndex(i => group.itemIds.includes(i.id));
+                  // Find the actual index for navigation (first unpicked item in group, or first item)
+                  const targetItem = group.items.find(i => i.pickedQuantity < i.quantity) || group.items[0];
+                  const actualItemIndex = activePickingOrder.items.findIndex(i => i.id === targetItem.id);
                   
                   return (
                     <Card 
@@ -16020,14 +16036,23 @@ export default function PickPack() {
                                 }`}>
                                   {group.parentName}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
+                                {isMultiVariant && (
+                                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5">
+                                    {group.variantCount} {t('variants')}
+                                  </p>
+                                )}
+                                {!isMultiVariant && (
+                                  <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
+                                )}
                                 <div className="flex items-center justify-between mt-2">
-                                  <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                  }`}>
-                                    📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
-                                  </span>
-                                  <span className={`text-xs xl:text-sm font-bold ${
+                                  {!isMultiVariant && (
+                                    <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
+                                      isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                    }`}>
+                                      📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
+                                    </span>
+                                  )}
+                                  <span className={`text-xs xl:text-sm font-bold ${isMultiVariant ? 'ml-auto' : ''} ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
                                     isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
                                   }`}>
