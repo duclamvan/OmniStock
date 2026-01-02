@@ -11907,6 +11907,21 @@ Important:
       if (items && items.length > 0) {
         console.log('Creating order items, items received:', JSON.stringify(items));
         console.log('Order ID:', order.id, 'Order Currency:', order.currency);
+        
+        // Fetch live exchange rates for currency conversion (EUR is base)
+        let exchangeRates: Record<string, number> = { EUR: 1, CZK: 25.2, USD: 1.08, VND: 27000, CNY: 7.8 };
+        try {
+          const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+          if (exchangeRateResponse.ok) {
+            const ratesData = await exchangeRateResponse.json();
+            if (ratesData.rates) {
+              exchangeRates = { EUR: 1, ...ratesData.rates };
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch live exchange rates, using defaults:', err);
+        }
+        
         for (const item of items) {
           // Map frontend price field to schema fields
           const price = item.price || 0; // Default to 0 if price is undefined
@@ -11923,31 +11938,84 @@ Important:
           let inventoryDeductionRatio: string | null = null;
           let variantSku: string | null = null;
           
-          // Helper function to get cost from a product/variant based on currency priority
-          // Supports all currencies: CZK, EUR, USD, VND, CNY
-          // CRITICAL: Only use currency-tagged importCost fields - latestLandingCost has unknown currency and causes errors
-          const getCostFromEntity = (entity: any, currency: string): number | null => {
-            const currencyFieldMap: Record<string, string> = {
+          // Helper function to get cost from a product/variant based on order currency
+          // Uses landing cost fields first (full cost with freight/duty), then falls back to import cost
+          // CRITICAL: Converts from ANY available currency when order currency field is not available
+          const getCostFromEntity = (entity: any, currency: string, exchangeRates: Record<string, number>): number | null => {
+            const currencies = ['CZK', 'EUR', 'USD', 'VND', 'CNY'];
+            const landingCostFieldMap: Record<string, string> = {
+              'CZK': 'landingCostCzk',
+              'EUR': 'landingCostEur',
+              'USD': 'landingCostUsd',
+              'VND': 'landingCostVnd',
+              'CNY': 'landingCostCny',
+            };
+            const importCostFieldMap: Record<string, string> = {
               'CZK': 'importCostCzk',
               'EUR': 'importCostEur',
               'USD': 'importCostUsd',
               'VND': 'importCostVnd',
               'CNY': 'importCostCny',
             };
-            // Priority 1: importCost matching order currency (always most reliable)
-            const currencyField = currencyFieldMap[currency];
-            if (currencyField && entity[currencyField] && parseFloat(entity[currencyField]) > 0) {
-              return parseFloat(entity[currencyField]);
+            
+            // Priority 1: Use landingCost matching order currency (full cost with freight, duty, etc.)
+            const landingCostField = landingCostFieldMap[currency];
+            if (landingCostField && entity[landingCostField] && parseFloat(entity[landingCostField]) > 0) {
+              return parseFloat(entity[landingCostField]);
             }
-            // Priority 2: Fallback to any available importCost (prefer CZK as base currency)
-            // NOTE: We intentionally skip latestLandingCost here because it has unknown currency
-            // and using EUR cost for CZK order (or vice versa) causes incorrect profit calculations
-            const fallbackOrder = ['importCostCzk', 'importCostEur', 'importCostUsd', 'importCostVnd', 'importCostCny'];
-            for (const field of fallbackOrder) {
-              if (entity[field] && parseFloat(entity[field]) > 0) {
-                return parseFloat(entity[field]);
+            
+            // Priority 2: Use importCost matching order currency (just the import cost)
+            const importCostField = importCostFieldMap[currency];
+            if (importCostField && entity[importCostField] && parseFloat(entity[importCostField]) > 0) {
+              return parseFloat(entity[importCostField]);
+            }
+            
+            // Priority 3: Convert from ANY available currency (check all currencies)
+            // Try landing costs first, then import costs
+            // Exchange rates from Frankfurter API are EUR-based: 1 EUR = X target currency
+            // To convert: source → EUR (divide by source rate), EUR → target (multiply by target rate)
+            for (const sourceCurrency of currencies) {
+              if (sourceCurrency === currency) continue; // Already checked above
+              
+              const sourceLandingField = landingCostFieldMap[sourceCurrency];
+              if (sourceLandingField && entity[sourceLandingField] && parseFloat(entity[sourceLandingField]) > 0) {
+                const sourceCost = parseFloat(entity[sourceLandingField]);
+                // Convert: source currency -> EUR -> target currency
+                // If source is EUR, sourceToEur = 1; otherwise divide by source rate
+                const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (exchangeRates[sourceCurrency] || 1));
+                // If target is EUR, eurToTarget = 1; otherwise multiply by target rate
+                const eurToTarget = currency === 'EUR' ? 1 : (exchangeRates[currency] || 1);
+                const convertedCost = sourceCost * sourceToEur * eurToTarget;
+                console.log(`[LandingCost] Converted ${sourceCost} ${sourceCurrency} → ${convertedCost.toFixed(4)} ${currency} (via EUR, rates: ${sourceCurrency}=${exchangeRates[sourceCurrency]}, ${currency}=${exchangeRates[currency]})`);
+                return convertedCost;
               }
             }
+            
+            for (const sourceCurrency of currencies) {
+              if (sourceCurrency === currency) continue;
+              
+              const sourceImportField = importCostFieldMap[sourceCurrency];
+              if (sourceImportField && entity[sourceImportField] && parseFloat(entity[sourceImportField]) > 0) {
+                const sourceCost = parseFloat(entity[sourceImportField]);
+                // Convert: source currency -> EUR -> target currency
+                const sourceToEur = sourceCurrency === 'EUR' ? 1 : (1 / (exchangeRates[sourceCurrency] || 1));
+                const eurToTarget = currency === 'EUR' ? 1 : (exchangeRates[currency] || 1);
+                const convertedCost = sourceCost * sourceToEur * eurToTarget;
+                console.log(`[LandingCost] Converted importCost ${sourceCost} ${sourceCurrency} → ${convertedCost.toFixed(4)} ${currency}`);
+                return convertedCost;
+              }
+            }
+            
+            // Priority 4: Use latestLandingCost (assumed to be EUR-based for safety)
+            if (entity.latestLandingCost && parseFloat(entity.latestLandingCost) > 0) {
+              const eurCost = parseFloat(entity.latestLandingCost);
+              if (currency === 'EUR') {
+                return eurCost;
+              }
+              const eurToTarget = exchangeRates[currency] || 1;
+              return eurCost * eurToTarget;
+            }
+            
             return null;
           };
           
@@ -11959,7 +12027,7 @@ Important:
                 const variant = variantResult[0];
                 variantSku = variant.sku || null;
                 // Try to get variant-specific cost
-                const variantCost = getCostFromEntity(variant, order.currency || 'CZK');
+                const variantCost = getCostFromEntity(variant, order.currency || 'CZK', exchangeRates);
                 if (variantCost !== null) {
                   landingCostSnapshot = variantCost;
                 }
@@ -12006,11 +12074,11 @@ Important:
                   
                   // Check variant cost first
                   if (bundleItem.variantId && variantsMap.has(bundleItem.variantId)) {
-                    componentCost = getCostFromEntity(variantsMap.get(bundleItem.variantId), order.currency || 'CZK');
+                    componentCost = getCostFromEntity(variantsMap.get(bundleItem.variantId), order.currency || 'CZK', exchangeRates);
                   }
                   // Fall back to product cost
                   if (componentCost === null && bundleItem.productId && productsMap.has(bundleItem.productId)) {
-                    componentCost = getCostFromEntity(productsMap.get(bundleItem.productId), order.currency || 'CZK');
+                    componentCost = getCostFromEntity(productsMap.get(bundleItem.productId), order.currency || 'CZK', exchangeRates);
                   }
                   if (componentCost !== null) {
                     bundleCost += componentCost * componentQty;
@@ -12032,7 +12100,7 @@ Important:
               if (product) {
                 // Only use product cost if we don't have variant or bundle cost
                 if (landingCostSnapshot === null) {
-                  landingCostSnapshot = getCostFromEntity(product, order.currency || 'CZK');
+                  landingCostSnapshot = getCostFromEntity(product, order.currency || 'CZK', exchangeRates);
                 }
                 // Copy bulk unit fields from product if not provided
                 if (!productBulkUnitQty && product.bulkUnitQty) {
@@ -12050,7 +12118,7 @@ Important:
                   if (landingCostSnapshot === null) {
                     const masterProduct = await storage.getProductById(product.masterProductId);
                     if (masterProduct) {
-                      const masterCost = getCostFromEntity(masterProduct, order.currency || 'CZK');
+                      const masterCost = getCostFromEntity(masterProduct, order.currency || 'CZK', exchangeRates);
                       if (masterCost !== null) {
                         const ratio = parseFloat(product.inventoryDeductionRatio || '1');
                         landingCostSnapshot = masterCost * ratio;
@@ -12106,18 +12174,13 @@ Important:
       }
 
       // Calculate and update totalCost from order items' landing costs
+      // Uses the exchange rates fetched earlier in this request
       if (items && items.length > 0) {
         const orderItems = await storage.getOrderItems(order.id);
         let totalCost = 0;
         for (const item of orderItems) {
           if (item.landingCost) {
             totalCost += parseFloat(item.landingCost) * (item.quantity || 1);
-          } else if (item.variantId) {
-            // Fallback: fetch landing cost from variant if not snapshot in item
-            const variant = await storage.getProductVariant(item.variantId);
-            if (variant && variant.landingCostEur) {
-              totalCost += parseFloat(variant.landingCostEur) * (item.quantity || 1);
-            }
           }
         }
         if (totalCost > 0) {
