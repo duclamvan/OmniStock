@@ -1767,6 +1767,139 @@ function generateSmartRange(colorNumbers: (string | null | undefined)[]): string
   return ranges.join(', ');
 }
 
+// Helper function to group items by productId for order card display
+interface GroupedOrderItem {
+  productId: string;
+  productName: string;
+  totalQuantity: number;
+  variantCount: number;
+  colorRange: string;
+  primaryLocation: string | null;
+  image?: string;
+}
+
+function groupItemsForCardDisplay(items: OrderItem[]): GroupedOrderItem[] {
+  const groups = new Map<string, GroupedOrderItem>();
+  
+  items.forEach((item) => {
+    const key = item.productId || item.id;
+    
+    if (groups.has(key)) {
+      const group = groups.get(key)!;
+      group.totalQuantity += item.quantity;
+      group.variantCount += 1;
+    } else {
+      groups.set(key, {
+        productId: key,
+        productName: item.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim(),
+        totalQuantity: item.quantity,
+        variantCount: 1,
+        colorRange: '',
+        primaryLocation: item.warehouseLocation || null,
+        image: item.image,
+      });
+    }
+  });
+  
+  // Calculate color ranges for each group
+  const itemsByProduct = new Map<string, OrderItem[]>();
+  items.forEach(item => {
+    const key = item.productId || item.id;
+    if (!itemsByProduct.has(key)) {
+      itemsByProduct.set(key, []);
+    }
+    itemsByProduct.get(key)!.push(item);
+  });
+  
+  groups.forEach((group, key) => {
+    const productItems = itemsByProduct.get(key) || [];
+    const colorNumbers = productItems.map(i => i.colorNumber);
+    group.colorRange = generateSmartRange(colorNumbers);
+  });
+  
+  return Array.from(groups.values());
+}
+
+// Component for displaying grouped items in order cards
+function GroupedItemsCardDisplay({ items }: { items: OrderItem[] }) {
+  const groupedItems = useMemo(() => groupItemsForCardDisplay(items), [items]);
+  
+  return (
+    <div className="space-y-2">
+      {groupedItems.map((group, idx) => (
+        <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
+          <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+            {group.totalQuantity}x
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+              {group.productName}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {group.variantCount > 1 && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                  {group.variantCount} variants
+                </Badge>
+              )}
+              {group.colorRange && (
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
+                  #{group.colorRange}
+                </span>
+              )}
+              {group.primaryLocation && (
+                <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                  <MapPin className="h-3 w-3" />
+                  {group.primaryLocation}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Compact version for smaller card displays
+function GroupedItemsCompactDisplay({ items }: { items: OrderItem[] }) {
+  const groupedItems = useMemo(() => groupItemsForCardDisplay(items), [items]);
+  
+  return (
+    <div className="space-y-1.5">
+      {groupedItems.map((group, idx) => (
+        <div key={idx} className="flex items-start gap-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 rounded p-1.5">
+          <span className="flex-shrink-0 w-6 h-6 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-700 dark:text-gray-200">
+            {group.totalQuantity}x
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+              {group.productName}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              {group.variantCount > 1 && (
+                <span className="text-[10px] text-purple-600 dark:text-purple-400">
+                  {group.variantCount}v
+                </span>
+              )}
+              {group.colorRange && (
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
+                  #{group.colorRange}
+                </span>
+              )}
+              {group.primaryLocation && (
+                <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
+                  <MapPin className="h-2.5 w-2.5" />
+                  {group.primaryLocation}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // GroupedPickingListView - Groups items by parent product with collapsible variant lists
 interface GroupedPickingListViewProps {
   order: PickPackOrder;
@@ -16673,32 +16806,10 @@ export default function PickPack() {
                                 <span className="truncate font-medium text-blue-600 dark:text-blue-400">{order.shippingMethod || 'Standard'}</span>
                               </div>
                             </div>
-                            {/* Comprehensive product list */}
+                            {/* Comprehensive product list - Grouped by product */}
                             {order.items && order.items.length > 0 && (
                               <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                <div className="space-y-2">
-                                  {order.items.map((item, idx) => (
-                                    <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
-                                      <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
-                                        {item.quantity}x
-                                      </span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                          {item.productName}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          {item.sku && (
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.sku}</span>
-                                          )}
-                                          <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                            <MapPin className="h-3 w-3" />
-                                            <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                <GroupedItemsCardDisplay items={order.items} />
                               </div>
                             )}
                           </div>
@@ -16849,32 +16960,10 @@ export default function PickPack() {
                                   <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
-                              {/* Comprehensive product list */}
+                              {/* Comprehensive product list - Grouped by product */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                  <div className="space-y-2">
-                                    {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
-                                        <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
-                                          {item.quantity}x
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                            {item.productName}
-                                          </p>
-                                          <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                              <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
-                                            </span>
-                                            {item.categoryName && (
-                                              <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <GroupedItemsCardDisplay items={order.items} />
                                 </div>
                               )}
                             </div>
@@ -17032,32 +17121,10 @@ export default function PickPack() {
                                   <span className="text-green-600 dark:text-green-400 font-medium">{t('pickedBy', { name: order.pickedBy })}</span>
                                 </div>
                               )}
-                              {/* Comprehensive product list */}
+                              {/* Comprehensive product list - Grouped by product */}
                               {order.items && order.items.length > 0 && (
                                 <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                                  <div className="space-y-2">
-                                    {order.items.map((item, idx) => (
-                                      <div key={idx} className="flex items-start gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2">
-                                        <span className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
-                                          {item.quantity}x
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                            {item.productName}
-                                          </p>
-                                          <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5">
-                                              <MapPin className="h-3 w-3" />
-                                              <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
-                                            </span>
-                                            {item.categoryName && (
-                                              <span className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <GroupedItemsCardDisplay items={order.items} />
                                 </div>
                               )}
                             </div>
@@ -17543,27 +17610,10 @@ export default function PickPack() {
                                             <span className="text-blue-600 dark:text-blue-400 font-medium">{t('tracking', { number: order.trackingNumber })}</span>
                                           </div>
                                         )}
-                                        {/* Comprehensive product list */}
+                                        {/* Comprehensive product list - Grouped by product (compact) */}
                                         {order.items && order.items.length > 0 && (
                                           <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-700">
-                                            <div className="space-y-1.5">
-                                              {order.items.map((item, idx) => (
-                                                <div key={idx} className="flex items-start gap-1.5 text-xs bg-gray-50 dark:bg-gray-800/50 rounded p-1.5">
-                                                  <span className="flex-shrink-0 w-6 h-6 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-700 dark:text-gray-200">
-                                                    {item.quantity}x
-                                                  </span>
-                                                  <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                                      {item.productName}
-                                                    </p>
-                                                    <span className="text-[10px] text-orange-600 dark:text-orange-400 font-mono flex items-center gap-0.5 mt-0.5">
-                                                      <MapPin className="h-2.5 w-2.5" />
-                                                      <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
-                                                    </span>
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
+                                            <GroupedItemsCompactDisplay items={order.items} />
                                           </div>
                                         )}
                                       </div>
