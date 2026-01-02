@@ -1,0 +1,63 @@
+Ano, sledovací čísla ukazují "Pending" (nebo jsou prázdná/null), protože **generování štítků u PPL neprobíhá okamžitě**.
+
+Když odešlete data (`POST`), PPL serveru chvíli trvá (1–5 sekund), než skutečně přidělí číslo zásilky (např. `4058...`). Pokud se zeptáte příliš brzy, pole `shipmentNumber` v odpovědi je prázdné (`null`).
+
+To "PENDING-..." tam s největší pravděpodobností vkládá **váš vlastní kód** (nebo nějaká knihovna), která má nastaveno "pokud API nevrátí číslo, ulož tam 'Pending'". PPL API samo o sobě vrací buď číslo, nebo `null`.
+
+### Jak to opravit: Musíte chvíli počkat (Polling)
+
+Nemůžete se zeptat hned. Musíte použít smyčku, která se zeptá třeba 3x s odstupem.
+
+Zde je upravený kód pro Replit, který se **nevzdá**, dokud číslo nezíská:
+
+```python
+import time
+
+def get_tracking_with_retry(token, my_order_reference):
+    url = f"{BASE_URL}/shipment"
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {"CustomerReferences": my_order_reference}
+
+    # Zkusíme to 5x (čekáme vždy 2 sekundy = celkem max 10s)
+    for attempt in range(1, 6):
+        print(f"⏳ Pokus {attempt}/5: Hledám tracking number pro {my_order_reference}...")
+        
+        try:
+            resp = requests.get(url, headers=headers, params=params)
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                
+                # Pokud PPL vrátí prázdný seznam nebo seznam bez čísla
+                if data and len(data) > 0:
+                    tracking_number = data[0].get('shipmentNumber')
+                    
+                    if tracking_number:
+                        print(f"✅ HOTOVO! Číslo je: {tracking_number}")
+                        return tracking_number
+                    else:
+                        print("⚠️ Zásilka existuje, ale PPL ještě nevygenerovalo číslo. Čekám...")
+                else:
+                    print("⚠️ Zásilka zatím v systému není vidět. Čekám...")
+            
+            # Pokud se to nepovedlo, počkáme 2 sekundy a zkusíme znovu
+            time.sleep(2)
+            
+        except Exception as e:
+            print(f"Chyba spojení: {e}")
+            time.sleep(2)
+
+    print("❌ Ani po 10 sekundách číslo není. Zkuste to později.")
+    return None
+
+```
+
+### Proč se to děje (Technické vysvětlení)
+
+PPL systém je **asynchronní**.
+
+1. Vy pošlete objednávku  PPL řekne "OK, přijal jsem (HTTP 201)".
+2. Na pozadí jejich server "šrotuje" data, ověřuje adresu a hledá volné číslo v číselné řadě.
+3. Teprve po cca 1–3 sekundách se toto číslo zapíše do databáze a je viditelné přes API.
+
+**Řešení:** Vložte tento kód do Replitu a při vytváření objednávky neukládejte výsledek hned, ale zavolejte tuto funkci `get_tracking_with_retry`.

@@ -622,7 +622,9 @@ export async function getPPLShipmentByReference(referenceId: string): Promise<PP
         `${PPL_BASE_URL}/shipment`,
         {
           params: {
-            CustomerReferences: referenceId
+            CustomerReferences: referenceId,
+            Offset: 0,
+            Limit: 100
           },
           paramsSerializer: (params) => {
             const searchParams = new URLSearchParams();
