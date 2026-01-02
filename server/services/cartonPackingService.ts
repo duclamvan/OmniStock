@@ -201,22 +201,30 @@ function normalizeWeightAndDimensions(
   };
 }
 
+const FAST_FALLBACK_DIMENSIONS = {
+  weightKg: 0.05,
+  lengthCm: 5,
+  widthCm: 3,
+  heightCm: 8,
+};
+
 export async function optimizeCartonPacking(
   orderItems: any[],
   packingCartons: PackingCarton[],
   options: PackingOptions = {}
 ): Promise<PackingPlan> {
+  const startTime = Date.now();
   try {
     const { carrierCode, shippingCountry, preferBulkWrapping = true } = options;
     const carrierConstraints = carrierCode ? getCarrierConstraints(carrierCode) : null;
+    const isLargeOrder = orderItems.length > 50;
     
-    console.log(`Starting carton packing optimization for ${orderItems.length} items with ${packingCartons.length} carton types`);
+    console.log(`🚀 Starting OPTIMIZED carton packing for ${orderItems.length} items with ${packingCartons.length} carton types`);
     if (carrierCode) {
       console.log(`Carrier: ${carrierCode}, Constraints: ${carrierConstraints ? 'Found' : 'Not found'}`);
     }
 
     if (!orderItems || orderItems.length === 0) {
-      console.warn('No order items provided for packing');
       return {
         cartons: [],
         nylonWrapItems: [],
@@ -229,14 +237,12 @@ export async function optimizeCartonPacking(
     }
 
     if (!packingCartons || packingCartons.length === 0) {
-      console.error('No packing cartons available');
       throw new Error('No packing cartons configured. Please add carton types first.');
     }
 
     const { cartonNeededItems, nylonWrapItems } = classifyItemsByPackaging(orderItems);
 
     if (cartonNeededItems.length === 0) {
-      console.log('All items are nylon wrap only, no cartons needed');
       return {
         cartons: [],
         nylonWrapItems,
@@ -248,12 +254,40 @@ export async function optimizeCartonPacking(
       };
     }
 
+    const dimensionCache = new Map<string, { weightKg: number; lengthCm: number; widthCm: number; heightCm: number; aiEstimated: boolean }>();
     const itemsWithDimensions: OrderItemWithDimensions[] = [];
+    let missingDimensionsCount = 0;
 
     for (const orderItem of cartonNeededItems) {
       const product = orderItem.product;
-      if (!product) {
-        console.warn(`Order item ${orderItem.id} has no product information, skipping`);
+      if (!product) continue;
+
+      const productId = product.id;
+      
+      if (dimensionCache.has(productId)) {
+        const cached = dimensionCache.get(productId)!;
+        itemsWithDimensions.push({
+          productId,
+          productName: product.name || orderItem.productName,
+          quantity: orderItem.quantity,
+          product,
+          weightKg: cached.weightKg,
+          lengthCm: cached.lengthCm,
+          widthCm: cached.widthCm,
+          heightCm: cached.heightCm,
+          volumeCm3: cached.lengthCm * cached.widthCm * cached.heightCm,
+          aiEstimated: cached.aiEstimated,
+          isBulkWrappable: false,
+          discount: orderItem.discount,
+          discountPercentage: orderItem.discountPercentage,
+          appliedDiscountLabel: orderItem.appliedDiscountLabel,
+          appliedDiscountType: orderItem.appliedDiscountType,
+          freeItemsCount: orderItem.freeItemsCount,
+          fromBundle: orderItem.fromBundle,
+          isBulkExpanded: orderItem.isBulkExpanded,
+          bulkUnitQty: orderItem.bulkUnitQty,
+          isServicePart: orderItem.isServicePart
+        });
         continue;
       }
 
@@ -284,22 +318,28 @@ export async function optimizeCartonPacking(
         widthCm = normalized.widthCm;
         heightCm = normalized.heightCm;
         
-        if (normalized.wasNormalized) {
-          console.log(`Normalized dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg (original: ${rawLength}x${rawWidth}x${rawHeight}cm, ${rawWeight}kg)`);
-        } else {
-          console.log(`Using existing dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg`);
+        if (!isLargeOrder && normalized.wasNormalized) {
+          console.log(`Normalized: ${product.id} → ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg`);
         }
       } else {
-        console.log(`Missing dimensions for product ${product.id}, using AI inference`);
-        const inferred = await inferProductWeightDimensions(product);
-        weightKg = inferred.weightKg;
-        lengthCm = inferred.lengthCm;
-        widthCm = inferred.widthCm;
-        heightCm = inferred.heightCm;
-        aiEstimated = true;
-        console.log(`AI inferred dimensions for product ${product.id}: ${lengthCm}x${widthCm}x${heightCm}cm, ${weightKg}kg (confidence: ${inferred.confidence})`);
+        missingDimensionsCount++;
+        if (isLargeOrder) {
+          weightKg = FAST_FALLBACK_DIMENSIONS.weightKg;
+          lengthCm = FAST_FALLBACK_DIMENSIONS.lengthCm;
+          widthCm = FAST_FALLBACK_DIMENSIONS.widthCm;
+          heightCm = FAST_FALLBACK_DIMENSIONS.heightCm;
+          aiEstimated = true;
+        } else {
+          const inferred = await inferProductWeightDimensions(product);
+          weightKg = inferred.weightKg;
+          lengthCm = inferred.lengthCm;
+          widthCm = inferred.widthCm;
+          heightCm = inferred.heightCm;
+          aiEstimated = true;
+        }
       }
 
+      dimensionCache.set(productId, { weightKg, lengthCm, widthCm, heightCm, aiEstimated });
       const volumeCm3 = lengthCm * widthCm * heightCm;
       
       const isBulkWrappable = preferBulkWrapping && (
@@ -636,7 +676,11 @@ export async function optimizeCartonPacking(
       }
     }
 
-    console.log(`✅ Packing optimization complete: ${totalCartons} carton(s), ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
+    const elapsedMs = Date.now() - startTime;
+    console.log(`✅ Packing optimization complete in ${elapsedMs}ms: ${totalCartons} carton(s), ${totalWeightKg.toFixed(2)}kg total, ${avgUtilization.toFixed(1)}% avg utilization`);
+    if (missingDimensionsCount > 0) {
+      console.log(`⚠️ ${missingDimensionsCount} products used fallback dimensions (missing weight/size data)`);
+    }
 
     const cartonSummary = cartons.map((c, i) => {
       const partial = partialCartons[i];
