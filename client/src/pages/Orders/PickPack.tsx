@@ -2689,13 +2689,17 @@ function MultiLocationPicker({
   pickedFromLocations,
   setPickedFromLocations,
   updatePickedItem,
-  t
+  t,
+  mergedQuantity,
+  sameSkuItemIds
 }: {
   currentItem: OrderItem;
   pickedFromLocations: Record<string, Record<string, number>>; // itemId -> locationCode -> picked qty
   setPickedFromLocations: (locations: Record<string, Record<string, number>>) => void;
   updatePickedItem: (itemId: string, pickedQty: number, locationCode?: string) => void;
   t: (key: string, fallback?: string) => string;
+  mergedQuantity?: number; // Total quantity across all items with same SKU
+  sameSkuItemIds?: string[]; // IDs of all items with the same SKU
 }) {
   // For virtual products, check the master product's stock
   const isVirtual = currentItem.isVirtual && currentItem.masterProductId;
@@ -2723,16 +2727,30 @@ function MultiLocationPicker({
   // No need to fetch variant data separately - it's included in the pick-pack response
   const isLoading = locationsLoading;
 
-  // Get picked quantities for this item
+  // Get picked quantities for this item (or all items with same SKU if merged)
   const itemPicks = pickedFromLocations[currentItem.id] || {};
 
-  // Calculate total picked across all locations
-  const totalPicked = useMemo(() => {
+  // Calculate total picked across all locations for this item
+  const itemTotalPicked = useMemo(() => {
     return Object.values(itemPicks).reduce((sum, qty) => sum + qty, 0);
   }, [itemPicks]);
 
-  // Calculate remaining to pick
-  const remainingToPick = Math.max(0, currentItem.quantity - totalPicked);
+  // For merged SKU items: calculate total picked across ALL items with same SKU
+  const totalPicked = useMemo(() => {
+    if (sameSkuItemIds && sameSkuItemIds.length > 1) {
+      return sameSkuItemIds.reduce((sum, itemId) => {
+        const picks = pickedFromLocations[itemId] || {};
+        return sum + Object.values(picks).reduce((s, qty) => s + qty, 0);
+      }, 0);
+    }
+    return itemTotalPicked;
+  }, [sameSkuItemIds, pickedFromLocations, itemTotalPicked]);
+
+  // Use merged quantity if provided, otherwise fall back to current item quantity
+  const targetQuantity = mergedQuantity ?? currentItem.quantity;
+  
+  // Calculate remaining to pick (using merged quantity when available)
+  const remainingToPick = Math.max(0, targetQuantity - totalPicked);
 
   // For variants: the available quantity is the variant's own stock (from API response)
   // This is the total available across all locations for this variant
@@ -3129,18 +3147,18 @@ function MultiLocationPicker({
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-300 ${
-                totalPicked >= currentItem.quantity 
+                totalPicked >= targetQuantity 
                   ? 'bg-green-500' 
                   : 'bg-blue-500'
               }`}
-              style={{ width: `${Math.min(100, (totalPicked / currentItem.quantity) * 100)}%` }}
+              style={{ width: `${Math.min(100, (totalPicked / targetQuantity) * 100)}%` }}
             />
           </div>
 
           {/* Pick Controls - Only show if items remaining */}
           {remainingToPick > 0 && selectedLocation && (
             <div className="space-y-3">
-              {/* Quantity Controls Row - Use variant quantity for variants, otherwise location quantity */}
+              {/* Quantity Controls Row - Use merged quantity for display */}
               <div className="flex items-center gap-2">
                 <Button
                   size="lg"
@@ -3157,7 +3175,7 @@ function MultiLocationPicker({
                     {totalPicked}
                   </span>
                   <span className="text-xl text-gray-900 dark:text-gray-100 font-bold">
-                    / {currentItem.quantity}
+                    / {targetQuantity}
                   </span>
                 </div>
 
@@ -3193,7 +3211,7 @@ function MultiLocationPicker({
           )}
 
           {/* Success Message - Item fully picked */}
-          {totalPicked >= currentItem.quantity && (
+          {totalPicked >= targetQuantity && (
             <Alert className="bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700">
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-700 dark:text-green-300 font-bold text-sm">
@@ -15776,6 +15794,8 @@ export default function PickPack() {
                           setPickedFromLocations={setPickedFromLocations}
                           updatePickedItem={updatePickedItem}
                           t={t}
+                          mergedQuantity={mergedQty}
+                          sameSkuItemIds={sameSkuItems.map(i => i.id)}
                         />
                         </div>
                       )}
