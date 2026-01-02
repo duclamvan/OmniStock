@@ -586,7 +586,7 @@ export async function searchPPLAccessPoints(params: PPLAccessPointSearchParams):
   if (params.zipCode) queryParams.append('ZipCode', params.zipCode);
   queryParams.append('CountryCode', params.country || 'CZ');
   queryParams.append('Limit', (params.limit || 1000).toString());
-  if (params.offset) queryParams.append('Offset', params.offset.toString());
+  queryParams.append('Offset', (params.offset ?? 0).toString());
   if (params.accessPointTypes && params.accessPointTypes.length > 0) {
     params.accessPointTypes.forEach(type => queryParams.append('AccessPointTypes', type));
   }
