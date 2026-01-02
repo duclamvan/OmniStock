@@ -15327,6 +15327,15 @@ export default function PickPack() {
               </div>
             ) : !allItemsPicked && currentItem ? (
               /* CARD VIEW - Show single item detail */
+              (() => {
+                // Calculate merged quantity for current item's SKU
+                const currentSku = currentItem.sku || currentItem.id;
+                const sameSkuItems = activePickingOrder.items.filter(i => (i.sku || i.id) === currentSku);
+                const mergedQty = sameSkuItems.reduce((sum, i) => sum + i.quantity, 0);
+                const mergedPickedQty = sameSkuItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
+                const variantCount = sameSkuItems.length;
+                
+                return (
               <div className="h-full flex flex-col bg-gray-50">
                 
                 <div className="flex-1 p-4 space-y-4 overflow-auto">
@@ -15351,9 +15360,9 @@ export default function PickPack() {
                                 <Package className="h-24 w-24 sm:h-32 sm:w-32 text-gray-300" />
                               )}
                             </div>
-                            {/* Overlay Badge for Quick Info */}
+                            {/* Overlay Badge for Quick Info - Shows merged quantity */}
                             <div className="absolute top-2 right-2 bg-black/75 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
-                              {currentItem.pickedQuantity}/{currentItem.quantity}
+                              {mergedPickedQty}/{mergedQty}
                             </div>
                           </div>
                         </div>
@@ -15376,7 +15385,8 @@ export default function PickPack() {
                             </h2>
                             <div className="flex gap-4 text-sm text-gray-600 flex-wrap items-center">
                               <div className="flex items-center gap-1">
-                                <span className="font-bold text-gray-900">({currentItem.quantity}x)</span>
+                                <span className="font-bold text-blue-600">({mergedQty}x)</span>
+                                {variantCount > 1 && <span className="text-gray-500">({variantCount} {t('variants')})</span>}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Hash className="h-4 w-4 text-gray-400" />
@@ -15388,11 +15398,11 @@ export default function PickPack() {
                                   <span className="font-mono">{currentItem.barcode}</span>
                                 </div>
                               )}
-                              {/* Carton Badge - shown when quantity >= bulkUnitQty */}
-                              {currentItem.bulkUnitQty && currentItem.quantity >= currentItem.bulkUnitQty && (
+                              {/* Carton Badge - shown when merged quantity >= bulkUnitQty */}
+                              {currentItem.bulkUnitQty && mergedQty >= currentItem.bulkUnitQty && (
                                 <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
                                   <Box className="h-2.5 w-2.5 mr-0.5" />
-                                  {Math.floor(currentItem.quantity / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
+                                  {Math.floor(mergedQty / currentItem.bulkUnitQty)} {currentItem.bulkUnitName || 'carton'}
                                 </Badge>
                               )}
                             </div>
@@ -15863,7 +15873,9 @@ export default function PickPack() {
                     </div>
                   )}
                 </div>
-              ) : allItemsPicked ? (
+                );
+              })()
+            ) : allItemsPicked ? (
               /* All items picked - Show completion popup overlay above the items list */
               <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 relative">
                 {/* Floating Completion Popup - Overlay at top */}
