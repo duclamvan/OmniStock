@@ -1910,11 +1910,46 @@ interface GroupedPickingListViewProps {
   onToggleFullPick: (item: OrderItem) => void;
 }
 
+// Merged item that combines duplicate variants with summed quantities
+interface MergedOrderItem extends OrderItem {
+  mergedItemIds: string[]; // All original item IDs that were merged
+  mergedOriginalIndices: number[]; // All original indices for navigation
+}
+
+// Helper function to merge items with the same SKU for simpler picking display
+function mergeItemsBySku(items: OrderItem[], originalIndices: number[]): { mergedItems: MergedOrderItem[], mergedIndices: number[] } {
+  const mergedMap = new Map<string, MergedOrderItem>();
+  
+  items.forEach((item, idx) => {
+    // Use SKU as the merge key - simplest identifier for employees
+    const mergeKey = item.sku;
+    
+    if (mergedMap.has(mergeKey)) {
+      const existing = mergedMap.get(mergeKey)!;
+      existing.quantity += item.quantity;
+      existing.pickedQuantity += item.pickedQuantity;
+      existing.mergedItemIds.push(item.id);
+      existing.mergedOriginalIndices.push(originalIndices[idx]);
+    } else {
+      mergedMap.set(mergeKey, {
+        ...item,
+        mergedItemIds: [item.id],
+        mergedOriginalIndices: [originalIndices[idx]]
+      });
+    }
+  });
+  
+  const mergedItems = Array.from(mergedMap.values());
+  const mergedIndices = mergedItems.map(item => item.mergedOriginalIndices[0]);
+  
+  return { mergedItems, mergedIndices };
+}
+
 interface ProductGroup {
   productId: string;
   productName: string;
   image?: string;
-  items: OrderItem[];
+  items: MergedOrderItem[]; // Now uses merged items
   totalQuantity: number;
   pickedQuantity: number;
   colorRange: string;
@@ -1932,40 +1967,46 @@ function GroupedPickingListView({
   const { t } = useTranslation('orders');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
-  // Group items by productId
+  // Group items by productId, then merge duplicates with same variantId
   const productGroups = useMemo(() => {
-    const groups = new Map<string, ProductGroup>();
+    // First, collect raw items by productId
+    const rawGroups = new Map<string, { items: OrderItem[], indices: number[] }>();
     
     order.items.forEach((item, index) => {
       const key = item.productId || item.id;
       
-      if (groups.has(key)) {
-        const group = groups.get(key)!;
-        group.items.push(item);
-        group.totalQuantity += item.quantity;
-        group.pickedQuantity += item.pickedQuantity;
-        group.originalIndices.push(index);
+      if (rawGroups.has(key)) {
+        rawGroups.get(key)!.items.push(item);
+        rawGroups.get(key)!.indices.push(index);
       } else {
-        groups.set(key, {
-          productId: key,
-          productName: item.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim(),
-          image: item.image,
-          items: [item],
-          totalQuantity: item.quantity,
-          pickedQuantity: item.pickedQuantity,
-          colorRange: '',
-          originalIndices: [index]
-        });
+        rawGroups.set(key, { items: [item], indices: [index] });
       }
     });
     
-    // Calculate color ranges for each group
-    groups.forEach((group) => {
-      const colorNumbers = group.items.map(i => i.colorNumber);
-      group.colorRange = generateSmartRange(colorNumbers);
+    // Then convert to ProductGroups with merged items
+    const groups: ProductGroup[] = [];
+    
+    rawGroups.forEach((rawGroup, productId) => {
+      // Merge items with same SKU within this product group
+      const { mergedItems, mergedIndices } = mergeItemsBySku(rawGroup.items, rawGroup.indices);
+      
+      const totalQuantity = mergedItems.reduce((sum, item) => sum + item.quantity, 0);
+      const pickedQuantity = mergedItems.reduce((sum, item) => sum + item.pickedQuantity, 0);
+      const colorNumbers = mergedItems.map(i => i.colorNumber);
+      
+      groups.push({
+        productId,
+        productName: rawGroup.items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim(),
+        image: rawGroup.items[0].image,
+        items: mergedItems,
+        totalQuantity,
+        pickedQuantity,
+        colorRange: generateSmartRange(colorNumbers),
+        originalIndices: mergedIndices
+      });
     });
     
-    return Array.from(groups.values());
+    return groups;
   }, [order.items]);
   
   const toggleGroup = (productId: string) => {
@@ -1981,10 +2022,15 @@ function GroupedPickingListView({
   };
   
   const pickAllInGroup = (group: ProductGroup) => {
-    group.items.forEach(item => {
-      if (item.pickedQuantity < item.quantity) {
-        onUpdatePickedItem(item.id, item.quantity);
-      }
+    group.items.forEach(mergedItem => {
+      // For merged items, update each underlying item to be fully picked
+      mergedItem.mergedItemIds.forEach(itemId => {
+        // Find the original item to get its individual quantity
+        const originalItem = order.items.find(i => i.id === itemId);
+        if (originalItem && originalItem.pickedQuantity < originalItem.quantity) {
+          onUpdatePickedItem(itemId, originalItem.quantity);
+        }
+      });
     });
   };
   
@@ -15857,65 +15903,72 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Group product items by productId
-                const productGroups = new Map<string, typeof productItems>();
+                // Merge product items by SKU for simpler display
+                const mergedBySkuMap = new Map<string, { item: typeof productItems[0], totalQty: number, pickedQty: number, ids: string[] }>();
                 productItems.forEach(item => {
-                  const key = item.productId || item.id;
-                  if (!productGroups.has(key)) {
-                    productGroups.set(key, []);
+                  const key = item.sku;
+                  if (mergedBySkuMap.has(key)) {
+                    const existing = mergedBySkuMap.get(key)!;
+                    existing.totalQty += item.quantity;
+                    existing.pickedQty += item.pickedQuantity;
+                    existing.ids.push(item.id);
+                  } else {
+                    mergedBySkuMap.set(key, { 
+                      item, 
+                      totalQty: item.quantity, 
+                      pickedQty: item.pickedQuantity,
+                      ids: [item.id]
+                    });
                   }
-                  productGroups.get(key)!.push(item);
                 });
                 
-                // Convert to display groups
+                // Convert to display groups (one per unique SKU)
                 const displayGroups: Array<{
                   type: 'product' | 'service';
-                  items: typeof productItems;
                   parentName: string;
                   firstItem: typeof productItems[0];
-                  pickedCount: number;
-                  totalCount: number;
+                  totalQty: number;
+                  pickedQty: number;
                   allPicked: boolean;
                   hasCurrent: boolean;
+                  itemIds: string[];
                 }> = [];
                 
-                productGroups.forEach((items, productId) => {
-                  const parentName = items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
-                  const pickedCount = items.filter(i => i.pickedQuantity >= i.quantity).length;
+                mergedBySkuMap.forEach((merged) => {
                   displayGroups.push({
                     type: 'product',
-                    items,
-                    parentName: items.length > 1 ? parentName : items[0].productName,
-                    firstItem: items[0],
-                    pickedCount,
-                    totalCount: items.length,
-                    allPicked: pickedCount === items.length,
-                    hasCurrent: items.some(i => currentItem?.id === i.id)
+                    parentName: merged.item.productName,
+                    firstItem: merged.item,
+                    totalQty: merged.totalQty,
+                    pickedQty: merged.pickedQty,
+                    allPicked: merged.pickedQty >= merged.totalQty,
+                    hasCurrent: merged.ids.some(id => currentItem?.id === id),
+                    itemIds: merged.ids
                   });
                 });
                 
                 // Add service bill if exists
                 if (hasServiceItems) {
+                  const serviceTotalQty = serviceItems.reduce((sum, i) => sum + i.quantity, 0);
+                  const servicePickedQty = serviceItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
                   displayGroups.push({
                     type: 'service',
-                    items: serviceItems,
                     parentName: 'Service Bill',
                     firstItem: serviceItems[0],
-                    pickedCount: serviceItems.filter(i => i.pickedQuantity >= i.quantity).length,
-                    totalCount: serviceItems.length,
-                    allPicked: allServicesPicked,
-                    hasCurrent: anyServiceCurrent
+                    totalQty: serviceTotalQty,
+                    pickedQty: servicePickedQty,
+                    allPicked: servicePickedQty >= serviceTotalQty,
+                    hasCurrent: anyServiceCurrent,
+                    itemIds: serviceItems.map(i => i.id)
                   });
                 }
                 
                 return displayGroups.map((group, displayIndex) => {
                   const isPicked = group.allPicked;
                   const isCurrent = group.hasCurrent;
-                  const isMultiVariant = group.items.length > 1;
                   
-                  // Find the actual index for navigation (first unpicked item in group, or first item)
-                  const targetItem = group.items.find(i => i.pickedQuantity < i.quantity) || group.items[0];
-                  const actualItemIndex = activePickingOrder.items.findIndex(i => i.id === targetItem.id);
+                  // Find the actual index for navigation
+                  const actualItemIndex = activePickingOrder.items.findIndex(i => group.itemIds.includes(i.id));
                   
                   return (
                     <Card 
@@ -15967,27 +16020,18 @@ export default function PickPack() {
                                 }`}>
                                   {group.parentName}
                                 </p>
-                                {isMultiVariant && (
-                                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5">
-                                    {group.items.length} {t('variants')}
-                                  </p>
-                                )}
-                                {!isMultiVariant && (
-                                  <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
-                                )}
+                                <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
                                 <div className="flex items-center justify-between mt-2">
-                                  {!isMultiVariant && (
-                                    <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                                      isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                    }`}>
-                                      📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
-                                    </span>
-                                  )}
-                                  <span className={`text-xs xl:text-sm font-bold ${isMultiVariant ? 'ml-auto' : ''} ${
+                                  <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
+                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                  }`}>
+                                    📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
+                                  </span>
+                                  <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
                                     isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
                                   }`}>
-                                    {group.pickedCount}/{group.totalCount}
+                                    {group.pickedQty}/{group.totalQty}
                                   </span>
                                 </div>
                               </>
