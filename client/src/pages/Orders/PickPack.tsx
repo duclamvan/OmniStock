@@ -16021,13 +16021,14 @@ export default function PickPack() {
                                     {/* Variant Info + Location */}
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                        {item.variantName || item.productName}
+                                        {item.productName}
                                       </p>
-                                      <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-xs text-gray-500 font-mono">
-                                          📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                        <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">{item.sku}</span>
+                                        <span className="text-xs text-gray-500 font-mono flex items-center gap-0.5">
+                                          <MapPin className="h-3 w-3" />
+                                          <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
                                         </span>
-                                        <span className="text-xs text-gray-400 font-mono">{item.sku}</span>
                                       </div>
                                     </div>
                                     
