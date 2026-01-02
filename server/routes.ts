@@ -17582,7 +17582,7 @@ Important:
   app.post('/api/orders/:orderId/ppl/refresh-tracking', isAuthenticated, async (req, res) => {
     try {
       const { orderId } = req.params;
-      const { getTrackingFromShipmentId } = await import('./services/pplService');
+      const { getPPLShipmentByReference } = await import('./services/pplService');
       
       // Get the order
       const order = await storage.getOrderById(orderId);
@@ -17611,29 +17611,36 @@ Important:
       
       for (const label of pplLabels) {
         const labelData = label.labelData as any;
-        const shipmentIdFromLabel = labelData?.shipmentId; // Single shipment ID (from POST /shipment)
         const batchId = label.batchId || labelData?.batchId || order.pplBatchId;
         
-        // Use shipmentId or batchId as the ID to query
-        const shipmentIdToQuery = shipmentIdFromLabel || batchId;
+        // Use the referenceId (order.orderId) to search for the shipment
+        // This is the correct endpoint: GET /shipment?CustomerReferences=referenceId
+        const referenceId = labelData?.referenceId || order.orderId;
         
-        if (!shipmentIdToQuery) {
-          results.push({ labelId: label.id, error: 'No shipment ID or batch ID found' });
+        if (!referenceId) {
+          results.push({ labelId: label.id, error: 'No reference ID found' });
           continue;
         }
         
         let shipmentNumbers: string[] = [];
         
-        // Use GET /shipment/{id} to fetch tracking numbers from packages[].parcelNumber
+        // Use GET /shipment?CustomerReferences=referenceId to fetch tracking numbers
         try {
-          console.log(`📡 Fetching PPL tracking numbers for shipment ${shipmentIdToQuery}...`);
-          shipmentNumbers = await getTrackingFromShipmentId(shipmentIdToQuery);
+          console.log(`📡 Fetching PPL tracking by reference: ${referenceId}...`);
+          const shipments = await getPPLShipmentByReference(referenceId);
+          
+          // Extract shipmentNumber from each shipment
+          shipmentNumbers = shipments
+            .filter(s => s.shipmentNumber)
+            .map(s => s.shipmentNumber!);
           
           if (shipmentNumbers.length > 0) {
             console.log(`✅ Found tracking numbers:`, shipmentNumbers);
+          } else {
+            console.log(`⚠️ No tracking numbers found for reference ${referenceId}`);
           }
         } catch (fetchError) {
-          console.log(`⚠️ Tracking fetch failed for ${shipmentIdToQuery}:`, fetchError);
+          console.log(`⚠️ Tracking fetch failed for reference ${referenceId}:`, fetchError);
         }
         
         // Update if we found real tracking numbers
@@ -18227,20 +18234,26 @@ Important:
         });
       }
 
-      // PPL API is asynchronous - fetch tracking numbers using GET /shipment/{batchId}
-      // The batchId can be used as shipment ID to get parcelNumber from packages array
+      // PPL API is asynchronous - fetch tracking numbers using GET /shipment?CustomerReferences=orderId
       if (shipmentNumbers.length === 0) {
-        console.log('📡 Fetching PPL tracking numbers using GET /shipment/{batchId}...');
-        const { getTrackingFromShipmentId } = await import('./services/pplService');
+        console.log('📡 Fetching PPL tracking numbers by reference...');
+        const { getPPLShipmentByReference } = await import('./services/pplService');
         
         // Wait a moment for PPL to process, then fetch tracking numbers
         console.log('   Waiting 3s for PPL to process shipment...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        const trackingNumbers = await getTrackingFromShipmentId(batchId);
-        if (trackingNumbers.length > 0) {
-          shipmentNumbers = trackingNumbers;
-          console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
+        try {
+          const shipments = await getPPLShipmentByReference(order.orderId);
+          const trackingNumbers = shipments
+            .filter(s => s.shipmentNumber)
+            .map(s => s.shipmentNumber!);
+          if (trackingNumbers.length > 0) {
+            shipmentNumbers = trackingNumbers;
+            console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
+          }
+        } catch (refError) {
+          console.log('⚠️ Reference lookup failed:', refError);
         }
       }
 
@@ -18682,17 +18695,24 @@ Important:
         batchId = batchResult.batchId;
         console.log(`✅ PPL batch created: ${batchId}`);
 
-        // Fetch tracking numbers using GET /shipment/{batchId} to get packages[].parcelNumber
-        const { getTrackingFromShipmentId } = await import('./services/pplService');
+        // Fetch tracking numbers using GET /shipment?CustomerReferences=orderId
+        const { getPPLShipmentByReference } = await import('./services/pplService');
         
-        console.log(`📦 Fetching PPL tracking numbers using GET /shipment/${batchId}...`);
+        console.log(`📦 Fetching PPL tracking numbers by reference: ${order.orderId}...`);
         console.log('   Waiting 3s for PPL to process shipment...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        const trackingNumbers = await getTrackingFromShipmentId(batchId);
-        if (trackingNumbers.length > 0) {
-          shipmentNumbers = trackingNumbers;
-          console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
+        try {
+          const foundShipments = await getPPLShipmentByReference(order.orderId);
+          const trackingNumbers = foundShipments
+            .filter(s => s.shipmentNumber)
+            .map(s => s.shipmentNumber!);
+          if (trackingNumbers.length > 0) {
+            shipmentNumbers = trackingNumbers;
+            console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
+          }
+        } catch (refError) {
+          console.log('⚠️ Reference lookup failed:', refError);
         }
 
         // Get the label PDF

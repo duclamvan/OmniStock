@@ -1,0 +1,81 @@
+You are absolutely right to question this. The documentation you pasted confirms why the previous `GET /shipment/{batchId}` call was failing with a `500` error.
+
+According to the documentation you provided:
+
+1. **`GET /shipment` is a SEARCH endpoint**, not a "get by ID" endpoint.
+2. It does **not** accept a Batch ID in the URL path (like `/shipment/123`).
+3. Instead, it expects **Query Parameters** (like `?CustomerReferences=...`).
+
+This is actually **better** for you. You don't need to save the PPL "Batch ID" to get the tracking number. You can just use your own **Order ID**.
+
+### The Correct Solution: Search by Reference
+
+Since you sent your internal Order ID (e.g., `2024001`) as the `referenceId` when creating the shipment, you can simply ask PPL: *"What is the tracking number for Reference 2024001?"*
+
+Here is the corrected Python code based strictly on your API documentation:
+
+```python
+def get_tracking_by_reference(token, my_order_id):
+    """
+    Fetches the PPL Tracking Number using YOUR Order ID (Reference).
+    Based on GET /shipment documentation.
+    """
+    # 1. Use the Search Endpoint (no ID in the URL)
+    url = f"{BASE_URL}/shipment"
+    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    
+    # 2. Pass your Order ID as a parameter
+    # The docs say 'CustomerReferences' is an array, so we pass it as a list
+    params = {
+        "CustomerReferences": [str(my_order_id)] 
+    }
+
+    try:
+        print(f"🔍 Searching PPL for Reference: {my_order_id}...")
+        resp = requests.get(url, headers=headers, params=params)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            
+            # The response is an Array of shipments
+            if len(data) > 0:
+                # 3. Extract 'shipmentNumber' (This is the Tracking Number)
+                tracking_number = data[0].get('shipmentNumber')
+                
+                if tracking_number:
+                    print(f"✅ Found Tracking Number: {tracking_number}")
+                    return tracking_number
+                else:
+                    print("⚠️ Shipment found, but no tracking number yet.")
+            else:
+                print("❌ No shipment found with this reference.")
+                
+        else:
+            print(f"❌ API Error: {resp.status_code} - {resp.text}")
+            
+    except Exception as e:
+        print(f"Error: {e}")
+        
+    return None
+
+```
+
+### Why this works (Based on your Docs)
+
+* **Request:** You send `GET /shipment?CustomerReferences=YourID`.
+* **Response:** The docs say it returns an array where each object has a `shipmentNumber`.
+* `shipmentNumber`: *"Číslo zásilky"* (This is your tracking number, e.g., 405800...)
+* `productType`: *"Typ produktu"*
+
+
+
+### How to use it in your flow
+
+1. **Create Shipment:** Send `referenceId=1024` (your order ID).
+2. **Wait 1-2 seconds** (PPL needs a moment to save it).
+3. **Get Tracking:** Call `get_tracking_by_reference(token, "1024")`.
+4. **Save:** Save the returned number to your database.
