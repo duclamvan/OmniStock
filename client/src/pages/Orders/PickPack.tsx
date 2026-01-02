@@ -16840,12 +16840,9 @@ export default function PickPack() {
                 
                 return displayGroups.map((group, displayIndex) => {
                   const isPicked = group.allPicked;
-                  const isCurrent = group.hasCurrent;
+                  // Use group index for current highlight to stay in sync with main display
+                  const isCurrent = displayIndex === currentGroupIndex;
                   const isMultiVariant = group.variantCount > 1;
-                  
-                  // Find the actual index for navigation (first unpicked item in group, or first item)
-                  const targetItem = group.items.find(i => i.pickedQuantity < i.quantity) || group.items[0];
-                  const actualItemIndex = activePickingOrder.items.findIndex(i => i.id === targetItem.id);
                   
                   return (
                     <Card 
@@ -16856,10 +16853,13 @@ export default function PickPack() {
                         'bg-white hover:shadow-lg border-2 border-gray-200 hover:border-blue-300'
                       }`}
                       onClick={() => {
-                        if (actualItemIndex >= 0) {
-                          setManualItemIndex(actualItemIndex);
-                          playSound('scan');
-                        }
+                        // Navigate by group index (matches parentGroups structure)
+                        setCurrentGroupIndex(displayIndex);
+                        // Also sync manualItemIndex for handlers that still use it
+                        const firstOriginalId = (group.items[0] as any)?._mergedFromIds?.[0] || group.items[0]?.id;
+                        const itemIdx = activePickingOrder.items.findIndex(i => i.id === firstOriginalId);
+                        if (itemIdx >= 0) setManualItemIndex(itemIdx);
+                        playSound('scan');
                       }}
                     >
                       <CardContent className="p-3 xl:p-4">
@@ -17021,47 +17021,29 @@ export default function PickPack() {
                     );
                   })()}
                   <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
-                    {/* Consolidate service items in mobile drawer too */}
+                    {/* Mobile drawer uses parent groups for navigation (same as main display) */}
                     {(() => {
-                      // Pure service = has serviceId but NO productId
-                      const isPureService = (item: typeof activePickingOrder.items[0]) => 
-                        item.serviceId && !item.productId;
-                      
-                      const productItems = activePickingOrder.items.filter(item => !isPureService(item));
-                      const serviceItems = activePickingOrder.items.filter(isPureService);
-                      const hasServiceItems = serviceItems.length > 0;
-                      const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
-                      const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
-                      
-                      const displayItems = hasServiceItems 
-                        ? [...productItems, { ...serviceItems[0], _isConsolidatedService: true, _allServicesPicked: allServicesPicked, _anyServiceCurrent: anyServiceCurrent }]
-                        : productItems;
-                      
-                      return displayItems.map((item: any, displayIndex) => {
-                        const isServiceBill = item._isConsolidatedService;
-                        const isPicked = isServiceBill ? item._allServicesPicked : item.pickedQuantity >= item.quantity;
-                        const isCurrent = isServiceBill ? item._anyServiceCurrent : currentItem?.id === item.id;
-                        
-                        // Find actual index for navigation
-                        const actualItemIndex = isServiceBill 
-                          ? activePickingOrder.items.findIndex(i => isPureService(i))
-                          : activePickingOrder.items.findIndex(i => i.id === item.id);
+                      return parentGroups.map((group, groupIndex) => {
+                        const isPicked = group.allPicked;
+                        const isCurrent = groupIndex === currentGroupIndex;
+                        const isService = group.type === 'service';
                         
                         return (
                           <div
-                            key={isServiceBill ? 'service-bill-mobile' : item.id}
+                            key={isService ? 'service-bill-mobile' : group.groupId}
                             className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 snap-start transition-all transform active:scale-95 touch-manipulation ${
                               isPicked ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-700' :
                               isCurrent ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-lg' :
                               'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700'
                             }`}
                             onClick={() => {
-                              // Navigate to this item
-                              if (actualItemIndex >= 0) {
-                                setManualItemIndex(actualItemIndex);
-                                setShowMobileProgress(false);
-                                playSound('scan');
-                              }
+                              setCurrentGroupIndex(groupIndex);
+                              // Also sync manualItemIndex for handlers that still use it
+                              const firstOriginalId = (group.items[0] as any)?._mergedFromIds?.[0] || group.items[0]?.id;
+                              const itemIdx = activePickingOrder.items.findIndex(i => i.id === firstOriginalId);
+                              if (itemIdx >= 0) setManualItemIndex(itemIdx);
+                              setShowMobileProgress(false);
+                              playSound('scan');
                             }}
                           >
                             <div className="flex items-center gap-1 mb-1">
@@ -17071,21 +17053,21 @@ export default function PickPack() {
                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                                   isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
                                 }`}>
-                                  {displayIndex + 1}
+                                  {groupIndex + 1}
                                 </div>
                               )}
-                              {!isServiceBill && (
+                              {!isService && group.items[0] && (
                                 <span className="text-xs font-mono font-bold">
-                                  <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                                  <ItemPrimaryLocation productId={group.items[0].productId} variantId={group.items[0].variantId} variantLocationCode={group.items[0].variantLocationCode} fallbackLocation={group.items[0].warehouseLocation} />
                                 </span>
                               )}
                             </div>
-                            {isServiceBill ? (
+                            {isService ? (
                               <p className="text-xs font-bold text-purple-600 dark:text-purple-400 text-center">Service Bill</p>
                             ) : (
                               <>
-                                <p className="text-xs font-medium truncate">{item.productName}</p>
-                                <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                                <p className="text-xs font-medium truncate">{group.parentName}</p>
+                                <p className="text-xs text-gray-500">{group.pickedQuantity}/{group.totalQuantity}</p>
                               </>
                             )}
                           </div>
