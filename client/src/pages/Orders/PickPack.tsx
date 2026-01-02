@@ -15060,6 +15060,120 @@ export default function PickPack() {
                         )}
                       </div>
 
+                      {/* Related Variants Panel - Show when item belongs to a product group */}
+                      {(() => {
+                        // Find related variants (same productId)
+                        const productId = currentItem.productId;
+                        const relatedItems = productId 
+                          ? activePickingOrder.items.filter(item => item.productId === productId)
+                          : [];
+                        const hasMultipleVariants = relatedItems.length > 1;
+                        
+                        if (!hasMultipleVariants || currentItem.serviceId) return null;
+                        
+                        // Calculate group stats
+                        const totalQuantity = relatedItems.reduce((sum, item) => sum + item.quantity, 0);
+                        const pickedQuantity = relatedItems.reduce((sum, item) => sum + item.pickedQuantity, 0);
+                        const allPicked = pickedQuantity >= totalQuantity;
+                        const parentName = currentItem.productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
+                        
+                        return (
+                          <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-indigo-50 dark:to-indigo-900/30 rounded-xl border-2 border-purple-300 dark:border-purple-700 overflow-hidden">
+                            {/* Group Header */}
+                            <div className="p-3 bg-purple-100 dark:bg-purple-900/50 border-b border-purple-200 dark:border-purple-700">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                  <span className="font-bold text-purple-900 dark:text-purple-200 text-sm">{parentName}</span>
+                                </div>
+                                <Badge className={`px-2 py-0.5 text-xs font-bold ${allPicked ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'}`}>
+                                  {pickedQuantity}/{totalQuantity}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                {relatedItems.length} {t('variants')}
+                              </div>
+                            </div>
+                            
+                            {/* Pick All Button */}
+                            {!allPicked && (
+                              <div className="p-2 border-b border-purple-200 dark:border-purple-700">
+                                <Button
+                                  size="sm"
+                                  className="w-full h-9 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-sm"
+                                  onClick={() => {
+                                    relatedItems.forEach(item => {
+                                      if (item.pickedQuantity < item.quantity) {
+                                        updatePickedItem(item.id, item.quantity);
+                                      }
+                                    });
+                                    playSound('success');
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  {t('pickAll')} ({relatedItems.length})
+                                </Button>
+                              </div>
+                            )}
+                            
+                            {/* Variant List */}
+                            <div className="max-h-48 overflow-y-auto">
+                              {relatedItems.map((item, idx) => {
+                                const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+                                const isPicked = item.pickedQuantity >= item.quantity;
+                                const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+                                const isCurrent = item.id === currentItem.id;
+                                
+                                let itemBg = 'bg-white dark:bg-gray-900';
+                                if (isPicked) itemBg = 'bg-green-50 dark:bg-green-900/30';
+                                else if (isPartial) itemBg = 'bg-yellow-50 dark:bg-yellow-900/30';
+                                
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`${itemBg} ${isCurrent ? 'ring-2 ring-inset ring-blue-500' : ''} 
+                                      p-2 border-b border-purple-100 dark:border-purple-800 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2`}
+                                    onClick={() => {
+                                      if (!isPicked) {
+                                        updatePickedItem(item.id, item.quantity);
+                                        playSound('success');
+                                      }
+                                      setManualItemIndex(itemIndex);
+                                    }}
+                                  >
+                                    {/* Color Number Badge */}
+                                    <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${
+                                      isPicked ? 'bg-green-500 text-white' : 
+                                      isPartial ? 'bg-yellow-500 text-white' : 
+                                      isCurrent ? 'bg-blue-500 text-white' :
+                                      'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                                    }`}>
+                                      {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
+                                    </div>
+                                    
+                                    {/* Variant Name */}
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-xs font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                        {item.variantName || item.productName}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Status */}
+                                    <div className="flex-shrink-0 text-xs font-bold">
+                                      {isPicked ? (
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                      ) : (
+                                        <span className="text-gray-500">{item.pickedQuantity}/{item.quantity}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Carton/Bulk Unit Details - Shows how many cartons to pick (Hidden for services) */}
                       {!currentItem.serviceId && currentItem.bulkUnitQty && currentItem.bulkUnitQty > 0 && currentItem.quantity >= currentItem.bulkUnitQty && (
                         <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3 flex items-center justify-center gap-3">

@@ -1156,7 +1156,9 @@ const orders = {
   inProgress: 'Đang thực hiện',
   completed: 'Đã hoàn thành',
   picked: 'Đã lấy',
+  pickAll: 'Lấy tất cả',
   partiallyPicked: 'Lấy một phần',
+  variants: 'biến thể',
   notFound: 'Không tìm thấy',
   itemReview: 'Xem lại sản phẩm',
   

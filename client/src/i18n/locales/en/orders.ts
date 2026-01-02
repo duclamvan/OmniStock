@@ -1152,7 +1152,9 @@ const orders = {
   inProgress: 'In Progress',
   completed: 'Completed',
   picked: 'Picked',
+  pickAll: 'Pick All',
   partiallyPicked: 'Partially Picked',
+  variants: 'variants',
   notFound: 'Not Found',
   itemReview: 'Item Review',
   
