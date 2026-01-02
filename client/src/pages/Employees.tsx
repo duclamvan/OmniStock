@@ -1098,7 +1098,7 @@ export default function Employees() {
                       <FormItem>
                         <FormLabel>{t('common:phone')}</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="+420 123 456 789" {...field} data-testid="input-phone" />
+                          <Input type="text" placeholder="+420 123 456 789" {...field} data-testid="input-phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1428,7 +1428,7 @@ export default function Employees() {
                       <FormItem>
                         <FormLabel>{t('system:emergencyPhone')}</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="+420 123 456 789" {...field} data-testid="input-emergency-phone" />
+                          <Input type="text" placeholder="+420 123 456 789" {...field} data-testid="input-emergency-phone" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

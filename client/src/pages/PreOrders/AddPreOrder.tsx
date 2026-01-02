@@ -785,7 +785,7 @@ export default function AddPreOrder() {
                     <p className="text-xs text-slate-500 mb-1.5">{t('reminderPhoneHint')}</p>
                     <Input
                       id="reminderPhone"
-                      type="tel"
+                      type="text"
                       placeholder="+420 123 456 789"
                       value={form.watch("reminderPhone") || ""}
                       onChange={(e) => form.setValue("reminderPhone", e.target.value)}
@@ -1110,7 +1110,7 @@ export default function AddPreOrder() {
               </Label>
               <Input
                 id="newCustomerTel"
-                type="tel"
+                type="text"
                 placeholder="e.g., +420 123 456 789"
                 value={newCustomerData.tel}
                 onChange={(e) => setNewCustomerData(prev => ({ ...prev, tel: e.target.value }))}

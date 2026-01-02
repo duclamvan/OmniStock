@@ -1558,13 +1558,23 @@ export default function AddOrder() {
       return;
     }
 
-    // Helper function to get default price for a carrier (considers COD payment method for dobírka)
+    // Helper function to get default price for a carrier (considers COD payment method for dobírka and SMART pickup)
     const getDefaultPriceForCarrier = (carrier: string): number => {
       const paymentMethod = form.getValues('paymentMethod');
       const isCOD = paymentMethod === 'COD';
+      const isSmartDelivery = shippingSettings?.pplPackageType === 'SMART';
       
       if ((carrier === 'PPL' || carrier === 'PPL CZ')) {
-        // Use dobírka price if COD payment and dobírka price is configured
+        // SMART pickup pricing (ParcelShop/ParcelBox/AlzaBox)
+        if (isSmartDelivery) {
+          if (isCOD && shippingSettings?.pplDefaultShippingPriceSmartWithDobirka && shippingSettings.pplDefaultShippingPriceSmartWithDobirka > 0) {
+            return shippingSettings.pplDefaultShippingPriceSmartWithDobirka;
+          }
+          if (shippingSettings?.pplDefaultShippingPriceSmart && shippingSettings.pplDefaultShippingPriceSmart > 0) {
+            return shippingSettings.pplDefaultShippingPriceSmart;
+          }
+        }
+        // Standard home/business delivery pricing
         if (isCOD && shippingSettings?.pplDefaultShippingPriceWithDobirka && shippingSettings.pplDefaultShippingPriceWithDobirka > 0) {
           return shippingSettings.pplDefaultShippingPriceWithDobirka;
         }
@@ -1583,11 +1593,13 @@ export default function AddOrder() {
     const newCarrierDefaultPrice = getDefaultPriceForCarrier(watchedShippingMethod);
 
     // Build a map of all carrier defaults to check if current price was auto-applied for any carrier
-    // Include both regular and dobírka prices for PPL
+    // Include regular, dobírka, and SMART prices for PPL
     const allCarrierDefaults: Record<string, number> = {
       'PPL': shippingSettings?.pplDefaultShippingPrice || 0,
       'PPL CZ': shippingSettings?.pplDefaultShippingPrice || 0,
       'PPL_DOBIRKA': shippingSettings?.pplDefaultShippingPriceWithDobirka || 0,
+      'PPL_SMART': shippingSettings?.pplDefaultShippingPriceSmart || 0,
+      'PPL_SMART_DOBIRKA': shippingSettings?.pplDefaultShippingPriceSmartWithDobirka || 0,
       'GLS': shippingSettings?.glsDefaultShippingPrice || 0,
       'GLS DE': shippingSettings?.glsDefaultShippingPrice || 0,
       'DHL': shippingSettings?.dhlDefaultShippingPrice || 0,
@@ -1647,7 +1659,7 @@ export default function AddOrder() {
 
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', finalShippingCost);
-  }, [watchedShippingMethod, watchedPaymentMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.pplDefaultShippingPriceWithDobirka, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice]);
+  }, [watchedShippingMethod, watchedPaymentMethod, selectedCustomer?.country, watchedCurrency, orderItems, shippingSettings?.pplShippingRates, shippingSettings?.pplDefaultShippingPrice, shippingSettings?.pplDefaultShippingPriceWithDobirka, shippingSettings?.pplDefaultShippingPriceSmart, shippingSettings?.pplDefaultShippingPriceSmartWithDobirka, shippingSettings?.pplPackageType, shippingSettings?.glsDefaultShippingPrice, shippingSettings?.dhlDefaultShippingPrice]);
 
   // Auto-sync dobírka/nachnahme amount and currency when PPL CZ/DHL DE + COD is selected
   // Recalculates on EVERY change (currency, items, shipping, discounts, taxes, adjustment)

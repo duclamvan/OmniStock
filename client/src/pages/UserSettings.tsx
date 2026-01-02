@@ -633,7 +633,7 @@ export default function UserSettings() {
                     <FormLabel>{t('settings:phoneNumber')}</FormLabel>
                     <FormControl>
                       <Input 
-                        type="tel"
+                        type="text"
                         placeholder="+420123456789" 
                         {...field} 
                         data-testid="input-contact-phone"
@@ -724,7 +724,7 @@ export default function UserSettings() {
                 </p>
                 <Input
                   id="phone-number-2fa"
-                  type="tel"
+                  type="text"
                   placeholder="+420123456789"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}

@@ -253,7 +253,7 @@ export default function Register() {
                   <Label htmlFor="phone">{t('auth.phoneNumber')}</Label>
                   <Input
                     id="phone"
-                    type="tel"
+                    type="text"
                     placeholder={t('auth.phonePlaceholder')}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}

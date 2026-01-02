@@ -659,7 +659,7 @@ export default function ShippingManagement() {
                       <Label htmlFor="ppl-phone">{t('shipping:phone')}</Label>
                       <Input 
                         id="ppl-phone"
-                        type="tel"
+                        type="text"
                         value={pplAddress.phone}
                         onChange={(e) => setPplAddress({ ...pplAddress, phone: e.target.value })}
                         placeholder="+420123456789"
@@ -1186,7 +1186,7 @@ export default function ShippingManagement() {
                           <Label htmlFor="gls-phone">{t('shipping:phone')}</Label>
                           <Input 
                             id="gls-phone"
-                            type="tel"
+                            type="text"
                             value={glsAddress.phone}
                             onChange={(e) => setGlsAddress({ ...glsAddress, phone: e.target.value })}
                             placeholder="+49 123 456789"
