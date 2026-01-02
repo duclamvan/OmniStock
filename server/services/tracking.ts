@@ -57,10 +57,20 @@ class PPLTrackingAdapter implements TrackingAdapter {
   
   async fetchTracking(trackingNumber: string): Promise<NormalizedTracking> {
     try {
+      // Handle PENDING placeholder tracking numbers
+      if (trackingNumber.startsWith('PENDING-')) {
+        return {
+          statusCode: 'created',
+          statusLabel: 'Awaiting tracking number from PPL',
+          checkpoints: [],
+        };
+      }
+      
       const token = await getPPLAccessToken();
       
+      // Use the /shipment endpoint with ShipmentNumbers query param (per PPL API docs)
       const response = await fetch(
-        `https://api.dhl.com/ecs/ppl/myapi2/shipment/${trackingNumber}`,
+        `https://api.dhl.com/ecs/ppl/myapi2/shipment?ShipmentNumbers=${encodeURIComponent(trackingNumber)}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -84,7 +94,16 @@ class PPLTrackingAdapter implements TrackingAdapter {
       }
       
       const data = await response.json();
-      return this.normalizePPLResponse(data);
+      // PPL /shipment endpoint returns an array - take the first matching shipment
+      const shipmentData = Array.isArray(data) ? data[0] : data;
+      if (!shipmentData) {
+        return {
+          statusCode: 'created',
+          statusLabel: 'Shipment not yet registered in PPL system',
+          checkpoints: [],
+        };
+      }
+      return this.normalizePPLResponse(shipmentData);
     } catch (error: any) {
       if (error.message.includes('PPL API credentials not configured')) {
         return {
@@ -98,34 +117,78 @@ class PPLTrackingAdapter implements TrackingAdapter {
   }
   
   private normalizePPLResponse(data: any): NormalizedTracking {
-    const statusCode = this.mapPPLStatus(data.state || data.status);
+    // Map shipmentState from PPL API to our status codes
+    const statusCode = this.mapPPLStatus(data.shipmentState || data.state || data.status);
     
-    const events = data.trackAndTraceEvents || data.events || [];
+    // Extract tracking events from trackAndTrace object (per PPL API response format)
+    // PPL may use different field names: events, trackingEvents, trackAndTraceEvents
+    const trackAndTrace = data.trackAndTrace || {};
+    const events = trackAndTrace.events || 
+                   trackAndTrace.trackingEvents || 
+                   data.trackAndTraceEvents || 
+                   data.trackingEvents ||
+                   data.events || 
+                   [];
+    
     const checkpoints = events.map((event: any) => ({
-      timestamp: event.eventDate || `${event.date}T${event.time || '00:00:00'}`,
-      location: event.depot?.name || event.depot || event.location || 'Unknown',
-      status: event.eventType || event.status || '',
-      description: event.eventDescription || event.statusText || event.description || event.status || ''
+      timestamp: event.eventDate || event.date || new Date().toISOString(),
+      location: event.depot?.name || event.depot || event.location || data.depot || 'Unknown',
+      status: event.eventCode || event.eventType || event.status || '',
+      description: event.eventName || event.eventDescription || event.statusText || event.description || event.status || ''
     })).reverse();
+    
+    // Get last event info from trackAndTrace
+    const lastEventDate = trackAndTrace.lastEventDate || (checkpoints.length > 0 ? checkpoints[0].timestamp : undefined);
+    const lastEventName = trackAndTrace.lastEventName || (checkpoints.length > 0 ? checkpoints[0].description : undefined);
+    
+    // Map shipmentState to human-readable label
+    const stateLabels: Record<string, string> = {
+      'None': 'Created',
+      'Active': 'Active',
+      'Undelivered': 'Undelivered',
+      'Delivered': 'Delivered',
+      'PickedUpFromSender': 'Picked up from sender',
+      'DeliveredToPickupPoint': 'Delivered to pickup point',
+      'OutForDelivery': 'Out for delivery',
+      'NotDelivered': 'Not delivered',
+      'CodPaidDate': 'COD paid',
+      'BackToSender': 'Returned to sender',
+      'Rejected': 'Rejected',
+      'DataShipment': 'Data shipment',
+      'Canceled': 'Cancelled',
+      'Dormant': 'Dormant'
+    };
+    
+    const statusLabel = stateLabels[data.shipmentState] || 
+                       lastEventName || 
+                       data.stateText || 
+                       data.statusText || 
+                       data.shipmentState || 
+                       'Unknown';
     
     return {
       statusCode,
-      statusLabel: data.stateText || data.statusText || data.state || 'Unknown',
+      statusLabel,
       checkpoints,
-      lastEventAt: checkpoints.length > 0 ? new Date(checkpoints[0].timestamp) : undefined,
-      deliveredAt: statusCode === 'delivered' && checkpoints.length > 0 
-        ? new Date(checkpoints[0].timestamp)
+      lastEventAt: lastEventDate ? new Date(lastEventDate) : undefined,
+      deliveredAt: statusCode === 'delivered' && lastEventDate
+        ? new Date(lastEventDate)
         : undefined,
     };
   }
   
   private mapPPLStatus(status: string): TrackingStatus {
     const s = (status || '').toLowerCase();
-    if (s.includes('deliver') || s.includes('doručen')) return 'delivered';
-    if (s.includes('transit') || s.includes('transport') || s.includes('přeprav')) return 'in_transit';
-    if (s.includes('out for delivery') || s.includes('na cestě')) return 'out_for_delivery';
-    if (s.includes('exception') || s.includes('problem') || s.includes('chyba')) return 'exception';
-    if (s.includes('picked') || s.includes('vyzvednut') || s.includes('přijat')) return 'in_transit';
+    
+    // Map PPL shipmentState enum values
+    if (s === 'delivered' || s === 'deliveredtopickuppoint' || s.includes('deliver') || s.includes('doručen')) return 'delivered';
+    if (s === 'outfordelivery' || s.includes('out for delivery') || s.includes('na cestě')) return 'out_for_delivery';
+    if (s === 'pickedupfromsender' || s === 'active' || s === 'undelivered' || 
+        s.includes('transit') || s.includes('transport') || s.includes('přeprav') ||
+        s.includes('picked') || s.includes('vyzvednut') || s.includes('přijat')) return 'in_transit';
+    if (s === 'notdelivered' || s === 'backtosender' || s === 'rejected' ||
+        s.includes('exception') || s.includes('problem') || s.includes('chyba')) return 'exception';
+    if (s === 'none' || s === 'datashipment' || s === 'dormant' || s === 'canceled') return 'created';
     return 'unknown';
   }
   

@@ -1840,6 +1840,11 @@ const orders = {
   failedToRefreshTracking: 'Không thể làm mới thông tin theo dõi',
   trackingHistory: 'Lịch sử Theo dõi',
   estimatedDelivery: 'Dự kiến Giao hàng',
+  pendingTrackingNumber: 'Đang chờ mã theo dõi...',
+  trackingUpdated: 'Đã Cập nhật Theo dõi',
+  trackingNumbersReceived: 'Đã nhận mã theo dõi thực từ hãng vận chuyển',
+  trackingPending: 'Đang Chờ Theo dõi',
+  trackingNotYetAvailable: 'Mã theo dõi chưa có từ hãng vận chuyển. Vui lòng thử lại sau vài phút.',
   
   // DHL Bookmarklet Autofill
   prepareDhlAutofill: 'Chuẩn bị DHL Autofill',

@@ -1,0 +1,113 @@
+V nové **PPL CPL API (REST)** získáte tyto údaje okamžitě v odpovědi (Response) poté, co odešlete požadavek `POST /shipment`.
+
+Zde je přesný návod, kde co najít a jak to naprogramovat v Replitu.
+
+### 1. Rozdíl mezi ID
+
+* **Tracking Number (Sledovací číslo):** V API se jmenuje `parcelNumber`. To je to číslo (např. `405800...`), které posíláte zákazníkovi.
+* **Shipment ID (dříve Batch ID):** V CPL API je to hlavní `id` celé zásilky. Toto ID používáte, když chcete **stáhnout štítek (PDF)**.
+* **Reference ID:** Toto je **VAŠE** číslo (např. číslo objednávky `2024001`). Vy ho musíte poslat v požadavku, aby se vytisklo na štítek a abyste podle něj mohl hledat.
+
+---
+
+### 2. Kód pro získání čísel (Python)
+
+Tento skript ukazuje, jak poslat `referenceId` a jak z odpovědi vytáhnout `parcelNumber`.
+
+```python
+def create_shipment_and_get_ids(token, order_id, receiver_data):
+    url = f"{BASE_URL}/shipment"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "productType": "SMAR", # Nebo 'PRIV' pro doručení na adresu
+        # ZDE posíláte své ID objednávky
+        "referenceId": str(order_id), 
+        "recipient": {
+            "name": receiver_data['name'],
+            "street": receiver_data['street'],
+            "city": receiver_data['city'],
+            "zipCode": receiver_data['zip'],
+            "country": "CZ",
+            "phone": receiver_data['phone'],
+            "email": receiver_data['email'],
+             # Pokud je to Smart, musí tu být parcelShopId
+            "type": "ParcelShop",
+            "parcelShopId": receiver_data['pickup_point_id']
+        },
+        "packages": [
+            {
+                # ZDE můžete dát i referenci konkrétního balíku, pokud jich je víc
+                "referenceId": f"{order_id}-1",
+                "weight": 1.0
+            }
+        ]
+    }
+
+    resp = requests.post(url, json=payload, headers=headers)
+
+    if resp.status_code == 201:
+        data = resp.json()
+        
+        # --- ZDE ZÍSKÁTE DATA ---
+        
+        # 1. Shipment ID (pro stažení PDF štítku)
+        shipment_id = data.get('id') 
+        
+        # 2. Sledovací číslo (Tracking Number)
+        # Pozor: Je v poli 'packages', protože jedna zásilka může mít víc balíků
+        tracking_number = data['packages'][0].get('parcelNumber')
+        
+        # 3. Vaše Reference (pro kontrolu)
+        my_ref = data.get('referenceId')
+
+        print(f"✅ Zásilka vytvořena!")
+        print(f"   Shipment ID (pro štítek): {shipment_id}")
+        print(f"   Tracking Number (pro zákazníka): {tracking_number}")
+        print(f"   Reference: {my_ref}")
+        
+        return shipment_id, tracking_number
+        
+    else:
+        print(f"❌ Chyba: {resp.text}")
+        return None, None
+
+```
+
+### 3. Jak vypadá Odpověď (JSON Response)
+
+Když odešlete zásilku, vrátí se vám toto. Zde vidíte, kde přesně data jsou:
+
+```json
+{
+  "id": "12345678-abcd-9012-efgh-345678901234",  <-- TOTO JE SHIPMENT ID (Batch)
+  "referenceId": "OBJ-2023-999",                 <-- TOTO JE VAŠE REFERENCE
+  "productType": "SMAR",
+  "status": "CREATED",
+  "packages": [
+    {
+      "id": "98765432-....",
+      "parcelNumber": "405800123456",            <-- TOTO JE SLEDOVACÍ ČÍSLO
+      "referenceId": "OBJ-2023-999-1",
+      "qrcode": "..."
+    }
+  ]
+}
+
+```
+
+### 4. Jak následně získat štítek (Batch/Label)
+
+Jakmile máte `shipment_id` (to dlouhé ID nahoře), zavoláte endpoint pro štítek:
+
+* **Endpoint:** `GET /shipment/{shipment_id}/label`
+* **Pozor:** V URL se používá právě to `id` z odpovědi, ne tracking number.
+
+### Shrnutí pro WMS
+
+1. **ReferenceID:** Vygenerujte ho z ID objednávky (např. `#1024`) a pošlete ho v `payload`.
+2. **Sledovací číslo:** Uložte si `json['packages'][0]['parcelNumber']` do databáze k objednávce ihned po vytvoření. Toto číslo pošlete e-mailem zákazníkovi.
+3. **Štítek:** Stáhněte ho ihned pomocí `json['id']`.

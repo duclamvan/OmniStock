@@ -2070,15 +2070,58 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               {t('orders:shippingLabelCarrier', { carrier: label.carrier?.toUpperCase() || t('orders:carrierUnknown') })}
                             </p>
                             {label.trackingNumbers && label.trackingNumbers.length > 0 && (
-                              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5 flex items-center gap-1">
-                                <Hash className="h-3 w-3" />
-                                {label.trackingNumbers.join(', ')}
-                              </p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Hash className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
+                                {label.trackingNumbers.some((tn: string) => tn.startsWith('PENDING-')) ? (
+                                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                    {t('orders:pendingTrackingNumber')}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-emerald-700 dark:text-emerald-300">
+                                    {label.trackingNumbers.join(', ')}
+                                  </span>
+                                )}
+                              </div>
                             )}
                             <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
                               {new Date(label.createdAt).toLocaleDateString()}
                             </p>
                           </div>
+                          {label.carrier === 'PPL' && label.trackingNumbers?.some((tn: string) => tn.startsWith('PENDING-')) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={async () => {
+                                try {
+                                  const response = await apiRequest('POST', `/api/orders/${order.id}/ppl/refresh-tracking`);
+                                  const result = await response.json();
+                                  if (result.updated > 0) {
+                                    toast({
+                                      title: t('orders:trackingUpdated'),
+                                      description: t('orders:trackingNumbersReceived'),
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: [`/api/orders/${order.id}/shipment-labels`] });
+                                    queryClient.invalidateQueries({ queryKey: [`/api/orders/${order.id}/tracking`] });
+                                  } else {
+                                    toast({
+                                      title: t('orders:trackingPending'),
+                                      description: t('orders:trackingNotYetAvailable'),
+                                    });
+                                  }
+                                } catch (error: any) {
+                                  toast({
+                                    variant: 'destructive',
+                                    title: t('orders:refreshFailed'),
+                                    description: error.message || t('orders:failedToRefreshTracking'),
+                                  });
+                                }
+                              }}
+                              data-testid={`button-refresh-ppl-tracking-${label.id}`}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          )}
                           {label.labelBase64 && (
                             <a
                               href={`data:application/pdf;base64,${label.labelBase64}`}

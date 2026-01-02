@@ -1852,6 +1852,11 @@ const orders = {
   failedToRefreshTracking: 'Failed to refresh tracking information',
   trackingHistory: 'Tracking History',
   estimatedDelivery: 'Estimated Delivery',
+  pendingTrackingNumber: 'Tracking number pending...',
+  trackingUpdated: 'Tracking Updated',
+  trackingNumbersReceived: 'Real tracking numbers have been received from the carrier',
+  trackingPending: 'Tracking Pending',
+  trackingNotYetAvailable: 'Tracking numbers are not yet available from the carrier. Please try again in a few minutes.',
   
   // DHL Bookmarklet Autofill
   prepareDhlAutofill: 'Prepare DHL Autofill',

@@ -254,9 +254,172 @@ export interface PPLShipmentResponse {
   };
 }
 
+// Single shipment request for POST /shipment (returns tracking number immediately)
+export interface PPLSingleShipmentRequest {
+  productType: string;
+  referenceId: string;
+  recipient: {
+    name: string;
+    street: string;
+    city: string;
+    zipCode: string;
+    country: string;
+    phone?: string;
+    email?: string;
+    type?: 'Address' | 'ParcelShop';
+    parcelShopId?: string;
+  };
+  sender?: {
+    name: string;
+    street: string;
+    city: string;
+    zipCode: string;
+    country: string;
+    phone?: string;
+    email?: string;
+  };
+  packages: Array<{
+    referenceId?: string;
+    weight?: number;
+  }>;
+  cashOnDelivery?: {
+    price: number;
+    currency: string;
+    variableSymbol?: string;
+  };
+  note?: string;
+}
+
+// Response from POST /shipment (contains tracking number immediately)
+export interface PPLSingleShipmentResponse {
+  id: string; // Shipment ID (used for getting labels)
+  referenceId: string;
+  productType: string;
+  status: string;
+  packages: Array<{
+    id: string;
+    parcelNumber: string; // This is the tracking number!
+    referenceId?: string;
+    qrcode?: string;
+  }>;
+}
+
 /**
- * Create PPL shipment(s)
+ * Create a single PPL shipment using POST /shipment
+ * This endpoint returns the tracking number (parcelNumber) IMMEDIATELY in the response
+ * Use this for packing mode to avoid polling for tracking numbers
+ */
+export async function createPPLSingleShipment(request: PPLSingleShipmentRequest): Promise<{
+  shipmentId: string;
+  trackingNumbers: string[];
+  referenceId: string;
+  responseData: PPLSingleShipmentResponse;
+}> {
+  try {
+    const token = await getPPLAccessToken();
+    
+    console.log('═══════════════════════════════════════════════════');
+    console.log('📦 Creating PPL Single Shipment (POST /shipment)');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('Request:', JSON.stringify(request, null, 2));
+    
+    const response = await axios.post<PPLSingleShipmentResponse>(
+      `${PPL_BASE_URL}/shipment`,
+      request,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept-Language': 'cs-CZ'
+        }
+      }
+    );
+    
+    const data = response.data;
+    
+    console.log('═══════════════════════════════════════════════════');
+    console.log('✅ PPL Single Shipment Response:');
+    console.log('═══════════════════════════════════════════════════');
+    console.log('Shipment ID:', data.id);
+    console.log('Reference ID:', data.referenceId);
+    console.log('Status:', data.status);
+    console.log('Packages:', JSON.stringify(data.packages, null, 2));
+    
+    // Extract tracking numbers from packages
+    const trackingNumbers = data.packages
+      .filter(pkg => pkg.parcelNumber)
+      .map(pkg => pkg.parcelNumber);
+    
+    console.log('📬 Tracking Numbers:', trackingNumbers);
+    console.log('═══════════════════════════════════════════════════');
+    
+    if (trackingNumbers.length === 0) {
+      throw new Error('No tracking numbers (parcelNumber) returned from PPL API');
+    }
+    
+    return {
+      shipmentId: data.id,
+      trackingNumbers,
+      referenceId: data.referenceId,
+      responseData: data
+    };
+  } catch (error: any) {
+    const errorDetails = {
+      message: error.message,
+      data: error.response?.data,
+      status: error.response?.status,
+      url: `${PPL_BASE_URL}/shipment`,
+      requestData: JSON.stringify(request, null, 2)
+    };
+    console.error('Failed to create PPL single shipment:', errorDetails);
+    
+    let errorMessage = 'Failed to create PPL shipment';
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (data.title && data.errors) {
+        const validationErrors = Object.entries(data.errors)
+          .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+          .join('; ');
+        errorMessage = `${data.title}: ${validationErrors}`;
+      } else if (data.detail) {
+        errorMessage = data.detail;
+      } else if (data.message) {
+        errorMessage = data.message;
+      }
+    }
+    
+    const err = new Error(errorMessage) as any;
+    err.details = errorDetails;
+    throw err;
+  }
+}
+
+/**
+ * Get PPL label by shipment ID (from POST /shipment response)
+ * Uses GET /shipment/{id}/label endpoint
+ */
+export async function getPPLLabelByShipmentId(shipmentId: string, format: 'pdf' | 'zpl' = 'pdf'): Promise<Buffer> {
+  const token = await getPPLAccessToken();
+  
+  const response = await axios.get(
+    `${PPL_BASE_URL}/shipment/${shipmentId}/label`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': format === 'pdf' ? 'application/pdf' : 'application/zpl'
+      },
+      responseType: 'arraybuffer'
+    }
+  );
+  
+  return Buffer.from(response.data);
+}
+
+/**
+ * Create PPL shipment(s) using batch endpoint
  * Returns batchId, location, and any tracking numbers included in the response
+ * NOTE: This uses the batch endpoint which may not return tracking numbers immediately
+ * For immediate tracking numbers, use createPPLSingleShipment instead
  */
 export async function createPPLShipment(request: PPLCreateShipmentRequest): Promise<{ 
   batchId: string; 
