@@ -2951,57 +2951,78 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">THÀNH TIỀN</span>
               </div>
               
-              {/* Items */}
+              {/* Items - Grouped by parent product name */}
               <div className="divide-y divide-slate-100">
-                {order?.items?.map((item: any, idx: number) => {
-                  const originalPrice = (item.unitPrice || item.price || 0) * item.quantity;
-                  const finalPrice = originalPrice - (item.discount || 0);
-                  const rawDiscountPercent = originalPrice > 0 ? ((item.discount || 0) / originalPrice * 100) : 0;
-                  const discountPercent = rawDiscountPercent % 1 === 0 ? rawDiscountPercent.toFixed(0) : rawDiscountPercent.toFixed(2).replace(/\.?0+$/, '');
+                {(() => {
+                  const getParentName = (name: string) => {
+                    const match = name.match(/^(.+?)\s*[-–—]\s*(?:Color|Màu|Size|Kích thước|Variant|Biến thể)\s*.+$/i);
+                    return match ? match[1].trim() : name;
+                  };
                   
-                  return (
-                    <div key={idx} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3">
-                      {/* Image */}
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {item.image ? (
-                          <img src={item.image} alt={item.productName} className="w-full h-full object-contain" />
-                        ) : item.serviceId ? (
-                          <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
-                        ) : (
-                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
-                        )}
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">{item.productName}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          <span className="font-extrabold text-slate-900">{item.quantity}</span>
-                          <span> × {formatCurrency(item.unitPrice || item.price || 0, order?.currency || 'EUR')}</span>
+                  const grouped = (order?.items || []).reduce((acc: any, item: any) => {
+                    const parentName = getParentName(item.productName || '');
+                    if (!acc[parentName]) {
+                      acc[parentName] = { 
+                        name: parentName, 
+                        totalQty: 0, 
+                        totalPrice: 0, 
+                        totalDiscount: 0,
+                        image: item.image,
+                        isService: !!item.serviceId,
+                        variantCount: 0
+                      };
+                    }
+                    acc[parentName].totalQty += item.quantity || 0;
+                    acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
+                    acc[parentName].totalDiscount += (item.discount || 0);
+                    acc[parentName].variantCount += 1;
+                    if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
+                    return acc;
+                  }, {});
+                  
+                  return Object.values(grouped).map((group: any, idx: number) => {
+                    const finalPrice = group.totalPrice - group.totalDiscount;
+                    const rawDiscountPercent = group.totalPrice > 0 ? (group.totalDiscount / group.totalPrice * 100) : 0;
+                    const discountPercent = rawDiscountPercent % 1 === 0 ? rawDiscountPercent.toFixed(0) : rawDiscountPercent.toFixed(2).replace(/\.?0+$/, '');
+                    
+                    return (
+                      <div key={idx} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3">
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {group.image ? (
+                            <img src={group.image} alt={group.name} className="w-full h-full object-contain" />
+                          ) : group.isService ? (
+                            <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                          ) : (
+                            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">{group.name}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            <span className="font-extrabold text-slate-900">{group.totalQty}</span>
+                            <span> {group.variantCount > 1 ? `(${group.variantCount} loại)` : ''}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right flex flex-col items-end flex-shrink-0">
+                          {group.totalDiscount > 0 ? (
+                            <>
+                              <span className="text-xs text-slate-400 relative inline-block whitespace-nowrap">
+                                {formatCurrency(group.totalPrice, order?.currency || 'EUR')}
+                                <span className="absolute left-0 right-0 top-1/2 bg-slate-400" style={{ height: '1px', transform: 'translateY(-50%)' }} />
+                              </span>
+                              <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
+                              <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                            </>
+                          ) : (
+                            <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(group.totalPrice, order?.currency || 'EUR')}</span>
+                          )}
                         </div>
                       </div>
-                      
-                      {/* Price */}
-                      <div className="text-right flex flex-col items-end flex-shrink-0">
-                        {item.discount > 0 ? (
-                          <>
-                            <span className="text-xs text-slate-400 relative inline-block whitespace-nowrap">
-                              {formatCurrency(originalPrice, order?.currency || 'EUR')}
-                              <span 
-                                className="absolute left-0 right-0 top-1/2 bg-slate-400"
-                                style={{ height: '1px', transform: 'translateY(-50%)' }}
-                              />
-                            </span>
-                            <span className="text-xs text-green-600 font-semibold whitespace-nowrap">-{discountPercent}%</span>
-                            <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
-                          </>
-                        ) : (
-                          <span className="text-base font-bold text-slate-900 whitespace-nowrap">{formatCurrency(originalPrice, order?.currency || 'EUR')}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
               
               {/* Pricing Summary */}
