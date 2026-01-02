@@ -12933,57 +12933,109 @@ export default function PickPack() {
                                         <p className={`text-xs font-mono truncate ${isCancelled ? 'text-gray-500 line-through' : 'text-gray-600'}`}>
                                           {label.trackingNumbers[0]}
                                         </p>
-                                        {/* Show edit button for PENDING tracking numbers */}
+                                        {/* Show refresh and edit buttons for PENDING tracking numbers */}
                                         {label.trackingNumbers[0].startsWith('PENDING-') && !isCancelled && (
-                                          <button
-                                            onClick={async (e) => {
-                                              // Prevent double clicks
-                                              const btn = e.currentTarget;
-                                              if (btn.disabled) return;
-                                              
-                                              const trackingNumber = prompt(
-                                                `⚠️ PPL API couldn't retrieve the tracking number.\n\n` +
-                                                `Please check the barcode on the printed label and enter the tracking number:\n\n` +
-                                                `Batch ID: ${label.batchId}\n` +
-                                                `Label #${index + 1}`,
-                                                ''
-                                              );
-                                              
-                                              if (trackingNumber && trackingNumber.trim()) {
-                                                // Disable button during request
+                                          <>
+                                            {/* Refresh button - tries to fetch real tracking from PPL API */}
+                                            <button
+                                              onClick={async (e) => {
+                                                const btn = e.currentTarget;
+                                                if (btn.disabled) return;
                                                 btn.disabled = true;
                                                 btn.classList.add('opacity-50', 'cursor-not-allowed');
                                                 
                                                 try {
-                                                  const response = await apiRequest('PATCH', `/api/shipment-labels/${label.id}/tracking`, {
-                                                    trackingNumbers: [trackingNumber.trim()]
+                                                  toast({
+                                                    title: t('orders:refreshingTrackingNumber'),
+                                                    description: t('orders:fetchingFromPPLAPI'),
                                                   });
+                                                  
+                                                  const response = await apiRequest('POST', `/api/orders/${activePackingOrder.id}/ppl/refresh-tracking`, {});
                                                   
                                                   if (!response.ok) {
                                                     const errorData = await response.json().catch(() => ({}));
-                                                    throw new Error(errorData.error || 'Failed to update tracking number');
+                                                    throw new Error(errorData.error || 'Failed to refresh tracking');
                                                   }
                                                   
-                                                  // Refresh labels
+                                                  const result = await response.json();
                                                   await fetchShipmentLabels();
+                                                  
+                                                  if (result.updated > 0) {
+                                                    toast({
+                                                      title: t('orders:trackingNumberUpdated'),
+                                                      description: `${result.updated} ${t('orders:trackingNumbersRefreshed')}`,
+                                                    });
+                                                  } else {
+                                                    toast({
+                                                      title: t('orders:noUpdates'),
+                                                      description: result.message || t('orders:trackingNotYetAvailable'),
+                                                    });
+                                                  }
                                                 } catch (error: any) {
                                                   toast({
                                                     title: t('error'),
-                                                    description: error.message || "Failed to update tracking number",
+                                                    description: error.message || "Failed to refresh tracking",
                                                     variant: "destructive"
                                                   });
                                                 } finally {
-                                                  // Re-enable button
                                                   btn.disabled = false;
                                                   btn.classList.remove('opacity-50', 'cursor-not-allowed');
                                                 }
-                                              }
-                                            }}
-                                            className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:text-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title={t('updateTrackingNumberFromLabelBarcode')}
-                                          >
-                                            <Edit className="h-3 w-3" />
-                                          </button>
+                                              }}
+                                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:text-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              title={t('orders:refreshTrackingFromPPL')}
+                                              data-testid="button-refresh-ppl-tracking"
+                                            >
+                                              <RefreshCw className="h-3 w-3" />
+                                            </button>
+                                            {/* Edit button - manual entry */}
+                                            <button
+                                              onClick={async (e) => {
+                                                const btn = e.currentTarget;
+                                                if (btn.disabled) return;
+                                                
+                                                const trackingNumber = prompt(
+                                                  `⚠️ PPL API couldn't retrieve the tracking number.\n\n` +
+                                                  `Please check the barcode on the printed label and enter the tracking number:\n\n` +
+                                                  `Batch ID: ${label.batchId}\n` +
+                                                  `Label #${index + 1}`,
+                                                  ''
+                                                );
+                                                
+                                                if (trackingNumber && trackingNumber.trim()) {
+                                                  btn.disabled = true;
+                                                  btn.classList.add('opacity-50', 'cursor-not-allowed');
+                                                  
+                                                  try {
+                                                    const response = await apiRequest('PATCH', `/api/shipment-labels/${label.id}/tracking`, {
+                                                      trackingNumbers: [trackingNumber.trim()]
+                                                    });
+                                                    
+                                                    if (!response.ok) {
+                                                      const errorData = await response.json().catch(() => ({}));
+                                                      throw new Error(errorData.error || 'Failed to update tracking number');
+                                                    }
+                                                    
+                                                    await fetchShipmentLabels();
+                                                  } catch (error: any) {
+                                                    toast({
+                                                      title: t('error'),
+                                                      description: error.message || "Failed to update tracking number",
+                                                      variant: "destructive"
+                                                    });
+                                                  } finally {
+                                                    btn.disabled = false;
+                                                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                                  }
+                                                }
+                                              }}
+                                              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:text-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 p-0.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              title={t('updateTrackingNumberFromLabelBarcode')}
+                                              data-testid="button-edit-ppl-tracking"
+                                            >
+                                              <Edit className="h-3 w-3" />
+                                            </button>
+                                          </>
                                         )}
                                       </div>
                                     ) : (

@@ -214,6 +214,13 @@ const orders = {
   pplLabelsRemovedDesc: 'Dữ liệu nhãn đã được xóa khỏi đơn hàng',
   pplLabelRetrieved: 'Đã lấy nhãn PPL',
   labelRetrievalFailed: 'Lấy nhãn thất bại',
+  refreshingTrackingNumber: 'Đang làm mới mã vận đơn',
+  fetchingFromPPLAPI: 'Đang lấy mã vận đơn thực từ PPL API...',
+  trackingNumberUpdated: 'Đã cập nhật mã vận đơn',
+  trackingNumbersRefreshed: 'mã vận đơn đã được làm mới',
+  noUpdates: 'Không có cập nhật',
+  trackingNotYetAvailable: 'Mã vận đơn chưa có từ PPL',
+  refreshTrackingFromPPL: 'Làm mới mã vận đơn từ PPL API',
   
   // Toast Messages - Packing Actions
   repackingOrder: 'Đang đóng gói lại đơn hàng',

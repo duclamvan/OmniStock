@@ -214,6 +214,13 @@ const orders = {
   pplLabelsRemovedDesc: 'Label data has been removed from the order',
   pplLabelRetrieved: 'PPL Label Retrieved',
   labelRetrievalFailed: 'Label Retrieval Failed',
+  refreshingTrackingNumber: 'Refreshing Tracking Number',
+  fetchingFromPPLAPI: 'Fetching real tracking number from PPL API...',
+  trackingNumberUpdated: 'Tracking Number Updated',
+  trackingNumbersRefreshed: 'tracking number(s) refreshed',
+  noUpdates: 'No Updates',
+  trackingNotYetAvailable: 'Tracking number not yet available from PPL',
+  refreshTrackingFromPPL: 'Refresh tracking number from PPL API',
   
   // Toast Messages - Packing Actions
   repackingOrder: 'Repacking Order',
