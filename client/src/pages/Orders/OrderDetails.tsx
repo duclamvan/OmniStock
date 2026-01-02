@@ -289,55 +289,63 @@ export default function OrderDetails() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Fetch pick/pack logs for the order
+  // LAZY LOADING: Secondary queries only run when section is visible and order is loaded
+  // This reduces initial load from 8 parallel queries to just 1 (order data)
+  
+  // Fetch pick/pack logs - lazy load with longer stale time
   const { data: pickPackLogs } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/pick-pack-logs`],
     enabled: !!id && !!order && id !== 'pick-pack',
-    refetchInterval: 5000,
-    staleTime: 3000,
+    refetchInterval: 30000, // Reduced from 5s to 30s for better performance
+    staleTime: 15000, // Keep data fresh for 15 seconds
   });
 
-  // Fetch order tickets
+  // Fetch order tickets - lazy load
   const { data: tickets = [] } = useQuery<any[]>({
     queryKey: [`/api/tickets?orderId=${id}`],
     enabled: !!id && !!order,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Fetch product files for selected document IDs
+  // Fetch product files - LAZY: only when Product Documents section is open
   const { data: productFiles = [] } = useQuery<any[]>({
     queryKey: ['/api/product-files'],
-    enabled: !!order && !!order.selectedDocumentIds && order.selectedDocumentIds.length > 0,
+    enabled: !!order && !!order.selectedDocumentIds && order.selectedDocumentIds.length > 0 && isProductDocsOpen,
+    staleTime: 60000, // Product files rarely change, cache for 1 minute
     select: (allFiles) => {
       if (!order?.selectedDocumentIds) return [];
-      // Filter to only show files that were selected for this order
       return allFiles.filter((file: any) => 
         order.selectedDocumentIds.includes(file.id)
       );
     },
   });
 
-  // Fetch uploaded order files from database
+  // Fetch uploaded order files - LAZY: only when Uploaded Files section is open
   const { data: orderFiles = [] } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/files`],
-    enabled: !!id && !!order,
+    enabled: !!id && !!order && isUploadedFilesOpen,
+    staleTime: 30000,
   });
 
-  // Fetch shipment labels
+  // Fetch shipment labels - LAZY: only when Shipping Labels section is open
   const { data: shipmentLabels = [] } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/shipment-labels`],
-    enabled: !!id && !!order,
+    enabled: !!id && !!order && isShippingLabelsOpen,
+    staleTime: 30000,
   });
 
-  // Fetch order cartons
+  // Fetch order cartons - lazy load with caching
   const { data: orderCartons = [] } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/cartons`],
     enabled: !!id && !!order,
+    staleTime: 30000, // Cartons don't change frequently
   });
 
-  // Fetch tracking data for Order Progress section - use standard query pattern with default fetcher
+  // Fetch tracking data - LAZY: only when order is shipped and tracking is enabled
   const { data: trackingData = [], isLoading: isTrackingLoading } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/tracking`],
     enabled: !!id && !!order && enableTracking && !!order.shippedAt,
+    staleTime: 60000, // Tracking updates are expensive, cache for 1 minute
     refetchInterval: shippingSettings?.autoUpdateTrackingStatus 
       ? (shippingSettings?.trackingUpdateFrequencyHours ?? 1) * 60 * 60 * 1000 
       : false,

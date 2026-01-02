@@ -16703,7 +16703,11 @@ export default function PickPack() {
             <div className="space-y-2 xl:space-y-3">
               {/* STEP 1: Merge items by SKU first, then group by productId */}
               {(() => {
-                const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
+                // Pure service = has serviceId but NO productId (actual service fees, not free product items)
+                const isPureService = (item: typeof activePickingOrder.items[0]) => 
+                  item.serviceId && !item.productId;
+                
+                const serviceItems = activePickingOrder.items.filter(isPureService);
                 const hasServiceItems = serviceItems.length > 0;
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
@@ -16723,7 +16727,8 @@ export default function PickPack() {
                 }>();
                 const itemsWithNotes: typeof activePickingOrder.items = [];
                 
-                activePickingOrder.items.filter(item => !item.serviceId).forEach(item => {
+                // Filter to product items (has productId, even if it wrongly has serviceId)
+                activePickingOrder.items.filter(item => !isPureService(item)).forEach(item => {
                   if (item.notes && item.notes.trim()) {
                     itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as typeof item);
                   } else {
@@ -17018,8 +17023,12 @@ export default function PickPack() {
                   <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
                     {/* Consolidate service items in mobile drawer too */}
                     {(() => {
-                      const productItems = activePickingOrder.items.filter(item => !item.serviceId);
-                      const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
+                      // Pure service = has serviceId but NO productId
+                      const isPureService = (item: typeof activePickingOrder.items[0]) => 
+                        item.serviceId && !item.productId;
+                      
+                      const productItems = activePickingOrder.items.filter(item => !isPureService(item));
+                      const serviceItems = activePickingOrder.items.filter(isPureService);
                       const hasServiceItems = serviceItems.length > 0;
                       const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                       const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
@@ -17035,7 +17044,7 @@ export default function PickPack() {
                         
                         // Find actual index for navigation
                         const actualItemIndex = isServiceBill 
-                          ? activePickingOrder.items.findIndex(i => i.serviceId)
+                          ? activePickingOrder.items.findIndex(i => isPureService(i))
                           : activePickingOrder.items.findIndex(i => i.id === item.id);
                         
                         return (
