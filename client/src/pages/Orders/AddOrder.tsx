@@ -3921,17 +3921,39 @@ export default function AddOrder() {
         
         if (allocation) {
           // Check if we need to update this item
-          if (item.appliedDiscountId !== allocation.discountId || 
-              item.appliedDiscountType !== 'buy_x_get_y' ||
-              item.appliedDiscountLabel !== allocation.discountName) {
-            hasChanges = true;
-            return {
-              ...item,
-              appliedDiscountId: allocation.discountId,
-              appliedDiscountType: 'buy_x_get_y',
-              appliedDiscountLabel: allocation.discountName,
-              appliedDiscountScope: allocation.isProductScope ? 'specific_product' : 'specific_category',
-            };
+          // Only apply label if item quantity >= buyQty (actually contributes to earning free items)
+          const qualifiesForLabel = item.quantity >= allocation.buyQty;
+          
+          if (qualifiesForLabel) {
+            if (item.appliedDiscountId !== allocation.discountId || 
+                item.appliedDiscountType !== 'buy_x_get_y' ||
+                item.appliedDiscountLabel !== allocation.discountName ||
+                item.buyXGetYBuyQty !== allocation.buyQty) {
+              hasChanges = true;
+              return {
+                ...item,
+                appliedDiscountId: allocation.discountId,
+                appliedDiscountType: 'buy_x_get_y',
+                appliedDiscountLabel: allocation.discountName,
+                appliedDiscountScope: allocation.isProductScope ? 'specific_product' : 'specific_category',
+                buyXGetYBuyQty: allocation.buyQty,
+                buyXGetYGetQty: allocation.getQty,
+              };
+            }
+          } else {
+            // Item doesn't have enough quantity to qualify - clear the label
+            if (item.appliedDiscountType === 'buy_x_get_y') {
+              hasChanges = true;
+              return {
+                ...item,
+                appliedDiscountId: null,
+                appliedDiscountType: null,
+                appliedDiscountLabel: null,
+                appliedDiscountScope: null,
+                buyXGetYBuyQty: undefined,
+                buyXGetYGetQty: undefined,
+              };
+            }
           }
         } else {
           // Remove buy_x_get_y discount info if no longer qualifying
@@ -3943,6 +3965,8 @@ export default function AddOrder() {
               appliedDiscountType: null,
               appliedDiscountLabel: null,
               appliedDiscountScope: null,
+              buyXGetYBuyQty: undefined,
+              buyXGetYGetQty: undefined,
             };
           }
         }
