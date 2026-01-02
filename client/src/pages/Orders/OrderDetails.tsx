@@ -3001,7 +3001,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           <div className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">{group.name}</div>
                           <div className="text-xs text-slate-500 mt-0.5">
                             <span className="font-extrabold text-slate-900">{group.totalQty}</span>
-                            <span> {group.variantCount > 1 ? `(${group.variantCount} loại)` : ''}</span>
+                            <span> {group.variantCount > 1 ? `(${group.variantCount} ${t('orders:variants')})` : ''}</span>
                           </div>
                         </div>
                         

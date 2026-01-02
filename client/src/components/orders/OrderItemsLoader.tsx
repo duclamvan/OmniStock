@@ -86,7 +86,7 @@ export function OrderItemsLoader({
             <p key={idx} className="text-[11px] truncate leading-tight">
               <span className="font-semibold text-blue-600 dark:text-blue-400">{group.totalQty}×</span>{' '}
               <span className="font-medium text-black dark:text-white">{group.name}</span>
-              {group.variantCount > 1 && <span className="text-slate-500"> ({group.variantCount} loại)</span>}
+              {group.variantCount > 1 && <span className="text-slate-500"> ({group.variantCount} {t('orders:variants')})</span>}
             </p>
           ))}
           {hasMore && (
@@ -121,7 +121,7 @@ export function OrderItemsLoader({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
                   <span className="text-blue-600 dark:text-blue-400">{group.totalQty}×</span> {group.name}
-                  {group.variantCount > 1 && <span className="text-slate-500 dark:text-slate-400 ml-1">({group.variantCount} loại)</span>}
+                  {group.variantCount > 1 && <span className="text-slate-500 dark:text-slate-400 ml-1">({group.variantCount} {t('orders:variants')})</span>}
                 </p>
               </div>
               <div className="text-right ml-4">

@@ -573,6 +573,7 @@ const orders = {
   itemsColon: 'Sản phẩm:',
   showLess: 'Thu gọn',
   moreItems: '+{{count}} sản phẩm khác',
+  variants: 'loại',
   previousOrder: 'Đơn hàng trước',
   nextOrder: 'Đơn hàng tiếp theo',
   

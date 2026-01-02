@@ -569,6 +569,7 @@ const orders = {
   itemsColon: 'Items:',
   showLess: 'Show less',
   moreItems: '+{{count}} more item(s)',
+  variants: 'variants',
   previousOrder: 'Previous Order',
   nextOrder: 'Next Order',
   

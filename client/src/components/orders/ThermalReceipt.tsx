@@ -375,7 +375,7 @@ export function useOrderReceiptData(order: any, currency: string = 'EUR'): Recei
   }, {});
   
   const items: ReceiptItem[] = Object.values(grouped).map((g: any) => ({
-    name: g.variantCount > 1 ? `${g.name} (${g.variantCount} loại)` : g.name,
+    name: g.variantCount > 1 ? `${g.name} (${g.variantCount})` : g.name,
     quantity: g.totalQty,
     price: g.totalQty > 0 ? g.totalPrice / g.totalQty : 0
   }));
