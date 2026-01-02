@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -35,55 +35,9 @@ interface PPLSmartPopupProps {
   language?: "cs" | "en";
 }
 
-type LoadStatus = 'loading' | 'loaded' | 'error' | 'timeout';
+type LoadStatus = 'loading' | 'loaded' | 'error';
 
-const LOAD_TIMEOUT_MS = 15000;
-const PPL_MAP_BASE_URL = 'https://www.ppl.cz/mapa-vydejnich-mist';
-
-function buildMapUrl(address?: string, city?: string, zipCode?: string): string {
-  const parts: string[] = [];
-  if (address) parts.push(address);
-  if (city) parts.push(city);
-  if (zipCode) parts.push(zipCode);
-  
-  const fullAddress = parts.join(', ').trim();
-  
-  if (fullAddress) {
-    const params = new URLSearchParams();
-    params.set('KTMAddress', fullAddress);
-    return `${PPL_MAP_BASE_URL}?${params.toString()}`;
-  }
-  
-  return PPL_MAP_BASE_URL;
-}
-
-const StableIframe = memo(({ 
-  src, 
-  onLoad, 
-  onError,
-  iframeKey 
-}: { 
-  src: string; 
-  onLoad: () => void; 
-  onError: () => void;
-  iframeKey: number;
-}) => {
-  return (
-    <iframe
-      key={iframeKey}
-      src={src}
-      className="w-full h-full border-0"
-      onLoad={onLoad}
-      onError={onError}
-      title="PPL Pickup Points"
-      allow="geolocation"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      referrerPolicy="strict-origin-when-cross-origin"
-    />
-  );
-});
-
-StableIframe.displayName = 'StableIframe';
+const PPL_MAP_URL = 'https://www.ppl.cz/mapa-vydejnich-mist';
 
 export function PPLSmartPopup({
   open,
@@ -92,109 +46,109 @@ export function PPLSmartPopup({
   customerAddress,
   customerCity,
   customerZipCode,
-  language = "cs",
 }: PPLSmartPopupProps) {
   const { t } = useTranslation(["orders", "common"]);
   const [status, setStatus] = useState<LoadStatus>('loading');
-  const [retryCount, setRetryCount] = useState(0);
-  const [iframeKey, setIframeKey] = useState(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scriptLoadedRef = useRef(false);
 
-  const widgetUrl = buildMapUrl(customerAddress, customerCity, customerZipCode);
-
-  const clearTimeoutRef = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+  const handleOpenExternal = useCallback(() => {
+    const parts: string[] = [];
+    if (customerAddress) parts.push(customerAddress);
+    if (customerCity) parts.push(customerCity);
+    if (customerZipCode) parts.push(customerZipCode);
+    
+    const fullAddress = parts.join(', ').trim();
+    let url = PPL_MAP_URL;
+    
+    if (fullAddress) {
+      const params = new URLSearchParams();
+      params.set('KTMAddress', fullAddress);
+      url = `${PPL_MAP_URL}?${params.toString()}`;
     }
-  }, []);
-
-  const startLoadTimeout = useCallback(() => {
-    clearTimeoutRef();
-    timeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current && status === 'loading') {
-        setStatus('timeout');
-      }
-    }, LOAD_TIMEOUT_MS);
-  }, [clearTimeoutRef, status]);
+    
+    window.open(url, '_blank', 'width=900,height=700');
+  }, [customerAddress, customerCity, customerZipCode]);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      clearTimeoutRef();
-    };
-  }, [clearTimeoutRef]);
+    if (!open) return;
 
-  useEffect(() => {
-    if (open) {
+    const loadWidget = async () => {
       setStatus('loading');
-      startLoadTimeout();
 
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin.includes('ppl.cz')) {
-          try {
-            const data = event.data;
-            if (data && data.code) {
-              const pickupPoint: PPLPickupPoint = {
-                code: data.code || data.accessPointCode,
-                name: data.name || data.title,
-                street: data.street || data.address,
-                city: data.city,
-                zipCode: data.zipCode || data.zip,
-                address: `${data.street || ''}, ${data.city || ''} ${data.zipCode || ''}`.trim(),
-                type: data.type || data.accessPointType,
-                lat: data.lat || data.latitude,
-                lng: data.lng || data.longitude,
-              };
-              onSelectPickupPoint(pickupPoint);
-              onOpenChange(false);
-            }
-          } catch (e) {
-            console.error('Error parsing PPL widget message:', e);
-          }
+      try {
+        if (!document.getElementById('ppl-widget-css')) {
+          const link = document.createElement('link');
+          link.id = 'ppl-widget-css';
+          link.rel = 'stylesheet';
+          link.href = 'https://www.ppl.cz/sources/map/main.css';
+          document.head.appendChild(link);
         }
-      };
 
-      window.addEventListener('message', handleMessage);
-      return () => {
-        window.removeEventListener('message', handleMessage);
-        clearTimeoutRef();
-      };
-    }
-  }, [open, onSelectPickupPoint, onOpenChange, startLoadTimeout, clearTimeoutRef]);
+        if (!scriptLoadedRef.current) {
+          await new Promise<void>((resolve, reject) => {
+            if (document.getElementById('ppl-widget-script')) {
+              resolve();
+              return;
+            }
+            
+            const script = document.createElement('script');
+            script.id = 'ppl-widget-script';
+            script.src = 'https://www.ppl.cz/sources/map/main.js';
+            script.async = true;
+            script.onload = () => {
+              scriptLoadedRef.current = true;
+              resolve();
+            };
+            script.onerror = () => reject(new Error('Failed to load PPL widget script'));
+            document.body.appendChild(script);
+          });
+        }
 
-  const handleIframeLoad = useCallback(() => {
-    clearTimeoutRef();
-    if (isMountedRef.current) {
-      setStatus('loaded');
-    }
-  }, [clearTimeoutRef]);
+        setTimeout(() => {
+          setStatus('loaded');
+        }, 500);
 
-  const handleIframeError = useCallback(() => {
-    clearTimeoutRef();
-    if (isMountedRef.current) {
-      setStatus('error');
-    }
-  }, [clearTimeoutRef]);
+      } catch (error) {
+        console.error('Failed to load PPL widget:', error);
+        setStatus('error');
+      }
+    };
 
-  const handleRetry = useCallback(() => {
-    setStatus('loading');
-    setRetryCount(prev => prev + 1);
-    setIframeKey(prev => prev + 1);
-    startLoadTimeout();
-  }, [startLoadTimeout]);
+    loadWidget();
 
-  const handleOpenExternal = () => {
-    window.open(widgetUrl, '_blank', 'width=900,height=700');
-  };
+    const handlePPLSelection = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const data = customEvent.detail;
+      
+      if (data) {
+        const pickupPoint: PPLPickupPoint = {
+          code: data.code || data.accessPointCode || data.id,
+          name: data.name || data.title,
+          street: data.street || data.address,
+          city: data.city,
+          zipCode: data.zipCode || data.zip || data.postalCode,
+          address: `${data.street || ''}, ${data.city || ''} ${data.zipCode || data.zip || ''}`.trim(),
+          type: data.type || data.accessPointType,
+          lat: data.lat || data.latitude || data.gpsLatitude,
+          lng: data.lng || data.longitude || data.gpsLongitude,
+          accessPointType: data.accessPointType || data.type,
+        };
+        onSelectPickupPoint(pickupPoint);
+        onOpenChange(false);
+      }
+    };
 
-  const showError = status === 'error' || status === 'timeout';
+    document.addEventListener('ppl-parcelshop-map', handlePPLSelection);
+
+    return () => {
+      document.removeEventListener('ppl-parcelshop-map', handlePPLSelection);
+    };
+  }, [open, onSelectPickupPoint, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] h-[85vh] max-h-[900px] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-7xl w-[98vw] h-[95vh] max-h-[1200px] p-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-4 pt-4 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -204,15 +158,6 @@ export function PPLSmartPopup({
               </DialogTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRetry}
-                className="gap-2"
-                title={t("common:refresh", "Refresh")}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -229,7 +174,7 @@ export function PPLSmartPopup({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden">
           {status === 'loading' && (
             <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
               <div className="flex flex-col items-center gap-3">
@@ -241,66 +186,37 @@ export function PPLSmartPopup({
             </div>
           )}
 
-          {showError && (
+          {status === 'error' && (
             <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
               <div className="flex flex-col items-center gap-4 text-center px-4">
                 <AlertCircle className="h-12 w-12 text-orange-500" />
                 <div>
                   <p className="font-medium text-lg">
-                    {status === 'timeout' 
-                      ? t("orders:loadingTooLong", "Loading took too long")
-                      : t("orders:errorLoadingPickupPoints", "Failed to load pickup points")}
+                    {t("orders:errorLoadingPickupPoints", "Failed to load pickup points")}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {t("orders:tryRefreshOrOpenExternal", "Try refreshing or open in a new window")}
+                    {t("orders:tryOpenExternal", "Please use the 'Open in new window' button")}
                   </p>
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleRetry}
-                    className="gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    {t("common:retry", "Retry")} {retryCount > 0 && `(${retryCount})`}
-                  </Button>
-                  <Button
-                    onClick={handleOpenExternal}
-                    className="gap-2 bg-orange-500 hover:bg-orange-600"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {t("common:openInNewWindow", "Open in new window")}
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleOpenExternal}
+                  className="gap-2 bg-orange-500 hover:bg-orange-600"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {t("common:openInNewWindow", "Open in new window")}
+                </Button>
               </div>
             </div>
           )}
 
-          <StableIframe
-            src={widgetUrl}
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-            iframeKey={iframeKey}
+          <div 
+            ref={containerRef}
+            id="ppl-parcelshop-map" 
+            className="w-full h-full"
+            style={{ minHeight: '500px' }}
           />
         </div>
 
-        <div className="border-t p-4 flex justify-end items-center flex-shrink-0 bg-muted/30">
-          <div className="text-sm text-muted-foreground mr-auto flex items-center gap-2">
-            {status === 'loaded' && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                {t("orders:selectPointFromMap", "Select a pickup point from the map above")}
-              </>
-            )}
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-cancel-pickup"
-          >
-            {t("common:close", "Close")}
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
