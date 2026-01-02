@@ -10020,7 +10020,7 @@ export default function PickPack() {
                                     <div className={`absolute -bottom-1 -right-1 min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md ${
                                       allVerified ? 'bg-green-600 text-white' : 'bg-purple-600 text-white'
                                     }`}>
-                                      {allVerified ? <CheckCircle className="h-4 w-4" /> : groupItems.length}
+                                      {allVerified ? <CheckCircle className="h-4 w-4" /> : `${groupItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}×`}
                                     </div>
                                   </div>
                                   <div className="flex-1 min-w-0">
