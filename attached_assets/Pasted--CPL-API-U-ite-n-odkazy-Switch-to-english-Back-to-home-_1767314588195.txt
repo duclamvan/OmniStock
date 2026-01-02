@@ -1,0 +1,408 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+Seznam výdejních míst
+GET
+AddressWhisper
+Codelist
+Číselník pro službu kontroly věku příjemce
+GET
+Číselník produktů
+GET
+Číselník typů externích čísel
+GET
+Číselník zemí + povolení COD
+GET
+Číselník povolených měn
+GET
+Metoda pro získání poskytovaných služeb k zásilkám.
+GET
+Metoda pro získání minimálních a maximálních hodnot u služeb
+GET
+Fáze zásilky
+GET
+Statusy zásilky /shipment
+GET
+Chybové hlášení
+GET
+Typy osobních dokladů
+GET
+Customer
+Data
+data
+GET
+Info
+info
+GET
+Order
+Získání informace o objednávce přepravy
+GET
+OrderBatch
+Slouží k vytvoření objednávky. Odpověď je v header (Location)
+POST
+Získaní stavu objednávky
+GET
+OrderEvent
+Zrušení objednání svozu nebo balíku z libovolné adresy
+POST
+Slouží k získání informací (trackingu) k zásilce
+GET
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+storno zásilky
+POST
+úprava kontaktu
+POST
+VersionInformation
+AccessPoint
+Seznam výdejních míst
+GET
+/accessPoint
+Maintainer:
+Not configured
+Význam a použití
+Metoda accessPoint slouží k získání seznamu výdejních míst, tzv. Access Pointů a to v případě, že nechce zákazník využívat hotový mapový widget PPL
+Pomocí této metody je možné získat následující typy výdejních míst, kam lze zásilky doručit, případně odkud je lze odeslat:
+ParcelShopy
+ParcelBoxy
+AlzaBoxy
+Používá se především k:
+Zobrazení nabídky výdejních míst pro zákazníky, pomocí vlastních mapových podkladů
+Například v e-shopu, kde si zákazník může vybrat, na kterou pobočku (Access Point) chce zásilku doručit.
+Response totiž obsahuje mimo jiné GPS souřadnice, otevírací dobu a další potřebné informace ke každému výdejnímu místu.
+Důležitou položkou je jedinečný identifikátor AccessPointCode, který se následně používá při vytváření štítků na vybrané výdejní místo.
+Automatizované zpracování objednávek
+Při tvorbě zásilky v ERP systému, nebo jiném e-commerce řešení je potřeba systémově vybrat vhodné nebo nejbližší výdejní místo na základě údajů o zákazníkovi (PSČ, adresa apod.).
+Typy výdejních míst - accessPointTypes
+Typy výdejních míst jsou vraceny v odpovědi na volání metody GET accessPoint. Zadáním jejich kódu do query parametru requestu accessPoint lze vyfiltrovat požadovaná výdejní místa.
+Název	Kód
+ParcelShop	ParcelShop
+ParcelBox	ParcelBox
+AlzaBox	AlzaBox
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Query Params
+Name
+Type
+Required
+Description
+AccessPointCode
+string 
+Kód Výdejního místa
+CountryCode
+string 
+Kód země viz. /codelist/country
+Pokud chcete zobrazit access pointy pro jinou zemi než je ČR je nutné zadat countryCode, jinak se vám zobrazí access pointy pro ČR.
+ZipCode
+string 
+PSČ
+City
+string 
+Město
+AccessPointTypes
+array[string]
+Typ výdejního místa
+Allowed values:
+None
+ParcelShop
+ParcelBox
+AlzaBox
+Radius
+integer <int32>
+Rádius (km)
+Latitude
+number <double>
+GPS souřanice
+Longitude
+number <double>
+GPS souřanice
+TribalServicePoint
+boolean 
+Kmenové výdejní místo
+ActiveCardPayment
+boolean 
+Možnost platby kartou
+ActiveCashPayment
+boolean 
+Možnost platby v hotovosti
+PickupEnabled
+boolean 
+Možnost podání zásilky
+Sizes
+array[string]
+Maximální hodnoty velikosti balíku: S,M,L,XL
+Limit
+integer <int32>
+>= 1
+<= 1000
+Offset
+integer <int32>
+>= 0
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Request Code Samples
+Responses
+🟢200
+OK
+application/json
+Success
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+X-Paging-Total-Items-Count
+string 
+optional
+Total items in result
+X-Paging-Offset
+string 
+optional
+Paging offset
+X-Paging-Limit
+string 
+optional
+Page size
+Body
+Array of:
+accessPointCode
+string  | 
+null 
+optional
+Kód Výdejního místa
+accessPointType
+enum<string> 
+(Eps.Api.MyApi2.Web.Models.AccessPoint.ConstMyApi2AccessPointType)
+optional
+Access point type
+Allowed values:
+None
+ParcelShop
+ParcelBox
+AlzaBox
+name
+string  | 
+null 
+optional
+Jméno
+name2
+string  | 
+null 
+optional
+Name2
+street
+string  | 
+null 
+optional
+Ulice
+city
+string  | 
+null 
+optional
+Město
+country
+string  | 
+null 
+optional
+Země
+zipCode
+string  | 
+null 
+optional
+PSČ
+phone
+string  | 
+null 
+optional
+Telefon
+email
+string  | 
+null 
+optional
+Email
+tribalServicePoint
+boolean 
+optional
+Tribal service point
+activeCardPayment
+boolean 
+optional
+Možnost platby kartou
+activeCashPayment
+boolean 
+optional
+Možnost platby v hotovosti
+pickupEnabled
+boolean 
+optional
+Možnost podání zásilky
+dimensionForced
+boolean 
+optional
+Omezení rozměrů
+workHours
+array [object]  | 
+null 
+optional
+Otevírací doba
+weekDay
+integer <int32>
+optional
+pracovní dny (1 - Neděle, 7 - Sobota)
+dayPart
+integer <int32>
+optional
+Části pracovního dně (0 - ráno, 1 - odpoledne)
+openFrom
+string <date-span>
+optional
+Otevřeno od
+openTo
+string <date-span>
+optional
+Otevřeno do
+accessPointNote
+string  | 
+null 
+optional
+AccessPointNote
+gps
+optional
+One of:
+
+object
+
+EmptyNullableObject
+latitude
+number <double> | 
+null 
+optional
+Zeměpisná šířka
+longitude
+number <double> | 
+null 
+optional
+Zeměpisná délka
+capacitySettings
+array [object]  | 
+null 
+optional
+Nastavení kapacity obchodu. Popisuje jaké rozměry zásilek dané výdejní místo přijímá
+size
+string  | 
+null 
+optional
+velikost: S,M,XL...
+capacity
+integer <int32> | 
+null 
+optional
+Maximální kapacita
+length
+integer <int32>
+optional
+Délka
+height
+integer <int32>
+optional
+Výška
+width
+integer <int32>
+optional
+Šířka
+Example
+[
+    {
+        "accessPointCode": "string",
+        "accessPointType": "None",
+        "name": "string",
+        "name2": "string",
+        "street": "string",
+        "city": "string",
+        "country": "string",
+        "zipCode": "string",
+        "phone": "string",
+        "email": "string",
+        "tribalServicePoint": true,
+        "activeCardPayment": true,
+        "activeCashPayment": true,
+        "pickupEnabled": true,
+        "dimensionForced": true,
+        "workHours": [
+            {
+                "weekDay": 0,
+                "dayPart": 0,
+                "openFrom": "string",
+                "openTo": "string"
+            }
+        ],
+        "accessPointNote": "string",
+        "gps": {
+            "latitude": 0,
+            "longitude": 0
+        },
+        "capacitySettings": [
+            {
+                "size": "string",
+                "capacity": 0,
+                "length": 0,
+                "height": 0,
+                "width": 0
+            }
+        ]
+    }
+]
+🟠400
+Bad Request
+🟠405
+405
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at 9 months ago
+Previous
+AccessPoint
+Next
+AddressWhisper

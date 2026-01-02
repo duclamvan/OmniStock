@@ -535,21 +535,34 @@ export async function getPPLShipmentTracking(shipmentNumber: string): Promise<an
   return pplRequest('GET', `/shipment/${shipmentNumber}`);
 }
 
-// PPL Access Point (ParcelShop/ParcelBox) types
+// PPL Access Point (ParcelShop/ParcelBox) types - matching PPL API response
+export interface PPLAccessPointWorkHour {
+  weekDay: number;
+  dayPart: number;
+  openFrom: string;
+  openTo: string;
+}
+
 export interface PPLAccessPoint {
-  code: string;
+  accessPointCode: string;
+  accessPointType: string;
   name: string;
   name2?: string;
   street: string;
   city: string;
-  zipCode: string;
   country: string;
-  gpsLat?: number;
-  gpsLon?: number;
-  accessPointType?: string; // 'PARCELSHOP' | 'PARCELBOX'
-  openingHours?: string;
+  zipCode: string;
   phone?: string;
   email?: string;
+  tribalServicePoint?: boolean;
+  activeCardPayment?: boolean;
+  activeCashPayment?: boolean;
+  pickupEnabled?: boolean;
+  gps?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  workHours?: PPLAccessPointWorkHour[];
 }
 
 export interface PPLAccessPointSearchParams {
@@ -558,6 +571,7 @@ export interface PPLAccessPointSearchParams {
   country?: string;
   limit?: number;
   offset?: number;
+  accessPointTypes?: string[];
 }
 
 /**
@@ -568,11 +582,14 @@ export async function searchPPLAccessPoints(params: PPLAccessPointSearchParams):
   const token = await getPPLAccessToken();
   
   const queryParams = new URLSearchParams();
-  if (params.city) queryParams.append('city', params.city);
-  if (params.zipCode) queryParams.append('zipCode', params.zipCode);
-  if (params.country) queryParams.append('country', params.country || 'CZ');
-  if (params.limit) queryParams.append('limit', params.limit.toString());
-  if (params.offset) queryParams.append('offset', params.offset.toString());
+  if (params.city) queryParams.append('City', params.city);
+  if (params.zipCode) queryParams.append('ZipCode', params.zipCode);
+  queryParams.append('CountryCode', params.country || 'CZ');
+  queryParams.append('Limit', (params.limit || 1000).toString());
+  if (params.offset) queryParams.append('Offset', params.offset.toString());
+  if (params.accessPointTypes && params.accessPointTypes.length > 0) {
+    params.accessPointTypes.forEach(type => queryParams.append('AccessPointTypes', type));
+  }
   
   try {
     const response = await axios.get(
@@ -586,23 +603,29 @@ export async function searchPPLAccessPoints(params: PPLAccessPointSearchParams):
       }
     );
     
-    // Map response to our interface
+    // Return the raw API response directly (it's already in the correct format)
     const accessPoints = Array.isArray(response.data) ? response.data : (response.data?.items || []);
     
     return accessPoints.map((ap: any) => ({
-      code: ap.code || ap.accessPointCode,
-      name: ap.name || ap.accessPointName,
+      accessPointCode: ap.accessPointCode || ap.code,
+      accessPointType: ap.accessPointType || 'ParcelShop',
+      name: ap.name || '',
       name2: ap.name2,
-      street: ap.street || ap.address?.street,
-      city: ap.city || ap.address?.city,
-      zipCode: ap.zipCode || ap.address?.zipCode,
-      country: ap.country || ap.address?.country || 'CZ',
-      gpsLat: ap.gpsLat || ap.gps?.lat,
-      gpsLon: ap.gpsLon || ap.gps?.lon,
-      accessPointType: ap.accessPointType || ap.type,
-      openingHours: ap.openingHours,
+      street: ap.street || '',
+      city: ap.city || '',
+      country: ap.country || 'CZ',
+      zipCode: ap.zipCode || '',
       phone: ap.phone,
-      email: ap.email
+      email: ap.email,
+      tribalServicePoint: ap.tribalServicePoint,
+      activeCardPayment: ap.activeCardPayment,
+      activeCashPayment: ap.activeCashPayment,
+      pickupEnabled: ap.pickupEnabled,
+      gps: ap.gps ? {
+        latitude: ap.gps.latitude,
+        longitude: ap.gps.longitude
+      } : undefined,
+      workHours: ap.workHours
     }));
   } catch (error: any) {
     console.error('Failed to search PPL access points:', error.response?.data || error.message);
