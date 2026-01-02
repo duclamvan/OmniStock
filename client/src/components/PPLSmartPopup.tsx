@@ -214,6 +214,9 @@ export function PPLSmartPopup({
             id="ppl-parcelshop-map" 
             className="w-full h-full"
             style={{ minHeight: '500px' }}
+            data-address={[customerAddress, customerCity, customerZipCode].filter(Boolean).join(', ') || undefined}
+            data-country="cz"
+            data-language="cs"
           />
         </div>
 
