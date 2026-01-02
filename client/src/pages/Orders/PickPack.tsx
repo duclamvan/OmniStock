@@ -1525,10 +1525,11 @@ interface PickingListViewProps {
   onToggleFullPick: (item: OrderItem) => void;
 }
 
-// Interface for SKU-grouped display items in list view
-interface SkuGroupedItem {
-  sku: string;
-  items: OrderItem[];
+// Interface for Product-grouped display items in list view (group by parent product with variants)
+interface ProductGroupedItem {
+  productId: string;
+  productName: string; // Parent product name (stripped of variant suffix)
+  items: OrderItem[]; // All variants/items for this product
   firstItem: OrderItem;
   totalQuantity: number;
   pickedQuantity: number;
@@ -1536,7 +1537,17 @@ interface SkuGroupedItem {
   isPartial: boolean;
   hasCurrent: boolean;
   hasRecentlyScanned: boolean;
-  firstItemIndex: number; // For navigation
+  firstItemIndex: number;
+  // Variant info
+  variantCount: number;
+  colorNumbers: (string | null)[]; // All color numbers for range display
+  firstColorNumber: string | null;
+  lastColorNumber: string | null;
+}
+
+// Helper to extract parent product name (strip color/variant suffix)
+function getParentProductName(productName: string): string {
+  return productName.replace(/\s*-\s*(Color|Colour|Màu)\s*\d+.*$/i, '').trim();
 }
 
 function PickingListView({ 
@@ -1550,15 +1561,16 @@ function PickingListView({
   const { t } = useTranslation('orders');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
-  // Group items by SKU for merged display (same as right sidebar)
-  const skuGroups = useMemo(() => {
-    const groups = new Map<string, SkuGroupedItem>();
+  // Group items by productId for parent product display with variant dropdown
+  const productGroups = useMemo(() => {
+    const groups = new Map<string, ProductGroupedItem>();
     
     order.items.forEach((item, index) => {
-      const skuKey = item.sku || item.id;
+      // Use productId as grouping key, fallback to stripped product name
+      const groupKey = item.productId || getParentProductName(item.productName);
       
-      if (groups.has(skuKey)) {
-        const group = groups.get(skuKey)!;
+      if (groups.has(groupKey)) {
+        const group = groups.get(groupKey)!;
         group.items.push(item);
         group.totalQuantity += item.quantity;
         group.pickedQuantity += item.pickedQuantity;
@@ -1566,9 +1578,14 @@ function PickingListView({
         group.isPartial = group.pickedQuantity > 0 && group.pickedQuantity < group.totalQuantity;
         group.hasCurrent = group.hasCurrent || currentItem?.id === item.id;
         group.hasRecentlyScanned = group.hasRecentlyScanned || recentlyScannedItemId === item.id;
+        group.variantCount += 1;
+        if (item.colorNumber) {
+          group.colorNumbers.push(item.colorNumber);
+        }
       } else {
-        groups.set(skuKey, {
-          sku: skuKey,
+        groups.set(groupKey, {
+          productId: groupKey,
+          productName: getParentProductName(item.productName),
           items: [item],
           firstItem: item,
           totalQuantity: item.quantity,
@@ -1577,29 +1594,47 @@ function PickingListView({
           isPartial: item.pickedQuantity > 0 && item.pickedQuantity < item.quantity,
           hasCurrent: currentItem?.id === item.id,
           hasRecentlyScanned: recentlyScannedItemId === item.id,
-          firstItemIndex: index
+          firstItemIndex: index,
+          variantCount: 1,
+          colorNumbers: item.colorNumber ? [item.colorNumber] : [],
+          firstColorNumber: null,
+          lastColorNumber: null
         });
+      }
+    });
+    
+    // Calculate first/last color numbers for each group
+    groups.forEach(group => {
+      const sortedColors = group.colorNumbers
+        .filter(Boolean)
+        .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
+        .filter(c => !isNaN(c.numeric))
+        .sort((a, b) => a.numeric - b.numeric);
+      
+      if (sortedColors.length > 0) {
+        group.firstColorNumber = sortedColors[0].original;
+        group.lastColorNumber = sortedColors[sortedColors.length - 1].original;
       }
     });
     
     return Array.from(groups.values());
   }, [order.items, currentItem?.id, recentlyScannedItemId]);
   
-  // Toggle expand/collapse for a SKU group
-  const toggleGroup = (sku: string) => {
+  // Toggle expand/collapse for a product group
+  const toggleGroup = (productId: string) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(sku)) {
-        newSet.delete(sku);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
       } else {
-        newSet.add(sku);
+        newSet.add(productId);
       }
       return newSet;
     });
   };
   
-  // Handle click on a SKU group - toggle expand for multi-item, toggle pick for single-item
-  const handleGroupClick = (group: SkuGroupedItem) => {
+  // Handle click on a product group - toggle expand for multi-variant, toggle pick for single-item
+  const handleGroupClick = (group: ProductGroupedItem) => {
     if (group.items.length === 1) {
       // Single-item groups: toggle the pick directly
       const targetItem = group.firstItem;
@@ -1609,13 +1644,13 @@ function PickingListView({
         onItemClick(targetIndex);
       }
     } else {
-      // Multi-item groups: toggle expand/collapse
-      toggleGroup(group.sku);
+      // Multi-variant groups: toggle expand/collapse
+      toggleGroup(group.productId);
     }
   };
   
-  // Handle picking all items in a group
-  const handlePickAllInGroup = (group: SkuGroupedItem, e: React.MouseEvent) => {
+  // Handle picking all items in a product group
+  const handlePickAllInGroup = (group: ProductGroupedItem, e: React.MouseEvent) => {
     e.stopPropagation();
     group.items.forEach(item => {
       if (item.pickedQuantity < item.quantity) {
@@ -1635,7 +1670,7 @@ function PickingListView({
           </h3>
           <div className="flex items-center gap-2">
             <Badge className="bg-purple-600 dark:bg-purple-700 text-white font-bold text-xs px-2 py-0.5">
-              {skuGroups.length} SKUs
+              {productGroups.length} {t('products') || 'products'}
             </Badge>
             <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
               {order.pickedItems} / {order.totalItems}
@@ -1657,20 +1692,20 @@ function PickingListView({
       <div className="flex items-center gap-3 py-2">
         <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          {t('itemsToPick') || 'Items to Pick'} ({t('groupedBySku') || 'Grouped by SKU'})
+          {t('itemsToPick') || 'Items to Pick'} ({t('groupedByProduct') || 'Grouped by Product'})
         </span>
         <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
       </div>
 
-      {/* SKU-Grouped Checklist */}
+      {/* Product-Grouped Checklist */}
       <div className="space-y-2">
-        {skuGroups.map((group, groupIndex) => {
-          const { firstItem, totalQuantity, pickedQuantity, allPicked, isPartial, hasCurrent, hasRecentlyScanned, items } = group;
-          const isMultiItem = items.length > 1;
+        {productGroups.map((group, groupIndex) => {
+          const { productName, firstItem, totalQuantity, pickedQuantity, allPicked, isPartial, hasCurrent, hasRecentlyScanned, items, variantCount, firstColorNumber, lastColorNumber } = group;
+          const isMultiVariant = variantCount > 1;
           
           // Check if next group is in the same aisle (for route optimization indicator)
           const currentAisle = extractAisle(firstItem.warehouseLocation);
-          const nextGroup = skuGroups[groupIndex + 1];
+          const nextGroup = productGroups[groupIndex + 1];
           const nextAisle = nextGroup ? extractAisle(nextGroup.firstItem.warehouseLocation) : null;
           const isSameAisleAsNext = currentAisle && nextAisle && currentAisle === nextAisle;
           
@@ -1690,7 +1725,7 @@ function PickingListView({
           
           return (
             <div
-              key={group.sku}
+              key={group.productId}
               role="button"
               tabIndex={0}
               className={`
@@ -1728,7 +1763,7 @@ function PickingListView({
                     {firstItem.image ? (
                       <img 
                         src={firstItem.image} 
-                        alt={firstItem.productName}
+                        alt={productName}
                         className={`w-full h-full object-cover ${allPicked ? 'opacity-60' : ''}`}
                       />
                     ) : (
@@ -1750,26 +1785,33 @@ function PickingListView({
                   )}
                 </div>
                 
-                {/* Product Name + Location (stacked under title) */}
+                {/* Product Name + Color Range + Location */}
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold text-base sm:text-lg leading-snug line-clamp-2 ${
                     allPicked 
                       ? 'text-green-700 dark:text-green-300 line-through' 
                       : 'text-gray-900 dark:text-gray-100'
                   }`}>
-                    {firstItem.productName}
+                    {productName}
                   </p>
-                  {firstItem.colorNumber && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                      #{firstItem.colorNumber}
-                    </span>
-                  )}
-                  {/* Multi-item indicator */}
-                  {isMultiItem && (
-                    <Badge className="ml-2 text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
-                      {items.length} {t('lines') || 'lines'}
-                    </Badge>
-                  )}
+                  {/* Color range for quick recognition - shows first and last */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isMultiVariant && firstColorNumber && lastColorNumber ? (
+                      <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                        #{firstColorNumber} → #{lastColorNumber}
+                      </span>
+                    ) : firstItem.colorNumber && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                        #{firstItem.colorNumber}
+                      </span>
+                    )}
+                    {/* Multi-variant indicator */}
+                    {isMultiVariant && (
+                      <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                        {variantCount} {t('variants') || 'variants'}
+                      </Badge>
+                    )}
+                  </div>
                   {/* Warehouse Location - Under Product Title */}
                   <div className="mt-1.5 flex items-center gap-1.5">
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold ${
@@ -1805,10 +1847,10 @@ function PickingListView({
                   >
                     {isPartial ? `${pickedQuantity}/` : '×'}{totalQuantity}
                   </Badge>
-                  {/* Expand/Collapse Arrow for multi-item groups */}
-                  {isMultiItem && (
+                  {/* Expand/Collapse Arrow for multi-variant groups */}
+                  {isMultiVariant && (
                     <div className="text-gray-400">
-                      {expandedGroups.has(group.sku) ? (
+                      {expandedGroups.has(group.productId) ? (
                         <ChevronUp className="h-5 w-5" />
                       ) : (
                         <ChevronDown className="h-5 w-5" />
@@ -1818,10 +1860,10 @@ function PickingListView({
                 </div>
               </div>
               
-              {/* Row 2: SKU and Carton Badge + Pick All button for multi-item groups */}
+              {/* Row 2: SKU info + Pick All button for multi-variant groups */}
               <div className="mt-1.5 ml-[76px] sm:ml-[92px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-                  <span className="font-mono">{group.sku}</span>
+                  <span className="font-mono">{firstItem.sku}</span>
                   {/* Carton/Bulk Unit Badge */}
                   {firstItem.bulkUnitQty && totalQuantity >= firstItem.bulkUnitQty && (
                     <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
@@ -1835,8 +1877,8 @@ function PickingListView({
                     </span>
                   )}
                 </div>
-                {/* Pick All button for multi-item groups */}
-                {isMultiItem && !allPicked && (
+                {/* Pick All button for multi-variant groups */}
+                {isMultiVariant && !allPicked && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1849,8 +1891,8 @@ function PickingListView({
                 )}
               </div>
               
-              {/* Expanded Item List for multi-item groups */}
-              {isMultiItem && expandedGroups.has(group.sku) && (
+              {/* Expanded Variant List for multi-variant groups */}
+              {isMultiVariant && expandedGroups.has(group.productId) && (
                 <div className="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
                   <div className="space-y-1">
                     {items.map((item, idx) => {
@@ -1870,27 +1912,32 @@ function PickingListView({
                             p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Toggle only THIS specific item
+                            // Toggle only THIS specific variant
                             onToggleFullPick(item);
                             if (originalIndex >= 0) onItemClick(originalIndex);
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            {/* Line number */}
-                            <div className={`w-6 h-6 flex-shrink-0 rounded flex items-center justify-center font-bold text-xs ${
+                            {/* Color number badge */}
+                            <div className={`w-8 h-6 flex-shrink-0 rounded flex items-center justify-center font-bold text-xs ${
                               itemIsPicked ? 'bg-green-500 text-white' : 
                               itemIsPartial ? 'bg-yellow-500 text-white' : 
-                              'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
                             }`}>
-                              {idx + 1}
+                              {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
                             
-                            {/* Item details */}
+                            {/* Variant details - SKU + quantity */}
                             <div className="flex-1 min-w-0">
-                              <span className={`text-sm ${itemIsPicked ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {t('line') || 'Line'} {idx + 1}: {item.quantity}x
+                              <span className={`text-sm font-mono ${itemIsPicked ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {item.sku}
                               </span>
                             </div>
+                            
+                            {/* Quantity */}
+                            <span className={`text-sm font-medium ${itemIsPicked ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                              {item.quantity}x
+                            </span>
                             
                             {/* Status */}
                             <Badge className={`text-xs font-bold px-1.5 py-0 ${
@@ -2124,9 +2171,10 @@ function mergeItemsBySku(items: OrderItem[], originalIndices: number[]): { merge
   return { mergedItems, mergedIndices };
 }
 
-// SKU Group interface for GroupedPickingListView (matches sidebar behavior)
-interface SkuGroup {
-  sku: string;
+// Product Group interface for GroupedPickingListView (groups by parent product with variants)
+interface ProductGroupForGrouped {
+  productId: string;
+  productName: string;
   items: OrderItem[];
   firstItem: OrderItem;
   totalQuantity: number;
@@ -2136,6 +2184,9 @@ interface SkuGroup {
   hasCurrent: boolean;
   hasRecentlyScanned: boolean;
   originalIndices: number[];
+  variantCount: number;
+  firstColorNumber: string | null;
+  lastColorNumber: string | null;
 }
 
 function GroupedPickingListView({ 
@@ -2149,15 +2200,15 @@ function GroupedPickingListView({
   const { t } = useTranslation('orders');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
-  // Group items by SKU directly (same as right sidebar) for consistent display
-  const skuGroups = useMemo(() => {
-    const groups = new Map<string, SkuGroup>();
+  // Group items by productId for parent product display with variants
+  const productGroups = useMemo(() => {
+    const groups = new Map<string, ProductGroupForGrouped>();
     
     order.items.forEach((item, index) => {
-      const skuKey = item.sku || item.id;
+      const groupKey = item.productId || getParentProductName(item.productName);
       
-      if (groups.has(skuKey)) {
-        const group = groups.get(skuKey)!;
+      if (groups.has(groupKey)) {
+        const group = groups.get(groupKey)!;
         group.items.push(item);
         group.totalQuantity += item.quantity;
         group.pickedQuantity += item.pickedQuantity;
@@ -2166,9 +2217,11 @@ function GroupedPickingListView({
         group.hasCurrent = group.hasCurrent || currentItem?.id === item.id;
         group.hasRecentlyScanned = group.hasRecentlyScanned || recentlyScannedItemId === item.id;
         group.originalIndices.push(index);
+        group.variantCount += 1;
       } else {
-        groups.set(skuKey, {
-          sku: skuKey,
+        groups.set(groupKey, {
+          productId: groupKey,
+          productName: getParentProductName(item.productName),
           items: [item],
           firstItem: item,
           totalQuantity: item.quantity,
@@ -2177,28 +2230,45 @@ function GroupedPickingListView({
           isPartial: item.pickedQuantity > 0 && item.pickedQuantity < item.quantity,
           hasCurrent: currentItem?.id === item.id,
           hasRecentlyScanned: recentlyScannedItemId === item.id,
-          originalIndices: [index]
+          originalIndices: [index],
+          variantCount: 1,
+          firstColorNumber: null,
+          lastColorNumber: null
         });
+      }
+    });
+    
+    // Calculate first/last color numbers
+    groups.forEach(group => {
+      const colorNumbers = group.items
+        .map(i => i.colorNumber)
+        .filter(Boolean)
+        .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
+        .filter(c => !isNaN(c.numeric))
+        .sort((a, b) => a.numeric - b.numeric);
+      
+      if (colorNumbers.length > 0) {
+        group.firstColorNumber = colorNumbers[0].original;
+        group.lastColorNumber = colorNumbers[colorNumbers.length - 1].original;
       }
     });
     
     return Array.from(groups.values());
   }, [order.items, currentItem?.id, recentlyScannedItemId]);
   
-  const toggleGroup = (sku: string) => {
+  const toggleGroup = (productId: string) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(sku)) {
-        newSet.delete(sku);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
       } else {
-        newSet.add(sku);
+        newSet.add(productId);
       }
       return newSet;
     });
   };
   
-  const pickAllInGroup = (group: SkuGroup) => {
-    // Pick all items in the SKU group
+  const pickAllInGroup = (group: ProductGroupForGrouped) => {
     group.items.forEach(item => {
       if (item.pickedQuantity < item.quantity) {
         onUpdatePickedItem(item.id, item.quantity);
@@ -2217,7 +2287,7 @@ function GroupedPickingListView({
           </h3>
           <div className="flex items-center gap-2">
             <Badge className="bg-purple-600 dark:bg-purple-700 text-white font-bold text-xs px-2 py-0.5">
-              {skuGroups.length} SKUs
+              {productGroups.length} {t('products') || 'products'}
             </Badge>
             <Badge className="bg-blue-600 dark:bg-blue-700 text-white font-bold text-sm sm:text-base px-2 sm:px-3 py-1">
               {order.pickedItems} / {order.totalItems}
@@ -2239,17 +2309,17 @@ function GroupedPickingListView({
       <div className="flex items-center gap-3 py-2">
         <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          {t('groupedBySku') || 'Grouped by SKU'}
+          {t('groupedByProduct') || 'Grouped by Product'}
         </span>
         <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
       </div>
 
-      {/* SKU-Grouped Cards */}
+      {/* Product-Grouped Cards */}
       <div className="space-y-3">
-        {skuGroups.map((group) => {
-          const isExpanded = expandedGroups.has(group.sku);
-          const { allPicked, isPartial, hasCurrent, hasRecentlyScanned, items, firstItem, totalQuantity, pickedQuantity } = group;
-          const isMultiItem = items.length > 1;
+        {productGroups.map((group) => {
+          const isExpanded = expandedGroups.has(group.productId);
+          const { productName, allPicked, isPartial, hasCurrent, hasRecentlyScanned, items, firstItem, totalQuantity, pickedQuantity, variantCount, firstColorNumber, lastColorNumber } = group;
+          const isMultiVariant = variantCount > 1;
           
           // Determine card styling
           let cardBg = 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700';
@@ -2264,17 +2334,17 @@ function GroupedPickingListView({
           
           return (
             <div 
-              key={group.sku}
+              key={group.productId}
               className={`${cardBg} ${currentHighlight} ${scanAnimation} border-2 rounded-xl overflow-hidden shadow-sm`}
             >
-              {/* Group Header - Clickable to expand if multiple items, otherwise toggle pick */}
+              {/* Group Header - Clickable to expand if multiple variants, otherwise toggle pick */}
               <div 
                 className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 onClick={() => {
-                  if (isMultiItem) {
-                    toggleGroup(group.sku);
+                  if (isMultiVariant) {
+                    toggleGroup(group.productId);
                   } else {
-                    // Single item - toggle pick directly
+                    // Single variant - toggle pick directly
                     onToggleFullPick(firstItem);
                     onItemClick(group.originalIndices[0]);
                   }
@@ -2290,7 +2360,7 @@ function GroupedPickingListView({
                       'border-gray-300 dark:border-gray-600'
                     }`}>
                       {firstItem.image ? (
-                        <img src={firstItem.image} alt={firstItem.productName} className={`w-full h-full object-cover ${allPicked ? 'opacity-60' : ''}`} />
+                        <img src={firstItem.image} alt={productName} className={`w-full h-full object-cover ${allPicked ? 'opacity-60' : ''}`} />
                       ) : (
                         <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                           <Package className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 dark:text-gray-500" />
@@ -2316,20 +2386,26 @@ function GroupedPickingListView({
                         <p className={`font-semibold text-base sm:text-lg leading-snug line-clamp-2 ${
                           allPicked ? 'text-green-700 dark:text-green-300 line-through' : 'text-gray-900 dark:text-gray-100'
                         }`}>
-                          {firstItem.productName}
+                          {productName}
                         </p>
                         
-                        {/* SKU */}
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">
-                          {group.sku}
-                        </p>
-                        
-                        {/* Multi-item indicator */}
-                        {isMultiItem && (
-                          <Badge className="mt-1 text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
-                            {items.length} {t('lines') || 'lines'}
-                          </Badge>
-                        )}
+                        {/* Color range for quick recognition */}
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {isMultiVariant && firstColorNumber && lastColorNumber ? (
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                              #{firstColorNumber} → #{lastColorNumber}
+                            </span>
+                          ) : firstItem.colorNumber && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                              #{firstItem.colorNumber}
+                            </span>
+                          )}
+                          {isMultiVariant && (
+                            <Badge className="text-[10px] px-1.5 py-0 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600">
+                              {variantCount} {t('variants') || 'variants'}
+                            </Badge>
+                          )}
+                        </div>
                         
                         {/* Location */}
                         <div className="mt-1.5 flex items-center gap-1.5">
@@ -2365,8 +2441,8 @@ function GroupedPickingListView({
                     </div>
                   </div>
                   
-                  {/* Expand/Collapse Arrow - only for multi-item groups */}
-                  {isMultiItem && (
+                  {/* Expand/Collapse Arrow - only for multi-variant groups */}
+                  {isMultiVariant && (
                     <div className="flex-shrink-0 mt-2">
                       {isExpanded ? (
                         <ChevronUp className="h-5 w-5 text-gray-400" />
@@ -2378,8 +2454,8 @@ function GroupedPickingListView({
                 </div>
               </div>
               
-              {/* Expanded Item List - only for multi-item groups */}
-              {isMultiItem && isExpanded && (
+              {/* Expanded Variant List - only for multi-variant groups */}
+              {isMultiVariant && isExpanded && (
                 <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                   {/* Quick Pick All Button */}
                   {!allPicked && (
@@ -2398,7 +2474,7 @@ function GroupedPickingListView({
                     </div>
                   )}
                   
-                  {/* Individual Items List */}
+                  {/* Individual Variants List */}
                   <div className="max-h-80 overflow-y-auto">
                     {items.map((item, idx) => {
                       const originalIndex = group.originalIndices[idx];
@@ -2418,45 +2494,42 @@ function GroupedPickingListView({
                             p-2.5 border-b border-gray-200 dark:border-gray-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Toggle only THIS specific item, not all items in group
+                            // Toggle only THIS specific variant
                             onToggleFullPick(item);
                             onItemClick(originalIndex);
                           }}
                         >
                           <div className="flex items-center gap-3">
-                            {/* Index/Line number */}
-                            <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${
+                            {/* Color number badge */}
+                            <div className={`w-10 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-xs ${
                               isPicked ? 'bg-green-500 text-white' : 
                               itemIsPartial ? 'bg-yellow-500 text-white' : 
-                              'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
                             }`}>
-                              {idx + 1}
+                              {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
                             
-                            {/* Item details */}
+                            {/* Variant details - SKU */}
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                {t('line') || 'Line'} {idx + 1}: {item.quantity}x
+                              <p className={`text-sm font-mono ${isPicked ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {item.sku}
                               </p>
-                              {item.warehouseLocation && (
-                                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                                  <MapPin className="h-3 w-3" />
-                                  {item.warehouseLocation}
-                                </div>
-                              )}
                             </div>
                             
-                            {/* Quantity & Status */}
-                            <div className="flex-shrink-0 flex items-center gap-2">
-                              <Badge className={`text-xs font-bold px-2 py-0.5 ${
-                                isPicked ? 'bg-green-600 text-white' : 
-                                itemIsPartial ? 'bg-yellow-500 text-white' : 
-                                'bg-gray-600 text-white'
-                              }`}>
-                                {item.pickedQuantity}/{item.quantity}
-                              </Badge>
-                              {isPicked && <Check className="h-5 w-5 text-green-500" strokeWidth={3} />}
-                            </div>
+                            {/* Quantity */}
+                            <span className={`text-sm font-medium ${isPicked ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                              {item.quantity}x
+                            </span>
+                            
+                            {/* Status */}
+                            <Badge className={`text-xs font-bold px-2 py-0.5 ${
+                              isPicked ? 'bg-green-600 text-white' : 
+                              itemIsPartial ? 'bg-yellow-500 text-white' : 
+                              'bg-gray-600 text-white'
+                            }`}>
+                              {item.pickedQuantity}/{item.quantity}
+                            </Badge>
+                            {isPicked && <Check className="h-5 w-5 text-green-500" strokeWidth={3} />}
                           </div>
                         </div>
                       );
