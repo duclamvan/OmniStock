@@ -15182,6 +15182,7 @@ export default function PickPack() {
     
     // STEP 1: First merge ALL items with same SKU across entire order (before grouping by productId)
     // This ensures items like 5x + 1x of same SKU get combined regardless of their productId
+    // EXCEPTION: Items with notes are kept separate (they may have special instructions)
     const globalSkuMergeMap = new Map<string, { 
       mergedItem: typeof activePickingOrder.items[0]; 
       originalIds: string[];
@@ -15189,12 +15190,17 @@ export default function PickPack() {
       pickedQty: number;
     }>();
     const serviceItems: typeof activePickingOrder.items = [];
+    // Items with notes are kept separate, not merged
+    const itemsWithNotes: typeof activePickingOrder.items = [];
     
     activePickingOrder.items.forEach(item => {
       if (item.serviceId) {
         serviceItems.push(item);
+      } else if (item.notes && item.notes.trim()) {
+        // Items with notes are kept separate - don't merge them
+        itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as typeof item);
       } else {
-        // Use SKU as the global merge key
+        // Use SKU as the global merge key for items without notes
         const mergeKey = item.sku || item.id;
         if (globalSkuMergeMap.has(mergeKey)) {
           const existing = globalSkuMergeMap.get(mergeKey)!;
@@ -15219,8 +15225,11 @@ export default function PickPack() {
       }
     });
     
-    // Get all merged product items
-    const allMergedItems = Array.from(globalSkuMergeMap.values()).map(v => v.mergedItem);
+    // Get all merged product items + items with notes (kept separate)
+    const allMergedItems = [
+      ...Array.from(globalSkuMergeMap.values()).map(v => v.mergedItem),
+      ...itemsWithNotes
+    ];
     
     // STEP 2: Now group merged items by productId for display
     const productGroupMap = new Map<string, typeof allMergedItems>();
