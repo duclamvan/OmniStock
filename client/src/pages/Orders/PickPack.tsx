@@ -2512,7 +2512,7 @@ function GroupedPickingListView({
                             {/* Variant details - Name + SKU */}
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                {item.productName}
+                                {item.variantName || item.productName}
                               </p>
                               <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded inline-block mt-0.5">{item.sku}</span>
                             </div>
