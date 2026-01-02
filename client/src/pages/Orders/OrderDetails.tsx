@@ -1117,10 +1117,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         {isExpanded && group.variants.map((variantItem: any, variantIndex: number) => {
                           const variantUnitPrice = parseFloat(variantItem.unitPrice) || parseFloat(variantItem.price) || 0;
                           const variantTotal = variantUnitPrice * (variantItem.quantity || 1) - (parseFloat(variantItem.discount) || 0);
+                          const isLastVariant = variantIndex === group.variants.length - 1;
                           return (
                             <div 
                               key={variantItem.id || variantIndex} 
-                              className="px-3 sm:px-6 py-2 sm:py-3 bg-slate-50/50 dark:bg-slate-900/30 border-l-4 border-l-blue-400 dark:border-l-blue-600"
+                              className={`px-3 sm:px-6 py-2 sm:py-3 bg-slate-50/50 dark:bg-slate-900/30 border-l-4 ${isLastVariant ? 'border-l-blue-600 dark:border-l-blue-500 border-b-2 border-b-blue-300 dark:border-b-blue-700' : 'border-l-blue-400 dark:border-l-blue-600'}`}
                             >
                               <div className="flex items-center justify-between gap-3 pl-4">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">

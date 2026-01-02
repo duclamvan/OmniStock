@@ -6104,12 +6104,14 @@ export default function AddOrder() {
                                   </TableCell>
                                 </TableRow>
                                 {/* Expanded Variant Rows */}
-                                {isExpanded && group.variants.map((item, variantIndex) => (
+                                {isExpanded && group.variants.map((item, variantIndex) => {
+                                  const isLastVariant = variantIndex === group.variants.length - 1;
+                                  return (
                                   <Fragment key={item.id}>
                                     <TableRow 
                                       className={`${item.isFreeItem 
                                         ? 'bg-green-50 dark:bg-green-950/30' 
-                                        : 'bg-slate-50/50 dark:bg-slate-900/30'} border-l-4 border-l-blue-400 dark:border-l-blue-600`}
+                                        : 'bg-slate-50/50 dark:bg-slate-900/30'} border-l-4 ${isLastVariant ? 'border-l-blue-600 dark:border-l-blue-500 border-b-2 border-b-blue-300 dark:border-b-blue-700' : 'border-l-blue-400 dark:border-l-blue-600'}`}
                                       data-testid={`order-item-${item.id}`}
                                     >
                                       <TableCell className="py-2 pl-8">
@@ -6197,7 +6199,8 @@ export default function AddOrder() {
                                       </TableCell>
                                     </TableRow>
                                   </Fragment>
-                                ))}
+                                  );
+                                })}
                               </Fragment>
                             );
                           }
