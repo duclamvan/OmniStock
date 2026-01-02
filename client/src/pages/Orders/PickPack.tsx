@@ -16379,7 +16379,7 @@ export default function PickPack() {
             })()}
             
             <div className="space-y-2 xl:space-y-3">
-              {/* Group items by productId and show parent product with variant count */}
+              {/* Group items by productId (parent product) and show variant count with color range */}
               {(() => {
                 const productItems = activePickingOrder.items.filter(item => !item.serviceId);
                 const serviceItems = activePickingOrder.items.filter(item => item.serviceId);
@@ -16387,18 +16387,17 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Group product items by SKU to merge same-SKU items for display
-                // This ensures items with same SKU show combined quantities
-                const skuGroups = new Map<string, typeof productItems>();
+                // Group product items by productId (parent product) for consistent grouping
+                const productGroups = new Map<string, typeof productItems>();
                 productItems.forEach(item => {
-                  const skuKey = item.sku || item.id;
-                  if (!skuGroups.has(skuKey)) {
-                    skuGroups.set(skuKey, []);
+                  const groupKey = item.productId || getParentProductName(item.productName);
+                  if (!productGroups.has(groupKey)) {
+                    productGroups.set(groupKey, []);
                   }
-                  skuGroups.get(skuKey)!.push(item);
+                  productGroups.get(groupKey)!.push(item);
                 });
                 
-                // Convert to display groups with merged SKU quantities
+                // Convert to display groups with merged quantities and color range
                 const displayGroups: Array<{
                   type: 'product' | 'service';
                   items: typeof productItems;
@@ -16409,14 +16408,29 @@ export default function PickPack() {
                   variantCount: number;
                   allPicked: boolean;
                   hasCurrent: boolean;
+                  firstColorNumber: string | null;
+                  lastColorNumber: string | null;
                 }> = [];
                 
-                skuGroups.forEach((items, sku) => {
-                  // Calculate merged totals for all items with same SKU
+                productGroups.forEach((items, productId) => {
+                  // Calculate merged totals for all items with same productId
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
                   const pickedQty = items.reduce((sum, item) => sum + item.pickedQuantity, 0);
                   
-                  const parentName = items[0].productName.replace(/\s*-\s*(Color|Colour)\s*\d+.*$/i, '').trim();
+                  // Get parent product name
+                  const parentName = getParentProductName(items[0].productName);
+                  
+                  // Calculate color range for multi-variant products
+                  const colorNumbers = items
+                    .map(i => i.colorNumber)
+                    .filter(Boolean)
+                    .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
+                    .filter(c => !isNaN(c.numeric))
+                    .sort((a, b) => a.numeric - b.numeric);
+                  
+                  const firstColorNumber = colorNumbers.length > 0 ? colorNumbers[0].original : null;
+                  const lastColorNumber = colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null;
+                  
                   displayGroups.push({
                     type: 'product',
                     items,
@@ -16426,7 +16440,9 @@ export default function PickPack() {
                     pickedQty,
                     variantCount: items.length,
                     allPicked: pickedQty >= totalQty,
-                    hasCurrent: items.some(i => currentItem?.id === i.id)
+                    hasCurrent: items.some(i => currentItem?.id === i.id),
+                    firstColorNumber,
+                    lastColorNumber
                   });
                 });
                 
@@ -16443,7 +16459,9 @@ export default function PickPack() {
                     pickedQty: servicePickedQty,
                     variantCount: serviceItems.length,
                     allPicked: servicePickedQty >= serviceTotalQty,
-                    hasCurrent: anyServiceCurrent
+                    hasCurrent: anyServiceCurrent,
+                    firstColorNumber: null,
+                    lastColorNumber: null
                   });
                 }
                 
@@ -16506,23 +16524,39 @@ export default function PickPack() {
                                 }`}>
                                   {group.parentName}
                                 </p>
+                                {/* Color range and variant count for multi-variant products */}
                                 {isMultiVariant && (
-                                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5">
-                                    {group.variantCount} {t('variants')}
-                                  </p>
-                                )}
-                                {!isMultiVariant && (
-                                  <p className="text-xs text-gray-500 mt-0.5">SKU: {group.firstItem.sku}</p>
-                                )}
-                                <div className="flex items-center justify-between mt-2">
-                                  {!isMultiVariant && (
-                                    <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
-                                      isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                    }`}>
-                                      📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
+                                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                    {group.firstColorNumber && group.lastColorNumber && (
+                                      <span className="text-[10px] xl:text-xs text-purple-600 dark:text-purple-400 font-mono font-medium">
+                                        #{group.firstColorNumber} → #{group.lastColorNumber}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] xl:text-xs px-1.5 py-0 rounded bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-medium">
+                                      {group.variantCount} {t('variants')}
                                     </span>
-                                  )}
-                                  <span className={`text-xs xl:text-sm font-bold ${isMultiVariant ? 'ml-auto' : ''} ${
+                                  </div>
+                                )}
+                                {/* Single variant - show SKU and color number */}
+                                {!isMultiVariant && (
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    {group.firstItem.colorNumber && (
+                                      <span className="text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                        #{group.firstItem.colorNumber}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] xl:text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
+                                      {group.firstItem.sku}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <span className={`text-[10px] xl:text-xs font-mono px-1 xl:px-1.5 py-0.5 rounded font-bold ${
+                                    isCurrent ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                  }`}>
+                                    📍 <ItemPrimaryLocation productId={group.firstItem.productId} variantId={group.firstItem.variantId} variantLocationCode={group.firstItem.variantLocationCode} fallbackLocation={group.firstItem.warehouseLocation} />
+                                  </span>
+                                  <span className={`text-xs xl:text-sm font-bold ${
                                     isPicked ? 'text-green-600 dark:text-green-300' : 
                                     isCurrent ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
                                   }`}>
