@@ -15180,14 +15180,50 @@ export default function PickPack() {
       }
     });
     
-    // Convert product groups
+    // Convert product groups - merge items with same SKU within each group
     productGroupMap.forEach((items, groupId) => {
-      const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
-      const pickedQty = items.reduce((sum, i) => sum + i.pickedQuantity, 0);
+      // Merge items with same SKU (same variant appearing multiple times as separate line items)
+      const skuMergeMap = new Map<string, { 
+        mergedItem: typeof items[0]; 
+        originalIds: string[];
+        totalQty: number;
+        pickedQty: number;
+      }>();
+      
+      items.forEach(item => {
+        const mergeKey = item.sku || item.id; // Use SKU as merge key, fallback to id if no SKU
+        if (skuMergeMap.has(mergeKey)) {
+          const existing = skuMergeMap.get(mergeKey)!;
+          existing.originalIds.push(item.id);
+          existing.totalQty += item.quantity;
+          existing.pickedQty += item.pickedQuantity;
+          // Update the merged item's quantities
+          existing.mergedItem = {
+            ...existing.mergedItem,
+            quantity: existing.totalQty,
+            pickedQuantity: existing.pickedQty,
+            // Store original IDs for picking updates
+            _mergedFromIds: existing.originalIds
+          } as typeof item;
+        } else {
+          skuMergeMap.set(mergeKey, {
+            mergedItem: { ...item, _mergedFromIds: [item.id] } as typeof item,
+            originalIds: [item.id],
+            totalQty: item.quantity,
+            pickedQty: item.pickedQuantity
+          });
+        }
+      });
+      
+      // Get merged items list
+      const mergedItems = Array.from(skuMergeMap.values()).map(v => v.mergedItem);
+      
+      const totalQty = mergedItems.reduce((sum, i) => sum + i.quantity, 0);
+      const pickedQty = mergedItems.reduce((sum, i) => sum + i.pickedQuantity, 0);
       const parentName = getParentProductName(items[0].productName);
       
-      // Calculate color range
-      const colorNumbers = items
+      // Calculate color range from merged items
+      const colorNumbers = mergedItems
         .map(i => i.colorNumber)
         .filter(Boolean)
         .map(c => ({ original: c!, numeric: parseInt(c!.replace(/\D/g, ''), 10) }))
@@ -15198,13 +15234,13 @@ export default function PickPack() {
         type: 'product',
         groupId,
         parentName,
-        items,
+        items: mergedItems,
         totalQuantity: totalQty,
         pickedQuantity: pickedQty,
         allPicked: pickedQty >= totalQty,
         firstColorNumber: colorNumbers.length > 0 ? colorNumbers[0].original : null,
         lastColorNumber: colorNumbers.length > 0 ? colorNumbers[colorNumbers.length - 1].original : null,
-        variantCount: items.length,
+        variantCount: mergedItems.length,
         image: items[0].image || null
       });
     });
@@ -15889,8 +15925,15 @@ export default function PickPack() {
                                   size="lg"
                                   className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
                                   onClick={() => {
+                                    // Collect all original IDs from merged items (services typically aren't merged, but handle consistently)
+                                    const allOriginalIds = new Set<string>();
+                                    currentGroup.items.forEach(gi => {
+                                      const mergedIds = (gi as any)._mergedFromIds || [gi.id];
+                                      mergedIds.forEach((id: string) => allOriginalIds.add(id));
+                                    });
+                                    
                                     const updatedItems = activePickingOrder.items.map(i => {
-                                      if (currentGroup.items.some(gi => gi.id === i.id)) {
+                                      if (allOriginalIds.has(i.id)) {
                                         return { ...i, pickedQuantity: i.quantity };
                                       }
                                       return i;
@@ -15965,8 +16008,15 @@ export default function PickPack() {
                                 size="lg"
                                 className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-base"
                                 onClick={() => {
+                                  // Collect all original IDs from merged items
+                                  const allOriginalIds = new Set<string>();
+                                  currentGroup.items.forEach(gi => {
+                                    const mergedIds = (gi as any)._mergedFromIds || [gi.id];
+                                    mergedIds.forEach((id: string) => allOriginalIds.add(id));
+                                  });
+                                  
                                   const updatedItems = activePickingOrder.items.map(i => {
-                                    if (currentGroup.items.some(gi => gi.id === i.id)) {
+                                    if (allOriginalIds.has(i.id)) {
                                       return { ...i, pickedQuantity: i.quantity };
                                     }
                                     return i;
@@ -16004,8 +16054,10 @@ export default function PickPack() {
                                       ${isPicked ? 'bg-green-50 dark:bg-green-900/30' : isPartial ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                     onClick={() => {
                                       if (!isPicked) {
+                                        // Handle merged items - update all original items
+                                        const mergedIds = (item as any)._mergedFromIds || [item.id];
                                         const updatedItems = activePickingOrder.items.map(i => 
-                                          i.id === item.id ? { ...i, pickedQuantity: i.quantity } : i
+                                          mergedIds.includes(i.id) ? { ...i, pickedQuantity: i.quantity } : i
                                         );
                                         setActivePickingOrder({
                                           ...activePickingOrder,
