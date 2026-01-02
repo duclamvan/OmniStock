@@ -141,7 +141,8 @@ import {
   Scale,
   Layers,
   Camera,
-  MapPinCheck
+  MapPinCheck,
+  Receipt
 } from "lucide-react";
 
 interface BundleItem {
@@ -2986,13 +2987,44 @@ function MultiLocationPicker({
   // Service items bypass stock checks
   if (isServiceItem) {
     return (
-      <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-6 text-center border-2 border-purple-300 dark:border-purple-700">
-        <p className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4">
-          {t('serviceBill', 'Service Bill')}
-        </p>
+      <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-4 border-2 border-purple-300 dark:border-purple-700">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+            {t('serviceBill', 'Service Bill')}
+          </p>
+        </div>
+        
+        {/* Service Item Details */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-purple-200 dark:border-purple-700">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 dark:text-gray-100 text-base">
+                {currentItem.productName}
+              </p>
+              {currentItem.notes && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 italic">
+                  {currentItem.notes}
+                </p>
+              )}
+              <div className="flex items-center gap-4 mt-2 text-sm">
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('quantity', 'Qty')}: <span className="font-bold text-gray-900 dark:text-gray-100">{currentItem.quantity}</span>
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('price', 'Price')}: <span className="font-bold text-purple-700 dark:text-purple-300">{currentItem.price?.toFixed(2)}</span>
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('total', 'Total')}: <span className="font-bold text-green-700 dark:text-green-300">{((currentItem.price || 0) * currentItem.quantity).toFixed(2)}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <Button 
           size="lg"
-          className="h-16 px-8 text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white"
+          className="w-full h-14 text-lg font-bold bg-purple-600 hover:bg-purple-700 text-white"
           onClick={() => {
             setPickedFromLocations({
               ...pickedFromLocations,
