@@ -18523,6 +18523,13 @@ Important:
             error: 'Pickup location code is required for PPL SMART service. Please select a pickup point first.' 
           });
         }
+        // Strip "KM" prefix from parcelShopCode if present - PPL API expects numeric code only
+        // Widget returns format like "KM12135002", but API expects "12135002"
+        const rawPickupCode = order.pickupLocationCode;
+        const cleanPickupCode = rawPickupCode.startsWith('KM') ? rawPickupCode.slice(2) : rawPickupCode;
+        console.log(`🏪 PPL SMART parcelShopCode: raw=${rawPickupCode} → clean=${cleanPickupCode}`);
+        // Store cleaned code for use below
+        (order as any)._cleanPickupLocationCode = cleanPickupCode;
       } else if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
         productType = hasCOD ? 'BUSD' : 'BUSS';
@@ -18590,7 +18597,7 @@ Important:
           // specificDelivery contains parcelShopCode for SMAR product type
           ...(isSmartShipment && order.pickupLocationCode ? { 
             specificDelivery: { 
-              parcelShopCode: order.pickupLocationCode 
+              parcelShopCode: (order as any)._cleanPickupLocationCode || order.pickupLocationCode 
             } 
           } : {}),
           // COD applied to the entire shipment set (if present)
@@ -18654,7 +18661,7 @@ Important:
           // specificDelivery contains parcelShopCode for SMAR product type
           ...(isSmartShipment && order.pickupLocationCode ? { 
             specificDelivery: { 
-              parcelShopCode: order.pickupLocationCode 
+              parcelShopCode: (order as any)._cleanPickupLocationCode || order.pickupLocationCode 
             } 
           } : {}),
           cashOnDelivery,
@@ -18721,7 +18728,7 @@ Important:
           } : {}),
           ...(isSmartShipment && order.pickupLocationCode ? {
             specificDelivery: {
-              parcelShopCode: order.pickupLocationCode
+              parcelShopCode: (order as any)._cleanPickupLocationCode || order.pickupLocationCode
             }
           } : {}),
           note: singleShipmentData.note
