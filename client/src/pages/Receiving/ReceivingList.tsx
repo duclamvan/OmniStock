@@ -6453,56 +6453,90 @@ function ShipmentReportDialog({
                             )}
                           </div>
                           
-                          {/* Locations - Collapsible */}
+                          {/* Variants with Locations - Grouped by variant */}
                           {item.locations.length > 0 && (
-                            <div className="mt-1.5">
-                              {item.locations.length <= LOCATION_PREVIEW_COUNT ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {item.locations.map((loc, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
-                                    >
-                                      {loc.locationCode}×{loc.quantity}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="flex flex-wrap gap-1">
-                                    {(expandedLocations.has(String(item.receiptItemId)) 
-                                      ? item.locations 
-                                      : item.locations.slice(0, LOCATION_PREVIEW_COUNT)
-                                    ).map((loc, idx) => (
-                                      <span 
-                                        key={idx} 
-                                        className="inline-flex items-center text-[11px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
-                                      >
-                                        {loc.locationCode}×{loc.quantity}
-                                      </span>
+                            <div className="mt-2 space-y-1">
+                              {(() => {
+                                const variantGroups = item.locations.reduce((acc: Record<string, {
+                                  variantName: string;
+                                  sku: string;
+                                  locations: Array<{locationCode: string; quantity: number}>;
+                                  totalQty: number;
+                                }>, loc: any) => {
+                                  const key = loc.variantId || loc.sku || 'default';
+                                  if (!acc[key]) {
+                                    acc[key] = {
+                                      variantName: loc.variantName || item.productName,
+                                      sku: loc.sku || item.sku || '-',
+                                      locations: [],
+                                      totalQty: 0
+                                    };
+                                  }
+                                  acc[key].locations.push({ locationCode: loc.locationCode, quantity: loc.quantity });
+                                  acc[key].totalQty += loc.quantity || 0;
+                                  return acc;
+                                }, {});
+                                
+                                const variants = Object.entries(variantGroups);
+                                const isExpanded = expandedLocations.has(String(item.receiptItemId));
+                                const displayVariants = isExpanded ? variants : variants.slice(0, 3);
+                                
+                                return (
+                                  <>
+                                    {displayVariants.map(([key, variant]) => (
+                                      <div key={key} className="bg-muted/30 rounded p-1.5">
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <span className="font-medium text-foreground truncate flex-1">
+                                            {variant.variantName}
+                                          </span>
+                                          <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+                                            {variant.sku}
+                                          </span>
+                                          <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold shrink-0">
+                                            ×{variant.totalQty}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-0.5 mt-1">
+                                          {variant.locations.slice(0, isExpanded ? undefined : 3).map((loc, idx) => (
+                                            <span 
+                                              key={idx} 
+                                              className="text-[9px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded"
+                                            >
+                                              {loc.locationCode}×{loc.quantity}
+                                            </span>
+                                          ))}
+                                          {!isExpanded && variant.locations.length > 3 && (
+                                            <span className="text-[9px] text-muted-foreground">
+                                              +{variant.locations.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
                                     ))}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleLocationExpand(String(item.receiptItemId));
-                                      }}
-                                      className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                                    >
-                                      {expandedLocations.has(String(item.receiptItemId)) ? (
-                                        <>
-                                          <ChevronUp className="h-3 w-3" />
-                                          {t('common:hide')}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ChevronDown className="h-3 w-3" />
-                                          +{item.locations.length - LOCATION_PREVIEW_COUNT} {t('more')}
-                                        </>
-                                      )}
-                                    </button>
-                                  </div>
-                                </>
-                              )}
+                                    {variants.length > 3 && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleLocationExpand(String(item.receiptItemId));
+                                        }}
+                                        className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-1.5 py-0.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                      >
+                                        {isExpanded ? (
+                                          <>
+                                            <ChevronUp className="h-3 w-3" />
+                                            {t('common:hide')}
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="h-3 w-3" />
+                                            +{variants.length - 3} {t('variants')}
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
