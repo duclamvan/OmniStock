@@ -1927,11 +1927,18 @@ function PickingListView({
                               {item.colorNumber ? `#${item.colorNumber}` : idx + 1}
                             </div>
                             
-                            {/* Variant details - SKU + quantity */}
+                            {/* Variant details - Name + Location + SKU */}
                             <div className="flex-1 min-w-0">
-                              <span className={`text-sm font-mono ${itemIsPicked ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {item.sku}
-                              </span>
+                              <p className={`text-sm font-medium truncate ${itemIsPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {item.variantName && item.variantName !== item.sku ? item.variantName : item.productName}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1 py-0.5 rounded">
+                                  <MapPin className="h-2.5 w-2.5" />
+                                  <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation || t('noLocation')} />
+                                </span>
+                                <span className="text-[10px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1 py-0.5 rounded">{item.sku}</span>
+                              </div>
                             </div>
                             
                             {/* Quantity */}
