@@ -51,7 +51,7 @@ export function PPLSmartPopup({
   const [status, setStatus] = useState<LoadStatus>('loading');
   const [widgetKey, setWidgetKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scriptLoadedRef = useRef(false);
+  const wasOpenRef = useRef(false);
 
   const handleOpenExternal = useCallback(() => {
     const parts: string[] = [];
@@ -72,13 +72,18 @@ export function PPLSmartPopup({
   }, [customerAddress, customerCity, customerZipCode]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+
+    if (wasOpenRef.current) return;
+    wasOpenRef.current = true;
 
     setWidgetKey(prev => prev + 1);
+    setStatus('loading');
 
     const loadWidget = async () => {
-      setStatus('loading');
-
       try {
         if (!document.getElementById('ppl-widget-css')) {
           const link = document.createElement('link');
@@ -92,24 +97,22 @@ export function PPLSmartPopup({
         if (existingScript) {
           existingScript.remove();
         }
-        scriptLoadedRef.current = false;
+
+        await new Promise<void>((resolve) => setTimeout(resolve, 100));
 
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
           script.id = 'ppl-widget-script';
           script.src = 'https://www.ppl.cz/sources/map/main.js';
           script.async = true;
-          script.onload = () => {
-            scriptLoadedRef.current = true;
-            resolve();
-          };
+          script.onload = () => resolve();
           script.onerror = () => reject(new Error('Failed to load PPL widget script'));
           document.body.appendChild(script);
         });
 
         setTimeout(() => {
           setStatus('loaded');
-        }, 500);
+        }, 800);
 
       } catch (error) {
         console.error('Failed to load PPL widget:', error);
