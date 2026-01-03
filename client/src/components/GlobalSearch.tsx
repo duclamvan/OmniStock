@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,9 @@ import { Search, Package, Truck, User, ShoppingCart, Calendar, Loader2, Command 
 import { useLocation } from 'wouter';
 import { getCountryFlag, getCountryCodeByName } from '@/lib/countries';
 import { formatCurrency } from '@/lib/currencyUtils';
+
+// Track if we've already preloaded search data (singleton across component remounts)
+let hasPreloadedSearch = false;
 
 // Framer Motion animation variants
 const dropdownVariants = {
@@ -159,6 +162,32 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const queryClient = useQueryClient();
+  
+  // Preload top products/customers on first mount to warm up cache
+  // This makes subsequent searches much faster as the data is already cached
+  useEffect(() => {
+    if (hasPreloadedSearch) return;
+    hasPreloadedSearch = true;
+    
+    // Delay preloading to not block initial page load
+    const timer = setTimeout(async () => {
+      try {
+        // Preload search index data for faster searches
+        const response = await fetch('/api/search/preload');
+        if (response.ok) {
+          const data = await response.json();
+          // Store in cache for instant search results
+          queryClient.setQueryData(['/api/search/preload'], data);
+        }
+      } catch {
+        // Silently fail - preloading is optional
+      }
+    }, 1500); // Start preloading 1.5 seconds after mount
+    
+    return () => clearTimeout(timer);
+  }, [queryClient]);
+  
   const { data: results, isLoading, isFetching } = useQuery<SearchResult>({
     queryKey: ['/api/search', debouncedQuery],
     queryFn: async ({ signal }) => {

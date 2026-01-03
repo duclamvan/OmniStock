@@ -4048,6 +4048,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search preload cache (5 min TTL for top items)
+  let searchPreloadCache: { data: any; timestamp: number } | null = null;
+  const PRELOAD_CACHE_TTL = 300000; // 5 minutes
+
+  // Search preload endpoint - returns top products/customers for instant search
+  app.get('/api/search/preload', isAuthenticated, async (req, res) => {
+    try {
+      // Return cached preload data if valid
+      if (searchPreloadCache && Date.now() - searchPreloadCache.timestamp < PRELOAD_CACHE_TTL) {
+        return res.json(searchPreloadCache.data);
+      }
+
+      // Fetch top 15 products by recent activity/popularity
+      const topProducts = await db
+        .select()
+        .from(products)
+        .where(eq(products.isActive, true))
+        .orderBy(desc(products.updatedAt))
+        .limit(15);
+
+      // Get allocated quantities for available stock calculation
+      const allocatedMap = await storage.getAllocatedQuantities();
+
+      const inventoryItems = topProducts.map((product) => {
+        const productKey = `product:${product.id}`;
+        const allocated = allocatedMap.get(productKey) || 0;
+        const onHand = product.quantity || 0;
+        const available = Math.max(0, onHand - allocated);
+        return {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          quantity: onHand,
+          availableQuantity: available,
+          allocatedQuantity: allocated,
+          imageUrl: product.imageUrl,
+          type: 'inventory' as const
+        };
+      });
+
+      // Fetch top 5 customers by order count
+      const topCustomers = await db
+        .select()
+        .from(customers)
+        .orderBy(desc(customers.totalOrders))
+        .limit(5);
+
+      const customersData = topCustomers.map((customer) => ({
+        id: customer.id,
+        name: customer.name || 'Unknown',
+        email: customer.email,
+        company: customer.company,
+        city: customer.city,
+        country: customer.country,
+        preferredCurrency: customer.preferredCurrency,
+        totalOrders: customer.totalOrders || 0,
+        lastOrderText: '',
+        recentOrders: []
+      }));
+
+      const result = {
+        inventoryItems,
+        shipmentItems: [],
+        customers: customersData,
+        orders: []
+      };
+
+      // Cache the preload result
+      searchPreloadCache = { data: result, timestamp: Date.now() };
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error in search preload:", error);
+      res.status(500).json({ message: "Preload failed" });
+    }
+  });
+
   // Categories endpoints
   app.get('/api/categories', isAuthenticated, async (req, res) => {
     try {
