@@ -329,6 +329,7 @@ const inventory = {
   revert: 'Hoàn tác',
   revertSuccessful: 'Hoàn tác thành công',
   revertedProducts: 'Đã hoàn tác {{count}} sản phẩm',
+  showingProducts: 'Hiển thị {{from}}-{{to}} trong {{total}} sản phẩm',
   revertPartial: 'Hoàn tác một phần',
   revertFailed: 'Không thể hoàn tác {{count}} sản phẩm',
   

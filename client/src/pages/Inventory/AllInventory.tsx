@@ -17,7 +17,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber, convertCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +61,20 @@ export default function AllInventory() {
   const { toast } = useToast();
   const { canViewImportCost } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // Server-side pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(50);
+  
+  // Debounce search query for server-side search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   
   // Read category from URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -135,11 +149,26 @@ export default function AllInventory() {
     localStorage.setItem('inventoryVisibleColumns', JSON.stringify(columnVisibility));
   }, [columnVisibility]);
 
-  const { data: products = [], isLoading, error } = useQuery({
-    queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
+  // Server-side paginated query
+  const { data: productsData, isLoading, error } = useQuery<{
+    items: any[];
+    total: number;
+    limit: number;
+    offset: number;
+  }>({
+    queryKey: ['/api/products', { page, pageSize, search: debouncedSearch, archive: showArchive }],
     queryFn: async () => {
-      const url = showArchive ? '/api/products?includeInactive=true&includeAvailability=false' : '/api/products?includeAvailability=false';
-      const response = await fetch(url, {
+      const offset = (page - 1) * pageSize;
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        offset: String(offset),
+        includeInactive: String(showArchive),
+        includeAvailability: 'false',
+      });
+      if (debouncedSearch) {
+        params.set('search', debouncedSearch);
+      }
+      const response = await fetch(`/api/products?${params}`, {
         credentials: 'include',
       });
       if (!response.ok) {
@@ -148,7 +177,12 @@ export default function AllInventory() {
       return response.json();
     },
     staleTime: 30000,
+    placeholderData: (previousData) => previousData, // Keep showing previous data while loading new page
   });
+
+  const products = productsData?.items ?? [];
+  const totalProducts = productsData?.total ?? 0;
+  const totalPages = Math.ceil(totalProducts / pageSize);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
@@ -837,7 +871,7 @@ export default function AllInventory() {
     }
   };
 
-  // Filter products based on search query, category, and archive status
+  // Filter products - search is now done server-side, only apply category filter client-side
   const filteredProducts = products?.filter((product: any) => {
     // Archive filter - only show inactive products in archive mode
     if (showArchive && product.isActive) {
@@ -847,21 +881,12 @@ export default function AllInventory() {
       return false;
     }
 
-    // Category filter
+    // Category filter (still client-side for now)
     if (categoryFilter !== "all" && String(product.categoryId) !== String(categoryFilter)) {
       return false;
     }
 
-    // Search filter
-    if (!searchQuery) return true;
-    
-    const results = fuzzySearch([product], searchQuery, {
-      fields: ['name', 'sku', 'description'],
-      threshold: 0.2,
-      fuzzy: true,
-      vietnameseNormalization: true,
-    });
-    return results.length > 0;
+    return true;
   });
 
   const getStockStatus = (quantity: number, lowStockAlert: number, isVirtual?: boolean, availableVirtualStock?: number) => {
@@ -2170,6 +2195,58 @@ export default function AllInventory() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Pagination Controls - Mobile */}
+          <div className="md:hidden flex flex-col items-center gap-3 py-4 px-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            <div className="text-sm text-muted-foreground">
+              {t('inventory:showingProducts', { 
+                from: ((page - 1) * pageSize) + 1, 
+                to: Math.min(page * pageSize, totalProducts), 
+                total: totalProducts 
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="h-9 w-9"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="h-9 w-9"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-3 py-2 text-sm font-medium">
+                {page} / {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="h-9 w-9"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage(totalPages)}
+                disabled={page >= totalPages}
+                className="h-9 w-9"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
           

@@ -228,6 +228,7 @@ const inventory = {
   revert: 'Revert',
   revertSuccessful: 'Revert Successful',
   revertedProducts: 'Successfully reverted {{count}} product(s)',
+  showingProducts: 'Showing {{from}}-{{to}} of {{total}} products',
   revertPartial: 'Partial Revert',
   revertFailed: 'Failed to revert {{count}} product(s)',
   
