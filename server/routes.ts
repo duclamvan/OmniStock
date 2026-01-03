@@ -6930,17 +6930,41 @@ Important:
             continue;
           }
 
-          // Find category by name
+          // Find category by name - auto-create if not exists
           const categoryName = row['Category'] || row['category'];
-          const category = categories.find((c: any) => c.name?.toLowerCase() === categoryName?.toLowerCase());
+          let category = categories.find((c: any) => c.name?.toLowerCase() === categoryName?.toLowerCase());
+          
+          // Auto-create category if it doesn't exist
+          if (!category && categoryName && categoryName.trim()) {
+            const newCategory = await storage.createCategory({
+              name: categoryName.trim(),
+              description: `Auto-created from product import`,
+            });
+            categories.push(newCategory); // Add to local cache for subsequent rows
+            category = newCategory;
+          }
 
           // Find warehouse by name
           const warehouseName = row['Warehouse'] || row['warehouse'];
           const warehouse = warehouses.find((w: any) => w.name?.toLowerCase() === warehouseName?.toLowerCase());
 
-          // Find supplier by name
+          // Find supplier by name - auto-create if not exists
           const supplierName = row['Supplier'] || row['supplier'];
-          const supplier = suppliers.find((s: any) => s.name?.toLowerCase() === supplierName?.toLowerCase());
+          let supplier = suppliers.find((s: any) => s.name?.toLowerCase() === supplierName?.toLowerCase());
+          
+          // Auto-create supplier if it doesn't exist
+          if (!supplier && supplierName && supplierName.trim()) {
+            const newSupplier = await storage.createSupplier({
+              name: supplierName.trim(),
+              email: null,
+              phone: null,
+              address: null,
+              country: null,
+              notes: 'Auto-created from product import',
+            });
+            suppliers.push(newSupplier); // Add to local cache for subsequent rows
+            supplier = newSupplier;
+          }
 
           // Prepare product data
           const productData: any = {
