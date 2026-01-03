@@ -24623,6 +24623,20 @@ Important rules:
         });
       }
 
+      // Create automatic backup before reset (7-day recovery window)
+      const { createBackup } = await import('./services/backupService');
+      const backupResult = await createBackup('pre_reset', req.user?.username || 'system', 7);
+      
+      if (!backupResult.success) {
+        console.error('Pre-reset backup failed:', backupResult.error);
+        return res.status(500).json({
+          message: 'Failed to create safety backup before reset. Operation cancelled.',
+          error: backupResult.error
+        });
+      }
+      
+      console.log(`✅ Pre-reset backup created: ${backupResult.fileName} (recoverable for 7 days)`);
+
       // Execute deletions in transaction with FK-safe order (children → parents)
       const deletionSummary: Record<string, number> = {};
       
@@ -24711,7 +24725,7 @@ Important rules:
           action: 'factory_reset',
           entityType: 'system',
           entityId: 'factory_reset',
-          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. Mode: ${keepSettings ? 'Keep Settings' : 'Full Reset'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} operational records deleted.`,
+          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. Mode: ${keepSettings ? 'Keep Settings' : 'Full Reset'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} records deleted. Backup: ${backupResult.fileName} (ID: ${backupResult.backupId}, recoverable for 7 days).`,
         });
       }, {
         accessMode: 'read write',
@@ -24721,11 +24735,22 @@ Important rules:
       // Calculate total deleted
       const totalDeleted = Object.values(deletionSummary).reduce((sum, count) => sum + count, 0);
 
+      // Calculate expiry date for backup
+      const backupExpiresAt = new Date();
+      backupExpiresAt.setDate(backupExpiresAt.getDate() + 7);
+
       res.json({
         success: true,
-        message: `Factory reset completed. ${totalDeleted} records deleted.`,
+        message: `Factory reset completed. ${totalDeleted} records deleted. A backup was created and can be restored within 7 days.`,
         deletionSummary,
-        totalDeleted
+        totalDeleted,
+        backup: {
+          id: backupResult.backupId,
+          fileName: backupResult.fileName,
+          recordCount: backupResult.recordCount,
+          expiresAt: backupExpiresAt.toISOString(),
+          recoveryDays: 7
+        }
       });
     } catch (error) {
       console.error('Error during factory reset:', error);

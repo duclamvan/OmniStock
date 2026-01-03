@@ -241,9 +241,13 @@ export default function SystemSettings() {
     onSuccess: (data: any) => {
       setShowFactoryResetDialog(false);
       setConfirmationPhrase('');
+      const backupInfo = data.backup 
+        ? ` ${t('settings:backupCreated', 'A backup was created and can be restored within')} ${data.backup.recoveryDays} ${t('settings:days', 'days')}.`
+        : '';
       toast({
         title: t('settings:factoryResetSuccess', 'Action Successful'),
-        description: `${data.totalDeleted} ${t('settings:recordsDeleted', 'records deleted')}`,
+        description: `${data.totalDeleted} ${t('settings:recordsDeleted', 'records deleted')}.${backupInfo}`,
+        duration: 10000,
       });
       // Invalidate all queries to refresh the UI
       queryClient.invalidateQueries();

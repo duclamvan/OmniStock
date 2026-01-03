@@ -112,8 +112,9 @@ export async function getBackupSettings(): Promise<BackupSettings> {
 }
 
 export async function createBackup(
-  backupType: 'manual' | 'auto_daily' | 'auto_weekly' | 'auto_monthly' = 'manual',
-  triggeredBy?: string
+  backupType: 'manual' | 'auto_daily' | 'auto_weekly' | 'auto_monthly' | 'pre_reset' = 'manual',
+  triggeredBy?: string,
+  customRetentionDays?: number
 ): Promise<BackupResult> {
   console.log(`📦 Starting ${backupType} backup...`);
   
@@ -127,7 +128,8 @@ export async function createBackup(
   
   const settings = await getBackupSettings();
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + settings.retentionDays);
+  const retentionDays = customRetentionDays ?? settings.retentionDays;
+  expiresAt.setDate(expiresAt.getDate() + retentionDays);
   
   const [backupRecord] = await db.insert(databaseBackups).values({
     backupType,
