@@ -269,25 +269,32 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
   // Show subtle loading indicator when server is refining results (local results already showing)
   const isRefining = (isDebouncing || isFetching) && results !== null;
 
-  // Flatten results for keyboard navigation
+  // Limit items per section for cleaner dropdown
+  const MAX_ITEMS_PER_SECTION = 3;
+  
+  // Flatten results for keyboard navigation (order: Stock → Orders → Shipments → Customers)
   const flattenedResults = useMemo((): FlattenedResult[] => {
     if (!results) return [];
     
     const flat: FlattenedResult[] = [];
     
-    results.inventoryItems?.forEach(item => {
+    // 1. Current Stock (inventory items)
+    results.inventoryItems?.slice(0, MAX_ITEMS_PER_SECTION).forEach(item => {
       flat.push({ type: 'inventory', id: item.id, data: item });
     });
     
-    results.shipmentItems?.forEach(item => {
-      flat.push({ type: 'shipment', id: item.id, productId: item.productId, data: item });
-    });
-    
-    results.orders?.forEach(order => {
+    // 2. Orders with this item
+    results.orders?.slice(0, MAX_ITEMS_PER_SECTION).forEach(order => {
       flat.push({ type: 'order', id: order.id, data: order });
     });
     
-    results.customers?.forEach(customer => {
+    // 3. Incoming shipments
+    results.shipmentItems?.slice(0, MAX_ITEMS_PER_SECTION).forEach(item => {
+      flat.push({ type: 'shipment', id: item.id, productId: item.productId, data: item });
+    });
+    
+    // 4. Customers
+    results.customers?.slice(0, MAX_ITEMS_PER_SECTION).forEach(customer => {
       flat.push({ type: 'customer', id: customer.id, data: customer });
     });
     
@@ -539,14 +546,14 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                   {totalResults} result{totalResults !== 1 ? 's' : ''} • Use ↑↓ to navigate, Enter to select
                 </motion.div>
 
-              {/* Inventory Items Section */}
+              {/* 1. Current Stock Section */}
               {results && results.inventoryItems.length > 0 && (
                 <motion.div variants={itemVariants} className="mb-3">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Package className="h-3.5 w-3.5 text-emerald-500" />
-                    {t('common:currentStock')} ({results.inventoryItems.length})
+                    {t('common:currentStock')} ({Math.min(results.inventoryItems.length, MAX_ITEMS_PER_SECTION)}/{results.inventoryItems.length})
                   </div>
-                  {results.inventoryItems.map((item, idx) => {
+                  {results.inventoryItems.slice(0, MAX_ITEMS_PER_SECTION).map((item, idx) => {
                     currentFlatIndex++;
                     const isSelected = selectedIndex === currentFlatIndex;
                     const available = item.availableQuantity ?? item.quantity;
@@ -615,14 +622,62 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                 </motion.div>
               )}
 
-              {/* Shipment Items Section */}
+              {/* 2. Orders Section */}
+              {results && results.orders?.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
+                    {t('common:orders')} ({Math.min(results.orders.length, MAX_ITEMS_PER_SECTION)}/{results.orders.length})
+                  </div>
+                  {results.orders.slice(0, MAX_ITEMS_PER_SECTION).map((order) => {
+                    currentFlatIndex++;
+                    const isSelected = selectedIndex === currentFlatIndex;
+                    return (
+                      <button
+                        key={order.id}
+                        data-index={currentFlatIndex}
+                        onClick={() => navigateToResult({ type: 'order', id: order.id, data: order })}
+                        className={`w-full px-3 py-2.5 rounded-lg flex items-center gap-3 text-left transition-all ${
+                          isSelected 
+                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50' 
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                        }`}
+                        data-testid={`search-result-order-${order.id}`}
+                      >
+                        <div className="h-12 w-12 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <ShoppingCart className="h-6 w-6 text-orange-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div 
+                            className="font-medium truncate text-gray-900 dark:text-gray-100"
+                            dangerouslySetInnerHTML={{ __html: highlightMatch(`#${order.orderId}`, searchQuery) }}
+                          />
+                          <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
+                            {order.customerName}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">
+                            {formatCurrency(parseFloat(String(order.grandTotal || '0')), order.currency)}
+                          </div>
+                          <div className="text-xs text-muted-foreground dark:text-gray-400">
+                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('cs-CZ') : ''}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 3. Incoming Shipments Section */}
               {results && results.shipmentItems.length > 0 && (
                 <div className="mb-3">
                   <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Truck className="h-3.5 w-3.5 text-blue-500" />
-                    {t('common:upcomingShipments')} ({results.shipmentItems.length})
+                    {t('common:upcomingShipments')} ({Math.min(results.shipmentItems.length, MAX_ITEMS_PER_SECTION)}/{results.shipmentItems.length})
                   </div>
-                  {results.shipmentItems.map((item) => {
+                  {results.shipmentItems.slice(0, MAX_ITEMS_PER_SECTION).map((item) => {
                     currentFlatIndex++;
                     const isSelected = selectedIndex === currentFlatIndex;
                     return (
@@ -671,62 +726,14 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                 </div>
               )}
 
-              {/* Orders Section */}
-              {results && results.orders?.length > 0 && (
-                <div className="mb-3">
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
-                    {t('common:orders')} ({results.orders.length})
-                  </div>
-                  {results.orders.map((order) => {
-                    currentFlatIndex++;
-                    const isSelected = selectedIndex === currentFlatIndex;
-                    return (
-                      <button
-                        key={order.id}
-                        data-index={currentFlatIndex}
-                        onClick={() => navigateToResult({ type: 'order', id: order.id, data: order })}
-                        className={`w-full px-3 py-2.5 rounded-lg flex items-center gap-3 text-left transition-all ${
-                          isSelected 
-                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                        }`}
-                        data-testid={`search-result-order-${order.id}`}
-                      >
-                        <div className="h-12 w-12 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <ShoppingCart className="h-6 w-6 text-orange-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div 
-                            className="font-medium truncate text-gray-900 dark:text-gray-100"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(`#${order.orderId}`, searchQuery) }}
-                          />
-                          <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
-                            {order.customerName}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">
-                            {formatCurrency(parseFloat(String(order.grandTotal || '0')), order.currency)}
-                          </div>
-                          <div className="text-xs text-muted-foreground dark:text-gray-400">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('cs-CZ') : ''}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Customers Section */}
+              {/* 4. Customers Section */}
               {results && results.customers.length > 0 && (
                 <div>
                   <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <User className="h-3.5 w-3.5 text-purple-500" />
-                    Customers ({results.customers.length})
+                    Customers ({Math.min(results.customers.length, MAX_ITEMS_PER_SECTION)}/{results.customers.length})
                   </div>
-                  {results.customers.map((customer) => {
+                  {results.customers.slice(0, MAX_ITEMS_PER_SECTION).map((customer) => {
                     currentFlatIndex++;
                     const isSelected = selectedIndex === currentFlatIndex;
                     const countryCode = customer.country ? getCountryCodeByName(customer.country) : '';
