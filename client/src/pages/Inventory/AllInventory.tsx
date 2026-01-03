@@ -1140,41 +1140,57 @@ export default function AllInventory() {
                   <Edit className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href={`/inventory/add?duplicateId=${product.id}`}>
-                <Button size="sm" variant="ghost" title={t('inventory:duplicate')} data-testid={`button-duplicate-${product.id}`}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </Link>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" data-testid={`button-delete-${product.id}`}>
-                    <Trash2 className="h-4 w-4" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" data-testid={`button-more-${product.id}`}>
+                    <MoreVertical className="h-4 w-4" />
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t('inventory:deleteProductTitle')}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t('inventory:deleteConfirmation', { name: product.name })}
-                    </AlertDialogDescription>
-                    <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4">
-                      <div className="text-amber-600 dark:text-amber-400 font-medium">
-                        {t('inventory:productWillBeInactive')}
-                      </div>
-                      <div>{t('inventory:preservesOrderHistory')}</div>
-                    </div>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => deleteProductMutation.mutate(product.id)}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      {t('inventory:delete')}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/inventory/add?duplicateId=${product.id}`} className="flex items-center">
+                      <Copy className="h-4 w-4 mr-2" />
+                      {t('inventory:duplicate')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem 
+                        className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                        onSelect={(e) => e.preventDefault()}
+                        data-testid={`button-delete-${product.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {t('inventory:delete')}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('inventory:deleteProductTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('inventory:deleteConfirmation', { name: product.name })}
+                        </AlertDialogDescription>
+                        <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4">
+                          <div className="text-amber-600 dark:text-amber-400 font-medium">
+                            {t('inventory:productWillBeInactive')}
+                          </div>
+                          <div>{t('inventory:preservesOrderHistory')}</div>
+                        </div>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => deleteProductMutation.mutate(product.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          {t('inventory:delete')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <Button 
@@ -1878,7 +1894,7 @@ export default function AllInventory() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <Link href={`/inventory/products/${product.id}`}>
-                            <span className={`font-semibold truncate cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                            <span className={`font-semibold cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
                               {product.name}
                               {product.isVirtual && (
                                 <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
@@ -1978,41 +1994,57 @@ export default function AllInventory() {
                               {t('inventory:edit')}
                             </Button>
                           </Link>
-                          <Link href={`/inventory/add?duplicateId=${product.id}`}>
-                            <Button size="icon" variant="ghost" className="h-11 w-11 touch-target flex-shrink-0" title={t('inventory:duplicate')} data-testid={`button-duplicate-${product.id}`}>
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-11 w-11 touch-target text-red-600 hover:text-red-700 flex-shrink-0" data-testid={`button-delete-${product.id}`}>
-                                <Trash2 className="h-4 w-4" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-11 w-11 touch-target flex-shrink-0" data-testid={`button-more-card-${product.id}`}>
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{t('inventory:deleteProduct')}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t('inventory:deleteConfirmation', { name: product.name })}
-                                </AlertDialogDescription>
-                                <div className="space-y-2 text-sm text-muted-foreground mt-4">
-                                  <div className="text-amber-600 font-medium">
-                                    {t('inventory:productWillBeInactive')}
-                                  </div>
-                                  <div>{t('inventory:preservesOrderHistory')}</div>
-                                </div>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteProductMutation.mutate(product.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  {t('inventory:delete')}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/inventory/add?duplicateId=${product.id}`} className="flex items-center">
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  {t('inventory:duplicate')}
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                                    onSelect={(e) => e.preventDefault()}
+                                    data-testid={`button-delete-card-${product.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {t('inventory:delete')}
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('inventory:deleteProduct')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {t('inventory:deleteConfirmation', { name: product.name })}
+                                    </AlertDialogDescription>
+                                    <div className="space-y-2 text-sm text-muted-foreground mt-4">
+                                      <div className="text-amber-600 font-medium">
+                                        {t('inventory:productWillBeInactive')}
+                                      </div>
+                                      <div>{t('inventory:preservesOrderHistory')}</div>
+                                    </div>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('inventory:cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => deleteProductMutation.mutate(product.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      {t('inventory:delete')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </>
                       ) : (
                         <Button 
@@ -2052,13 +2084,13 @@ export default function AllInventory() {
                             <AvatarImage src={product.imageUrl} />
                             <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-800">{product.name?.charAt(0) || 'P'}</AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <Link href={`/inventory/products/${product.id}`}>
-                              <span className={`font-medium text-sm truncate block max-w-[140px] ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600' : 'text-gray-400 line-through'}`}>
+                              <span className={`font-medium text-sm block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600' : 'text-gray-400 line-through'}`}>
                                 {product.name}
                               </span>
                             </Link>
-                            <span className="text-xs text-gray-500 truncate block max-w-[140px]">{product.sku}</span>
+                            <span className="text-xs text-gray-500 block">{product.sku}</span>
                           </div>
                         </div>
                       </td>
