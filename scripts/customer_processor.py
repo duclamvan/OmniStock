@@ -415,6 +415,7 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
                 'Name': '',
                 'Facebook Name': '',
                 'Facebook ID': facebook_id,
+                'Facebook URL': f'https://facebook.com/{facebook_id}' if facebook_id and not facebook_id.startswith('http') else '',
                 'Email': '',
                 'Phone': '',
                 'Address': raw_address,
@@ -425,17 +426,23 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
                 'Type': 'regular',
                 'Preferred Language': 'vi',
                 'Preferred Currency': 'EUR',
-                # Shipping address fields
-                'Shipping First Name': '',
-                'Shipping Last Name': '',
-                'Shipping Company': '',
-                'Shipping Email': '',
-                'Shipping Phone': '',
-                'Shipping Street': '',
-                'Shipping Street Number': '',
-                'Shipping City': '',
-                'Shipping Zip Code': '',
-                'Shipping Country': '',
+                # VAT/Tax fields
+                'ICO': '',
+                'DIC': '',
+                'VAT ID': '',
+                'VAT Number': '',
+                'Tax ID': '',
+                # Billing address fields
+                'Billing First Name': '',
+                'Billing Last Name': '',
+                'Billing Company': '',
+                'Billing Email': '',
+                'Billing Phone': '',
+                'Billing Street': '',
+                'Billing Street Number': '',
+                'Billing City': '',
+                'Billing Zip Code': '',
+                'Billing Country': '',
             }
             
             # Check if address should be skipped
@@ -504,17 +511,17 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
             customer['Zip Code'] = parsed.get('zipCode', '')
             customer['Country'] = parsed.get('country', '')
             
-            # Shipping address (mirror main address)
-            customer['Shipping First Name'] = first_name
-            customer['Shipping Last Name'] = last_name
-            customer['Shipping Company'] = parsed.get('company', '')
-            customer['Shipping Email'] = parsed.get('email', '')
-            customer['Shipping Phone'] = parsed.get('tel', '')
-            customer['Shipping Street'] = street
-            customer['Shipping Street Number'] = street_num
-            customer['Shipping City'] = parsed.get('city', '')
-            customer['Shipping Zip Code'] = parsed.get('zipCode', '')
-            customer['Shipping Country'] = parsed.get('country', '')
+            # Billing address (mirror main address for import convenience)
+            customer['Billing First Name'] = first_name
+            customer['Billing Last Name'] = last_name
+            customer['Billing Company'] = parsed.get('company', '')
+            customer['Billing Email'] = parsed.get('email', '')
+            customer['Billing Phone'] = parsed.get('tel', '')
+            customer['Billing Street'] = street
+            customer['Billing Street Number'] = street_num
+            customer['Billing City'] = parsed.get('city', '')
+            customer['Billing Zip Code'] = parsed.get('zipCode', '')
+            customer['Billing Country'] = parsed.get('country', '')
             
             customers.append(customer)
     
@@ -535,12 +542,13 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
         ws.title = "Customers"
         
         headers = [
-            'Name', 'Facebook Name', 'Facebook ID', 'Email', 'Phone',
+            'Name', 'Facebook Name', 'Facebook ID', 'Facebook URL', 'Email', 'Phone',
             'Address', 'City', 'Zip Code', 'Country', 'Notes',
             'Type', 'Preferred Language', 'Preferred Currency',
-            'Shipping First Name', 'Shipping Last Name', 'Shipping Company',
-            'Shipping Email', 'Shipping Phone', 'Shipping Street',
-            'Shipping Street Number', 'Shipping City', 'Shipping Zip Code', 'Shipping Country'
+            'ICO', 'DIC', 'VAT ID', 'VAT Number', 'Tax ID',
+            'Billing First Name', 'Billing Last Name', 'Billing Company',
+            'Billing Email', 'Billing Phone', 'Billing Street',
+            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country'
         ]
         
         header_font = Font(bold=True)
@@ -576,12 +584,13 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
         print(f"💾 Writing CSV output to: {output_csv}")
         
         headers = [
-            'Name', 'Facebook Name', 'Facebook ID', 'Email', 'Phone',
+            'Name', 'Facebook Name', 'Facebook ID', 'Facebook URL', 'Email', 'Phone',
             'Address', 'City', 'Zip Code', 'Country', 'Notes',
             'Type', 'Preferred Language', 'Preferred Currency',
-            'Shipping First Name', 'Shipping Last Name', 'Shipping Company',
-            'Shipping Email', 'Shipping Phone', 'Shipping Street',
-            'Shipping Street Number', 'Shipping City', 'Shipping Zip Code', 'Shipping Country'
+            'ICO', 'DIC', 'VAT ID', 'VAT Number', 'Tax ID',
+            'Billing First Name', 'Billing Last Name', 'Billing Company',
+            'Billing Email', 'Billing Phone', 'Billing Street',
+            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country'
         ]
         
         with open(output_csv, 'w', encoding='utf-8', newline='') as f:
