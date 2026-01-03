@@ -14,7 +14,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
+import { formatCurrency, formatCompactNumber, convertCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List } from "lucide-react";
@@ -1071,7 +1071,11 @@ export default function AllInventory() {
       key: "importCostEur",
       header: t('inventory:importCostEur'),
       sortable: true,
-      cell: (product) => formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR'),
+      cell: (product) => formatCurrency(
+        parseFloat(product.importCostEur || '0') || 
+        (parseFloat(product.importCostCzk || '0') > 0 ? convertCurrency(parseFloat(product.importCostCzk || '0'), 'CZK', 'EUR') : 0),
+        'EUR'
+      ),
       className: "text-right",
     },
     {
@@ -1970,7 +1974,11 @@ export default function AllInventory() {
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('inventory:importCostLabel')}</p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
+                          {formatCurrency(
+                            parseFloat(product.importCostEur || '0') || 
+                            (parseFloat(product.importCostCzk || '0') > 0 ? convertCurrency(parseFloat(product.importCostCzk || '0'), 'CZK', 'EUR') : 0),
+                            'EUR'
+                          )}
                         </p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
                           {formatCurrency(parseFloat(product.importCostCzk || '0'), 'CZK')}
