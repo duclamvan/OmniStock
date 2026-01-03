@@ -5809,13 +5809,43 @@ Important:
       const search = req.query.search as string;
       const includeInactive = req.query.includeInactive === 'true';
       const includeLandingCost = req.query.includeLandingCost === 'true';
-      const includeAvailability = req.query.includeAvailability !== 'false'; // Default to true
+      const includeAvailability = req.query.includeAvailability === 'true'; // Default to false for performance
       let productsResult;
 
       if (search) {
         productsResult = await storage.searchProducts(search, includeInactive);
       } else {
         productsResult = await storage.getProducts(includeInactive);
+      }
+
+      // Fast path: if no availability or landing cost needed, return products directly
+      if (!includeAvailability && !includeLandingCost) {
+        // Just enrich virtual products with master product data (minimal processing)
+        const productQuantityMap = new Map<string, { quantity: number; name: string }>();
+        for (const product of productsResult) {
+          productQuantityMap.set(product.id, { 
+            quantity: product.quantity || 0,
+            name: product.name 
+          });
+        }
+        
+        const enrichedProducts = productsResult.map((product: any) => {
+          if (product.isVirtual && product.masterProductId) {
+            const masterData = productQuantityMap.get(product.masterProductId);
+            if (masterData) {
+              return {
+                ...product,
+                masterProductName: masterData.name,
+                masterProductQuantity: masterData.quantity,
+              };
+            }
+          }
+          return product;
+        });
+        
+        const userRole = req.user?.role || 'warehouse_operator';
+        const filtered = filterFinancialData(enrichedProducts, userRole);
+        return res.json(filtered);
       }
 
       // Create a map of product IDs to quantities for virtual SKU calculation
@@ -5913,23 +5943,30 @@ Important:
         };
       });
 
-      // If landing costs are requested, fetch them from the database
+      // If landing costs are requested, fetch them in a single batch query
       if (includeLandingCost) {
-        const productsWithCosts = await Promise.all(enrichedProducts.map(async (product: any) => {
-          const [productWithCost] = await db
-            .select()
-            .from(products)
-            .where(eq(products.id, product.id))
-            .limit(1);
-
-          // Return currency-tagged import costs - never use latestLandingCost as it has unknown currency
+        const productIds = enrichedProducts.map((p: any) => p.id);
+        const productsWithCostsDb = await db
+          .select({
+            id: products.id,
+            importCostCzk: products.importCostCzk,
+            importCostEur: products.importCostEur,
+            importCostUsd: products.importCostUsd,
+          })
+          .from(products)
+          .where(inArray(products.id, productIds));
+        
+        const costMap = new Map(productsWithCostsDb.map(p => [p.id, p]));
+        
+        const productsWithCosts = enrichedProducts.map((product: any) => {
+          const costData = costMap.get(product.id);
           return {
             ...product,
-            importCostCzk: productWithCost?.importCostCzk || null,
-            importCostEur: productWithCost?.importCostEur || null,
-            importCostUsd: productWithCost?.importCostUsd || null,
+            importCostCzk: costData?.importCostCzk || null,
+            importCostEur: costData?.importCostEur || null,
+            importCostUsd: costData?.importCostUsd || null,
           };
-        }));
+        });
 
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';

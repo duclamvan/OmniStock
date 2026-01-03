@@ -127,7 +127,7 @@ export default function AllInventory() {
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
     queryFn: async () => {
-      const url = showArchive ? '/api/products?includeInactive=true&includeAvailability=true' : '/api/products?includeAvailability=true';
+      const url = showArchive ? '/api/products?includeInactive=true&includeAvailability=false' : '/api/products?includeAvailability=false';
       const response = await fetch(url, {
         credentials: 'include',
       });
@@ -136,60 +136,42 @@ export default function AllInventory() {
       }
       return response.json();
     },
+    staleTime: 30000,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
+    staleTime: 60000,
   });
 
   const { data: warehouses = [] } = useQuery({
     queryKey: ['/api/warehouses'],
+    staleTime: 60000,
   });
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['/api/suppliers'],
+    staleTime: 60000,
   });
 
-  // Fetch order items to calculate units sold per product
-  const { data: orderItems = [] } = useQuery({
-    queryKey: ['/api/order-items/all'],
-    queryFn: async () => {
-      const response = await fetch('/api/order-items/all', {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        return [];
-      }
-      return response.json();
-    },
-  });
-
-  // Fetch over-allocated items
+  // Fetch over-allocated items (lazy load, only on demand)
   const { data: overAllocatedItems = [] } = useQuery<any[]>({
     queryKey: ['/api/over-allocated-items'],
-    staleTime: 0,
-    refetchInterval: 60000,
+    staleTime: 60000,
+    refetchInterval: 120000,
   });
 
-  // Fetch under-allocated items
+  // Fetch under-allocated items (lazy load)
   const { data: underAllocatedItems = [] } = useQuery<any[]>({
     queryKey: ['/api/under-allocated-items'],
-    staleTime: 0,
-    refetchInterval: 60000,
+    staleTime: 60000,
+    refetchInterval: 120000,
   });
 
   // Fetch recently approved receipts (last 7 days)
   const { data: recentReceipts = [] } = useQuery<any[]>({
     queryKey: ['/api/imports/receipts/recent'],
-  });
-
-  // Calculate units sold per product
-  const unitsSoldByProduct: { [productId: string]: number } = {};
-  (orderItems as any[])?.forEach((item: any) => {
-    const productId = item.productId;
-    if (productId) {
-      unitsSoldByProduct[productId] = (unitsSoldByProduct[productId] || 0) + (item.quantity || 0);
-    }
+    staleTime: 60000,
   });
 
   // Error handling
@@ -333,7 +315,7 @@ export default function AllInventory() {
           'Description': product.description || '',
           'Shipment Notes': product.shipmentNotes || '',
           'Status': product.isActive ? 'Active' : 'Inactive',
-          'Units Sold': unitsSoldByProduct[product.id] || 0,
+          'Units Sold': product.unitsSold || 0,
         };
       });
 
@@ -445,7 +427,7 @@ export default function AllInventory() {
         sku: product.sku,
         category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
         quantity: product.quantity,
-        unitsSold: unitsSoldByProduct[product.id] || 0,
+        unitsSold: product.unitsSold || 0,
         priceEur: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
         priceCzk: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
         status: product.isActive ? t('inventory:active') : t('inventory:inactive'),
@@ -524,7 +506,7 @@ export default function AllInventory() {
           'Description': product.description || '',
           'Shipment Notes': product.shipmentNotes || '',
           'Status': product.isActive ? 'Active' : 'Inactive',
-          'Units Sold': unitsSoldByProduct[product.id] || 0,
+          'Units Sold': product.unitsSold || 0,
         };
       });
 
@@ -562,7 +544,7 @@ export default function AllInventory() {
         sku: product.sku,
         category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
         quantity: product.quantity,
-        unitsSold: unitsSoldByProduct[product.id] || 0,
+        unitsSold: product.unitsSold || 0,
         priceEur: formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
         priceCzk: formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
         status: product.isActive ? t('inventory:active') : t('inventory:inactive'),
@@ -1031,7 +1013,7 @@ export default function AllInventory() {
       sortable: true,
       className: "text-right w-[100px]",
       cell: (product) => {
-        const sold = unitsSoldByProduct[product.id] || 0;
+        const sold = product.unitsSold || 0;
         return (
           <div className="flex items-center justify-end gap-1.5">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
@@ -1809,7 +1791,7 @@ export default function AllInventory() {
           <div className="md:hidden space-y-3 p-3">
             {filteredProducts?.map((product: any) => {
               const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
-              const unitsSold = unitsSoldByProduct[product.id] || 0;
+              const unitsSold = product.unitsSold || 0;
               
               return (
                 <div key={product.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
