@@ -84,7 +84,8 @@ import {
   Edit,
   ListPlus,
   Layers,
-  Loader2
+  Loader2,
+  Copy
 } from "lucide-react";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
@@ -362,7 +363,7 @@ export default function ProductForm() {
   const tierPriceManualRef = useRef<{czk: boolean, eur: boolean}>({czk: false, eur: false});
   const importCostManualRef = useRef<{usd: boolean, czk: boolean, eur: boolean, vnd: boolean, cny: boolean}>({usd: false, czk: false, eur: false, vnd: false, cny: false});
 
-  // Get query parameters from URL (for add mode - pre-fill from purchase order)
+  // Get query parameters from URL (for add mode - pre-fill from purchase order or duplication)
   const searchParams = new URLSearchParams(window.location.search);
   const categoryIdFromUrl = searchParams.get('categoryId');
   const nameFromUrl = searchParams.get('name');
@@ -378,11 +379,19 @@ export default function ProductForm() {
   const weightFromUrl = searchParams.get('weight');
   const dimensionsFromUrl = searchParams.get('dimensions');
   const imageUrlFromUrl = searchParams.get('imageUrl');
+  const duplicateIdFromUrl = searchParams.get('duplicateId');
+  const isDuplicateMode = !isEditMode && !!duplicateIdFromUrl;
 
   // Fetch product data if in edit mode
   const { data: product, isLoading: productLoading, isSuccess: productLoaded } = useQuery<any>({
     queryKey: ['/api/products', id],
     enabled: isEditMode,
+  });
+
+  // Fetch source product for duplication mode
+  const { data: duplicateSource, isSuccess: duplicateSourceLoaded } = useQuery<any>({
+    queryKey: [`/api/products/${duplicateIdFromUrl}`],
+    enabled: isDuplicateMode,
   });
 
   // Fetch cost history if in edit mode
@@ -479,7 +488,7 @@ export default function ProductForm() {
 
   // Reset form with proper defaults after settings finish loading (add mode only, once)
   useEffect(() => {
-    if (!isEditMode && !hasResetRef.current && lowStockThreshold !== undefined) {
+    if (!isEditMode && !isDuplicateMode && !hasResetRef.current && lowStockThreshold !== undefined) {
       if (import.meta.env.DEV) {
         console.log('[ProductForm] Settings loaded, resetting form with defaults:', {
           lowStockThreshold,
@@ -495,7 +504,79 @@ export default function ProductForm() {
       importCostManualRef.current = {usd: false, czk: false, eur: false, vnd: false, cny: false};
       hasResetRef.current = true;
     }
-  }, [lowStockThreshold, defaultWarehouse, buildDefaultValues, form, isEditMode]);
+  }, [lowStockThreshold, defaultWarehouse, buildDefaultValues, form, isEditMode, isDuplicateMode]);
+
+  // Track if duplication reset has happened
+  const hasDuplicateResetRef = useRef(false);
+
+  // Reset form with duplicated product data when source is loaded (duplicate mode only)
+  useEffect(() => {
+    if (isDuplicateMode && duplicateSourceLoaded && duplicateSource && !hasDuplicateResetRef.current) {
+      if (import.meta.env.DEV) {
+        console.log('[ProductForm] Duplicating product:', duplicateSource.name);
+      }
+      
+      // Copy all fields from the source product, but clear identifiers
+      const duplicateValues = {
+        name: duplicateSource.name ? `${duplicateSource.name} (Copy)` : '',
+        vietnameseName: duplicateSource.vietnameseName || '',
+        sku: '', // Clear SKU - user should provide new unique SKU
+        barcode: '', // Clear barcode - user should provide new unique barcode
+        categoryId: duplicateSource.categoryId || undefined,
+        warehouseId: duplicateSource.warehouseId || undefined,
+        warehouseLocation: duplicateSource.warehouseLocation || '',
+        supplierId: duplicateSource.supplierId || undefined,
+        description: duplicateSource.description || '',
+        quantity: 0, // Start with 0 quantity for new product
+        lowStockAlert: duplicateSource.lowStockAlert || 50,
+        lowStockAlertType: duplicateSource.lowStockAlertType || 'percentage',
+        maxStockLevel: duplicateSource.maxStockLevel || 100,
+        priceCzk: parseFloat(duplicateSource.priceCzk) || undefined,
+        priceEur: parseFloat(duplicateSource.priceEur) || undefined,
+        wholesalePriceCzk: parseFloat(duplicateSource.wholesalePriceCzk) || undefined,
+        wholesalePriceEur: parseFloat(duplicateSource.wholesalePriceEur) || undefined,
+        importCostUsd: parseFloat(duplicateSource.importCostUsd) || undefined,
+        importCostCzk: parseFloat(duplicateSource.importCostCzk) || undefined,
+        importCostEur: parseFloat(duplicateSource.importCostEur) || undefined,
+        importCostVnd: parseFloat(duplicateSource.importCostVnd) || undefined,
+        importCostCny: parseFloat(duplicateSource.importCostCny) || undefined,
+        length: parseFloat(duplicateSource.length) || undefined,
+        width: parseFloat(duplicateSource.width) || undefined,
+        height: parseFloat(duplicateSource.height) || undefined,
+        weight: parseFloat(duplicateSource.weight) || undefined,
+        packingMaterialId: duplicateSource.packingMaterialId || undefined,
+        sellingUnitName: duplicateSource.sellingUnitName || 'piece',
+        unitContentsInfo: duplicateSource.unitContentsInfo || '',
+        isVirtual: duplicateSource.isVirtual || false,
+        masterProductId: duplicateSource.masterProductId || undefined,
+        inventoryDeductionRatio: parseFloat(duplicateSource.inventoryDeductionRatio) || undefined,
+        bulkUnitName: duplicateSource.bulkUnitName || '',
+        bulkUnitQty: duplicateSource.bulkUnitQty || undefined,
+        bulkPriceCzk: parseFloat(duplicateSource.bulkPriceCzk) || undefined,
+        bulkPriceEur: parseFloat(duplicateSource.bulkPriceEur) || undefined,
+        allowBulkSales: duplicateSource.allowBulkSales || false,
+      };
+
+      form.reset(duplicateValues);
+      
+      // Copy image if exists
+      if (duplicateSource.imageUrl) {
+        setProductImages([{
+          file: null,
+          preview: duplicateSource.imageUrl,
+          url: duplicateSource.imageUrl,
+          isPrimary: true,
+          purpose: 'catalog'
+        }]);
+      }
+
+      // Reset manual edit tracking
+      salesPriceManualRef.current = {czk: false, eur: false};
+      wholesalePriceManualRef.current = {czk: false, eur: false};
+      importCostManualRef.current = {usd: false, czk: false, eur: false, vnd: false, cny: false};
+      hasDuplicateResetRef.current = true;
+    }
+  }, [isDuplicateMode, duplicateSourceLoaded, duplicateSource, form]);
 
   // Watch import cost fields for auto-conversion
   const importCostUsd = form.watch('importCostUsd');
@@ -2010,8 +2091,16 @@ export default function ProductForm() {
     );
   }
 
-  const pageTitle = isEditMode ? t('products:editProduct') : t('products:addNewProduct');
-  const pageDescription = isEditMode ? t('products:editProductDescription') : t('products:addNewProductDescription');
+  const pageTitle = isEditMode 
+    ? t('products:editProduct') 
+    : isDuplicateMode 
+      ? t('products:duplicateProduct', { defaultValue: 'Duplicate Product' })
+      : t('products:addNewProduct');
+  const pageDescription = isEditMode 
+    ? t('products:editProductDescription') 
+    : isDuplicateMode 
+      ? t('products:duplicateProductDescription', { defaultValue: 'Create a copy of an existing product with the same settings' })
+      : t('products:addNewProductDescription');
   const submitButtonText = isEditMode ? t('products:updateProduct') : t('products:createProduct');
   const submitIcon = isEditMode ? Pencil : Plus;
   const isPending = isEditMode ? updateProductMutation.isPending : createProductMutation.isPending;
@@ -2036,7 +2125,7 @@ export default function ProductForm() {
               <Separator orientation="vertical" className="h-8 hidden sm:block" />
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  {isEditMode ? <Pencil className="h-5 w-5 md:h-6 md:w-6 text-blue-600" /> : <Plus className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />}
+                  {isEditMode ? <Pencil className="h-5 w-5 md:h-6 md:w-6 text-blue-600" /> : isDuplicateMode ? <Copy className="h-5 w-5 md:h-6 md:w-6 text-purple-600" /> : <Plus className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />}
                   {pageTitle}
                 </h1>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
@@ -2044,8 +2133,8 @@ export default function ProductForm() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600" : "text-emerald-600 border-emerald-600"}>
-              {isEditMode ? <><Pencil className="h-3 w-3 mr-1" />{t('products:editMode')}</> : <><Plus className="h-3 w-3 mr-1" />{t('products:addMode')}</>}
+            <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600" : isDuplicateMode ? "text-purple-600 border-purple-600" : "text-emerald-600 border-emerald-600"}>
+              {isEditMode ? <><Pencil className="h-3 w-3 mr-1" />{t('products:editMode')}</> : isDuplicateMode ? <><Copy className="h-3 w-3 mr-1" />{t('products:duplicateMode', { defaultValue: 'Duplicate Mode' })}</> : <><Plus className="h-3 w-3 mr-1" />{t('products:addMode')}</>}
             </Badge>
           </div>
         </div>

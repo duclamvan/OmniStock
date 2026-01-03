@@ -377,6 +377,7 @@ const inventory = {
   cancel: 'Hủy',
   delete: 'Xóa',
   edit: 'Sửa',
+  duplicate: 'Nhân bản',
   viewDetails: 'Xem chi tiết',
   selected: 'Đã chọn',
   

@@ -276,6 +276,7 @@ const inventory = {
   cancel: 'Cancel',
   delete: 'Delete',
   edit: 'Edit',
+  duplicate: 'Duplicate',
   viewDetails: 'View Details',
   selected: 'Selected',
   

@@ -17,7 +17,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -1125,13 +1125,18 @@ export default function AllInventory() {
           {product.isActive ? (
             <>
               <Link href={`/inventory/${product.id}/edit`}>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" data-testid={`button-edit-${product.id}`}>
                   <Edit className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href={`/inventory/add?duplicateId=${product.id}`}>
+                <Button size="sm" variant="ghost" title={t('inventory:duplicate')} data-testid={`button-duplicate-${product.id}`}>
+                  <Copy className="h-4 w-4" />
                 </Button>
               </Link>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" data-testid={`button-delete-${product.id}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
@@ -1924,20 +1929,25 @@ export default function AllInventory() {
                       {product.isActive ? (
                         <>
                           <Link href={`/inventory/products/${product.id}`} className="flex-1">
-                            <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-view-details">
+                            <Button variant="outline" className="w-full h-11 touch-target" data-testid={`button-view-details-${product.id}`}>
                               <Package className="h-4 w-4 mr-2" />
                               {t('inventory:viewDetails')}
                             </Button>
                           </Link>
                           <Link href={`/inventory/${product.id}/edit`} className="flex-1">
-                            <Button variant="outline" className="w-full h-11 touch-target" data-testid="button-edit">
+                            <Button variant="outline" className="w-full h-11 touch-target" data-testid={`button-edit-${product.id}`}>
                               <Edit className="h-4 w-4 mr-2" />
                               {t('inventory:edit')}
                             </Button>
                           </Link>
+                          <Link href={`/inventory/add?duplicateId=${product.id}`}>
+                            <Button size="icon" variant="ghost" className="h-11 w-11 touch-target flex-shrink-0" title={t('inventory:duplicate')} data-testid={`button-duplicate-${product.id}`}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="h-11 w-11 touch-target text-red-600 hover:text-red-700 flex-shrink-0" data-testid="button-delete">
+                              <Button size="icon" variant="ghost" className="h-11 w-11 touch-target text-red-600 hover:text-red-700 flex-shrink-0" data-testid={`button-delete-${product.id}`}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -1971,7 +1981,7 @@ export default function AllInventory() {
                           variant="outline" 
                           className="w-full h-11 touch-target text-green-600 border-green-600 hover:bg-green-50"
                           onClick={() => restoreProductMutation.mutate(product.id)}
-                          data-testid="button-restore"
+                          data-testid={`button-restore-${product.id}`}
                         >
                           {t('inventory:restore')}
                         </Button>
