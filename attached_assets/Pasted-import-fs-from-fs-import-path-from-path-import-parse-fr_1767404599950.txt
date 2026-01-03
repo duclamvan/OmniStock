@@ -1,0 +1,180 @@
+import fs from 'fs';
+import path from 'path';
+import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
+
+// --- CONFIGURATION ---
+const INPUT_FILE = 'NS-Management - data-addresses.csv';
+const OUTPUT_FILE = 'customers_final_import.csv';
+const API_DELAY_MS = 1100; 
+
+// --- HELPER: Sleep ---
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// --- HELPER: Clean User ID ---
+function cleanUserId(id: string): string {
+  if (!id) return '';
+  return id.replace(/°/g, '.').trim();
+}
+
+// --- HELPER: Extract Phone ---
+function extractPhone(text: string): string {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, '');
+  const match = clean.match(/(\+|00)?\d{9,13}/); 
+  return match ? match[0] : '';
+}
+
+// --- NEW HELPER: Smart Parse The Raw String ---
+function parseLegacyString(raw: string) {
+  // 1. Split by semicolon or comma (if semicolon not present)
+  let parts = raw.split(';');
+  if (parts.length === 1) parts = raw.split(',');
+
+  let name = '';
+  let company = '';
+  let addressParts: string[] = [];
+
+  // Keywords that suggest this part is a Company/Salon
+  const salonKeywords = /nails?|beauty|spa|studio|kosmetik|center|lounge/i;
+  // Regex to check if a part contains numbers (likely address or zip)
+  const hasNumber = /\d/;
+
+  for (let part of parts) {
+    part = part.trim();
+    if (!part) continue;
+
+    // Skip if it's just a phone number (we extract that separately)
+    if (part.replace(/\s/g, '').match(/^(\+|00)?\d{9,13}$/)) continue;
+
+    if (salonKeywords.test(part)) {
+      // It looks like a Salon Name
+      company = part;
+    } else if (hasNumber.test(part)) {
+      // It has numbers, it's likely the Street or Zip
+      addressParts.push(part);
+    } else if (!name) {
+      // If we don't have a name yet, and it's not a salon or address -> It's the Name
+      name = part;
+    } else {
+      // If we already have a name, append to address just in case
+      addressParts.push(part);
+    }
+  }
+
+  // Fallback: If no name found but we have a company, use company as name (or UserID later)
+  // Rejoin address parts for the API to search
+  return {
+    name: name,
+    company: company,
+    searchAddress: addressParts.join(', ') || raw // Fallback to raw if logic failed
+  };
+}
+
+// --- HELPER: OpenStreetMap Validator ---
+async function validateAddress(addressStr: string) {
+  if (!addressStr || addressStr.length < 5) return null;
+  const cleanSearch = addressStr.replace(/(\+|00)\d{9,13}/g, '').trim(); // Remove phone before search
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanSearch)}&format=json&addressdetails=1&limit=1`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'DavieSupplyImportScript/2.0' }
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const addr = data[0].address;
+      return {
+        street: `${addr.road || ''} ${addr.house_number || ''}`.trim() || cleanSearch,
+        city: addr.city || addr.town || addr.village || '',
+        zip: addr.postcode || '',
+        country: addr.country_code ? addr.country_code.toUpperCase() : 'CZ',
+        state: addr.state || ''
+      };
+    }
+  } catch (error) {
+    // Ignore errors, return null
+  }
+  return null;
+}
+
+async function main() {
+  console.log('🧠 Starting Smart V2 Import (Name/Salon Splitter + Geocoding)...');
+  
+  const inputPath = path.join(process.cwd(), INPUT_FILE);
+  const fileContent = fs.readFileSync(inputPath, 'utf-8');
+  const records = parse(fileContent, { columns: true, skip_empty_lines: true, trim: true });
+
+  const processedData = [];
+  let count = 0;
+
+  for (const row of records) {
+    count++;
+    const rawId = row['User ID'] || '';
+    const rawString = row['Address'] || '';
+    
+    const cleanId = cleanUserId(rawId);
+    const phone = extractPhone(rawString);
+
+    // 1. SMART PARSE (Split Name vs Salon vs Address)
+    const parsed = parseLegacyString(rawString);
+    
+    // If parsed.name is empty, use ID as fallback name
+    const finalName = parsed.name || cleanId;
+
+    // 2. GEOCODE (Validate the Address part)
+    process.stdout.write(`   [${count}/${records.length}] Parsing: ${finalName}... `);
+    
+    let finalAddress = {
+      street: parsed.searchAddress, 
+      city: '',
+      zip: '',
+      country: '',
+      state: ''
+    };
+
+    const apiResult = await validateAddress(parsed.searchAddress);
+    
+    if (apiResult) {
+      console.log('✅ Address Validated');
+      finalAddress = apiResult;
+    } else {
+      console.log('⚪ Raw Address Used');
+    }
+
+    // 3. MAP TO TEMPLATE
+    processedData.push({
+      'Name': finalName,
+      'Email': '',
+      'Phone': phone,
+      'Company': parsed.company, // Now we have the Salon Name separated!
+      'Customer Type': 'regular',
+      'Street': finalAddress.street,
+      'City': finalAddress.city,
+      'State': finalAddress.state,
+      'Country': finalAddress.country,
+      'Postal Code': finalAddress.zip,
+      'Facebook ID': cleanId,
+      'Facebook Name': '', 
+      'ICO': '',
+      'DIC': '',
+      'VAT ID': '',
+      'Preferred Currency': 'EUR',
+      'Preferred Language': 'vi',
+      'Notes': `Original String: ${rawString}`
+    });
+
+    await sleep(API_DELAY_MS);
+  }
+
+  // Save File
+  console.log(`💾 Saving results to ${OUTPUT_FILE}...`);
+  const outputContent = stringify(processedData, { header: true });
+  fs.writeFileSync(path.join(process.cwd(), OUTPUT_FILE), outputContent);
+  console.log('🚀 Done!');
+}
+
+main();
