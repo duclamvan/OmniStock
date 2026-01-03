@@ -943,20 +943,73 @@ export default function AllCustomers() {
         
         for (const [key, value] of Object.entries(row)) {
           const lowerKey = key.toLowerCase().trim();
+          const strValue = value != null ? String(value) : '';
+          
+          // Basic fields
           if (lowerKey === 'name' || lowerKey === 'tên' || lowerKey === 'ten') {
-            customer.name = String(value);
+            customer.name = strValue;
           } else if (lowerKey === 'email') {
-            customer.email = String(value);
+            customer.email = strValue;
           } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
-            customer.phone = String(value);
+            customer.phone = strValue;
           } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
-            customer.country = String(value);
-          } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi') {
-            customer.address = String(value);
+            customer.country = strValue;
+          } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi' || lowerKey === 'street') {
+            customer.address = strValue;
           } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
-            customer.city = String(value);
+            customer.city = strValue;
+          } else if (lowerKey === 'zip code' || lowerKey === 'zipcode' || lowerKey === 'postal code' || lowerKey === 'postalcode') {
+            customer.zipCode = strValue;
           } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
-            customer.notes = String(value);
+            customer.notes = strValue;
+          } else if (lowerKey === 'type' || lowerKey === 'customer type') {
+            customer.type = strValue;
+          } else if (lowerKey === 'preferred language' || lowerKey === 'language') {
+            customer.preferredLanguage = strValue;
+          } else if (lowerKey === 'preferred currency' || lowerKey === 'currency') {
+            customer.preferredCurrency = strValue;
+          }
+          // Facebook fields
+          else if (lowerKey === 'facebook id' || lowerKey === 'facebookid' || lowerKey === 'facebook_id') {
+            customer.facebookId = strValue;
+          } else if (lowerKey === 'facebook name' || lowerKey === 'facebookname' || lowerKey === 'facebook_name') {
+            customer.facebookName = strValue;
+          } else if (lowerKey === 'facebook url' || lowerKey === 'facebookurl' || lowerKey === 'facebook_url') {
+            customer.facebookUrl = strValue;
+          }
+          // Tax/VAT fields
+          else if (lowerKey === 'ico') {
+            customer.ico = strValue;
+          } else if (lowerKey === 'dic') {
+            customer.dic = strValue;
+          } else if (lowerKey === 'vat id' || lowerKey === 'vatid') {
+            customer.vatId = strValue;
+          } else if (lowerKey === 'vat number' || lowerKey === 'vatnumber') {
+            customer.vatNumber = strValue;
+          } else if (lowerKey === 'tax id' || lowerKey === 'taxid') {
+            customer.taxId = strValue;
+          }
+          // Billing address fields
+          else if (lowerKey === 'billing first name') {
+            customer.billingFirstName = strValue;
+          } else if (lowerKey === 'billing last name') {
+            customer.billingLastName = strValue;
+          } else if (lowerKey === 'billing company' || lowerKey === 'company') {
+            customer.billingCompany = strValue;
+          } else if (lowerKey === 'billing email') {
+            customer.billingEmail = strValue;
+          } else if (lowerKey === 'billing phone' || lowerKey === 'billing tel') {
+            customer.billingTel = strValue;
+          } else if (lowerKey === 'billing street') {
+            customer.billingStreet = strValue;
+          } else if (lowerKey === 'billing street number') {
+            customer.billingStreetNumber = strValue;
+          } else if (lowerKey === 'billing city') {
+            customer.billingCity = strValue;
+          } else if (lowerKey === 'billing zip code' || lowerKey === 'billing zipcode') {
+            customer.billingZipCode = strValue;
+          } else if (lowerKey === 'billing country') {
+            customer.billingCountry = strValue;
           }
         }
         return customer;

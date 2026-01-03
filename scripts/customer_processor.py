@@ -89,6 +89,27 @@ def convert_user_id_to_facebook_id(user_id: str) -> str:
     return user_id.replace('°', '.')
 
 
+def generate_facebook_url(facebook_id: str) -> str:
+    """
+    Generate proper Facebook URL based on ID type.
+    - Numeric IDs (like 100036805186298): https://www.facebook.com/profile.php?id=100036805186298
+    - Nickname IDs (like itzdavie): https://www.facebook.com/itzdavie
+    """
+    if not facebook_id:
+        return ''
+    
+    # Check if ID is purely numeric (or starts with numeric pattern)
+    # Facebook numeric IDs are typically 15-17 digits starting with "100"
+    clean_id = facebook_id.strip()
+    
+    if clean_id.isdigit():
+        # Numeric ID - use profile.php format
+        return f'https://www.facebook.com/profile.php?id={clean_id}'
+    else:
+        # Nickname/username - use direct URL format
+        return f'https://www.facebook.com/{clean_id}'
+
+
 def should_skip_address(address: str) -> bool:
     """Check if address should be skipped (no real address data)."""
     if not address or len(address.strip()) < 5:
@@ -415,7 +436,7 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
                 'Name': '',
                 'Facebook Name': '',
                 'Facebook ID': facebook_id,
-                'Facebook URL': f'https://facebook.com/{facebook_id}' if facebook_id and not facebook_id.startswith('http') else '',
+                'Facebook URL': generate_facebook_url(facebook_id),
                 'Email': '',
                 'Phone': '',
                 'Address': raw_address,
@@ -443,6 +464,17 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
                 'Billing City': '',
                 'Billing Zip Code': '',
                 'Billing Country': '',
+                # Shipping address fields (main address for orders)
+                'Shipping First Name': '',
+                'Shipping Last Name': '',
+                'Shipping Company': '',
+                'Shipping Email': '',
+                'Shipping Phone': '',
+                'Shipping Street': '',
+                'Shipping Street Number': '',
+                'Shipping City': '',
+                'Shipping Zip Code': '',
+                'Shipping Country': '',
             }
             
             # Check if address should be skipped
@@ -523,6 +555,18 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
             customer['Billing Zip Code'] = parsed.get('zipCode', '')
             customer['Billing Country'] = parsed.get('country', '')
             
+            # Shipping address (main address for orders - same as billing)
+            customer['Shipping First Name'] = first_name
+            customer['Shipping Last Name'] = last_name
+            customer['Shipping Company'] = parsed.get('company', '')
+            customer['Shipping Email'] = parsed.get('email', '')
+            customer['Shipping Phone'] = parsed.get('tel', '')
+            customer['Shipping Street'] = street
+            customer['Shipping Street Number'] = street_num
+            customer['Shipping City'] = parsed.get('city', '')
+            customer['Shipping Zip Code'] = parsed.get('zipCode', '')
+            customer['Shipping Country'] = parsed.get('country', '')
+            
             customers.append(customer)
     
     # Save cache
@@ -548,7 +592,10 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
             'ICO', 'DIC', 'VAT ID', 'VAT Number', 'Tax ID',
             'Billing First Name', 'Billing Last Name', 'Billing Company',
             'Billing Email', 'Billing Phone', 'Billing Street',
-            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country'
+            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country',
+            'Shipping First Name', 'Shipping Last Name', 'Shipping Company',
+            'Shipping Email', 'Shipping Phone', 'Shipping Street',
+            'Shipping Street Number', 'Shipping City', 'Shipping Zip Code', 'Shipping Country'
         ]
         
         header_font = Font(bold=True)
@@ -590,7 +637,10 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
             'ICO', 'DIC', 'VAT ID', 'VAT Number', 'Tax ID',
             'Billing First Name', 'Billing Last Name', 'Billing Company',
             'Billing Email', 'Billing Phone', 'Billing Street',
-            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country'
+            'Billing Street Number', 'Billing City', 'Billing Zip Code', 'Billing Country',
+            'Shipping First Name', 'Shipping Last Name', 'Shipping Company',
+            'Shipping Email', 'Shipping Phone', 'Shipping Street',
+            'Shipping Street Number', 'Shipping City', 'Shipping Zip Code', 'Shipping Country'
         ]
         
         with open(output_csv, 'w', encoding='utf-8', newline='') as f:
