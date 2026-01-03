@@ -13399,9 +13399,13 @@ router.get('/receipts/:id/report', async (req, res) => {
               locationType: productLocations.locationType,
               quantity: productLocations.quantity,
               isPrimary: productLocations.isPrimary,
-              notes: productLocations.notes
+              notes: productLocations.notes,
+              variantId: productLocations.variantId,
+              variantName: productVariants.name,
+              variantSku: productVariants.sku
             })
             .from(productLocations)
+            .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
             .where(eq(productLocations.productId, product.id));
         }
       } else if (item.itemType === 'custom') {
@@ -13450,9 +13454,13 @@ router.get('/receipts/:id/report', async (req, res) => {
                 locationType: productLocations.locationType,
                 quantity: productLocations.quantity,
                 isPrimary: productLocations.isPrimary,
-                notes: productLocations.notes
+                notes: productLocations.notes,
+                variantId: productLocations.variantId,
+                variantName: productVariants.name,
+                variantSku: productVariants.sku
               })
               .from(productLocations)
+              .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
               .where(eq(productLocations.productId, matchingProduct.id));
           }
         }
@@ -13641,9 +13649,13 @@ router.get('/shipments/:id/report', async (req, res) => {
               locationType: productLocations.locationType,
               quantity: productLocations.quantity,
               isPrimary: productLocations.isPrimary,
-              notes: productLocations.notes
+              notes: productLocations.notes,
+              variantId: productLocations.variantId,
+              variantName: productVariants.name,
+              variantSku: productVariants.sku
             })
             .from(productLocations)
+            .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
             .where(eq(productLocations.productId, product.id));
         }
       } else if (item.itemType === 'custom') {
@@ -13692,9 +13704,13 @@ router.get('/shipments/:id/report', async (req, res) => {
                 locationType: productLocations.locationType,
                 quantity: productLocations.quantity,
                 isPrimary: productLocations.isPrimary,
-                notes: productLocations.notes
+                notes: productLocations.notes,
+                variantId: productLocations.variantId,
+                variantName: productVariants.name,
+                variantSku: productVariants.sku
               })
               .from(productLocations)
+              .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
               .where(eq(productLocations.productId, matchingProduct.id));
           }
         }

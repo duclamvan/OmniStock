@@ -6045,6 +6045,18 @@ interface ShipmentReportData {
   };
 }
 
+// Helper type for variant label data
+interface VariantLabelData {
+  key: string;
+  variantName: string;
+  sku: string;
+  locations: Array<{locationCode: string; quantity: number}>;
+  totalQty: number;
+  receiptItemId: string;
+  prices: { priceCzk?: string; priceEur?: string; priceUsd?: string } | null;
+  productId?: string;
+}
+
 function ShipmentReportDialog({ 
   shipmentId, 
   open, 
@@ -6056,7 +6068,7 @@ function ShipmentReportDialog({
 }) {
   const { t } = useTranslation(['imports', 'common']);
   const { toast } = useToast();
-  const [selectedItemsForLabels, setSelectedItemsForLabels] = useState<Set<string>>(new Set());
+  const [selectedVariantsForLabels, setSelectedVariantsForLabels] = useState<Map<string, VariantLabelData>>(new Map());
   const [showLabelsSection, setShowLabelsSection] = useState(false);
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
@@ -6111,13 +6123,49 @@ function ShipmentReportDialog({
     return true;
   };
   
-  const toggleItemForLabel = (itemId: string) => {
-    setSelectedItemsForLabels(prev => {
-      const next = new Set(prev);
-      if (next.has(itemId)) {
-        next.delete(itemId);
+  // Helper to build variant key - includes receiptItemId to avoid collisions for items without variant metadata
+  const buildVariantKey = (loc: any, receiptItemId: string) => {
+    if (loc.variantId) {
+      return `${receiptItemId}_${loc.variantId}_${loc.variantName || ''}_${loc.variantSku || ''}`;
+    } else if (loc.variantName) {
+      return `${receiptItemId}_name_${loc.variantName}_${loc.variantSku || ''}`;
+    } else {
+      // Include receiptItemId to ensure items without variant data don't collide
+      return `${receiptItemId}_default`;
+    }
+  };
+  
+  // Get all variants from an item's locations
+  const getVariantsFromItem = (item: ShipmentReportItem): VariantLabelData[] => {
+    const variantGroups: Record<string, VariantLabelData> = {};
+    const receiptItemId = String(item.receiptItemId);
+    item.locations.forEach((loc: any) => {
+      const key = buildVariantKey(loc, receiptItemId);
+      if (!variantGroups[key]) {
+        variantGroups[key] = {
+          key,
+          variantName: loc.variantName || item.productName,
+          sku: loc.variantSku || item.sku || '-',
+          locations: [],
+          totalQty: 0,
+          receiptItemId,
+          prices: item.prices,
+          productId: item.productId
+        };
+      }
+      variantGroups[key].locations.push({ locationCode: loc.locationCode, quantity: loc.quantity || 1 });
+      variantGroups[key].totalQty += loc.quantity || 1;
+    });
+    return Object.values(variantGroups);
+  };
+
+  const toggleVariantForLabel = (variant: VariantLabelData) => {
+    setSelectedVariantsForLabels(prev => {
+      const next = new Map(prev);
+      if (next.has(variant.key)) {
+        next.delete(variant.key);
       } else {
-        next.add(itemId);
+        next.set(variant.key, variant);
       }
       return next;
     });
@@ -6125,15 +6173,16 @@ function ShipmentReportDialog({
   
   const selectAllForLabels = () => {
     if (!reportData) return;
-    const allIds = reportData.items
+    const allVariants = new Map<string, VariantLabelData>();
+    reportData.items
       .filter(item => item.locations.length > 0)
-      .map(item => String(item.receiptItemId));
-    setSelectedItemsForLabels(new Set(allIds));
+      .forEach(item => {
+        getVariantsFromItem(item).forEach(v => allVariants.set(v.key, v));
+      });
+    setSelectedVariantsForLabels(allVariants);
   };
   
-  const printLabels = () => {
-    if (!printRef.current) return;
-    
+  const printVariantLabels = (variants: VariantLabelData[]) => {
     const printWindow = window.open('', '_blank', 'width=600,height=800');
     if (!printWindow) {
       toast({
@@ -6144,16 +6193,11 @@ function ShipmentReportDialog({
       return;
     }
     
-    const selectedItems = reportData?.items.filter(item => 
-      selectedItemsForLabels.has(String(item.receiptItemId))
-    ) || [];
-    
-    // Generate labels in the same format as /stock warehouse labels
-    const labelsHtml = selectedItems.map(item => {
-      const productCode = item.sku || item.productId || '-';
-      const vietnameseName = (item as any).vietnameseName || item.productName;
-      const priceEur = item.prices?.priceEur ? Number(item.prices.priceEur) : null;
-      const priceCzk = item.prices?.priceCzk ? Number(item.prices.priceCzk) : null;
+    // Generate labels for each variant
+    const labelsHtml = variants.map(variant => {
+      const productCode = variant.sku || variant.productId || '-';
+      const priceEur = variant.prices?.priceEur ? Number(variant.prices.priceEur) : null;
+      const priceCzk = variant.prices?.priceCzk ? Number(variant.prices.priceCzk) : null;
       
       return `
         <div class="label-container">
@@ -6165,9 +6209,8 @@ function ShipmentReportDialog({
             </svg>
           </div>
           <div class="name-section">
-            <div class="vn-name">${vietnameseName}</div>
-            <div class="en-name">${item.productName}</div>
-            ${item.sku ? `<div class="sku">${item.sku}</div>` : ''}
+            <div class="vn-name">${variant.variantName}</div>
+            ${variant.sku ? `<div class="sku">${variant.sku}</div>` : ''}
           </div>
           <div class="price-section">
             ${priceEur !== null ? `<div class="price-eur-row"><span class="price-eur">€${priceEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ''}
@@ -6457,17 +6500,21 @@ function ShipmentReportDialog({
                           {item.locations.length > 0 && (
                             <div className="mt-2 space-y-1">
                               {(() => {
+                                const receiptItemId = String(item.receiptItemId);
                                 const variantGroups = item.locations.reduce((acc: Record<string, {
                                   variantName: string;
                                   sku: string;
                                   locations: Array<{locationCode: string; quantity: number}>;
                                   totalQty: number;
                                 }>, loc: any) => {
-                                  const key = loc.variantId || loc.sku || 'default';
+                                  // Use composite key with receiptItemId to avoid collisions
+                                  const key = loc.variantId 
+                                    ? `${receiptItemId}_${loc.variantId}_${loc.variantName || ''}_${loc.variantSku || ''}`
+                                    : (loc.variantName ? `${receiptItemId}_name_${loc.variantName}_${loc.variantSku || ''}` : `${receiptItemId}_default`);
                                   if (!acc[key]) {
                                     acc[key] = {
                                       variantName: loc.variantName || item.productName,
-                                      sku: loc.sku || item.sku || '-',
+                                      sku: loc.variantSku || item.sku || '-',
                                       locations: [],
                                       totalQty: 0
                                     };
@@ -6676,22 +6723,22 @@ function ShipmentReportDialog({
                         </Button>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">
-                            {selectedItemsForLabels.size} {t('selected')}
+                            {selectedVariantsForLabels.size} {t('selected')}
                           </span>
                           <Button 
                             size="sm"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              if (selectedItemsForLabels.size > 0) {
-                                printLabels();
+                              if (selectedVariantsForLabels.size > 0) {
+                                printVariantLabels(Array.from(selectedVariantsForLabels.values()));
                               }
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
                             }}
-                            disabled={selectedItemsForLabels.size === 0}
+                            disabled={selectedVariantsForLabels.size === 0}
                             className="h-8 pointer-events-auto"
                             style={{ pointerEvents: 'auto', zIndex: 9999 }}
                           >
@@ -6719,18 +6766,23 @@ function ShipmentReportDialog({
                           }, {} as Record<string, typeof itemsWithLocations>);
                           
                           return Object.entries(grouped).map(([parentName, items]) => {
-                            const groupItemIds = items.map(i => String(i.receiptItemId));
-                            const allSelected = groupItemIds.every(id => selectedItemsForLabels.has(id));
-                            const someSelected = groupItemIds.some(id => selectedItemsForLabels.has(id));
-                            const isMultiVariant = items.length > 1;
+                            // Get all variants for this group
+                            const groupVariants: VariantLabelData[] = [];
+                            items.forEach(item => {
+                              getVariantsFromItem(item).forEach(v => groupVariants.push(v));
+                            });
+                            const groupVariantKeys = groupVariants.map(v => v.key);
+                            const allSelected = groupVariantKeys.length > 0 && groupVariantKeys.every(k => selectedVariantsForLabels.has(k));
+                            const someSelected = groupVariantKeys.some(k => selectedVariantsForLabels.has(k));
+                            const isMultiVariant = groupVariants.length > 1;
                             
                             const toggleGroup = () => {
-                              setSelectedItemsForLabels(prev => {
-                                const next = new Set(prev);
+                              setSelectedVariantsForLabels(prev => {
+                                const next = new Map(prev);
                                 if (allSelected) {
-                                  groupItemIds.forEach(id => next.delete(id));
+                                  groupVariantKeys.forEach(k => next.delete(k));
                                 } else {
-                                  groupItemIds.forEach(id => next.add(id));
+                                  groupVariants.forEach(v => next.set(v.key, v));
                                 }
                                 return next;
                               });
@@ -6738,14 +6790,12 @@ function ShipmentReportDialog({
                             
                             const printGroupLabels = (e: React.MouseEvent) => {
                               e.stopPropagation();
-                              setSelectedItemsForLabels(new Set(groupItemIds));
-                              setTimeout(() => printLabels(), 100);
+                              printVariantLabels(groupVariants);
                             };
                             
-                            const printSingleLabel = (e: React.MouseEvent, itemId: string) => {
+                            const printSingleVariant = (e: React.MouseEvent, variant: VariantLabelData) => {
                               e.stopPropagation();
-                              setSelectedItemsForLabels(new Set([itemId]));
-                              setTimeout(() => printLabels(), 100);
+                              printVariantLabels([variant]);
                             };
                             
                             return (
@@ -6769,17 +6819,9 @@ function ShipmentReportDialog({
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <span className="text-sm font-medium truncate block">{parentName}</span>
-                                        {(() => {
-                                          // Count total variants across all items
-                                          let totalVariants = 0;
-                                          items.forEach((item) => {
-                                            const uniqueVariants = new Set(item.locations.map((loc: any) => loc.variantId || loc.sku || 'default'));
-                                            totalVariants += uniqueVariants.size || 1;
-                                          });
-                                          return totalVariants > 1 && (
-                                            <span className="text-[10px] text-muted-foreground">{totalVariants} {t('variants')}</span>
-                                          );
-                                        })()}
+                                        {groupVariants.length > 1 && (
+                                          <span className="text-[10px] text-muted-foreground">{groupVariants.length} {t('variants')}</span>
+                                        )}
                                       </div>
                                       <Button
                                         size="sm"
@@ -6798,93 +6840,58 @@ function ShipmentReportDialog({
                                   
                                   <CollapsibleContent>
                                     <div className="border-t divide-y divide-border max-h-96 overflow-y-auto">
-                                      {(() => {
-                                        // Expand all variants from all items in this group
-                                        const allVariants: Array<{
-                                          variantKey: string;
-                                          variantName: string;
-                                          sku: string;
-                                          locations: Array<{locationCode: string; quantity: number}>;
-                                          totalQty: number;
-                                          receiptItemId: string;
-                                          prices: any;
-                                        }> = [];
-                                        
-                                        items.forEach((item) => {
-                                          // Group locations by variant
-                                          const variantGroups: Record<string, typeof allVariants[0]> = {};
-                                          item.locations.forEach((loc: any) => {
-                                            const key = loc.variantId || loc.sku || item.sku || 'default';
-                                            if (!variantGroups[key]) {
-                                              variantGroups[key] = {
-                                                variantKey: key,
-                                                variantName: loc.variantName || item.productName,
-                                                sku: loc.sku || item.sku || '-',
-                                                locations: [],
-                                                totalQty: 0,
-                                                receiptItemId: String(item.receiptItemId),
-                                                prices: item.prices
-                                              };
-                                            }
-                                            variantGroups[key].locations.push({ locationCode: loc.locationCode, quantity: loc.quantity || 1 });
-                                            variantGroups[key].totalQty += loc.quantity || 1;
-                                          });
-                                          Object.values(variantGroups).forEach(v => allVariants.push(v));
-                                        });
-                                        
-                                        return allVariants.map((variant, vIdx) => (
+                                      {groupVariants.map((variant, vIdx) => (
+                                        <div 
+                                          key={`${variant.receiptItemId}-${variant.key}-${vIdx}`}
+                                          className={`p-2 pl-8 flex items-center gap-2 transition-colors ${
+                                            selectedVariantsForLabels.has(variant.key)
+                                              ? 'bg-green-50/50 dark:bg-green-900/10'
+                                              : 'hover:bg-muted/30'
+                                          }`}
+                                        >
                                           <div 
-                                            key={`${variant.receiptItemId}-${variant.variantKey}-${vIdx}`}
-                                            className={`p-2 pl-8 flex items-center gap-2 transition-colors ${
-                                              selectedItemsForLabels.has(variant.receiptItemId)
-                                                ? 'bg-green-50/50 dark:bg-green-900/10'
-                                                : 'hover:bg-muted/30'
+                                            className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 cursor-pointer ${
+                                              selectedVariantsForLabels.has(variant.key)
+                                                ? 'bg-green-500 border-green-500'
+                                                : 'border-gray-300 dark:border-gray-600'
                                             }`}
+                                            onClick={() => toggleVariantForLabel(variant)}
                                           >
-                                            <div 
-                                              className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 cursor-pointer ${
-                                                selectedItemsForLabels.has(variant.receiptItemId)
-                                                  ? 'bg-green-500 border-green-500'
-                                                  : 'border-gray-300 dark:border-gray-600'
-                                              }`}
-                                              onClick={() => toggleItemForLabel(variant.receiptItemId)}
-                                            >
-                                              {selectedItemsForLabels.has(variant.receiptItemId) && (
-                                                <Check className="h-2 w-2 text-white" />
-                                              )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <span className="text-xs truncate block">{variant.variantName}</span>
-                                              <span className="text-[9px] text-muted-foreground font-mono">{variant.sku}</span>
-                                            </div>
-                                            <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
-                                              ×{variant.totalQty}
-                                            </span>
-                                            <div className="text-right shrink-0 text-[10px]">
-                                              <div className="font-semibold">{formatPrice(variant.prices?.priceCzk, 'CZK')}</div>
-                                              <div className="text-muted-foreground">{formatPrice(variant.prices?.priceEur, 'EUR')}</div>
-                                            </div>
-                                            <div className="flex flex-wrap gap-0.5 shrink-0 max-w-24">
-                                              {variant.locations.slice(0, 2).map((loc, idx) => (
-                                                <span key={idx} className="text-[9px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded">
-                                                  {loc.locationCode}
-                                                </span>
-                                              ))}
-                                              {variant.locations.length > 2 && (
-                                                <span className="text-[9px] text-muted-foreground">+{variant.locations.length - 2}</span>
-                                              )}
-                                            </div>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0 shrink-0"
-                                              onClick={(e) => printSingleLabel(e, variant.receiptItemId)}
-                                            >
-                                              <Printer className="h-3 w-3" />
-                                            </Button>
+                                            {selectedVariantsForLabels.has(variant.key) && (
+                                              <Check className="h-2 w-2 text-white" />
+                                            )}
                                           </div>
-                                        ));
-                                      })()}
+                                          <div className="flex-1 min-w-0">
+                                            <span className="text-xs truncate block">{variant.variantName}</span>
+                                            <span className="text-[9px] text-muted-foreground font-mono">{variant.sku}</span>
+                                          </div>
+                                          <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
+                                            ×{variant.totalQty}
+                                          </span>
+                                          <div className="text-right shrink-0 text-[10px]">
+                                            <div className="font-semibold">{formatPrice(variant.prices?.priceCzk, 'CZK')}</div>
+                                            <div className="text-muted-foreground">{formatPrice(variant.prices?.priceEur, 'EUR')}</div>
+                                          </div>
+                                          <div className="flex flex-wrap gap-0.5 shrink-0 max-w-24">
+                                            {variant.locations.slice(0, 2).map((loc, idx) => (
+                                              <span key={idx} className="text-[9px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded">
+                                                {loc.locationCode}
+                                              </span>
+                                            ))}
+                                            {variant.locations.length > 2 && (
+                                              <span className="text-[9px] text-muted-foreground">+{variant.locations.length - 2}</span>
+                                            )}
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0 shrink-0"
+                                            onClick={(e) => printSingleVariant(e, variant)}
+                                          >
+                                            <Printer className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
                                     </div>
                                   </CollapsibleContent>
                                 </div>
