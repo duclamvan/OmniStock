@@ -505,13 +505,6 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                     </div>
                   </motion.div>
                 ))}
-                <motion.div 
-                  variants={skeletonItemVariants}
-                  className="flex items-center justify-center gap-2 text-xs text-muted-foreground dark:text-gray-500 pt-2"
-                >
-                  <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
-                  {t('common:searching')}
-                </motion.div>
               </motion.div>
             ) : totalResults === 0 ? (
               <motion.div 
