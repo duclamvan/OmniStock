@@ -3737,6 +3737,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return sql.join(conditions, sql` OR `);
   }
 
+  // LRU Cache for global search (30s TTL, max 100 entries)
+  const searchCache = new Map<string, { data: any; timestamp: number }>();
+  const SEARCH_CACHE_TTL = 30000; // 30 seconds
+  const SEARCH_CACHE_MAX_SIZE = 100;
+
+  function getSearchFromCache(key: string): any | null {
+    const cached = searchCache.get(key);
+    if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+      return cached.data;
+    }
+    if (cached) {
+      searchCache.delete(key); // Clean up expired entry
+    }
+    return null;
+  }
+
+  function setSearchCache(key: string, data: any): void {
+    // LRU eviction if at max size
+    if (searchCache.size >= SEARCH_CACHE_MAX_SIZE) {
+      const firstKey = searchCache.keys().next().value;
+      if (firstKey) searchCache.delete(firstKey);
+    }
+    searchCache.set(key, { data, timestamp: Date.now() });
+  }
+
   // Global Search endpoint - PostgreSQL-native accent-insensitive search
   app.get('/api/search', isAuthenticated, async (req, res) => {
     try {
@@ -3747,8 +3772,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ 
           inventoryItems: [], 
           shipmentItems: [], 
-          customers: [] 
+          customers: [],
+          orders: []
         });
+      }
+
+      // Check cache first for instant response
+      const cacheKey = query.toLowerCase().trim();
+      const cachedResult = getSearchFromCache(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
       }
 
       // Normalize query for Vietnamese accent-insensitive search
@@ -3998,12 +4031,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      res.json({
+      const result = {
         inventoryItems,
         shipmentItems,
         customers: customersWithStats,
         orders: orderResults
-      });
+      };
+      
+      // Cache the result for fast repeated queries
+      setSearchCache(cacheKey, result);
+      
+      res.json(result);
     } catch (error) {
       console.error("Error in global search:", error);
       res.status(500).json({ message: "Search failed" });

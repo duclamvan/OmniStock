@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -161,13 +161,20 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
 
   const { data: results, isLoading, isFetching } = useQuery<SearchResult>({
     queryKey: ['/api/search', debouncedQuery],
-    queryFn: async () => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+    queryFn: async ({ signal }) => {
+      // Use TanStack Query's signal for proper cancellation
+      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {
+        signal, // Query will auto-cancel when key changes
+      });
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
     enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 30000,
+    staleTime: 60000, // Cache for 1 minute
+    gcTime: 300000, // Keep in memory for 5 minutes
+    placeholderData: keepPreviousData, // Show previous results while loading
+    refetchOnWindowFocus: false,
+    retry: false, // Don't retry failed searches
   });
 
   // Flatten results for keyboard navigation
