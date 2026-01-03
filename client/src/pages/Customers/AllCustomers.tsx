@@ -745,24 +745,93 @@ export default function AllCustomers() {
 
         for (const [key, value] of Object.entries(row)) {
           const lowerKey = key.toLowerCase().trim();
+          const strValue = value != null ? String(value) : '';
+          
+          // Basic fields
           if (lowerKey === 'name' || lowerKey === 'tên' || lowerKey === 'ten') {
-            customer.name = String(value);
+            customer.name = strValue;
           } else if (lowerKey === 'email') {
-            customer.email = String(value);
+            customer.email = strValue;
           } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
-            customer.phone = String(value);
+            customer.phone = strValue;
           } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
-            customer.country = String(value);
+            customer.country = strValue;
           } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi' || lowerKey === 'street') {
-            customer.street = String(value);
+            customer.address = strValue;
           } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
-            customer.city = String(value);
+            customer.city = strValue;
+          } else if (lowerKey === 'zip code' || lowerKey === 'zipcode' || lowerKey === 'postal code') {
+            customer.zipCode = strValue;
           } else if (lowerKey === 'company' || lowerKey === 'công ty' || lowerKey === 'cong ty') {
-            customer.company = String(value);
+            customer.company = strValue;
           } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
-            customer.notes = String(value);
+            customer.notes = strValue;
           } else if (lowerKey === 'customer type' || lowerKey === 'type' || lowerKey === 'loại') {
-            customer.type = String(value);
+            customer.type = strValue;
+          }
+          // Facebook fields
+          else if (lowerKey === 'facebook id' || lowerKey === 'facebookid') {
+            customer.facebookId = strValue;
+          } else if (lowerKey === 'facebook name' || lowerKey === 'facebookname') {
+            customer.facebookName = strValue;
+          } else if (lowerKey === 'facebook url' || lowerKey === 'facebookurl') {
+            customer.facebookUrl = strValue;
+          }
+          // Tax/VAT fields  
+          else if (lowerKey === 'ico') {
+            customer.ico = strValue;
+          } else if (lowerKey === 'dic') {
+            customer.dic = strValue;
+          } else if (lowerKey === 'vat id' || lowerKey === 'vatid') {
+            customer.vatId = strValue;
+          } else if (lowerKey === 'vat number') {
+            customer.vatNumber = strValue;
+          } else if (lowerKey === 'tax id') {
+            customer.taxId = strValue;
+          }
+          // Billing fields
+          else if (lowerKey === 'billing first name') {
+            customer.billingFirstName = strValue;
+          } else if (lowerKey === 'billing last name') {
+            customer.billingLastName = strValue;
+          } else if (lowerKey === 'billing company') {
+            customer.billingCompany = strValue;
+          } else if (lowerKey === 'billing email') {
+            customer.billingEmail = strValue;
+          } else if (lowerKey === 'billing phone') {
+            customer.billingTel = strValue;
+          } else if (lowerKey === 'billing street') {
+            customer.billingStreet = strValue;
+          } else if (lowerKey === 'billing street number') {
+            customer.billingStreetNumber = strValue;
+          } else if (lowerKey === 'billing city') {
+            customer.billingCity = strValue;
+          } else if (lowerKey === 'billing zip code') {
+            customer.billingZipCode = strValue;
+          } else if (lowerKey === 'billing country') {
+            customer.billingCountry = strValue;
+          }
+          // Shipping fields
+          else if (lowerKey === 'shipping first name') {
+            customer.shippingFirstName = strValue;
+          } else if (lowerKey === 'shipping last name') {
+            customer.shippingLastName = strValue;
+          } else if (lowerKey === 'shipping company') {
+            customer.shippingCompany = strValue;
+          } else if (lowerKey === 'shipping email') {
+            customer.shippingEmail = strValue;
+          } else if (lowerKey === 'shipping phone') {
+            customer.shippingPhone = strValue;
+          } else if (lowerKey === 'shipping street') {
+            customer.shippingStreet = strValue;
+          } else if (lowerKey === 'shipping street number') {
+            customer.shippingStreetNumber = strValue;
+          } else if (lowerKey === 'shipping city') {
+            customer.shippingCity = strValue;
+          } else if (lowerKey === 'shipping zip code') {
+            customer.shippingZipCode = strValue;
+          } else if (lowerKey === 'shipping country') {
+            customer.shippingCountry = strValue;
           }
         }
 
