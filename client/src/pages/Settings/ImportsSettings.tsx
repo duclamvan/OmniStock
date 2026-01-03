@@ -108,12 +108,9 @@ export default function ImportsSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      return apiRequest('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify({
-          category: 'imports',
-          settings: data,
-        }),
+      return apiRequest('POST', '/api/settings', {
+        category: 'imports',
+        settings: data,
       });
     },
     onSuccess: () => {

@@ -462,6 +462,9 @@ function Router() {
         <Route path="/settings/roles">
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
         </Route>
+        <Route path="/settings/imports">
+          {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
       </Layout>
       <Route component={NotFound} />
     </Switch>
