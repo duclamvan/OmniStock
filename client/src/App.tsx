@@ -14,6 +14,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { LocalizationProvider } from "@/contexts/LocalizationContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { LabelPrintProvider } from "@/hooks/use-label-print";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
@@ -509,7 +510,9 @@ function App() {
         <SettingsProvider>
           <LocalizationProvider>
             <TooltipProvider>
-              <AppContent />
+              <LabelPrintProvider>
+                <AppContent />
+              </LabelPrintProvider>
             </TooltipProvider>
           </LocalizationProvider>
         </SettingsProvider>
