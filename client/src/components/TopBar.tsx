@@ -74,10 +74,7 @@ export function TopBar() {
 
   // Auto-mark notifications as read when dialog opens
   useEffect(() => {
-    console.log('[TopBar] useEffect triggered - showNotifications:', showNotifications, 'unreadCount:', unreadCount);
     if (showNotifications && unreadCount > 0) {
-      // Mark all notifications as read immediately when dialog opens
-      console.log('[TopBar] Marking all notifications as read, count:', unreadCount);
       markAllAsReadMutation.mutate();
     }
   }, [showNotifications, unreadCount]);
@@ -85,11 +82,8 @@ export function TopBar() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
-    // Real-time search with Vietnamese diacritics support
     const normalizedQuery = normalizeVietnamese(value.toLowerCase());
-    // TODO: Implement search across all entities
-    console.log('Searching for:', normalizedQuery);
+    // Search functionality is handled by the search component
   };
 
   const getTypeColor = (type: string): string => {

@@ -3612,10 +3612,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await fs.writeFile(thumbnailPath, thumbnailBuffer.buffer);
 
       // Log compression stats
-      console.log(`Image compressed: ${req.file.originalname}`);
-      console.log(`Original size: ${(req.file.size / 1024).toFixed(2)} KB`);
-      console.log(`Compressed size: ${(compressionResult.compressedSize / 1024).toFixed(2)} KB`);
-      console.log(`Compression ratio: ${compressionResult.compressionRatio.toFixed(2)}%`);
 
       // Return URLs and compression info
       res.json({ 
@@ -6649,14 +6645,12 @@ Important:
   app.post('/api/products/:id/tiered-pricing', isAuthenticated, async (req, res) => {
     try {
       const productId = req.params.id;
-      console.log("Creating tiered pricing with body:", req.body);
       const validationResult = insertProductTieredPricingSchema.safeParse({
         ...req.body,
         productId
       });
 
       if (!validationResult.success) {
-        console.log("Tiered pricing validation error:", validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid tiered pricing data",
           errors: validationResult.error.errors
@@ -7269,13 +7263,11 @@ Important:
       const updates = { ...req.body };
       const productId = req.params.id;
 
-      console.log('PATCH /api/products/:id - variants received:', updates.variants);
 
       // Extract variants from updates
       const newVariants = updates.variants || [];
       delete updates.variants;
 
-      console.log('PATCH - extracted variants count:', newVariants.length);
 
       // Update the main product
       const product = await storage.updateProduct(productId, updates);
@@ -7330,7 +7322,6 @@ Important:
                     quantity: (existingLoc.quantity || 0) + variant.quantity,
                     notes: existingLoc.notes ? `${existingLoc.notes}, Variant: ${variant.name}` : `Variant: ${variant.name}`,
                   });
-                  console.log(`📍 Added ${variant.quantity} to location ${locationCode} for variant "${variant.name}"`);
                 } else {
                   // Create new location
                   await storage.createProductLocation({
@@ -7340,7 +7331,6 @@ Important:
                     isPrimary: false,
                     notes: `Variant: ${variant.name}`,
                   });
-                  console.log(`📍 Created location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
                 }
               } catch (locError) {
                 console.error(`Failed to create/update location for variant ${variant.name}:`, locError);
@@ -7363,7 +7353,6 @@ Important:
                     quantity: variant.quantity,
                     notes: `Variant: ${variant.name}`,
                   });
-                  console.log(`📍 Updated location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
                 } else {
                   // Create new location
                   await storage.createProductLocation({
@@ -7373,7 +7362,6 @@ Important:
                     isPrimary: false,
                     notes: `Variant: ${variant.name}`,
                   });
-                  console.log(`📍 Created location ${locationCode} for variant "${variant.name}" with qty ${variant.quantity}`);
                 }
               } catch (locError) {
                 console.error(`Failed to update/create location for variant ${variant.name}:`, locError);
@@ -7736,7 +7724,6 @@ Important:
           .update(products)
           .set({ warehouseId: matchingWarehouse.id, updatedAt: new Date() })
           .where(eq(products.id, productId));
-        console.log(`📦 Auto-set product ${productId} warehouse to ${matchingWarehouse.name} (${matchingWarehouse.id}) based on location ${locationCode}`);
       }
     } catch (error) {
       console.error('Failed to update product warehouse from location code:', error);
@@ -11192,7 +11179,6 @@ Important:
           const masterProduct = await storage.getProductById(targetProductId);
           masterProductName = masterProduct?.name || 'Unknown Master';
           
-          console.log(`🎯 Virtual SKU detected: "${virtualProductName}" → deducting from "${masterProductName}" (ratio: ${deductionRatio})`);
         }
       }
       
@@ -11220,7 +11206,6 @@ Important:
           if (!location && (isVirtualSku || !locationCode)) {
             location = locations.find(loc => loc.isPrimary) || locations[0];
             if (location && isVirtualSku) {
-              console.log(`🎯 [Virtual SKU] Auto-selected master product location: ${location.locationCode}`);
             }
           }
           
@@ -11237,9 +11222,7 @@ Important:
               await storage.updateProduct(targetProductId, { quantity: newProductQty });
               
               if (isVirtualSku) {
-                console.log(`📦 [Virtual SKU] Picked ${qtyChange}x "${virtualProductName}", deducted ${actualQtyChange}x "${masterProductName}" from ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               } else {
-                console.log(`📦 Picked ${qtyChange}x, reduced location ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               }
             }
           } else {
@@ -11258,7 +11241,6 @@ Important:
               const currentVariantQty = variant.quantity || 0;
               const newVariantQty = Math.max(0, currentVariantQty - qtyChange);
               await storage.updateProductVariant(variantId, { quantity: newVariantQty });
-              console.log(`📦 [Variant] Picked ${qtyChange}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
             }
           } catch (variantError) {
             console.error('Error deducting variant quantity:', variantError);
@@ -11280,7 +11262,6 @@ Important:
           if (!location && (isVirtualSku || !locationCode)) {
             location = locations.find(loc => loc.isPrimary) || locations[0];
             if (location && isVirtualSku) {
-              console.log(`🎯 [Virtual SKU Unpick] Auto-selected master product location: ${location.locationCode}`);
             }
           }
           
@@ -11298,9 +11279,7 @@ Important:
               await storage.updateProduct(targetProductId, { quantity: newProductQty });
               
               if (isVirtualSku) {
-                console.log(`📦 [Virtual SKU] Unpicked ${Math.abs(qtyChange)}x "${virtualProductName}", restored ${restoreQty}x "${masterProductName}" to ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               } else {
-                console.log(`📦 Unpicked ${Math.abs(qtyChange)}x, restored location ${locationCode}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
               }
             }
           }
@@ -11317,7 +11296,6 @@ Important:
               const restoreQty = Math.abs(qtyChange);
               const newVariantQty = currentVariantQty + restoreQty;
               await storage.updateProductVariant(variantId, { quantity: newVariantQty });
-              console.log(`📦 [Variant] Unpicked ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
             }
           } catch (variantError) {
             console.error('Error restoring variant quantity:', variantError);
@@ -11391,7 +11369,6 @@ Important:
         targetProductId = product.masterProductId;
         const deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
         actualQuantity = quantity * deductionRatio;
-        console.log(`🎯 [Bundle Component] Virtual SKU detected: "${product.name}" → deducting from master (ratio: ${deductionRatio})`);
       }
       
       // Find the location for the target product (master product for virtual SKUs)
@@ -11404,7 +11381,6 @@ Important:
       if (!location && isVirtualSku) {
         location = locations.find(loc => loc.isPrimary) || locations[0];
         if (location) {
-          console.log(`🎯 [Bundle Component Virtual SKU] Auto-selected master product location: ${location.locationCode}`);
         }
       }
       
@@ -11418,11 +11394,9 @@ Important:
       if (action === 'restore') {
         // Restore stock (unpicking)
         newQty = currentQty + actualQuantity;
-        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Restored stock at ${location.locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (+${actualQuantity})`);
       } else {
         // Deduct stock (picking)
         newQty = Math.max(0, currentQty - actualQuantity);
-        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Deducted stock at ${location.locationCode} for product ${targetProductId}: ${currentQty} → ${newQty} (-${actualQuantity})`);
       }
       
       await storage.updateProductLocation(location.id, { quantity: newQty });
@@ -11435,7 +11409,6 @@ Important:
           ? currentProductQty + actualQuantity 
           : Math.max(0, currentProductQty - actualQuantity);
         await storage.updateProduct(targetProductId, { quantity: newProductQty });
-        console.log(`📦 [Bundle Component${isVirtualSku ? ' Virtual' : ''}] Product qty updated: ${currentProductQty} → ${newProductQty}`);
       }
       
       // Log the activity
@@ -11486,7 +11459,6 @@ Important:
       // Whether resetting during active picking OR reverting from packing
       const shouldRestoreInventory = true;
       
-      console.log(`📦 Reset-picking: order ${orderId}, pickStatus=${order.pickStatus}, shouldRestoreInventory=${shouldRestoreInventory}`);
       
       // Get order items with their picked quantities
       const orderItems = await storage.getOrderItems(orderId);
@@ -11510,14 +11482,12 @@ Important:
               isVirtualSku = true;
               targetProductId = item.masterProductId;
               deductionRatio = parseFloat(item.inventoryDeductionRatio || '1');
-              console.log(`📦 Reset [Debug]: Virtual SKU from ORDER ITEM: isVirtual=${item.isVirtual}, masterProductId=${item.masterProductId}, ratio=${deductionRatio}`);
             }
             // Fallback to product fields for legacy orders
             else if (product?.isVirtual && product?.masterProductId) {
               isVirtualSku = true;
               targetProductId = product.masterProductId;
               deductionRatio = parseFloat(product.inventoryDeductionRatio || '1');
-              console.log(`📦 Reset [Debug]: Virtual SKU from PRODUCT: isVirtual=${product.isVirtual}, masterProductId=${product.masterProductId}, ratio=${deductionRatio}`);
             }
             
             // Only restore inventory if we're resetting during active picking (not reverting from packing)
@@ -11532,7 +11502,6 @@ Important:
               // If frontend didn't provide locations, try to read from database
               if (!multiLocationPicks && item.pickedFromLocations) {
                 multiLocationPicks = item.pickedFromLocations as Record<string, number>;
-                console.log(`📦 Using stored pickedFromLocations for item ${item.id}:`, multiLocationPicks);
               }
               
               if (multiLocationPicks && typeof multiLocationPicks === 'object') {
@@ -11550,7 +11519,6 @@ Important:
                 // Calculate total virtual picks from pickedFromLocations
                 const totalVirtualPicks = Object.values(multiLocationPicks).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
                 
-                console.log(`📦 Reset [Debug]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${item.pickedQuantity}, totalVirtualPicks=${totalVirtualPicks}, maxRestoreMaster=${maxRestorationMaster}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
                 
                 for (const [locationCode, qty] of Object.entries(multiLocationPicks)) {
                   const pickedQty = Number(qty) || 0;
@@ -11588,9 +11556,7 @@ Important:
                       await storage.updateProduct(targetProductId, { quantity: newProductQty });
                       
                       if (isVirtualSku) {
-                        console.log(`📦 Reset [Virtual SKU Multi-Loc]: Restored ${pickedQty} × ${deductionRatio} = ${restoreQty} to ${locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}`);
                       } else {
-                        console.log(`📦 Reset [Multi-Loc]: Restored ${pickedQty} to ${locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
                       }
                     }
                     
@@ -11611,7 +11577,6 @@ Important:
                       const restoreQty = item.pickedQuantity || 0;
                       const newVariantQty = currentVariantQty + restoreQty;
                       await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                      console.log(`📦 Reset [Variant Multi-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
                     }
                   } catch (variantError) {
                     console.error('Error restoring variant quantity during reset:', variantError);
@@ -11643,7 +11608,6 @@ Important:
                   const restoreQty = isVirtualSku ? (pickedCount * deductionRatio) : pickedCount;
                   const newQty = currentQty + restoreQty;
                   
-                  console.log(`📦 Reset [Debug Single-Loc]: item ${item.id?.slice(-6)}, orderQty=${item.quantity}, pickedQty=${pickedCount}, restoreQty=${restoreQty}, isVirtual=${isVirtualSku}, ratio=${deductionRatio}`);
                   
                   await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                   
@@ -11655,9 +11619,7 @@ Important:
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
                     if (isVirtualSku) {
-                      console.log(`📦 Reset [Virtual SKU]: Restored ${pickedCount} × ${deductionRatio} = ${restoreQty} to ${targetLocation.locationCode} for master product ${targetProductId}: ${currentQty} → ${newQty}, product qty: ${currentProductQty} → ${newProductQty}`);
                     } else {
-                      console.log(`📦 Reset: Restored ${pickedCount} to ${targetLocation.locationCode} for product ${item.productId}: ${currentQty} → ${newQty}`);
                     }
                   }
                   
@@ -11674,7 +11636,6 @@ Important:
                       const restoreQty = item.pickedQuantity || 0;
                       const newVariantQty = currentVariantQty + restoreQty;
                       await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                      console.log(`📦 Reset [Variant Single-Loc]: Restored ${restoreQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
                     }
                   } catch (variantError) {
                     console.error('Error restoring variant quantity during reset:', variantError);
@@ -11700,7 +11661,6 @@ Important:
                 await storage.updateBundle(item.bundleId, {
                   availableStock: currentStock + restoreQty
                 });
-                console.log(`📦 Reset [Bundle]: Restored ${restoreQty} to bundle "${bundle.name}": ${currentStock} → ${currentStock + restoreQty}`);
                 restoredQuantity += restoreQty;
               }
             }
@@ -11722,7 +11682,6 @@ Important:
         pickEndTime: null,
         pickedBy: null
       });
-      console.log(`📦 Order ${orderId} picking reset: ${restoredLocations} locations, ${restoredQuantity} units restored`);
       
       // Invalidate allocation cache so products query recalculates allocations
       storage.invalidateAllocatedQuantitiesCache();
@@ -12123,7 +12082,6 @@ Important:
           fileIds: selectedDocumentIds || [],
           uploadedFiles: currentIncludedDocs.uploadedFiles || []
         };
-        console.log('Merged selectedDocumentIds into includedDocuments:', finalOrderData.includedDocuments);
       }
 
       // Convert numeric fields to strings for decimal columns
@@ -12211,7 +12169,6 @@ Important:
 
       // Create order items with landing cost snapshot - OPTIMIZED BATCH VERSION
       if (items && items.length > 0) {
-        console.log(`[Batch] Creating ${items.length} order items for order ${order.id}`);
         const batchStartTime = Date.now();
         
         // Fetch live exchange rates for currency conversion (EUR is base)
@@ -12336,7 +12293,6 @@ Important:
           }
         }
         
-        console.log(`[Batch] Fetched ${variantsMap.size} variants, ${productsMap.size} products, ${bundleItemsMap.size} bundles in ${Date.now() - batchStartTime}ms`);
         
         // STEP 5: Build order items array using cached data
         const orderItemsToInsert: any[] = [];
@@ -12437,7 +12393,6 @@ Important:
         // STEP 6: Bulk insert all order items in one query
         try {
           await storage.createOrderItemsBulk(orderItemsToInsert);
-          console.log(`[Batch] Inserted ${orderItemsToInsert.length} order items in ${Date.now() - batchStartTime}ms total`);
         } catch (bulkError) {
           console.error('Failed to bulk insert order items, falling back to individual inserts:', bulkError);
           // Fallback: insert items one by one if bulk fails
@@ -12450,7 +12405,6 @@ Important:
           }
         }
       } else {
-        console.log('No items to create or empty items array');
       }
 
       // Calculate and update totalCost from order items' landing costs
@@ -12497,7 +12451,6 @@ Important:
 
       // Fetch the complete order with items to return
       const completeOrder = await storage.getOrderById(order.id);
-      console.log('[POS] Returning order with orderId:', completeOrder?.orderId, 'id:', completeOrder?.id);
       res.json(completeOrder);
     } catch (error) {
       console.error("Error creating order:", error);
@@ -12507,7 +12460,6 @@ Important:
 
   app.patch('/api/orders/:id', isAuthenticated, async (req: any, res) => {
     try {
-      console.log('PATCH /api/orders/:id - Received body:', req.body);
       const { items, selectedDocumentIds, ...orderUpdates } = req.body;
 
       const updates = { ...orderUpdates };
@@ -12516,7 +12468,6 @@ Important:
       if (selectedDocumentIds !== undefined) {
         // Save to the selectedDocumentIds column directly
         updates.selectedDocumentIds = selectedDocumentIds || [];
-        console.log('✅ Saving selectedDocumentIds to database:', updates.selectedDocumentIds);
       }
 
       // Convert all date fields from strings to Date objects
@@ -12526,7 +12477,6 @@ Important:
           try {
             const dateValue = new Date(updates[field]);
             if (!isNaN(dateValue.getTime())) {
-              console.log(`Converting ${field}: ${updates[field]} to Date object`);
               updates[field] = dateValue;
             } else {
               console.error(`Invalid date for ${field}: ${updates[field]}`);
@@ -12544,7 +12494,6 @@ Important:
         updates[key] === undefined && delete updates[key]
       );
 
-      console.log('Updates after date conversion:', updates);
 
       const order = await storage.updateOrder(req.params.id, updates);
 
@@ -12560,7 +12509,6 @@ Important:
 
       // Update order items if provided - OPTIMIZED BATCH VERSION
       if (items && Array.isArray(items)) {
-        console.log(`[Batch] Updating ${items.length} order items for order ${req.params.id}`);
         const batchStartTime = Date.now();
         
         // Delete existing items
@@ -12644,7 +12592,6 @@ Important:
         // Bulk insert all items
         try {
           await storage.createOrderItemsBulk(orderItemsToInsert);
-          console.log(`[Batch] Updated ${orderItemsToInsert.length} order items in ${Date.now() - batchStartTime}ms`);
         } catch (bulkError) {
           console.error('Failed to bulk insert, falling back to individual:', bulkError);
           for (const oi of orderItemsToInsert) {
@@ -13045,7 +12992,6 @@ Important:
       const shouldRestoreInventory = order.pickStatus === 'completed' || order.pickStatus === 'in_progress';
       
       if (!shouldRestoreInventory) {
-        console.log(`🔄 [Soft Delete] Order ${order.orderId} was never picked, no inventory to restore`);
       }
       
       // Restore inventory for each item (add quantities back to specific locations)
@@ -13109,7 +13055,6 @@ Important:
                     const newProductQty = currentProductQty + restoreQty;
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
-                    console.log(`🔄 [Soft Delete Multi-Loc] Restored ${pickedQty}${isVirtualSku ? ` × ${deductionRatio} = ${restoreQty}` : ''} to ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
                   }
                   
                   totalRestoredLocations++;
@@ -13128,7 +13073,6 @@ Important:
                     const restoreQty = item.pickedQuantity || 0;
                     const newVariantQty = currentVariantQty + restoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Soft Delete] Restored ${restoreQty}x variant "${variant.name}": ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
@@ -13154,7 +13098,6 @@ Important:
                 const newQty = currentQty + restoreQty;
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                 
-                console.log(`🔄 [Soft Delete Fallback] Restored ${pickedCount}${isVirtualSku ? ` × ${deductionRatio} = ${restoreQty}` : ''} to ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
                 totalRestoredLocations++;
               }
               
@@ -13177,7 +13120,6 @@ Important:
                     const variantRestoreQty = item.pickedQuantity || 0;
                     const newVariantQty = currentVariantQty + variantRestoreQty;
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Soft Delete] Restored ${variantRestoreQty}x variant "${variant.name}": ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error restoring variant quantity during soft delete:', variantError);
@@ -13196,14 +13138,12 @@ Important:
               await storage.updateBundle(item.bundleId, {
                 availableStock: currentStock + restoreQty
               });
-              console.log(`🔄 [Soft Delete] Restored ${restoreQty} units to bundle "${bundle.name}"`);
               totalRestoredQuantity += restoreQty;
             }
           }
         }
       }
       
-      console.log(`🔄 [Soft Delete] Order ${order.orderId} archived: ${totalRestoredLocations} locations, ${totalRestoredQuantity} units restored`);
 
       // Soft delete - move to trash (isArchived = true)
       // Note: Pick/pack data (pickedFromLocations, pickedQuantity, etc.) is preserved on order items
@@ -13294,7 +13234,6 @@ Important:
                     const newProductQty = Math.max(0, currentProductQty - deductQty);
                     await storage.updateProduct(targetProductId, { quantity: newProductQty });
                     
-                    console.log(`🔄 [Restore Multi-Loc] Deducted ${pickedQty}${isVirtualSku ? ` × ${deductionRatio} = ${deductQty}` : ''} from ${locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}: ${currentQty} → ${newQty}`);
                   }
                   
                   totalDeductedLocations++;
@@ -13313,7 +13252,6 @@ Important:
                     const deductQty = item.pickedQuantity || 0;
                     const newVariantQty = Math.max(0, currentVariantQty - deductQty);
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Restore Variant Multi-Loc]: Deducted ${deductQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error deducting variant quantity during restore:', variantError);
@@ -13326,7 +13264,6 @@ Important:
               
               // Skip if nothing was picked
               if (pickedCount <= 0) {
-                console.log(`🔄 [Restore Fallback] Item ${item.id?.slice(-6)} has pickedQuantity=0, skipping deduction`);
                 continue;
               }
               
@@ -13339,7 +13276,6 @@ Important:
                 const newQty = Math.max(0, currentQty - deductQty);
                 await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
                 
-                console.log(`🔄 [Restore Fallback] Deducted ${pickedCount}${isVirtualSku ? ` × ${deductionRatio} = ${deductQty}` : ''} from ${targetLocation.locationCode} for ${isVirtualSku ? 'master ' : ''}product ${targetProductId}`);
                 totalDeductedLocations++;
               }
               
@@ -13362,7 +13298,6 @@ Important:
                     const variantDeductQty = item.pickedQuantity || 0;
                     const newVariantQty = Math.max(0, currentVariantQty - variantDeductQty);
                     await storage.updateProductVariant(item.variantId, { quantity: newVariantQty });
-                    console.log(`🔄 [Restore Variant Single-Loc]: Deducted ${variantDeductQty}x variant "${variant.name}", qty: ${currentVariantQty} → ${newVariantQty}`);
                   }
                 } catch (variantError) {
                   console.error('Error deducting variant quantity during restore:', variantError);
@@ -13381,14 +13316,12 @@ Important:
               await storage.updateBundle(item.bundleId, {
                 availableStock: Math.max(0, currentStock - deductQty)
               });
-              console.log(`🔄 [Restore] Deducted ${deductQty} units from bundle "${bundle.name}"`);
               totalDeductedQuantity += deductQty;
             }
           }
         }
       }
       
-      console.log(`🔄 [Restore] Order ${order.orderId} restored: ${totalDeductedLocations} locations, ${totalDeductedQuantity} units deducted`);
 
       const restoredOrder = await storage.restoreOrder(req.params.id);
       if (!restoredOrder) {
@@ -16000,7 +15933,6 @@ Important:
     try {
       // Clear existing sales data
       await storage.deleteAllSales();
-      console.log("Cleared all existing sales/discounts data");
 
       // Create new discounts data
       const newDiscounts = [
@@ -16068,7 +16000,6 @@ Important:
       // Create each discount
       for (const discount of newDiscounts) {
         await storage.createSale(discount);
-        console.log(`Created discount: ${discount.name}`);
       }
 
       res.json({ 
@@ -17000,15 +16931,12 @@ Important:
       let shipmentNumbers: string[] = [];
       try {
         const batchStatus = await getPPLBatchStatus(batchId);
-        console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
         if (batchStatus.items && Array.isArray(batchStatus.items)) {
           shipmentNumbers = batchStatus.items
             .filter(item => item.shipmentNumber)
             .map(item => item.shipmentNumber!);
-          console.log('✅ Extracted shipment numbers:', shipmentNumbers);
         }
       } catch (statusError) {
-        console.log('⚠️ Could not get batch status:', statusError);
         // Continue with empty tracking numbers - will use placeholder
       }
 
@@ -17285,15 +17213,12 @@ Important:
         let shipmentNumbers: string[] = [];
         try {
           const batchStatus = await getPPLBatchStatus(batchId);
-          console.log('📦 Batch status response:', JSON.stringify(batchStatus, null, 2));
           if (batchStatus.items && Array.isArray(batchStatus.items)) {
             shipmentNumbers = batchStatus.items
               .filter(item => item.shipmentNumber)
               .map(item => item.shipmentNumber!);
-            console.log('✅ Extracted shipment numbers:', shipmentNumbers);
           }
         } catch (statusError) {
-          console.log('⚠️ Could not get batch status:', statusError);
           // Continue with empty tracking numbers - will use placeholder
         }
 
@@ -17377,9 +17302,6 @@ Important:
       const existingLabels = await storage.getShipmentLabelsByOrderId(orderId);
       const activeLabels = existingLabels.filter((l: any) => l.status === 'active');
 
-      console.log(`🔄 Rebuilding COD shipment for order ${orderId}`);
-      console.log(`📦 Existing cartons: ${existingCartons.length}`);
-      console.log(`🏷️ Active labels to cancel: ${activeLabels.length}`);
 
       // STEP 1: Cancel all existing PPL labels
       const { cancelPPLShipment } = await import('./services/pplService');
@@ -17388,9 +17310,7 @@ Important:
         if (label.carrier === 'PPL' && label.trackingNumbers?.[0]) {
           try {
             await cancelPPLShipment(label.trackingNumbers[0]);
-            console.log(`✅ Cancelled PPL shipment: ${label.trackingNumbers[0]}`);
           } catch (pplError) {
-            console.log(`⚠️ PPL cancellation failed (may already be processed): ${label.trackingNumbers[0]}`);
           }
         }
         // Mark label as cancelled in our database
@@ -17426,7 +17346,6 @@ Important:
         throw new Error('Failed to create carton');
       }
 
-      console.log(`📦 Created new carton #${nextCartonNumber}`);
 
       // STEP 3: Get all cartons (including the new one)
       const allCartons = await db
@@ -17559,14 +17478,12 @@ Important:
         let shipmentNumbers: string[] = [];
         try {
           const batchStatus = await getPPLBatchStatus(batchId);
-          console.log('📦 Rebuild batch status:', JSON.stringify(batchStatus, null, 2));
           if (batchStatus.items && Array.isArray(batchStatus.items)) {
             shipmentNumbers = batchStatus.items
               .filter((item: any) => item.shipmentNumber)
               .map((item: any) => item.shipmentNumber!);
           }
         } catch (statusError) {
-          console.log('⚠️ Could not get batch status:', statusError);
           // Generate placeholder tracking numbers
           shipmentNumbers = allCartons.map((_, i) => `PENDING-${batchId}-${i + 1}`);
         }
@@ -17622,7 +17539,6 @@ Important:
           });
         }
 
-        console.log(`✅ COD shipment rebuilt: ${allCartons.length} labels created`);
 
         res.json({
           success: true,
@@ -17673,7 +17589,6 @@ Important:
         // Check if order has pplLabelData that needs migration
         const order = await storage.getOrderById(orderId);
         if (order && order.pplLabelData && order.pplStatus === 'created') {
-          console.log('📦 Auto-migrating pplLabelData to shipment_labels for order:', orderId);
           const pplData = order.pplLabelData as any;
           const cartons = await storage.getOrderCartons(orderId);
           const cartonIds = cartons.map(c => c.id);
@@ -17707,7 +17622,6 @@ Important:
             }
           }
           
-          console.log('✅ Auto-migration complete');
           // Refetch labels after migration
           labels = await storage.getShipmentLabelsByOrderId(orderId);
         }
@@ -17736,7 +17650,6 @@ Important:
         try {
           const { cancelPPLShipment } = await import('./services/pplService');
           await cancelPPLShipment(label.trackingNumbers[0]);
-          console.log('PPL shipment cancelled:', label.trackingNumbers[0]);
         } catch (pplError) {
           console.error('PPL cancellation failed (may already be processed):', pplError);
           // Continue with deletion even if PPL cancellation fails
@@ -17754,12 +17667,10 @@ Important:
           pplShipmentNumbers: null as any,
           pplBatchId: null
         });
-        console.log(`✅ Order ${label.orderId} pplLabelData cleared to prevent auto-migration`);
       }
 
       // Note: We do NOT delete the carton - only the label is removed
       // This allows regenerating labels without losing carton data (weight, dimensions, etc.)
-      console.log(`✅ Label ${labelId} cancelled - carton data preserved`);
 
       res.json({ success: true, message: 'Shipment label cancelled successfully' });
     } catch (error) {
@@ -17827,7 +17738,6 @@ Important:
         trackingNumbers: trimmedNumbers
       });
 
-      console.log(`✅ Updated tracking numbers for label ${labelId}:`, trimmedNumbers);
 
       res.json(updatedLabel);
     } catch (error) {
@@ -17879,7 +17789,6 @@ Important:
         return res.status(500).json({ error: 'Failed to update tracking number' });
       }
 
-      console.log(`✅ Updated tracking number for label ${id}: ${trackingNumber}`);
       res.json({ 
         success: true, 
         label,
@@ -17939,7 +17848,6 @@ Important:
         
         // Use GET /shipment?CustomerReferences=referenceId to fetch tracking numbers
         try {
-          console.log(`📡 Fetching PPL tracking by reference: ${referenceId}...`);
           const shipments = await getPPLShipmentByReference(referenceId);
           
           // Extract shipmentNumber from each shipment
@@ -17948,12 +17856,9 @@ Important:
             .map(s => s.shipmentNumber!);
           
           if (shipmentNumbers.length > 0) {
-            console.log(`✅ Found tracking numbers:`, shipmentNumbers);
           } else {
-            console.log(`⚠️ No tracking numbers found for reference ${referenceId}`);
           }
         } catch (fetchError) {
-          console.log(`⚠️ Tracking fetch failed for reference ${referenceId}:`, fetchError);
         }
         
         // Update if we found real tracking numbers
@@ -18244,7 +18149,6 @@ Important:
       const duplicateCarton = existingCartons.find(c => c.cartonNumber === cartonData.cartonNumber);
       
       if (duplicateCarton) {
-        console.log(`⚠️ Duplicate carton prevented: Order ${orderId} already has carton #${cartonData.cartonNumber}`);
         // Return the existing carton instead of creating a duplicate
         return res.json(duplicateCarton);
       }
@@ -18378,7 +18282,6 @@ Important:
         }
         
         // Order has pplLabelData but no shipment_labels record - create one now
-        console.log('📦 Order has pplLabelData but no shipment_labels - creating record...');
         const pplData = order.pplLabelData as any;
         const cartons = await storage.getOrderCartons(orderId);
         const cartonIds = cartons.map(c => c.id);
@@ -18411,7 +18314,6 @@ Important:
           }
         }
         
-        console.log('✅ Created missing shipment_labels record');
         return res.json({
           success: true,
           message: 'Labels migrated to shipment_labels table',
@@ -18523,7 +18425,6 @@ Important:
       };
 
       // Create PPL shipment
-      console.log('📦 Creating PPL shipment for single carton order...');
       const batchResult = await createPPLShipment(pplShipment);
       const batchId = batchResult.batchId;
       let shipmentNumbers = batchResult.shipmentNumbers || [];
@@ -18531,7 +18432,6 @@ Important:
       // Get label PDF
       let label;
       try {
-        console.log('📄 Retrieving PPL label...');
         label = await getPPLLabel(batchId, 'pdf');
       } catch (labelError: any) {
         console.error('❌ Failed to retrieve PPL label:', labelError.message);
@@ -18549,11 +18449,9 @@ Important:
 
       // PPL API is asynchronous - fetch tracking numbers using GET /shipment?CustomerReferences=orderId
       if (shipmentNumbers.length === 0) {
-        console.log('📡 Fetching PPL tracking numbers by reference...');
         const { getPPLShipmentByReference } = await import('./services/pplService');
         
         // Wait a moment for PPL to process, then fetch tracking numbers
-        console.log('   Waiting 3s for PPL to process shipment...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         try {
@@ -18563,10 +18461,8 @@ Important:
             .map(s => s.shipmentNumber!);
           if (trackingNumbers.length > 0) {
             shipmentNumbers = trackingNumbers;
-            console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
           }
         } catch (refError) {
-          console.log('⚠️ Reference lookup failed:', refError);
         }
       }
 
@@ -18619,7 +18515,6 @@ Important:
         });
       }
 
-      console.log('✅ PPL label created successfully, cartons updated');
       res.json({
         success: true,
         batchId,
@@ -18765,7 +18660,6 @@ Important:
           });
         }
         // Use the parcelShopCode as-is - PPL API accepts KM prefix format
-        console.log(`🏪 PPL SMART parcelShopCode: ${order.pickupLocationCode}`);
       } else if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
         productType = hasCOD ? 'BUSD' : 'BUSS';
@@ -18792,7 +18686,6 @@ Important:
       if (cartons.length > 1) {
         // Multi-carton order: Create ONE SHIPMENT with shipmentSet
         // Each carton becomes an item in the set, labeled as 1/N, 2/N, etc.
-        console.log(`📦 Creating shipment SET with ${cartons.length} cartons`);
 
         // PPL API RESTRICTION for COD in shipmentSet:
         // When using shipmentSet, ONLY the main shipment can have COD
@@ -18810,9 +18703,7 @@ Important:
             codCurrency: order.codCurrency || 'CZK',      // PPL API uses camelCase
             codVarSym: numericOrderId || '1234567890'     // PPL API uses camelCase
           };
-          console.log(`💰 Shipment SET WITH COD: ${codValue} ${order.codCurrency || 'CZK'} (applied to entire set)`);
         } else {
-          console.log(`📦 Shipment SET: Standard shipment (no COD)`);
         }
 
         // Create ONE shipment with shipmentSet structure
@@ -18854,14 +18745,11 @@ Important:
         
         // Log parcelShopCode for PPL SMART shipments
         if (isSmartShipment && order.pickupLocationCode) {
-          console.log(`🏪 PPL SMART: specificDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         shipments.push(shipment);
-        console.log(`✓ Created shipment SET:`, JSON.stringify(shipment.shipmentSet, null, 2));
       } else if (cartons.length === 1) {
         // Single carton - simpler structure with COD if present
-        console.log(`📦 Creating single PPL shipment`);
 
         // Validate COD amount before creating cashOnDelivery object
         let cashOnDelivery = undefined;
@@ -18875,9 +18763,7 @@ Important:
             codCurrency: order.codCurrency || 'CZK',      // PPL API uses camelCase
             codVarSym: numericOrderId || '1234567890'     // PPL API uses camelCase
           };
-          console.log(`💰 Single carton WITH COD: ${codValue} ${order.codCurrency || 'CZK'}`);
         } else {
-          console.log(`📦 Single carton: Standard shipment (no COD)`);
         }
 
         const singleShipment: any = {
@@ -18911,7 +18797,6 @@ Important:
         
         // Log parcelShopCode for PPL SMART shipments
         if (isSmartShipment && order.pickupLocationCode) {
-          console.log(`🏪 PPL SMART: specificDelivery.parcelShopCode=${order.pickupLocationCode}`);
         }
 
         // Add weight for international shipments (CONN/COND) - required by PPL API
@@ -18920,7 +18805,6 @@ Important:
           singleShipment.weightedPackageInfo = {
             weight: cartonWeight > 0 ? cartonWeight : 1
           };
-          console.log(`📦 International batch shipment: Adding weightedPackageInfo.weight = ${singleShipment.weightedPackageInfo.weight} kg`);
         }
 
         shipments.push(singleShipment);
@@ -18940,7 +18824,6 @@ Important:
       const useSingleEndpoint = cartons.length === 1 && shipments.length === 1 && !isSmartShipment && !isInternational;
       
       if (useSingleEndpoint) {
-        console.log('🚀 Creating PPL single shipment (POST /shipment) - tracking number returned immediately!');
         
         const singleShipmentData = shipments[0];
         
@@ -18953,11 +18836,9 @@ Important:
         const packageData: any = { referenceId: `${singleShipmentData.referenceId}-1` };
         if (isInternational && cartonWeight && cartonWeight > 0) {
           packageData.weight = cartonWeight;
-          console.log(`📦 International shipment: Adding weight ${cartonWeight} kg to package`);
         } else if (isInternational && (!cartonWeight || cartonWeight <= 0)) {
           // For international, default to 1kg if no weight specified
           packageData.weight = 1;
-          console.log(`⚠️ International shipment: No carton weight, using default 1 kg`);
         }
         
         const singleShipmentRequest = {
@@ -19001,14 +18882,10 @@ Important:
           const result = await createPPLSingleShipment(singleShipmentRequest);
           shipmentId = result.shipmentId;
           shipmentNumbers = result.trackingNumbers;
-          console.log(`✅ PPL single shipment created! Shipment ID: ${shipmentId}`);
-          console.log(`📬 Tracking numbers (immediate): ${shipmentNumbers.join(', ')}`);
           
           // Get label using the shipment ID
-          console.log('📄 Retrieving PPL label by shipment ID...');
           const labelBuffer = await getPPLLabelByShipmentId(shipmentId, 'pdf');
           label = { labelContent: labelBuffer.toString('base64') };
-          console.log(`✅ Label retrieved (${labelBuffer.length} bytes)`);
         } catch (singleError: any) {
           console.error('❌ Single shipment creation failed:', singleError.message);
           return res.status(500).json({ 
@@ -19018,7 +18895,6 @@ Important:
         }
       } else {
         // Multi-carton: Use batch endpoint (shipmentSet requires batch)
-        console.log('🚀 Creating PPL batch (multi-carton shipmentSet)...');
         const batchResult = await createPPLShipment({
           shipments,
           labelSettings: {
@@ -19032,13 +18908,10 @@ Important:
         });
 
         batchId = batchResult.batchId;
-        console.log(`✅ PPL batch created: ${batchId}`);
 
         // Fetch tracking numbers using GET /shipment?CustomerReferences=orderId
         const { getPPLShipmentByReference } = await import('./services/pplService');
         
-        console.log(`📦 Fetching PPL tracking numbers by reference: ${order.orderId}...`);
-        console.log('   Waiting 3s for PPL to process shipment...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         try {
@@ -19048,17 +18921,13 @@ Important:
             .map(s => s.shipmentNumber!);
           if (trackingNumbers.length > 0) {
             shipmentNumbers = trackingNumbers;
-            console.log('✅ Retrieved tracking numbers:', shipmentNumbers);
           }
         } catch (refError) {
-          console.log('⚠️ Reference lookup failed:', refError);
         }
 
         // Get the label PDF
         try {
-          console.log('📄 Retrieving PPL label...');
           label = await getPPLLabel(batchId, 'pdf');
-          console.log(`✅ Label retrieved (${label.labelContent?.length} bytes)`);
         } catch (labelError: any) {
           console.error('❌ Failed to retrieve PPL label:', labelError.message);
           await storage.updateOrder(orderId, { pplBatchId: batchId, pplStatus: 'pending' });
@@ -19073,7 +18942,6 @@ Important:
         // Use placeholder if still no tracking numbers
         if (shipmentNumbers.length === 0 && cartons.length > 0) {
           shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
-          console.log('⚠️ Using placeholders - check the label PDF barcodes for real tracking numbers.');
         }
       }
 
@@ -19207,7 +19075,6 @@ Important:
       }
 
       const identifier = shipmentId || batchId;
-      console.log(`🔄 Retrying PPL label download for ${shipmentId ? 'shipment' : 'batch'} ${identifier}...`);
 
       // Get cartons for this order
       const cartons = await storage.getOrderCartons(orderId);
@@ -19219,37 +19086,30 @@ Important:
         // For single shipments, tracking numbers should already be in pplShipmentNumbers
         if (order.pplShipmentNumbers && Array.isArray(order.pplShipmentNumbers)) {
           shipmentNumbers = order.pplShipmentNumbers as string[];
-          console.log('✅ Using existing tracking numbers:', shipmentNumbers);
         }
       } else if (batchId) {
         // For batch shipments, try to get from batch status
         try {
           const batchStatus = await getPPLBatchStatus(batchId);
-          console.log('📦 Batch status:', JSON.stringify(batchStatus, null, 2));
           if (batchStatus.items && Array.isArray(batchStatus.items)) {
             shipmentNumbers = batchStatus.items
               .filter((item: any) => item.shipmentNumber)
               .map((item: any) => item.shipmentNumber);
-            console.log('✅ Extracted shipment numbers:', shipmentNumbers);
           }
         } catch (statusError) {
-          console.log('⚠️ Batch status check failed:', statusError);
         }
       }
 
       // Try to get the label
       let label;
       try {
-        console.log('📄 Retrieving PPL label...');
         if (shipmentId) {
           // Single shipment - use shipment ID to get label
           const labelBuffer = await getPPLLabelByShipmentId(shipmentId, 'pdf');
           label = { labelContent: labelBuffer.toString('base64') };
-          console.log(`✅ Label retrieved via shipmentId (${labelBuffer.length} bytes)`);
         } else {
           // Batch shipment - use batch ID to get label
           label = await getPPLLabel(batchId!, 'pdf');
-          console.log(`✅ Label retrieved via batchId (${label.labelContent?.length} bytes)`);
         }
       } catch (labelError: any) {
         console.error('❌ Failed to retrieve PPL label:', labelError.message);
@@ -19263,7 +19123,6 @@ Important:
       // Use placeholder tracking if we couldn't get them (only for batch shipments)
       if (shipmentNumbers.length === 0 && cartons.length > 0 && batchId) {
         shipmentNumbers = cartons.map((_, index) => `PENDING-${batchId.slice(0, 8)}-${index + 1}`);
-        console.log('⚠️ Using placeholder tracking numbers');
       }
 
       // Determine if COD
@@ -19313,7 +19172,6 @@ Important:
         });
       }
 
-      console.log('✅ PPL label retry successful');
       res.json({
         success: true,
         batchId: batchId || undefined,
@@ -20314,7 +20172,6 @@ Important:
         // Skip pure service items (serviceId without productId - they have no physical weight/dimensions)
         // But include service parts (items with both serviceId AND productId - these are physical products)
         if (item.serviceId && !item.productId) {
-          console.log(`Skipping pure service item "${item.productName}" - no physical packing needed`);
           skippedItems.push({ name: item.productName || 'Service item', reason: 'service' });
           continue;
         }
@@ -20325,7 +20182,6 @@ Important:
           if (bundle) {
             // It's a bundle - expand into individual items
             const bundleItems = await storage.getBundleItems(item.bundleId);
-            console.log(`Expanding bundle "${bundle.name}" with ${bundleItems.length} items for packing calculation`);
             
             for (const bundleItem of bundleItems) {
               if (bundleItem.productId) {
@@ -20346,7 +20202,6 @@ Important:
               }
             }
           } else {
-            console.log(`Bundle ${item.bundleId} not found, skipping`);
             skippedItems.push({ name: item.productName || `Bundle ${item.bundleId}`, reason: 'bundle_not_found' });
           }
           continue;
@@ -20358,12 +20213,10 @@ Important:
           const isServicePart = item.isServicePart || (item.serviceId && item.productId);
           
           if (isServicePart) {
-            console.log(`Including service part "${item.productName}" in packing calculation`);
           }
           
           if (item.bulkUnitQty && item.bulkUnitQty > 1) {
             // Bulk unit item - calculate as multiple individual items
-            console.log(`Bulk unit item "${item.productName}" with ${item.bulkUnitQty} units per pack`);
             expandedItems.push({
               productId: item.productId,
               productName: item.productName,
@@ -20404,7 +20257,6 @@ Important:
             });
           }
         } else {
-          console.log(`Item "${item.productName}" has no productId or bundleId, skipping`);
           skippedItems.push({ name: item.productName || 'Unknown item', reason: 'no_product_id' });
         }
       }
@@ -20413,7 +20265,6 @@ Important:
       
       // Log skipped items summary
       if (skippedItems.length > 0) {
-        console.log(`Skipped ${skippedItems.length} items from packing: ${skippedItems.map(s => `${s.name} (${s.reason})`).join(', ')}`);
       }
 
       // Fetch all packing cartons - first try dedicated table, then fall back to packing materials
@@ -20464,7 +20315,6 @@ Important:
               updatedAt: m.updatedAt
             };
           });
-          console.log(`Using ${cartons.length} cartons from packing materials table`);
         }
       }
       
@@ -20473,7 +20323,6 @@ Important:
       }
 
       // Call optimization service with carrier constraints
-      console.log(`Optimizing carton packing for ${enrichedItems.length} items (shipping to ${shippingCountry}, carrier: ${carrierCode || 'none'})`);
       const packingPlan = await optimizeCartonPacking(enrichedItems, cartons, {
         carrierCode,
         shippingCountry,
@@ -20575,12 +20424,6 @@ Important:
         return res.status(400).json({ message: 'No packing cartons configured. Add cartons in Packing Materials.' });
       }
 
-      console.log(`Saving packing plan for order ${orderId}:`, {
-        totalCartons: planData.totalCartons,
-        totalWeight: planData.totalWeight,
-        avgUtilization: planData.avgUtilization
-      });
-
       // Compute checksum for efficient change detection
       const checksum = computePlanChecksum(planData);
 
@@ -20629,14 +20472,16 @@ Important:
         createdItems.push(createdItem);
       }
 
-      console.log(`Created packing plan ${createdPlan.id} with ${createdItems.length} items across ${planData.totalCartons} cartons`);
 
-      // Return the created plan with checksum
+      // Return the created plan with checksum and metadata
       res.status(201).json({
         id: createdPlan.id,
         orderId: createdPlan.orderId,
-        totalCartons: createdPlan.totalCartons,
+        totalCartons: planData.totalCartons,
+        totalWeight: planData.totalWeight,
+        avgUtilization: planData.avgUtilization,
         checksum,
+        itemsCreated: createdItems.length,
         message: 'Packing plan saved successfully'
       });
     } catch (error) {
@@ -20661,7 +20506,6 @@ Important:
 
       // Fetch carton items for this plan
       const items = await storage.getOrderCartonItems(plan.id);
-      console.log(`Loading packing plan ${plan.id} for order ${orderId}: found ${items.length} items`);
 
       // Fetch all packing cartons for reference
       const allCartons = await storage.getPackingCartons();
@@ -20712,14 +20556,12 @@ Important:
 
       // CRITICAL: Verify items are included in ALL cartons
       const totalItemsInPlan = uiPackingPlan.cartons.reduce((sum, c) => sum + (c.items?.length || 0), 0);
-      console.log(`Deserialized plan has ${uiPackingPlan.cartons.length} cartons with ${totalItemsInPlan} total items (from ${enrichedItems.length} DB items)`);
 
       // Explicitly verify each carton has items array
       uiPackingPlan.cartons.forEach((carton, idx) => {
         if (!carton.items) {
           console.error(`ERROR: Carton ${idx} is missing items array!`);
         } else {
-          console.log(`Carton ${idx} (${carton.cartonName}): ${carton.items.length} items`);
         }
       });
 
@@ -20760,7 +20602,6 @@ Important:
         return res.status(404).json({ message: 'Packing plan not found' });
       }
 
-      console.log(`Updated packing plan ${planId} with status: ${validatedData.status || 'unchanged'}`);
 
       res.json(updatedPlan);
     } catch (error) {
@@ -20877,7 +20718,6 @@ Important:
 
       const data = await response.json();
       if (data && data.length > 0 && data[0].address?.postcode) {
-        console.log(`Postal code lookup: found "${data[0].address.postcode}" for "${query}"`);
         return data[0].address.postcode;
       }
 
@@ -20909,12 +20749,10 @@ Important:
       const apiKey = process.env.DEEPSEEK_API_KEY;
       if (!apiKey) {
         // Fallback to basic regex parsing when AI is not configured
-        console.log('DEEPSEEK_API_KEY not configured, using basic parsing');
         const basicParsed = parseAddressBasic(rawAddress);
         
         // Auto-fill postal code if missing but city is present
         if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
-          console.log(`Smart Paste (basic): zipCode missing, looking up for city "${basicParsed.fields.city}"`);
           const lookedUpZipCode = await lookupPostalCode(
             basicParsed.fields.city, 
             basicParsed.fields.street, 
@@ -20922,7 +20760,6 @@ Important:
           );
           if (lookedUpZipCode) {
             basicParsed.fields.zipCode = lookedUpZipCode;
-            console.log(`Smart Paste (basic): Auto-filled postal code "${lookedUpZipCode}"`);
           }
         }
         
@@ -20992,7 +20829,6 @@ Important rules:
         
         // Auto-fill postal code if missing but city is present
         if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
-          console.log(`Smart Paste (fallback): zipCode missing, looking up for city "${basicParsed.fields.city}"`);
           const lookedUpZipCode = await lookupPostalCode(
             basicParsed.fields.city, 
             basicParsed.fields.street, 
@@ -21000,7 +20836,6 @@ Important rules:
           );
           if (lookedUpZipCode) {
             basicParsed.fields.zipCode = lookedUpZipCode;
-            console.log(`Smart Paste (fallback): Auto-filled postal code "${lookedUpZipCode}"`);
           }
         }
         
@@ -21021,11 +20856,9 @@ Important rules:
 
       // Auto-fill postal code if missing but city is present
       if (!zipCode && city) {
-        console.log(`Smart Paste: zipCode missing, looking up for city "${city}"`);
         const lookedUpZipCode = await lookupPostalCode(city, street, country);
         if (lookedUpZipCode) {
           zipCode = lookedUpZipCode;
-          console.log(`Smart Paste: Auto-filled postal code "${zipCode}" for "${city}"`);
         }
       }
 
@@ -22713,7 +22546,6 @@ Important rules:
         .where(eq(receipts.shipmentId, shipmentId));
       
       if (shipmentReceipts.length === 0) {
-        console.log(`No receipts found for shipment ${shipmentId}`);
         return updatedPurchases;
       }
       
@@ -22736,7 +22568,6 @@ Important rules:
         ));
       
       if (purchaseReceiptItems.length === 0) {
-        console.log(`No purchase items found in receipts for shipment ${shipmentId}`);
         return updatedPurchases;
       }
       
@@ -22834,7 +22665,6 @@ Important rules:
           
           if (updatedPurchase) {
             updatedPurchases.push(`Purchase #${purchaseId} marked as delivered`);
-            console.log(`Purchase #${purchaseId} automatically marked as delivered (received: ${totalReceived}/${totalExpected}, stored: ${totalStored}/${totalExpected})`);
           }
         }
       }
@@ -22858,7 +22688,6 @@ Important rules:
         .where(eq(shipments.id, shipmentId));
       
       if (!shipment) {
-        console.log(`Shipment ${shipmentId} not found for landed cost calculation`);
         return updatedProducts;
       }
       
@@ -22869,7 +22698,6 @@ Important rules:
         .where(eq(receipts.shipmentId, shipmentId));
       
       if (shipmentReceipts.length === 0) {
-        console.log(`No receipts found for shipment ${shipmentId} for landed cost calculation`);
         return updatedProducts;
       }
       
@@ -22888,7 +22716,6 @@ Important rules:
         .where(inArray(receiptItems.receiptId, receiptIds));
       
       if (allReceiptItems.length === 0) {
-        console.log(`No receipt items found for shipment ${shipmentId}`);
         return updatedProducts;
       }
       
@@ -22966,7 +22793,6 @@ Important rules:
       }
       
       if (itemsWithPricing.length === 0) {
-        console.log(`No items with valid pricing found for shipment ${shipmentId} - cannot calculate landed costs`);
         return updatedProducts;
       }
       
@@ -23010,7 +22836,6 @@ Important rules:
           
           // Validate new cost is a valid positive number
           if (!isFinite(newUnitLandingCost) || isNaN(newUnitLandingCost) || newUnitLandingCost <= 0) {
-            console.log(`Skipping product ${productId}: invalid new unit cost ${newUnitLandingCost}`);
             continue;
           }
           
@@ -23056,7 +22881,6 @@ Important rules:
           
           // Final validation
           if (!isFinite(avgLandingCost) || isNaN(avgLandingCost) || avgLandingCost <= 0) {
-            console.log(`Skipping product ${productId}: invalid avg cost ${avgLandingCost}`);
             continue;
           }
           
@@ -23079,7 +22903,6 @@ Important rules:
           });
           
           updatedProducts.push(`Product ${productId}: avg landing cost updated to ${avgLandingCost.toFixed(4)} CZK`);
-          console.log(`Product ${productId} landing cost updated: ${avgLandingCost.toFixed(4)} CZK (weighted avg of ${entries.length} purchase entries)`);
           
         } catch (productError) {
           console.error(`Error updating landing cost for product ${productId}:`, productError);
@@ -23120,7 +22943,6 @@ Important rules:
           eurToAud = rateData.rates.AUD || eurToAud;
           eurToCad = rateData.rates.CAD || eurToCad;
           ratesSource = 'exchangerate-api';
-          console.log(`[addInventoryOnCompletion] Using live ExchangeRate-API rates: EUR→USD=${eurToUsd.toFixed(4)}, EUR→CZK=${eurToCzk.toFixed(2)}, EUR→CNY=${eurToCny.toFixed(4)}, EUR→VND=${eurToVnd.toFixed(0)}, EUR→GBP=${eurToGbp.toFixed(4)}`);
         }
       }
     } catch (rateError) {
@@ -23173,7 +22995,6 @@ Important rules:
         .where(eq(receipts.shipmentId, shipmentId));
       
       if (shipmentReceipts.length === 0) {
-        console.log(`[addInventoryOnCompletion] No receipts found for shipment ${shipmentId}`);
         return inventoryUpdates;
       }
       
@@ -23220,7 +23041,6 @@ Important rules:
         additionalCostsEur += toEur(amount, costCurrency);
       }
       
-      console.log(`[addInventoryOnCompletion] Additional shipment costs: €${additionalCostsEur.toFixed(2)} (${additionalCosts.length} items)`);
       
       // Smart auto-selection when allocationMethod is null (Auto mode)
       // Matches the logic in landingCostService.getAllocationMethod()
@@ -23249,10 +23069,8 @@ Important rules:
             allocationMethod = 'HYBRID';
             break;
         }
-        console.log(`[addInventoryOnCompletion] Auto-selected ${allocationMethod} allocation based on unitType: ${shipmentUnitType}`);
       }
       
-      console.log(`[addInventoryOnCompletion] Shipment ${shipmentId}: shipping=${shipmentShippingCost} ${shipmentShippingCurrency}, insurance=${shipmentInsuranceCost}, allocation=${allocationMethod} (unitType: ${shipmentUnitType})`);
       
       // Step 2: Get all receipt items with productId, receivedQuantity, AND itemId/itemType/sku for fallback lookups
       // ALSO include variantAllocations for variant quantity distribution
@@ -23271,7 +23089,6 @@ Important rules:
         .where(inArray(receiptItems.receiptId, receiptIds));
       
       if (allReceiptItems.length === 0) {
-        console.log(`[addInventoryOnCompletion] No receipt items found for shipment ${shipmentId}`);
         return inventoryUpdates;
       }
       
@@ -23295,7 +23112,6 @@ Important rules:
             .where(eq(products.sku, item.sku));
           if (productBySku) {
             resolvedProductId = productBySku.id;
-            console.log(`[addInventoryOnCompletion] Resolved productId ${resolvedProductId} from receipt item SKU ${item.sku}`);
           }
         }
         
@@ -23337,7 +23153,6 @@ Important rules:
               .where(eq(products.sku, originalItemSku));
             if (productBySku) {
               resolvedProductId = productBySku.id;
-              console.log(`[addInventoryOnCompletion] Resolved productId ${resolvedProductId} from original item SKU ${originalItemSku}`);
               
               // Also update the receipt item with the resolved productId and sku for future lookups
               await db
@@ -23349,7 +23164,6 @@ Important rules:
         }
         
         if (!resolvedProductId) {
-          console.log(`[addInventoryOnCompletion] Skipping receipt item ${item.id} - could not resolve productId`);
           continue;
         }
         
@@ -23362,7 +23176,6 @@ Important rules:
         }
       }
       
-      console.log(`[addInventoryOnCompletion] Aggregated ${productQuantityMap.size} unique products from ${allReceiptItems.length} receipt items`);
       
       // Step 3b: PRE-COMPUTE shipment totals for allocation methods
       // All values converted to EUR for consistent ratio calculation
@@ -23451,7 +23264,6 @@ Important rules:
         totalShipmentValueEur += productBaseValueEur;
       }
       
-      console.log(`[addInventoryOnCompletion] Shipment totals: ${totalShipmentUnits} units, ${totalShipmentWeightKg.toFixed(2)}kg, ${totalShipmentValueEur.toFixed(2)} EUR`);
       
       // Convert shipment costs to EUR once for allocation calculations
       // Includes: shipping + insurance + brokerage/customs from shipmentCosts table
@@ -23464,7 +23276,6 @@ Important rules:
       // Add additional costs (brokerage, customs, etc.) - already in EUR
       shipmentCostsEur += additionalCostsEur;
       
-      console.log(`[addInventoryOnCompletion] Total shipment costs in EUR: €${shipmentCostsEur.toFixed(2)} (shipping+insurance: €${(shipmentCostsEur - additionalCostsEur).toFixed(2)}, additional: €${additionalCostsEur.toFixed(2)})`);
       
       // Helper: compute share based on allocation method
       // All bases are in EUR to ensure Σ(ratios) = 1
@@ -23495,7 +23306,6 @@ Important rules:
             .where(eq(products.id, productId));
           
           if (!product) {
-            console.log(`[addInventoryOnCompletion] Product ${productId} not found`);
             continue;
           }
           
@@ -23559,7 +23369,6 @@ Important rules:
                       const totalQty = purchaseItemsCount[0]?.totalQty || 1;
                       purchaseShippingPerUnit = purchaseShipping / totalQty;
                       unitCost += purchaseShippingPerUnit;
-                      console.log(`[addInventoryOnCompletion] Added purchase shipping: ${purchaseShippingPerUnit.toFixed(4)} per unit (total ${purchaseShipping} / ${totalQty} items)`);
                     }
                   }
                 }
@@ -23580,7 +23389,6 @@ Important rules:
             // Priority 1: Use dedicated paymentCurrency column (most reliable)
             if (customItem?.paymentCurrency) {
               purchaseCurrency = customItem.paymentCurrency;
-              console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from custom item's paymentCurrency column`);
             }
             
             if (customItem?.orderItems) {
@@ -23615,7 +23423,6 @@ Important rules:
                 
                 if (linkedPurchase?.paymentCurrency) {
                   purchaseCurrency = linkedPurchase.paymentCurrency;
-                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from custom item's linked purchaseOrderId`);
                 }
               }
               
@@ -23630,7 +23437,6 @@ Important rules:
                 
                 if (consolidatedPurchases.length > 0 && consolidatedPurchases[0].paymentCurrency) {
                   purchaseCurrency = consolidatedPurchases[0].paymentCurrency;
-                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from consolidated purchase`);
                 }
               }
               
@@ -23649,7 +23455,6 @@ Important rules:
                 
                 if (otherPurchaseItems.length > 0 && otherPurchaseItems[0].paymentCurrency) {
                   purchaseCurrency = otherPurchaseItems[0].paymentCurrency;
-                  console.log(`[addInventoryOnCompletion] Got payment currency ${purchaseCurrency} from sibling purchase item in receipt`);
                 }
               }
               
@@ -23679,7 +23484,6 @@ Important rules:
               shipmentCostPerUnit = fromEur(freightPerUnitEur, purchaseCurrency);
               
               unitCost += shipmentCostPerUnit;
-              console.log(`[addInventoryOnCompletion] ${allocationMethod} allocation: €${freightPerUnitEur.toFixed(4)}/unit = ${shipmentCostPerUnit.toFixed(4)} ${purchaseCurrency}/unit (${(shareRatio * 100).toFixed(1)}% of shipment)`);
             }
           }
           
@@ -23697,7 +23501,6 @@ Important rules:
               .where(eq(products.id, productId));
             
             inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock}) [NO COST DATA - REVIEW REQUIRED]`);
-            console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock}), existing costs preserved due to missing pricing data`);
             continue;
           }
           
@@ -23777,7 +23580,6 @@ Important rules:
           });
           
           inventoryUpdates.push(`Product ${product.sku || productId}: +${quantityToAdd} units (${currentStock} → ${newStock}), costs updated`);
-          console.log(`[addInventoryOnCompletion] Product ${productId}: added ${quantityToAdd} units (${currentStock} → ${newStock}), import costs: USD=${avgCostUsd.toFixed(2)} CZK=${avgCostCzk.toFixed(2)} EUR=${avgCostEur.toFixed(2)}`);
           
           // VARIANT DISTRIBUTION: If receipt items have variantAllocations, distribute quantities to individual variants
           for (const receiptItem of data.items) {
@@ -23790,7 +23592,6 @@ Important rules:
               
               if (!Array.isArray(allocations) || allocations.length === 0) continue;
               
-              console.log(`[addInventoryOnCompletion] Processing ${allocations.length} variant allocations for product ${productId}`);
               
               // Get existing variants for this product
               const existingVariants = await db
@@ -23863,9 +23664,7 @@ Important rules:
                     })
                     .where(eq(productVariants.id, matchedVariant.id));
                   
-                  console.log(`[addInventoryOnCompletion] Updated variant ${variantName}: +${allocatedQty} (${oldVariantQty} → ${newVariantQty}), import cost: €${variantUnitPriceEur.toFixed(2)} (USD=${variantNewCosts.importCostUsd})`);
                 } else {
-                  console.log(`[addInventoryOnCompletion] Variant ${variantName} not found for product ${productId} - skipping`);
                 }
               }
             } catch (variantError) {
@@ -24305,7 +24104,6 @@ Important rules:
           .where(inArray(receipts.id, receiptIds));
       }
       
-      console.log(`Shipment ${id} reverted to receiving:`, revertResults);
       
       res.json({
         success: true,
@@ -24417,7 +24215,6 @@ Important rules:
         deletionResults.consolidation = deletedConsolidation.length;
       }
       
-      console.log(`Shipment ${id} deleted:`, deletionResults);
       
       res.json({
         success: true,
@@ -24766,7 +24563,6 @@ Important rules:
         consolidationRestored = true;
       }
       
-      console.log(`Shipment ${id} undone, consolidation ${consolidationId} restored:`, { consolidationRestored });
       
       res.json({
         success: true,
@@ -24819,7 +24615,6 @@ Important rules:
         deletionResults.consolidation = 1;
       }
       
-      console.log(`Consolidation ${id} deleted:`, deletionResults);
       
       res.json({
         success: true,
@@ -25210,13 +25005,11 @@ Important rules:
         });
       }
       
-      console.log(`✅ Pre-reset backup created: ${backupResult.fileName} (recoverable for 7 days)`);
 
       // Execute deletions in transaction with FK-safe order (children → parents)
       // Using .returning() to get actual deleted rows count (Neon serverless returns arrays, not rowCount)
       const deletionSummary: Record<string, number> = {};
       
-      console.log(`🗑️ Starting factory reset (keepSettings: ${keepSettings})...`);
       
       await db.transaction(async (tx) => {
         // Delete in FK-safe order - children first, then parents
@@ -25236,7 +25029,6 @@ Important rules:
         deletionSummary.productLocations = (await tx.delete(productLocations).returning()).length;
         deletionSummary.notifications = (await tx.delete(notifications).returning()).length;
         
-        console.log(`  Level 1 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} records`);
         
         // Level 2: Tables with level 1 parents
         deletionSummary.orderCartonItems = (await tx.delete(orderCartonItems).returning()).length;
@@ -25256,7 +25048,6 @@ Important rules:
         deletionSummary.purchaseItems = (await tx.delete(purchaseItems).returning()).length;
         deletionSummary.deliveryHistory = (await tx.delete(deliveryHistory).returning()).length;
         
-        console.log(`  Level 2 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
         
         // Level 3: Tables with level 2 parents
         deletionSummary.orderCartonPlans = (await tx.delete(orderCartonPlans).returning()).length;
@@ -25270,7 +25061,6 @@ Important rules:
         deletionSummary.shipmentTracking = (await tx.delete(shipmentTracking).returning()).length;
         deletionSummary.customItems = (await tx.delete(customItems).returning()).length;
         
-        console.log(`  Level 3 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
         
         // Level 4: Major entity tables
         deletionSummary.orders = (await tx.delete(orders).returning()).length;
@@ -25290,7 +25080,6 @@ Important rules:
         deletionSummary.packingCartons = (await tx.delete(packingCartons).returning()).length;
         deletionSummary.dailySequences = (await tx.delete(dailySequences).returning()).length;
 
-        console.log(`  Level 4 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
 
         // Conditional Deletion: Infrastructure data (warehouses, suppliers, categories, etc.)
         // Delete in proper FK order: children first, then parents
@@ -25305,11 +25094,9 @@ Important rules:
           deletionSummary.categories = (await tx.delete(categories).returning()).length;
           deletionSummary.packingMaterials = (await tx.delete(packingMaterials).returning()).length;
           
-          console.log(`  Infrastructure deleted: warehouses=${deletionSummary.warehouses}, categories=${deletionSummary.categories}, suppliers=${deletionSummary.suppliers}`);
         }
         
         const totalDeleted = Object.values(deletionSummary).reduce((sum, count) => sum + count, 0);
-        console.log(`✅ Factory reset transaction complete: ${totalDeleted} records deleted`);
         
         // NOTE: user_activities (audit trail) is PRESERVED for forensic evidence
         // Log the factory reset action INSIDE transaction AFTER successful deletions
