@@ -1,12 +1,23 @@
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useRef, ChangeEvent } from "react";
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Calculator, 
   Package, 
@@ -22,10 +33,19 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronRight,
-  Box
+  Box,
+  Trash2,
+  Download,
+  Upload,
+  FileSpreadsheet,
+  X,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Shipment {
   id: string;
@@ -59,9 +79,14 @@ interface LandingCostSummary {
 
 export default function LandingCostList() {
   const { t } = useTranslation('imports');
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [expandedShipments, setExpandedShipments] = useState<string[]>([]);
+  const [selectedShipments, setSelectedShipments] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch all shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
@@ -143,6 +168,139 @@ export default function LandingCostList() {
     return formatCurrency(cost, shipment.shippingCostCurrency || 'USD');
   };
 
+  // Selection helpers
+  const toggleSelection = (id: string) => {
+    setSelectedShipments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedShipments.size === filteredShipments.length) {
+      setSelectedShipments(new Set());
+    } else {
+      setSelectedShipments(new Set(filteredShipments.map(s => String(s.id))));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedShipments(new Set());
+  };
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await apiRequest('POST', '/api/imports/shipments/bulk-delete', { ids });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      setSelectedShipments(new Set());
+      setShowDeleteDialog(false);
+      toast({
+        title: t('deleteSuccess'),
+        description: t('shipmentsDeletedCount', { count: data.deleted || selectedShipments.size }),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('deleteError'),
+        description: error.message || t('failedToDeleteShipments'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Export to Excel
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const ids = selectedShipments.size > 0 ? Array.from(selectedShipments) : filteredShipments.map(s => String(s.id));
+      const params = new URLSearchParams();
+      ids.forEach(id => params.append('ids', id));
+      
+      const response = await fetch(`/api/imports/shipments/export?${params.toString()}`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `landing-costs-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: t('exportSuccess'),
+        description: t('dataExportedSuccessfully'),
+      });
+    } catch (error: any) {
+      toast({
+        title: t('exportError'),
+        description: error.message || t('failedToExport'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Import from Excel
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/imports/shipments/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Import failed');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+
+      toast({
+        title: t('importSuccess'),
+        description: t('shipmentsImportedCount', { 
+          imported: result.imported || 0,
+          errors: result.errors || 0 
+        }),
+      });
+    } catch (error: any) {
+      toast({
+        title: t('importError'),
+        description: error.message || t('failedToImport'),
+        variant: "destructive",
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (isLoading || isLoadingCosts) {
     return (
       <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
@@ -162,6 +320,38 @@ export default function LandingCostList() {
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 overflow-x-hidden">
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImport}
+        accept=".xlsx,.xls"
+        className="hidden"
+        data-testid="input-import-file"
+      />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteShipmentsWarning', { count: selectedShipments.size })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkDeleteMutation.mutate(Array.from(selectedShipments))}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
+              {bulkDeleteMutation.isPending ? t('deleting') : t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -174,7 +364,70 @@ export default function LandingCostList() {
               {t('landingCostsDescription')}
             </p>
           </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="button-import"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {t('import')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isExporting}
+              data-testid="button-export"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? t('exporting') : t('export')}
+            </Button>
+          </div>
         </div>
+
+        {/* Bulk Action Bar */}
+        {selectedShipments.size > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                {t('selectedCount', { count: selectedShipments.size })}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                data-testid="button-clear-selection"
+              >
+                <X className="h-4 w-4 mr-1" />
+                {t('clearSelection')}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+                data-testid="button-export-selected"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {t('exportSelected')}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                data-testid="button-bulk-delete"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('deleteSelected')}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -274,6 +527,20 @@ export default function LandingCostList() {
         </div>
       </div>
 
+      {/* Select All Row */}
+      {filteredShipments.length > 0 && (
+        <div className="flex items-center gap-3 mb-3 px-2">
+          <Checkbox
+            checked={selectedShipments.size === filteredShipments.length && filteredShipments.length > 0}
+            onCheckedChange={toggleSelectAll}
+            data-testid="checkbox-select-all"
+          />
+          <span className="text-sm text-muted-foreground">
+            {t('selectAll')} ({filteredShipments.length})
+          </span>
+        </div>
+      )}
+
       {/* Shipments List */}
       {filteredShipments.length === 0 ? (
         <Card>
@@ -290,9 +557,20 @@ export default function LandingCostList() {
       ) : (
         <div className="grid gap-4">
           {filteredShipments.map(shipment => (
-            <Card key={shipment.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={shipment.id} 
+              className={`hover:shadow-md transition-shadow ${selectedShipments.has(String(shipment.id)) ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+            >
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row items-start gap-4">
+                  {/* Checkbox */}
+                  <div className="shrink-0 pt-1">
+                    <Checkbox
+                      checked={selectedShipments.has(String(shipment.id))}
+                      onCheckedChange={() => toggleSelection(String(shipment.id))}
+                      data-testid={`checkbox-shipment-${shipment.id}`}
+                    />
+                  </div>
                   {/* Left Section */}
                   <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-start gap-3 mb-3">

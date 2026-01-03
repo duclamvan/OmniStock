@@ -2398,6 +2398,24 @@ const imports = {
   dutyTax: 'Duty/Tax',
   other: 'Other',
   
+  // Landing Cost List - Bulk Operations
+  deleteShipmentsWarning: 'Are you sure you want to delete {{count}} selected shipment(s)? This will permanently remove all associated data including receipts and storage assignments. This action cannot be undone.',
+  shipmentsDeletedCount: '{{count}} shipment(s) deleted successfully',
+  shipmentsImportedCount: '{{imported}} shipment(s) imported successfully. {{errors}} error(s).',
+  exportSelected: 'Export Selected',
+  deleteSuccess: 'Delete Successful',
+  deleteError: 'Delete Failed',
+  failedToDeleteShipments: 'Failed to delete shipments',
+  exportSuccess: 'Export Successful',
+  exportError: 'Export Failed',
+  dataExportedSuccessfully: 'Data exported successfully',
+  failedToExport: 'Failed to export data',
+  importSuccess: 'Import Successful',
+  importError: 'Import Failed',
+  failedToImport: 'Failed to import data',
+  cancel: 'Cancel',
+  delete: 'Delete',
+  
 } as const;
 
 export default imports;

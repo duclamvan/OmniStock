@@ -2339,6 +2339,24 @@ const imports = {
   dutyTax: 'Thuế/Quan',
   other: 'Khác',
   
+  // Landing Cost List - Bulk Operations
+  deleteShipmentsWarning: 'Bạn có chắc chắn muốn xóa {{count}} lô hàng đã chọn? Thao tác này sẽ xóa vĩnh viễn tất cả dữ liệu liên quan bao gồm biên nhận và phân công lưu kho. Không thể hoàn tác.',
+  shipmentsDeletedCount: 'Đã xóa {{count}} lô hàng thành công',
+  shipmentsImportedCount: 'Đã nhập {{imported}} lô hàng thành công. {{errors}} lỗi.',
+  exportSelected: 'Xuất đã chọn',
+  deleteSuccess: 'Xóa thành công',
+  deleteError: 'Xóa thất bại',
+  failedToDeleteShipments: 'Không thể xóa lô hàng',
+  exportSuccess: 'Xuất thành công',
+  exportError: 'Xuất thất bại',
+  dataExportedSuccessfully: 'Đã xuất dữ liệu thành công',
+  failedToExport: 'Không thể xuất dữ liệu',
+  importSuccess: 'Nhập thành công',
+  importError: 'Nhập thất bại',
+  failedToImport: 'Không thể nhập dữ liệu',
+  cancel: 'Hủy',
+  delete: 'Xóa',
+  
 } as const;
 
 export default imports;

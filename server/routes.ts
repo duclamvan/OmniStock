@@ -24430,6 +24430,210 @@ Important rules:
     }
   });
 
+  // Bulk delete shipments
+  app.post('/api/imports/shipments/bulk-delete', isAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'No shipment IDs provided' });
+      }
+
+      let deletedCount = 0;
+      const errors: string[] = [];
+
+      for (const id of ids) {
+        try {
+          const [shipment] = await db
+            .select()
+            .from(shipments)
+            .where(eq(shipments.id, id));
+          
+          if (!shipment) {
+            errors.push(`Shipment ${id} not found`);
+            continue;
+          }
+
+          const consolidationId = shipment.consolidationId;
+
+          const shipmentReceipts = await db
+            .select({ id: receipts.id })
+            .from(receipts)
+            .where(eq(receipts.shipmentId, id));
+          
+          const receiptIds = shipmentReceipts.map(r => r.id);
+
+          if (receiptIds.length > 0) {
+            const allReceiptItems = await db
+              .select({
+                id: receiptItems.id,
+                productId: receiptItems.productId
+              })
+              .from(receiptItems)
+              .where(inArray(receiptItems.receiptId, receiptIds));
+            
+            for (const item of allReceiptItems) {
+              const tagPattern = `RI:${item.id}:%`;
+              await db
+                .delete(productLocations)
+                .where(sql`${productLocations.notes} LIKE ${tagPattern}`);
+            }
+
+            await db
+              .delete(receiptItems)
+              .where(inArray(receiptItems.receiptId, receiptIds));
+
+            await db
+              .delete(receipts)
+              .where(inArray(receipts.id, receiptIds));
+          }
+
+          await db
+            .delete(shipments)
+            .where(eq(shipments.id, id));
+
+          if (consolidationId) {
+            await db
+              .delete(consolidationItems)
+              .where(eq(consolidationItems.consolidationId, consolidationId));
+            
+            await db
+              .delete(consolidations)
+              .where(eq(consolidations.id, consolidationId));
+          }
+
+          deletedCount++;
+        } catch (err: any) {
+          errors.push(`Failed to delete shipment ${id}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        deleted: deletedCount,
+        errors: errors.length,
+        errorDetails: errors
+      });
+    } catch (error) {
+      console.error('Error bulk deleting shipments:', error);
+      res.status(500).json({ message: 'Failed to bulk delete shipments' });
+    }
+  });
+
+  // Export shipments to Excel
+  app.get('/api/imports/shipments/export', isAuthenticated, async (req, res) => {
+    try {
+      const { ids } = req.query;
+      
+      let shipmentIds: string[] = [];
+      if (ids) {
+        shipmentIds = Array.isArray(ids) ? ids as string[] : [ids as string];
+      }
+
+      let shipmentsData;
+      if (shipmentIds.length > 0) {
+        shipmentsData = await db
+          .select()
+          .from(shipments)
+          .where(inArray(shipments.id, shipmentIds))
+          .orderBy(desc(shipments.createdAt));
+      } else {
+        shipmentsData = await db
+          .select()
+          .from(shipments)
+          .orderBy(desc(shipments.createdAt));
+      }
+
+      const XLSX = await import('xlsx');
+      
+      const exportData = shipmentsData.map(s => ({
+        'ID': s.id,
+        'Shipment Name': s.shipmentName || '',
+        'Carrier': s.carrier || '',
+        'Tracking Number': s.trackingNumber || '',
+        'Origin': s.origin || '',
+        'Destination': s.destination || '',
+        'Status': s.status || '',
+        'Receiving Status': s.receivingStatus || '',
+        'Shipping Cost': s.shippingCost || '',
+        'Shipping Cost Currency': s.shippingCostCurrency || '',
+        'Estimated Delivery': s.estimatedDelivery || '',
+        'Delivered At': s.deliveredAt || '',
+        'Completed At': s.completedAt || '',
+        'Created At': s.createdAt || '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Shipments');
+
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=shipments-export.xlsx');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error exporting shipments:', error);
+      res.status(500).json({ message: 'Failed to export shipments' });
+    }
+  });
+
+  // Import shipments from Excel
+  app.post('/api/imports/shipments/import', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      const imported: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        try {
+          const shipmentData = {
+            shipmentName: row['Shipment Name'] || row.shipmentName || `Imported Shipment ${i + 1}`,
+            carrier: row['Carrier'] || row.carrier || 'Unknown',
+            trackingNumber: row['Tracking Number'] || row.trackingNumber || `IMPORT-${Date.now()}-${i}`,
+            origin: row['Origin'] || row.origin || '',
+            destination: row['Destination'] || row.destination || '',
+            status: row['Status'] || row.status || 'pending',
+            shippingCost: row['Shipping Cost'] || row.shippingCost || '0',
+            shippingCostCurrency: row['Shipping Cost Currency'] || row.shippingCostCurrency || 'USD',
+            estimatedDelivery: row['Estimated Delivery'] || row.estimatedDelivery || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          const [created] = await db
+            .insert(shipments)
+            .values(shipmentData)
+            .returning();
+
+          imported.push(created);
+        } catch (err: any) {
+          errors.push(`Row ${i + 2}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: imported.length,
+        errors: errors.length,
+        errorDetails: errors
+      });
+    } catch (error) {
+      console.error('Error importing shipments:', error);
+      res.status(500).json({ message: 'Failed to import shipments' });
+    }
+  });
+
   // Undo import shipment - delete shipment and restore consolidation to active
   app.post('/api/imports/shipments/:id/undo', isAuthenticated, async (req: any, res) => {
     try {
