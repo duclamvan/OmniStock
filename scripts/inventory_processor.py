@@ -123,8 +123,12 @@ def load_supplier_mapping(supplier_file: str) -> Dict[str, str]:
     """
     Load supplier data and create a mapping from product name to supplier.
     Uses fuzzy matching to handle variations in product names.
+    Always uses the newest supplier (by Stock Date) when there are duplicates.
     """
-    supplier_map = {}
+    from datetime import datetime
+    
+    # Store supplier with date for comparison: {key: (supplier, date)}
+    supplier_with_dates: Dict[str, tuple] = {}
     
     delimiter = '\t' if supplier_file.endswith('.tsv') or supplier_file.endswith('.txt') else ','
     
@@ -136,18 +140,35 @@ def load_supplier_mapping(supplier_file: str) -> Dict[str, str]:
         for row in reader:
             product_name = row.get('Product name', '').strip()
             supplier = row.get('Supplier', '').strip()
+            stock_date_str = row.get('Stock Date', '').strip()
             
-            if product_name and supplier:
-                # Store both original and normalized versions for matching
-                normalized_name = normalize_for_matching(product_name)
-                supplier_map[normalized_name] = supplier
-                
-                # Also store by SKU if available for direct matching
-                sku = row.get('SKU', '').strip()
-                if sku:
-                    supplier_map[f"sku:{sku.upper()}"] = supplier
+            if not product_name or not supplier:
+                continue
+            
+            # Parse date for comparison (format: YYYY-MM-DD)
+            try:
+                stock_date = datetime.strptime(stock_date_str, '%Y-%m-%d') if stock_date_str else datetime.min
+            except ValueError:
+                stock_date = datetime.min
+            
+            # Normalized name for matching
+            normalized_name = normalize_for_matching(product_name)
+            
+            # Only update if this is newer than existing entry
+            if normalized_name not in supplier_with_dates or stock_date > supplier_with_dates[normalized_name][1]:
+                supplier_with_dates[normalized_name] = (supplier, stock_date)
+            
+            # Also store by SKU if available
+            sku = row.get('SKU', '').strip()
+            if sku:
+                sku_key = f"sku:{sku.upper()}"
+                if sku_key not in supplier_with_dates or stock_date > supplier_with_dates[sku_key][1]:
+                    supplier_with_dates[sku_key] = (supplier, stock_date)
     
-    print(f"   ✅ Loaded {len(supplier_map)} supplier mappings")
+    # Extract just the supplier names (drop dates)
+    supplier_map = {key: value[0] for key, value in supplier_with_dates.items()}
+    
+    print(f"   ✅ Loaded {len(supplier_map)} supplier mappings (using newest dates)")
     return supplier_map
 
 
