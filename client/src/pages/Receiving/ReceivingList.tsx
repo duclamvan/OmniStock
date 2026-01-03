@@ -6359,7 +6359,11 @@ function ShipmentReportDialog({
                                   return acc;
                                 }, {});
                                 
-                                const variants = Object.entries(variantGroups);
+                                const variants = Object.entries(variantGroups).sort((a, b) => {
+                                  const nameA = a[1].variantName || '';
+                                  const nameB = b[1].variantName || '';
+                                  return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+                                });
                                 const isExpanded = expandedLocations.has(String(item.receiptItemId));
                                 const displayVariants = isExpanded ? variants : variants.slice(0, 3);
                                 
@@ -6606,6 +6610,10 @@ function ShipmentReportDialog({
                             items.forEach(item => {
                               getVariantsFromItem(item).forEach(v => groupVariants.push(v));
                             });
+                            // Sort variants naturally by name (handles 1, 2, 10, 200 correctly)
+                            groupVariants.sort((a, b) => 
+                              (a.variantName || '').localeCompare(b.variantName || '', undefined, { numeric: true, sensitivity: 'base' })
+                            );
                             const groupVariantKeys = groupVariants.map(v => v.key);
                             const allSelected = groupVariantKeys.length > 0 && groupVariantKeys.every(k => selectedVariantsForLabels.has(k));
                             const someSelected = groupVariantKeys.some(k => selectedVariantsForLabels.has(k));
