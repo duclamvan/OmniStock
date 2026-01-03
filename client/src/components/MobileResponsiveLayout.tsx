@@ -560,6 +560,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           description: t('common:systemConfiguration'),
           children: [
             { name: t('common:general'), href: "/settings/general" },
+            { name: t('common:imports'), href: "/settings/imports" },
             { name: t('common:shipping'), href: "/settings/shipping" },
             { name: t('common:orders'), href: "/settings/orders" },
             { name: t('common:financial'), href: "/settings/financial" },
