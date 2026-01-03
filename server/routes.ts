@@ -24659,14 +24659,17 @@ Important rules:
         deletionSummary.dailySequences = (await tx.delete(dailySequences)).rowCount || 0;
 
         // Conditional Deletion: Infrastructure data (warehouses, suppliers, categories, etc.)
+        // Delete in proper FK order: children first, then parents
         if (!keepSettings) {
-          deletionSummary.warehouses = (await tx.delete(warehouses)).rowCount || 0;
+          // Level 1: Tables that reference warehouses
+          deletionSummary.warehouseTasks = (await tx.delete(warehouseTasks)).rowCount || 0;
+          deletionSummary.warehouseLabels = (await tx.delete(warehouseLabels)).rowCount || 0;
           deletionSummary.warehouseLayouts = (await tx.delete(warehouseLayouts)).rowCount || 0;
+          // Level 2: Parent infrastructure tables
+          deletionSummary.warehouses = (await tx.delete(warehouses)).rowCount || 0;
           deletionSummary.suppliers = (await tx.delete(suppliers)).rowCount || 0;
           deletionSummary.categories = (await tx.delete(categories)).rowCount || 0;
           deletionSummary.packingMaterials = (await tx.delete(packingMaterials)).rowCount || 0;
-          deletionSummary.warehouseTasks = (await tx.delete(warehouseTasks)).rowCount || 0;
-          deletionSummary.warehouseLabels = (await tx.delete(warehouseLabels)).rowCount || 0;
         }
         
         // NOTE: user_activities (audit trail) is PRESERVED for forensic evidence
