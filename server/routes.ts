@@ -24666,8 +24666,6 @@ Important rules:
         deletionSummary.orderItems = (await tx.delete(orderItems)).rowCount || 0;
         deletionSummary.serviceItems = (await tx.delete(serviceItems)).rowCount || 0;
         deletionSummary.preOrderItems = (await tx.delete(preOrderItems)).rowCount || 0;
-        deletionSummary.customerShippingAddresses = (await tx.delete(customerShippingAddresses)).rowCount || 0;
-        deletionSummary.customerBillingAddresses = (await tx.delete(customerBillingAddresses)).rowCount || 0;
         deletionSummary.packingMaterialUsage = (await tx.delete(packingMaterialUsage)).rowCount || 0;
         deletionSummary.shipmentLabels = (await tx.delete(shipmentLabels)).rowCount || 0;
         deletionSummary.shipmentItems = (await tx.delete(shipmentItems)).rowCount || 0;
@@ -24692,6 +24690,9 @@ Important rules:
         
         // Level 4: Major entity tables
         deletionSummary.orders = (await tx.delete(orders)).rowCount || 0;
+        // Delete addresses AFTER orders (orders.customerShippingAddressId references addresses)
+        deletionSummary.customerShippingAddresses = (await tx.delete(customerShippingAddresses)).rowCount || 0;
+        deletionSummary.customerBillingAddresses = (await tx.delete(customerBillingAddresses)).rowCount || 0;
         deletionSummary.products = (await tx.delete(products)).rowCount || 0;
         deletionSummary.customers = (await tx.delete(customers)).rowCount || 0;
         deletionSummary.shipments = (await tx.delete(shipments)).rowCount || 0;
