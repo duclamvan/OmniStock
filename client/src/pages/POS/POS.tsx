@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { usePageTitle } from '@/hooks/use-page-title';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,6 +162,7 @@ function NumPad({ value, onChange, onSubmit, label }: {
 }
 
 export default function POS() {
+  usePageTitle('nav.pos', 'Point of Sale');
   const { t } = useTranslation(['common', 'orders', 'products', 'financial']);
   const { toast } = useToast();
   const { financialHelpers } = useSettings();

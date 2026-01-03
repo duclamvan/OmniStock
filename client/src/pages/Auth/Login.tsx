@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { LogIn, UserPlus, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
@@ -39,6 +40,7 @@ const createAdminSchema = (t: (key: string) => string) => z.object({
 type CreateAdminFormValues = z.infer<ReturnType<typeof createAdminSchema>>;
 
 export default function Login() {
+  usePageTitle('auth.login', 'Login');
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);

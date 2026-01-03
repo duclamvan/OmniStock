@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
@@ -81,6 +82,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 export default function AllTickets() {
+  usePageTitle('nav.tickets', 'Support Tickets');
   const { t } = useTranslation('system');
   const [, navigate] = useLocation();
   const { toast } = useToast();

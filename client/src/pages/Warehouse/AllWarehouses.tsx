@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/select";
 
 export default function AllWarehouses() {
+  usePageTitle('nav.warehouses', 'Warehouses');
   const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");

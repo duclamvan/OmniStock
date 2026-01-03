@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, createContext, useContext } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7540,6 +7541,7 @@ function EmptyState({ icon: Icon, title, description, action }: {
 // ============================================================================
 
 export default function ReceivingList() {
+  usePageTitle('nav.receiving', 'Receiving');
   const { t } = useTranslation(['imports']);
   const [location, navigate] = useLocation();
   const { toast } = useToast();

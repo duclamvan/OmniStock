@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
@@ -41,6 +42,7 @@ import {
 import { ImportExportMenu } from "@/components/imports/ImportExportMenu";
 
 export default function AllDiscounts() {
+  usePageTitle('nav.discounts', 'Discounts');
   const { t } = useTranslation(['discounts', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");

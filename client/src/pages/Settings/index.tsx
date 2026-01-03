@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings as SettingsIcon, DollarSign, ShoppingCart, Package, Warehouse, Truck, Shield, PackageOpen } from "lucide-react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import GeneralSettings from "./GeneralSettings";
 import ShippingSettings from "./ShippingSettings";
 import OrderSettings from "./OrderSettings";
@@ -12,6 +13,7 @@ import RolesSettings from "./RolesSettings";
 import ImportsSettings from "./ImportsSettings";
 
 export default function Settings() {
+  usePageTitle('nav.settings', 'Settings');
   const [location, navigate] = useLocation();
   const { t } = useTranslation(['settings', 'common', 'system']);
   const tab = location.split("/")[2] || "general";

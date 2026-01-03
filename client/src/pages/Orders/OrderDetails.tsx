@@ -2,6 +2,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,6 +124,7 @@ function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onCl
 }
 
 export default function OrderDetails() {
+  usePageTitle('orders:orderDetails', 'Order Details');
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();

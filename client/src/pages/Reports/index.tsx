@@ -21,6 +21,7 @@ import {
   Receipt,
   LayoutDashboard
 } from "lucide-react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import Reports from "./Reports";
 import FinancialReports from "./FinancialReports";
 import SalesReports from "./SalesReports";
@@ -30,6 +31,7 @@ import ExpenseReports from "./ExpenseReports";
 import POSSalesReports from "./POSSalesReports";
 
 export default function ReportsIndex() {
+  usePageTitle('nav.reports', 'Reports');
   const [location, setLocation] = useLocation();
   const { t } = useTranslation('reports');
 

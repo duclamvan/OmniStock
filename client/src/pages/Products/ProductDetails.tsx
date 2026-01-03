@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +80,7 @@ interface NavSection {
 }
 
 export default function ProductDetails() {
+  usePageTitle('products:productDetails', 'Product Details');
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { canViewImportCost: canAccessFinancialData } = useAuth();

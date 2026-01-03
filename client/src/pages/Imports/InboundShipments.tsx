@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -174,6 +175,7 @@ interface PendingShipment {
 }
 
 export default function InternationalTransit() {
+  usePageTitle('nav.imports', 'Imports & Shipping');
   const { t } = useTranslation('imports');
   const [isShipmentFormOpen, setIsShipmentFormOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);

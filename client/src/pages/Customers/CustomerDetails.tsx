@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -61,6 +62,7 @@ import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
 export default function CustomerDetails() {
+  usePageTitle('customers:customerDetails', 'Customer Details');
   const { t } = useTranslation(['customers', 'common']);
   const { formatCurrency, formatDate } = useLocalization();
   const { id } = useParams();

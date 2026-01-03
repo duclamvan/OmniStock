@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { 
   Plus, 
   Search, 
@@ -159,6 +160,7 @@ const getCountryFlag = (country: string): string => {
 };
 
 export default function AllSuppliers() {
+  usePageTitle('nav.suppliers', 'Suppliers');
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation(['inventory', 'common']);

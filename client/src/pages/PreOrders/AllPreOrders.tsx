@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -67,6 +68,7 @@ interface PreOrder {
 }
 
 export default function AllPreOrders() {
+  usePageTitle('nav.preOrders', 'Pre-Orders');
   const { t } = useTranslation('orders');
   const { t: tCommon } = useTranslation('common');
   const { toast } = useToast();

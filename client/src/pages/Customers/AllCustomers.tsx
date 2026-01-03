@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, formatDate, formatCompactNumber } from "@/lib/currencyUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
@@ -59,6 +60,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function AllCustomers() {
+  usePageTitle('nav.customers', 'Customers');
   const { t } = useTranslation(['customers', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");

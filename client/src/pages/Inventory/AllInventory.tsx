@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -55,6 +56,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AllInventory() {
+  usePageTitle('nav.inventory', 'Inventory');
   const { t } = useTranslation(['inventory', 'common']);
   const { toast } = useToast();
   const { canViewImportCost } = useAuth();

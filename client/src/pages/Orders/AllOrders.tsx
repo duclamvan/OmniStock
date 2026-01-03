@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -310,6 +311,7 @@ function MobileOrderCard({
 }
 
 export default function AllOrders({ filter }: AllOrdersProps) {
+  usePageTitle('nav.orders', 'Orders');
   const { toast } = useToast();
   const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;

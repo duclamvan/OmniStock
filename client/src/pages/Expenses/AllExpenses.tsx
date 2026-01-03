@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -82,6 +83,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AllExpenses() {
+  usePageTitle('nav.expenses', 'Expenses');
   const { t } = useTranslation(['financial', 'common']);
   const [, navigate] = useLocation();
   const { toast } = useToast();
