@@ -352,7 +352,7 @@ def main():
     # Default files
     input_file = 'attached_assets/Pasted-Product-name-Reference-Category-SKU-Price-CZK-Price-EUR_1767405059741.txt'
     supplier_file = 'attached_assets/Pasted--Product-name-Stock-Date-Supplier-SKU-Quantity-Cost-Pri_1767406214298.txt'
-    output_file = 'inventory_import_ready.xlsx'
+    output_file = 'inventory_import_ready.csv'
     
     if len(sys.argv) >= 2:
         input_file = sys.argv[1]
