@@ -1,0 +1,57 @@
+~/workspace$ npm run db:prod --force
+npm warn using --force Recommended protections disabled.
+
+> rest-express@1.0.0 db:prod
+> DATABASE_URL=$PROD_DATABASE_URL drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/runner/workspace/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
++ badge_definitions table will be created
++ business_reports table will be created
++ daily_performance_snapshots table will be created
++ employee_badges table will be created
++ employee_points table will be created
++ historical_orders table will be created
++ import_batch_items table will be created
++ import_batches table will be created
++ performance_events table will be created
++ receipt_item_locations table will be created
++ shipment_tracking_metadata table will be created
++ warehouse_labels table will be created
+--- all table conflicts resolved ---
+
+
+ Warning  Found data-loss statements:
+· You're about to delete sessions table with 1 items
+· You're about to change id column type from serial to varchar with 1 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+error: foreign key constraint "ai_location_suggestions_custom_item_id_purchase_items_id_fk" cannot be implemented
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Object.query (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:66575:26)
+    at async pgPush (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:70117:13)
+    at async Object.handler (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:79124:9)
+    at async run (/home/runner/workspace/node_modules/drizzle-kit/bin.cjs:78381:7) {
+  length: 277,
+  severity: 'ERROR',
+  code: '42804',
+  detail: 'Key columns "custom_item_id" and "id" are of incompatible types: character varying and integer.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'tablecmds.c',
+  line: '9896',
+  routine: 'ATAddForeignKeyConstraint'
+}
