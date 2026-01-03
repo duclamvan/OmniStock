@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from 'react-i18next';
@@ -63,7 +63,8 @@ export default function AllCustomers() {
   usePageTitle('nav.customers', 'Customers');
   const { t } = useTranslation(['customers', 'common']);
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showUpdateTypeDialog, setShowUpdateTypeDialog] = useState(false);
   const [selectedCustomerType, setSelectedCustomerType] = useState<string>("");
@@ -113,25 +114,41 @@ export default function AllCustomers() {
     localStorage.setItem('customersVisibleColumns', JSON.stringify(newVisibility));
   };
 
+  // Debounce search input - only trigger API call after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const { data: customers = [], isLoading, error } = useQuery<any[]>({
-    queryKey: searchQuery 
-      ? ['/api/customers', { search: searchQuery, includeOrderStats: 'false' }] 
+    queryKey: debouncedSearch 
+      ? ['/api/customers', { search: debouncedSearch, includeOrderStats: 'false' }] 
       : ['/api/customers', { includeOrderStats: 'false' }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('includeOrderStats', 'false');
-      if (searchQuery) params.set('search', searchQuery);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       const res = await fetch(`/api/customers?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch customers');
       return res.json();
     },
     retry: false,
-    staleTime: 30000, // 30 seconds - customers don't change frequently
+    staleTime: 30000,
   });
 
-  // Note: Backend API filters customers based on searchQuery parameter
-  // filteredCustomers is the same as customers since filtering is done server-side
-  const filteredCustomers = customers;
+  // Client-side filtering for instant feedback while debouncing
+  const filteredCustomers = useMemo(() => {
+    if (!searchInput || searchInput === debouncedSearch) return customers;
+    const query = searchInput.toLowerCase();
+    return customers.filter((c: any) => 
+      c.name?.toLowerCase().includes(query) ||
+      c.email?.toLowerCase().includes(query) ||
+      c.phone?.includes(query) ||
+      c.facebookName?.toLowerCase().includes(query)
+    );
+  }, [customers, searchInput, debouncedSearch]);
 
   // Error handling
   useEffect(() => {
@@ -1557,8 +1574,8 @@ export default function AllCustomers() {
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
                 placeholder={t('common:searchPlaceholder', { item: t('customers:customers').toLowerCase() })}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10 h-10 focus:border-cyan-500 dark:focus:border-cyan-400 bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                 data-testid="input-search-customers"
               />
