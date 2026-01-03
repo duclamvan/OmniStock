@@ -1406,6 +1406,8 @@ function BackupHistoryCard() {
         return <Badge variant="secondary">{t('settings:backupTypeWeekly', 'Weekly')}</Badge>;
       case 'auto_monthly':
         return <Badge variant="secondary">{t('settings:backupTypeMonthly', 'Monthly')}</Badge>;
+      case 'pre_reset':
+        return <Badge variant="destructive">{t('settings:backupTypePreReset', 'Pre-Reset')}</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }

@@ -3052,7 +3052,7 @@ export const databaseBackups = pgTable("database_backups", {
 
 export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups, {
   backupType: z
-    .enum(["manual", "auto_daily", "auto_weekly", "auto_monthly"])
+    .enum(["manual", "auto_daily", "auto_weekly", "auto_monthly", "pre_reset"])
     .default("manual"),
   status: z.enum(["in_progress", "completed", "failed"]).default("in_progress"),
   fileName: z.string().optional(),

@@ -24625,7 +24625,8 @@ Important rules:
 
       // Create automatic backup before reset (7-day recovery window)
       const { createBackup } = await import('./services/backupService');
-      const backupResult = await createBackup('pre_reset', req.user?.username || 'system', 7);
+      // Pass user ID (not username) for foreign key constraint, or undefined for system/auto backups
+      const backupResult = await createBackup('pre_reset', req.user?.id || undefined, 7);
       
       if (!backupResult.success) {
         console.error('Pre-reset backup failed:', backupResult.error);
