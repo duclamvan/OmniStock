@@ -17,7 +17,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -84,6 +84,17 @@ export default function AllInventory() {
   const [lastImportedIds, setLastImportedIds] = useState<string[]>([]);
   const [showRevertButton, setShowRevertButton] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
+
+  // Mobile view mode: 'card' or 'table'
+  const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>(() => {
+    const saved = localStorage.getItem('inventoryMobileViewMode');
+    return (saved === 'table' ? 'table' : 'card') as 'card' | 'table';
+  });
+
+  // Save mobile view mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('inventoryMobileViewMode', mobileViewMode);
+  }, [mobileViewMode]);
 
   // Column visibility state with localStorage persistence
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -1822,8 +1833,35 @@ export default function AllInventory() {
       {/* Products Table */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-0 md:p-6">
+          {/* Mobile View Header with Toggle */}
+          <div className="md:hidden flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
+            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              {filteredProducts?.length || 0} {t('inventory:products')}
+            </div>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <Button
+                variant={mobileViewMode === 'card' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setMobileViewMode('card')}
+                data-testid="button-view-card"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={mobileViewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setMobileViewMode('table')}
+                data-testid="button-view-table"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-3 p-3">
+          <div className={`md:hidden space-y-3 p-3 ${mobileViewMode !== 'card' ? 'hidden' : ''}`}>
             {filteredProducts?.map((product: any) => {
               const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
               const unitsSold = product.unitsSold || 0;
@@ -1991,6 +2029,108 @@ export default function AllInventory() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Mobile Table View */}
+          <div className={`md:hidden ${mobileViewMode !== 'table' ? 'hidden' : ''}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <tr>
+                    <th className="text-left py-3 px-3 font-medium text-slate-600 dark:text-slate-400">{t('inventory:product')}</th>
+                    <th className="text-right py-3 px-3 font-medium text-slate-600 dark:text-slate-400">{t('inventory:qty')}</th>
+                    <th className="text-right py-3 px-3 font-medium text-slate-600 dark:text-slate-400">{t('inventory:price')}</th>
+                    <th className="text-center py-3 px-2 font-medium text-slate-600 dark:text-slate-400"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredProducts?.map((product: any) => (
+                    <tr key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarImage src={product.imageUrl} />
+                            <AvatarFallback className="text-xs bg-gray-100 dark:bg-gray-800">{product.name?.charAt(0) || 'P'}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <Link href={`/inventory/products/${product.id}`}>
+                              <span className={`font-medium text-sm truncate block max-w-[140px] ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600' : 'text-gray-400 line-through'}`}>
+                                {product.name}
+                              </span>
+                            </Link>
+                            <span className="text-xs text-gray-500 truncate block max-w-[140px]">{product.sku}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <span className={`font-semibold ${
+                          product.quantity <= 0 ? 'text-red-600' : 
+                          product.quantity <= (product.lowStockAlert || 5) ? 'text-amber-600' : 
+                          'text-gray-900 dark:text-gray-100'
+                        }`}>
+                          {product.isVirtual ? (product.availableVirtualStock ?? 0) : product.quantity}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-actions-mobile-${product.id}`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/inventory/products/${product.id}`}>
+                                <Package className="h-4 w-4 mr-2" />
+                                {t('inventory:viewDetails')}
+                              </Link>
+                            </DropdownMenuItem>
+                            {product.isActive && (
+                              <>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/inventory/${product.id}/edit`}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    {t('inventory:edit')}
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/inventory/add?duplicateId=${product.id}`}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    {t('inventory:duplicate')}
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => deleteProductMutation.mutate(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t('inventory:delete')}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {!product.isActive && (
+                              <DropdownMenuItem 
+                                className="text-green-600"
+                                onClick={() => restoreProductMutation.mutate(product.id)}
+                              >
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                {t('inventory:restore')}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           
           {/* Desktop Table View */}
