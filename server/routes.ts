@@ -9528,6 +9528,38 @@ Important:
       const data = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer(data);
 
+      // Create shipping address from contact info if we have enough data
+      const shippingStreet = req.body.shippingStreet || data.address;
+      const shippingCity = req.body.shippingCity || data.city;
+      const shippingZipCode = req.body.shippingZipCode || data.zipCode;
+      const shippingCountry = req.body.shippingCountry || data.country;
+      
+      if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
+        try {
+          const nameParts = (data.name || '').trim().split(/\s+/);
+          const firstName = req.body.shippingFirstName || nameParts[0] || data.name;
+          const lastName = req.body.shippingLastName || nameParts.slice(1).join(' ') || '';
+          
+          await storage.createCustomerShippingAddress({
+            customerId: customer.id,
+            firstName: firstName,
+            lastName: lastName || firstName,
+            company: req.body.shippingCompany || null,
+            email: req.body.shippingEmail || data.email || null,
+            tel: req.body.shippingPhone || data.phone || null,
+            street: shippingStreet,
+            streetNumber: req.body.shippingStreetNumber || null,
+            city: shippingCity,
+            zipCode: shippingZipCode,
+            country: shippingCountry,
+            isPrimary: true,
+            label: 'Primary',
+          });
+        } catch (shippingError) {
+          console.error('Failed to create shipping address for customer:', customer.name, shippingError);
+        }
+      }
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -9624,6 +9656,39 @@ Important:
 
           const customer = await storage.createCustomer(customerData);
           importedCustomers.push(customer);
+          
+          // Create shipping address from contact info if we have enough data
+          const shippingStreet = row['Shipping Street'] || customerData.address;
+          const shippingCity = row['Shipping City'] || customerData.city;
+          const shippingZipCode = row['Shipping Zip Code'] || customerData.zipCode;
+          const shippingCountry = row['Shipping Country'] || customerData.country;
+          
+          if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
+            try {
+              // Parse name into first/last for shipping address
+              const nameParts = customerData.name.trim().split(/\s+/);
+              const firstName = row['Shipping First Name'] || nameParts[0] || customerData.name;
+              const lastName = row['Shipping Last Name'] || nameParts.slice(1).join(' ') || '';
+              
+              await storage.createCustomerShippingAddress({
+                customerId: customer.id,
+                firstName: firstName,
+                lastName: lastName || firstName,
+                company: row['Shipping Company'] || null,
+                email: row['Shipping Email'] || customerData.email || null,
+                tel: row['Shipping Phone'] || customerData.phone || null,
+                street: shippingStreet,
+                streetNumber: row['Shipping Street Number'] || null,
+                city: shippingCity,
+                zipCode: shippingZipCode,
+                country: shippingCountry,
+                isPrimary: true,
+                label: 'Primary',
+              });
+            } catch (shippingError) {
+              console.error('Failed to create shipping address for customer:', customer.name, shippingError);
+            }
+          }
         } catch (error: any) {
           errors.push(`Row ${i + 2}: ${error.message || 'Failed to create customer'}`);
         }
@@ -9705,14 +9770,51 @@ Important:
             billingCountry: item.billingCountry || null,
           };
 
+          let customer;
           if (item._isUpdate && item._existingId) {
             // Update existing customer
             const updated = await storage.updateCustomer(item._existingId, customerData);
             importedCustomers.push({ ...updated, action: 'updated' });
+            customer = updated;
           } else {
             // Create new customer
             const created = await storage.createCustomer(customerData);
             importedCustomers.push({ ...created, action: 'created' });
+            customer = created;
+          }
+          
+          // Create shipping address from contact info if we have enough data (only for new customers)
+          if (customer && !item._isUpdate) {
+            const shippingStreet = item.shippingStreet || customerData.address;
+            const shippingCity = item.shippingCity || customerData.city;
+            const shippingZipCode = item.shippingZipCode || customerData.zipCode;
+            const shippingCountry = item.shippingCountry || customerData.country;
+            
+            if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
+              try {
+                const nameParts = customerData.name.trim().split(/\s+/);
+                const firstName = item.shippingFirstName || nameParts[0] || customerData.name;
+                const lastName = item.shippingLastName || nameParts.slice(1).join(' ') || '';
+                
+                await storage.createCustomerShippingAddress({
+                  customerId: customer.id,
+                  firstName: firstName,
+                  lastName: lastName || firstName,
+                  company: item.shippingCompany || null,
+                  email: item.shippingEmail || customerData.email || null,
+                  tel: item.shippingPhone || customerData.phone || null,
+                  street: shippingStreet,
+                  streetNumber: item.shippingStreetNumber || null,
+                  city: shippingCity,
+                  zipCode: shippingZipCode,
+                  country: shippingCountry,
+                  isPrimary: true,
+                  label: 'Primary',
+                });
+              } catch (shippingError) {
+                console.error('Failed to create shipping address for customer:', customer.name, shippingError);
+              }
+            }
           }
         } catch (error: any) {
           errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${error.message}`);

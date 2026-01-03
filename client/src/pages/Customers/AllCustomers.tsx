@@ -1011,6 +1011,28 @@ export default function AllCustomers() {
           } else if (lowerKey === 'billing country') {
             customer.billingCountry = strValue;
           }
+          // Shipping address fields
+          else if (lowerKey === 'shipping first name') {
+            customer.shippingFirstName = strValue;
+          } else if (lowerKey === 'shipping last name') {
+            customer.shippingLastName = strValue;
+          } else if (lowerKey === 'shipping company') {
+            customer.shippingCompany = strValue;
+          } else if (lowerKey === 'shipping email') {
+            customer.shippingEmail = strValue;
+          } else if (lowerKey === 'shipping phone' || lowerKey === 'shipping tel') {
+            customer.shippingPhone = strValue;
+          } else if (lowerKey === 'shipping street') {
+            customer.shippingStreet = strValue;
+          } else if (lowerKey === 'shipping street number') {
+            customer.shippingStreetNumber = strValue;
+          } else if (lowerKey === 'shipping city') {
+            customer.shippingCity = strValue;
+          } else if (lowerKey === 'shipping zip code' || lowerKey === 'shipping zipcode') {
+            customer.shippingZipCode = strValue;
+          } else if (lowerKey === 'shipping country') {
+            customer.shippingCountry = strValue;
+          }
         }
         return customer;
       };
