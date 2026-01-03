@@ -1194,29 +1194,46 @@ export default function SystemSettings() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertTriangle className="h-5 w-5" />
-              {t('settings:factoryResetConfirmTitle', 'Confirm Factory Reset')}
+              {keepSettingsOnReset 
+                ? t('settings:deleteUserDataConfirmTitle', 'Confirm Delete User Data')
+                : t('settings:fullResetConfirmTitle', 'Confirm Full Factory Reset')}
             </DialogTitle>
             <DialogDescription className="space-y-3 pt-2">
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>{t('settings:factoryResetDialogWarning', 'This action cannot be undone')}</AlertTitle>
                 <AlertDescription className="mt-2">
-                  <p className="text-sm">{t('settings:factoryResetDialogDescription', 'All data will be permanently deleted.')}</p>
+                  <p className="text-sm">
+                    {keepSettingsOnReset
+                      ? t('settings:deleteUserDataDialogDesc', 'All operational data will be permanently deleted.')
+                      : t('settings:fullResetDialogDesc', 'Everything will be permanently deleted including all infrastructure.')}
+                  </p>
                 </AlertDescription>
               </Alert>
               <div className="space-y-2 text-sm">
-                <p className="font-semibold">{t('settings:factoryResetWillDelete', 'The following will be deleted:')}</p>
+                <p className="font-semibold text-red-700 dark:text-red-400">{t('settings:thisWillDelete', 'This will DELETE:')}</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>{t('settings:factoryResetDelete1', 'All orders and order history')}</li>
-                  <li>{t('settings:factoryResetDelete2', 'All products and inventory')}</li>
-                  <li>{t('settings:factoryResetDelete3', 'All customers and contacts')}</li>
-                  <li>{t('settings:factoryResetDelete4', 'All reports and analytics data')}</li>
+                  <li>{t('settings:deleteProducts', 'All products, orders, customers, and employees')}</li>
+                  <li>{t('settings:deleteImports', 'All imports, shipments, and financial records')}</li>
+                  <li>{t('settings:deleteInventory', 'All inventory data and transactions')}</li>
+                  <li>{t('settings:deleteTickets', 'All tickets and services (audit trail is preserved)')}</li>
+                  {!keepSettingsOnReset && (
+                    <>
+                      <li className="text-red-600 dark:text-red-400 font-medium">{t('settings:deleteWarehouses', 'All warehouses and warehouse layouts')}</li>
+                      <li className="text-red-600 dark:text-red-400 font-medium">{t('settings:deleteCategories', 'All categories and suppliers')}</li>
+                      <li className="text-red-600 dark:text-red-400 font-medium">{t('settings:deletePackingMaterials', 'All packing materials catalog')}</li>
+                    </>
+                  )}
                 </ul>
-                <p className="font-semibold mt-3">{t('settings:factoryResetWillKeep', 'The following will be preserved:')}</p>
+                <p className="font-semibold mt-3 text-green-700 dark:text-green-400">{t('settings:thisWillKeep', 'This will KEEP:')}</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>{t('settings:factoryResetKeep1', 'User accounts and credentials')}</li>
-                  <li>{t('settings:factoryResetKeep2', 'System settings')}</li>
-                  <li>{t('settings:factoryResetKeep3', 'Application configuration')}</li>
+                  <li>{t('settings:keepUsers', 'User accounts and settings')}</li>
+                  {keepSettingsOnReset && (
+                    <>
+                      <li>{t('settings:keepWarehouses', 'Warehouse structures and carrier configurations')}</li>
+                      <li>{t('settings:keepCategories', 'Categories, suppliers, and packing materials catalog')}</li>
+                    </>
+                  )}
                 </ul>
               </div>
               <div className="space-y-2 pt-2">
@@ -1252,12 +1269,14 @@ export default function SystemSettings() {
               {factoryResetMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('settings:factoryResetInProgress', 'Resetting...')}
+                  {t('settings:factoryResetInProgress', 'Processing...')}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {t('settings:factoryResetConfirmButton', 'Confirm Factory Reset')}
+                  {keepSettingsOnReset
+                    ? t('settings:deleteUserDataConfirmButton', 'Delete All Data')
+                    : t('settings:fullResetConfirmButton', 'Wipe Entire System')}
                 </>
               )}
             </Button>
