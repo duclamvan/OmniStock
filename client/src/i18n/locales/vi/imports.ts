@@ -2328,7 +2328,6 @@ const imports = {
   manuallyAddedCosts: 'Chi phí thêm thủ công',
   noAutoIncludedCosts: 'Không có chi phí tự động',
   noManualCostsAdded: 'Chưa có chi phí thủ công. Nhấn "Thêm chi phí" để thêm thuế quan, phí hải quan hoặc các khoản phí khác.',
-  internationalTransitShipping: 'Vận chuyển quốc tế',
   fromShipment: 'Từ lô hàng',
   shipmentInsurance: 'Bảo hiểm lô hàng',
   purchaseOrderShipping: 'Vận chuyển đơn hàng',
@@ -2398,7 +2397,6 @@ const imports = {
   importPartialSuccess: 'Nhập hoàn thành một phần. {{imported}} đã nhập, {{skipped}} bị bỏ qua do lỗi xác thực.',
   validationErrorsDetails: 'Lỗi xác thực',
   importResultsSummary: '{{imported}} lô hàng đã nhập thành công. {{errors}} dòng có lỗi xác thực.',
-  close: 'Đóng',
   
 } as const;
 

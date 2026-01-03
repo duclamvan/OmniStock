@@ -390,10 +390,15 @@ function deepParse(value: any): any {
   if (value === 'true') return true;
   if (value === 'false') return false;
   
-  // Handle number strings - ONLY if they don't have leading zeros
+  // Handle number strings - ONLY if they don't have leading zeros or plus signs
   // Leading zeros indicate it's an identifier (zip, phone, ID), not a quantity
+  // Plus signs indicate phone numbers with country codes (e.g., +420123456789)
   if (typeof value === 'string' && value !== '') {
     const trimmed = value.trim();
+    // If it starts with +, keep as string (phone number with country code)
+    if (trimmed.startsWith('+')) {
+      return trimmed;
+    }
     if (!isNaN(Number(trimmed))) {
       // If it starts with 0 and next char is a digit, keep as string (zip code, phone, ID)
       if (/^0\d/.test(trimmed)) {
