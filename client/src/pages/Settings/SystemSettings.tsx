@@ -230,16 +230,18 @@ export default function SystemSettings() {
     }
   }, [isLoading, form, systemSettings]);
 
+  const [keepSettingsOnReset, setKeepSettingsOnReset] = useState(true);
+
   const factoryResetMutation = useMutation({
-    mutationFn: async (confirmationPhrase: string) => {
-      const response = await apiRequest('POST', '/api/system/factory-reset', { confirmationPhrase });
+    mutationFn: async ({ phrase, keepSettings }: { phrase: string, keepSettings: boolean }) => {
+      const response = await apiRequest('POST', '/api/system/factory-reset', { confirmationPhrase: phrase, keepSettings });
       return response;
     },
     onSuccess: (data: any) => {
       setShowFactoryResetDialog(false);
       setConfirmationPhrase('');
       toast({
-        title: t('settings:factoryResetSuccess', 'Factory Reset Successful'),
+        title: t('settings:factoryResetSuccess', 'Action Successful'),
         description: `${data.totalDeleted} ${t('settings:recordsDeleted', 'records deleted')}`,
       });
       // Invalidate all queries to refresh the UI
@@ -249,7 +251,7 @@ export default function SystemSettings() {
       toast({
         variant: "destructive",
         title: t('common:error', 'Error'),
-        description: error.message || t('settings:factoryResetFailed', 'Factory reset failed'),
+        description: error.message || t('settings:factoryResetFailed', 'Action failed'),
       });
     },
   });
@@ -287,7 +289,7 @@ export default function SystemSettings() {
 
   const handleFactoryReset = () => {
     if (confirmationPhrase === 'DELETE ALL DATA') {
-      factoryResetMutation.mutate(confirmationPhrase);
+      factoryResetMutation.mutate({ phrase: confirmationPhrase, keepSettings: keepSettingsOnReset });
     }
   };
 
