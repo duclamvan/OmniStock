@@ -9,13 +9,13 @@ SKU Format: CATEGORY-PRODUCTPART (e.g., GP-SOGEPO for "SORAH Gel Polish 15ml" in
 - Only adds -1, -2 suffix if duplicate exists
 
 Usage:
-    python scripts/inventory_processor.py input_file.tsv output_file.xlsx
+    python scripts/inventory_processor.py input_file.tsv [supplier_file.tsv] output_file.xlsx
 """
 
 import csv
 import sys
 import os
-from typing import Set
+from typing import Set, Dict
 
 try:
     from openpyxl import Workbook
@@ -55,69 +55,54 @@ VIETNAMESE_MAP = {
 
 
 def normalize_for_sku(text: str) -> str:
-    """
-    Normalize text for SKU generation - remove Vietnamese diacritics and non-alphanumeric chars.
-    """
+    """Normalize text for SKU generation - remove Vietnamese diacritics and non-alphanumeric chars."""
     import re
     normalized = ''.join(VIETNAMESE_MAP.get(c, c) for c in text)
     return re.sub(r'[^A-Za-z0-9]', '', normalized).upper()
 
 
+def normalize_for_matching(text: str) -> str:
+    """Normalize text for fuzzy matching - lowercase, remove diacritics, remove special chars."""
+    import re
+    normalized = ''.join(VIETNAMESE_MAP.get(c, c) for c in text)
+    return re.sub(r'[^a-z0-9]', '', normalized.lower())
+
+
 def get_category_part(category_name: str) -> str:
-    """
-    Generate category code from category name.
-    - Multi-word: Take first letter of each word (e.g., "Gel Polish" -> "GP")
-    - Single word: Take first 3 characters (e.g., "Design" -> "DES")
-    """
+    """Generate category code from category name."""
     words = [w for w in category_name.split() if w and w not in ['&', 'and', '-', '/']]
-    
     if len(words) > 1:
         category_part = ''.join(normalize_for_sku(w)[0] if normalize_for_sku(w) else '' for w in words)
     else:
         category_part = normalize_for_sku(category_name)[:3]
-    
     return category_part.upper() if category_part else 'GEN'
 
 
 def get_product_part(product_name: str) -> str:
-    """
-    Generate product code from product name.
-    - 1 word: Take first 6 characters
-    - 2 words: Take first 3 chars of each word
-    - 3+ words: Take first 2 chars of first 3 words
-    """
+    """Generate product code from product name."""
     words = [w for w in product_name.split() if w]
-    
     if not words:
         return 'ITEM'
-    
     if len(words) == 1:
         product_part = normalize_for_sku(words[0])[:6]
     elif len(words) == 2:
         product_part = normalize_for_sku(words[0])[:3] + normalize_for_sku(words[1])[:3]
     else:
         product_part = ''.join(normalize_for_sku(w)[:2] for w in words[:3])
-    
     return product_part.upper() if product_part else 'ITEM'
 
 
 def generate_sku(category: str, product_name: str, existing_skus: Set[str]) -> str:
-    """
-    Generate a unique SKU matching Davie Supply's exact format.
-    """
+    """Generate a unique SKU matching Davie Supply's exact format."""
     cat_part = get_category_part(category)
     prod_part = get_product_part(product_name)
-    
     base_sku = f"{cat_part}-{prod_part}"
-    
     if base_sku.upper() not in existing_skus:
         existing_skus.add(base_sku.upper())
         return base_sku
-    
     counter = 1
     while f"{base_sku}-{counter}".upper() in existing_skus:
         counter += 1
-    
     final_sku = f"{base_sku}-{counter}"
     existing_skus.add(final_sku.upper())
     return final_sku
@@ -134,7 +119,71 @@ def clean_price(value: str) -> float:
         return 0.0
 
 
-def process_inventory(input_file: str, output_file: str):
+def load_supplier_mapping(supplier_file: str) -> Dict[str, str]:
+    """
+    Load supplier data and create a mapping from product name to supplier.
+    Uses fuzzy matching to handle variations in product names.
+    """
+    supplier_map = {}
+    
+    delimiter = '\t' if supplier_file.endswith('.tsv') or supplier_file.endswith('.txt') else ','
+    
+    print(f"📦 Loading supplier data from: {supplier_file}")
+    
+    with open(supplier_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter=delimiter)
+        
+        for row in reader:
+            product_name = row.get('Product name', '').strip()
+            supplier = row.get('Supplier', '').strip()
+            
+            if product_name and supplier:
+                # Store both original and normalized versions for matching
+                normalized_name = normalize_for_matching(product_name)
+                supplier_map[normalized_name] = supplier
+                
+                # Also store by SKU if available for direct matching
+                sku = row.get('SKU', '').strip()
+                if sku:
+                    supplier_map[f"sku:{sku.upper()}"] = supplier
+    
+    print(f"   ✅ Loaded {len(supplier_map)} supplier mappings")
+    return supplier_map
+
+
+def find_supplier(product_name: str, reference: str, supplier_map: Dict[str, str]) -> str:
+    """
+    Find supplier for a product using fuzzy matching.
+    Tries multiple matching strategies.
+    """
+    # Strategy 1: Try exact reference/SKU match
+    if reference:
+        sku_key = f"sku:{reference.upper()}"
+        if sku_key in supplier_map:
+            return supplier_map[sku_key]
+    
+    # Strategy 2: Try normalized product name match
+    normalized_name = normalize_for_matching(product_name)
+    if normalized_name in supplier_map:
+        return supplier_map[normalized_name]
+    
+    # Strategy 3: Try partial matching (contains)
+    for key, supplier in supplier_map.items():
+        if not key.startswith('sku:'):
+            # Check if the supplier product name is contained in our product name
+            if key in normalized_name or normalized_name in key:
+                return supplier
+    
+    # Strategy 4: Try matching first significant words
+    product_words = normalized_name[:15]  # First 15 chars
+    for key, supplier in supplier_map.items():
+        if not key.startswith('sku:') and key.startswith(product_words):
+            return supplier
+    
+    return ''  # No match found
+
+
+def process_inventory(input_file: str, supplier_file: str, output_file: str):
     """
     Process inventory file and generate new SKUs.
     Outputs to Excel format matching the import template.
@@ -142,9 +191,16 @@ def process_inventory(input_file: str, output_file: str):
     products = []
     existing_skus: Set[str] = set()
     
+    # Load supplier mapping if file provided
+    supplier_map = {}
+    if supplier_file and os.path.exists(supplier_file):
+        supplier_map = load_supplier_mapping(supplier_file)
+    
     delimiter = '\t' if input_file.endswith('.tsv') or input_file.endswith('.txt') else ','
     
     print(f"📂 Reading inventory from: {input_file}")
+    
+    matched_suppliers = 0
     
     with open(input_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f, delimiter=delimiter)
@@ -152,11 +208,17 @@ def process_inventory(input_file: str, output_file: str):
         for row in reader:
             product_name = row.get('Product name', '').strip()
             category = row.get('Category', '').strip()
+            reference = row.get('Reference', '').strip()
             
             if not product_name:
                 continue
             
             new_sku = generate_sku(category, product_name, existing_skus)
+            
+            # Find supplier using reference or product name matching
+            supplier = find_supplier(product_name, reference, supplier_map)
+            if supplier:
+                matched_suppliers += 1
             
             products.append({
                 'Name': product_name,
@@ -164,7 +226,7 @@ def process_inventory(input_file: str, output_file: str):
                 'SKU': new_sku,
                 'Barcode': '',
                 'Category': category,
-                'Supplier': '',
+                'Supplier': supplier,
                 'Warehouse': '',
                 'Warehouse Location': '',
                 'Quantity': 0,
@@ -186,17 +248,10 @@ def process_inventory(input_file: str, output_file: str):
             })
     
     print(f"✅ Processed {len(products)} products")
+    print(f"   🏭 Matched suppliers for {matched_suppliers}/{len(products)} products ({100*matched_suppliers//len(products)}%)")
     
     # Count unique vs duplicated SKUs
-    base_skus = set()
-    dup_count = 0
-    for p in products:
-        sku = p['SKU']
-        parts = sku.rsplit('-', 1)
-        if len(parts) == 2 and parts[1].isdigit():
-            dup_count += 1
-        else:
-            base_skus.add(sku)
+    dup_count = sum(1 for p in products if p['SKU'].rsplit('-', 1)[-1].isdigit() and '-' in p['SKU'])
     print(f"   📊 {len(products) - dup_count} unique base SKUs, {dup_count} with suffix counters")
     
     # Output to Excel
@@ -207,7 +262,6 @@ def process_inventory(input_file: str, output_file: str):
         ws = wb.active
         ws.title = "Products"
         
-        # Headers matching import template
         headers = [
             'Name', 'Vietnamese Name', 'SKU', 'Barcode', 'Category', 'Supplier',
             'Warehouse', 'Warehouse Location', 'Quantity', 'Low Stock Alert',
@@ -217,7 +271,6 @@ def process_inventory(input_file: str, output_file: str):
             'Description', 'Shipment Notes'
         ]
         
-        # Style for header row
         header_font = Font(bold=True)
         header_fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
         
@@ -226,13 +279,11 @@ def process_inventory(input_file: str, output_file: str):
             cell.font = header_font
             cell.fill = header_fill
         
-        # Write data rows
         for row_idx, product in enumerate(products, 2):
             for col_idx, header in enumerate(headers, 1):
                 value = product.get(header, '')
                 ws.cell(row=row_idx, column=col_idx, value=value)
         
-        # Auto-adjust column widths
         for col in ws.columns:
             max_length = 0
             column = col[0].column_letter
@@ -247,7 +298,6 @@ def process_inventory(input_file: str, output_file: str):
         
         wb.save(output_file)
     else:
-        # Fallback to CSV
         print(f"💾 Writing CSV output to: {output_file}")
         
         headers = [
@@ -266,28 +316,39 @@ def process_inventory(input_file: str, output_file: str):
     
     print(f"🚀 Done! Generated {len(products)} products ready for import")
     
-    print("\n📋 Sample output (first 10 products):")
-    print("-" * 90)
-    for product in products[:10]:
-        print(f"  {product['SKU']:20} | {product['Category']:20} | {product['Name'][:40]}")
+    # Show sample with suppliers
+    print("\n📋 Sample output (first 15 products with suppliers):")
+    print("-" * 100)
+    products_with_supplier = [p for p in products if p['Supplier']]
+    for product in products_with_supplier[:15]:
+        print(f"  {product['SKU']:18} | {product['Supplier'][:30]:30} | {product['Name'][:35]}")
+    
+    if not products_with_supplier:
+        print("  (No supplier matches found)")
 
 
 def main():
-    if len(sys.argv) < 2:
-        input_file = 'attached_assets/Pasted-Product-name-Reference-Category-SKU-Price-CZK-Price-EUR_1767405059741.txt'
-        output_file = 'inventory_import_ready.xlsx'
-    elif len(sys.argv) == 2:
+    # Default files
+    input_file = 'attached_assets/Pasted-Product-name-Reference-Category-SKU-Price-CZK-Price-EUR_1767405059741.txt'
+    supplier_file = 'attached_assets/Pasted--Product-name-Stock-Date-Supplier-SKU-Quantity-Cost-Pri_1767406214298.txt'
+    output_file = 'inventory_import_ready.xlsx'
+    
+    if len(sys.argv) >= 2:
         input_file = sys.argv[1]
-        output_file = 'inventory_import_ready.xlsx'
-    else:
-        input_file = sys.argv[1]
-        output_file = sys.argv[2]
+    if len(sys.argv) >= 3:
+        supplier_file = sys.argv[2]
+    if len(sys.argv) >= 4:
+        output_file = sys.argv[3]
     
     if not os.path.exists(input_file):
         print(f"❌ Error: Input file not found: {input_file}")
         sys.exit(1)
     
-    process_inventory(input_file, output_file)
+    if supplier_file and not os.path.exists(supplier_file):
+        print(f"⚠️ Warning: Supplier file not found: {supplier_file}")
+        supplier_file = None
+    
+    process_inventory(input_file, supplier_file, output_file)
 
 
 if __name__ == '__main__':
