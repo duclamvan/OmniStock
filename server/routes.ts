@@ -5810,6 +5810,11 @@ Important:
       const includeInactive = req.query.includeInactive === 'true';
       const includeLandingCost = req.query.includeLandingCost === 'true';
       const includeAvailability = req.query.includeAvailability === 'true'; // Default to false for performance
+      
+      // Server-side pagination params
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
       let productsResult;
 
       if (search) {
@@ -5845,6 +5850,13 @@ Important:
         
         const userRole = req.user?.role || 'warehouse_operator';
         const filtered = filterFinancialData(enrichedProducts, userRole);
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = filtered.length;
+          const paginated = filtered.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         return res.json(filtered);
       }
 
@@ -5971,11 +5983,25 @@ Important:
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';
         const filtered = filterFinancialData(productsWithCosts, userRole);
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = filtered.length;
+          const paginated = filtered.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         res.json(filtered);
       } else {
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';
         const filtered = filterFinancialData(enrichedProducts, userRole);
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = filtered.length;
+          const paginated = filtered.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         res.json(filtered);
       }
     } catch (error) {
@@ -9366,6 +9392,11 @@ Important:
       const search = req.query.search as string;
       const includeBadges = req.query.includeBadges === 'true';
       const includeOrderStats = req.query.includeOrderStats !== 'false'; // Default true for backwards compat
+      
+      // Server-side pagination params
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
       let customers;
 
       if (search) {
@@ -9423,9 +9454,22 @@ Important:
             return { ...customer, badges };
           })
         );
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = customersWithBadges.length;
+          const paginated = customersWithBadges.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         return res.json(customersWithBadges);
       }
 
+      // Apply server-side pagination if limit is provided
+      if (limit) {
+        const total = customersWithPayLaterBadge.length;
+        const paginated = customersWithPayLaterBadge.slice(offset, offset + limit);
+        return res.json({ items: paginated, total, limit, offset });
+      }
       res.json(customersWithPayLaterBadge);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -10298,6 +10342,10 @@ Important:
       const customerId = req.query.customerId as string;
       const channel = req.query.channel as string;
       const includeItems = req.query.includeItems === 'true';
+      
+      // Server-side pagination params
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
       let orders;
       // Special filter: pay_later means shipped orders with pay_later payment status
@@ -10421,11 +10469,25 @@ Important:
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';
         const filtered = filterFinancialData(ordersWithItems, userRole);
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = filtered.length;
+          const paginated = filtered.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         res.json(filtered);
       } else {
         // Filter financial data based on user role
         const userRole = req.user?.role || 'warehouse_operator';
         const filtered = filterFinancialData(orders, userRole);
+        
+        // Apply server-side pagination if limit is provided
+        if (limit) {
+          const total = filtered.length;
+          const paginated = filtered.slice(offset, offset + limit);
+          return res.json({ items: paginated, total, limit, offset });
+        }
         res.json(filtered);
       }
     } catch (error) {
