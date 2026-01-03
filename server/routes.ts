@@ -5259,6 +5259,66 @@ Important:
     }
   });
 
+  // Bulk import suppliers from pre-parsed data (optimized - single request)
+  app.post('/api/suppliers/bulk-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const { items } = req.body;
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "No items provided for import" });
+      }
+
+      const importedSuppliers: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          const name = item.name;
+          if (!name) {
+            errors.push(`Item ${i + 1}: Name is required`);
+            continue;
+          }
+
+          const supplierData: any = {
+            name: name,
+            contactPerson: item.contactPerson || null,
+            email: item.email || null,
+            phone: item.phone || null,
+            address: item.address || null,
+            country: item.country || null,
+            website: item.website || null,
+            supplierLink: item.supplierLink || null,
+            notes: item.notes || null,
+          };
+
+          if (item._isUpdate && item._existingId) {
+            // Update existing supplier
+            const updated = await storage.updateSupplier(item._existingId, supplierData);
+            importedSuppliers.push({ ...updated, action: 'updated' });
+          } else {
+            // Create new supplier
+            const created = await storage.createSupplier(supplierData);
+            importedSuppliers.push({ ...created, action: 'created' });
+          }
+        } catch (error: any) {
+          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${error.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedSuppliers.length,
+        errors: errors.length,
+        errorDetails: errors,
+        suppliers: importedSuppliers
+      });
+    } catch (error: any) {
+      console.error("Bulk suppliers import error:", error);
+      res.status(500).json({ message: error.message || "Failed to bulk import suppliers" });
+    }
+  });
+
   // Get import purchases for a specific supplier
   app.get('/api/suppliers/:supplierId/purchases', isAuthenticated, async (req, res) => {
     try {
@@ -9485,6 +9545,76 @@ Important:
     } catch (error: any) {
       console.error("Error importing customers:", error);
       res.status(500).json({ message: error.message || "Failed to import customers" });
+    }
+  });
+
+  // Bulk import customers from pre-parsed data (optimized - single request)
+  app.post('/api/customers/bulk-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const { items } = req.body;
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "No items provided for import" });
+      }
+
+      const importedCustomers: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          const name = item.name;
+          if (!name) {
+            errors.push(`Item ${i + 1}: Name is required`);
+            continue;
+          }
+
+          const customerData: any = {
+            name: name,
+            email: item.email || null,
+            phone: item.phone || null,
+            company: item.company || null,
+            type: item.type || 'regular',
+            street: item.street || null,
+            city: item.city || null,
+            state: item.state || null,
+            country: item.country || null,
+            postalCode: item.postalCode || null,
+            facebookId: item.facebookId || null,
+            facebookName: item.facebookName || null,
+            ico: item.ico || null,
+            dic: item.dic || null,
+            vatId: item.vatId || null,
+            preferredCurrency: item.preferredCurrency || null,
+            preferredLanguage: item.preferredLanguage || null,
+            notes: item.notes || null,
+            isNew: item.isNew ?? true,
+          };
+
+          if (item._isUpdate && item._existingId) {
+            // Update existing customer
+            const updated = await storage.updateCustomer(item._existingId, customerData);
+            importedCustomers.push({ ...updated, action: 'updated' });
+          } else {
+            // Create new customer
+            const created = await storage.createCustomer(customerData);
+            importedCustomers.push({ ...created, action: 'created' });
+          }
+        } catch (error: any) {
+          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${error.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedCustomers.length,
+        errors: errors.length,
+        errorDetails: errors,
+        customers: importedCustomers
+      });
+    } catch (error: any) {
+      console.error("Bulk customers import error:", error);
+      res.status(500).json({ message: error.message || "Failed to bulk import customers" });
     }
   });
 

@@ -744,7 +744,8 @@ export default function AllInventory() {
       }
 
       // Send all items in a single bulk request
-      const response = await apiRequest('POST', '/api/products/bulk-import', { items: validItems });
+      const res = await apiRequest('POST', '/api/products/bulk-import', { items: validItems });
+      const response = await res.json();
 
       // Close preview modal
       setShowImportPreview(false);

@@ -754,45 +754,41 @@ export default function AllCustomers() {
 
   const confirmImport = async () => {
     setIsImporting(true);
-    const validItems = importPreviewData.filter(item => item._isValid);
-    const importedIds: string[] = [];
 
     try {
-      for (const item of validItems) {
-        const customerData = {
-          name: item.name,
-          email: item.email || null,
-          phone: item.phone || null,
-          country: item.country || null,
-          street: item.street || null,
-          city: item.city || null,
-          company: item.company || null,
-          notes: item.notes || null,
-          type: item.type || 'regular',
-          isNew: true,
-        };
-
-        if (item._isUpdate && item._existingId) {
-          // Update existing customer - don't track for revert (would delete original data)
-          await apiRequest('PATCH', `/api/customers/${item._existingId}`, customerData);
-        } else {
-          // Create new customer - track for revert
-          const result = await apiRequest('POST', '/api/customers', customerData);
-          if (result && result.id) {
-            importedIds.push(result.id);
-          }
-        }
+      // Filter valid items for bulk import
+      const validItems = importPreviewData.filter(item => item._isValid);
+      
+      if (validItems.length === 0) {
+        toast({
+          title: t('common:error'),
+          description: t('customers:noValidItems'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
       }
 
+      // Send all items in a single bulk request
+      const res = await apiRequest('POST', '/api/customers/bulk-import', { items: validItems });
+      const response = await res.json();
+
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+
+      // Store imported IDs for revert (only new customers, not updates)
+      const newCustomerIds = response.customers
+        ?.filter((c: any) => c.action === 'created')
+        .map((c: any) => c.id) || [];
       
       toast({
         title: t('customers:importCompleted'),
-        description: t('customers:importedCustomersCount', { count: importedIds.length }),
+        description: t('customers:importedCustomersCount', { count: response.imported || 0 }),
       });
 
-      setLastImportedIds(importedIds);
-      setShowRevertButton(true);
+      if (newCustomerIds.length > 0) {
+        setLastImportedIds(newCustomerIds);
+        setShowRevertButton(true);
+      }
       setShowImportPreview(false);
       setImportPreviewData([]);
       setImportErrors([]);

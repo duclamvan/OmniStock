@@ -467,41 +467,25 @@ export default function AllSuppliers() {
   };
 
   const confirmImport = async () => {
-    if (importPreviewData.filter(i => i._isValid).length === 0) return;
-
     setIsImporting(true);
-    const importedIds: string[] = [];
     
     try {
+      // Filter valid items for bulk import
       const validItems = importPreviewData.filter(i => i._isValid);
       
-      for (const item of validItems) {
-        try {
-          const supplierData = {
-            name: item.name,
-            contactPerson: item.contactPerson || null,
-            email: item.email || null,
-            phone: item.phone || null,
-            address: item.address || null,
-            country: item.country || null,
-            website: item.website || null,
-            supplierLink: item.supplierLink || null,
-            notes: item.notes || null,
-          };
-
-          if (item._isUpdate && item._existingId) {
-            // Update existing supplier - don't track for revert (would delete original data)
-            await apiRequest("PUT", `/api/suppliers/${item._existingId}`, supplierData);
-          } else {
-            // Create new supplier - track for revert
-            const response = await apiRequest("POST", "/api/suppliers", supplierData);
-            const newSupplier = await response.json();
-            importedIds.push(newSupplier.id);
-          }
-        } catch (itemError) {
-          console.error(`Error importing supplier ${item.name}:`, itemError);
-        }
+      if (validItems.length === 0) {
+        toast({
+          title: t('common:error'),
+          description: t('inventory:noValidItems'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
       }
+
+      // Send all items in a single bulk request
+      const res = await apiRequest("POST", "/api/suppliers/bulk-import", { items: validItems });
+      const response = await res.json();
 
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       
@@ -509,13 +493,20 @@ export default function AllSuppliers() {
       setImportPreviewData([]);
       setImportErrors([]);
       setImportFile(null);
+
+      // Store imported IDs for revert (only new suppliers, not updates)
+      const newSupplierIds = response.suppliers
+        ?.filter((s: any) => s.action === 'created')
+        .map((s: any) => s.id) || [];
       
-      setLastImportedIds(importedIds);
-      setShowRevertButton(true);
+      if (newSupplierIds.length > 0) {
+        setLastImportedIds(newSupplierIds);
+        setShowRevertButton(true);
+      }
       
       toast({
         title: t('inventory:importCompleted'),
-        description: t('inventory:importedSuppliersCount', { count: importedIds.length }),
+        description: t('inventory:importedSuppliersCount', { count: response.imported || 0 }),
       });
       
       setTimeout(() => {
