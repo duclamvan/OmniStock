@@ -582,6 +582,8 @@ export default function ProductForm() {
   const importCostUsd = form.watch('importCostUsd');
   const importCostCzk = form.watch('importCostCzk');
   const importCostEur = form.watch('importCostEur');
+  const importCostVnd = form.watch('importCostVnd');
+  const importCostCny = form.watch('importCostCny');
   
   // Watch sales price fields for auto-conversion
   const priceCzk = form.watch('priceCzk');
@@ -595,7 +597,7 @@ export default function ProductForm() {
   const productName = form.watch('name');
   const productQuantity = form.watch('quantity');
 
-  // Auto-convert import costs after 1 second
+  // Auto-convert import costs after 1 second (includes all 5 currencies)
   useEffect(() => {
     if (conversionTimeoutRef.current) {
       clearTimeout(conversionTimeoutRef.current);
@@ -606,6 +608,8 @@ export default function ProductForm() {
         importCostUsd ? 'USD' : null,
         importCostCzk ? 'CZK' : null,
         importCostEur ? 'EUR' : null,
+        importCostVnd ? 'VND' : null,
+        importCostCny ? 'CNY' : null,
       ].filter(Boolean);
 
       if (filledFields.length === 1) {
@@ -622,6 +626,12 @@ export default function ProductForm() {
           case 'EUR':
             sourceValue = parseFloat(String(importCostEur)) || 0;
             break;
+          case 'VND':
+            sourceValue = parseFloat(String(importCostVnd)) || 0;
+            break;
+          case 'CNY':
+            sourceValue = parseFloat(String(importCostCny)) || 0;
+            break;
         }
 
         if (sourceValue > 0) {
@@ -637,6 +647,14 @@ export default function ProductForm() {
             const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
             form.setValue('importCostEur', parseFloat(eurValue.toFixed(2)));
           }
+          if (sourceCurrency !== 'VND' && !importCostVnd) {
+            const vndValue = convertCurrency(sourceValue, sourceCurrency, 'VND');
+            form.setValue('importCostVnd', parseFloat(vndValue.toFixed(0)));
+          }
+          if (sourceCurrency !== 'CNY' && !importCostCny) {
+            const cnyValue = convertCurrency(sourceValue, sourceCurrency, 'CNY');
+            form.setValue('importCostCny', parseFloat(cnyValue.toFixed(2)));
+          }
         }
       }
     }, 1000);
@@ -646,7 +664,7 @@ export default function ProductForm() {
         clearTimeout(conversionTimeoutRef.current);
       }
     };
-  }, [importCostUsd, importCostCzk, importCostEur, form]);
+  }, [importCostUsd, importCostCzk, importCostEur, importCostVnd, importCostCny, form]);
 
   // Auto-convert series import costs after 1 second
   useEffect(() => {
