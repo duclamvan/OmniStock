@@ -118,33 +118,50 @@ const normalizeCarrier = (value: string): string => {
   return map[value] || value;
 };
 
-// Helper function to extract Facebook ID or username from URL
+// Helper function to extract Facebook ID or username from URL or recognize plain Facebook ID
 const extractFacebookId = (input: string): string | null => {
   if (!input) return null;
   
+  const trimmed = input.trim();
+  
   // Check if input looks like a Facebook URL
   const facebookUrlPattern = /(?:https?:\/\/)?(?:www\.|m\.)?facebook\.com\//i;
-  if (!facebookUrlPattern.test(input)) return null;
   
-  try {
-    // Pattern 1: profile.php?id=12345
-    const numericIdMatch = input.match(/profile\.php\?id=(\d+)/);
-    if (numericIdMatch) {
-      return numericIdMatch[1];
-    }
-    
-    // Pattern 2: facebook.com/username or facebook.com/pages/name/id
-    const usernameMatch = input.match(/facebook\.com\/([^/?&#]+)/);
-    if (usernameMatch && usernameMatch[1]) {
-      const username = usernameMatch[1];
-      // Exclude common paths that aren't usernames
-      const excludedPaths = ['profile.php', 'pages', 'groups', 'events', 'marketplace', 'watch', 'gaming'];
-      if (!excludedPaths.includes(username.toLowerCase())) {
-        return username;
+  if (facebookUrlPattern.test(trimmed)) {
+    try {
+      // Pattern 1: profile.php?id=12345
+      const numericIdMatch = trimmed.match(/profile\.php\?id=(\d+)/);
+      if (numericIdMatch) {
+        return numericIdMatch[1];
       }
+      
+      // Pattern 2: facebook.com/username or facebook.com/pages/name/id
+      const usernameMatch = trimmed.match(/facebook\.com\/([^/?&#]+)/);
+      if (usernameMatch && usernameMatch[1]) {
+        const username = usernameMatch[1];
+        // Exclude common paths that aren't usernames
+        const excludedPaths = ['profile.php', 'pages', 'groups', 'events', 'marketplace', 'watch', 'gaming'];
+        if (!excludedPaths.includes(username.toLowerCase())) {
+          return username;
+        }
+      }
+    } catch (error) {
+      // Silently handle parsing errors
     }
-  } catch (error) {
-    console.error('Error extracting Facebook ID:', error);
+    return null;
+  }
+  
+  // Check if input looks like a plain Facebook ID (not a URL)
+  // Facebook IDs with numbers: hien.cao.5855594, 100001234567890
+  // Nicknames: hien.cao (no numbers at end - these are just usernames)
+  
+  // Pattern: alphanumeric with dots, containing numbers (typical FB profile ID)
+  // e.g., hien.cao.5855594, nguyen.van.123456, 100001234567890
+  const fbIdWithNumbersPattern = /^[a-zA-Z0-9._-]+\d+$/;
+  const pureNumericIdPattern = /^\d{10,}$/; // Pure numeric IDs (10+ digits)
+  
+  if (fbIdWithNumbersPattern.test(trimmed) || pureNumericIdPattern.test(trimmed)) {
+    return trimmed;
   }
   
   return null;
