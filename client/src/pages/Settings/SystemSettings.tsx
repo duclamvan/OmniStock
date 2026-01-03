@@ -28,7 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check, Wrench } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check, Wrench, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
@@ -629,85 +630,96 @@ export default function SystemSettings() {
             {/* Backup History Card */}
             <BackupHistoryCard />
 
-            {/* Factory Reset Card */}
-            <Card className="border-red-200 dark:border-red-900 overflow-hidden">
-              <CardHeader className="p-4 sm:p-6 bg-red-50/80 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  {t('settings:factoryResetTitle', 'Dangerous Actions')}
-                </CardTitle>
-                <CardDescription className="text-sm text-red-600/80 dark:text-red-400/80">
-                  {t('settings:factoryResetDescription', 'Permanently delete data or reset the system')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Option 1: Delete All Data but Keep Settings */}
-                  <div className="flex flex-col h-full rounded-xl border border-red-100 dark:border-red-900/30 bg-white dark:bg-slate-950 p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
-                        <Database className="h-5 w-5 text-red-600 dark:text-red-400" />
+            {/* Factory Reset Card - Collapsed by default */}
+            <Collapsible defaultOpen={false}>
+              <Card className="border-red-200 dark:border-red-900 overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="p-4 sm:p-6 bg-red-50/80 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50 cursor-pointer hover:bg-red-100/80 dark:hover:bg-red-950/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700 dark:text-red-400">
+                          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+                          {t('settings:factoryResetTitle', 'Dangerous Actions')}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-red-600/80 dark:text-red-400/80">
+                          {t('settings:factoryResetDescription', 'Permanently delete data or reset the system')}
+                        </CardDescription>
                       </div>
-                      <h4 className="font-semibold text-red-900 dark:text-red-100">
-                        {t('settings:deleteUserDataTitle', 'Delete User Data Only')}
-                      </h4>
+                      <ChevronDown className="h-5 w-5 text-red-600 dark:text-red-400 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 flex-grow">
-                      {t('settings:deleteUserDataDesc', 'Permanently removes all orders, customers, products, and operational records while keeping your system configuration, categories, and warehouses.')}
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setKeepSettingsOnReset(true);
-                        setShowFactoryResetDialog(true);
-                      }}
-                      className="w-full border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-900/20"
-                      data-testid="button-delete-user-data"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      {t('settings:deleteUserDataButton', 'Delete All User Data')}
-                    </Button>
-                  </div>
-
-                  {/* Option 2: Full Factory Reset */}
-                  <div className="flex flex-col h-full rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/40">
-                        <AlertTriangle className="h-5 w-5 text-red-700 dark:text-red-400" />
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="p-4 sm:p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Option 1: Delete All Data but Keep Settings */}
+                      <div className="flex flex-col h-full rounded-xl border border-red-100 dark:border-red-900/30 bg-white dark:bg-slate-950 p-5 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                            <Database className="h-5 w-5 text-red-600 dark:text-red-400" />
+                          </div>
+                          <h4 className="font-semibold text-red-900 dark:text-red-100">
+                            {t('settings:deleteUserDataTitle', 'Delete User Data Only')}
+                          </h4>
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 flex-grow">
+                          {t('settings:deleteUserDataDesc', 'Permanently removes all orders, customers, products, and operational records while keeping your system configuration, categories, and warehouses.')}
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setKeepSettingsOnReset(true);
+                            setShowFactoryResetDialog(true);
+                          }}
+                          className="w-full border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-900/20"
+                          data-testid="button-delete-user-data"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {t('settings:deleteUserDataButton', 'Delete All User Data')}
+                        </Button>
                       </div>
-                      <h4 className="font-semibold text-red-900 dark:text-red-100">
-                        {t('settings:fullResetTitle', 'Full Factory Reset')}
-                      </h4>
-                    </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 flex-grow font-medium">
-                      {t('settings:fullResetDesc', 'Complete system wipe. Deletes everything including warehouses, categories, and suppliers. Use with extreme caution.')}
-                    </p>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        setKeepSettingsOnReset(false);
-                        setShowFactoryResetDialog(true);
-                      }}
-                      className="w-full shadow-lg shadow-red-500/20"
-                      data-testid="button-full-factory-reset"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      {t('settings:fullResetButton', 'Wipe Entire System')}
-                    </Button>
-                  </div>
-                </div>
 
-                <Alert variant="destructive" className="bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/50">
-                  <Shield className="h-4 w-4" />
-                  <AlertTitle className="text-xs font-bold uppercase tracking-wider">
-                    {t('settings:securityNote', 'Security Note')}
-                  </AlertTitle>
-                  <AlertDescription className="text-xs opacity-80">
-                    {t('settings:auditTrailPreserved', 'User accounts and the system audit trail (Activity Logs) are never deleted for security and compliance purposes.')}
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+                      {/* Option 2: Full Factory Reset */}
+                      <div className="flex flex-col h-full rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 p-5 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/40">
+                            <AlertTriangle className="h-5 w-5 text-red-700 dark:text-red-400" />
+                          </div>
+                          <h4 className="font-semibold text-red-900 dark:text-red-100">
+                            {t('settings:fullResetTitle', 'Full Factory Reset')}
+                          </h4>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 flex-grow font-medium">
+                          {t('settings:fullResetDesc', 'Complete system wipe. Deletes everything including warehouses, categories, and suppliers. Use with extreme caution.')}
+                        </p>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setKeepSettingsOnReset(false);
+                            setShowFactoryResetDialog(true);
+                          }}
+                          className="w-full shadow-lg shadow-red-500/20"
+                          data-testid="button-full-factory-reset"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          {t('settings:fullResetButton', 'Wipe Entire System')}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Alert variant="destructive" className="bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/50">
+                      <Shield className="h-4 w-4" />
+                      <AlertTitle className="text-xs font-bold uppercase tracking-wider">
+                        {t('settings:securityNote', 'Security Note')}
+                      </AlertTitle>
+                      <AlertDescription className="text-xs opacity-80">
+                        {t('settings:auditTrailPreserved', 'User accounts and the system audit trail (Activity Logs) are never deleted for security and compliance purposes.')}
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           </TabsContent>
 
           {/* Tab 3: Security */}
