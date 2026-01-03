@@ -3630,51 +3630,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Calculate relevance score for search results with Vietnamese normalization
-  function calculateScore(text: string, query: string): number {
+  // Token-based fuzzy matching score for multi-word search
+  function calculateFuzzyScore(text: string, query: string): number {
     if (!text || !query) return 0;
 
     const normalizedText = normalizeVietnamese(text.toLowerCase());
     const normalizedQuery = normalizeVietnamese(query.toLowerCase());
-
+    
+    // Split query into tokens (words), filter out empty and short tokens
+    const queryTokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
+    const textTokens = normalizedText.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 1);
+    
     let score = 0;
 
-    // Exact match (highest priority)
+    // Exact full match (highest priority)
     if (normalizedText === normalizedQuery) {
+      score += 200;
+    }
+
+    // Full query as substring
+    if (normalizedText.includes(normalizedQuery)) {
       score += 100;
     }
 
-    // Starts with query
+    // Starts with full query
     if (normalizedText.startsWith(normalizedQuery)) {
+      score += 80;
+    }
+
+    // Token-based matching: each matching token adds score
+    let matchedTokens = 0;
+    let consecutiveBonus = 0;
+    let lastMatchIndex = -2;
+    
+    for (const queryToken of queryTokens) {
+      let bestTokenScore = 0;
+      let foundIndex = -1;
+      
+      for (let i = 0; i < textTokens.length; i++) {
+        const textToken = textTokens[i];
+        
+        // Exact token match
+        if (textToken === queryToken) {
+          bestTokenScore = Math.max(bestTokenScore, 30);
+          foundIndex = i;
+        }
+        // Token starts with query token
+        else if (textToken.startsWith(queryToken)) {
+          bestTokenScore = Math.max(bestTokenScore, 25);
+          if (foundIndex === -1) foundIndex = i;
+        }
+        // Token contains query token
+        else if (textToken.includes(queryToken)) {
+          bestTokenScore = Math.max(bestTokenScore, 15);
+          if (foundIndex === -1) foundIndex = i;
+        }
+        // Query token starts with text token (partial match)
+        else if (queryToken.startsWith(textToken)) {
+          bestTokenScore = Math.max(bestTokenScore, 10);
+          if (foundIndex === -1) foundIndex = i;
+        }
+      }
+      
+      if (bestTokenScore > 0) {
+        matchedTokens++;
+        score += bestTokenScore;
+        
+        // Consecutive token bonus (tokens appear in order)
+        if (foundIndex === lastMatchIndex + 1) {
+          consecutiveBonus += 15;
+        }
+        lastMatchIndex = foundIndex;
+      }
+    }
+    
+    score += consecutiveBonus;
+
+    // All tokens matched bonus
+    if (queryTokens.length > 1 && matchedTokens === queryTokens.length) {
       score += 50;
     }
 
-    // Contains query
-    if (normalizedText.includes(normalizedQuery)) {
-      score += 25;
-    }
-
-    // Word boundary match (query matches start of a word)
-    const words = normalizedText.split(/\s+/);
-    for (const word of words) {
-      if (word.startsWith(normalizedQuery)) {
-        score += 35;
-        break;
-      }
-    }
-
-    // Multi-word bonus (all query words found)
-    const queryWords = normalizedQuery.split(/\s+/);
-    if (queryWords.length > 1) {
-      const allWordsFound = queryWords.every(qw => 
-        normalizedText.includes(qw)
-      );
-      if (allWordsFound) {
-        score += 20;
-      }
+    // Penalize if not all tokens matched
+    if (queryTokens.length > 0) {
+      const matchRatio = matchedTokens / queryTokens.length;
+      score = Math.floor(score * matchRatio);
     }
 
     return score;
+  }
+
+  // Build SQL condition for token-based fuzzy matching
+  function buildTokenMatchSQL(column: any, query: string) {
+    const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
+    const tokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
+    
+    if (tokens.length === 0) {
+      return sql`${normalizeSQLColumn(column)} LIKE ${`%${normalizedQuery}%`}`;
+    }
+    
+    // Match if ANY token is found (for broad candidate fetching)
+    const conditions = tokens.map(token => 
+      sql`${normalizeSQLColumn(column)} LIKE ${`%${token}%`}`
+    );
+    
+    return sql.join(conditions, sql` OR `);
   }
 
   // Global Search endpoint - PostgreSQL-native accent-insensitive search
@@ -3694,8 +3754,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalize query for Vietnamese accent-insensitive search
       const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
 
-      // STEP 1: Database-level filtering using SQL REPLACE() chain
-      // Only fetch ~20 candidates that match at database level (instead of 500)
+      // STEP 1: Database-level filtering using token-based SQL matching
+      // Fetch candidates that match ANY search token
       const productCandidates = await db
         .select()
         .from(products)
@@ -3703,24 +3763,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           and(
             eq(products.isActive, true),
             or(
-              sql`${normalizeSQLColumn(products.name)} LIKE ${`%${normalizedQuery}%`}`,
-              sql`${normalizeSQLColumn(products.sku)} LIKE ${`%${normalizedQuery}%`}`
+              buildTokenMatchSQL(products.name, query),
+              buildTokenMatchSQL(products.sku, query)
             )
           )
         )
-        .limit(20); // Much smaller limit - DB already filtered results
+        .limit(35); // Balanced pool for fuzzy matching
 
-      // STEP 2: In-memory scoring for final ranking (on much smaller result set)
+      // STEP 2: In-memory fuzzy scoring for final ranking
       const scoredProducts = productCandidates
         .map(product => ({
           product,
           score: Math.max(
-            calculateScore(product.name || '', normalizedQuery),
-            calculateScore(product.sku || '', normalizedQuery)
+            calculateFuzzyScore(product.name || '', normalizedQuery),
+            calculateFuzzyScore(product.sku || '', normalizedQuery)
           )
         }))
+        .filter(({ score }) => score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10 after scoring
+        .slice(0, 12);
 
       // Get allocated quantities for available stock calculation
       const allocatedMap = await storage.getAllocatedQuantities();
@@ -3742,10 +3803,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // STEP 1: Database-level filtering for shipments
+      // STEP 1: Database-level filtering for shipments with token matching
       const shipmentCandidates = await db
         .select({
           itemId: purchaseItems.id,
+          productId: purchaseItems.productId,
           itemName: purchaseItems.name,
           itemSku: purchaseItems.sku,
           quantity: purchaseItems.quantity,
@@ -3759,26 +3821,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .innerJoin(importPurchases, eq(purchaseItems.purchaseId, importPurchases.id))
         .where(
           or(
-            sql`${normalizeSQLColumn(purchaseItems.name)} LIKE ${`%${normalizedQuery}%`}`,
-            sql`${normalizeSQLColumn(purchaseItems.sku)} LIKE ${`%${normalizedQuery}%`}`
+            buildTokenMatchSQL(purchaseItems.name, query),
+            buildTokenMatchSQL(purchaseItems.sku, query)
           )
         )
-        .limit(20); // Much smaller limit - DB already filtered results
+        .limit(25);
 
-      // STEP 2: In-memory scoring for final ranking
+      // STEP 2: In-memory fuzzy scoring for final ranking
       const scoredShipments = shipmentCandidates
         .map(item => ({
           item,
           score: Math.max(
-            calculateScore(item.itemName || '', normalizedQuery),
-            calculateScore(item.itemSku || '', normalizedQuery)
+            calculateFuzzyScore(item.itemName || '', normalizedQuery),
+            calculateFuzzyScore(item.itemSku || '', normalizedQuery)
           )
         }))
+        .filter(({ score }) => score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10 after scoring
+        .slice(0, 8);
 
       const shipmentItems = scoredShipments.map(({ item }) => ({
         id: item.itemId,
+        productId: item.productId,
         name: item.itemName,
         sku: item.itemSku || 'N/A',
         quantity: item.quantity || 0,
@@ -3789,31 +3853,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'shipment' as const
       }));
 
-      // STEP 1: Database-level filtering for customers
+      // STEP 1: Database-level filtering for customers with token matching
       const customerCandidates = await db
         .select()
         .from(customers)
         .where(
           or(
-            sql`${normalizeSQLColumn(customers.name)} LIKE ${`%${normalizedQuery}%`}`,
-            sql`${normalizeSQLColumn(customers.email)} LIKE ${`%${normalizedQuery}%`}`,
-            sql`${normalizeSQLColumn(customers.phone)} LIKE ${`%${normalizedQuery}%`}`
+            buildTokenMatchSQL(customers.name, query),
+            buildTokenMatchSQL(customers.email, query),
+            buildTokenMatchSQL(customers.phone, query)
           )
         )
-        .limit(20); // Much smaller limit - DB already filtered results
+        .limit(25);
 
-      // STEP 2: In-memory scoring for final ranking
+      // STEP 2: In-memory fuzzy scoring for final ranking
       const scoredCustomers = customerCandidates
         .map(customer => ({
           customer,
           score: Math.max(
-            calculateScore(customer.name || '', normalizedQuery),
-            calculateScore(customer.email || '', normalizedQuery),
-            calculateScore(customer.phone || '', normalizedQuery)
+            calculateFuzzyScore(customer.name || '', normalizedQuery),
+            calculateFuzzyScore(customer.email || '', normalizedQuery),
+            calculateFuzzyScore(customer.phone || '', normalizedQuery)
           )
         }))
+        .filter(({ score }) => score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10 after scoring
+        .slice(0, 8);
 
       const customerResults = scoredCustomers.map(({ customer }) => customer);
 
