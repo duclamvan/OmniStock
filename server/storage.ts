@@ -3656,8 +3656,10 @@ export class DatabaseStorage implements IStorage {
         .map(customer => {
           const nameScore = calculateScore(customer.name || '', normalizedQuery);
           const emailScore = calculateScore(customer.email || '', normalizedQuery);
-          const companyScore = calculateScore(customer.company || '', normalizedQuery);
-          const maxScore = Math.max(nameScore, emailScore, companyScore);
+          const facebookIdScore = calculateScore(customer.facebookId || '', normalizedQuery);
+          const facebookUrlScore = calculateScore(customer.facebookUrl || '', normalizedQuery);
+          const facebookNameScore = calculateScore(customer.facebookName || '', normalizedQuery);
+          const maxScore = Math.max(nameScore, emailScore, facebookIdScore, facebookUrlScore, facebookNameScore);
 
           return {
             customer,
