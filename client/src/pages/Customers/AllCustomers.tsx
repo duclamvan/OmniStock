@@ -1176,15 +1176,101 @@ export default function AllCustomers() {
     }
   };
 
-  // Import addressbook CSV (PPL format) and match to existing customers
+  // Parse German TXT format addressbook
+  const parseGermanAddressbook = (text: string): any[] => {
+    const entries = text.split(/\nBearbeiten\s*\n+Löschen\s*\n?/);
+    const addresses: any[] = [];
+    
+    for (const entry of entries) {
+      const lines = entry.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length < 3) continue;
+      
+      const address: any = {
+        company: '',
+        contact: '',
+        street: '',
+        city: '',
+        zipCode: '',
+        country: 'Germany',
+        email: '',
+      };
+      
+      // Find email line
+      let emailIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('@')) {
+          address.email = lines[i];
+          emailIdx = i;
+          break;
+        }
+      }
+      
+      // Find postal code + city line (e.g., "12345 City, DE")
+      let postalIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/^(\d{4,5})\s+(.+?),\s*(\w{2})$/);
+        if (match) {
+          address.zipCode = match[1];
+          address.city = match[2];
+          const countryMap: Record<string, string> = {
+            'DE': 'Germany', 'AT': 'Austria', 'NL': 'Netherlands',
+            'DK': 'Denmark', 'CH': 'Switzerland', 'BE': 'Belgium', 'FR': 'France',
+          };
+          address.country = countryMap[match[3].toUpperCase()] || match[3];
+          postalIdx = i;
+          break;
+        }
+      }
+      
+      if (postalIdx < 1) continue;
+      
+      // Street is line before postal code
+      const streetLine = lines[postalIdx - 1];
+      const streetMatch = streetLine.match(/^(.+?)\s+(\d+[a-zA-Z]?(?:[-/]\d+[a-zA-Z]?)?)$/);
+      if (streetMatch) {
+        address.street = streetMatch[1] + ' ' + streetMatch[2];
+      } else {
+        address.street = streetLine;
+      }
+      
+      // Company/contact from remaining lines
+      const remaining = lines.slice(0, postalIdx - 1);
+      if (remaining.length > 0) {
+        const first = remaining[0];
+        const companyKeywords = ['nails', 'beauty', 'studio', 'salon', 'center', 'shop', 'lounge', 'spa'];
+        if (companyKeywords.some(kw => first.toLowerCase().includes(kw))) {
+          address.company = first;
+          if (remaining.length > 1 && !remaining[1].startsWith('(')) {
+            address.contact = remaining[1];
+          }
+        } else {
+          address.contact = first;
+          if (remaining.length > 1) {
+            address.company = remaining[1];
+          }
+        }
+      }
+      
+      if (address.street && address.zipCode) {
+        addresses.push(address);
+      }
+    }
+    
+    return addresses;
+  };
+
+  // Import addressbook (CSV or TXT format) and match to existing customers
   const handleImportAddressbook = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.csv')) {
+    const isCsv = file.name.endsWith('.csv');
+    const isTxt = file.name.endsWith('.txt');
+    
+    if (!isCsv && !isTxt) {
       toast({
         title: t('common:error'),
-        description: 'Please select a CSV file',
+        description: 'Please select a CSV or TXT file',
         variant: "destructive",
       });
       return;
@@ -1198,31 +1284,43 @@ export default function AllCustomers() {
 
     try {
       const text = await file.text();
-      const lines = text.split('\n');
-      const headers = lines[0].split(';').map(h => h.trim());
+      let addresses: any[] = [];
       
-      const addresses: any[] = [];
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
+      if (isTxt) {
+        // Parse German TXT format
+        addresses = parseGermanAddressbook(text);
+      } else {
+        // Parse CSV format
+        const lines = text.split('\n');
+        const headers = lines[0].split(';').map(h => h.trim());
         
-        const values = line.split(';');
-        const row: any = {};
-        headers.forEach((header, idx) => {
-          row[header] = values[idx]?.trim() || '';
-        });
-        
-        addresses.push({
-          company: row['NAZEV'] || '',
-          street: row['ULICE_CP'] || '',
-          city: row['MESTO'] || '',
-          zipCode: row['PSC'] || '',
-          country: row['ZEME'] || 'CZ',
-          email: row['EMAIL'] || '',
-          contact: row['KONTAKTNI_OS'] || '',
-          phone: row['TELEFON'] || '',
-        });
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+          
+          const values = line.split(';');
+          const row: any = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx]?.trim() || '';
+          });
+          
+          addresses.push({
+            company: row['NAZEV'] || '',
+            street: row['ULICE_CP'] || '',
+            city: row['MESTO'] || '',
+            zipCode: row['PSC'] || '',
+            country: row['ZEME'] || 'CZ',
+            email: row['EMAIL'] || '',
+            contact: row['KONTAKTNI_OS'] || '',
+            phone: row['TELEFON'] || '',
+          });
+        }
       }
+      
+      toast({
+        title: 'Importing',
+        description: `Found ${addresses.length} addresses to match...`,
+      });
 
       const response = await apiRequest('POST', '/api/customers/import-addressbook', { addresses });
       const result = await response.json();
@@ -1326,10 +1424,10 @@ export default function AllCustomers() {
               <DropdownMenuItem asChild data-testid="menu-import-addressbook">
                 <label className="cursor-pointer flex items-center w-full">
                   <Upload className="h-4 w-4 mr-2" />
-                  Import Address Book (CSV)
+                  Import Address Book
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.txt"
                     className="hidden"
                     onChange={handleImportAddressbook}
                     disabled={isImporting}
