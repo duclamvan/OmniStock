@@ -114,7 +114,17 @@ export default function AllCustomers() {
   };
 
   const { data: customers = [], isLoading, error } = useQuery<any[]>({
-    queryKey: searchQuery ? ['/api/customers', { search: searchQuery }] : ['/api/customers'],
+    queryKey: searchQuery 
+      ? ['/api/customers', { search: searchQuery, includeOrderStats: 'false' }] 
+      : ['/api/customers', { includeOrderStats: 'false' }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('includeOrderStats', 'false');
+      if (searchQuery) params.set('search', searchQuery);
+      const res = await fetch(`/api/customers?${params.toString()}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch customers');
+      return res.json();
+    },
     retry: false,
     staleTime: 30000, // 30 seconds - customers don't change frequently
   });

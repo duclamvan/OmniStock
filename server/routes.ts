@@ -9365,6 +9365,7 @@ Important:
     try {
       const search = req.query.search as string;
       const includeBadges = req.query.includeBadges === 'true';
+      const includeOrderStats = req.query.includeOrderStats !== 'false'; // Default true for backwards compat
       let customers;
 
       if (search) {
@@ -9373,13 +9374,29 @@ Important:
         customers = await storage.getCustomers();
       }
 
+      // Fast path: skip order stats calculation when not needed (significant performance boost)
+      if (!includeOrderStats) {
+        return res.json(customers);
+      }
+
       // Get all orders to calculate Pay Later badge
       const allOrders = await storage.getOrders();
 
+      // Build a map of customer orders for O(1) lookup instead of O(n) filter per customer
+      const ordersByCustomerId = new Map<string, typeof allOrders>();
+      for (const order of allOrders) {
+        if (order.customerId) {
+          if (!ordersByCustomerId.has(order.customerId)) {
+            ordersByCustomerId.set(order.customerId, []);
+          }
+          ordersByCustomerId.get(order.customerId)!.push(order);
+        }
+      }
+
       // Calculate Pay Later preference for each customer
       const customersWithPayLaterBadge = customers.map(customer => {
-        // Get orders for this customer
-        const customerOrders = allOrders.filter(order => order.customerId === customer.id);
+        // Get orders for this customer using the map (O(1) lookup)
+        const customerOrders = ordersByCustomerId.get(customer.id) || [];
 
         // Calculate Pay Later percentage
         const payLaterOrders = customerOrders.filter(order => order.paymentStatus === 'pay_later');
