@@ -8,40 +8,57 @@ const app = express();
 
 // Security headers middleware (helmet)
 const isProduction = process.env.NODE_ENV === "production";
-app.use(helmet({
-  contentSecurityPolicy: isProduction ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "https:", "wss:"],
-      frameSrc: ["'none'"], // Block all framing for security
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      upgradeInsecureRequests: [],
-    },
-  } : false, // Disabled for Vite dev server compatibility
-  crossOriginEmbedderPolicy: false, // Keep disabled for external resources
-  hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  xFrameOptions: { action: "deny" }, // Prevent clickjacking
-  xContentTypeOptions: true, // Prevent MIME type sniffing
-  xDnsPrefetchControl: { allow: false }, // Disable DNS prefetching
-  xPermittedCrossDomainPolicies: { permittedPolicies: "none" }, // Block Adobe cross-domain policies
-}));
+
+// Enable proxy trust for Railway (fixes protocol detection for Helmet/HSTS behind load balancer)
+app.set("trust proxy", 1);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: isProduction
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              "https://fonts.googleapis.com",
+            ],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'", "https:", "wss:"],
+            frameSrc: ["'none'"], // Block all framing for security
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            upgradeInsecureRequests: [],
+          },
+        }
+      : false, // Disabled for Vite dev server compatibility
+    crossOriginEmbedderPolicy: false, // Keep disabled for external resources
+    hsts: isProduction
+      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+      : false,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xFrameOptions: { action: "deny" }, // Prevent clickjacking
+    xContentTypeOptions: true, // Prevent MIME type sniffing
+    xDnsPrefetchControl: { allow: false }, // Disable DNS prefetching
+    xPermittedCrossDomainPolicies: { permittedPolicies: "none" }, // Block Adobe cross-domain policies
+  }),
+);
 
 // X-Robots-Tag header - Block all search engine indexing (PRIVATE APPLICATION)
 app.use((req, res, next) => {
-  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+  res.setHeader(
+    "X-Robots-Tag",
+    "noindex, nofollow, noarchive, nosnippet, noimageindex",
+  );
   next();
 });
 
 // Serve robots.txt to block all crawlers
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
   res.send(`# Block all search engine crawlers - Private Application
 User-agent: *
 Disallow: /
@@ -49,23 +66,25 @@ Disallow: /
 });
 
 // Add compression middleware for all responses
-app.use(compression({
-  // Enable compression for all response types
-  filter: (req, res) => {
-    // Don't compress for WebSocket upgrade requests
-    if (req.headers['upgrade'] === 'websocket') {
-      return false;
-    }
-    // Use compression for everything else
-    return compression.filter(req, res);
-  },
-  // Use maximum compression level for better performance
-  level: 6, // Balanced compression (1-9, where 9 is max compression)
-  threshold: 1024 // Only compress responses > 1KB
-}));
+app.use(
+  compression({
+    // Enable compression for all response types
+    filter: (req, res) => {
+      // Don't compress for WebSocket upgrade requests
+      if (req.headers["upgrade"] === "websocket") {
+        return false;
+      }
+      // Use compression for everything else
+      return compression.filter(req, res);
+    },
+    // Use maximum compression level for better performance
+    level: 6, // Balanced compression (1-9, where 9 is max compression)
+    threshold: 1024, // Only compress responses > 1KB
+  }),
+);
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // NOTE: Static file routes for /images and /uploads are now protected and defined in routes.ts
 // after authentication is set up to ensure enterprise-level security
@@ -123,70 +142,72 @@ app.use((req, res, next) => {
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, async () => {
+  const port = parseInt(process.env.PORT || "5000", 10);
+
+  // Use standard listen arguments instead of object syntax to avoid container issues
+  server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
-    
+
     // Start automatic backup scheduler
     try {
-      const { startBackupScheduler } = await import('./services/backupService');
+      const { startBackupScheduler } = await import("./services/backupService");
       await startBackupScheduler();
-      log('Backup scheduler started');
+      log("Backup scheduler started");
     } catch (error) {
-      console.error('Failed to start backup scheduler:', error);
+      console.error("Failed to start backup scheduler:", error);
     }
-    
+
     // Start report scheduler
     try {
-      const { startReportScheduler } = await import('./services/reportService');
+      const { startReportScheduler } = await import("./services/reportService");
       await startReportScheduler();
-      log('Report scheduler started');
+      log("Report scheduler started");
     } catch (error) {
-      console.error('Failed to start report scheduler:', error);
+      console.error("Failed to start report scheduler:", error);
     }
-    
+
     // Sync expired discount statuses on startup and every 6 hours
     try {
-      const { storage } = await import('./storage');
+      const { storage } = await import("./storage");
       const syncDiscounts = async () => {
         const count = await storage.syncExpiredDiscountStatuses();
         if (count > 0) {
-          log(`[Discount Sync] Updated ${count} expired discounts to 'finished' status`);
+          log(
+            `[Discount Sync] Updated ${count} expired discounts to 'finished' status`,
+          );
         }
       };
-      
+
       // Run immediately on startup
       await syncDiscounts();
-      
+
       // Run every 6 hours (21600000 ms)
       setInterval(syncDiscounts, 6 * 60 * 60 * 1000);
-      log('Discount status sync scheduler started');
+      log("Discount status sync scheduler started");
     } catch (error) {
-      console.error('Failed to start discount status sync:', error);
+      console.error("Failed to start discount status sync:", error);
     }
-    
+
     // Weekly shipment archiving scheduler - runs at Sunday 23:59
     try {
-      const { startShipmentArchiveScheduler } = await import('./services/shipmentArchiveService');
+      const { startShipmentArchiveScheduler } = await import(
+        "./services/shipmentArchiveService"
+      );
       startShipmentArchiveScheduler();
-      log('Shipment archive scheduler started');
+      log("Shipment archive scheduler started");
     } catch (error) {
-      console.error('Failed to start shipment archive scheduler:', error);
+      console.error("Failed to start shipment archive scheduler:", error);
     }
-    
+
     // EasyPost polling scheduler - runs every 6 hours to check tracking status
     try {
-      const { startEasyPostPollingScheduler } = await import('./services/easypostPollingService');
+      const { startEasyPostPollingScheduler } = await import(
+        "./services/easypostPollingService"
+      );
       startEasyPostPollingScheduler();
-      log('EasyPost polling scheduler started');
+      log("EasyPost polling scheduler started");
     } catch (error) {
-      console.error('Failed to start EasyPost polling scheduler:', error);
+      console.error("Failed to start EasyPost polling scheduler:", error);
     }
   });
 })();
