@@ -24582,7 +24582,7 @@ Important rules:
   // Factory Reset - Delete all operational data while preserving system configuration
   app.post('/api/system/factory-reset', requireRole(['administrator']), async (req: any, res) => {
     try {
-      const { confirmationPhrase } = req.body;
+      const { confirmationPhrase, keepSettings } = req.body;
       
       // Require typed confirmation
       if (confirmationPhrase !== 'DELETE ALL DATA') {
@@ -24595,17 +24595,6 @@ Important rules:
       const deletionSummary: Record<string, number> = {};
       
       await db.transaction(async (tx) => {
-        // ===== FACTORY RESET DELETION POLICY =====
-        // DELETE: All operational/transactional data
-        // PRESERVE: System configuration and audit trail
-        //   - users (authentication & roles)
-        //   - user_activities (audit trail - MUST NEVER DELETE)
-        //   - warehouses, warehouse_layouts (infrastructure)
-        //   - categories, suppliers (reference data)
-        //   - packing_materials (catalog)
-        //   - app_settings (system configuration)
-        // ==========================================
-        
         // Delete in FK-safe order - children first, then parents
         
         // Level 1: Leaf tables (no children)
@@ -24668,6 +24657,17 @@ Important rules:
         deletionSummary.employees = (await tx.delete(employees)).rowCount || 0;
         deletionSummary.packingCartons = (await tx.delete(packingCartons)).rowCount || 0;
         deletionSummary.dailySequences = (await tx.delete(dailySequences)).rowCount || 0;
+
+        // Conditional Deletion: Infrastructure data (warehouses, suppliers, categories, etc.)
+        if (!keepSettings) {
+          deletionSummary.warehouses = (await tx.delete(warehouses)).rowCount || 0;
+          deletionSummary.warehouseLayouts = (await tx.delete(warehouseLayouts)).rowCount || 0;
+          deletionSummary.suppliers = (await tx.delete(suppliers)).rowCount || 0;
+          deletionSummary.categories = (await tx.delete(categories)).rowCount || 0;
+          deletionSummary.packingMaterials = (await tx.delete(packingMaterials)).rowCount || 0;
+          deletionSummary.warehouseTasks = (await tx.delete(warehouseTasks)).rowCount || 0;
+          deletionSummary.warehouseLabels = (await tx.delete(warehouseLabels)).rowCount || 0;
+        }
         
         // NOTE: user_activities (audit trail) is PRESERVED for forensic evidence
         // Log the factory reset action INSIDE transaction AFTER successful deletions
@@ -24676,7 +24676,7 @@ Important rules:
           action: 'factory_reset',
           entityType: 'system',
           entityId: 'factory_reset',
-          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} operational records deleted.`,
+          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. Mode: ${keepSettings ? 'Keep Settings' : 'Full Reset'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} operational records deleted.`,
         });
       }, {
         accessMode: 'read write',
