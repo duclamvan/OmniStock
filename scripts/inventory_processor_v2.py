@@ -151,12 +151,8 @@ def process_inventory(input_file: str, output_file: str):
             if not product_name:
                 continue
             
-            # Use existing SKU if available, otherwise generate new one
-            if existing_sku and existing_sku.upper() not in existing_skus:
-                sku = existing_sku
-                existing_skus.add(existing_sku.upper())
-            else:
-                sku = generate_sku(category, product_name, existing_skus)
+            # Always generate new SKU in site format (ignore A0000... format from old system)
+            sku = generate_sku(category, product_name, existing_skus)
             
             if supplier:
                 with_supplier += 1
