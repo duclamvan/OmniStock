@@ -6577,7 +6577,7 @@ function ShipmentReportDialog({
                               e.stopPropagation();
                               e.preventDefault();
                             }}
-                            disabled={selectedVariantsForLabels.size === 0}
+                            disabled
                             className="h-8 pointer-events-auto"
                             style={{ pointerEvents: 'auto', zIndex: 9999 }}
                           >
@@ -6671,6 +6671,7 @@ function ShipmentReportDialog({
                                         variant="ghost"
                                         className="h-7 px-2 text-xs shrink-0"
                                         onClick={printGroupLabels}
+                                        disabled
                                       >
                                         <Printer className="h-3 w-3 mr-1" />
                                         {t('printLabels')}
@@ -6730,6 +6731,7 @@ function ShipmentReportDialog({
                                             variant="ghost"
                                             className="h-6 w-6 p-0 shrink-0"
                                             onClick={(e) => printSingleVariant(e, variant)}
+                                            disabled
                                           >
                                             <Printer className="h-3 w-3" />
                                           </Button>
