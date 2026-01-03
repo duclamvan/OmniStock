@@ -1350,37 +1350,37 @@ export default function AllInventory() {
       <div className="space-y-4 md:space-y-6 overflow-x-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-4 w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-2" />
+            <div className="h-8 w-40 bg-muted rounded-md animate-pulse" />
+            <div className="h-4 w-64 bg-muted rounded-md animate-pulse mt-2" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-9 w-9 bg-muted rounded-md animate-pulse" />
+            <div className="h-9 w-9 bg-muted rounded-md animate-pulse" />
+            <div className="h-9 w-32 bg-muted rounded-md animate-pulse" />
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-4 border">
-              <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2" />
-              <div className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="h-4 w-20 bg-muted rounded-md animate-pulse mb-2" />
+              <div className="h-8 w-24 bg-muted rounded-md animate-pulse" />
             </div>
           ))}
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-lg border">
           <div className="p-4 border-b flex items-center gap-4">
-            <div className="h-10 flex-1 max-w-md bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-            <div className="h-10 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-10 flex-1 max-w-md bg-muted rounded-md animate-pulse" />
+            <div className="h-10 w-24 bg-muted rounded-md animate-pulse" />
           </div>
           <div className="divide-y">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
               <div key={i} className="flex items-center gap-4 p-4" style={{ opacity: 1 - i * 0.06 }}>
-                <div className="h-5 w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-5 flex-1 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 w-5 bg-muted rounded-md animate-pulse" />
+                <div className="h-12 w-12 bg-muted rounded-md animate-pulse" />
+                <div className="h-5 flex-1 bg-muted rounded-md animate-pulse" />
+                <div className="h-5 w-20 bg-muted rounded-md animate-pulse" />
+                <div className="h-5 w-16 bg-muted rounded-md animate-pulse" />
+                <div className="h-5 w-24 bg-muted rounded-md animate-pulse" />
               </div>
             ))}
           </div>
