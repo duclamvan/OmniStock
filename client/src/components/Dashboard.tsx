@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { 
   Package, 
@@ -687,9 +688,32 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
 });
 SalesAnalyticsSection.displayName = 'SalesAnalyticsSection';
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  CZK: 'Kč',
+  USD: '$',
+  VND: '₫',
+  CNY: '¥',
+};
+
+function formatCompactCurrency(amount: number, currency: string): string {
+  const symbol = CURRENCY_SYMBOLS[currency] || currency;
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  
+  if (absAmount >= 1_000_000) {
+    return `${sign}${symbol}${(absAmount / 1_000_000).toFixed(1)}M`;
+  } else if (absAmount >= 1_000) {
+    return `${sign}${symbol}${(absAmount / 1_000).toFixed(1)}K`;
+  } else {
+    return `${sign}${symbol}${absAmount.toFixed(0)}`;
+  }
+}
+
 export function Dashboard() {
   const { t } = useTranslation(['dashboard', 'common']);
   const { formatCurrency } = useLocalization();
+  const [dashboardCurrency, setDashboardCurrency] = useState<string>('EUR');
   
   // Query all dashboard endpoints
   // Operations pulse - faster polling (15s) for critical fulfillment metrics
@@ -796,12 +820,26 @@ export function Dashboard() {
 
       {/* Sales Hero Cards - Key KPIs at the top */}
       <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-today-overview">
-            <Sun className="h-5 w-5 text-yellow-500" />
-            {t('todaysOverview')}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('todaysOverviewDescription')}</p>
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2" data-testid="heading-today-overview">
+              <Sun className="h-5 w-5 text-yellow-500" />
+              {t('todaysOverview')}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('todaysOverviewDescription')}</p>
+          </div>
+          <Select value={dashboardCurrency} onValueChange={setDashboardCurrency}>
+            <SelectTrigger className="w-[100px]" data-testid="select-dashboard-currency">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EUR">EUR €</SelectItem>
+              <SelectItem value="CZK">CZK Kč</SelectItem>
+              <SelectItem value="USD">USD $</SelectItem>
+              <SelectItem value="VND">VND ₫</SelectItem>
+              <SelectItem value="CNY">CNY ¥</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {salesGrowthLoading && !salesGrowth ? (
@@ -814,10 +852,10 @@ export function Dashboard() {
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/20 border-blue-200 dark:border-blue-800" data-testid="card-today-revenue">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-blue-600 dark:text-blue-400" data-testid="label-today-revenue">{t('todayRevenue')}</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-revenue">
-                      {formatCurrency(salesGrowth?.todayMetrics.revenue || 0, 'EUR')}
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1 truncate" data-testid="value-today-revenue">
+                      {formatCompactCurrency(salesGrowth?.todayMetrics.revenue || 0, dashboardCurrency)}
                     </p>
                     {salesGrowth?.todayMetrics.changeVsYesterday !== undefined && (
                       <div className="flex items-center gap-1 mt-2">
@@ -843,10 +881,10 @@ export function Dashboard() {
             <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/20 border-green-200 dark:border-green-800" data-testid="card-today-profit">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-green-600 dark:text-green-400" data-testid="label-today-profit">{t('todayProfit')}</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-profit">
-                      {formatCurrency(salesGrowth?.todayMetrics.profit || 0, 'EUR')}
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1 truncate" data-testid="value-today-profit">
+                      {formatCompactCurrency(salesGrowth?.todayMetrics.profit || 0, dashboardCurrency)}
                     </p>
                     {salesGrowth?.todayMetrics.profitChangeVsYesterday !== undefined && (
                       <div className="flex items-center gap-1 mt-2">
@@ -890,10 +928,10 @@ export function Dashboard() {
             <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/20 border-orange-200 dark:border-orange-800" data-testid="card-today-aov">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-orange-600 dark:text-orange-400" data-testid="label-today-aov">{t('todayAOV')}</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-today-aov">
-                      {formatCurrency(salesGrowth?.todayMetrics.aov || 0, 'EUR')}
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1 truncate" data-testid="value-today-aov">
+                      {formatCompactCurrency(salesGrowth?.todayMetrics.aov || 0, dashboardCurrency)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t('perTransaction')}</p>
                   </div>
