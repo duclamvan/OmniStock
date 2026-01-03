@@ -285,7 +285,9 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
           data-testid="input-global-search"
         />
         {isSearching && (
-          <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-500 animate-spin" />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-in fade-in duration-150">
+            <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
+          </div>
         )}
         {!isSearching && searchQuery.length === 0 && (
           <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-1.5 font-mono text-[10px] text-gray-500 dark:text-gray-400">
@@ -297,28 +299,40 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       {showResults && searchQuery.trim().length > 0 && (
         <Card 
           ref={resultsRef}
-          className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(100%+0.5rem)] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[80vh] overflow-y-auto z-50 shadow-xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-lg"
+          className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(100%+0.5rem)] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[80vh] overflow-y-auto z-50 shadow-xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-lg animate-in fade-in-0 slide-in-from-top-2 duration-200"
         >
           {searchQuery.trim().length === 1 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400">
+            <div className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400 animate-in fade-in duration-300">
               <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
               {t('common:typeAtLeastTwoCharacters')}
             </div>
           ) : isLoading ? (
-            <div className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400">
-              <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-cyan-500" />
-              {t('common:searching')}
+            <div className="p-4 space-y-3 animate-in fade-in duration-200">
+              {/* Skeleton loading animation */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2" style={{ animationDelay: `${i * 50}ms` }}>
+                  <div className="h-12 w-12 rounded-lg bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+              <div className="text-center text-xs text-muted-foreground dark:text-gray-500 pt-2">
+                <Loader2 className="h-4 w-4 inline-block mr-2 animate-spin text-cyan-500" />
+                {t('common:searching')}
+              </div>
             </div>
           ) : totalResults === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400">
-              <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <div className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400 animate-in fade-in zoom-in-95 duration-200">
+              <Search className="h-8 w-8 mx-auto mb-2 opacity-30 animate-pulse" />
               {t('common:noResultsFoundFor', { query: searchQuery })}
               <p className="text-xs mt-2 opacity-70">Try different keywords or check spelling</p>
             </div>
           ) : (
-            <div className="p-2">
+            <div className="p-2 animate-in fade-in duration-200">
               {/* Results summary */}
-              <div className="px-3 py-1 mb-2 text-xs text-muted-foreground dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
+              <div className="px-3 py-1 mb-2 text-xs text-muted-foreground dark:text-gray-500 border-b border-gray-100 dark:border-gray-700 animate-in slide-in-from-top-1 duration-150">
                 {totalResults} result{totalResults !== 1 ? 's' : ''} • Use ↑↓ to navigate, Enter to select
               </div>
 
