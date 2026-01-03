@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Inventory Processor Script
-Generates SKUs matching Davie Supply's format and processes inventory data for import.
+Generates SKUs matching Davie Supply's exact format and processes inventory data for import.
+
+SKU Format: CATEGORY-PRODUCTPART (e.g., GP-SOGEPO for "SORAH Gel Polish 15ml" in "Gel Polish")
+- Category: First letter of each word (multi-word) or first 3 chars (single word)
+- Product: First 6 chars (1 word), first 3 of each (2 words), first 2 of first 3 (3+ words)
+- Only adds -1, -2 suffix if duplicate exists
 
 Usage:
     python scripts/inventory_processor.py input_file.tsv output_file.csv
@@ -10,7 +15,7 @@ Usage:
 import csv
 import sys
 import os
-from typing import Dict, List, Set
+from typing import Set
 
 # Vietnamese diacritics mapping (matching client/src/lib/vietnameseSearch.ts)
 VIETNAMESE_MAP = {
@@ -42,71 +47,90 @@ VIETNAMESE_MAP = {
 }
 
 
-def remove_diacritics(text: str) -> str:
-    """Remove Vietnamese diacritics from text."""
-    return ''.join(VIETNAMESE_MAP.get(c, c) for c in text)
-
-
 def normalize_for_sku(text: str) -> str:
-    """Normalize text for SKU generation - remove diacritics and special chars."""
+    """
+    Normalize text for SKU generation - remove Vietnamese diacritics and non-alphanumeric chars.
+    Matches the normalizeForSKU function in ProductForm.tsx
+    """
     import re
-    normalized = remove_diacritics(text).upper()
-    return re.sub(r'[^A-Z0-9]', '', normalized)
+    # Remove Vietnamese diacritics
+    normalized = ''.join(VIETNAMESE_MAP.get(c, c) for c in text)
+    # Remove non-alphanumeric characters and convert to uppercase
+    return re.sub(r'[^A-Za-z0-9]', '', normalized).upper()
 
 
-def get_category_code(category_name: str) -> str:
+def get_category_part(category_name: str) -> str:
     """
     Generate category code from category name.
-    - Multi-word: Take first letter of each word (e.g., "Tools & Accessories" -> "TA")
-    - Single word: Take first 3 characters (e.g., "Design" -> "DES")
+    Matches the exact logic from ProductForm.tsx generateSKU function.
+    
+    - Multi-word: Take first letter of each word (e.g., "Gel Polish" -> "GP", "Tools & Accessories" -> "TA")
+    - Single word: Take first 3 characters (e.g., "Design" -> "DES", "Tips" -> "TIP")
     """
-    import re
-    words = [w for w in re.split(r'\s+', category_name) if w and w not in ['&', 'and', '-']]
+    # Split on whitespace and filter out empty strings and connectors
+    words = [w for w in category_name.split() if w and w not in ['&', 'and', '-', '/']]
     
     if len(words) > 1:
-        code = ''.join(normalize_for_sku(w)[0] if normalize_for_sku(w) else '' for w in words)
-        return code[:4] if code else 'GEN'
+        # Multi-word: first letter of each word
+        category_part = ''.join(normalize_for_sku(w)[0] if normalize_for_sku(w) else '' for w in words)
     else:
-        code = normalize_for_sku(category_name)
-        return code[:3] if code else 'GEN'
+        # Single word: first 3 characters
+        category_part = normalize_for_sku(category_name)[:3]
+    
+    return category_part.upper() if category_part else 'GEN'
 
 
-def get_product_code(product_name: str, max_length: int = 6) -> str:
+def get_product_part(product_name: str) -> str:
     """
     Generate product code from product name.
-    Takes first 4-6 significant characters.
-    """
-    import re
-    words = product_name.split()
+    Matches the exact logic from ProductForm.tsx generateSKU function.
     
-    if len(words) >= 2:
-        first_word = normalize_for_sku(words[0])[:3]
-        second_word = normalize_for_sku(words[1])[:3]
-        code = first_word + second_word
+    - 1 word: Take first 6 characters
+    - 2 words: Take first 3 chars of each word
+    - 3+ words: Take first 2 chars of first 3 words
+    """
+    words = [w for w in product_name.split() if w]
+    
+    if not words:
+        return 'ITEM'
+    
+    if len(words) == 1:
+        # Single word: take first 6 characters
+        product_part = normalize_for_sku(words[0])[:6]
+    elif len(words) == 2:
+        # Two words: take first 3 chars of each
+        product_part = normalize_for_sku(words[0])[:3] + normalize_for_sku(words[1])[:3]
     else:
-        code = normalize_for_sku(product_name)
+        # Multiple words (3+): take first 2 chars of first 3 words
+        product_part = ''.join(normalize_for_sku(w)[:2] for w in words[:3])
     
-    return code[:max_length] if code else 'PROD'
+    return product_part.upper() if product_part else 'ITEM'
 
 
-def generate_sku(category: str, product_name: str, counter: int, existing_skus: Set[str]) -> str:
+def generate_sku(category: str, product_name: str, existing_skus: Set[str]) -> str:
     """
-    Generate a unique SKU matching Davie Supply's format.
-    Format: CAT-PROD-NNNNNN (e.g., TA-BUTVZ-000001)
+    Generate a unique SKU matching Davie Supply's exact format.
+    Format: CAT-PRODPART (e.g., GP-SOGEPO)
+    Only adds -1, -2, etc. suffix if duplicate exists.
     """
-    cat_code = get_category_code(category)
-    prod_code = get_product_code(product_name)
+    cat_part = get_category_part(category)
+    prod_part = get_product_part(product_name)
     
-    base_sku = f"{cat_code}-{prod_code}-{counter:06d}"
+    base_sku = f"{cat_part}-{prod_part}"
     
-    if base_sku.upper() in existing_skus:
-        suffix = 1
-        while f"{base_sku}-{suffix}".upper() in existing_skus:
-            suffix += 1
-        base_sku = f"{base_sku}-{suffix}"
+    # Check if base SKU exists - only add counter if needed
+    if base_sku.upper() not in existing_skus:
+        existing_skus.add(base_sku.upper())
+        return base_sku
     
-    existing_skus.add(base_sku.upper())
-    return base_sku
+    # Find next available counter
+    counter = 1
+    while f"{base_sku}-{counter}".upper() in existing_skus:
+        counter += 1
+    
+    final_sku = f"{base_sku}-{counter}"
+    existing_skus.add(final_sku.upper())
+    return final_sku
 
 
 def clean_price(value: str) -> str:
@@ -132,8 +156,8 @@ def process_inventory(input_file: str, output_file: str):
     """
     products = []
     existing_skus: Set[str] = set()
-    sku_counter = 1
     
+    # Detect delimiter based on file extension
     delimiter = '\t' if input_file.endswith('.tsv') or input_file.endswith('.txt') else ','
     
     print(f"📂 Reading inventory from: {input_file}")
@@ -148,8 +172,8 @@ def process_inventory(input_file: str, output_file: str):
             if not product_name:
                 continue
             
-            new_sku = generate_sku(category, product_name, sku_counter, existing_skus)
-            sku_counter += 1
+            # Generate SKU using exact site logic
+            new_sku = generate_sku(category, product_name, existing_skus)
             
             products.append({
                 'Product name': product_name,
@@ -163,6 +187,11 @@ def process_inventory(input_file: str, output_file: str):
     
     print(f"✅ Processed {len(products)} products")
     
+    # Count unique vs duplicated SKUs
+    unique_count = len([p for p in products if '-' not in p['SKU'].split('-')[-1] or not p['SKU'].split('-')[-1].isdigit()])
+    dup_count = len(products) - unique_count
+    print(f"   📊 {unique_count} unique base SKUs, {dup_count} with suffix counters")
+    
     print(f"💾 Writing output to: {output_file}")
     
     output_columns = ['Product name', 'Category', 'SKU', 'Price CZK', 'Price EUR', 'Imp. Cost EUR', 'Imp. Cost CZK']
@@ -174,14 +203,16 @@ def process_inventory(input_file: str, output_file: str):
     
     print(f"🚀 Done! Generated {len(products)} SKUs")
     
-    print("\n📋 Sample output (first 10 products):")
+    # Show sample output grouped by category
+    print("\n📋 Sample output (first 15 products):")
     print("-" * 80)
-    for product in products[:10]:
-        print(f"  {product['SKU']:25} | {product['Product name'][:40]}")
+    for product in products[:15]:
+        print(f"  {product['SKU']:20} | {product['Category']:20} | {product['Product name'][:35]}")
 
 
 def main():
     if len(sys.argv) < 2:
+        # Default to the attached file if no args
         input_file = 'attached_assets/Pasted-Product-name-Reference-Category-SKU-Price-CZK-Price-EUR_1767405059741.txt'
         output_file = 'inventory_import_ready.csv'
     elif len(sys.argv) == 2:
