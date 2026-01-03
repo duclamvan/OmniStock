@@ -3767,8 +3767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const query = req.query.q as string || '';
 
-      // Require minimum 2 characters
-      if (!query.trim() || query.trim().length < 2) {
+      // Require minimum 1 character for instant search
+      if (!query.trim() || query.trim().length < 1) {
         return res.json({ 
           inventoryItems: [], 
           shipmentItems: [], 
@@ -4060,13 +4060,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(searchPreloadCache.data);
       }
 
-      // Fetch top 15 products by recent activity/popularity
+      // Fetch top 50 products by recent activity/popularity for instant local filtering
       const topProducts = await db
         .select()
         .from(products)
         .where(eq(products.isActive, true))
         .orderBy(desc(products.updatedAt))
-        .limit(15);
+        .limit(50);
 
       // Get allocated quantities for available stock calculation
       const allocatedMap = await storage.getAllocatedQuantities();
@@ -4088,12 +4088,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Fetch top 5 customers by order count
+      // Fetch top 20 customers by order count for instant local filtering
       const topCustomers = await db
         .select()
         .from(customers)
         .orderBy(desc(customers.totalOrders))
-        .limit(5);
+        .limit(20);
 
       const customersData = topCustomers.map((customer) => ({
         id: customer.id,

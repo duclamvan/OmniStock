@@ -135,12 +135,31 @@ interface GlobalSearchProps {
   autoFocus?: boolean;
 }
 
+// Normalize text for matching (remove diacritics, lowercase)
+function normalizeForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd');
+}
+
+// Check if item matches query
+function matchesQuery(text: string, query: string): boolean {
+  if (!text || !query) return false;
+  const normalizedText = normalizeForSearch(text);
+  const normalizedQuery = normalizeForSearch(query);
+  return normalizedText.includes(normalizedQuery);
+}
+
 export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps = {}) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [preloadedData, setPreloadedData] = useState<SearchResult | null>(null);
   const [, setLocation] = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -153,58 +172,102 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     }
   }, [autoFocus]);
 
-  // Debounce search query - fast 100ms for snappy feel
+  // Debounce for server query only (longer delay)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 100);
+    }, 250); // Server fetch delayed 250ms
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const queryClient = useQueryClient();
   
-  // Preload top products/customers on first mount to warm up cache
-  // This makes subsequent searches much faster as the data is already cached
+  // Preload top products/customers on mount for instant local filtering
   useEffect(() => {
     if (hasPreloadedSearch) return;
     hasPreloadedSearch = true;
     
-    // Delay preloading to not block initial page load
-    const timer = setTimeout(async () => {
+    const loadPreloadData = async () => {
       try {
-        // Preload search index data for faster searches
         const response = await fetch('/api/search/preload');
         if (response.ok) {
           const data = await response.json();
-          // Store in cache for instant search results
+          setPreloadedData(data);
           queryClient.setQueryData(['/api/search/preload'], data);
         }
       } catch {
-        // Silently fail - preloading is optional
+        // Silently fail
       }
-    }, 1500); // Start preloading 1.5 seconds after mount
+    };
     
-    return () => clearTimeout(timer);
+    // Start immediately for instant search capability
+    loadPreloadData();
   }, [queryClient]);
   
-  const { data: results, isLoading, isFetching } = useQuery<SearchResult>({
+  // Instant local filtering of preloaded data (no server round-trip)
+  const localFilteredResults = useMemo((): SearchResult | null => {
+    if (!preloadedData || searchQuery.trim().length < 1) return null;
+    
+    const query = searchQuery.trim();
+    
+    // Filter inventory items locally
+    const filteredInventory = preloadedData.inventoryItems?.filter(item => 
+      matchesQuery(item.name || '', query) || matchesQuery(item.sku || '', query)
+    ) || [];
+    
+    // Filter customers locally
+    const filteredCustomers = preloadedData.customers?.filter(customer =>
+      matchesQuery(customer.name || '', query) || 
+      matchesQuery(customer.email || '', query) ||
+      matchesQuery(customer.company || '', query)
+    ) || [];
+    
+    // Return null if no local matches found - this allows loading skeleton to show
+    if (filteredInventory.length === 0 && filteredCustomers.length === 0) {
+      return null;
+    }
+    
+    return {
+      inventoryItems: filteredInventory.slice(0, 10),
+      shipmentItems: [],
+      customers: filteredCustomers.slice(0, 5),
+      orders: []
+    };
+  }, [preloadedData, searchQuery]);
+  
+  // Server query for comprehensive results (runs with delay)
+  const { data: serverResults, isFetching, isPlaceholderData } = useQuery<SearchResult>({
     queryKey: ['/api/search', debouncedQuery],
     queryFn: async ({ signal }) => {
-      // Use TanStack Query's signal for proper cancellation
       const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {
-        signal, // Query will auto-cancel when key changes
+        signal,
       });
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
-    enabled: debouncedQuery.trim().length >= 2,
-    staleTime: 60000, // Cache for 1 minute
-    gcTime: 300000, // Keep in memory for 5 minutes
-    placeholderData: keepPreviousData, // Show previous results while loading
+    enabled: debouncedQuery.trim().length >= 1, // Enable for 1+ characters
+    staleTime: 60000,
+    gcTime: 300000,
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
-    retry: false, // Don't retry failed searches
+    retry: false,
   });
+  
+  // Use server results only when they match current query (not placeholder from previous query)
+  const hasFreshServerResults = serverResults && debouncedQuery === searchQuery && !isPlaceholderData;
+  const results = hasFreshServerResults ? serverResults : localFilteredResults;
+  
+  // Detect if debounce is pending (query changed but server hasn't fetched yet)
+  const isDebouncing = debouncedQuery !== searchQuery && searchQuery.trim().length >= 1;
+  
+  // Show loading skeleton when:
+  // 1. No local results AND (debounce pending OR server fetching OR no fresh server results)
+  const hasNoLocalResults = !localFilteredResults;
+  const isLoading = searchQuery.trim().length >= 1 && hasNoLocalResults && (isDebouncing || isFetching || !hasFreshServerResults);
+  
+  // Show subtle loading indicator when server is refining results (local results already showing)
+  const isRefining = (isDebouncing || isFetching) && results !== null;
 
   // Flatten results for keyboard navigation
   const flattenedResults = useMemo((): FlattenedResult[] => {
@@ -244,16 +307,16 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Show results when query changes and has results
+  // Show dropdown immediately when user types (even before results load)
   useEffect(() => {
-    if (debouncedQuery.trim().length >= 2 && results) {
+    if (searchQuery.trim().length >= 1) {
       setShowResults(true);
       setSelectedIndex(-1);
-    } else if (debouncedQuery.trim().length < 2) {
+    } else {
       setShowResults(false);
       setSelectedIndex(-1);
     }
-  }, [debouncedQuery, results]);
+  }, [searchQuery]);
 
   const navigateToResult = useCallback((result: FlattenedResult) => {
     if (result.type === 'inventory') {
@@ -414,16 +477,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
             className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(100%+0.5rem)] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[80vh] overflow-y-auto z-50 shadow-2xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl"
             style={{ originY: 0 }}
           >
-            {searchQuery.trim().length === 1 ? (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400"
-              >
-                <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                {t('common:typeAtLeastTwoCharacters')}
-              </motion.div>
-            ) : isLoading ? (
+            {isLoading && !results ? (
               <motion.div 
                 variants={skeletonVariants}
                 initial="hidden"
