@@ -537,15 +537,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                 <p className="text-xs mt-2 opacity-70">Try different keywords or check spelling</p>
               </motion.div>
             ) : (
-              <motion.div className="p-2">
-                {/* Results summary */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="px-3 py-1 mb-2 text-xs text-muted-foreground dark:text-gray-500 border-b border-gray-100 dark:border-gray-700"
-                >
-                  {totalResults} result{totalResults !== 1 ? 's' : ''} • Use ↑↓ to navigate, Enter to select
-                </motion.div>
-
+              <motion.div className="py-2">
               {/* 1. Current Stock Section */}
               {results && results.inventoryItems.length > 0 && (
                 <motion.div variants={itemVariants} className="mb-3">
