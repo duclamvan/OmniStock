@@ -24634,6 +24634,102 @@ Important rules:
     }
   });
 
+  // Bulk import shipments from pre-parsed data (used by frontend preview)
+  app.post('/api/imports/shipments/bulk-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const { items } = req.body;
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'No items provided for import' });
+      }
+
+      const importedShipments: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          // Validate required fields
+          if (!item.carrier || typeof item.carrier !== 'string' || item.carrier.trim() === '') {
+            errors.push(`Item ${i + 1}: Missing required field 'carrier'`);
+            continue;
+          }
+          if (!item.trackingNumber || typeof item.trackingNumber !== 'string' || item.trackingNumber.trim() === '') {
+            errors.push(`Item ${i + 1}: Missing required field 'trackingNumber'`);
+            continue;
+          }
+          
+          // Validate and normalize status (accept both camelCase and snake_case)
+          const statusMap: Record<string, string> = {
+            'pending': 'pending',
+            'shipped': 'shipped',
+            'in_transit': 'in_transit',
+            'inTransit': 'in_transit',
+            'delivered': 'delivered',
+            'cancelled': 'cancelled',
+            'canceled': 'cancelled',
+          };
+          const normalizedStatus = item.status ? statusMap[item.status] : undefined;
+          const status = normalizedStatus || 'pending';
+          
+          // Parse and validate shipping cost
+          let shippingCost = '0';
+          if (item.shippingCost) {
+            const parsed = parseFloat(String(item.shippingCost).replace(/[^0-9.-]/g, ''));
+            shippingCost = isNaN(parsed) ? '0' : String(parsed);
+          }
+          
+          const shipmentData = {
+            shipmentName: item.shipmentName?.trim() || `Imported Shipment ${i + 1}`,
+            carrier: item.carrier.trim(),
+            trackingNumber: item.trackingNumber.trim(),
+            origin: item.origin?.trim() || '',
+            destination: item.destination?.trim() || '',
+            status,
+            shippingCost,
+            shippingCostCurrency: item.shippingCostCurrency?.trim() || 'USD',
+            updatedAt: new Date(),
+          };
+
+          if (item._isUpdate && item._existingId) {
+            // Update existing shipment
+            const [updated] = await db
+              .update(shipments)
+              .set(shipmentData)
+              .where(eq(shipments.id, item._existingId))
+              .returning();
+            
+            importedShipments.push({ ...updated, action: 'updated' });
+          } else {
+            // Create new shipment
+            const [created] = await db
+              .insert(shipments)
+              .values({
+                ...shipmentData,
+                createdAt: new Date(),
+              })
+              .returning();
+
+            importedShipments.push({ ...created, action: 'created' });
+          }
+        } catch (err: any) {
+          errors.push(`Item ${i + 1}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedShipments.length,
+        errors: errors.length,
+        errorDetails: errors,
+        shipments: importedShipments
+      });
+    } catch (error) {
+      console.error('Error bulk importing shipments:', error);
+      res.status(500).json({ message: 'Failed to bulk import shipments' });
+    }
+  });
+
   // Undo import shipment - delete shipment and restore consolidation to active
   app.post('/api/imports/shipments/:id/undo', isAuthenticated, async (req: any, res) => {
     try {

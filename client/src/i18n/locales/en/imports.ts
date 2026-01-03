@@ -2416,6 +2416,49 @@ const imports = {
   cancel: 'Cancel',
   delete: 'Delete',
   
+  // Import Preview Dialog
+  reviewImportData: 'Review Import Data',
+  reviewBeforeImport: 'Review the data below before confirming the import',
+  totalRows: 'Total Rows',
+  newShipments: 'New Shipments',
+  updates: 'Updates',
+  validationErrors: '{{count}} validation error(s)',
+  andMore: '{{count}} more',
+  row: 'Row',
+  missingRequiredFields: 'Missing required fields (Carrier, Tracking Number)',
+  invalid: 'Invalid',
+  update: 'Update',
+  new: 'New',
+  importing: 'Importing...',
+  confirmImport: 'Import {{count}} item(s)',
+  noValidItems: 'No valid items to import',
+  noDataFound: 'No Data Found',
+  excelFileEmpty: 'The Excel file is empty or contains no data',
+  
+  // Revert Import
+  importCompleted: 'Import Completed',
+  importedShipmentsCount: '{{count}} shipment(s) imported',
+  revert: 'Revert',
+  revertSuccess: 'Revert Successful',
+  revertError: 'Revert Failed',
+  failedToRevert: 'Failed to revert import',
+  shipmentsRevertedCount: '{{count}} shipment(s) reverted',
+  
+  // Template & Export
+  template: 'Template',
+  templateDownloaded: 'Template Downloaded',
+  useTemplateForImport: 'Use this template to prepare your import data',
+  exportShipments: 'Export Shipments',
+  selectExportScope: 'Choose which shipments to export',
+  exportAll: 'Export Filtered',
+  exportAllDesc: 'Export {{count}} shipment(s) matching current filters',
+  exportSelectedDesc: 'Export {{count}} selected shipment(s)',
+  noShipmentsSelected: 'No shipments selected. Please select at least one shipment to export.',
+  importPartialSuccess: 'Import partially completed. {{imported}} imported, {{skipped}} skipped due to validation errors.',
+  validationErrorsDetails: 'Validation Errors',
+  importResultsSummary: '{{imported}} shipment(s) imported successfully. {{errors}} row(s) had validation errors.',
+  close: 'Close',
+  
 } as const;
 
 export default imports;

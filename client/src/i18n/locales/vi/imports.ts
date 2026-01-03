@@ -2357,6 +2357,49 @@ const imports = {
   cancel: 'Hủy',
   delete: 'Xóa',
   
+  // Import Preview Dialog
+  reviewImportData: 'Xem trước dữ liệu nhập',
+  reviewBeforeImport: 'Xem lại dữ liệu bên dưới trước khi xác nhận nhập',
+  totalRows: 'Tổng dòng',
+  newShipments: 'Lô hàng mới',
+  updates: 'Cập nhật',
+  validationErrors: '{{count}} lỗi xác thực',
+  andMore: '{{count}} lỗi nữa',
+  row: 'Dòng',
+  missingRequiredFields: 'Thiếu trường bắt buộc (Nhà vận chuyển, Mã theo dõi)',
+  invalid: 'Không hợp lệ',
+  update: 'Cập nhật',
+  new: 'Mới',
+  importing: 'Đang nhập...',
+  confirmImport: 'Nhập {{count}} mục',
+  noValidItems: 'Không có mục hợp lệ để nhập',
+  noDataFound: 'Không tìm thấy dữ liệu',
+  excelFileEmpty: 'File Excel trống hoặc không chứa dữ liệu',
+  
+  // Revert Import
+  importCompleted: 'Nhập hoàn tất',
+  importedShipmentsCount: 'Đã nhập {{count}} lô hàng',
+  revert: 'Hoàn tác',
+  revertSuccess: 'Hoàn tác thành công',
+  revertError: 'Hoàn tác thất bại',
+  failedToRevert: 'Không thể hoàn tác nhập',
+  shipmentsRevertedCount: 'Đã hoàn tác {{count}} lô hàng',
+  
+  // Template & Export
+  template: 'Mẫu',
+  templateDownloaded: 'Đã tải mẫu',
+  useTemplateForImport: 'Sử dụng mẫu này để chuẩn bị dữ liệu nhập',
+  exportShipments: 'Xuất lô hàng',
+  selectExportScope: 'Chọn lô hàng để xuất',
+  exportAll: 'Xuất đã lọc',
+  exportAllDesc: 'Xuất {{count}} lô hàng khớp với bộ lọc hiện tại',
+  exportSelectedDesc: 'Xuất {{count}} lô hàng đã chọn',
+  noShipmentsSelected: 'Chưa chọn lô hàng. Vui lòng chọn ít nhất một lô hàng để xuất.',
+  importPartialSuccess: 'Nhập hoàn thành một phần. {{imported}} đã nhập, {{skipped}} bị bỏ qua do lỗi xác thực.',
+  validationErrorsDetails: 'Lỗi xác thực',
+  importResultsSummary: '{{imported}} lô hàng đã nhập thành công. {{errors}} dòng có lỗi xác thực.',
+  close: 'Đóng',
+  
 } as const;
 
 export default imports;

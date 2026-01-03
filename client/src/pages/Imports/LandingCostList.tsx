@@ -2,12 +2,14 @@ import { useState, useMemo, useEffect, useRef, ChangeEvent } from "react";
 import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
+import * as XLSX from 'xlsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Calculator, 
   Package, 
@@ -38,9 +48,15 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
+  FileUp,
+  FileDown,
   X,
   CheckSquare,
-  Square
+  Square,
+  RefreshCw,
+  Check,
+  CheckCircle2,
+  RotateCcw
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -87,6 +103,28 @@ export default function LandingCostList() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Import preview state
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  
+  // Revert state
+  const [lastImportedIds, setLastImportedIds] = useState<string[]>([]);
+  const [showRevertButton, setShowRevertButton] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
+  
+  // Export dialog
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  
+  // Import results dialog (for showing validation errors)
+  const [showImportResults, setShowImportResults] = useState(false);
+  const [importResultData, setImportResultData] = useState<{
+    imported: number;
+    errors: number;
+    errorDetails: string[];
+  } | null>(null);
 
   // Fetch all shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
@@ -218,10 +256,27 @@ export default function LandingCostList() {
   });
 
   // Export to Excel
-  const handleExport = async () => {
+  const handleExport = async (exportScope: 'all' | 'selected' = 'all') => {
+    // If selected scope is requested but nothing is selected, show warning
+    if (exportScope === 'selected' && selectedShipments.size === 0) {
+      toast({
+        title: t('exportError'),
+        description: t('noShipmentsSelected'),
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsExporting(true);
     try {
-      const ids = selectedShipments.size > 0 ? Array.from(selectedShipments) : filteredShipments.map(s => String(s.id));
+      // Determine which IDs to export based on scope
+      let ids: string[];
+      if (exportScope === 'selected') {
+        ids = Array.from(selectedShipments);
+      } else {
+        ids = filteredShipments.map(s => String(s.id));
+      }
+      
       const params = new URLSearchParams();
       ids.forEach(id => params.append('ids', id));
       
@@ -258,36 +313,192 @@ export default function LandingCostList() {
     }
   };
 
-  // Import from Excel
+  // Parse Excel file and show preview instead of importing directly
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await fetch('/api/imports/shipments/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Import failed');
+      if (jsonData.length === 0) {
+        toast({
+          title: t('noDataFound'),
+          description: t('excelFileEmpty'),
+          variant: "destructive",
+        });
+        return;
       }
 
+      // Parse and validate data for preview
+      const previewItems: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i] as any;
+        const rowNum = i + 2; // Excel row number (1-indexed + header)
+        
+        const shipmentData: any = {
+          _rowNumber: rowNum,
+          shipmentName: row['Shipment Name'] || row.shipmentName || '',
+          carrier: row['Carrier'] || row.carrier || '',
+          trackingNumber: row['Tracking Number'] || row.trackingNumber || '',
+          origin: row['Origin'] || row.origin || '',
+          destination: row['Destination'] || row.destination || '',
+          status: row['Status'] || row.status || 'pending',
+          shippingCost: row['Shipping Cost'] || row.shippingCost || '0',
+          shippingCostCurrency: row['Shipping Cost Currency'] || row.shippingCostCurrency || 'USD',
+          _isValid: true,
+          _error: '',
+          _isUpdate: false,
+        };
+
+        // Validate required fields
+        if (!shipmentData.carrier || !shipmentData.trackingNumber) {
+          shipmentData._isValid = false;
+          shipmentData._error = t('missingRequiredFields');
+          errors.push(`${t('row')} ${rowNum}: ${t('missingRequiredFields')}`);
+        }
+
+        // Check if shipment exists by tracking number
+        const existingShipment = shipments.find((s: any) => s.trackingNumber === shipmentData.trackingNumber);
+        if (existingShipment) {
+          shipmentData._isUpdate = true;
+          shipmentData._existingId = existingShipment.id;
+        }
+
+        previewItems.push(shipmentData);
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Show preview
+      setImportPreviewData(previewItems);
+      setImportErrors(errors);
+      setShowImportPreview(true);
+
+    } catch (error: any) {
+      console.error("Import parse error:", error);
+      toast({
+        title: t('importError'),
+        description: error.message || t('failedToImport'),
+        variant: "destructive",
+      });
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Confirm and execute the actual import
+  const confirmImport = async () => {
+    setIsImporting(true);
+
+    try {
+      const validItems = importPreviewData.filter(item => item._isValid).map(item => ({
+        shipmentName: item.shipmentName,
+        carrier: item.carrier,
+        trackingNumber: item.trackingNumber,
+        origin: item.origin,
+        destination: item.destination,
+        status: item.status,
+        shippingCost: item.shippingCost,
+        shippingCostCurrency: item.shippingCostCurrency,
+        _isUpdate: item._isUpdate,
+        _existingId: item._existingId,
+      }));
+
+      if (validItems.length === 0) {
+        toast({
+          title: t('importError'),
+          description: t('noValidItems'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      const res = await apiRequest('POST', '/api/imports/shipments/bulk-import', { items: validItems });
+      
+      // Handle non-OK response
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Import failed' }));
+        throw new Error(errorData.message || 'Import failed');
+      }
+      
+      const response = await res.json();
+
+      // Close preview modal
+      setShowImportPreview(false);
+      setImportPreviewData([]);
+      setImportErrors([]);
+
+      // Refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
 
-      toast({
-        title: t('importSuccess'),
-        description: t('shipmentsImportedCount', { 
-          imported: result.imported || 0,
-          errors: result.errors || 0 
-        }),
-      });
+      // Store imported IDs for revert (only new shipments, not updates)
+      // Defensive check for shipments array
+      const newShipmentIds = Array.isArray(response.shipments) 
+        ? response.shipments
+            .filter((s: any) => s && s.action === 'created' && s.id)
+            .map((s: any) => s.id)
+        : [];
+      
+      if (newShipmentIds.length > 0) {
+        setLastImportedIds(newShipmentIds);
+        setShowRevertButton(true);
+        
+        // Auto-hide revert button after 30 seconds
+        setTimeout(() => {
+          setShowRevertButton(false);
+          setLastImportedIds([]);
+        }, 30000);
+      }
+
+      // Show appropriate toast based on results
+      const importedCount = response.imported || 0;
+      const errorCount = response.errors || 0;
+      const errorDetails = response.errorDetails || [];
+      
+      if (importedCount > 0 && errorCount > 0) {
+        // Partial success - show toast and store details for results dialog
+        toast({
+          title: t('importSuccess'),
+          description: t('importPartialSuccess', { 
+            imported: importedCount,
+            skipped: errorCount 
+          }),
+        });
+        // Store results for optional viewing
+        setImportResultData({ imported: importedCount, errors: errorCount, errorDetails });
+        setShowImportResults(true);
+      } else if (importedCount === 0 && errorCount > 0) {
+        // All items failed validation - show results dialog
+        toast({
+          title: t('importError'),
+          description: t('noValidItems'),
+          variant: "destructive",
+        });
+        setImportResultData({ imported: 0, errors: errorCount, errorDetails });
+        setShowImportResults(true);
+      } else {
+        // Full success
+        toast({
+          title: t('importSuccess'),
+          description: t('shipmentsImportedCount', { 
+            imported: importedCount,
+            errors: 0 
+          }),
+        });
+      }
+
     } catch (error: any) {
       toast({
         title: t('importError'),
@@ -295,10 +506,62 @@ export default function LandingCostList() {
         variant: "destructive",
       });
     } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setIsImporting(false);
     }
+  };
+
+  // Revert last import
+  const handleRevertImport = async () => {
+    if (lastImportedIds.length === 0) return;
+    
+    setIsReverting(true);
+    try {
+      await apiRequest('POST', '/api/imports/shipments/bulk-delete', { ids: lastImportedIds });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      
+      toast({
+        title: t('revertSuccess'),
+        description: t('shipmentsRevertedCount', { count: lastImportedIds.length }),
+      });
+      
+      setShowRevertButton(false);
+      setLastImportedIds([]);
+    } catch (error: any) {
+      toast({
+        title: t('revertError'),
+        description: error.message || t('failedToRevert'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
+  // Download template
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Shipment Name': 'Example Shipment 1',
+        'Carrier': 'DHL',
+        'Tracking Number': 'DHL123456789',
+        'Origin': 'China',
+        'Destination': 'Czech Republic',
+        'Status': 'pending',
+        'Shipping Cost': '150.00',
+        'Shipping Cost Currency': 'USD',
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Shipments');
+    XLSX.writeFile(workbook, 'shipments-import-template.xlsx');
+    
+    toast({
+      title: t('templateDownloaded'),
+      description: t('useTemplateForImport'),
+    });
   };
 
   if (isLoading || isLoadingCosts) {
@@ -368,6 +631,15 @@ export default function LandingCostList() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleDownloadTemplate}
+              data-testid="button-download-template"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              {t('template')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fileInputRef.current?.click()}
               data-testid="button-import"
             >
@@ -377,12 +649,11 @@ export default function LandingCostList() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
-              disabled={isExporting}
+              onClick={() => setShowExportDialog(true)}
               data-testid="button-export"
             >
               <Download className="h-4 w-4 mr-2" />
-              {isExporting ? t('exporting') : t('export')}
+              {t('export')}
             </Button>
           </div>
         </div>
@@ -717,6 +988,293 @@ export default function LandingCostList() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Import Preview Modal */}
+      <Dialog open={showImportPreview} onOpenChange={setShowImportPreview}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileUp className="h-5 w-5" />
+              {t('reviewImportData')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('reviewBeforeImport')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden space-y-4">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{importPreviewData.length}</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">{t('totalRows')}</p>
+              </div>
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {importPreviewData.filter(i => i._isValid && !i._isUpdate).length}
+                </p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70">{t('newShipments')}</p>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-center">
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {importPreviewData.filter(i => i._isUpdate).length}
+                </p>
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{t('updates')}</p>
+              </div>
+            </div>
+
+            {/* Errors Warning */}
+            {importErrors.length > 0 && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="font-medium text-red-700 dark:text-red-300">
+                    {t('validationErrors', { count: importErrors.length })}
+                  </span>
+                </div>
+                <ul className="text-xs text-red-600 dark:text-red-400 space-y-1 max-h-20 overflow-y-auto">
+                  {importErrors.slice(0, 5).map((error, i) => (
+                    <li key={i}>{error}</li>
+                  ))}
+                  {importErrors.length > 5 && (
+                    <li>... {t('andMore', { count: importErrors.length - 5 })}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview Table */}
+            <ScrollArea className="h-[300px] border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+                  <tr>
+                    <th className="text-left p-2 font-medium">#</th>
+                    <th className="text-left p-2 font-medium">{t('status')}</th>
+                    <th className="text-left p-2 font-medium">{t('shipmentName')}</th>
+                    <th className="text-left p-2 font-medium">{t('carrier')}</th>
+                    <th className="text-left p-2 font-medium">{t('trackingNumber')}</th>
+                    <th className="text-left p-2 font-medium">{t('shippingCost')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreviewData.map((item, index) => (
+                    <tr 
+                      key={index} 
+                      className={`border-b ${!item._isValid ? 'bg-red-50 dark:bg-red-950/20' : item._isUpdate ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                    >
+                      <td className="p-2 text-muted-foreground">{item._rowNumber}</td>
+                      <td className="p-2">
+                        {!item._isValid ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            {t('invalid')}
+                          </Badge>
+                        ) : item._isUpdate ? (
+                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-500">
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            {t('update')}
+                          </Badge>
+                        ) : (
+                          <Badge className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {t('new')}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="p-2 font-medium">{item.shipmentName || '-'}</td>
+                      <td className="p-2">{item.carrier || '-'}</td>
+                      <td className="p-2 font-mono text-xs">{item.trackingNumber || '-'}</td>
+                      <td className="p-2">{item.shippingCost} {item.shippingCostCurrency}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowImportPreview(false);
+                setImportPreviewData([]);
+                setImportErrors([]);
+              }}
+            >
+              {t('cancel')}
+            </Button>
+            <Button 
+              onClick={confirmImport}
+              disabled={isImporting || importPreviewData.filter(i => i._isValid).length === 0}
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {t('importing')}
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  {t('confirmImport', { count: importPreviewData.filter(i => i._isValid).length })}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              {t('exportShipments')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('selectExportScope')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-3"
+              onClick={async () => {
+                setShowExportDialog(false);
+                await handleExport('all');
+              }}
+              disabled={isExporting}
+              data-testid="button-export-all"
+            >
+              <FileSpreadsheet className="mr-3 h-5 w-5 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">{t('exportAll')}</p>
+                <p className="text-xs text-muted-foreground">{t('exportAllDesc', { count: filteredShipments.length })}</p>
+              </div>
+            </Button>
+            
+            {selectedShipments.size > 0 && (
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto py-3"
+                onClick={async () => {
+                  setShowExportDialog(false);
+                  await handleExport('selected');
+                }}
+                disabled={isExporting}
+                data-testid="button-export-selected-dialog"
+              >
+                <CheckSquare className="mr-3 h-5 w-5 text-blue-600" />
+                <div className="text-left">
+                  <p className="font-medium">{t('exportSelected')}</p>
+                  <p className="text-xs text-muted-foreground">{t('exportSelectedDesc', { count: selectedShipments.size })}</p>
+                </div>
+              </Button>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+              {t('cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Results Dialog */}
+      <Dialog open={showImportResults} onOpenChange={setShowImportResults}>
+        <DialogContent className="max-w-lg max-h-[70vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {importResultData && importResultData.imported > 0 ? (
+                <CheckCircle className="h-5 w-5 text-amber-500" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-500" />
+              )}
+              {importResultData && importResultData.imported > 0 
+                ? t('importSuccess') 
+                : t('importError')}
+            </DialogTitle>
+            <DialogDescription>
+              {importResultData && t('importResultsSummary', {
+                imported: importResultData.imported,
+                errors: importResultData.errors
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {importResultData && importResultData.errorDetails.length > 0 && (
+            <div className="flex-1 overflow-hidden">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                {t('validationErrorsDetails')} ({importResultData.errorDetails.length})
+              </h4>
+              <ScrollArea className="h-[200px] border rounded-lg p-3 bg-slate-50 dark:bg-slate-900">
+                <ul className="space-y-1 text-sm">
+                  {importResultData.errorDetails.map((error, i) => (
+                    <li key={i} className="text-red-600 dark:text-red-400">
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => {
+              setShowImportResults(false);
+              setImportResultData(null);
+            }}>
+              {t('close')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Revert Button */}
+      {showRevertButton && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-3 flex items-center gap-3">
+            <div className="text-sm">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {t('importCompleted')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('importedShipmentsCount', { count: lastImportedIds.length })}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRevertImport}
+                disabled={isReverting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                data-testid="button-revert-import"
+              >
+                {isReverting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span className="ml-1">{t('revert')}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowRevertButton(false)}
+                className="h-8 w-8"
+                data-testid="button-dismiss-revert"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
