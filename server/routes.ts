@@ -109,6 +109,7 @@ import {
   dailySequences,
   warehouses,
   warehouseLayouts,
+  warehouseFinancialContracts,
   suppliers,
   categories,
   userActivities,
