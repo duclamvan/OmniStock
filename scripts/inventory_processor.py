@@ -9,13 +9,20 @@ SKU Format: CATEGORY-PRODUCTPART (e.g., GP-SOGEPO for "SORAH Gel Polish 15ml" in
 - Only adds -1, -2 suffix if duplicate exists
 
 Usage:
-    python scripts/inventory_processor.py input_file.tsv output_file.csv
+    python scripts/inventory_processor.py input_file.tsv output_file.xlsx
 """
 
 import csv
 import sys
 import os
 from typing import Set
+
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
 
 # Vietnamese diacritics mapping (matching client/src/lib/vietnameseSearch.ts)
 VIETNAMESE_MAP = {
@@ -50,31 +57,23 @@ VIETNAMESE_MAP = {
 def normalize_for_sku(text: str) -> str:
     """
     Normalize text for SKU generation - remove Vietnamese diacritics and non-alphanumeric chars.
-    Matches the normalizeForSKU function in ProductForm.tsx
     """
     import re
-    # Remove Vietnamese diacritics
     normalized = ''.join(VIETNAMESE_MAP.get(c, c) for c in text)
-    # Remove non-alphanumeric characters and convert to uppercase
     return re.sub(r'[^A-Za-z0-9]', '', normalized).upper()
 
 
 def get_category_part(category_name: str) -> str:
     """
     Generate category code from category name.
-    Matches the exact logic from ProductForm.tsx generateSKU function.
-    
-    - Multi-word: Take first letter of each word (e.g., "Gel Polish" -> "GP", "Tools & Accessories" -> "TA")
-    - Single word: Take first 3 characters (e.g., "Design" -> "DES", "Tips" -> "TIP")
+    - Multi-word: Take first letter of each word (e.g., "Gel Polish" -> "GP")
+    - Single word: Take first 3 characters (e.g., "Design" -> "DES")
     """
-    # Split on whitespace and filter out empty strings and connectors
     words = [w for w in category_name.split() if w and w not in ['&', 'and', '-', '/']]
     
     if len(words) > 1:
-        # Multi-word: first letter of each word
         category_part = ''.join(normalize_for_sku(w)[0] if normalize_for_sku(w) else '' for w in words)
     else:
-        # Single word: first 3 characters
         category_part = normalize_for_sku(category_name)[:3]
     
     return category_part.upper() if category_part else 'GEN'
@@ -83,8 +82,6 @@ def get_category_part(category_name: str) -> str:
 def get_product_part(product_name: str) -> str:
     """
     Generate product code from product name.
-    Matches the exact logic from ProductForm.tsx generateSKU function.
-    
     - 1 word: Take first 6 characters
     - 2 words: Take first 3 chars of each word
     - 3+ words: Take first 2 chars of first 3 words
@@ -95,13 +92,10 @@ def get_product_part(product_name: str) -> str:
         return 'ITEM'
     
     if len(words) == 1:
-        # Single word: take first 6 characters
         product_part = normalize_for_sku(words[0])[:6]
     elif len(words) == 2:
-        # Two words: take first 3 chars of each
         product_part = normalize_for_sku(words[0])[:3] + normalize_for_sku(words[1])[:3]
     else:
-        # Multiple words (3+): take first 2 chars of first 3 words
         product_part = ''.join(normalize_for_sku(w)[:2] for w in words[:3])
     
     return product_part.upper() if product_part else 'ITEM'
@@ -110,20 +104,16 @@ def get_product_part(product_name: str) -> str:
 def generate_sku(category: str, product_name: str, existing_skus: Set[str]) -> str:
     """
     Generate a unique SKU matching Davie Supply's exact format.
-    Format: CAT-PRODPART (e.g., GP-SOGEPO)
-    Only adds -1, -2, etc. suffix if duplicate exists.
     """
     cat_part = get_category_part(category)
     prod_part = get_product_part(product_name)
     
     base_sku = f"{cat_part}-{prod_part}"
     
-    # Check if base SKU exists - only add counter if needed
     if base_sku.upper() not in existing_skus:
         existing_skus.add(base_sku.upper())
         return base_sku
     
-    # Find next available counter
     counter = 1
     while f"{base_sku}-{counter}".upper() in existing_skus:
         counter += 1
@@ -133,31 +123,25 @@ def generate_sku(category: str, product_name: str, existing_skus: Set[str]) -> s
     return final_sku
 
 
-def clean_price(value: str) -> str:
+def clean_price(value: str) -> float:
     """Clean price value, handling commas and #N/A."""
-    if not value or value.strip() in ['#N/A', 'Loading...', '']:
-        return '0'
-    cleaned = value.replace(',', '').strip()
+    if not value or str(value).strip() in ['#N/A', 'Loading...', '', 'None']:
+        return 0.0
+    cleaned = str(value).replace(',', '').strip()
     try:
-        float(cleaned)
-        return cleaned
+        return float(cleaned)
     except ValueError:
-        return '0'
+        return 0.0
 
 
 def process_inventory(input_file: str, output_file: str):
     """
     Process inventory file and generate new SKUs.
-    
-    Input columns: Product name, Reference, Category, SKU, Price CZK, Price EUR, 
-                   Imp. Cost EUR, Imp. Cost CZK, Weight (g), Imported (pcs), Stock (pcs), Total orders
-    
-    Output columns: Product name, Category, SKU, Price CZK, Price EUR, Imp. Cost EUR, Imp. Cost CZK
+    Outputs to Excel format matching the import template.
     """
     products = []
     existing_skus: Set[str] = set()
     
-    # Detect delimiter based on file extension
     delimiter = '\t' if input_file.endswith('.tsv') or input_file.endswith('.txt') else ','
     
     print(f"📂 Reading inventory from: {input_file}")
@@ -172,52 +156,129 @@ def process_inventory(input_file: str, output_file: str):
             if not product_name:
                 continue
             
-            # Generate SKU using exact site logic
             new_sku = generate_sku(category, product_name, existing_skus)
             
             products.append({
-                'Product name': product_name,
-                'Category': category,
+                'Name': product_name,
+                'Vietnamese Name': '',
                 'SKU': new_sku,
+                'Barcode': '',
+                'Category': category,
+                'Supplier': '',
+                'Warehouse': '',
+                'Warehouse Location': '',
+                'Quantity': 0,
+                'Low Stock Alert': 10,
                 'Price CZK': clean_price(row.get('Price CZK', '0')),
                 'Price EUR': clean_price(row.get('Price EUR', '0')),
-                'Imp. Cost EUR': clean_price(row.get('Imp. Cost EUR', '0')),
-                'Imp. Cost CZK': clean_price(row.get('Imp. Cost CZK', '0')),
+                'Price USD': 0.0,
+                'Wholesale Price CZK': 0.0,
+                'Wholesale Price EUR': 0.0,
+                'Import Cost USD': 0.0,
+                'Import Cost EUR': clean_price(row.get('Imp. Cost EUR', '0')),
+                'Import Cost CZK': clean_price(row.get('Imp. Cost CZK', '0')),
+                'Weight (kg)': 0.0,
+                'Length (cm)': 0.0,
+                'Width (cm)': 0.0,
+                'Height (cm)': 0.0,
+                'Description': '',
+                'Shipment Notes': '',
             })
     
     print(f"✅ Processed {len(products)} products")
     
     # Count unique vs duplicated SKUs
-    unique_count = len([p for p in products if '-' not in p['SKU'].split('-')[-1] or not p['SKU'].split('-')[-1].isdigit()])
-    dup_count = len(products) - unique_count
-    print(f"   📊 {unique_count} unique base SKUs, {dup_count} with suffix counters")
+    base_skus = set()
+    dup_count = 0
+    for p in products:
+        sku = p['SKU']
+        parts = sku.rsplit('-', 1)
+        if len(parts) == 2 and parts[1].isdigit():
+            dup_count += 1
+        else:
+            base_skus.add(sku)
+    print(f"   📊 {len(products) - dup_count} unique base SKUs, {dup_count} with suffix counters")
     
-    print(f"💾 Writing output to: {output_file}")
+    # Output to Excel
+    if output_file.endswith('.xlsx') and HAS_OPENPYXL:
+        print(f"💾 Writing Excel output to: {output_file}")
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Products"
+        
+        # Headers matching import template
+        headers = [
+            'Name', 'Vietnamese Name', 'SKU', 'Barcode', 'Category', 'Supplier',
+            'Warehouse', 'Warehouse Location', 'Quantity', 'Low Stock Alert',
+            'Price CZK', 'Price EUR', 'Price USD', 'Wholesale Price CZK', 'Wholesale Price EUR',
+            'Import Cost USD', 'Import Cost EUR', 'Import Cost CZK',
+            'Weight (kg)', 'Length (cm)', 'Width (cm)', 'Height (cm)',
+            'Description', 'Shipment Notes'
+        ]
+        
+        # Style for header row
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+        
+        # Write data rows
+        for row_idx, product in enumerate(products, 2):
+            for col_idx, header in enumerate(headers, 1):
+                value = product.get(header, '')
+                ws.cell(row=row_idx, column=col_idx, value=value)
+        
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        wb.save(output_file)
+    else:
+        # Fallback to CSV
+        print(f"💾 Writing CSV output to: {output_file}")
+        
+        headers = [
+            'Name', 'Vietnamese Name', 'SKU', 'Barcode', 'Category', 'Supplier',
+            'Warehouse', 'Warehouse Location', 'Quantity', 'Low Stock Alert',
+            'Price CZK', 'Price EUR', 'Price USD', 'Wholesale Price CZK', 'Wholesale Price EUR',
+            'Import Cost USD', 'Import Cost EUR', 'Import Cost CZK',
+            'Weight (kg)', 'Length (cm)', 'Width (cm)', 'Height (cm)',
+            'Description', 'Shipment Notes'
+        ]
+        
+        with open(output_file, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(products)
     
-    output_columns = ['Product name', 'Category', 'SKU', 'Price CZK', 'Price EUR', 'Imp. Cost EUR', 'Imp. Cost CZK']
+    print(f"🚀 Done! Generated {len(products)} products ready for import")
     
-    with open(output_file, 'w', encoding='utf-8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=output_columns)
-        writer.writeheader()
-        writer.writerows(products)
-    
-    print(f"🚀 Done! Generated {len(products)} SKUs")
-    
-    # Show sample output grouped by category
-    print("\n📋 Sample output (first 15 products):")
-    print("-" * 80)
-    for product in products[:15]:
-        print(f"  {product['SKU']:20} | {product['Category']:20} | {product['Product name'][:35]}")
+    print("\n📋 Sample output (first 10 products):")
+    print("-" * 90)
+    for product in products[:10]:
+        print(f"  {product['SKU']:20} | {product['Category']:20} | {product['Name'][:40]}")
 
 
 def main():
     if len(sys.argv) < 2:
-        # Default to the attached file if no args
         input_file = 'attached_assets/Pasted-Product-name-Reference-Category-SKU-Price-CZK-Price-EUR_1767405059741.txt'
-        output_file = 'inventory_import_ready.csv'
+        output_file = 'inventory_import_ready.xlsx'
     elif len(sys.argv) == 2:
         input_file = sys.argv[1]
-        output_file = 'inventory_import_ready.csv'
+        output_file = 'inventory_import_ready.xlsx'
     else:
         input_file = sys.argv[1]
         output_file = sys.argv[2]
