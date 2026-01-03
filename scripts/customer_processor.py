@@ -603,7 +603,7 @@ def process_customers(input_file: str, output_file: str, api_url: str = None, se
     # Show sample output
     print("\n📋 Sample output (first 10 customers with addresses):")
     print("-" * 100)
-    sample = [c for c in customers if c['City'] or c['Shipping Street']][:10]
+    sample = [c for c in customers if c['City'] or c.get('Billing Street', '')][:10]
     for customer in sample:
         name = customer['Name'][:25] if customer['Name'] else '(no name)'
         city = customer['City'][:15] if customer['City'] else ''
