@@ -597,13 +597,40 @@ export default function AllTickets() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-6">
-            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+      <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 w-56 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-2" />
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('loadingTickets')}</p>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-10 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-4 border">
+              <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2" />
+              <div className="h-8 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg border">
+          <div className="p-4 border-b">
+            <div className="h-10 w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+          <div className="divide-y">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex items-center gap-4 p-4" style={{ opacity: 1 - i * 0.1 }}>
+                <div className="h-5 w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 flex-1 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

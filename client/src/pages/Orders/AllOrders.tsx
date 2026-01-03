@@ -1631,13 +1631,43 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-6">
-            <div className="absolute inset-0 border-4 border-cyan-200 dark:border-cyan-800 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-cyan-600 dark:border-cyan-400 rounded-full border-t-transparent animate-spin"></div>
+      <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-2 hidden sm:block" />
           </div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium">{t('orders:loadingOrders')}</p>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-9 w-28 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-3 border">
+              <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2" />
+              <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg border">
+          <div className="p-4 border-b flex items-center gap-4">
+            <div className="h-10 flex-1 max-w-sm bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-10 w-28 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+          <div className="divide-y">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="flex items-center gap-4 p-4" style={{ opacity: 1 - i * 0.08 }}>
+                <div className="h-5 w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 flex-1 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
+                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
