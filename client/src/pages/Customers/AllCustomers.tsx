@@ -1176,6 +1176,81 @@ export default function AllCustomers() {
     }
   };
 
+  // Import addressbook CSV (PPL format) and match to existing customers
+  const handleImportAddressbook = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: t('common:error'),
+        description: 'Please select a CSV file',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    toast({
+      title: 'Importing Address Book',
+      description: t('common:pleaseWait'),
+    });
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(';').map(h => h.trim());
+      
+      const addresses: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        
+        const values = line.split(';');
+        const row: any = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx]?.trim() || '';
+        });
+        
+        addresses.push({
+          company: row['NAZEV'] || '',
+          street: row['ULICE_CP'] || '',
+          city: row['MESTO'] || '',
+          zipCode: row['PSC'] || '',
+          country: row['ZEME'] || 'CZ',
+          email: row['EMAIL'] || '',
+          contact: row['KONTAKTNI_OS'] || '',
+          phone: row['TELEFON'] || '',
+        });
+      }
+
+      const response = await apiRequest('POST', '/api/customers/import-addressbook', { addresses });
+      const result = await response.json();
+
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
+
+      toast({
+        title: 'Address Book Import Complete',
+        description: `Matched ${result.matched} addresses to customers. Skipped ${result.skipped}.`,
+      });
+
+      if (result.errors?.length > 0) {
+        console.error('Import errors:', result.errors);
+      }
+    } catch (error: any) {
+      console.error('Addressbook import error:', error);
+      toast({
+        title: t('common:error'),
+        description: error.message || 'Failed to import address book',
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4 sm:space-y-6 bg-gray-50 dark:bg-slate-900 min-h-screen -m-6 p-2 sm:p-4 md:p-6 overflow-x-hidden">
@@ -1247,6 +1322,19 @@ export default function AllCustomers() {
               <DropdownMenuItem onClick={() => setShowImportDialog(true)} data-testid="menu-import-xlsx">
                 <Upload className="h-4 w-4 mr-2" />
                 {t('customers:importFromExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild data-testid="menu-import-addressbook">
+                <label className="cursor-pointer flex items-center w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Address Book (CSV)
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleImportAddressbook}
+                    disabled={isImporting}
+                  />
+                </label>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleComprehensiveExportXLSX} data-testid="menu-export-xlsx">

@@ -9874,6 +9874,310 @@ Important:
     }
   });
 
+  // Batch validate and fix all customer shipping addresses
+  app.post('/api/customers/validate-addresses', isAuthenticated, async (req: any, res) => {
+    try {
+      // Get all shipping addresses
+      const allAddresses = await db.select().from(customerShippingAddresses);
+      
+      const results = {
+        total: allAddresses.length,
+        fixed: 0,
+        skipped: 0,
+        errors: [] as string[],
+        fixedAddresses: [] as any[],
+      };
+      
+      for (const address of allAddresses) {
+        try {
+          // Check if address needs fixing (has mixed data in street field)
+          const needsFix = address.street && (
+            address.street.includes(';') || 
+            (address.street.includes('/') && address.street.length > 50) ||
+            /\d{4,5}\s+[A-Za-z]/.test(address.street) // Postal code pattern in street
+          );
+          
+          if (!needsFix) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Parse the mixed address using the existing parseAddressBasic logic
+          const rawAddress = address.street;
+          const parsed = parseAddressFromMixed(rawAddress);
+          
+          if (parsed.confidence === 'low' && !parsed.street) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Build update object with parsed values (only if better than existing)
+          const updates: any = {};
+          
+          if (parsed.street && parsed.street !== address.street) {
+            updates.street = parsed.street;
+          }
+          if (parsed.streetNumber && !address.streetNumber) {
+            updates.streetNumber = parsed.streetNumber;
+          }
+          if (parsed.city && (!address.city || address.city === parsed.city)) {
+            updates.city = parsed.city;
+          }
+          if (parsed.zipCode && (!address.zipCode || address.zipCode === parsed.zipCode)) {
+            updates.zipCode = parsed.zipCode;
+          }
+          if (parsed.country && (!address.country || address.country === parsed.country)) {
+            updates.country = parsed.country;
+          }
+          if (parsed.firstName && address.firstName !== parsed.firstName) {
+            updates.firstName = parsed.firstName;
+          }
+          if (parsed.lastName && address.lastName !== parsed.lastName) {
+            updates.lastName = parsed.lastName;
+          }
+          if (parsed.company) {
+            updates.company = parsed.company;
+          }
+          
+          if (Object.keys(updates).length > 0) {
+            await storage.updateCustomerShippingAddress(address.id, updates);
+            results.fixed++;
+            results.fixedAddresses.push({
+              id: address.id,
+              before: {
+                street: address.street,
+                streetNumber: address.streetNumber,
+                city: address.city,
+                zipCode: address.zipCode,
+                country: address.country,
+              },
+              after: updates,
+            });
+          } else {
+            results.skipped++;
+          }
+        } catch (error: any) {
+          results.errors.push(`Address ${address.id}: ${error.message}`);
+        }
+      }
+      
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error validating addresses:", error);
+      res.status(500).json({ message: error.message || "Failed to validate addresses" });
+    }
+  });
+
+  // Import address book and match to existing customers
+  app.post('/api/customers/import-addressbook', isAuthenticated, async (req: any, res) => {
+    try {
+      const { addresses } = req.body;
+      
+      if (!addresses || !Array.isArray(addresses)) {
+        return res.status(400).json({ message: "No addresses provided" });
+      }
+      
+      const results = {
+        total: addresses.length,
+        matched: 0,
+        created: 0,
+        skipped: 0,
+        errors: [] as string[],
+        matchedAddresses: [] as any[],
+      };
+      
+      // Get all customers for matching
+      const allCustomers = await storage.getCustomers();
+      
+      // Country code mapping
+      const countryCodeMap: Record<string, string> = {
+        'CZ': 'Czech Republic',
+        'DE': 'Germany',
+        'AT': 'Austria',
+        'SK': 'Slovakia',
+        'PL': 'Poland',
+        'HU': 'Hungary',
+        'DK': 'Denmark',
+        'BE': 'Belgium',
+        'NL': 'Netherlands',
+        'FR': 'France',
+        'IT': 'Italy',
+        'ES': 'Spain',
+        'VN': 'Vietnam',
+      };
+      
+      for (const addr of addresses) {
+        try {
+          // Parse street and number
+          const streetMatch = addr.street?.match(/^(.+?)\s+(\d+[a-zA-Z]?(?:\/\d+)?)$/);
+          const street = streetMatch ? streetMatch[1].trim() : addr.street;
+          const streetNumber = streetMatch ? streetMatch[2] : null;
+          
+          // Parse contact name
+          const contactParts = addr.contact?.split(/\s+/) || [];
+          const firstName = contactParts[0] || '';
+          const lastName = contactParts.slice(1).join(' ') || firstName;
+          
+          // Normalize phone for matching
+          const normalizedPhone = addr.phone?.replace(/[\s\-\+]/g, '').slice(-9);
+          
+          // Try to find matching customer by phone or company name
+          let matchedCustomer = allCustomers.find(c => {
+            const customerPhone = c.phone?.replace(/[\s\-\+]/g, '').slice(-9);
+            if (customerPhone && normalizedPhone && customerPhone === normalizedPhone) {
+              return true;
+            }
+            // Match by company name (case-insensitive, partial match)
+            const companyName = addr.company?.toLowerCase().trim();
+            if (companyName && c.name?.toLowerCase().includes(companyName.substring(0, 10))) {
+              return true;
+            }
+            return false;
+          });
+          
+          if (!matchedCustomer) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Check if customer already has this address
+          const existingAddresses = await storage.getCustomerShippingAddresses(matchedCustomer.id);
+          const isDuplicate = existingAddresses.some(ea => 
+            ea.zipCode === addr.zipCode && 
+            ea.street?.toLowerCase() === street?.toLowerCase()
+          );
+          
+          if (isDuplicate) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Create shipping address for matched customer
+          const country = countryCodeMap[addr.country] || addr.country || 'Czech Republic';
+          
+          await storage.createCustomerShippingAddress({
+            customerId: matchedCustomer.id,
+            firstName: firstName,
+            lastName: lastName,
+            company: addr.company || null,
+            email: addr.email || null,
+            tel: addr.phone || null,
+            street: street,
+            streetNumber: streetNumber,
+            city: addr.city,
+            zipCode: addr.zipCode,
+            country: country,
+            isPrimary: existingAddresses.length === 0,
+            label: existingAddresses.length === 0 ? 'Primary' : 'Imported',
+          });
+          
+          results.matched++;
+          results.matchedAddresses.push({
+            company: addr.company,
+            customer: matchedCustomer.name,
+            customerId: matchedCustomer.id,
+          });
+        } catch (error: any) {
+          results.errors.push(`${addr.company}: ${error.message}`);
+        }
+      }
+      
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error importing addressbook:", error);
+      res.status(500).json({ message: error.message || "Failed to import addressbook" });
+    }
+  });
+  
+  // Helper function to parse mixed address data (similar to parseAddressBasic but for fixing)
+  function parseAddressFromMixed(rawAddress: string): {
+    firstName?: string;
+    lastName?: string;
+    company?: string;
+    street?: string;
+    streetNumber?: string;
+    city?: string;
+    zipCode?: string;
+    country?: string;
+    confidence: 'high' | 'medium' | 'low';
+  } {
+    const result: any = {};
+    
+    // Split by common delimiters
+    const parts = rawAddress.split(/[;\/]/).map(p => p.trim()).filter(Boolean);
+    
+    // Extract postal code (4-5 digits)
+    const zipMatch = rawAddress.match(/\b(\d{3}\s?\d{2}|\d{4,5})\b/);
+    if (zipMatch) {
+      result.zipCode = zipMatch[1].replace(/\s/g, '');
+    }
+    
+    // Country detection
+    const countryPatterns: Record<string, string> = {
+      'czech|česk|czechia|cz': 'Czech Republic',
+      'germany|deutschland|german|de|unna|berlin|hamburg|münchen': 'Germany',
+      'austria|österreich|at': 'Austria',
+      'poland|polska|pl': 'Poland',
+      'slovakia|slovensko|sk|banská|bratislava': 'Slovakia',
+      'hungary|magyarország|hu': 'Hungary',
+      'vietnam|việt nam|vn': 'Vietnam'
+    };
+    
+    for (const [pattern, country] of Object.entries(countryPatterns)) {
+      if (new RegExp(pattern, 'i').test(rawAddress)) {
+        result.country = country;
+        break;
+      }
+    }
+    
+    // Try to extract city (word after postal code, or known city patterns)
+    const cityPatterns = /(\d{4,5})\s+([A-Za-zÀ-žА-яа-я\s]+?)(?:$|;|\/)/i;
+    const cityMatch = rawAddress.match(cityPatterns);
+    if (cityMatch && cityMatch[2]) {
+      result.city = cityMatch[2].trim().toUpperCase();
+    }
+    
+    // Extract street and number
+    for (const part of parts) {
+      // Look for street pattern: Name + number (e.g., "Hertinger str15" or "Hertinger str 15")
+      const streetMatch = part.match(/([A-Za-zÀ-žА-яа-я\s]+?)\s*(\d+[a-zA-Z]?(?:\/\d+)?)\s*$/);
+      if (streetMatch && !result.street) {
+        result.street = streetMatch[1].trim();
+        result.streetNumber = streetMatch[2];
+        break;
+      }
+    }
+    
+    // Extract name (look for full name pattern)
+    for (const part of parts) {
+      // Skip if looks like address or company
+      if (/\d/.test(part) || part.toLowerCase().includes('str') || part.toLowerCase().includes('nails')) {
+        // Check if it's a company name
+        if (part.toLowerCase().includes('nails') || part.toLowerCase().includes('salon') || 
+            part.toLowerCase().includes('shop') || part.toLowerCase().includes('gmbh')) {
+          result.company = part;
+        }
+        continue;
+      }
+      
+      const nameParts = part.split(/\s+/);
+      if (nameParts.length >= 2 && nameParts[0].length > 1) {
+        result.firstName = nameParts[0];
+        result.lastName = nameParts.slice(1).join(' ');
+        break;
+      }
+    }
+    
+    // Determine confidence
+    const fieldCount = Object.keys(result).filter(k => k !== 'confidence').length;
+    let confidence: 'high' | 'medium' | 'low' = 'low';
+    if (fieldCount >= 4) confidence = 'medium';
+    if (fieldCount >= 6) confidence = 'high';
+    result.confidence = confidence;
+    
+    return result;
+  }
+
   app.patch('/api/customers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
