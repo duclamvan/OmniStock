@@ -1294,6 +1294,9 @@ const common = {
   searching: 'Searching...',
   noResultsFoundFor: 'No results found for "{{query}}"',
   currentStock: 'Current Stock',
+  available: 'available',
+  allocated: 'allocated',
+  reserved: 'reserved',
   
   // Shipping Address Form
   newShippingAddress: 'New Shipping Address',

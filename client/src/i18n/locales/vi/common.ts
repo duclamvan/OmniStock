@@ -1040,6 +1040,10 @@ const common = {
   typeAtLeastTwoCharacters: 'Nhập ít nhất 2 ký tự để tìm kiếm...',
   searching: 'Đang tìm kiếm...',
   noResultsFoundFor: 'Không tìm thấy kết quả cho "{{query}}"',
+  currentStock: 'Tồn kho',
+  available: 'có sẵn',
+  allocated: 'đã phân bổ',
+  reserved: 'đã giữ',
   
   // Form Field Labels and Placeholders
   companyName: 'Tên công ty',
