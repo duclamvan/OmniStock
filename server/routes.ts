@@ -24639,86 +24639,103 @@ Important rules:
       console.log(`✅ Pre-reset backup created: ${backupResult.fileName} (recoverable for 7 days)`);
 
       // Execute deletions in transaction with FK-safe order (children → parents)
+      // Using .returning() to get actual deleted rows count (Neon serverless returns arrays, not rowCount)
       const deletionSummary: Record<string, number> = {};
+      
+      console.log(`🗑️ Starting factory reset (keepSettings: ${keepSettings})...`);
       
       await db.transaction(async (tx) => {
         // Delete in FK-safe order - children first, then parents
+        // Use .returning() to get deleted rows array and count length
         
         // Level 1: Leaf tables (no children)
-        deletionSummary.ticketComments = (await tx.delete(ticketComments)).rowCount || 0;
-        deletionSummary.orderFulfillmentLogs = (await tx.delete(orderFulfillmentLogs)).rowCount || 0;
-        deletionSummary.customerBadges = (await tx.delete(customerBadges)).rowCount || 0;
-        deletionSummary.supplierFiles = (await tx.delete(supplierFiles)).rowCount || 0;
-        deletionSummary.warehouseFiles = (await tx.delete(warehouseFiles)).rowCount || 0;
-        deletionSummary.warehouseFinancialContracts = (await tx.delete(warehouseFinancialContracts)).rowCount || 0;
-        deletionSummary.productFiles = (await tx.delete(productFiles)).rowCount || 0;
-        deletionSummary.orderFiles = (await tx.delete(orderFiles)).rowCount || 0;
-        deletionSummary.aiLocationSuggestions = (await tx.delete(aiLocationSuggestions)).rowCount || 0;
-        deletionSummary.stockAdjustmentRequests = (await tx.delete(stockAdjustmentRequests)).rowCount || 0;
-        deletionSummary.productLocations = (await tx.delete(productLocations)).rowCount || 0;
-        deletionSummary.notifications = (await tx.delete(notifications)).rowCount || 0;
+        deletionSummary.ticketComments = (await tx.delete(ticketComments).returning()).length;
+        deletionSummary.orderFulfillmentLogs = (await tx.delete(orderFulfillmentLogs).returning()).length;
+        deletionSummary.customerBadges = (await tx.delete(customerBadges).returning()).length;
+        deletionSummary.supplierFiles = (await tx.delete(supplierFiles).returning()).length;
+        deletionSummary.warehouseFiles = (await tx.delete(warehouseFiles).returning()).length;
+        deletionSummary.warehouseFinancialContracts = (await tx.delete(warehouseFinancialContracts).returning()).length;
+        deletionSummary.productFiles = (await tx.delete(productFiles).returning()).length;
+        deletionSummary.orderFiles = (await tx.delete(orderFiles).returning()).length;
+        deletionSummary.aiLocationSuggestions = (await tx.delete(aiLocationSuggestions).returning()).length;
+        deletionSummary.stockAdjustmentRequests = (await tx.delete(stockAdjustmentRequests).returning()).length;
+        deletionSummary.productLocations = (await tx.delete(productLocations).returning()).length;
+        deletionSummary.notifications = (await tx.delete(notifications).returning()).length;
+        
+        console.log(`  Level 1 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} records`);
         
         // Level 2: Tables with level 1 parents
-        deletionSummary.orderCartonItems = (await tx.delete(orderCartonItems)).rowCount || 0;
-        deletionSummary.bundleItems = (await tx.delete(bundleItems)).rowCount || 0;
-        deletionSummary.productTieredPricing = (await tx.delete(productTieredPricing)).rowCount || 0;
-        deletionSummary.productVariants = (await tx.delete(productVariants)).rowCount || 0;
-        deletionSummary.orderItems = (await tx.delete(orderItems)).rowCount || 0;
-        deletionSummary.serviceItems = (await tx.delete(serviceItems)).rowCount || 0;
-        deletionSummary.preOrderItems = (await tx.delete(preOrderItems)).rowCount || 0;
-        deletionSummary.packingMaterialUsage = (await tx.delete(packingMaterialUsage)).rowCount || 0;
-        deletionSummary.shipmentLabels = (await tx.delete(shipmentLabels)).rowCount || 0;
-        deletionSummary.shipmentItems = (await tx.delete(shipmentItems)).rowCount || 0;
-        deletionSummary.shipmentCartons = (await tx.delete(shipmentCartons)).rowCount || 0;
-        deletionSummary.consolidationItems = (await tx.delete(consolidationItems)).rowCount || 0;
-        deletionSummary.costAllocations = (await tx.delete(costAllocations)).rowCount || 0;
-        deletionSummary.receiptItems = (await tx.delete(receiptItems)).rowCount || 0;
-        deletionSummary.purchaseItems = (await tx.delete(purchaseItems)).rowCount || 0;
-        deletionSummary.deliveryHistory = (await tx.delete(deliveryHistory)).rowCount || 0;
+        deletionSummary.orderCartonItems = (await tx.delete(orderCartonItems).returning()).length;
+        deletionSummary.bundleItems = (await tx.delete(bundleItems).returning()).length;
+        deletionSummary.productTieredPricing = (await tx.delete(productTieredPricing).returning()).length;
+        deletionSummary.productVariants = (await tx.delete(productVariants).returning()).length;
+        deletionSummary.orderItems = (await tx.delete(orderItems).returning()).length;
+        deletionSummary.serviceItems = (await tx.delete(serviceItems).returning()).length;
+        deletionSummary.preOrderItems = (await tx.delete(preOrderItems).returning()).length;
+        deletionSummary.packingMaterialUsage = (await tx.delete(packingMaterialUsage).returning()).length;
+        deletionSummary.shipmentLabels = (await tx.delete(shipmentLabels).returning()).length;
+        deletionSummary.shipmentItems = (await tx.delete(shipmentItems).returning()).length;
+        deletionSummary.shipmentCartons = (await tx.delete(shipmentCartons).returning()).length;
+        deletionSummary.consolidationItems = (await tx.delete(consolidationItems).returning()).length;
+        deletionSummary.costAllocations = (await tx.delete(costAllocations).returning()).length;
+        deletionSummary.receiptItems = (await tx.delete(receiptItems).returning()).length;
+        deletionSummary.purchaseItems = (await tx.delete(purchaseItems).returning()).length;
+        deletionSummary.deliveryHistory = (await tx.delete(deliveryHistory).returning()).length;
+        
+        console.log(`  Level 2 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
         
         // Level 3: Tables with level 2 parents
-        deletionSummary.orderCartonPlans = (await tx.delete(orderCartonPlans)).rowCount || 0;
-        deletionSummary.orderCartons = (await tx.delete(orderCartons)).rowCount || 0;
-        deletionSummary.productBundles = (await tx.delete(productBundles)).rowCount || 0;
-        deletionSummary.tickets = (await tx.delete(tickets)).rowCount || 0;
-        deletionSummary.landedCosts = (await tx.delete(landedCosts)).rowCount || 0;
-        deletionSummary.receipts = (await tx.delete(receipts)).rowCount || 0;
-        deletionSummary.shipmentCosts = (await tx.delete(shipmentCosts)).rowCount || 0;
-        deletionSummary.productCostHistory = (await tx.delete(productCostHistory)).rowCount || 0;
-        deletionSummary.shipmentTracking = (await tx.delete(shipmentTracking)).rowCount || 0;
-        deletionSummary.customItems = (await tx.delete(customItems)).rowCount || 0;
+        deletionSummary.orderCartonPlans = (await tx.delete(orderCartonPlans).returning()).length;
+        deletionSummary.orderCartons = (await tx.delete(orderCartons).returning()).length;
+        deletionSummary.productBundles = (await tx.delete(productBundles).returning()).length;
+        deletionSummary.tickets = (await tx.delete(tickets).returning()).length;
+        deletionSummary.landedCosts = (await tx.delete(landedCosts).returning()).length;
+        deletionSummary.receipts = (await tx.delete(receipts).returning()).length;
+        deletionSummary.shipmentCosts = (await tx.delete(shipmentCosts).returning()).length;
+        deletionSummary.productCostHistory = (await tx.delete(productCostHistory).returning()).length;
+        deletionSummary.shipmentTracking = (await tx.delete(shipmentTracking).returning()).length;
+        deletionSummary.customItems = (await tx.delete(customItems).returning()).length;
+        
+        console.log(`  Level 3 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
         
         // Level 4: Major entity tables
-        deletionSummary.orders = (await tx.delete(orders)).rowCount || 0;
+        deletionSummary.orders = (await tx.delete(orders).returning()).length;
         // Delete addresses AFTER orders (orders.customerShippingAddressId references addresses)
-        deletionSummary.customerShippingAddresses = (await tx.delete(customerShippingAddresses)).rowCount || 0;
-        deletionSummary.customerBillingAddresses = (await tx.delete(customerBillingAddresses)).rowCount || 0;
-        deletionSummary.products = (await tx.delete(products)).rowCount || 0;
-        deletionSummary.customers = (await tx.delete(customers)).rowCount || 0;
-        deletionSummary.shipments = (await tx.delete(shipments)).rowCount || 0;
-        deletionSummary.consolidations = (await tx.delete(consolidations)).rowCount || 0;
-        deletionSummary.importPurchases = (await tx.delete(importPurchases)).rowCount || 0;
-        deletionSummary.services = (await tx.delete(services)).rowCount || 0;
-        deletionSummary.preOrders = (await tx.delete(preOrders)).rowCount || 0;
-        deletionSummary.expenses = (await tx.delete(expenses)).rowCount || 0;
-        deletionSummary.discounts = (await tx.delete(discounts)).rowCount || 0;
-        deletionSummary.employees = (await tx.delete(employees)).rowCount || 0;
-        deletionSummary.packingCartons = (await tx.delete(packingCartons)).rowCount || 0;
-        deletionSummary.dailySequences = (await tx.delete(dailySequences)).rowCount || 0;
+        deletionSummary.customerShippingAddresses = (await tx.delete(customerShippingAddresses).returning()).length;
+        deletionSummary.customerBillingAddresses = (await tx.delete(customerBillingAddresses).returning()).length;
+        deletionSummary.products = (await tx.delete(products).returning()).length;
+        deletionSummary.customers = (await tx.delete(customers).returning()).length;
+        deletionSummary.shipments = (await tx.delete(shipments).returning()).length;
+        deletionSummary.consolidations = (await tx.delete(consolidations).returning()).length;
+        deletionSummary.importPurchases = (await tx.delete(importPurchases).returning()).length;
+        deletionSummary.services = (await tx.delete(services).returning()).length;
+        deletionSummary.preOrders = (await tx.delete(preOrders).returning()).length;
+        deletionSummary.expenses = (await tx.delete(expenses).returning()).length;
+        deletionSummary.discounts = (await tx.delete(discounts).returning()).length;
+        deletionSummary.employees = (await tx.delete(employees).returning()).length;
+        deletionSummary.packingCartons = (await tx.delete(packingCartons).returning()).length;
+        deletionSummary.dailySequences = (await tx.delete(dailySequences).returning()).length;
+
+        console.log(`  Level 4 deleted: ${Object.values(deletionSummary).reduce((a, b) => a + b, 0)} total records`);
 
         // Conditional Deletion: Infrastructure data (warehouses, suppliers, categories, etc.)
         // Delete in proper FK order: children first, then parents
         if (!keepSettings) {
           // Level 1: Tables that reference warehouses
-          deletionSummary.warehouseTasks = (await tx.delete(warehouseTasks)).rowCount || 0;
-          deletionSummary.warehouseLabels = (await tx.delete(warehouseLabels)).rowCount || 0;
-          deletionSummary.warehouseLayouts = (await tx.delete(warehouseLayouts)).rowCount || 0;
+          deletionSummary.warehouseTasks = (await tx.delete(warehouseTasks).returning()).length;
+          deletionSummary.warehouseLabels = (await tx.delete(warehouseLabels).returning()).length;
+          deletionSummary.warehouseLayouts = (await tx.delete(warehouseLayouts).returning()).length;
           // Level 2: Parent infrastructure tables
-          deletionSummary.warehouses = (await tx.delete(warehouses)).rowCount || 0;
-          deletionSummary.suppliers = (await tx.delete(suppliers)).rowCount || 0;
-          deletionSummary.categories = (await tx.delete(categories)).rowCount || 0;
-          deletionSummary.packingMaterials = (await tx.delete(packingMaterials)).rowCount || 0;
+          deletionSummary.warehouses = (await tx.delete(warehouses).returning()).length;
+          deletionSummary.suppliers = (await tx.delete(suppliers).returning()).length;
+          deletionSummary.categories = (await tx.delete(categories).returning()).length;
+          deletionSummary.packingMaterials = (await tx.delete(packingMaterials).returning()).length;
+          
+          console.log(`  Infrastructure deleted: warehouses=${deletionSummary.warehouses}, categories=${deletionSummary.categories}, suppliers=${deletionSummary.suppliers}`);
         }
+        
+        const totalDeleted = Object.values(deletionSummary).reduce((sum, count) => sum + count, 0);
+        console.log(`✅ Factory reset transaction complete: ${totalDeleted} records deleted`);
         
         // NOTE: user_activities (audit trail) is PRESERVED for forensic evidence
         // Log the factory reset action INSIDE transaction AFTER successful deletions
@@ -24727,7 +24744,7 @@ Important rules:
           action: 'factory_reset',
           entityType: 'system',
           entityId: 'factory_reset',
-          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. Mode: ${keepSettings ? 'Keep Settings' : 'Full Reset'}. ${Object.values(deletionSummary).reduce((sum, count) => sum + count, 0)} records deleted. Backup: ${backupResult.fileName} (ID: ${backupResult.backupId}, recoverable for 7 days).`,
+          description: `Factory reset completed by ${req.user?.firstName || 'Administrator'}. Mode: ${keepSettings ? 'Keep Settings' : 'Full Reset'}. ${totalDeleted} records deleted. Backup: ${backupResult.fileName} (ID: ${backupResult.backupId}, recoverable for 7 days).`,
         });
       }, {
         accessMode: 'read write',
