@@ -7025,6 +7025,126 @@ Important:
     }
   });
 
+  // Bulk import from pre-parsed data (optimized - single request for all products)
+  app.post('/api/products/bulk-import', isAuthenticated, async (req: any, res) => {
+    try {
+      const { items } = req.body;
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "No items provided for import" });
+      }
+
+      const importedProducts: any[] = [];
+      const errors: string[] = [];
+      
+      // Get all categories, warehouses, and suppliers upfront for matching
+      const categories = await storage.getCategories();
+      const warehouses = await storage.getWarehouses();
+      const suppliers = await storage.getSuppliers();
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          const name = item.name;
+          const sku = item.sku;
+
+          if (!name || !sku) {
+            errors.push(`Item ${i + 1}: Missing name or SKU`);
+            continue;
+          }
+
+          // Find or create category by name
+          let category = categories.find((c: any) => c.name?.toLowerCase() === item.categoryName?.toLowerCase());
+          if (!category && item.categoryName && item.categoryName.trim()) {
+            const newCategory = await storage.createCategory({
+              name: item.categoryName.trim(),
+              description: 'Auto-created from product import',
+            });
+            categories.push(newCategory);
+            category = newCategory;
+          }
+
+          // Find or create supplier by name
+          let supplier = suppliers.find((s: any) => s.name?.toLowerCase() === item.supplierName?.toLowerCase());
+          if (!supplier && item.supplierName && item.supplierName.trim()) {
+            const newSupplier = await storage.createSupplier({
+              name: item.supplierName.trim(),
+              email: null,
+              phone: null,
+              address: null,
+              country: null,
+              notes: 'Auto-created from product import',
+            });
+            suppliers.push(newSupplier);
+            supplier = newSupplier;
+          }
+
+          // Find warehouse by name
+          const warehouse = warehouses.find((w: any) => w.name?.toLowerCase() === item.warehouseName?.toLowerCase());
+
+          // Prepare product data
+          const productData: any = {
+            name,
+            vietnameseName: item.vietnameseName || null,
+            sku,
+            barcode: item.barcode || null,
+            categoryId: category?.id ? String(category.id) : (item.categoryId || null),
+            warehouseId: warehouse?.id || item.warehouseId || null,
+            supplierId: supplier?.id ? String(supplier.id) : (item.supplierId || null),
+            warehouseLocation: item.warehouseLocation || null,
+            quantity: parseInt(item.quantity || '0') || 0,
+            lowStockAlert: parseInt(item.lowStockAlert || '0') || 0,
+            priceCzk: item.priceCzk || null,
+            priceEur: item.priceEur || null,
+            priceUsd: item.priceUsd || null,
+            wholesalePriceCzk: item.wholesalePriceCzk || null,
+            wholesalePriceEur: item.wholesalePriceEur || null,
+            importCostUsd: item.importCostUsd || null,
+            importCostEur: item.importCostEur || null,
+            importCostCzk: item.importCostCzk || null,
+            weight: item.weight || null,
+            length: item.length || null,
+            width: item.width || null,
+            height: item.height || null,
+            description: item.description || null,
+            shipmentNotes: item.shipmentNotes || null,
+            isActive: true,
+          };
+
+          // Check if product with same SKU exists
+          const existingProduct = await storage.getProductBySku(sku);
+          
+          if (item._isUpdate && item._existingId) {
+            // Update existing product
+            const updated = await storage.updateProduct(item._existingId, productData);
+            importedProducts.push({ ...updated, action: 'updated' });
+          } else if (existingProduct) {
+            // Update existing product by SKU
+            const updated = await storage.updateProduct(existingProduct.id, productData);
+            importedProducts.push({ ...updated, action: 'updated' });
+          } else {
+            // Create new product
+            const created = await storage.createProduct(productData);
+            importedProducts.push({ ...created, action: 'created' });
+          }
+        } catch (rowError: any) {
+          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${rowError.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        imported: importedProducts.length,
+        errors: errors.length,
+        errorDetails: errors,
+        products: importedProducts
+      });
+    } catch (error: any) {
+      console.error("Bulk products import error:", error);
+      res.status(500).json({ message: error.message || "Failed to bulk import products" });
+    }
+  });
+
   app.post('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertProductSchema.parse(req.body);

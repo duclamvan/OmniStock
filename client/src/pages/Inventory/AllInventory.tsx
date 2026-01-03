@@ -649,7 +649,7 @@ export default function AllInventory() {
           errors.push(`${t('inventory:row')} ${rowNum}: ${t('inventory:missingRequiredFields')}`);
         }
 
-        // Find category by name
+        // Find category by name - store original name for auto-creation
         const categoryName = row.Category || row.category;
         if (categoryName) {
           const category = (categories as any[])?.find(
@@ -659,7 +659,8 @@ export default function AllInventory() {
             productData.categoryId = String(category.id);
             productData._categoryName = category.name;
           } else {
-            productData._categoryName = categoryName + ' (' + t('inventory:notFound') + ')';
+            // Store category name for auto-creation on backend
+            productData._categoryName = categoryName;
           }
         }
 
@@ -672,7 +673,15 @@ export default function AllInventory() {
           if (warehouse) {
             productData.warehouseId = warehouse.id;
             productData._warehouseName = warehouse.name;
+          } else {
+            productData._warehouseName = warehouseName;
           }
+        }
+
+        // Store supplier name for auto-creation on backend
+        const supplierName = row.Supplier || row.supplier;
+        if (supplierName) {
+          productData.supplierName = supplierName;
         }
 
         // Check if product exists by SKU
@@ -710,57 +719,57 @@ export default function AllInventory() {
     }
   };
 
-  // Confirm and execute the actual import
+  // Confirm and execute the actual import - uses bulk endpoint for speed
   const confirmImport = async () => {
     setIsImporting(true);
-    const importedIds: string[] = [];
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
 
     try {
-      for (const item of importPreviewData) {
-        if (!item._isValid) {
-          errorCount++;
-          continue;
-        }
+      // Filter valid items and prepare for bulk import
+      const validItems = importPreviewData.filter(item => item._isValid).map(item => ({
+        ...item,
+        // Include category/supplier names for auto-creation on backend
+        categoryName: item._categoryName,
+        warehouseName: item._warehouseName,
+        supplierName: item.supplierName,
+      }));
 
-        try {
-          // Remove preview-only fields
-          const { _rowNumber, _isValid, _error, _isUpdate, _existingId, _categoryName, _warehouseName, ...productData } = item;
-
-          if (_isUpdate && _existingId) {
-            // Update existing product - don't track for revert (would delete original data)
-            await apiRequest('PATCH', `/api/products/${_existingId}`, productData);
-          } else {
-            // Create new product - track for revert
-            const response = await apiRequest('POST', '/api/products', productData);
-            if (response.id) {
-              importedIds.push(response.id);
-            }
-          }
-          successCount++;
-        } catch (error: any) {
-          errorCount++;
-          errors.push(`${item.name}: ${error.message}`);
-        }
+      if (validItems.length === 0) {
+        toast({
+          title: t('inventory:importFailed'),
+          description: t('inventory:noValidItems'),
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
       }
+
+      // Send all items in a single bulk request
+      const response = await apiRequest('POST', '/api/products/bulk-import', { items: validItems });
 
       // Close preview modal
       setShowImportPreview(false);
       setImportPreviewData([]);
       setImportErrors([]);
 
-      // Refresh products
+      // Refresh products and related data
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
 
-      // Store imported IDs for revert
-      if (importedIds.length > 0) {
-        setLastImportedIds(importedIds);
+      // Store imported IDs for revert (only new products, not updates)
+      const newProductIds = response.products
+        ?.filter((p: any) => p.action === 'created')
+        .map((p: any) => p.id) || [];
+      
+      if (newProductIds.length > 0) {
+        setLastImportedIds(newProductIds);
         setShowRevertButton(true);
       }
 
       // Show result
+      const successCount = response.imported || 0;
+      const errorCount = response.errors || 0;
+
       if (errorCount > 0) {
         toast({
           title: t('inventory:importCompletedWithErrors'),
