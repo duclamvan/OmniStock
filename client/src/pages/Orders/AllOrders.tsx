@@ -551,9 +551,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return response.json();
     },
     retry: false,
-    refetchInterval: 10000,
+    refetchInterval: 30000, // Reduced from 10s to 30s for less frequent refetches
     refetchOnWindowFocus: true,
-    staleTime: 5000,
+    staleTime: 15000, // Increased from 5s to 15s
     gcTime: 300000,
   });
 

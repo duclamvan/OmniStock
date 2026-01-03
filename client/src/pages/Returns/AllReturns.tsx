@@ -111,6 +111,7 @@ export default function AllReturns() {
   const { data: returns = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/returns'],
     retry: false,
+    staleTime: 30000, // 30 seconds
   });
 
   useEffect(() => {

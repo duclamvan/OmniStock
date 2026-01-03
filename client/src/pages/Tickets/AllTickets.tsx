@@ -136,6 +136,7 @@ export default function AllTickets() {
   const { data: tickets = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/tickets'],
     retry: false,
+    staleTime: 30000, // 30 seconds
   });
 
   // Error handling

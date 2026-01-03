@@ -298,26 +298,32 @@ export default function POS() {
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: productVariants = [] } = useQuery<any[]>({
     queryKey: ['/api/variants'],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: bundles = [] } = useQuery<any[]>({
     queryKey: ['/api/bundles'],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ['/api/customers'],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
+    staleTime: 120000, // 2 minutes - warehouses rarely change
   });
 
   const { data: posSettings } = useQuery({
     queryKey: ['/api/settings/pos'],
+    staleTime: 120000, // 2 minutes - settings rarely change
   });
 
   const { generalSettings } = useSettings();
@@ -336,6 +342,7 @@ export default function POS() {
 
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
+    staleTime: 120000, // 2 minutes - categories rarely change
   });
 
   const categories = useMemo(() => {

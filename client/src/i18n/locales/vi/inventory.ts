@@ -1436,7 +1436,7 @@ const inventory = {
   
   // Enhanced Inventory Dashboard
   totalSKUs: 'Tổng SKU',
-  variants: 'biến thể',
+  variantsCount: 'biến thể',
   variantUnits: 'đơn vị biến thể',
   stockHealth: 'Sức khỏe kho',
   healthy: 'Ổn định',
@@ -1451,7 +1451,7 @@ const inventory = {
   expectedSales: 'Dự kiến bán',
   stockNeeded: 'Cần nhập',
   potentialShortfalls: 'Có thể thiếu',
-  items: 'mặt hàng',
+  itemsCountDashboard: 'mặt hàng',
   actionRequired: 'Cần hành động',
   actionRequiredDesc: 'Các mục cần chú ý để đảm bảo hoạt động suôn sẻ',
   reorderNow: 'Đặt hàng ngay',
@@ -1465,14 +1465,14 @@ const inventory = {
   noSlowMovers: 'Không có hàng chậm tiêu thụ',
   valueByCategory: 'Giá trị theo danh mục',
   topSellers: 'Sản phẩm bán chạy nhất',
-  lowStockAlert: 'Cảnh báo tồn thấp',
+  lowStockAlertDashboard: 'Cảnh báo tồn thấp',
   needsAttention: 'Sản phẩm cần nhập thêm hàng',
   allStockHealthy: 'Tất cả sản phẩm có mức tồn kho ổn định',
   warehouseOverview: 'Tổng quan kho hàng',
-  units: 'Đơn vị',
+  unitsCount: 'Đơn vị',
   variantSummary: 'Tổng hợp biến thể',
   totalVariants: 'Tổng biến thể',
-  inStock: 'Trong kho',
+  inStockDashboard: 'Trong kho',
   
   // Supplier Import/Export
   importSuppliers: 'Nhập nhà cung cấp',

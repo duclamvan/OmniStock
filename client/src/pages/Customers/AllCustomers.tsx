@@ -116,6 +116,7 @@ export default function AllCustomers() {
   const { data: customers = [], isLoading, error } = useQuery<any[]>({
     queryKey: searchQuery ? ['/api/customers', { search: searchQuery }] : ['/api/customers'],
     retry: false,
+    staleTime: 30000, // 30 seconds - customers don't change frequently
   });
 
   // Note: Backend API filters customers based on searchQuery parameter

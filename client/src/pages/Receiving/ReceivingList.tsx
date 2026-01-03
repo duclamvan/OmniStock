@@ -7644,11 +7644,13 @@ export default function ReceivingList() {
 
   const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery<Receipt[]>({
     queryKey: ['/api/imports/receipts'],
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch recently approved receipts (last 7 days)
   const { data: recentReceipts = [] } = useQuery<Receipt[]>({
     queryKey: ['/api/imports/receipts/recent'],
+    staleTime: 60000, // 1 minute
   });
 
   // Fetch debug logs when panel is open - uses default fetcher with query params

@@ -1362,7 +1362,7 @@ const inventory = {
   
   // Enhanced Inventory Dashboard
   totalSKUs: 'Total SKUs',
-  variants: 'variants',
+  variantsCount: 'variants',
   variantUnits: 'variant units',
   stockHealth: 'Stock Health',
   healthy: 'Healthy',
@@ -1377,7 +1377,7 @@ const inventory = {
   expectedSales: 'Expected Sales',
   stockNeeded: 'Stock Needed',
   potentialShortfalls: 'Potential Shortfalls',
-  items: 'items',
+  itemsCountDashboard: 'items',
   actionRequired: 'Action Required',
   actionRequiredDesc: 'Items that need your attention to ensure smooth operations',
   reorderNow: 'Reorder Now',
@@ -1391,14 +1391,14 @@ const inventory = {
   noSlowMovers: 'No slow moving products',
   valueByCategory: 'Value by Category',
   topSellers: 'Top selling products',
-  lowStockAlert: 'Low Stock Alert',
+  lowStockAlertDashboard: 'Low Stock Alert',
   needsAttention: 'Products that need restocking',
   allStockHealthy: 'All products have healthy stock levels',
   warehouseOverview: 'Warehouse Overview',
-  units: 'Units',
+  unitsCount: 'Units',
   variantSummary: 'Variant Summary',
   totalVariants: 'Total Variants',
-  inStock: 'In Stock',
+  inStockDashboard: 'In Stock',
   
   // Supplier Import/Export
   importSuppliers: 'Import Suppliers',

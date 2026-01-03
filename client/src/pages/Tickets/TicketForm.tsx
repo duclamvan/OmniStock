@@ -68,11 +68,13 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<any[]>({
     queryKey: ['/api/customers'],
+    staleTime: 60000, // 1 minute
   });
 
   // Fetch orders for dropdown
   const { data: orders = [] } = useQuery<any[]>({
     queryKey: ['/api/orders'],
+    staleTime: 30000, // 30 seconds
   });
 
   // Read URL query parameters for pre-filling

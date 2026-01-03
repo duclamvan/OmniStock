@@ -213,16 +213,19 @@ export default function AllSuppliers() {
   const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
     retry: false,
+    staleTime: 60000, // 1 minute - suppliers rarely change
   });
 
   const { data: purchases = [] } = useQuery<any[]>({
     queryKey: ["/api/purchases"],
     retry: false,
+    staleTime: 30000,
   });
 
   const { data: products = [] } = useQuery<any[]>({
     queryKey: ["/api/products"],
     retry: false,
+    staleTime: 60000,
   });
 
   useEffect(() => {

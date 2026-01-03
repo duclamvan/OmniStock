@@ -81,6 +81,7 @@ export default function AllDiscounts() {
   const { data: sales = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/discounts'],
     retry: false,
+    staleTime: 60000, // 1 minute - discounts rarely change
   });
 
   // Error handling
