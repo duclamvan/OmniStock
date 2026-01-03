@@ -149,7 +149,9 @@ export default function AllCustomers() {
       await Promise.all(ids.map(id => apiRequest('DELETE', `/api/customers/${id}`)));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
       toast({
         title: t('common:success'),
         description: t('customers:deletedCustomersSuccess', { count: selectedCustomers.length }),
@@ -177,7 +179,9 @@ export default function AllCustomers() {
       });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
       toast({
         title: t('common:success'),
         description: variables.isBlacklisted 
@@ -207,7 +211,9 @@ export default function AllCustomers() {
         )
       );
       
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
       toast({
         title: t('common:success'),
         description: t('customers:customerTypeUpdatedSuccess', { count: selectedCustomers.length }),
@@ -887,7 +893,10 @@ export default function AllCustomers() {
       const res = await apiRequest('POST', '/api/customers/bulk-import', { items: validItems });
       const response = await res.json();
 
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      // Invalidate all customer-related queries (including AddOrder's query with includeBadges)
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
 
       // Store imported IDs for revert (only new customers, not updates)
       const newCustomerIds = response.customers
@@ -935,7 +944,9 @@ export default function AllCustomers() {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
 
       if (revertedCount === lastImportedIds.length) {
         toast({
@@ -1134,7 +1145,9 @@ export default function AllCustomers() {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
+      });
 
       if (successCount > 0) {
         toast({
