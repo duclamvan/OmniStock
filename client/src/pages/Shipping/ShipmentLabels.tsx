@@ -25,7 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { formatDate } from '@/lib/currencyUtils';
-import { fuzzySearch } from '@/lib/fuzzySearch';
+import { fuzzySearch, calculateSearchScore } from '@/lib/fuzzySearch';
 import { Package, XCircle, ExternalLink, Search, Eye, Filter, Truck, CheckCircle, XOctagon } from 'lucide-react';
 import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
@@ -109,33 +109,43 @@ export default function ShipmentLabels() {
     cancelled: labels.filter(l => l.status === 'cancelled').length,
   };
 
-  const filteredLabels = labels.filter((label) => {
-    // Status filter
-    if (statusFilter !== 'all' && label.status !== statusFilter) {
-      return false;
+  const filteredLabels = (() => {
+    const FUZZY_THRESHOLD = 25; // 0.25 * 100
+    
+    // First apply status and carrier filters
+    let filtered = labels.filter((label) => {
+      if (statusFilter !== 'all' && label.status !== statusFilter) {
+        return false;
+      }
+      if (carrierFilter !== 'all' && label.carrier !== carrierFilter) {
+        return false;
+      }
+      return true;
+    });
+    
+    // Apply fuzzy search if there's a query
+    if (searchQuery.trim()) {
+      const scored = filtered.map(label => {
+        const scores = [
+          calculateSearchScore(label.orderId, searchQuery),
+          label.customOrderId ? calculateSearchScore(label.customOrderId, searchQuery) : 0,
+          label.customerName ? calculateSearchScore(label.customerName, searchQuery) : 0,
+          calculateSearchScore(label.carrier, searchQuery),
+          ...label.trackingNumbers.map(tn => calculateSearchScore(tn, searchQuery)),
+          label.batchId ? calculateSearchScore(label.batchId, searchQuery) : 0
+        ];
+        const maxScore = Math.max(...scores);
+        return { label, score: maxScore };
+      });
+      
+      return scored
+        .filter(item => item.score >= FUZZY_THRESHOLD)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.label);
     }
     
-    // Carrier filter
-    if (carrierFilter !== 'all' && label.carrier !== carrierFilter) {
-      return false;
-    }
-    
-    // Search query filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch = (
-        label.orderId.toLowerCase().includes(query) ||
-        (label.customOrderId && label.customOrderId.toLowerCase().includes(query)) ||
-        (label.customerName && label.customerName.toLowerCase().includes(query)) ||
-        label.carrier.toLowerCase().includes(query) ||
-        label.trackingNumbers.some((tn) => tn.toLowerCase().includes(query)) ||
-        (label.batchId && label.batchId.toLowerCase().includes(query))
-      );
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
+    return filtered;
+  })();
 
   const columns: DataTableColumn<ShipmentLabel>[] = [
     {

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { smartFilter } from "@/hooks/use-smart-search";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -67,17 +68,15 @@ export default function AllImports() {
     }
   });
 
-  // Filter orders
-  const filteredOrders = importOrders.filter((order: any) => {
-    const matchesSearch = 
-      order.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.region?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Filter orders with fuzzy search
+  let filteredOrders = searchQuery
+    ? smartFilter(importOrders, searchQuery, ['orderNumber', 'trackingNumber', 'region', 'supplier.name'], 0.25)
+    : importOrders;
+  
+  // Apply status filter
+  if (statusFilter !== "all") {
+    filteredOrders = filteredOrders.filter((order: any) => order.status === statusFilter);
+  }
 
   // Calculate stats
   const stats = {

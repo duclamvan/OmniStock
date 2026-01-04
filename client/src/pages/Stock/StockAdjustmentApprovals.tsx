@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { fuzzySearch } from "@/lib/fuzzySearch";
+import { fuzzySearch, calculateSearchScore } from "@/lib/fuzzySearch";
 import { Plus, Minus, Package, Search, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -167,19 +167,36 @@ export default function StockAdjustmentApprovals() {
     return locationId;
   };
 
-  // Filter requests based on search query and status
-  const filteredRequests = requests.filter(req => {
-    const matchesStatus = statusFilter === "all" || req.status === statusFilter;
-    if (!matchesStatus) return false;
+  // Filter requests based on search query and status with fuzzy search
+  const filteredRequests = (() => {
+    const FUZZY_THRESHOLD = 25; // 0.25 * 100
+    
+    // First apply status filter
+    let filtered = requests.filter(req => {
+      return statusFilter === "all" || req.status === statusFilter;
+    });
 
-    if (!searchQuery) return true;
-
-    const productName = getProductName(req.productId).toLowerCase();
-    const searchLower = searchQuery.toLowerCase();
-    return productName.includes(searchLower) || 
-           req.reason.toLowerCase().includes(searchLower) ||
-           req.id.toLowerCase().includes(searchLower);
-  });
+    // Apply fuzzy search if there's a query
+    if (searchQuery.trim()) {
+      const scored = filtered.map(req => {
+        const productName = getProductName(req.productId);
+        const scores = [
+          calculateSearchScore(productName, searchQuery),
+          calculateSearchScore(req.reason, searchQuery),
+          calculateSearchScore(req.id, searchQuery)
+        ];
+        const maxScore = Math.max(...scores);
+        return { req, score: maxScore };
+      });
+      
+      return scored
+        .filter(item => item.score >= FUZZY_THRESHOLD)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.req);
+    }
+    
+    return filtered;
+  })();
 
   // Calculate stats
   const totalRequests = requests?.length || 0;

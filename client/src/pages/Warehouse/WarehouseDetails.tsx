@@ -392,7 +392,7 @@ export default function WarehouseDetails() {
     
     const results = fuzzySearch(warehouseProducts, searchQuery, {
       fields: ['name', 'sku', 'barcode', 'primaryLocation'],
-      threshold: 0.2,
+      threshold: 0.25,
       fuzzy: true,
       vietnameseNormalization: true,
     });

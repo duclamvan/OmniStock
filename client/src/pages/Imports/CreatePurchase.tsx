@@ -618,18 +618,11 @@ export default function CreatePurchase() {
     if (!newSupplierCountry.trim()) {
       return COMMON_COUNTRIES;
     }
-    const searchTerm = newSupplierCountry.toLowerCase().trim();
-    return COMMON_COUNTRIES.filter(c => 
-      c.name.toLowerCase().includes(searchTerm) ||
-      c.name.toLowerCase().startsWith(searchTerm)
-    ).sort((a, b) => {
-      // Prioritize exact prefix matches
-      const aStartsWith = a.name.toLowerCase().startsWith(searchTerm);
-      const bStartsWith = b.name.toLowerCase().startsWith(searchTerm);
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
-      return 0;
+    const results = fuzzySearch(COMMON_COUNTRIES, newSupplierCountry, {
+      fields: ['name'],
+      threshold: 0.25,
     });
+    return results.sort((a, b) => b.score - a.score).map(r => r.item);
   }, [newSupplierCountry]);
 
   // Fetch suppliers
@@ -676,11 +669,15 @@ export default function CreatePurchase() {
     }
   }, [products, t, toast]);
 
-  // Filter suppliers based on search
-  const filteredSuppliers = suppliers.filter(s => {
-    if (!supplier) return false;
-    return s.name.toLowerCase().includes(supplier.toLowerCase());
-  });
+  // Filter suppliers based on search with fuzzy matching
+  const filteredSuppliers = useMemo(() => {
+    if (!supplier?.trim()) return [];
+    const results = fuzzySearch(suppliers, supplier, {
+      fields: ['name'],
+      threshold: 0.25,
+    });
+    return results.sort((a, b) => b.score - a.score).map(r => r.item);
+  }, [suppliers, supplier]);
 
   // Enhanced frequent suppliers with country info
   const enhancedFrequentSuppliers = useMemo(() => {

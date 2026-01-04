@@ -16,7 +16,7 @@ import {
   RefreshCw, Warehouse, BoxSelect, Ship, Plane, Zap
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
-import { fuzzySearch } from "@/lib/fuzzySearch";
+import { fuzzySearch, calculateSearchScore } from "@/lib/fuzzySearch";
 
 // Type definitions
 interface PurchaseItem {
@@ -511,93 +511,91 @@ export default function ImportKanbanDashboard() {
     setDraggedItem(null);
   };
 
-  // Deep search helper - searches within nested items
-  const deepSearchPurchases = (purchase: Purchase, query: string): boolean => {
-    const { calculateSearchScore } = require('@/lib/fuzzySearch');
-    const threshold = 20; // 0.2 * 100
-    
-    // Search in main fields
-    if (calculateSearchScore(purchase.supplier, query) >= threshold) return true;
-    if (purchase.trackingNumber && calculateSearchScore(purchase.trackingNumber, query) >= threshold) return true;
-    if (calculateSearchScore(purchase.status, query) >= threshold) return true;
-    
-    // Deep search in items
-    for (const item of purchase.items) {
-      if (calculateSearchScore(item.name, query) >= threshold) return true;
-      if (calculateSearchScore(item.quantity.toString(), query) >= threshold) return true;
-    }
-    
-    return false;
+  // Deep search helper - searches within nested items with fuzzy matching
+  const FUZZY_THRESHOLD = 25; // 0.25 * 100 for good matching
+
+  const deepSearchPurchases = (purchase: Purchase, query: string): number => {
+    const scores = [
+      calculateSearchScore(purchase.supplier, query),
+      purchase.trackingNumber ? calculateSearchScore(purchase.trackingNumber, query) : 0,
+      calculateSearchScore(purchase.status, query),
+      ...purchase.items.flatMap(item => [
+        calculateSearchScore(item.name, query),
+        calculateSearchScore(item.quantity.toString(), query)
+      ])
+    ];
+    return Math.max(...scores);
   };
 
-  const deepSearchCustomItem = (item: CustomItem, query: string): boolean => {
-    const { calculateSearchScore } = require('@/lib/fuzzySearch');
-    const threshold = 20;
-    
-    if (calculateSearchScore(item.name, query) >= threshold) return true;
-    if (calculateSearchScore(item.source, query) >= threshold) return true;
-    if (item.customerName && calculateSearchScore(item.customerName, query) >= threshold) return true;
-    if (calculateSearchScore(item.status, query) >= threshold) return true;
-    
-    return false;
+  const deepSearchCustomItem = (item: CustomItem, query: string): number => {
+    const scores = [
+      calculateSearchScore(item.name, query),
+      calculateSearchScore(item.source, query),
+      item.customerName ? calculateSearchScore(item.customerName, query) : 0,
+      calculateSearchScore(item.status, query)
+    ];
+    return Math.max(...scores);
   };
 
-  const deepSearchConsolidation = (consolidation: Consolidation, query: string): boolean => {
-    const { calculateSearchScore } = require('@/lib/fuzzySearch');
-    const threshold = 20;
-    
-    if (calculateSearchScore(consolidation.name, query) >= threshold) return true;
-    if (calculateSearchScore(consolidation.shippingMethod, query) >= threshold) return true;
-    if (calculateSearchScore(consolidation.warehouse, query) >= threshold) return true;
-    if (calculateSearchScore(consolidation.status, query) >= threshold) return true;
-    
-    // Deep search in consolidation items
-    for (const item of consolidation.items) {
-      if (calculateSearchScore(item.name, query) >= threshold) return true;
-      if (calculateSearchScore(item.quantity.toString(), query) >= threshold) return true;
-    }
-    
-    return false;
+  const deepSearchConsolidation = (consolidation: Consolidation, query: string): number => {
+    const scores = [
+      calculateSearchScore(consolidation.name, query),
+      calculateSearchScore(consolidation.shippingMethod, query),
+      calculateSearchScore(consolidation.warehouse, query),
+      calculateSearchScore(consolidation.status, query),
+      ...consolidation.items.flatMap(item => [
+        calculateSearchScore(item.name, query),
+        calculateSearchScore(item.quantity.toString(), query)
+      ])
+    ];
+    return Math.max(...scores);
   };
 
-  const deepSearchShipment = (shipment: Shipment, query: string): boolean => {
-    const { calculateSearchScore } = require('@/lib/fuzzySearch');
-    const threshold = 20;
-    
-    if (calculateSearchScore(shipment.trackingNumber, query) >= threshold) return true;
-    if (calculateSearchScore(shipment.carrier, query) >= threshold) return true;
-    if (calculateSearchScore(shipment.origin, query) >= threshold) return true;
-    if (calculateSearchScore(shipment.destination, query) >= threshold) return true;
-    if (shipment.currentLocation && calculateSearchScore(shipment.currentLocation, query) >= threshold) return true;
-    if (calculateSearchScore(shipment.status, query) >= threshold) return true;
+  const deepSearchShipment = (shipment: Shipment, query: string): number => {
+    const scores = [
+      calculateSearchScore(shipment.trackingNumber, query),
+      calculateSearchScore(shipment.carrier, query),
+      calculateSearchScore(shipment.origin, query),
+      calculateSearchScore(shipment.destination, query),
+      shipment.currentLocation ? calculateSearchScore(shipment.currentLocation, query) : 0,
+      calculateSearchScore(shipment.status, query)
+    ];
     
     // Search in linked consolidation if available
     if (shipment.consolidationId) {
       const linkedConsolidation = consolidations.find(c => c.id === shipment.consolidationId);
-      if (linkedConsolidation && deepSearchConsolidation(linkedConsolidation, query)) {
-        return true;
+      if (linkedConsolidation) {
+        scores.push(deepSearchConsolidation(linkedConsolidation, query));
       }
     }
     
-    return false;
+    return Math.max(...scores);
   };
 
-  // Filter data with deep fuzzy search and Vietnamese support
+  // Filter data with deep fuzzy search and Vietnamese support, sorted by score
   const filteredPurchases = useMemo(() => {
     const pending = purchases.filter(p => 
       p.status === 'pending' || p.status === 'processing'
     );
     if (!searchQuery.trim()) return pending;
     
-    // Real-time deep filtering
-    return pending.filter(purchase => deepSearchPurchases(purchase, searchQuery));
+    // Real-time deep filtering with score-based sorting
+    return pending
+      .map(purchase => ({ item: purchase, score: deepSearchPurchases(purchase, searchQuery) }))
+      .filter(item => item.score >= FUZZY_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.item);
   }, [purchases, searchQuery]);
 
   const filteredCustomItems = useMemo(() => {
     const available = customItems.filter(item => item.status === 'available');
     if (!searchQuery.trim()) return available;
     
-    return available.filter(item => deepSearchCustomItem(item, searchQuery));
+    return available
+      .map(item => ({ item, score: deepSearchCustomItem(item, searchQuery) }))
+      .filter(item => item.score >= FUZZY_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.item);
   }, [customItems, searchQuery]);
 
   const filteredConsolidations = useMemo(() => {
@@ -609,21 +607,33 @@ export default function ImportKanbanDashboard() {
     }
     
     if (!searchQuery.trim()) return filtered;
-    return filtered.filter(consolidation => deepSearchConsolidation(consolidation, searchQuery));
+    return filtered
+      .map(consolidation => ({ item: consolidation, score: deepSearchConsolidation(consolidation, searchQuery) }))
+      .filter(item => item.score >= FUZZY_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.item);
   }, [consolidations, filterWarehouse, searchQuery]);
 
   const activeShipments = useMemo(() => {
     const active = shipments.filter(s => s.status !== 'delivered');
     if (!searchQuery.trim()) return active;
     
-    return active.filter(shipment => deepSearchShipment(shipment, searchQuery));
+    return active
+      .map(shipment => ({ item: shipment, score: deepSearchShipment(shipment, searchQuery) }))
+      .filter(item => item.score >= FUZZY_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.item);
   }, [shipments, searchQuery, consolidations]);
 
   const deliveredShipments = useMemo(() => {
     const delivered = shipments.filter(s => s.status === 'delivered');
     if (!searchQuery.trim()) return delivered;
     
-    return delivered.filter(shipment => deepSearchShipment(shipment, searchQuery));
+    return delivered
+      .map(shipment => ({ item: shipment, score: deepSearchShipment(shipment, searchQuery) }))
+      .filter(item => item.score >= FUZZY_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.item);
   }, [shipments, searchQuery, consolidations]);
 
   const isLoading = purchasesLoading || customItemsLoading || consolidationsLoading || shipmentsLoading;

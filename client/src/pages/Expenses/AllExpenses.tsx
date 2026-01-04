@@ -194,10 +194,10 @@ export default function AllExpenses() {
   if (searchQuery) {
     filteredExpenses = fuzzySearch(filteredExpenses, searchQuery, {
       fields: ['expenseId', 'name', 'category', 'description', 'paymentMethod', 'vendor'],
-      threshold: 0.2,
+      threshold: 0.25,
       fuzzy: true,
       vietnameseNormalization: true,
-    }).map(r => r.item);
+    }).sort((a, b) => b.score - a.score).map(r => r.item);
   }
 
   // Apply status filter

@@ -165,7 +165,7 @@ export default function AddDiscount() {
     
     return fuzzySearch(products, productSearch, {
       fields: ['name', 'sku', 'description'],
-      threshold: 0.3,
+      threshold: 0.25,
     }).map(result => result.item);
   }, [products, productSearch]);
 
@@ -174,7 +174,7 @@ export default function AddDiscount() {
     
     return fuzzySearch(products, getProductSearch, {
       fields: ['name', 'sku', 'description'],
-      threshold: 0.3,
+      threshold: 0.25,
     }).map(result => result.item);
   }, [products, getProductSearch]);
 
@@ -183,7 +183,7 @@ export default function AddDiscount() {
     
     return fuzzySearch(products, selectedProductSearchTerm, {
       fields: ['name', 'sku', 'description'],
-      threshold: 0.3,
+      threshold: 0.25,
     }).map(result => result.item);
   }, [products, selectedProductSearchTerm]);
 
@@ -200,7 +200,7 @@ export default function AddDiscount() {
     
     return fuzzySearch(categoriesWithCount, categorySearch, {
       fields: ['name', 'description'],
-      threshold: 0.3,
+      threshold: 0.25,
     }).map(result => result.item);
   }, [categoriesWithCount, categorySearch]);
 

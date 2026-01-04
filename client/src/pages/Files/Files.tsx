@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { smartFilter } from "@/hooks/use-smart-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,13 +150,12 @@ export default function Files() {
     }
   };
 
-  const filteredFiles = files.filter((file: any) => {
-    const matchesSearch = 
-      file.fileName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.product_files?.productName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredFiles = smartFilter(
+    files,
+    searchTerm,
+    ['fileName', 'description', 'products.name'],
+    0.25
+  );
 
   const getFileIcon = (fileType: string) => {
     switch (fileType) {

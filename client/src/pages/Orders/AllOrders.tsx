@@ -19,7 +19,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { fuzzySearch } from "@/lib/fuzzySearch";
+import { calculateSearchScore } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -843,52 +843,67 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       });
     }
     
-    // Apply search filter - comprehensive search across all text fields
+    // Apply search filter using fuzzy search with scoring
     if (searchQuery) {
-      const query = searchQuery.trim().toLowerCase();
+      const query = searchQuery.trim();
       
       // Check if searching for order ID number (digits only or with common prefixes)
-      const isOrderIdSearch = /^[\d-]+$/.test(query) || query.startsWith('ord');
+      const isOrderIdSearch = /^[\d-]+$/.test(query) || query.toLowerCase().startsWith('ord');
       
       if (isOrderIdSearch) {
-        // Direct substring match on orderId for number searches
+        // Direct substring match on orderId for number searches (exact matching is better here)
+        const lowerQuery = query.toLowerCase();
         filtered = filtered.filter((order: any) => 
-          order.orderId?.toLowerCase().includes(query)
+          order.orderId?.toLowerCase().includes(lowerQuery)
         );
       } else {
-        // Comprehensive text search across all fields
-        filtered = filtered.filter((order: any) => {
+        // Fuzzy search across all fields with scoring
+        const FUZZY_THRESHOLD = 25; // 0.25 * 100 = 25 points minimum
+        
+        const scoredOrders = filtered.map((order: any) => {
+          // Calculate score across all searchable fields
+          const scores: number[] = [];
+          
           // Order ID
-          if (order.orderId?.toLowerCase().includes(query)) return true;
+          if (order.orderId) scores.push(calculateSearchScore(order.orderId, query));
           
           // Customer fields
-          if (order.customer?.name?.toLowerCase().includes(query)) return true;
-          if (order.customer?.email?.toLowerCase().includes(query)) return true;
-          if (order.customer?.phone?.toLowerCase().includes(query)) return true;
-          if (order.customer?.facebookName?.toLowerCase().includes(query)) return true;
+          if (order.customer?.name) scores.push(calculateSearchScore(order.customer.name, query));
+          if (order.customer?.email) scores.push(calculateSearchScore(order.customer.email, query));
+          if (order.customer?.phone) scores.push(calculateSearchScore(order.customer.phone, query));
+          if (order.customer?.facebookName) scores.push(calculateSearchScore(order.customer.facebookName, query));
           
           // Address fields
-          if (order.customer?.street?.toLowerCase().includes(query)) return true;
-          if (order.customer?.city?.toLowerCase().includes(query)) return true;
-          if (order.customer?.postalCode?.toLowerCase().includes(query)) return true;
-          if (order.customer?.country?.toLowerCase().includes(query)) return true;
+          if (order.customer?.street) scores.push(calculateSearchScore(order.customer.street, query));
+          if (order.customer?.city) scores.push(calculateSearchScore(order.customer.city, query));
+          if (order.customer?.postalCode) scores.push(calculateSearchScore(order.customer.postalCode, query));
+          if (order.customer?.country) scores.push(calculateSearchScore(order.customer.country, query));
           
           // Tracking number
-          if (order.trackingNumber?.toLowerCase().includes(query)) return true;
+          if (order.trackingNumber) scores.push(calculateSearchScore(order.trackingNumber, query));
           
           // Notes
-          if (order.notes?.toLowerCase().includes(query)) return true;
-          if (order.shippingNotes?.toLowerCase().includes(query)) return true;
+          if (order.notes) scores.push(calculateSearchScore(order.notes, query));
+          if (order.shippingNotes) scores.push(calculateSearchScore(order.shippingNotes, query));
           
           // Biller name
-          if (order.biller?.firstName?.toLowerCase().includes(query)) return true;
-          if (order.biller?.email?.toLowerCase().includes(query)) return true;
+          if (order.biller?.firstName) scores.push(calculateSearchScore(order.biller.firstName, query));
+          if (order.biller?.email) scores.push(calculateSearchScore(order.biller.email, query));
           
           // Shipping method
-          if (order.shippingMethod?.toLowerCase().includes(query)) return true;
+          if (order.shippingMethod) scores.push(calculateSearchScore(order.shippingMethod, query));
           
-          return false;
+          // Get maximum score across all fields
+          const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+          
+          return { order, score: maxScore };
         });
+        
+        // Filter by threshold and sort by score (best matches first)
+        filtered = scoredOrders
+          .filter(({ score }: { score: number }) => score >= FUZZY_THRESHOLD)
+          .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
+          .map(({ order }: { order: any }) => order);
       }
     }
     

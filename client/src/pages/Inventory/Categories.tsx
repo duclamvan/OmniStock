@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
+import { smartFilter } from '@/hooks/use-smart-search';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,10 +98,12 @@ export default function Categories() {
   // Use categories directly - productCount already comes from the API
   const categoriesWithCount = categories;
 
-  // Filter categories based on search
-  const filteredCategories = categoriesWithCount.filter(category => 
-    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    category.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter categories based on search with fuzzy matching
+  const filteredCategories = smartFilter(
+    categoriesWithCount,
+    searchQuery,
+    ['name', 'description'],
+    0.25
   );
 
   // Delete mutation

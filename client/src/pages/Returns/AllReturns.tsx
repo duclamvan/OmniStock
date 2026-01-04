@@ -153,10 +153,10 @@ export default function AllReturns() {
   const filteredReturns = searchQuery
     ? fuzzySearch(returns || [], searchQuery, {
         fields: ['returnId', 'customer.name', 'orderId', 'notes'],
-        threshold: 0.2,
+        threshold: 0.25,
         fuzzy: true,
         vietnameseNormalization: true,
-      }).map(r => r.item)
+      }).sort((a, b) => b.score - a.score).map(r => r.item)
     : returns;
 
   // Calculate stats

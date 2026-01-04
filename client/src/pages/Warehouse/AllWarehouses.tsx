@@ -134,7 +134,7 @@ export default function AllWarehouses() {
   if (searchQuery) {
     filteredWarehouses = fuzzySearch(filteredWarehouses, searchQuery, {
       fields: ['name', 'location', 'address', 'city', 'manager', 'notes'],
-      threshold: 0.2,
+      threshold: 0.25,
       fuzzy: true,
       vietnameseNormalization: true,
     }).map(r => r.item);

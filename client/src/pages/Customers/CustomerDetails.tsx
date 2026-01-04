@@ -56,7 +56,7 @@ import {
 import { Facebook } from "lucide-react";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { CustomerPrices } from "./CustomerPrices";
-import { calculateSearchScore } from "@/lib/fuzzySearch";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
@@ -157,58 +157,40 @@ export default function CustomerDetails() {
     localStorage.setItem(EXPAND_ALL_KEY, String(newValue));
   };
 
-  // Filter orders based on search term
+  // Filter orders based on search term using fuzzy search
   const filteredOrders = useMemo(() => {
     if (!orderSearch.trim()) {
       return orders;
     }
 
-    const searchTerm = orderSearch.trim();
-    const threshold = 30; // Minimum score to match (out of 100)
-
-    return orders.filter((order: any) => {
-      // Search in order properties
-      const orderFields = [
+    // Create searchable order objects with flattened item data for fuzzy search
+    const ordersWithSearchableText = orders.map((order: any) => ({
+      ...order,
+      _searchableText: [
         order.orderId || '',
         order.id || '',
         order.orderStatus || '',
         order.paymentStatus || '',
         order.shippingMethod || '',
         formatDate(order.createdAt) || '',
-      ];
+        ...(order.items || []).flatMap((item: any) => [
+          item.productName || '',
+          item.name || '',
+          item.variantName || '',
+          item.sku || '',
+        ]),
+      ].filter(Boolean).join(' '),
+    }));
 
-      // Check if any order field matches
-      const orderMatches = orderFields.some(field => 
-        calculateSearchScore(String(field), searchTerm) >= threshold
-      );
-
-      if (orderMatches) {
-        return true;
-      }
-
-      // Search in order items
-      if (order.items && Array.isArray(order.items)) {
-        const itemMatches = order.items.some((item: any) => {
-          const itemFields = [
-            item.productName || '',
-            item.name || '',
-            item.variantName || '',
-            item.sku || '',
-          ];
-
-          return itemFields.some(field => 
-            calculateSearchScore(String(field), searchTerm) >= threshold
-          );
-        });
-
-        if (itemMatches) {
-          return true;
-        }
-      }
-
-      return false;
+    const results = fuzzySearch(ordersWithSearchableText, orderSearch, {
+      fields: ['orderId', 'id', 'orderStatus', 'paymentStatus', 'shippingMethod', '_searchableText'],
+      threshold: 0.25,
+      fuzzy: true,
+      vietnameseNormalization: true,
     });
-  }, [orders, orderSearch]);
+
+    return results.map(r => r.item);
+  }, [orders, orderSearch, formatDate]);
 
   if (isLoading) {
     return (

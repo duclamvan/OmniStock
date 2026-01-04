@@ -170,7 +170,7 @@ export default function AllDiscounts() {
   const filteredSales = searchQuery
     ? fuzzySearch(sales || [], searchQuery, {
         fields: ['name', 'description', 'discountId'],
-        threshold: 0.2,
+        threshold: 0.25,
         fuzzy: true,
         vietnameseNormalization: true,
       }).map(r => r.item)
