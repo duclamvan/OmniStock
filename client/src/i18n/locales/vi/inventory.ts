@@ -732,6 +732,8 @@ const inventory = {
   cannotReduce: 'Không thể giảm',
   stockAlreadyZero: 'Tồn kho đã về 0',
   noWarehouseLocations: 'Chưa chỉ định vị trí kho',
+  noLocation: 'Chưa có vị trí',
+  addLocation: 'Thêm vị trí',
   viewDescription: 'Xem mô tả',
   showingUnderAllocatedItems: 'Hiển thị mặt hàng phân bổ thiếu',
   discrepanciesBetweenRecorded: 'Sản phẩm dưới đây có chênh lệch giữa số lượng đã ghi và số lượng tại vị trí kho',

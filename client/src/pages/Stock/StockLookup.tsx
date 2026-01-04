@@ -737,12 +737,22 @@ export default function StockLookup() {
                         )}
                       </div>
 
-                      {/* Bottom Row: Location count */}
-                      <div className="flex items-center justify-end">
-                        {displayProduct.locations && displayProduct.locations.length > 0 && (
-                          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                      {/* Bottom Row: Location info */}
+                      <div className="flex items-center justify-between mt-1">
+                        {displayProduct.locations && displayProduct.locations.length > 0 ? (
+                          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                            <MapPin className="h-3.5 w-3.5 text-cyan-500" />
+                            <span className="text-[11px] font-medium font-mono">
+                              {displayProduct.locations[0].locationCode}
+                            </span>
+                            {displayProduct.locations.length > 1 && (
+                              <span className="text-[10px] text-gray-400">+{displayProduct.locations.length - 1}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
                             <MapPin className="h-3.5 w-3.5" />
-                            <span className="text-[11px] font-medium">{displayProduct.locations.length} {displayProduct.locations.length === 1 ? t('location') : t('location', { count: displayProduct.locations.length })}</span>
+                            <span className="text-[11px]">{t('noLocation')}</span>
                           </div>
                         )}
                       </div>
@@ -951,11 +961,29 @@ export default function StockLookup() {
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-                          <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {t('noWarehouseLocations')}
-                          </p>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              {t('warehouseLocations')}
+                            </h4>
+                          </div>
+                          <div className="text-center py-2">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                              {t('noWarehouseLocations')}
+                            </p>
+                            <Link href={`/inventory/products/${product.id}`}>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8"
+                                data-testid={`button-add-location-${product.id}`}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                {t('addLocation')}
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       )}
 

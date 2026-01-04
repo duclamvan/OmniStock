@@ -639,6 +639,8 @@ const inventory = {
   cannotReduce: 'Cannot Reduce',
   stockAlreadyZero: 'Stock is already at 0',
   noWarehouseLocations: 'No warehouse locations assigned',
+  noLocation: 'No location',
+  addLocation: 'Add Location',
   viewDescription: 'View Description',
   showingUnderAllocatedItems: 'Showing Under-Allocated Items',
   discrepanciesBetweenRecorded: 'Products below have discrepancies between recorded and stock location quantities',
