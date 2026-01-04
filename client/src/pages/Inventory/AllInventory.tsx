@@ -653,17 +653,31 @@ export default function AllInventory() {
         
         const productData: any = {
           _rowNumber: rowNum,
-          name: row.Name || row.name || '',
-          sku: row.SKU || row.sku || '',
-          barcode: row.Barcode || row.barcode || null,
-          quantity: Number(row.Quantity || row.quantity || 0),
-          lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
-          priceEur: row['Price EUR'] || row.priceEur || '0',
-          priceCzk: row['Price CZK'] || row.priceCzk || '0',
-          importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
-          importCostEur: row['Import Cost EUR'] || row.importCostEur || null,
-          importCostCzk: row['Import Cost CZK'] || row.importCostCzk || null,
-          description: row.Description || row.description || '',
+          name: row.Name || row.name || row['Tên'] || '',
+          vietnameseName: row['Vietnamese Name'] || row.vietnameseName || row['Tên Tiếng Việt'] || null,
+          sku: row.SKU || row.sku || row['Mã SKU'] || '',
+          barcode: row.Barcode || row.barcode || row['Mã Vạch'] || null,
+          quantity: Number(row.Quantity || row.quantity || row['Số Lượng'] || 0),
+          lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || row['Cảnh Báo Tồn Kho Thấp'] || 0),
+          priceEur: row['Price EUR'] || row.priceEur || row['Giá EUR'] || '0',
+          priceCzk: row['Price CZK'] || row.priceCzk || row['Giá CZK'] || '0',
+          priceUsd: row['Price USD'] || row.priceUsd || row['Giá USD'] || null,
+          priceVnd: row['Price VND'] || row.priceVnd || row['Giá VND'] || null,
+          priceCny: row['Price CNY'] || row.priceCny || row['Giá CNY'] || null,
+          importCostUsd: row['Import Cost USD'] || row.importCostUsd || row['Giá Nhập USD'] || null,
+          importCostEur: row['Import Cost EUR'] || row.importCostEur || row['Giá Nhập EUR'] || null,
+          importCostCzk: row['Import Cost CZK'] || row.importCostCzk || row['Giá Nhập CZK'] || null,
+          importCostVnd: row['Import Cost VND'] || row.importCostVnd || row['Giá Nhập VND'] || null,
+          importCostCny: row['Import Cost CNY'] || row.importCostCny || row['Giá Nhập CNY'] || null,
+          wholesalePriceCzk: row['Wholesale Price CZK'] || row.wholesalePriceCzk || row['Giá Sỉ CZK'] || null,
+          wholesalePriceEur: row['Wholesale Price EUR'] || row.wholesalePriceEur || row['Giá Sỉ EUR'] || null,
+          weight: row['Weight (kg)'] || row.weight || row['Cân Nặng'] || null,
+          length: row['Length (cm)'] || row.length || row['Chiều Dài'] || null,
+          width: row['Width (cm)'] || row.width || row['Chiều Rộng'] || null,
+          height: row['Height (cm)'] || row.height || row['Chiều Cao'] || null,
+          description: row.Description || row.description || row['Mô Tả'] || '',
+          shipmentNotes: row['Shipment Notes'] || row.shipmentNotes || row['Ghi Chú Vận Chuyển'] || null,
+          warehouseLocation: row['Warehouse Location'] || row.warehouseLocation || row['Vị Trí Kho'] || null,
           _isValid: true,
           _error: '',
           _isUpdate: false,
@@ -677,7 +691,7 @@ export default function AllInventory() {
         }
 
         // Find category by name - store original name for auto-creation
-        const categoryName = row.Category || row.category;
+        const categoryName = row.Category || row.category || row['Danh Mục'];
         if (categoryName) {
           const category = (categories as any[])?.find(
             (c: any) => c.name.toLowerCase() === categoryName.toLowerCase()
@@ -692,7 +706,7 @@ export default function AllInventory() {
         }
 
         // Find warehouse by name
-        const warehouseName = row.Warehouse || row.warehouse;
+        const warehouseName = row.Warehouse || row.warehouse || row['Kho'];
         if (warehouseName) {
           const warehouse = (warehouses as any[])?.find(
             (w: any) => w.name.toLowerCase() === warehouseName.toLowerCase()
@@ -706,7 +720,7 @@ export default function AllInventory() {
         }
 
         // Store supplier name for auto-creation on backend
-        const supplierName = row.Supplier || row.supplier;
+        const supplierName = row.Supplier || row.supplier || row['Nhà Cung Cấp'];
         if (supplierName) {
           productData.supplierName = supplierName;
         }

@@ -7383,7 +7383,7 @@ Important:
           // Find warehouse by name
           const warehouse = warehouses.find((w: any) => w.name?.toLowerCase() === item.warehouseName?.toLowerCase());
 
-          // Prepare product data
+          // Prepare product data - include all fields from import
           const productData: any = {
             name,
             vietnameseName: item.vietnameseName || null,
@@ -7398,11 +7398,15 @@ Important:
             priceCzk: item.priceCzk || null,
             priceEur: item.priceEur || null,
             priceUsd: item.priceUsd || null,
+            priceVnd: item.priceVnd || null,
+            priceCny: item.priceCny || null,
             wholesalePriceCzk: item.wholesalePriceCzk || null,
             wholesalePriceEur: item.wholesalePriceEur || null,
             importCostUsd: item.importCostUsd || null,
             importCostEur: item.importCostEur || null,
             importCostCzk: item.importCostCzk || null,
+            importCostVnd: item.importCostVnd || null,
+            importCostCny: item.importCostCny || null,
             weight: item.weight || null,
             length: item.length || null,
             width: item.width || null,
