@@ -52,22 +52,49 @@ function tokenize(text: string): string[] {
 }
 
 /**
- * Check if searchToken matches textToken with fuzzy tolerance
+ * Check if searchToken matches textToken with STRICT keyword matching
  * Returns match score 0-1 (1 = perfect match)
+ * 
+ * STRICT MATCHING RULES:
+ * - Exact matches and prefix matches are prioritized
+ * - Fuzzy matching ONLY for small typos (1 character off)
+ * - "thin" will NOT match "thick" (2 character difference = no match)
  */
 function tokenMatch(searchToken: string, textToken: string): number {
-  if (textToken === searchToken) return 1;
-  if (textToken.startsWith(searchToken)) return 0.9;
-  if (textToken.includes(searchToken)) return 0.7;
+  // EXACT match - highest score
+  if (textToken === searchToken) return 1.0;
   
-  // Fuzzy match for short edit distance
-  const maxLen = Math.max(searchToken.length, textToken.length);
-  if (maxLen === 0) return 0;
+  // Text token starts with search token - very high score
+  if (textToken.startsWith(searchToken)) return 0.95;
+  
+  // Text token contains search token as substring - high score
+  if (textToken.includes(searchToken)) return 0.85;
+  
+  // Search token starts with text token (partial word typed) - moderate score
+  if (searchToken.startsWith(textToken) && textToken.length >= 2) return 0.7;
+  
+  // STRICT FUZZY MATCHING - only for small typos
+  const searchLen = searchToken.length;
+  const textLen = textToken.length;
+  
+  // Length must be very similar (max 1 char difference)
+  if (Math.abs(searchLen - textLen) > 1) return 0;
+  
+  // Calculate edit distance
   const distance = levenshteinDistance(searchToken, textToken);
-  const similarity = 1 - distance / maxLen;
   
-  // Only accept fuzzy matches with high similarity
-  return similarity >= 0.6 ? similarity * 0.6 : 0;
+  // ONLY allow exactly 1 edit distance (single typo)
+  // This prevents "thin" from matching "thick" (distance = 2)
+  if (distance === 1) {
+    // Give lower score for shorter words (typos more significant)
+    if (searchLen <= 3) return 0.3;  // Very short words: low confidence
+    if (searchLen <= 5) return 0.4;  // Short words: moderate confidence  
+    return 0.5;                       // Longer words: better confidence
+  }
+  
+  // NO MATCH for edit distance >= 2
+  // This is the key change: "thin" vs "thick" has distance 2, so no match
+  return 0;
 }
 
 /**
