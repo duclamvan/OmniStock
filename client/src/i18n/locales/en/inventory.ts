@@ -1417,6 +1417,13 @@ const inventory = {
   exportSuppliers: 'Export Suppliers',
   regular: 'Regular',
   
+  // Inventory Matrix
+  inventoryMatrix: 'Inventory Matrix',
+  matrixDescription: 'Click any cell to edit. Press Tab to move between cells, Enter to save.',
+  matrixUpdated: 'Updated {{count}} product(s) successfully',
+  matrixUpdateErrors: 'Failed to update {{count}} product(s)',
+  matrixTip: 'Tip: Click any cell to edit inline. Use Tab to navigate, Enter to confirm changes.',
+  
 } as const;
 
 export default inventory;

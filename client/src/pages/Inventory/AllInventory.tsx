@@ -1518,6 +1518,13 @@ export default function AllInventory() {
                 <Download className="h-4 w-4 mr-2" />
                 {t('inventory:export')}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild data-testid="menu-inventory-matrix">
+                <Link href="/inventory/matrix">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  {t('inventory:inventoryMatrix')}
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           

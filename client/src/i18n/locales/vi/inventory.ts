@@ -1491,6 +1491,13 @@ const inventory = {
   exportSuppliers: 'Xuất nhà cung cấp',
   regular: 'Thường xuyên',
   
+  // Inventory Matrix
+  inventoryMatrix: 'Ma trận tồn kho',
+  matrixDescription: 'Nhấp vào ô để chỉnh sửa. Nhấn Tab để di chuyển, Enter để lưu.',
+  matrixUpdated: 'Đã cập nhật {{count}} sản phẩm thành công',
+  matrixUpdateErrors: 'Không thể cập nhật {{count}} sản phẩm',
+  matrixTip: 'Mẹo: Nhấp vào ô để chỉnh sửa. Dùng Tab để di chuyển, Enter để xác nhận.',
+  
 } as const;
 
 export default inventory;

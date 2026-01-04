@@ -1386,6 +1386,13 @@ const common = {
   currencyCzk: 'Kč',
   currencyEur: '€',
 
+  // Matrix/Bulk Edit
+  noChanges: 'Không có thay đổi',
+  noChangesToSave: 'Không có thay đổi để lưu',
+  changesDiscarded: 'Đã hủy thay đổi',
+  discard: 'Hủy',
+  partialError: 'Lỗi một phần',
+  
   // Performance & Gamification
   performance: {
     leaderboard: 'Bảng xếp hạng',

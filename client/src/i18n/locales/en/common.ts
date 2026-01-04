@@ -1472,6 +1472,13 @@ const common = {
   currencyCzk: 'Kč',
   currencyEur: '€',
 
+  // Matrix/Bulk Edit
+  noChanges: 'No changes',
+  noChangesToSave: 'There are no changes to save',
+  changesDiscarded: 'Changes discarded',
+  discard: 'Discard',
+  partialError: 'Partial error',
+  
   // Performance & Gamification
   performance: {
     leaderboard: 'Leaderboard',

@@ -30,6 +30,7 @@ import Bundles from "@/pages/Inventory/SimpleBundles";
 import CreateBundle from "@/pages/Inventory/CreateBundle";
 import BundleDetails from "@/pages/Inventory/BundleDetails";
 import EditBundle from "@/pages/Inventory/EditBundle";
+import InventoryMatrix from "@/pages/Inventory/InventoryMatrix";
 import AllWarehouses from "@/pages/Warehouse/AllWarehouses";
 import AddWarehouse from "@/pages/Warehouse/AddWarehouse";
 import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
@@ -198,6 +199,9 @@ function Router() {
         </Route>
         <Route path="/inventory/bundles/:id">
           {() => <ProtectedRoute requireAdmin><BundleDetails /></ProtectedRoute>}
+        </Route>
+        <Route path="/inventory/matrix">
+          {() => <ProtectedRoute requireAdmin><InventoryMatrix /></ProtectedRoute>}
         </Route>
         <Route path="/inventory/products/:id">
           {() => <ProtectedRoute requireAdmin><ProductDetails /></ProtectedRoute>}
