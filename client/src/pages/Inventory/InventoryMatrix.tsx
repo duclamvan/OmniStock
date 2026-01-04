@@ -10,7 +10,6 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/fuzzySearch";
 import { ArrowLeft, Search, Check, Loader2, RefreshCw, Grid3X3, X } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -68,12 +67,12 @@ const EDITABLE_COLUMNS = [
   { key: 'name', label: 'Name', width: 200, type: 'text' },
   { key: 'vietnameseName', label: 'Vietnamese Name', width: 180, type: 'text' },
   { key: 'sku', label: 'SKU', width: 120, type: 'text' },
-  { key: 'barcode', label: 'Barcode', width: 120, type: 'text' },
+  { key: 'barcode', label: 'Barcode', width: 130, type: 'text' },
   { key: 'categoryId', label: 'Category', width: 150, type: 'select' },
   { key: 'supplierId', label: 'Supplier', width: 150, type: 'select' },
   { key: 'warehouseLocation', label: 'Location', width: 100, type: 'text' },
   { key: 'quantity', label: 'Qty', width: 70, type: 'number' },
-  { key: 'lowStockAlert', label: 'Alert', width: 70, type: 'number' },
+  { key: 'lowStockAlert', label: 'Low Stock', width: 85, type: 'number' },
   { key: 'priceCzk', label: 'Price CZK', width: 100, type: 'number' },
   { key: 'priceEur', label: 'Price EUR', width: 100, type: 'number' },
   { key: 'priceUsd', label: 'Price USD', width: 100, type: 'number' },
@@ -82,7 +81,11 @@ const EDITABLE_COLUMNS = [
   { key: 'importCostUsd', label: 'Cost USD', width: 100, type: 'number' },
   { key: 'importCostEur', label: 'Cost EUR', width: 100, type: 'number' },
   { key: 'importCostCzk', label: 'Cost CZK', width: 100, type: 'number' },
-  { key: 'weight', label: 'Weight', width: 80, type: 'number' },
+  { key: 'weight', label: 'Weight (kg)', width: 90, type: 'number' },
+  { key: 'length', label: 'Length (cm)', width: 90, type: 'number' },
+  { key: 'width', label: 'Width (cm)', width: 90, type: 'number' },
+  { key: 'height', label: 'Height (cm)', width: 90, type: 'number' },
+  { key: 'description', label: 'Description', width: 200, type: 'text' },
   { key: 'shipmentNotes', label: 'Notes', width: 150, type: 'text' },
 ];
 
@@ -425,7 +428,7 @@ export default function InventoryMatrix() {
 
         <Card className="border-slate-200 dark:border-slate-800">
           <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-220px)]">
+            <div className="h-[calc(100vh-220px)] overflow-auto">
               <div className="min-w-max">
                 <table className="w-full border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800">
@@ -479,7 +482,7 @@ export default function InventoryMatrix() {
                   </tbody>
                 </table>
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
 
