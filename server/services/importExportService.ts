@@ -19,6 +19,7 @@ type EntityType = 'products' | 'customers' | 'warehouses' | 'suppliers' | 'disco
 interface ColumnConfig {
   key: string;
   label: string;
+  viLabel?: string;
   type: 'string' | 'number' | 'boolean' | 'date' | 'decimal';
   required: boolean;
 }
@@ -33,33 +34,64 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   products: {
     tableName: 'products',
     columns: [
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'vietnameseName', label: 'Vietnamese Name', type: 'string', required: false },
-      { key: 'sku', label: 'SKU', type: 'string', required: true },
-      { key: 'categoryId', label: 'Category ID', type: 'string', required: false },
-      { key: 'warehouseId', label: 'Warehouse ID', type: 'string', required: false },
-      { key: 'supplierId', label: 'Supplier ID', type: 'string', required: false },
-      { key: 'description', label: 'Description', type: 'string', required: false },
-      { key: 'quantity', label: 'Quantity', type: 'number', required: false },
-      { key: 'lowStockAlert', label: 'Low Stock Alert', type: 'number', required: false },
-      { key: 'priceCzk', label: 'Price CZK', type: 'decimal', required: false },
-      { key: 'priceEur', label: 'Price EUR', type: 'decimal', required: false },
-      { key: 'priceUsd', label: 'Price USD', type: 'decimal', required: false },
-      { key: 'wholesalePriceCzk', label: 'Wholesale Price CZK', type: 'decimal', required: false },
-      { key: 'wholesalePriceEur', label: 'Wholesale Price EUR', type: 'decimal', required: false },
-      { key: 'importCostUsd', label: 'Import Cost USD', type: 'decimal', required: false },
-      { key: 'importCostCzk', label: 'Import Cost CZK', type: 'decimal', required: false },
-      { key: 'importCostEur', label: 'Import Cost EUR', type: 'decimal', required: false },
-      { key: 'barcode', label: 'Barcode', type: 'string', required: false },
-      { key: 'length', label: 'Length', type: 'decimal', required: false },
-      { key: 'width', label: 'Width', type: 'decimal', required: false },
-      { key: 'height', label: 'Height', type: 'decimal', required: false },
-      { key: 'weight', label: 'Weight', type: 'decimal', required: false },
-      { key: 'isActive', label: 'Is Active', type: 'boolean', required: false },
-      { key: 'warehouseLocation', label: 'Warehouse Location', type: 'string', required: false },
-      { key: 'sellingUnitName', label: 'Selling Unit Name', type: 'string', required: false },
-      { key: 'bulkUnitName', label: 'Bulk Unit Name', type: 'string', required: false },
-      { key: 'bulkUnitQty', label: 'Bulk Unit Qty', type: 'number', required: false },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'vietnameseName', label: 'Vietnamese Name', viLabel: 'Tên Tiếng Việt', type: 'string', required: false },
+      { key: 'sku', label: 'SKU', viLabel: 'Mã SKU', type: 'string', required: true },
+      { key: 'categoryId', label: 'Category ID', viLabel: 'Mã Danh Mục', type: 'string', required: false },
+      { key: 'warehouseId', label: 'Warehouse ID', viLabel: 'Mã Kho', type: 'string', required: false },
+      { key: 'supplierId', label: 'Supplier ID', viLabel: 'Mã Nhà Cung Cấp', type: 'string', required: false },
+      { key: 'description', label: 'Description', viLabel: 'Mô Tả', type: 'string', required: false },
+      { key: 'quantity', label: 'Quantity', viLabel: 'Số Lượng', type: 'number', required: false },
+      { key: 'lowStockAlert', label: 'Low Stock Alert', viLabel: 'Cảnh Báo Tồn Kho Thấp', type: 'number', required: false },
+      { key: 'lowStockAlertType', label: 'Low Stock Alert Type', viLabel: 'Loại Cảnh Báo Tồn Kho', type: 'string', required: false },
+      { key: 'priceCzk', label: 'Price CZK', viLabel: 'Giá CZK', type: 'decimal', required: false },
+      { key: 'priceEur', label: 'Price EUR', viLabel: 'Giá EUR', type: 'decimal', required: false },
+      { key: 'priceUsd', label: 'Price USD', viLabel: 'Giá USD', type: 'decimal', required: false },
+      { key: 'priceVnd', label: 'Price VND', viLabel: 'Giá VND', type: 'decimal', required: false },
+      { key: 'priceCny', label: 'Price CNY', viLabel: 'Giá CNY', type: 'decimal', required: false },
+      { key: 'wholesalePriceCzk', label: 'Wholesale Price CZK', viLabel: 'Giá Sỉ CZK', type: 'decimal', required: false },
+      { key: 'wholesalePriceEur', label: 'Wholesale Price EUR', viLabel: 'Giá Sỉ EUR', type: 'decimal', required: false },
+      { key: 'importCostUsd', label: 'Import Cost USD', viLabel: 'Giá Nhập USD', type: 'decimal', required: false },
+      { key: 'importCostCzk', label: 'Import Cost CZK', viLabel: 'Giá Nhập CZK', type: 'decimal', required: false },
+      { key: 'importCostEur', label: 'Import Cost EUR', viLabel: 'Giá Nhập EUR', type: 'decimal', required: false },
+      { key: 'importCostVnd', label: 'Import Cost VND', viLabel: 'Giá Nhập VND', type: 'decimal', required: false },
+      { key: 'importCostCny', label: 'Import Cost CNY', viLabel: 'Giá Nhập CNY', type: 'decimal', required: false },
+      { key: 'landingCostEur', label: 'Landing Cost EUR', viLabel: 'Giá Landing EUR', type: 'decimal', required: false },
+      { key: 'landingCostUsd', label: 'Landing Cost USD', viLabel: 'Giá Landing USD', type: 'decimal', required: false },
+      { key: 'landingCostCzk', label: 'Landing Cost CZK', viLabel: 'Giá Landing CZK', type: 'decimal', required: false },
+      { key: 'landingCostVnd', label: 'Landing Cost VND', viLabel: 'Giá Landing VND', type: 'decimal', required: false },
+      { key: 'landingCostCny', label: 'Landing Cost CNY', viLabel: 'Giá Landing CNY', type: 'decimal', required: false },
+      { key: 'latestLandingCost', label: 'Latest Landing Cost', viLabel: 'Giá Landing Mới Nhất', type: 'decimal', required: false },
+      { key: 'barcode', label: 'Barcode', viLabel: 'Mã Vạch', type: 'string', required: false },
+      { key: 'imageUrl', label: 'Image URL', viLabel: 'Đường Dẫn Ảnh', type: 'string', required: false },
+      { key: 'length', label: 'Length', viLabel: 'Chiều Dài', type: 'decimal', required: false },
+      { key: 'width', label: 'Width', viLabel: 'Chiều Rộng', type: 'decimal', required: false },
+      { key: 'height', label: 'Height', viLabel: 'Chiều Cao', type: 'decimal', required: false },
+      { key: 'dimensionUnit', label: 'Dimension Unit', viLabel: 'Đơn Vị Kích Thước', type: 'string', required: false },
+      { key: 'weight', label: 'Weight', viLabel: 'Cân Nặng', type: 'decimal', required: false },
+      { key: 'weightUnit', label: 'Weight Unit', viLabel: 'Đơn Vị Cân Nặng', type: 'string', required: false },
+      { key: 'unitWeightKg', label: 'Unit Weight Kg', viLabel: 'Cân Nặng Đơn Vị Kg', type: 'decimal', required: false },
+      { key: 'unitLengthCm', label: 'Unit Length Cm', viLabel: 'Chiều Dài Đơn Vị Cm', type: 'decimal', required: false },
+      { key: 'unitWidthCm', label: 'Unit Width Cm', viLabel: 'Chiều Rộng Đơn Vị Cm', type: 'decimal', required: false },
+      { key: 'unitHeightCm', label: 'Unit Height Cm', viLabel: 'Chiều Cao Đơn Vị Cm', type: 'decimal', required: false },
+      { key: 'isActive', label: 'Is Active', viLabel: 'Hoạt Động', type: 'boolean', required: false },
+      { key: 'warehouseLocation', label: 'Warehouse Location', viLabel: 'Vị Trí Kho', type: 'string', required: false },
+      { key: 'shipmentNotes', label: 'Shipment Notes', viLabel: 'Ghi Chú Vận Chuyển', type: 'string', required: false },
+      { key: 'packingMaterialId', label: 'Packing Material ID', viLabel: 'Mã Vật Liệu Đóng Gói', type: 'string', required: false },
+      { key: 'packingInstructionsText', label: 'Packing Instructions', viLabel: 'Hướng Dẫn Đóng Gói', type: 'string', required: false },
+      { key: 'packagingRequirement', label: 'Packaging Requirement', viLabel: 'Yêu Cầu Đóng Gói', type: 'string', required: false },
+      { key: 'sellingUnitName', label: 'Selling Unit Name', viLabel: 'Đơn Vị Bán', type: 'string', required: false },
+      { key: 'bulkUnitName', label: 'Bulk Unit Name', viLabel: 'Đơn Vị Lớn', type: 'string', required: false },
+      { key: 'bulkUnitQty', label: 'Bulk Unit Qty', viLabel: 'Số Lượng Đơn Vị Lớn', type: 'number', required: false },
+      { key: 'bulkPriceCzk', label: 'Bulk Price CZK', viLabel: 'Giá Lớn CZK', type: 'decimal', required: false },
+      { key: 'bulkPriceEur', label: 'Bulk Price EUR', viLabel: 'Giá Lớn EUR', type: 'decimal', required: false },
+      { key: 'allowBulkSales', label: 'Allow Bulk Sales', viLabel: 'Cho Phép Bán Sỉ', type: 'boolean', required: false },
+      { key: 'unitContentsInfo', label: 'Unit Contents Info', viLabel: 'Thông Tin Đơn Vị', type: 'string', required: false },
+      { key: 'minStockLevel', label: 'Min Stock Level', viLabel: 'Tồn Kho Tối Thiểu', type: 'number', required: false },
+      { key: 'maxStockLevel', label: 'Max Stock Level', viLabel: 'Tồn Kho Tối Đa', type: 'number', required: false },
+      { key: 'isVirtual', label: 'Is Virtual', viLabel: 'Sản Phẩm Ảo', type: 'boolean', required: false },
+      { key: 'masterProductId', label: 'Master Product ID', viLabel: 'Mã Sản Phẩm Gốc', type: 'string', required: false },
+      { key: 'inventoryDeductionRatio', label: 'Inventory Deduction Ratio', viLabel: 'Tỷ Lệ Trừ Tồn Kho', type: 'decimal', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -86,8 +118,15 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
         }
       }
 
-      const decimalFields = ['priceCzk', 'priceEur', 'priceUsd', 'wholesalePriceCzk', 'wholesalePriceEur', 
-                             'importCostUsd', 'importCostCzk', 'importCostEur', 'length', 'width', 'height', 'weight'];
+      const decimalFields = [
+        'priceCzk', 'priceEur', 'priceUsd', 'priceVnd', 'priceCny',
+        'wholesalePriceCzk', 'wholesalePriceEur', 
+        'importCostUsd', 'importCostCzk', 'importCostEur', 'importCostVnd', 'importCostCny',
+        'landingCostEur', 'landingCostUsd', 'landingCostCzk', 'landingCostVnd', 'landingCostCny', 'latestLandingCost',
+        'length', 'width', 'height', 'weight',
+        'unitWeightKg', 'unitLengthCm', 'unitWidthCm', 'unitHeightCm',
+        'bulkPriceCzk', 'bulkPriceEur', 'inventoryDeductionRatio'
+      ];
       for (const field of decimalFields) {
         if (row[field] !== undefined && row[field] !== '') {
           const val = parseFloat(String(row[field]));
@@ -99,29 +138,34 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
         }
       }
 
-      const stringFields = ['vietnameseName', 'categoryId', 'warehouseId', 'supplierId', 'description', 
-                            'barcode', 'warehouseLocation', 'sellingUnitName', 'bulkUnitName'];
+      const stringFields = [
+        'vietnameseName', 'categoryId', 'warehouseId', 'supplierId', 'description', 
+        'barcode', 'imageUrl', 'warehouseLocation', 'shipmentNotes',
+        'packingMaterialId', 'packingInstructionsText', 'packagingRequirement',
+        'dimensionUnit', 'weightUnit',
+        'sellingUnitName', 'bulkUnitName', 'unitContentsInfo',
+        'lowStockAlertType', 'masterProductId'
+      ];
       for (const field of stringFields) {
         if (row[field] !== undefined && row[field] !== '') {
           processedData[field] = String(row[field]).trim();
         }
       }
 
-      if (row.isActive !== undefined && row.isActive !== '') {
-        processedData.isActive = String(row.isActive).toLowerCase() === 'true' || row.isActive === true || row.isActive === 1;
-      }
-
-      if (row.lowStockAlert !== undefined && row.lowStockAlert !== '') {
-        const alert = parseInt(String(row.lowStockAlert), 10);
-        if (!isNaN(alert)) {
-          processedData.lowStockAlert = alert;
+      const booleanFields = ['isActive', 'allowBulkSales', 'isVirtual'];
+      for (const field of booleanFields) {
+        if (row[field] !== undefined && row[field] !== '') {
+          processedData[field] = String(row[field]).toLowerCase() === 'true' || row[field] === true || row[field] === 1;
         }
       }
 
-      if (row.bulkUnitQty !== undefined && row.bulkUnitQty !== '') {
-        const qty = parseInt(String(row.bulkUnitQty), 10);
-        if (!isNaN(qty)) {
-          processedData.bulkUnitQty = qty;
+      const intFields = ['lowStockAlert', 'bulkUnitQty', 'minStockLevel', 'maxStockLevel'];
+      for (const field of intFields) {
+        if (row[field] !== undefined && row[field] !== '') {
+          const val = parseInt(String(row[field]), 10);
+          if (!isNaN(val)) {
+            processedData[field] = val;
+          }
         }
       }
 
@@ -132,32 +176,32 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   customers: {
     tableName: 'customers',
     columns: [
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'facebookName', label: 'Facebook Name', type: 'string', required: false },
-      { key: 'facebookUrl', label: 'Facebook URL', type: 'string', required: false },
-      { key: 'email', label: 'Email', type: 'string', required: false },
-      { key: 'phone', label: 'Phone', type: 'string', required: false },
-      { key: 'address', label: 'Address', type: 'string', required: false },
-      { key: 'city', label: 'City', type: 'string', required: false },
-      { key: 'zipCode', label: 'Zip Code', type: 'string', required: false },
-      { key: 'country', label: 'Country', type: 'string', required: false },
-      { key: 'notes', label: 'Notes', type: 'string', required: false },
-      { key: 'type', label: 'Type', type: 'string', required: false },
-      { key: 'vatId', label: 'VAT ID', type: 'string', required: false },
-      { key: 'taxId', label: 'Tax ID', type: 'string', required: false },
-      { key: 'preferredLanguage', label: 'Preferred Language', type: 'string', required: false },
-      { key: 'preferredCurrency', label: 'Preferred Currency', type: 'string', required: false },
-      { key: 'billingFirstName', label: 'Billing First Name', type: 'string', required: false },
-      { key: 'billingLastName', label: 'Billing Last Name', type: 'string', required: false },
-      { key: 'billingCompany', label: 'Billing Company', type: 'string', required: false },
-      { key: 'billingEmail', label: 'Billing Email', type: 'string', required: false },
-      { key: 'billingTel', label: 'Billing Tel', type: 'string', required: false },
-      { key: 'billingStreet', label: 'Billing Street', type: 'string', required: false },
-      { key: 'billingCity', label: 'Billing City', type: 'string', required: false },
-      { key: 'billingZipCode', label: 'Billing Zip Code', type: 'string', required: false },
-      { key: 'billingCountry', label: 'Billing Country', type: 'string', required: false },
-      { key: 'ico', label: 'ICO', type: 'string', required: false },
-      { key: 'dic', label: 'DIC', type: 'string', required: false },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'facebookName', label: 'Facebook Name', viLabel: 'Tên Facebook', type: 'string', required: false },
+      { key: 'facebookUrl', label: 'Facebook URL', viLabel: 'Đường Dẫn Facebook', type: 'string', required: false },
+      { key: 'email', label: 'Email', viLabel: 'Email', type: 'string', required: false },
+      { key: 'phone', label: 'Phone', viLabel: 'Điện Thoại', type: 'string', required: false },
+      { key: 'address', label: 'Address', viLabel: 'Địa Chỉ', type: 'string', required: false },
+      { key: 'city', label: 'City', viLabel: 'Thành Phố', type: 'string', required: false },
+      { key: 'zipCode', label: 'Zip Code', viLabel: 'Mã Bưu Điện', type: 'string', required: false },
+      { key: 'country', label: 'Country', viLabel: 'Quốc Gia', type: 'string', required: false },
+      { key: 'notes', label: 'Notes', viLabel: 'Ghi Chú', type: 'string', required: false },
+      { key: 'type', label: 'Type', viLabel: 'Loại', type: 'string', required: false },
+      { key: 'vatId', label: 'VAT ID', viLabel: 'Mã VAT', type: 'string', required: false },
+      { key: 'taxId', label: 'Tax ID', viLabel: 'Mã Thuế', type: 'string', required: false },
+      { key: 'preferredLanguage', label: 'Preferred Language', viLabel: 'Ngôn Ngữ Ưa Thích', type: 'string', required: false },
+      { key: 'preferredCurrency', label: 'Preferred Currency', viLabel: 'Tiền Tệ Ưa Thích', type: 'string', required: false },
+      { key: 'billingFirstName', label: 'Billing First Name', viLabel: 'Tên Thanh Toán', type: 'string', required: false },
+      { key: 'billingLastName', label: 'Billing Last Name', viLabel: 'Họ Thanh Toán', type: 'string', required: false },
+      { key: 'billingCompany', label: 'Billing Company', viLabel: 'Công Ty Thanh Toán', type: 'string', required: false },
+      { key: 'billingEmail', label: 'Billing Email', viLabel: 'Email Thanh Toán', type: 'string', required: false },
+      { key: 'billingTel', label: 'Billing Tel', viLabel: 'Điện Thoại Thanh Toán', type: 'string', required: false },
+      { key: 'billingStreet', label: 'Billing Street', viLabel: 'Đường Thanh Toán', type: 'string', required: false },
+      { key: 'billingCity', label: 'Billing City', viLabel: 'Thành Phố Thanh Toán', type: 'string', required: false },
+      { key: 'billingZipCode', label: 'Billing Zip Code', viLabel: 'Mã Bưu Điện Thanh Toán', type: 'string', required: false },
+      { key: 'billingCountry', label: 'Billing Country', viLabel: 'Quốc Gia Thanh Toán', type: 'string', required: false },
+      { key: 'ico', label: 'ICO', viLabel: 'ICO', type: 'string', required: false },
+      { key: 'dic', label: 'DIC', viLabel: 'DIC', type: 'string', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -188,26 +232,26 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   warehouses: {
     tableName: 'warehouses',
     columns: [
-      { key: 'id', label: 'ID', type: 'string', required: true },
-      { key: 'code', label: 'Code', type: 'string', required: false },
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'location', label: 'Location', type: 'string', required: false },
-      { key: 'address', label: 'Address', type: 'string', required: false },
-      { key: 'city', label: 'City', type: 'string', required: false },
-      { key: 'country', label: 'Country', type: 'string', required: false },
-      { key: 'zipCode', label: 'Zip Code', type: 'string', required: false },
-      { key: 'phone', label: 'Phone', type: 'string', required: false },
-      { key: 'email', label: 'Email', type: 'string', required: false },
-      { key: 'manager', label: 'Manager', type: 'string', required: false },
-      { key: 'capacity', label: 'Capacity', type: 'number', required: false },
-      { key: 'type', label: 'Type', type: 'string', required: false },
-      { key: 'status', label: 'Status', type: 'string', required: false },
-      { key: 'notes', label: 'Notes', type: 'string', required: false },
-      { key: 'floorArea', label: 'Floor Area', type: 'decimal', required: false },
-      { key: 'totalAisles', label: 'Total Aisles', type: 'number', required: false },
-      { key: 'maxRacks', label: 'Max Racks', type: 'number', required: false },
-      { key: 'maxLevels', label: 'Max Levels', type: 'number', required: false },
-      { key: 'maxBins', label: 'Max Bins', type: 'number', required: false },
+      { key: 'id', label: 'ID', viLabel: 'Mã', type: 'string', required: true },
+      { key: 'code', label: 'Code', viLabel: 'Mã Kho', type: 'string', required: false },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'location', label: 'Location', viLabel: 'Vị Trí', type: 'string', required: false },
+      { key: 'address', label: 'Address', viLabel: 'Địa Chỉ', type: 'string', required: false },
+      { key: 'city', label: 'City', viLabel: 'Thành Phố', type: 'string', required: false },
+      { key: 'country', label: 'Country', viLabel: 'Quốc Gia', type: 'string', required: false },
+      { key: 'zipCode', label: 'Zip Code', viLabel: 'Mã Bưu Điện', type: 'string', required: false },
+      { key: 'phone', label: 'Phone', viLabel: 'Điện Thoại', type: 'string', required: false },
+      { key: 'email', label: 'Email', viLabel: 'Email', type: 'string', required: false },
+      { key: 'manager', label: 'Manager', viLabel: 'Quản Lý', type: 'string', required: false },
+      { key: 'capacity', label: 'Capacity', viLabel: 'Sức Chứa', type: 'number', required: false },
+      { key: 'type', label: 'Type', viLabel: 'Loại', type: 'string', required: false },
+      { key: 'status', label: 'Status', viLabel: 'Trạng Thái', type: 'string', required: false },
+      { key: 'notes', label: 'Notes', viLabel: 'Ghi Chú', type: 'string', required: false },
+      { key: 'floorArea', label: 'Floor Area', viLabel: 'Diện Tích Sàn', type: 'decimal', required: false },
+      { key: 'totalAisles', label: 'Total Aisles', viLabel: 'Tổng Số Lối Đi', type: 'number', required: false },
+      { key: 'maxRacks', label: 'Max Racks', viLabel: 'Số Kệ Tối Đa', type: 'number', required: false },
+      { key: 'maxLevels', label: 'Max Levels', viLabel: 'Số Tầng Tối Đa', type: 'number', required: false },
+      { key: 'maxBins', label: 'Max Bins', viLabel: 'Số Ngăn Tối Đa', type: 'number', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -257,15 +301,15 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   suppliers: {
     tableName: 'suppliers',
     columns: [
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'contactPerson', label: 'Contact Person', type: 'string', required: false },
-      { key: 'email', label: 'Email', type: 'string', required: false },
-      { key: 'phone', label: 'Phone', type: 'string', required: false },
-      { key: 'address', label: 'Address', type: 'string', required: false },
-      { key: 'country', label: 'Country', type: 'string', required: false },
-      { key: 'website', label: 'Website', type: 'string', required: false },
-      { key: 'supplierLink', label: 'Supplier Link', type: 'string', required: false },
-      { key: 'notes', label: 'Notes', type: 'string', required: false },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'contactPerson', label: 'Contact Person', viLabel: 'Người Liên Hệ', type: 'string', required: false },
+      { key: 'email', label: 'Email', viLabel: 'Email', type: 'string', required: false },
+      { key: 'phone', label: 'Phone', viLabel: 'Điện Thoại', type: 'string', required: false },
+      { key: 'address', label: 'Address', viLabel: 'Địa Chỉ', type: 'string', required: false },
+      { key: 'country', label: 'Country', viLabel: 'Quốc Gia', type: 'string', required: false },
+      { key: 'website', label: 'Website', viLabel: 'Trang Web', type: 'string', required: false },
+      { key: 'supplierLink', label: 'Supplier Link', viLabel: 'Liên Kết Nhà Cung Cấp', type: 'string', required: false },
+      { key: 'notes', label: 'Notes', viLabel: 'Ghi Chú', type: 'string', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -292,21 +336,21 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   discounts: {
     tableName: 'discounts',
     columns: [
-      { key: 'discountId', label: 'Discount ID', type: 'string', required: true },
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'description', label: 'Description', type: 'string', required: false },
-      { key: 'type', label: 'Type', type: 'string', required: true },
-      { key: 'percentage', label: 'Percentage', type: 'decimal', required: false },
-      { key: 'value', label: 'Value', type: 'decimal', required: false },
-      { key: 'buyQuantity', label: 'Buy Quantity', type: 'number', required: false },
-      { key: 'getQuantity', label: 'Get Quantity', type: 'number', required: false },
-      { key: 'minOrderAmount', label: 'Min Order Amount', type: 'decimal', required: false },
-      { key: 'status', label: 'Status', type: 'string', required: false },
-      { key: 'startDate', label: 'Start Date', type: 'date', required: false },
-      { key: 'endDate', label: 'End Date', type: 'date', required: false },
-      { key: 'applicationScope', label: 'Application Scope', type: 'string', required: false },
-      { key: 'productId', label: 'Product ID', type: 'string', required: false },
-      { key: 'categoryId', label: 'Category ID', type: 'string', required: false },
+      { key: 'discountId', label: 'Discount ID', viLabel: 'Mã Giảm Giá', type: 'string', required: true },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'description', label: 'Description', viLabel: 'Mô Tả', type: 'string', required: false },
+      { key: 'type', label: 'Type', viLabel: 'Loại', type: 'string', required: true },
+      { key: 'percentage', label: 'Percentage', viLabel: 'Phần Trăm', type: 'decimal', required: false },
+      { key: 'value', label: 'Value', viLabel: 'Giá Trị', type: 'decimal', required: false },
+      { key: 'buyQuantity', label: 'Buy Quantity', viLabel: 'Số Lượng Mua', type: 'number', required: false },
+      { key: 'getQuantity', label: 'Get Quantity', viLabel: 'Số Lượng Tặng', type: 'number', required: false },
+      { key: 'minOrderAmount', label: 'Min Order Amount', viLabel: 'Đơn Hàng Tối Thiểu', type: 'decimal', required: false },
+      { key: 'status', label: 'Status', viLabel: 'Trạng Thái', type: 'string', required: false },
+      { key: 'startDate', label: 'Start Date', viLabel: 'Ngày Bắt Đầu', type: 'date', required: false },
+      { key: 'endDate', label: 'End Date', viLabel: 'Ngày Kết Thúc', type: 'date', required: false },
+      { key: 'applicationScope', label: 'Application Scope', viLabel: 'Phạm Vi Áp Dụng', type: 'string', required: false },
+      { key: 'productId', label: 'Product ID', viLabel: 'Mã Sản Phẩm', type: 'string', required: false },
+      { key: 'categoryId', label: 'Category ID', viLabel: 'Mã Danh Mục', type: 'string', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -381,10 +425,10 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   returns: {
     tableName: 'returns',
     columns: [
-      { key: 'orderId', label: 'Order ID', type: 'string', required: true },
-      { key: 'reason', label: 'Reason', type: 'string', required: true },
-      { key: 'status', label: 'Status', type: 'string', required: false },
-      { key: 'notes', label: 'Notes', type: 'string', required: false },
+      { key: 'orderId', label: 'Order ID', viLabel: 'Mã Đơn Hàng', type: 'string', required: true },
+      { key: 'reason', label: 'Reason', viLabel: 'Lý Do', type: 'string', required: true },
+      { key: 'status', label: 'Status', viLabel: 'Trạng Thái', type: 'string', required: false },
+      { key: 'notes', label: 'Notes', viLabel: 'Ghi Chú', type: 'string', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -416,19 +460,19 @@ const entityConfigs: Record<EntityType, EntityConfig> = {
   expenses: {
     tableName: 'expenses',
     columns: [
-      { key: 'expenseId', label: 'Expense ID', type: 'string', required: true },
-      { key: 'name', label: 'Name', type: 'string', required: true },
-      { key: 'category', label: 'Category', type: 'string', required: false },
-      { key: 'amount', label: 'Amount', type: 'decimal', required: true },
-      { key: 'currency', label: 'Currency', type: 'string', required: false },
-      { key: 'paymentMethod', label: 'Payment Method', type: 'string', required: false },
-      { key: 'status', label: 'Status', type: 'string', required: false },
-      { key: 'date', label: 'Date', type: 'date', required: true },
-      { key: 'description', label: 'Description', type: 'string', required: false },
-      { key: 'notes', label: 'Notes', type: 'string', required: false },
-      { key: 'isRecurring', label: 'Is Recurring', type: 'boolean', required: false },
-      { key: 'recurringType', label: 'Recurring Type', type: 'string', required: false },
-      { key: 'recurringInterval', label: 'Recurring Interval', type: 'number', required: false },
+      { key: 'expenseId', label: 'Expense ID', viLabel: 'Mã Chi Phí', type: 'string', required: true },
+      { key: 'name', label: 'Name', viLabel: 'Tên', type: 'string', required: true },
+      { key: 'category', label: 'Category', viLabel: 'Danh Mục', type: 'string', required: false },
+      { key: 'amount', label: 'Amount', viLabel: 'Số Tiền', type: 'decimal', required: true },
+      { key: 'currency', label: 'Currency', viLabel: 'Tiền Tệ', type: 'string', required: false },
+      { key: 'paymentMethod', label: 'Payment Method', viLabel: 'Phương Thức Thanh Toán', type: 'string', required: false },
+      { key: 'status', label: 'Status', viLabel: 'Trạng Thái', type: 'string', required: false },
+      { key: 'date', label: 'Date', viLabel: 'Ngày', type: 'date', required: true },
+      { key: 'description', label: 'Description', viLabel: 'Mô Tả', type: 'string', required: false },
+      { key: 'notes', label: 'Notes', viLabel: 'Ghi Chú', type: 'string', required: false },
+      { key: 'isRecurring', label: 'Is Recurring', viLabel: 'Định Kỳ', type: 'boolean', required: false },
+      { key: 'recurringType', label: 'Recurring Type', viLabel: 'Loại Định Kỳ', type: 'string', required: false },
+      { key: 'recurringInterval', label: 'Recurring Interval', viLabel: 'Khoảng Thời Gian Định Kỳ', type: 'number', required: false },
     ],
     validateRow: (row) => {
       const errors: string[] = [];
@@ -532,6 +576,9 @@ export function parseExcelFile(buffer: Buffer, entity: EntityType): Record<strin
   for (const col of config.columns) {
     labelToKey[col.label.toLowerCase()] = col.key;
     labelToKey[col.key.toLowerCase()] = col.key;
+    if (col.viLabel) {
+      labelToKey[col.viLabel.toLowerCase()] = col.key;
+    }
   }
 
   return rawData.map((row) => {
