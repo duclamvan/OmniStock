@@ -44,6 +44,33 @@ export function normalizeVietnamese(str: string): string {
 }
 
 /**
+ * Tokenize text by splitting on non-alphanumeric characters
+ * Returns array of non-empty tokens
+ */
+function tokenize(text: string): string[] {
+  return text.split(/[\s\-_.,;:!?/\\|()[\]{}'"]+/).filter(t => t.length > 0);
+}
+
+/**
+ * Check if searchToken matches textToken with fuzzy tolerance
+ * Returns match score 0-1 (1 = perfect match)
+ */
+function tokenMatch(searchToken: string, textToken: string): number {
+  if (textToken === searchToken) return 1;
+  if (textToken.startsWith(searchToken)) return 0.9;
+  if (textToken.includes(searchToken)) return 0.7;
+  
+  // Fuzzy match for short edit distance
+  const maxLen = Math.max(searchToken.length, textToken.length);
+  if (maxLen === 0) return 0;
+  const distance = levenshteinDistance(searchToken, textToken);
+  const similarity = 1 - distance / maxLen;
+  
+  // Only accept fuzzy matches with high similarity
+  return similarity >= 0.6 ? similarity * 0.6 : 0;
+}
+
+/**
  * Calculate Levenshtein distance between two strings (for fuzzy matching)
  */
 function levenshteinDistance(str1: string, str2: string): number {
@@ -112,6 +139,8 @@ export interface SearchResult<T> {
 /**
  * Calculate comprehensive search score for a text against a search term
  * Returns a score from 0-100 (higher is better)
+ * 
+ * Enhanced token-based matching: "1kg top coat" matches "1KG - Top coat tim dac"
  */
 export function calculateSearchScore(
   text: string,
@@ -149,44 +178,64 @@ export function calculateSearchScore(
     score += 70;
   }
 
-  // 3. Contains (40 points)
+  // 3. Contains exact phrase (40 points)
   if (normalizedText.includes(normalizedSearch)) {
     score += 40;
   }
 
-  // 4. Word boundary match (50 points)
-  const textWords = normalizedText.split(/\s+/);
-  const searchWords = normalizedSearch.split(/\s+/);
+  // 4. TOKEN-BASED MATCHING (most important for multi-word searches)
+  // Tokenize both text and search terms
+  const textTokens = tokenize(normalizedText);
+  const searchTokens = tokenize(normalizedSearch);
   
-  // Check if all search words match at word boundaries
-  const allWordsMatch = searchWords.every(searchWord =>
-    textWords.some(textWord => textWord.startsWith(searchWord))
-  );
-  if (allWordsMatch) {
-    score += 50;
+  if (searchTokens.length > 0 && textTokens.length > 0) {
+    // Check if each search token matches any text token
+    let matchedTokens = 0;
+    let totalTokenScore = 0;
+    
+    for (const searchToken of searchTokens) {
+      let bestMatch = 0;
+      for (const textToken of textTokens) {
+        const matchScore = tokenMatch(searchToken, textToken);
+        if (matchScore > bestMatch) {
+          bestMatch = matchScore;
+        }
+      }
+      if (bestMatch > 0) {
+        matchedTokens++;
+        totalTokenScore += bestMatch;
+      }
+    }
+    
+    // All search tokens found in text tokens = high score (60 points)
+    if (matchedTokens === searchTokens.length) {
+      const avgMatchQuality = totalTokenScore / searchTokens.length;
+      score += Math.floor(60 * avgMatchQuality);
+    } else if (matchedTokens > 0) {
+      // Partial match: proportional score (up to 30 points)
+      const matchRatio = matchedTokens / searchTokens.length;
+      const avgMatchQuality = totalTokenScore / matchedTokens;
+      score += Math.floor(30 * matchRatio * avgMatchQuality);
+    }
   }
 
-  // 5. Any word starts with search (30 points)
-  if (textWords.some(word => word.startsWith(normalizedSearch))) {
-    score += 30;
+  // 5. Any token starts with search (25 points) - for single-word search
+  if (searchTokens.length === 1 && textTokens.some(token => token.startsWith(searchTokens[0]))) {
+    score += 25;
   }
 
-  // 6. Fuzzy matching (up to 25 points based on similarity)
+  // 6. Fuzzy matching for entire strings (up to 15 points)
   if (fuzzy) {
     const similarity = fuzzyScore(normalizedText, normalizedSearch);
-    score += Math.floor(similarity * 25);
-    
-    // Also check fuzzy match for individual words
-    const maxWordSimilarity = Math.max(
-      ...textWords.map(word => fuzzyScore(word, normalizedSearch))
-    );
-    score += Math.floor(maxWordSimilarity * 15);
+    score += Math.floor(similarity * 15);
   }
 
-  // 7. Acronym match (20 points) - e.g., "vdl" matches "Van Duy Lam"
-  const acronym = textWords.map(word => word[0]).join('');
-  if (acronym.startsWith(normalizedSearch)) {
-    score += 20;
+  // 7. Acronym match (15 points) - e.g., "vdl" matches "Van Duy Lam"
+  if (textTokens.length > 0) {
+    const acronym = textTokens.map(token => token[0] || '').join('');
+    if (acronym.startsWith(normalizedSearch)) {
+      score += 15;
+    }
   }
 
   return Math.min(score, 100);

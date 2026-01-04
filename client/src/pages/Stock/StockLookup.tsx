@@ -240,38 +240,18 @@ export default function StockLookup() {
       result = result.filter(p => p.categoryName === selectedCategory);
     }
     
-    // Filter by search query
+    // Filter by search query using enhanced token-based fuzzy search
+    // Example: "1kg top coat" will match "1KG - Top coat tim dac"
     if (searchQuery.trim()) {
-      // Split by spaces to handle multiple SKUs/product names
-      const searchTerms = searchQuery.trim().split(/\s+/);
+      const searchResults = fuzzySearch(result, searchQuery, {
+        fields: ['name', 'sku', 'barcode', 'categoryName'],
+        threshold: 0.25
+      });
       
-      // If only one search term, use regular fuzzy search
-      if (searchTerms.length === 1) {
-        result = fuzzySearch(result, searchQuery, {
-          fields: ['name', 'sku', 'barcode', 'categoryName'],
-          threshold: 0.3
-        }).map(r => r.item);
-      } else {
-        // Multiple search terms: find products that match any of the terms
-        const matchedProductIds = new Set<string>();
-        const matchedProducts: EnrichedProduct[] = [];
-        
-        searchTerms.forEach(term => {
-          const results = fuzzySearch(result, term, {
-            fields: ['name', 'sku', 'barcode', 'categoryName'],
-            threshold: 0.3
-          });
-          
-          results.forEach(r => {
-            if (!matchedProductIds.has(r.item.id)) {
-              matchedProductIds.add(r.item.id);
-              matchedProducts.push(r.item);
-            }
-          });
-        });
-        
-        result = matchedProducts;
-      }
+      // Sort by score and extract items
+      result = searchResults
+        .sort((a, b) => b.score - a.score)
+        .map(r => r.item);
     }
     
     // Sort products
