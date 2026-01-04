@@ -242,7 +242,41 @@ export function calculateSearchScore(
 }
 
 /**
+ * Get value from an object using dot notation path (e.g., "supplier.name")
+ * Supports arrays - returns all values joined with space
+ */
+function getNestedValue(obj: any, path: string): string {
+  const parts = path.split('.');
+  let current = obj;
+  
+  for (let i = 0; i < parts.length; i++) {
+    if (current === null || current === undefined) return '';
+    
+    // Handle arrays - collect values from all array items with remaining path
+    if (Array.isArray(current)) {
+      const remainingPath = parts.slice(i).join('.');
+      const values = current
+        .map(item => getNestedValue(item, remainingPath))
+        .filter(v => v)
+        .join(' ');
+      return values;
+    }
+    
+    current = current[parts[i]];
+  }
+  
+  if (current === null || current === undefined) return '';
+  if (typeof current === 'string') return current;
+  if (typeof current === 'number') return String(current);
+  if (Array.isArray(current)) {
+    return current.filter(v => typeof v === 'string' || typeof v === 'number').join(' ');
+  }
+  return '';
+}
+
+/**
  * Search through an array of items with fuzzy matching and scoring
+ * Supports nested field paths like "supplier.name" or "products.name"
  */
 export function fuzzySearch<T>(
   items: T[],
@@ -281,7 +315,11 @@ export function fuzzySearch<T>(
         : Object.keys(item).filter(key => typeof (item as any)[key] === 'string');
 
       for (const field of fieldsToSearch) {
-        const value = (item as any)[field];
+        // Use getNestedValue to support dot notation paths
+        const value = field.includes('.') 
+          ? getNestedValue(item, field)
+          : (item as any)[field];
+          
         if (typeof value === 'string' && value) {
           const score = calculateSearchScore(value, searchTerm, options);
           if (score > maxScore) {
