@@ -7219,8 +7219,8 @@ Important:
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
-          const name = row['Name'] || row['name'];
-          const sku = row['SKU'] || row['sku'];
+          const name = row['Name'] || row['name'] || row['Tên'];
+          const sku = row['SKU'] || row['sku'] || row['Mã SKU'];
 
           if (!name || !sku) {
             errors.push(`Row ${i + 2}: Missing name or SKU`);
@@ -7228,7 +7228,7 @@ Important:
           }
 
           // Find category by name - auto-create if not exists
-          const categoryName = row['Category'] || row['category'];
+          const categoryName = row['Category'] || row['category'] || row['Danh Mục'];
           let category = categories.find((c: any) => c.name?.toLowerCase() === categoryName?.toLowerCase());
           
           // Auto-create category if it doesn't exist
@@ -7242,11 +7242,11 @@ Important:
           }
 
           // Find warehouse by name
-          const warehouseName = row['Warehouse'] || row['warehouse'];
+          const warehouseName = row['Warehouse'] || row['warehouse'] || row['Kho'];
           const warehouse = warehouses.find((w: any) => w.name?.toLowerCase() === warehouseName?.toLowerCase());
 
           // Find supplier by name - auto-create if not exists
-          const supplierName = row['Supplier'] || row['supplier'];
+          const supplierName = row['Supplier'] || row['supplier'] || row['Nhà Cung Cấp'];
           let supplier = suppliers.find((s: any) => s.name?.toLowerCase() === supplierName?.toLowerCase());
           
           // Auto-create supplier if it doesn't exist
@@ -7263,32 +7263,36 @@ Important:
             supplier = newSupplier;
           }
 
-          // Prepare product data
+          // Prepare product data - support both English and Vietnamese column headers
           const productData: any = {
             name,
-            vietnameseName: row['Vietnamese Name'] || row['vietnameseName'] || null,
+            vietnameseName: row['Vietnamese Name'] || row['vietnameseName'] || row['Tên Tiếng Việt'] || null,
             sku,
-            barcode: row['Barcode'] || row['barcode'] || null,
+            barcode: row['Barcode'] || row['barcode'] || row['Mã Vạch'] || null,
             categoryId: category?.id ? String(category.id) : null,
             warehouseId: warehouse?.id || null,
             supplierId: supplier?.id || null,
-            warehouseLocation: row['Warehouse Location'] || row['warehouseLocation'] || null,
-            quantity: parseInt(row['Quantity'] || row['quantity'] || '0') || 0,
-            lowStockAlert: parseInt(row['Low Stock Alert'] || row['lowStockAlert'] || '0') || 0,
-            priceCzk: row['Price CZK'] || row['priceCzk'] || null,
-            priceEur: row['Price EUR'] || row['priceEur'] || null,
-            priceUsd: row['Price USD'] || row['priceUsd'] || null,
-            wholesalePriceCzk: row['Wholesale Price CZK'] || row['wholesalePriceCzk'] || null,
-            wholesalePriceEur: row['Wholesale Price EUR'] || row['wholesalePriceEur'] || null,
-            importCostUsd: row['Import Cost USD'] || row['importCostUsd'] || null,
-            importCostEur: row['Import Cost EUR'] || row['importCostEur'] || null,
-            importCostCzk: row['Import Cost CZK'] || row['importCostCzk'] || null,
-            weight: row['Weight (kg)'] || row['weight'] || null,
-            length: row['Length (cm)'] || row['length'] || null,
-            width: row['Width (cm)'] || row['width'] || null,
-            height: row['Height (cm)'] || row['height'] || null,
-            description: row['Description'] || row['description'] || null,
-            shipmentNotes: row['Shipment Notes'] || row['shipmentNotes'] || null,
+            warehouseLocation: row['Warehouse Location'] || row['warehouseLocation'] || row['Vị Trí Kho'] || null,
+            quantity: parseInt(row['Quantity'] || row['quantity'] || row['Số Lượng'] || '0') || 0,
+            lowStockAlert: parseInt(row['Low Stock Alert'] || row['lowStockAlert'] || row['Cảnh Báo Tồn Kho Thấp'] || '0') || 0,
+            priceCzk: row['Price CZK'] || row['priceCzk'] || row['Giá CZK'] || null,
+            priceEur: row['Price EUR'] || row['priceEur'] || row['Giá EUR'] || null,
+            priceUsd: row['Price USD'] || row['priceUsd'] || row['Giá USD'] || null,
+            priceVnd: row['Price VND'] || row['priceVnd'] || row['Giá VND'] || null,
+            priceCny: row['Price CNY'] || row['priceCny'] || row['Giá CNY'] || null,
+            wholesalePriceCzk: row['Wholesale Price CZK'] || row['wholesalePriceCzk'] || row['Giá Sỉ CZK'] || null,
+            wholesalePriceEur: row['Wholesale Price EUR'] || row['wholesalePriceEur'] || row['Giá Sỉ EUR'] || null,
+            importCostUsd: row['Import Cost USD'] || row['importCostUsd'] || row['Giá Nhập USD'] || null,
+            importCostEur: row['Import Cost EUR'] || row['importCostEur'] || row['Giá Nhập EUR'] || null,
+            importCostCzk: row['Import Cost CZK'] || row['importCostCzk'] || row['Giá Nhập CZK'] || null,
+            importCostVnd: row['Import Cost VND'] || row['importCostVnd'] || row['Giá Nhập VND'] || null,
+            importCostCny: row['Import Cost CNY'] || row['importCostCny'] || row['Giá Nhập CNY'] || null,
+            weight: row['Weight (kg)'] || row['weight'] || row['Cân Nặng'] || null,
+            length: row['Length (cm)'] || row['length'] || row['Chiều Dài'] || null,
+            width: row['Width (cm)'] || row['width'] || row['Chiều Rộng'] || null,
+            height: row['Height (cm)'] || row['height'] || row['Chiều Cao'] || null,
+            description: row['Description'] || row['description'] || row['Mô Tả'] || null,
+            shipmentNotes: row['Shipment Notes'] || row['shipmentNotes'] || row['Ghi Chú Vận Chuyển'] || null,
             isActive: true,
           };
 
