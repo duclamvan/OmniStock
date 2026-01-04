@@ -1419,10 +1419,10 @@ const inventory = {
   
   // Inventory Matrix
   inventoryMatrix: 'Inventory Matrix',
-  matrixDescription: 'Click any cell to edit. Press Tab to move between cells, Enter to save.',
+  matrixDescription: 'Click any cell to edit. Changes auto-save when you click away.',
   matrixUpdated: 'Updated {{count}} product(s) successfully',
   matrixUpdateErrors: 'Failed to update {{count}} product(s)',
-  matrixTip: 'Tip: Click any cell to edit inline. Use Tab to navigate, Enter to confirm changes.',
+  matrixTip: 'Tip: Click any cell to edit inline. Use Tab to navigate. Changes save automatically.',
   
 } as const;
 

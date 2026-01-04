@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/fuzzySearch";
-import { ArrowLeft, Save, Search, X, Check, Loader2, RefreshCw, Grid3X3 } from "lucide-react";
+import { ArrowLeft, Search, Check, Loader2, RefreshCw, Grid3X3, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -58,11 +58,10 @@ interface Supplier {
   name: string;
 }
 
-interface EditedCell {
+interface SavingCell {
   productId: string;
   field: string;
-  originalValue: any;
-  newValue: any;
+  status: 'saving' | 'saved' | 'error';
 }
 
 const EDITABLE_COLUMNS = [
@@ -92,11 +91,10 @@ export default function InventoryMatrix() {
   const { t } = useTranslation(['inventory', 'common']);
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [editedCells, setEditedCells] = useState<Map<string, EditedCell>>(new Map());
+  const [savingCells, setSavingCells] = useState<Map<string, SavingCell>>(new Map());
   const [editingCell, setEditingCell] = useState<{ productId: string; field: string } | null>(null);
   const [tempValue, setTempValue] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
@@ -125,10 +123,6 @@ export default function InventoryMatrix() {
   const getCellKey = (productId: string, field: string) => `${productId}-${field}`;
 
   const getDisplayValue = (product: Product, field: string): string => {
-    const cellKey = getCellKey(product.id, field);
-    if (editedCells.has(cellKey)) {
-      return String(editedCells.get(cellKey)!.newValue ?? '');
-    }
     const value = (product as any)[field];
     if (value === null || value === undefined) return '';
     return String(value);
@@ -151,38 +145,72 @@ export default function InventoryMatrix() {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const saveCellValue = useCallback((product: Product, field: string, value: string) => {
+  const saveCell = useCallback(async (product: Product, field: string, value: string) => {
     const originalValue = (product as any)[field];
     const originalStr = originalValue === null || originalValue === undefined ? '' : String(originalValue);
     
-    if (value !== originalStr) {
-      const cellKey = getCellKey(product.id, field);
-      const column = EDITABLE_COLUMNS.find(c => c.key === field);
-      let newValue: any = value;
-      
-      if (column?.type === 'number') {
-        newValue = value === '' ? null : parseFloat(value);
-        if (newValue !== null && isNaN(newValue)) {
-          newValue = null;
-        }
+    if (value === originalStr) return;
+    
+    const cellKey = getCellKey(product.id, field);
+    const column = EDITABLE_COLUMNS.find(c => c.key === field);
+    let newValue: any = value;
+    
+    if (column?.type === 'number') {
+      newValue = value === '' ? null : parseFloat(value);
+      if (newValue !== null && isNaN(newValue)) {
+        newValue = null;
       }
+    }
+    
+    setSavingCells(prev => {
+      const next = new Map(prev);
+      next.set(cellKey, { productId: product.id, field, status: 'saving' });
+      return next;
+    });
+    
+    try {
+      await apiRequest('PATCH', `/api/products/${product.id}`, { [field]: newValue });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       
-      setEditedCells(prev => {
+      setSavingCells(prev => {
         const next = new Map(prev);
-        next.set(cellKey, {
-          productId: product.id,
-          field,
-          originalValue,
-          newValue,
-        });
+        next.set(cellKey, { productId: product.id, field, status: 'saved' });
         return next;
       });
+      
+      setTimeout(() => {
+        setSavingCells(prev => {
+          const next = new Map(prev);
+          next.delete(cellKey);
+          return next;
+        });
+      }, 1500);
+    } catch (error) {
+      console.error(`Failed to update ${field}:`, error);
+      setSavingCells(prev => {
+        const next = new Map(prev);
+        next.set(cellKey, { productId: product.id, field, status: 'error' });
+        return next;
+      });
+      toast({
+        title: t('common:error'),
+        description: t('common:saveFailed'),
+        variant: "destructive",
+      });
+      
+      setTimeout(() => {
+        setSavingCells(prev => {
+          const next = new Map(prev);
+          next.delete(cellKey);
+          return next;
+        });
+      }, 3000);
     }
-  }, []);
+  }, [t, toast]);
 
   const handleCellBlur = (product: Product, field: string) => {
     if (!editingCell) return;
-    saveCellValue(product, field, tempValue);
+    saveCell(product, field, tempValue);
     setEditingCell(null);
     setTempValue("");
   };
@@ -192,11 +220,11 @@ export default function InventoryMatrix() {
     setEditingCell({ productId: product.id, field });
     setTempValue(value);
     setTimeout(() => inputRef.current?.focus(), 50);
-  }, [editedCells]);
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent, product: Product, field: string) => {
     if (e.key === 'Enter') {
-      saveCellValue(product, field, tempValue);
+      saveCell(product, field, tempValue);
       setEditingCell(null);
       setTempValue("");
     } else if (e.key === 'Escape') {
@@ -204,7 +232,7 @@ export default function InventoryMatrix() {
       setTempValue("");
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      saveCellValue(product, field, tempValue);
+      saveCell(product, field, tempValue);
       
       const currentColIndex = EDITABLE_COLUMNS.findIndex(c => c.key === field);
       const currentRowIndex = filteredProducts.findIndex(p => p.id === product.id);
@@ -239,75 +267,10 @@ export default function InventoryMatrix() {
     }
   };
 
-  const handleSaveAll = async () => {
-    if (editedCells.size === 0) {
-      toast({ title: t('common:noChanges'), description: t('common:noChangesToSave') });
-      return;
-    }
-
-    setIsSaving(true);
-    
-    const updates: { [productId: string]: any } = {};
-    
-    editedCells.forEach((cell) => {
-      if (!updates[cell.productId]) {
-        updates[cell.productId] = { id: cell.productId };
-      }
-      updates[cell.productId][cell.field] = cell.newValue;
-    });
-
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const [productId, data] of Object.entries(updates)) {
-        try {
-          await apiRequest('PATCH', `/api/products/${productId}`, data);
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to update product ${productId}:`, error);
-          errorCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-        setEditedCells(new Map());
-        toast({
-          title: t('common:success'),
-          description: t('inventory:matrixUpdated', { count: successCount }),
-        });
-      }
-      
-      if (errorCount > 0) {
-        toast({
-          title: t('common:partialError'),
-          description: t('inventory:matrixUpdateErrors', { count: errorCount }),
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: t('common:error'),
-        description: t('common:saveFailed'),
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDiscardChanges = () => {
-    setEditedCells(new Map());
-    toast({ title: t('common:changesDiscarded') });
-  };
-
-  const hasChanges = editedCells.size > 0;
-
   const renderCell = (product: Product, column: typeof EDITABLE_COLUMNS[0]) => {
     const isEditing = editingCell?.productId === product.id && editingCell?.field === column.key;
     const cellKey = getCellKey(product.id, column.key);
-    const isModified = editedCells.has(cellKey);
+    const cellStatus = savingCells.get(cellKey);
     const displayValue = getDisplayValue(product, column.key);
 
     if (isEditing) {
@@ -380,13 +343,17 @@ export default function InventoryMatrix() {
       <div
         onClick={() => handleCellClick(product, column.key)}
         className={`
-          cursor-pointer px-2 py-1 rounded text-xs truncate h-7 flex items-center
-          hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors
-          ${isModified ? 'bg-amber-100 dark:bg-amber-900/30 font-medium' : ''}
+          cursor-pointer px-2 py-1 rounded text-xs truncate h-7 flex items-center gap-1
+          hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all
+          ${cellStatus?.status === 'saving' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+          ${cellStatus?.status === 'saved' ? 'bg-green-100 dark:bg-green-900/30' : ''}
+          ${cellStatus?.status === 'error' ? 'bg-red-100 dark:bg-red-900/30' : ''}
         `}
         title={displayText || '-'}
       >
-        {displayText || <span className="text-slate-400">-</span>}
+        {cellStatus?.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500 flex-shrink-0" />}
+        {cellStatus?.status === 'saved' && <Check className="h-3 w-3 text-green-500 flex-shrink-0" />}
+        <span className="truncate">{displayText || <span className="text-slate-400">-</span>}</span>
       </div>
     );
   };
@@ -444,44 +411,17 @@ export default function InventoryMatrix() {
               )}
             </div>
             
-            {hasChanges && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDiscardChanges}
-                  disabled={isSaving}
-                  className="h-9"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  {t('common:discard')}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveAll}
-                  disabled={isSaving}
-                  className="h-9 bg-cyan-600 hover:bg-cyan-700"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-1" />
-                  )}
-                  {t('common:saveChanges')} ({editedCells.size})
-                </Button>
-              </>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/products'] })}
+              className="h-9"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              {t('common:refresh')}
+            </Button>
           </div>
         </div>
-
-        {hasChanges && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 text-amber-600" />
-            <span className="text-sm text-amber-800 dark:text-amber-200">
-              {t('inventory:unsavedChanges', { count: editedCells.size })}
-            </span>
-          </div>
-        )}
 
         <Card className="border-slate-200 dark:border-slate-800">
           <CardContent className="p-0">

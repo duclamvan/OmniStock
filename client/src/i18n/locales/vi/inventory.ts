@@ -1493,10 +1493,10 @@ const inventory = {
   
   // Inventory Matrix
   inventoryMatrix: 'Ma trận tồn kho',
-  matrixDescription: 'Nhấp vào ô để chỉnh sửa. Nhấn Tab để di chuyển, Enter để lưu.',
+  matrixDescription: 'Nhấp vào ô để chỉnh sửa. Tự động lưu khi bạn nhấp ra ngoài.',
   matrixUpdated: 'Đã cập nhật {{count}} sản phẩm thành công',
   matrixUpdateErrors: 'Không thể cập nhật {{count}} sản phẩm',
-  matrixTip: 'Mẹo: Nhấp vào ô để chỉnh sửa. Dùng Tab để di chuyển, Enter để xác nhận.',
+  matrixTip: 'Mẹo: Nhấp vào ô để chỉnh sửa. Dùng Tab để di chuyển. Tự động lưu thay đổi.',
   
 } as const;
 
