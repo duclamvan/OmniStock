@@ -1142,6 +1142,7 @@ const common = {
   primaryLocationUpdated: 'Primary location updated',
   inventoryMovedSuccessfully: 'Inventory moved successfully',
   failedToAddLocation: 'Failed to add location',
+  locationCodeRequired: 'Location code is required',
   failedToUpdateLocation: 'Failed to update location',
   failedToDeleteLocation: 'Failed to delete location',
   failedToSetPrimaryLocation: 'Failed to set primary location',

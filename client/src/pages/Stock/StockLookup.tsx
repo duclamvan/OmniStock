@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
+import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info } from "lucide-react";
 import {
@@ -109,6 +113,16 @@ export default function StockLookup() {
   
   // Track which quick button (+/-) was clicked
   const [quickButtonType, setQuickButtonType] = useState<'add' | 'remove' | null>(null);
+  
+  // Add Location Dialog states
+  const [addLocationDialogOpen, setAddLocationDialogOpen] = useState(false);
+  const [addLocationProductId, setAddLocationProductId] = useState<string | null>(null);
+  const [addLocationProductName, setAddLocationProductName] = useState<string>("");
+  const [newLocationType, setNewLocationType] = useState<LocationType>("warehouse");
+  const [newLocationCode, setNewLocationCode] = useState("");
+  const [newLocationQuantity, setNewLocationQuantity] = useState(0);
+  const [newLocationNotes, setNewLocationNotes] = useState("");
+  const [newLocationIsPrimary, setNewLocationIsPrimary] = useState(true);
   
   // Save last adjustment to localStorage when it changes
   useEffect(() => {
@@ -323,6 +337,70 @@ export default function StockLookup() {
     if (stock <= threshold) return { label: t('lowStock'), borderColor: "border-yellow-500", textColor: "text-yellow-700 dark:text-yellow-400", icon: TrendingDown };
     if (stock <= threshold * 2) return { label: t('mediumStock'), borderColor: "border-blue-500", textColor: "text-blue-700 dark:text-blue-400", icon: TrendingUp };
     return { label: t('inStock'), borderColor: "border-green-500", textColor: "text-green-700 dark:text-green-400", icon: TrendingUp };
+  };
+
+  // Add location mutation
+  const addLocationMutation = useMutation({
+    mutationFn: async (data: { productId: string; locationType: LocationType; locationCode: string; quantity: number; notes: string; isPrimary: boolean }) => {
+      return await apiRequest('POST', `/api/products/${data.productId}/locations`, {
+        locationType: data.locationType,
+        locationCode: data.locationCode,
+        quantity: data.quantity,
+        notes: data.notes,
+        isPrimary: data.isPrimary,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${addLocationProductId}/locations`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: t('common:success'),
+        description: t('common:locationAddedSuccessfully'),
+      });
+      setAddLocationDialogOpen(false);
+      resetAddLocationForm();
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('common:failedToAddLocation'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetAddLocationForm = () => {
+    setNewLocationType("warehouse");
+    setNewLocationCode("");
+    setNewLocationQuantity(0);
+    setNewLocationNotes("");
+    setNewLocationIsPrimary(true);
+  };
+
+  const handleOpenAddLocationDialog = (productId: string, productName: string) => {
+    setAddLocationProductId(productId);
+    setAddLocationProductName(productName);
+    resetAddLocationForm();
+    setAddLocationDialogOpen(true);
+  };
+
+  const handleAddLocation = () => {
+    if (!addLocationProductId || !newLocationCode) {
+      toast({
+        title: t('common:error'),
+        description: t('common:locationCodeRequired'),
+        variant: "destructive",
+      });
+      return;
+    }
+    addLocationMutation.mutate({
+      productId: addLocationProductId,
+      locationType: newLocationType,
+      locationCode: newLocationCode,
+      quantity: newLocationQuantity,
+      notes: newLocationNotes,
+      isPrimary: newLocationIsPrimary,
+    });
   };
 
   const handleBarcodeScan = (barcode: string) => {
@@ -972,17 +1050,19 @@ export default function StockLookup() {
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                               {t('noWarehouseLocations')}
                             </p>
-                            <Link href={`/inventory/products/${product.id}`}>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="h-8"
-                                data-testid={`button-add-location-${product.id}`}
-                              >
-                                <Plus className="h-3.5 w-3.5 mr-1" />
-                                {t('addLocation')}
-                              </Button>
-                            </Link>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="h-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAddLocationDialog(product.id, product.name);
+                              }}
+                              data-testid={`button-add-location-${product.id}`}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              {t('addLocation')}
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -1358,6 +1438,88 @@ export default function StockLookup() {
           )}
         </>
       )}
+
+      {/* Add Location Dialog */}
+      <Dialog open={addLocationDialogOpen} onOpenChange={setAddLocationDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('common:addProductLocation')}</DialogTitle>
+            <DialogDescription>
+              {t('common:addStorageLocationFor', { productName: addLocationProductName })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <WarehouseLocationSelector
+              value={newLocationCode}
+              onChange={setNewLocationCode}
+              locationType={newLocationType}
+              onLocationTypeChange={setNewLocationType}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="add-location-quantity">{t('common:quantityAtLocation')}</Label>
+                <Input
+                  id="add-location-quantity"
+                  type="number"
+                  value={newLocationQuantity}
+                  onChange={(e) => setNewLocationQuantity(parseInt(e.target.value) || 0)}
+                  min="0"
+                  data-testid="input-add-location-quantity"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="add-location-primary"
+                    checked={newLocationIsPrimary}
+                    onChange={(e) => setNewLocationIsPrimary(e.target.checked)}
+                    className="h-4 w-4"
+                    data-testid="checkbox-add-location-primary"
+                  />
+                  <Label htmlFor="add-location-primary" className="cursor-pointer">
+                    {t('common:setAsPrimaryLocation')}
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="add-location-notes">{t('common:notes')}</Label>
+              <Textarea
+                id="add-location-notes"
+                value={newLocationNotes}
+                onChange={(e) => setNewLocationNotes(e.target.value)}
+                placeholder={t('common:optionalNotesAboutLocation')}
+                rows={2}
+                data-testid="textarea-add-location-notes"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAddLocationDialogOpen(false)}
+              data-testid="button-cancel-add-location"
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAddLocation}
+              disabled={addLocationMutation.isPending || !newLocationCode}
+              data-testid="button-save-add-location"
+            >
+              {t('common:addLocation')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

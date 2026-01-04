@@ -1101,6 +1101,7 @@ const common = {
   primaryLocationUpdated: 'Đã cập nhật vị trí chính',
   inventoryMovedSuccessfully: 'Đã di chuyển hàng tồn kho thành công',
   failedToAddLocation: 'Không thể thêm vị trí',
+  locationCodeRequired: 'Yêu cầu mã vị trí',
   failedToUpdateLocation: 'Không thể cập nhật vị trí',
   failedToDeleteLocation: 'Không thể xóa vị trí',
   failedToSetPrimaryLocation: 'Không thể đặt vị trí chính',
