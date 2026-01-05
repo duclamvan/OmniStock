@@ -1290,7 +1290,7 @@ const common = {
   retryFailedSyncs: 'Retry Failed Syncs',
   
   // Global Search
-  searchItemsShipmentsCustomers: 'Search items, shipments, or customers...',
+  searchItemsShipmentsCustomers: 'Search...',
   typeAtLeastTwoCharacters: 'Type at least 2 characters to search...',
   searching: 'Searching...',
   noResultsFoundFor: 'No results found for "{{query}}"',

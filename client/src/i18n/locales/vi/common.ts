@@ -1036,7 +1036,7 @@ const common = {
   retryFailedSyncs: 'Thử lại đồng bộ thất bại',
   
   // Global Search
-  searchItemsShipmentsCustomers: 'Tìm sản phẩm, lô hàng hoặc khách hàng...',
+  searchItemsShipmentsCustomers: 'Tìm kiếm...',
   typeAtLeastTwoCharacters: 'Nhập ít nhất 2 ký tự để tìm kiếm...',
   searching: 'Đang tìm kiếm...',
   noResultsFoundFor: 'Không tìm thấy kết quả cho "{{query}}"',
