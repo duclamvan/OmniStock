@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,10 +122,8 @@ export default function AllCustomers() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: customers = [], isLoading, error } = useQuery<any[]>({
-    queryKey: debouncedSearch 
-      ? ['/api/customers', { search: debouncedSearch, includeOrderStats: 'false' }] 
-      : ['/api/customers', { includeOrderStats: 'false' }],
+  const { data: customers = [], isLoading, isFetching, error } = useQuery<any[]>({
+    queryKey: ['/api/customers', { search: debouncedSearch, includeOrderStats: 'false' }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('includeOrderStats', 'false');
@@ -136,17 +134,33 @@ export default function AllCustomers() {
     },
     retry: false,
     staleTime: 30000,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
+
+  // Normalize text for Vietnamese diacritics-insensitive matching
+  const normalizeForSearch = (text: string): string => {
+    if (!text) return '';
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'd');
+  };
 
   // Client-side filtering for instant feedback while debouncing
   const filteredCustomers = useMemo(() => {
     if (!searchInput || searchInput === debouncedSearch) return customers;
-    const query = searchInput.toLowerCase();
+    const query = normalizeForSearch(searchInput);
     return customers.filter((c: any) => 
-      c.name?.toLowerCase().includes(query) ||
-      c.email?.toLowerCase().includes(query) ||
-      c.phone?.includes(query) ||
-      c.facebookName?.toLowerCase().includes(query)
+      normalizeForSearch(c.name || '').includes(query) ||
+      normalizeForSearch(c.email || '').includes(query) ||
+      (c.phone || '').includes(searchInput) ||
+      normalizeForSearch(c.facebookName || '').includes(query) ||
+      normalizeForSearch(c.company || '').includes(query) ||
+      normalizeForSearch(c.city || '').includes(query) ||
+      normalizeForSearch(c.country || '').includes(query)
     );
   }, [customers, searchInput, debouncedSearch]);
 
