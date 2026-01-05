@@ -123,7 +123,9 @@ export default function AllCustomers() {
   }, [searchInput]);
 
   const { data: customers = [], isLoading, isFetching, error } = useQuery<any[]>({
-    queryKey: ['/api/customers', { search: debouncedSearch, includeOrderStats: 'false' }],
+    queryKey: debouncedSearch 
+      ? ['/api/customers', { search: debouncedSearch, includeOrderStats: 'false' }]
+      : ['/api/customers', { includeOrderStats: 'false' }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('includeOrderStats', 'false');
