@@ -3637,8 +3637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const normalizedText = normalizeVietnamese(text.toLowerCase());
     const normalizedQuery = normalizeVietnamese(query.toLowerCase());
     
-    // Split query into tokens (words), filter out empty and short tokens
-    const queryTokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
+    // Split query into tokens (words), filter out empty tokens (allow single chars)
+    const queryTokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 1);
     const textTokens = normalizedText.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 1);
     
     let score = 0;
@@ -3723,7 +3723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Build SQL condition for token-based fuzzy matching
   function buildTokenMatchSQL(column: any, query: string) {
     const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
-    const tokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
+    const tokens = normalizedQuery.split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 1);
     
     if (tokens.length === 0) {
       return sql`${normalizeSQLColumn(column)} LIKE ${`%${normalizedQuery}%`}`;
@@ -4038,8 +4038,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orders: orderResults
       };
       
-      // Cache the result for fast repeated queries
-      setSearchCache(cacheKey, result);
+      // Only cache non-empty results to prevent stale empty caches
+      const hasResults = inventoryItems.length > 0 || shipmentItems.length > 0 || 
+                         customersWithStats.length > 0 || orderResults.length > 0;
+      if (hasResults) {
+        setSearchCache(cacheKey, result);
+      }
       
       res.json(result);
     } catch (error) {
