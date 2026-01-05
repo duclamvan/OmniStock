@@ -822,17 +822,17 @@ export default function POS() {
                 <Receipt className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h1 className="text-base sm:text-xl font-bold">Point of Sale</h1>
-                <p className="text-[10px] sm:text-xs text-blue-100 hidden sm:block">Davie Supply POS System</p>
+                <h1 className="text-base sm:text-xl font-bold">{t('financial:posTitle')}</h1>
+                <p className="text-[10px] sm:text-xs text-blue-100 hidden sm:block">{t('financial:posSystem')}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Warehouse Selector */}
               <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-                <SelectTrigger className="w-24 sm:w-40 h-8 sm:h-10 bg-white/10 border-white/20 text-white text-xs sm:text-sm" data-testid="select-warehouse">
+                <SelectTrigger className="w-24 sm:w-40 h-8 sm:h-10 bg-white/20 hover:bg-white/30 border-white/40 text-white font-medium text-xs sm:text-sm backdrop-blur-sm" data-testid="select-warehouse">
                   <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <SelectValue placeholder="Warehouse" />
+                  <SelectValue placeholder={t('financial:warehouse')} />
                 </SelectTrigger>
                 <SelectContent>
                   {warehouses.map((warehouse: any) => (
@@ -1068,7 +1068,7 @@ export default function POS() {
                                 {price.toFixed(2)} {currencySymbol}
                               </p>
                               {isInCart && cartItem && (
-                                <Badge className="mt-1">{cartItem.quantity} in cart</Badge>
+                                <Badge className="mt-1">{cartItem.quantity} {t('financial:inCart')}</Badge>
                               )}
                             </div>
                           </div>
@@ -1085,8 +1085,8 @@ export default function POS() {
             {filteredItems.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Package className="h-16 w-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium">No products found</p>
-                <p className="text-sm">Try adjusting your search or category filter</p>
+                <p className="text-lg font-medium">{t('financial:noProductsFound')}</p>
+                <p className="text-sm">{t('financial:tryAdjustingSearch')}</p>
               </div>
             )}
           </div>
@@ -1103,8 +1103,8 @@ export default function POS() {
                 <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <h2 className="text-base sm:text-xl font-bold">Cart</h2>
-                <p className="text-[10px] sm:text-xs text-gray-300 hidden sm:block">{totalItems} items</p>
+                <h2 className="text-base sm:text-xl font-bold">{t('financial:cart')}</h2>
+                <p className="text-[10px] sm:text-xs text-gray-300 hidden sm:block">{totalItems} {t('financial:items')}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3">
@@ -1168,7 +1168,7 @@ export default function POS() {
               {selectedCustomer ? (
                 <span className="font-medium">{customerName}</span>
               ) : (
-                <span className="text-muted-foreground text-xs sm:text-sm">Walk-in Customer (tap to select)</span>
+                <span className="text-muted-foreground text-xs sm:text-sm">{t('financial:walkInCustomerTapToSelect')}</span>
               )}
             </div>
             {selectedCustomer && (
@@ -1186,8 +1186,8 @@ export default function POS() {
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-muted-foreground">
                 <ShoppingCart className="h-12 w-12 sm:h-20 sm:w-20 mb-3 sm:mb-4 opacity-20" />
-                <p className="text-base sm:text-lg font-medium">Cart is empty</p>
-                <p className="text-xs sm:text-sm">Scan or click products to add</p>
+                <p className="text-base sm:text-lg font-medium">{t('financial:cartIsEmptyMessage')}</p>
+                <p className="text-xs sm:text-sm">{t('financial:scanOrClickToAdd')}</p>
               </div>
             ) : (
               cart.map((item) => (
@@ -1214,7 +1214,7 @@ export default function POS() {
                         <div className="flex items-center gap-1.5">
                           {item.type === 'custom' && (
                             <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
-                              Custom
+                              {t('financial:customItem')}
                             </Badge>
                           )}
                         </div>
@@ -1306,7 +1306,7 @@ export default function POS() {
                 data-testid="button-add-discount"
               >
                 <Percent className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                {discount > 0 ? `${discount.toFixed(2)} ${currencySymbol}` : 'Discount'}
+                {discount > 0 ? `${discount.toFixed(2)} ${currencySymbol}` : t('common:discount')}
               </Button>
               <Button
                 variant="outline"
@@ -1316,24 +1316,24 @@ export default function POS() {
                 data-testid="button-add-notes"
               >
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                {orderNotes ? 'Edit Notes' : 'Add Notes'}
+                {orderNotes ? t('financial:editNotes') : t('financial:addNotes')}
               </Button>
             </div>
 
             {/* Totals */}
             <div className="space-y-1 sm:space-y-2 text-sm sm:text-base">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">{t('common:subtotal')}</span>
                 <span className="font-medium tabular-nums">{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
+                  <span>{t('common:discount')}</span>
                   <span className="font-medium tabular-nums">-{discount.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg sm:text-xl font-bold pt-2 border-t">
-                <span>Total</span>
+                <span>{t('common:total')}</span>
                 <span className="text-primary tabular-nums">{total.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}</span>
               </div>
             </div>
@@ -1347,11 +1347,11 @@ export default function POS() {
               data-testid="button-checkout"
             >
               {createOrderMutation.isPending ? (
-                'Processing...'
+                t('financial:processing')
               ) : (
                 <>
                   <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
-                  Pay {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
+                  {t('financial:payAmount', { amount: `${total.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencySymbol}` })}
                 </>
               )}
             </Button>
@@ -1373,10 +1373,10 @@ export default function POS() {
           }}
         >
           <DialogHeader>
-            <DialogTitle className="text-2xl">Select Payment Method</DialogTitle>
+            <DialogTitle className="text-2xl">{t('financial:selectPaymentMethod')}</DialogTitle>
             <DialogDescription>
-              Total: <span className="font-bold text-xl text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
-              <span className="block text-xs mt-1 text-muted-foreground">Press 1-6 to select method</span>
+              {t('common:total')}: <span className="font-bold text-xl text-primary tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
+              <span className="block text-xs mt-1 text-muted-foreground">{t('financial:pressToSelectMethod')}</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -1393,7 +1393,7 @@ export default function POS() {
               <div className="p-3 rounded-full text-white bg-green-500">
                 <Banknote className="h-6 w-6" />
               </div>
-              Cash
+              {t('financial:cash')}
             </Button>
             
             {/* Card - Disabled */}
@@ -1408,8 +1408,8 @@ export default function POS() {
                 <CreditCard className="h-6 w-6" />
               </div>
               <span className="flex items-center gap-1">
-                Card
-                <span className="text-[10px] text-muted-foreground">(Soon)</span>
+                {t('financial:card')}
+                <span className="text-[10px] text-muted-foreground">{t('financial:comingSoon')}</span>
               </span>
             </Button>
             
@@ -1425,7 +1425,7 @@ export default function POS() {
               <div className="p-3 rounded-full text-white bg-purple-500">
                 <Building2 className="h-6 w-6" />
               </div>
-              Privat Konto
+              {t('financial:privatKonto')}
             </Button>
             
             {/* Bank Transfer - Invoice - Disabled */}
@@ -1440,8 +1440,8 @@ export default function POS() {
                 <FileText className="h-6 w-6" />
               </div>
               <span className="flex flex-col items-center">
-                <span>Invoice Transfer</span>
-                <span className="text-[10px] text-muted-foreground">(Soon)</span>
+                <span>{t('financial:invoiceTransfer')}</span>
+                <span className="text-[10px] text-muted-foreground">{t('financial:comingSoon')}</span>
               </span>
             </Button>
             
@@ -1461,7 +1461,7 @@ export default function POS() {
               <div className="p-3 rounded-full text-white bg-amber-500">
                 <Clock className="h-6 w-6" />
               </div>
-              Pay Later
+              {t('financial:payLater')}
             </Button>
             
             {/* QR Code CZK - Enabled */}
@@ -1479,7 +1479,7 @@ export default function POS() {
               <div className="p-3 rounded-full text-white bg-cyan-500">
                 <QrCode className="h-6 w-6" />
               </div>
-              QR Code CZK
+              {t('financial:qrCodeCzk')}
             </Button>
           </div>
         </DialogContent>
@@ -1781,16 +1781,16 @@ export default function POS() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-amber-500" />
-              Select Customer for Pay Later
+              {t('financial:selectCustomerForPayLater')}
             </DialogTitle>
             <DialogDescription>
-              Search by name, Facebook name, email, phone, or company
+              {t('financial:searchPayLaterHint')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <Input
-              placeholder="Search customers (including Facebook name)..."
+              placeholder={t('financial:searchCustomerPlaceholder')}
               value={payLaterCustomerSearchQuery}
               onChange={(e) => setPayLaterCustomerSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -1810,8 +1810,8 @@ export default function POS() {
                 {filteredPayLaterCustomers.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <User className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No customers found</p>
-                    <p className="text-sm">Try a different search term</p>
+                    <p>{t('common:noResultsFound')}</p>
+                    <p className="text-sm">{t('common:tryDifferentSearch')}</p>
                   </div>
                 ) : (
                   filteredPayLaterCustomers.map((customer) => (
@@ -1861,7 +1861,7 @@ export default function POS() {
                   setShowPaymentDialog(true); 
                 }}
               >
-                Back to Payment Options
+                {t('financial:backToPaymentOptions')}
               </Button>
             </DialogFooter>
           </div>
@@ -1886,7 +1886,7 @@ export default function POS() {
             <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{t('common:items')}</span>
-                <span className="font-medium">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
+                <span className="font-medium">{cart.length} {t('financial:items')}</span>
               </div>
               {discount > 0 && (
                 <>
@@ -1908,7 +1908,7 @@ export default function POS() {
               </div>
               {currency === 'EUR' && (
                 <div className="flex justify-between items-center bg-white/50 dark:bg-slate-800/50 rounded-lg p-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Amount in CZK</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('financial:amountInCzk')}</span>
                   <span className="text-xl font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">
                     {(total * 25).toFixed(2)} Kč
                   </span>
@@ -1935,7 +1935,7 @@ export default function POS() {
               }}
               className="w-full sm:w-auto"
             >
-              Back
+              {t('common:back')}
             </Button>
             <Button
               size="lg"
@@ -1950,12 +1950,12 @@ export default function POS() {
               {createOrderMutation.isPending ? (
                 <>
                   <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Processing...
+                  {t('financial:processing')}
                 </>
               ) : (
                 <>
                   <Check className="h-5 w-5 mr-2" />
-                  Complete Sale
+                  {t('financial:completeSale')}
                 </>
               )}
             </Button>
@@ -1967,7 +1967,7 @@ export default function POS() {
       <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Order Notes</DialogTitle>
+            <DialogTitle>{t('financial:orderNotes')}</DialogTitle>
           </DialogHeader>
           <Textarea
             value={orderNotes}
@@ -1978,12 +1978,12 @@ export default function POS() {
                 setShowNotesDialog(false);
               }
             }}
-            placeholder="Add any notes for this order... (Ctrl+Enter to save)"
+            placeholder={t('financial:addOrderNotesPlaceholder')}
             className="min-h-[120px]"
             data-testid="textarea-order-notes"
           />
           <DialogFooter>
-            <Button onClick={() => setShowNotesDialog(false)}>Save Notes</Button>
+            <Button onClick={() => setShowNotesDialog(false)}>{t('financial:saveNotes')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1994,10 +1994,10 @@ export default function POS() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Percent className="h-5 w-5" />
-              Apply Discount
+              {t('financial:applyDiscount')}
             </DialogTitle>
             <DialogDescription>
-              Subtotal: <span className="font-semibold tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
+              {t('common:subtotal')}: <span className="font-semibold tabular-nums">{subtotal.toFixed(2)} {currencySymbol}</span>
             </DialogDescription>
           </DialogHeader>
           
@@ -2011,7 +2011,7 @@ export default function POS() {
                 data-testid="button-discount-type-percentage"
               >
                 <Percent className="h-4 w-4 mr-2" />
-                Percentage
+                {t('financial:percentage')}
               </Button>
               <Button
                 variant={discountType === 'amount' ? 'default' : 'ghost'}
@@ -2020,7 +2020,7 @@ export default function POS() {
                 data-testid="button-discount-type-amount"
               >
                 {currency === 'EUR' ? <Euro className="h-4 w-4 mr-2" /> : <DollarSign className="h-4 w-4 mr-2" />}
-                Fixed Amount
+                {t('financial:fixedAmount')}
               </Button>
             </div>
             
@@ -2031,7 +2031,7 @@ export default function POS() {
                 value={discountInput}
                 onChange={(e) => setDiscountInput(e.target.value)}
                 onKeyDown={handleDecimalKeyDown}
-                placeholder={discountType === 'percentage' ? 'Enter percentage (e.g., 10)' : `Enter amount (e.g., 5.00)`}
+                placeholder={discountType === 'percentage' ? t('financial:enterPercentagePlaceholder') : `${t('common:enterAmount')} (e.g., 5.00)`}
                 className="h-14 text-xl text-center pr-12"
                 autoFocus
                 data-testid="input-discount"
@@ -2043,7 +2043,7 @@ export default function POS() {
             
             {/* Quick Discount Buttons */}
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground font-medium">Quick Select:</p>
+              <p className="text-xs text-muted-foreground font-medium">{t('financial:quickSelect')}</p>
               <div className="grid grid-cols-4 gap-2">
                 {discountType === 'percentage' ? (
                   [5, 10, 15, 20].map((percent) => (
@@ -2077,7 +2077,7 @@ export default function POS() {
             {discountInput && parseDecimal(discountInput) > 0 && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-green-700 dark:text-green-300">Discount:</span>
+                  <span className="text-green-700 dark:text-green-300">{t('common:discount')}:</span>
                   <span className="font-bold text-green-700 dark:text-green-300 tabular-nums">
                     -{discountType === 'percentage' 
                       ? ((subtotal * parseDecimal(discountInput)) / 100).toFixed(2)
@@ -2086,7 +2086,7 @@ export default function POS() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm mt-1">
-                  <span className="text-green-700 dark:text-green-300">New Total:</span>
+                  <span className="text-green-700 dark:text-green-300">{t('financial:newTotal')}</span>
                   <span className="font-bold text-lg text-green-700 dark:text-green-300 tabular-nums">
                     {discountType === 'percentage'
                       ? (subtotal - (subtotal * parseDecimal(discountInput)) / 100).toFixed(2)

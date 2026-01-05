@@ -1,0 +1,43 @@
+{
+  "period": "weekly",
+  "startDate": "2025-12-29T00:00:00.000Z",
+  "endDate": "2026-01-05T23:59:59.999Z",
+  "generatedAt": "2026-01-05T03:18:32.289Z",
+  "summary": {
+    "totalOrders": 28,
+    "completedOrders": 6,
+    "pendingOrders": 12,
+    "cancelledOrders": 0,
+    "totalRevenue": 140189,
+    "totalItemsSold": 0,
+    "averageOrderValue": 5006.75,
+    "newCustomers": 4010
+  },
+  "inventory": {
+    "totalProducts": 10,
+    "lowStockProducts": 6,
+    "outOfStockProducts": 0,
+    "stockAdjustments": 0,
+    "itemsReceived": 27001
+  },
+  "topProducts": [],
+  "topCustomers": [
+    {
+      "id": "07568cb6-bcb9-42f9-a585-914e0c5b4eef",
+      "name": "Davie Lam",
+      "orderCount": 17,
+      "totalSpent": 133050
+    },
+    {
+      "id": "6933df83-bdcf-48a1-905f-947e4a7d684c",
+      "name": "Yen Nguyen",
+      "orderCount": 9,
+      "totalSpent": 2099
+    }
+  ],
+  "financials": {
+    "totalExpenses": 0,
+    "grossProfit": 140189,
+    "expensesByCategory": {}
+  }
+}
