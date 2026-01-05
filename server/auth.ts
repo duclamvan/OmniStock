@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
@@ -8,7 +9,6 @@ import crypto from "crypto";
 import { z } from "zod";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
-import createMemoryStore from "memorystore";
 
 // Password complexity requirements
 const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -142,15 +142,13 @@ function validateEnvironment() {
 validateEnvironment();
 
 // Session configuration
-const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days default
+// 30 days for persistent sessions (survives server restarts)
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Use MemoryStore for reliable session handling
-// Note: Sessions don't persist across server restarts, but "Remember Device" still extends cookie life
-const MemoryStore = createMemoryStore(session);
-const sessionStore = new MemoryStore({
-  checkPeriod: 86400000, // Prune expired entries every 24 hours
-});
+// Use PostgreSQL-backed sessions for persistence across server restarts
+// This ensures users stay logged in even when deploying updates
+const PgSession = connectPg(session);
 
 // Memoize the session middleware to ensure single instance
 let sessionMiddleware: ReturnType<typeof session> | null = null;
@@ -158,17 +156,22 @@ let sessionMiddleware: ReturnType<typeof session> | null = null;
 export function getSession() {
   if (!sessionMiddleware) {
     sessionMiddleware = session({
+      store: new PgSession({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true,
+        tableName: 'session',
+        pruneSessionInterval: 60 * 15, // Clear expired sessions every 15 minutes
+      }),
       secret: process.env.SESSION_SECRET!,
-      store: sessionStore,
       resave: false,
       saveUninitialized: false,
       rolling: true,
       name: "sid", // Use a non-default session name for security
       cookie: {
+        maxAge: THIRTY_DAYS,
         httpOnly: true,
         secure: isProduction,
         sameSite: isProduction ? "strict" : "lax", // Stricter in production for CSRF protection
-        maxAge: sessionTtl,
         path: "/",
       },
     });
