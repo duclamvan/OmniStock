@@ -481,7 +481,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(100%+0.5rem)] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[80vh] overflow-y-auto z-50 shadow-2xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl"
+            className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[60vh] sm:max-h-[80vh] overflow-y-auto z-[100] shadow-2xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl"
             style={{ originY: 0 }}
           >
             {isLoading && !results ? (
