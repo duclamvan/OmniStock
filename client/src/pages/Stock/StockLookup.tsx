@@ -254,7 +254,14 @@ export default function StockLookup() {
         .map(r => r.item);
     }
     
-    // Sort products
+    // When search is active, preserve the relevance-based ordering from fuzzySearch
+    // Only apply manual sorting when there's no active search query
+    if (searchQuery.trim()) {
+      // Keep the relevance order from fuzzySearch - don't re-sort
+      return result;
+    }
+    
+    // Sort products (only when not searching)
     const sorted = [...result].sort((a, b) => {
       switch (sortBy) {
         case 'name-asc':
