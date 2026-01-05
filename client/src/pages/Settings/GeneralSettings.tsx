@@ -1572,6 +1572,23 @@ export default function GeneralSettings() {
                       )}
                     />
                   </div>
+
+                  {/* Persistent Sessions Info */}
+                  <div className="rounded-md border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-medium text-green-800 dark:text-green-200">
+                          {t('settings:persistentSessionsEnabled', 'Persistent Sessions Enabled')}
+                        </h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          {t('settings:persistentSessionsDescription', 'Sessions are stored in the database and persist across server restarts. Users stay logged in for 30 days.')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Data & Audit */}
