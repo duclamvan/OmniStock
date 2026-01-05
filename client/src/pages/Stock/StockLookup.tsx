@@ -914,11 +914,26 @@ export default function StockLookup() {
                               <MapPin className="h-4 w-4" />
                               {t('warehouseLocations')} ({selectedProductData.locations.length})
                             </h4>
-                            <Link href={`/inventory/products/${product.id}`}>
-                              <Button variant="ghost" size="sm" className="h-7 text-xs" data-testid={`button-view-all-locations-${product.id}`}>
-                                {t('viewAll')}
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenAddLocationDialog(product.id, product.name);
+                                }}
+                                data-testid={`button-add-location-${product.id}`}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {t('addLocation')}
                               </Button>
-                            </Link>
+                              <Link href={`/inventory/products/${product.id}`}>
+                                <Button variant="ghost" size="sm" className="h-7 text-xs" data-testid={`button-view-all-locations-${product.id}`}>
+                                  {t('viewAll')}
+                                </Button>
+                              </Link>
+                            </div>
                           </div>
                           <div className="space-y-2">
                             {selectedProductData.locations.map((loc) => (
