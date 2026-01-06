@@ -33,7 +33,9 @@ const PPL_TOKEN_URL = 'https://api.dhl.com/ecs/ppl/myapi2/login/getAccessToken';
 let tokenCache: PPLAuthCache | null = null;
 
 /**
- * Get PPL API access token with caching
+ * Get PPL API access token with caching (protected by circuit breaker)
+ * Note: This function is called inside pplRequest's circuit breaker execute block,
+ * so authentication failures will properly trip the circuit breaker
  */
 export async function getPPLAccessToken(): Promise<string> {
   // Check if we have a valid cached token
@@ -60,7 +62,8 @@ export async function getPPLAccessToken(): Promise<string> {
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        },
+        timeout: API_TIMEOUT_MS
       }
     );
 
@@ -79,11 +82,10 @@ export async function getPPLAccessToken(): Promise<string> {
       data: error.response?.data,
       status: error.response?.status,
       url: PPL_TOKEN_URL,
-      clientId: clientId?.substring(0, 4) + '***' // Show only first 4 chars
+      clientId: clientId?.substring(0, 4) + '***'
     };
     console.error('Failed to get PPL access token:', errorDetails);
     
-    // Throw a detailed error
     const errorMessage = error.response?.data?.error_description || 
                         error.response?.data?.error || 
                         'Failed to authenticate with PPL API';
