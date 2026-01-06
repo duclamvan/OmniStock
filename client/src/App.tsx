@@ -15,6 +15,7 @@ import { LocalizationProvider } from "@/contexts/LocalizationContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LabelPrintProvider } from "@/hooks/use-label-print";
+import { GlobalBarcodeScanner } from "@/components/GlobalBarcodeScanner";
 import NotFound from "@/pages/not-found";
 // Removed Landing page import
 import Home from "@/pages/Home";
@@ -503,6 +504,7 @@ function AppContent() {
   
   return (
     <>
+      <GlobalBarcodeScanner />
       <OfflineIndicator />
       <Toaster />
       <Router />

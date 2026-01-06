@@ -26393,6 +26393,143 @@ Important rules:
     }
   });
 
+  // =====================================================
+  // BACKGROUND JOB QUEUE ENDPOINTS
+  // =====================================================
+  
+  const { jobQueue, JOB_TYPES } = await import('./utils/jobQueue');
+  
+  // Register PPL label generation handler
+  jobQueue.registerHandler(JOB_TYPES.PPL_LABEL_GENERATION, async (job) => {
+    const { orderId, cartonCount, codAmount, codCurrency, pickupLocationCode } = job.data;
+    
+    try {
+      const { createPPLShipment, getPPLLabel, createPPLSingleShipment, getPPLLabelByShipmentId, getPPLShipmentByReference } = await import('./services/pplService');
+      
+      // Get order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        throw new Error('Order not found');
+      }
+      
+      jobQueue.updateProgress(job.id, 10);
+      
+      // Build shipment (simplified - actual logic would be more complex)
+      const customer = order.customerId ? await storage.getCustomer(order.customerId) : null;
+      
+      jobQueue.updateProgress(job.id, 30);
+      
+      // Create shipment with PPL API
+      const pplShipment = {
+        referenceId: order.orderId,
+        productType: pickupLocationCode ? 'PPL_SMART' : 'PPL_PARCEL_CZ_PRIVATE',
+        recipient: {
+          country: 'CZ',
+          zipCode: customer?.billingZipCode || '10000',
+          name: customer?.name || 'Customer',
+          street: customer?.address || 'Address',
+          city: customer?.city || 'Prague',
+        },
+      };
+      
+      jobQueue.updateProgress(job.id, 50);
+      
+      const batchResult = await createPPLShipment({
+        shipments: [pplShipment as any],
+        labelSettings: { format: 'Pdf' }
+      });
+      
+      jobQueue.updateProgress(job.id, 70);
+      
+      // Get label PDF
+      const labelBuffer = await getPPLLabel(batchResult.batchId, 'pdf');
+      
+      jobQueue.updateProgress(job.id, 90);
+      
+      // Get tracking numbers
+      let shipmentNumbers: string[] = [];
+      const foundShipments = await getPPLShipmentByReference(order.orderId);
+      if (foundShipments && foundShipments.length > 0) {
+        shipmentNumbers = foundShipments.map((s: any) => s.shipmentNumber);
+      }
+      
+      jobQueue.updateProgress(job.id, 100);
+      
+      return {
+        success: true,
+        batchId: batchResult.batchId,
+        shipmentNumbers,
+        labelData: labelBuffer ? labelBuffer.toString('base64') : null,
+      };
+    } catch (error: any) {
+      throw new Error(`PPL label generation failed: ${error.message}`);
+    }
+  });
+  
+  // Get job queue stats (must be before :jobId to avoid route conflict)
+  app.get('/api/jobs/stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = jobQueue.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting job stats:', error);
+      res.status(500).json({ message: 'Failed to get job stats' });
+    }
+  });
+  
+  // Get job status
+  app.get('/api/jobs/:jobId', isAuthenticated, async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      const job = jobQueue.getJob(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+      
+      res.json({
+        id: job.id,
+        type: job.type,
+        status: job.status,
+        progress: job.progress,
+        result: job.result,
+        error: job.error,
+        createdAt: job.createdAt,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+      });
+    } catch (error) {
+      console.error('Error getting job:', error);
+      res.status(500).json({ message: 'Failed to get job status' });
+    }
+  });
+  
+  // Queue a PPL label generation job (async)
+  app.post('/api/orders/:orderId/ppl/create-labels-async', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { cartonCount, codAmount, codCurrency, pickupLocationCode } = req.body;
+      
+      // Create a background job
+      const job = await jobQueue.addJob(JOB_TYPES.PPL_LABEL_GENERATION, {
+        orderId,
+        cartonCount: cartonCount || 1,
+        codAmount,
+        codCurrency,
+        pickupLocationCode,
+      });
+      
+      res.json({
+        message: 'Label generation started',
+        jobId: job.id,
+        status: job.status,
+      });
+    } catch (error) {
+      console.error('Error queuing label job:', error);
+      res.status(500).json({ message: 'Failed to queue label generation' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
