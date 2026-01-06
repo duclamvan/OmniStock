@@ -1,0 +1,29 @@
+**Context & Current Status:**
+My application just crashed my database (Neon) by hitting the 5GB bandwidth limit and maxing out connection slots. This happened because of an inefficient "infinite retry" loop during a bulk import of 500+ inventory items with images. The app is currently deployed on Railway.
+
+**Immediate Actions Required (Refactor Plan):**
+
+1.  **Implement "Safety Valve" Retry Logic:**
+    * Scan all API calls and database interactions (especially in `services/` or `scripts/`).
+    * Replace any `while(true)` or simple `try/catch` retry blocks with **Exponential Backoff**.
+    * Use a library like `p-retry` or implement a custom wrapper that retries max 3 times with a delay (1s, 2s, 4s) before failing gracefully.
+
+2.  **Fix Database Connection Pooling:**
+    * Review `db/index.ts` (or wherever the Drizzle client is initialized).
+    * Ensure we are explicitly using the **Pooled Connection String** (`DATABASE_URL`) for the application query client.
+    * Ensure we are using the **Direct Connection String** (`DIRECT_URL` or `PGHOST`) *only* for migration scripts (`drizzle-kit push`).
+    * Prevent "Zombie Connections": Ensure the client doesn't open a new connection for every single request; it must export a singleton instance.
+
+3.  **Optimize Bulk Uploads (The "Anti-Crash" Mechanism):**
+    * Refactor the inventory import logic.
+    * **Concurrency Control:** Use `p-limit` (set to limit 5) to ensure we never process more than 5 items at once.
+    * **Data Hygiene:** Check the schema. ensure we are NOT saving Base64 image strings into the `image_url` column. We must only save the remote URL string.
+    * If Base64 is detected in the input, the script must throw an error or handle the upload to external storage (S3/GCS) first, then save *only* the link.
+
+4.  **Add Circuit Breaker for External APIs:**
+    * Wrap calls to EasyPost, PPL, and AI APIs with a timeout (e.g., 5000ms). If they hang, the server must not hang with them.
+
+**Output Requirements:**
+* Show me the specific code changes for `db/index.ts` to guarantee pooling.
+* Rewrite the bulk upload function with the `p-limit` and retry logic included.
+* Do not delete existing business logic, only wrap it in safety layers.
