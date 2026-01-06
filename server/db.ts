@@ -11,19 +11,105 @@ if (!connectionString) {
   throw new Error("DATABASE_URL must be set for database connection.");
 }
 
-// Use standard pg driver with direct Neon connection
-// Increased timeouts for Neon serverless cold starts (can take 15+ seconds)
-export const pool = new Pool({
-  connectionString,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 30000, // 30 seconds for Neon cold starts
+// Singleton pattern enforcement - prevent multiple pool instances
+let poolInstance: pg.Pool | null = null;
+
+function createPool(): pg.Pool {
+  if (poolInstance) {
+    return poolInstance;
+  }
+
+  poolInstance = new Pool({
+    connectionString,
+    // Connection pool limits - prevent overwhelming the database
+    max: 10,                        // Maximum connections in pool
+    min: 2,                         // Minimum connections to keep alive
+    idleTimeoutMillis: 30000,       // Close idle connections after 30s
+    connectionTimeoutMillis: 30000, // Wait up to 30s for connection (Neon cold starts)
+    // Query statement timeout - prevent runaway queries
+    statement_timeout: 60000,       // 60 second query timeout
+    // Keep-alive settings for connection health
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+  });
+
+  // Connection health monitoring
+  poolInstance.on('connect', (client) => {
+    // Set search_path for PostgreSQL built-in types
+    client.query('SET search_path TO public, pg_catalog, "$user"');
+    // Set statement timeout at session level as fallback
+    client.query('SET statement_timeout = 60000');
+  });
+
+  poolInstance.on('error', (err, client) => {
+    console.error('[DB Pool] Unexpected error on idle client:', err.message);
+  });
+
+  poolInstance.on('acquire', (client) => {
+    // Log when connections are acquired (for debugging connection exhaustion)
+    if (process.env.DEBUG_DB === 'true') {
+      console.log(`[DB Pool] Connection acquired. Total: ${poolInstance?.totalCount}, Idle: ${poolInstance?.idleCount}, Waiting: ${poolInstance?.waitingCount}`);
+    }
+  });
+
+  poolInstance.on('release', (err, client) => {
+    if (err) {
+      console.error('[DB Pool] Error releasing client:', err.message);
+    }
+  });
+
+  return poolInstance;
+}
+
+// Use standard pg driver with Neon connection
+export const pool = createPool();
+
+/**
+ * Get pool statistics for monitoring
+ */
+export function getPoolStats() {
+  return {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+  };
+}
+
+/**
+ * Execute a query with timeout protection
+ */
+export async function queryWithTimeout<T>(
+  queryFn: () => Promise<T>,
+  timeoutMs: number = 30000
+): Promise<T> {
+  return Promise.race([
+    queryFn(),
+    new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error(`Query timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
+/**
+ * Graceful shutdown - close all connections
+ */
+export async function closePool(): Promise<void> {
+  if (poolInstance) {
+    await poolInstance.end();
+    poolInstance = null;
+    console.log('[DB Pool] All connections closed');
+  }
+}
+
+// Handle process termination gracefully
+process.on('SIGTERM', async () => {
+  console.log('[DB Pool] SIGTERM received, closing connections...');
+  await closePool();
 });
 
-// Ensure all connections use the correct search_path
-// Include pg_catalog for PostgreSQL built-in types like serial, and public for user tables
-pool.on('connect', (client) => {
-  client.query('SET search_path TO public, pg_catalog, "$user"');
+process.on('SIGINT', async () => {
+  console.log('[DB Pool] SIGINT received, closing connections...');
+  await closePool();
 });
 
 // Run startup migration to fix shipping_method column type (converts enum to text if needed)

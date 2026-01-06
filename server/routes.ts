@@ -154,6 +154,9 @@ import {
   EntityType
 } from './services/importExportService';
 import { PerformanceService } from './services/performanceService';
+import { safeBulkImport, validateProductImport, validateCustomerImport, validateSupplierImport, formatImportResponse } from './utils/safeBulkImport';
+import { validateImageUrl } from './utils/validation';
+import { getCircuitBreaker } from './utils/circuitBreaker';
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -5439,8 +5442,9 @@ Important:
     }
   });
 
-  // Bulk import suppliers from pre-parsed data (optimized - single request)
+  // Bulk import suppliers from pre-parsed data (optimized with concurrency control and retry logic)
   app.post('/api/suppliers/bulk-import', isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
     try {
       const { items } = req.body;
       
@@ -5448,16 +5452,18 @@ Important:
         return res.status(400).json({ message: "No items provided for import" });
       }
 
-      const importedSuppliers: any[] = [];
-      const errors: string[] = [];
+      console.log(`[BulkImport] Starting supplier import of ${items.length} items`);
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        try {
+      // Validate and sanitize items
+      const { valid: validatedItems, errors: validationErrors } = validateSupplierImport(items);
+
+      // Process items with concurrency control (max 5 parallel operations)
+      const results = await safeBulkImport(
+        validatedItems,
+        async (item: any, index: number) => {
           const name = item.name;
           if (!name) {
-            errors.push(`Item ${i + 1}: Name is required`);
-            continue;
+            throw new Error('Name is required');
           }
 
           const supplierData: any = {
@@ -5473,25 +5479,35 @@ Important:
           };
 
           if (item._isUpdate && item._existingId) {
-            // Update existing supplier
             const updated = await storage.updateSupplier(item._existingId, supplierData);
-            importedSuppliers.push({ ...updated, action: 'updated' });
+            return { ...updated, action: 'updated' };
           } else {
-            // Create new supplier
             const created = await storage.createSupplier(supplierData);
-            importedSuppliers.push({ ...created, action: 'created' });
+            return { ...created, action: 'created' };
           }
-        } catch (error: any) {
-          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${error.message}`);
+        },
+        { 
+          concurrency: 5,
+          maxRetries: 3,
+          onProgress: (completed, total) => {
+            if (completed % 50 === 0 || completed === total) {
+              console.log(`[BulkImport] Suppliers progress: ${completed}/${total}`);
+            }
+          }
         }
-      }
+      );
+
+      // Format response
+      const response = formatImportResponse(results, validationErrors, startTime);
+      console.log(`[BulkImport] Completed: ${response.stats.created} created, ${response.stats.updated} updated, ${response.stats.failed} failed in ${response.stats.durationMs}ms`);
 
       res.json({
-        success: true,
-        imported: importedSuppliers.length,
-        errors: errors.length,
-        errorDetails: errors,
-        suppliers: importedSuppliers
+        success: response.success,
+        imported: response.imported.length,
+        errors: response.errors.length,
+        errorDetails: response.errors,
+        suppliers: response.imported,
+        stats: response.stats
       });
     } catch (error: any) {
       console.error("Bulk suppliers import error:", error);
@@ -7330,8 +7346,9 @@ Important:
     }
   });
 
-  // Bulk import from pre-parsed data (optimized - single request for all products)
+  // Bulk import from pre-parsed data (optimized with concurrency control and retry logic)
   app.post('/api/products/bulk-import', isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
     try {
       const { items } = req.body;
       
@@ -7339,38 +7356,54 @@ Important:
         return res.status(400).json({ message: "No items provided for import" });
       }
 
-      const importedProducts: any[] = [];
-      const errors: string[] = [];
-      
-      // Get all categories, warehouses, and suppliers upfront for matching
-      const categories = await storage.getCategories();
-      const warehouses = await storage.getWarehouses();
-      const suppliers = await storage.getSuppliers();
+      console.log(`[BulkImport] Starting product import of ${items.length} items`);
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        try {
+      // Validate and sanitize items (reject Base64 images)
+      const { valid: validatedItems, errors: validationErrors } = validateProductImport(items);
+      
+      // Get all categories, warehouses, and suppliers upfront for matching (single queries)
+      const [categories, warehouses, suppliers] = await Promise.all([
+        storage.getCategories(),
+        storage.getWarehouses(),
+        storage.getSuppliers()
+      ]);
+
+      // Mutable arrays for dynamic category/supplier creation
+      const dynamicCategories = [...categories];
+      const dynamicSuppliers = [...suppliers];
+
+      // Process items with concurrency control (max 5 parallel operations)
+      const results = await safeBulkImport(
+        validatedItems,
+        async (item: any, index: number) => {
           const name = item.name;
           const sku = item.sku;
 
           if (!name || !sku) {
-            errors.push(`Item ${i + 1}: Missing name or SKU`);
-            continue;
+            throw new Error('Missing name or SKU');
+          }
+
+          // Validate image URL if present
+          if (item.imageUrl) {
+            const imgValidation = validateImageUrl(item.imageUrl);
+            if (!imgValidation.valid) {
+              item.imageUrl = null; // Clear invalid image
+            }
           }
 
           // Find or create category by name
-          let category = categories.find((c: any) => c.name?.toLowerCase() === item.categoryName?.toLowerCase());
+          let category = dynamicCategories.find((c: any) => c.name?.toLowerCase() === item.categoryName?.toLowerCase());
           if (!category && item.categoryName && item.categoryName.trim()) {
             const newCategory = await storage.createCategory({
               name: item.categoryName.trim(),
               description: 'Auto-created from product import',
             });
-            categories.push(newCategory);
+            dynamicCategories.push(newCategory);
             category = newCategory;
           }
 
           // Find or create supplier by name
-          let supplier = suppliers.find((s: any) => s.name?.toLowerCase() === item.supplierName?.toLowerCase());
+          let supplier = dynamicSuppliers.find((s: any) => s.name?.toLowerCase() === item.supplierName?.toLowerCase());
           if (!supplier && item.supplierName && item.supplierName.trim()) {
             const newSupplier = await storage.createSupplier({
               name: item.supplierName.trim(),
@@ -7380,7 +7413,7 @@ Important:
               country: null,
               notes: 'Auto-created from product import',
             });
-            suppliers.push(newSupplier);
+            dynamicSuppliers.push(newSupplier);
             supplier = newSupplier;
           }
 
@@ -7424,29 +7457,38 @@ Important:
           const existingProduct = await storage.getProductBySku(sku);
           
           if (item._isUpdate && item._existingId) {
-            // Update existing product
             const updated = await storage.updateProduct(item._existingId, productData);
-            importedProducts.push({ ...updated, action: 'updated' });
+            return { ...updated, action: 'updated' };
           } else if (existingProduct) {
-            // Update existing product by SKU
             const updated = await storage.updateProduct(existingProduct.id, productData);
-            importedProducts.push({ ...updated, action: 'updated' });
+            return { ...updated, action: 'updated' };
           } else {
-            // Create new product
             const created = await storage.createProduct(productData);
-            importedProducts.push({ ...created, action: 'created' });
+            return { ...created, action: 'created' };
           }
-        } catch (rowError: any) {
-          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${rowError.message}`);
+        },
+        { 
+          concurrency: 5,
+          maxRetries: 3,
+          onProgress: (completed, total) => {
+            if (completed % 50 === 0 || completed === total) {
+              console.log(`[BulkImport] Products progress: ${completed}/${total}`);
+            }
+          }
         }
-      }
+      );
+
+      // Format response
+      const response = formatImportResponse(results, validationErrors, startTime);
+      console.log(`[BulkImport] Completed: ${response.stats.created} created, ${response.stats.updated} updated, ${response.stats.failed} failed in ${response.stats.durationMs}ms`);
 
       res.json({
-        success: true,
-        imported: importedProducts.length,
-        errors: errors.length,
-        errorDetails: errors,
-        products: importedProducts
+        success: response.success,
+        imported: response.imported.length,
+        errors: response.errors.length,
+        errorDetails: response.errors,
+        products: response.imported,
+        stats: response.stats
       });
     } catch (error: any) {
       console.error("Bulk products import error:", error);
@@ -9905,8 +9947,9 @@ Important:
     }
   });
 
-  // Bulk import customers from pre-parsed data (optimized - single request)
+  // Bulk import customers from pre-parsed data (optimized with concurrency control and retry logic)
   app.post('/api/customers/bulk-import', isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
     try {
       const { items } = req.body;
       
@@ -9914,16 +9957,18 @@ Important:
         return res.status(400).json({ message: "No items provided for import" });
       }
 
-      const importedCustomers: any[] = [];
-      const errors: string[] = [];
+      console.log(`[BulkImport] Starting customer import of ${items.length} items`);
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        try {
+      // Validate and sanitize items
+      const { valid: validatedItems, errors: validationErrors } = validateCustomerImport(items);
+
+      // Process items with concurrency control (max 5 parallel operations)
+      const results = await safeBulkImport(
+        validatedItems,
+        async (item: any, index: number) => {
           const name = item.name;
           if (!name) {
-            errors.push(`Item ${i + 1}: Name is required`);
-            continue;
+            throw new Error('Name is required');
           }
 
           const customerData: any = {
@@ -9931,10 +9976,8 @@ Important:
             email: item.email || null,
             phone: item.phone || null,
             type: item.type || 'regular',
-            // Support both new (address) and legacy (street) field names
             address: item.address || item.street || null,
             city: item.city || null,
-            // Support both new (zipCode) and legacy (postalCode) field names
             zipCode: item.zipCode || item.postalCode || null,
             country: item.country || null,
             facebookId: item.facebookId || null,
@@ -9949,7 +9992,6 @@ Important:
             preferredLanguage: item.preferredLanguage || null,
             notes: item.notes || null,
             isNew: item.isNew ?? true,
-            // Billing fields - also map company to billingCompany for backward compat
             billingFirstName: item.billingFirstName || null,
             billingLastName: item.billingLastName || null,
             billingCompany: item.billingCompany || item.company || null,
@@ -9964,19 +10006,14 @@ Important:
 
           let customer;
           if (item._isUpdate && item._existingId) {
-            // Update existing customer
             const updated = await storage.updateCustomer(item._existingId, customerData);
-            importedCustomers.push({ ...updated, action: 'updated' });
             customer = updated;
+            return { ...updated, action: 'updated' };
           } else {
-            // Create new customer
             const created = await storage.createCustomer(customerData);
-            importedCustomers.push({ ...created, action: 'created' });
             customer = created;
-          }
-          
-          // Create shipping address from contact info if we have enough data (only for new customers)
-          if (customer && !item._isUpdate) {
+            
+            // Create shipping address from contact info if we have enough data (only for new customers)
             const shippingStreet = item.shippingStreet || customerData.address;
             const shippingCity = item.shippingCity || customerData.city;
             const shippingZipCode = item.shippingZipCode || customerData.zipCode;
@@ -10007,18 +10044,32 @@ Important:
                 console.error('Failed to create shipping address for customer:', customer.name, shippingError);
               }
             }
+            
+            return { ...created, action: 'created' };
           }
-        } catch (error: any) {
-          errors.push(`Item ${i + 1} (${item.name || 'unknown'}): ${error.message}`);
+        },
+        { 
+          concurrency: 5,
+          maxRetries: 3,
+          onProgress: (completed, total) => {
+            if (completed % 50 === 0 || completed === total) {
+              console.log(`[BulkImport] Customers progress: ${completed}/${total}`);
+            }
+          }
         }
-      }
+      );
+
+      // Format response
+      const response = formatImportResponse(results, validationErrors, startTime);
+      console.log(`[BulkImport] Completed: ${response.stats.created} created, ${response.stats.updated} updated, ${response.stats.failed} failed in ${response.stats.durationMs}ms`);
 
       res.json({
-        success: true,
-        imported: importedCustomers.length,
-        errors: errors.length,
-        errorDetails: errors,
-        customers: importedCustomers
+        success: response.success,
+        imported: response.imported.length,
+        errors: response.errors.length,
+        errorDetails: response.errors,
+        customers: response.imported,
+        stats: response.stats
       });
     } catch (error: any) {
       console.error("Bulk customers import error:", error);
