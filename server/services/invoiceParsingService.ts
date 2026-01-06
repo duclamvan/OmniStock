@@ -2,6 +2,31 @@ import OpenAI from 'openai';
 import { db } from '../db';
 import { suppliers, products } from '@shared/schema';
 import { eq, ilike, or } from 'drizzle-orm';
+import { getCircuitBreaker } from '../utils/circuitBreaker';
+
+// AI API timeout (15 seconds - longer for image processing)
+const AI_TIMEOUT_MS = 15000;
+
+// Circuit breaker for Invoice Parsing AI
+const invoiceAICircuitBreaker = getCircuitBreaker('invoice-ai', {
+  failureThreshold: 3,
+  resetTimeoutMs: 60000,
+  requestTimeoutMs: AI_TIMEOUT_MS,
+  onStateChange: (state) => {
+    console.log(`[InvoiceAI] Circuit breaker state: ${state}`);
+  }
+});
+
+/**
+ * Get Invoice AI circuit breaker status
+ */
+export function getInvoiceAICircuitBreakerStatus() {
+  return {
+    state: invoiceAICircuitBreaker.getState(),
+    failureCount: invoiceAICircuitBreaker.getFailureCount(),
+    remainingResetTime: invoiceAICircuitBreaker.getRemainingResetTime(),
+  };
+}
 
 export interface ParsedInvoiceItem {
   name: string;
@@ -120,6 +145,17 @@ Return the data in this exact JSON format:
 Be thorough but accurate. If you cannot read something clearly, use null rather than guessing.
 Return ONLY the JSON object, no additional text.`;
 
+    // Check circuit breaker state
+    if (invoiceAICircuitBreaker.getState() === 'open') {
+      const remaining = invoiceAICircuitBreaker.getRemainingResetTime();
+      console.warn(`Invoice AI circuit breaker is open, retry after ${Math.ceil(remaining / 1000)}s`);
+      return {
+        ...EMPTY_RESULT,
+        notes: 'AI service temporarily unavailable. Please try again in a minute or enter invoice data manually.',
+        confidence: 0
+      };
+    }
+
     // EXPERIMENTAL: DeepSeek vision support
     // Note: DeepSeek-chat may not support vision in all regions/configurations
     // This feature uses multimodal format compatible with OpenAI-style vision APIs
@@ -127,31 +163,33 @@ Return ONLY the JSON object, no additional text.`;
     
     let completion;
     try {
-      // Try with vision model format (OpenAI-compatible multimodal)
-      completion = await openai.chat.completions.create({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert invoice parser. Extract structured data from invoice images accurately. Always respond with valid JSON only.'
-          },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { 
-                type: 'image_url', 
-                image_url: { url: imageDataUrl, detail: 'high' }
-              }
-            ] as any
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 4000
-      });
+      // Try with vision model format (OpenAI-compatible multimodal) with circuit breaker
+      completion = await invoiceAICircuitBreaker.execute(() => 
+        openai.chat.completions.create({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert invoice parser. Extract structured data from invoice images accurately. Always respond with valid JSON only.'
+            },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { 
+                  type: 'image_url', 
+                  image_url: { url: imageDataUrl, detail: 'high' }
+                }
+              ] as any
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 4000
+        })
+      );
     } catch (visionError: any) {
-      // Vision format not supported - return empty result with helpful message
-      console.warn('Vision format not supported:', visionError.message);
+      // Vision format not supported or API error - return empty result with helpful message
+      console.warn('Vision format not supported or API error:', visionError.message);
       return {
         ...EMPTY_RESULT,
         notes: 'AI vision parsing is not available. Please enter invoice data manually.',

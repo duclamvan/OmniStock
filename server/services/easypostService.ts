@@ -1,8 +1,22 @@
 import { db } from "../db";
 import { shipments, orders, orderCartons } from "@shared/schema";
 import { eq, inArray, sql, and, ne, isNotNull } from "drizzle-orm";
+import { getCircuitBreaker } from '../utils/circuitBreaker';
 
 const EASYPOST_API_BASE = "https://api.easypost.com/v2";
+
+// API request timeout (5 seconds)
+const API_TIMEOUT_MS = 5000;
+
+// Circuit breaker for EasyPost API
+const easypostCircuitBreaker = getCircuitBreaker('easypost-api', {
+  failureThreshold: 5,
+  resetTimeoutMs: 30000,
+  requestTimeoutMs: API_TIMEOUT_MS,
+  onStateChange: (state) => {
+    console.log(`[EasyPost] Circuit breaker state: ${state}`);
+  }
+});
 
 interface EasyPostTrackingDetail {
   datetime: string;
@@ -104,33 +118,47 @@ export class EasyPostService {
       return { success: false, error: "EasyPost API key not configured" };
     }
 
+    // Check circuit breaker state
+    if (easypostCircuitBreaker.getState() === 'open') {
+      const remaining = easypostCircuitBreaker.getRemainingResetTime();
+      return { success: false, error: `EasyPost API circuit breaker is open. Retry after ${Math.ceil(remaining / 1000)}s` };
+    }
+
     try {
-      const formData = new URLSearchParams();
-      formData.append("tracker[tracking_code]", trackingNumber);
-      if (carrier) {
-        formData.append("tracker[carrier]", this.normalizeCarrierName(carrier));
-      }
+      return await easypostCircuitBreaker.execute(async () => {
+        const formData = new URLSearchParams();
+        formData.append("tracker[tracking_code]", trackingNumber);
+        if (carrier) {
+          formData.append("tracker[carrier]", this.normalizeCarrierName(carrier));
+        }
 
-      const response = await fetch(`${EASYPOST_API_BASE}/trackers`, {
-        method: "POST",
-        headers: {
-          Authorization: this.getAuthHeader(),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData.toString(),
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+        try {
+          const response = await fetch(`${EASYPOST_API_BASE}/trackers`, {
+            method: "POST",
+            headers: {
+              Authorization: this.getAuthHeader(),
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData.toString(),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+          const data = await response.json();
+
+          if (!response.ok) {
+            const error = data as EasyPostError;
+            throw new Error(error.error?.message || `EasyPost API error: ${response.status}`);
+          }
+
+          return { success: true, tracker: data as EasyPostTracker };
+        } finally {
+          clearTimeout(timeoutId);
+        }
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const error = data as EasyPostError;
-        return { 
-          success: false, 
-          error: error.error?.message || `EasyPost API error: ${response.status}` 
-        };
-      }
-
-      return { success: true, tracker: data as EasyPostTracker };
     } catch (error: any) {
       console.error("EasyPost createTracker error:", error);
       return { success: false, error: error.message || "Failed to create tracker" };
@@ -142,25 +170,39 @@ export class EasyPostService {
       return { success: false, error: "EasyPost API key not configured" };
     }
 
+    // Check circuit breaker state
+    if (easypostCircuitBreaker.getState() === 'open') {
+      const remaining = easypostCircuitBreaker.getRemainingResetTime();
+      return { success: false, error: `EasyPost API circuit breaker is open. Retry after ${Math.ceil(remaining / 1000)}s` };
+    }
+
     try {
-      const response = await fetch(`${EASYPOST_API_BASE}/trackers/${trackerId}`, {
-        method: "GET",
-        headers: {
-          Authorization: this.getAuthHeader(),
-        },
+      return await easypostCircuitBreaker.execute(async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+        try {
+          const response = await fetch(`${EASYPOST_API_BASE}/trackers/${trackerId}`, {
+            method: "GET",
+            headers: {
+              Authorization: this.getAuthHeader(),
+            },
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+          const data = await response.json();
+
+          if (!response.ok) {
+            const error = data as EasyPostError;
+            throw new Error(error.error?.message || `EasyPost API error: ${response.status}`);
+          }
+
+          return { success: true, tracker: data as EasyPostTracker };
+        } finally {
+          clearTimeout(timeoutId);
+        }
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const error = data as EasyPostError;
-        return { 
-          success: false, 
-          error: error.error?.message || `EasyPost API error: ${response.status}` 
-        };
-      }
-
-      return { success: true, tracker: data as EasyPostTracker };
     } catch (error: any) {
       console.error("EasyPost getTracker error:", error);
       return { success: false, error: error.message || "Failed to get tracker" };

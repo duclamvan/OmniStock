@@ -1,5 +1,19 @@
 import OpenAI from 'openai';
 import type { Product } from '@shared/schema';
+import { getCircuitBreaker } from '../utils/circuitBreaker';
+
+// AI API timeout (10 seconds - longer for AI processing)
+const AI_TIMEOUT_MS = 10000;
+
+// Circuit breaker for DeepSeek AI API
+const deepseekCircuitBreaker = getCircuitBreaker('deepseek-ai', {
+  failureThreshold: 5,
+  resetTimeoutMs: 60000, // 60 seconds for AI services
+  requestTimeoutMs: AI_TIMEOUT_MS,
+  onStateChange: (state) => {
+    console.log(`[DeepSeek] Circuit breaker state: ${state}`);
+  }
+});
 
 interface WeightDimensionResult {
   weightKg: number;
@@ -16,6 +30,17 @@ const FALLBACK_ESTIMATES: WeightDimensionResult = {
   heightCm: 5,
   confidence: 0.3
 };
+
+/**
+ * Get DeepSeek circuit breaker status (for monitoring)
+ */
+export function getDeepSeekCircuitBreakerStatus() {
+  return {
+    state: deepseekCircuitBreaker.getState(),
+    failureCount: deepseekCircuitBreaker.getFailureCount(),
+    remainingResetTime: deepseekCircuitBreaker.getRemainingResetTime(),
+  };
+}
 
 export async function inferProductWeightDimensions(product: Product): Promise<WeightDimensionResult> {
   try {
@@ -83,22 +108,30 @@ Base your confidence on:
 
 Return ONLY the JSON object, no additional text.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a logistics expert providing accurate physical property estimates for nail salon products. Always respond with valid JSON only.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 200,
-      response_format: { type: 'json_object' }
-    });
+    // Check circuit breaker state
+    if (deepseekCircuitBreaker.getState() === 'open') {
+      console.warn(`DeepSeek circuit breaker is open, using fallback estimates`);
+      return FALLBACK_ESTIMATES;
+    }
+
+    const completion = await deepseekCircuitBreaker.execute(() => 
+      openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a logistics expert providing accurate physical property estimates for nail salon products. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 200,
+        response_format: { type: 'json_object' }
+      })
+    );
 
     const responseText = completion.choices[0]?.message?.content;
     if (!responseText) {

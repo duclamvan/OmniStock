@@ -1,4 +1,18 @@
 import axios from 'axios';
+import { getCircuitBreaker, withTimeout } from '../utils/circuitBreaker';
+
+// API request timeout (5 seconds)
+const API_TIMEOUT_MS = 5000;
+
+// Circuit breaker for PPL API
+const pplCircuitBreaker = getCircuitBreaker('ppl-api', {
+  failureThreshold: 5,
+  resetTimeoutMs: 30000,
+  requestTimeoutMs: API_TIMEOUT_MS,
+  onStateChange: (state) => {
+    console.log(`[PPL] Circuit breaker state: ${state}`);
+  }
+});
 
 interface PPLTokenResponse {
   access_token: string;
@@ -80,7 +94,7 @@ export async function getPPLAccessToken(): Promise<string> {
 }
 
 /**
- * Make authenticated request to PPL API
+ * Make authenticated request to PPL API with circuit breaker and timeout protection
  */
 async function pplRequest<T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
@@ -88,28 +102,55 @@ async function pplRequest<T>(
   data?: any,
   headers?: Record<string, string>
 ): Promise<T> {
-  const token = await getPPLAccessToken();
-
-  const url = `${PPL_BASE_URL}${endpoint}`;
-
-  try {
-    const response = await axios({
-      method,
-      url,
-      data,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept-Language': 'cs-CZ',
-        ...headers
-      }
-    });
-
-    return response.data;
-  } catch (error: any) {
-    console.error(`PPL API request failed: ${method} ${endpoint}`, error.response?.data || error.message);
-    throw error;
+  // Check circuit breaker state first
+  if (pplCircuitBreaker.getState() === 'open') {
+    const remaining = pplCircuitBreaker.getRemainingResetTime();
+    throw new Error(`PPL API circuit breaker is open. Retry after ${Math.ceil(remaining / 1000)}s`);
   }
+
+  return pplCircuitBreaker.execute(async () => {
+    const token = await getPPLAccessToken();
+    const url = `${PPL_BASE_URL}${endpoint}`;
+
+    try {
+      const response = await axios({
+        method,
+        url,
+        data,
+        timeout: API_TIMEOUT_MS,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept-Language': 'cs-CZ',
+          ...headers
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error(`PPL API request failed: ${method} ${endpoint}`, error.response?.data || error.message);
+      throw error;
+    }
+  });
+}
+
+/**
+ * Get PPL circuit breaker status (for monitoring)
+ */
+export function getPPLCircuitBreakerStatus() {
+  return {
+    state: pplCircuitBreaker.getState(),
+    failureCount: pplCircuitBreaker.getFailureCount(),
+    remainingResetTime: pplCircuitBreaker.getRemainingResetTime(),
+  };
+}
+
+/**
+ * Reset PPL circuit breaker (admin function)
+ */
+export function resetPPLCircuitBreaker() {
+  pplCircuitBreaker.reset();
+  console.log('[PPL] Circuit breaker reset');
 }
 
 // PPL API Types
