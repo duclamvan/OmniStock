@@ -11,6 +11,7 @@ import {
   date,
   json,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -487,7 +488,12 @@ export const customers = pgTable("customers", {
   blacklistReason: text("blacklist_reason"), // Reason for blacklisting
   // Import tracking
   isNew: boolean("is_new").default(true), // Whether customer is newly imported/created
-});
+}, (table) => [
+  index("customers_name_idx").on(table.name),
+  index("customers_email_idx").on(table.email),
+  index("customers_phone_idx").on(table.phone),
+  index("customers_facebook_name_idx").on(table.facebookName),
+]);
 
 // Customer shipping addresses (multiple per customer)
 export const customerShippingAddresses = pgTable(
@@ -803,7 +809,13 @@ export const products = pgTable("products", {
   bulkPriceEur: decimal("bulk_price_eur", { precision: 12, scale: 2 }), // Optional special bulk price in EUR
   allowBulkSales: boolean("allow_bulk_sales").default(false), // Whether to show bulk unit option in sales/POS
   unitContentsInfo: text("unit_contents_info"), // Additional info like "12 packs of 10 tablets"
-});
+}, (table) => [
+  index("products_sku_idx").on(table.sku),
+  index("products_barcode_idx").on(table.barcode),
+  index("products_name_idx").on(table.name),
+  index("products_category_idx").on(table.categoryId),
+  index("products_supplier_idx").on(table.supplierId),
+]);
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product
 export const aiLocationSuggestions = pgTable("ai_location_suggestions", {
@@ -848,7 +860,11 @@ export const productVariants = pgTable("product_variants", {
   landingCostUsd: decimal("landing_cost_usd", { precision: 12, scale: 4 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("product_variants_product_id_idx").on(table.productId),
+  index("product_variants_sku_idx").on(table.sku),
+  index("product_variants_barcode_idx").on(table.barcode),
+]);
 
 // Product tiered pricing table
 export const productTieredPricing = pgTable("product_tiered_pricing", {
@@ -994,7 +1010,14 @@ export const orders = pgTable("orders", {
   channel: varchar("channel").notNull().default("online"), // Values: 'pos', 'online'
   allocated: boolean("allocated").default(false), // Track if order inventory is allocated
   isArchived: boolean("is_archived").notNull().default(false), // Soft delete - moved to trash
-});
+}, (table) => [
+  index("orders_order_id_idx").on(table.orderId),
+  index("orders_customer_id_idx").on(table.customerId),
+  index("orders_order_status_idx").on(table.orderStatus),
+  index("orders_payment_status_idx").on(table.paymentStatus),
+  index("orders_created_at_idx").on(table.createdAt),
+  index("orders_tracking_number_idx").on(table.trackingNumber),
+]);
 
 // Product Files table for document management
 export const productFiles = pgTable("product_files", {
