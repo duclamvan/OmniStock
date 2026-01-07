@@ -325,6 +325,47 @@ interface InventoryHealthData {
   timestamp: string;
 }
 
+interface WeeklyReportData {
+  period: string;
+  startDate: string;
+  endDate: string;
+  generatedAt: string;
+  summary: {
+    totalOrders: number;
+    completedOrders: number;
+    pendingOrders: number;
+    cancelledOrders: number;
+    totalRevenue: number;
+    totalItemsSold: number;
+    averageOrderValue: number;
+    newCustomers: number;
+  };
+  inventory: {
+    totalProducts: number;
+    lowStockProducts: number;
+    outOfStockProducts: number;
+    stockAdjustments: number;
+    itemsReceived: number;
+  };
+  topProducts: Array<{
+    id: string;
+    name: string;
+    quantitySold: number;
+    revenue: number;
+  }>;
+  topCustomers: Array<{
+    id: string;
+    name: string;
+    orderCount: number;
+    totalSpent: number;
+  }>;
+  financials?: {
+    totalExpenses: number;
+    grossProfit: number;
+    expensesByCategory: Record<string, number>;
+  };
+}
+
 // Skeleton components
 const MetricCardSkeleton = memo(() => (
   <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
@@ -800,6 +841,14 @@ export function Dashboard() {
     refetchInterval: 60 * 1000,
   });
 
+  // Weekly report - check if available
+  const { data: weeklyReport } = useQuery<WeeklyReportData>({
+    queryKey: ['/api/reports/latest', 'weekly'],
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    retry: false,
+  });
+
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Page Header */}
@@ -817,6 +866,76 @@ export function Dashboard() {
           <span className="text-gray-900 dark:text-gray-100">{t('common:liveUpdates')}</span>
         </Badge>
       </div>
+
+      {/* Weekly Report Summary - Show when available */}
+      {weeklyReport && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800" data-testid="card-weekly-report">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                {t('dashboard:weeklyReportReady', 'Weekly Report Ready')}
+              </CardTitle>
+              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                {new Date(weeklyReport.generatedAt).toLocaleDateString()}
+              </Badge>
+            </div>
+            <CardDescription className="text-blue-700 dark:text-blue-300">
+              {new Date(weeklyReport.startDate).toLocaleDateString()} - {new Date(weeklyReport.endDate).toLocaleDateString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="weekly-orders">
+                  {weeklyReport.summary.totalOrders}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:totalOrders', 'Total Orders')}</p>
+              </div>
+              <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400" data-testid="weekly-revenue">
+                  {formatCurrency(weeklyReport.summary.totalRevenue, dashboardCurrency)}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:revenue', 'Revenue')}</p>
+              </div>
+              <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="weekly-items">
+                  {weeklyReport.summary.totalItemsSold}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:itemsSold', 'Items Sold')}</p>
+              </div>
+              <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="weekly-aov">
+                  {formatCurrency(weeklyReport.summary.averageOrderValue, dashboardCurrency)}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:avgOrderValue', 'Avg Order Value')}</p>
+              </div>
+              <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-400" data-testid="weekly-new-customers">
+                  {weeklyReport.summary.newCustomers}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:newCustomers', 'New Customers')}</p>
+              </div>
+              {weeklyReport.financials && (
+                <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
+                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400" data-testid="weekly-profit">
+                    {formatCurrency(weeklyReport.financials.grossProfit, dashboardCurrency)}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:grossProfit', 'Gross Profit')}</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 flex items-center justify-end">
+              <Link href="/reports">
+                <Badge variant="outline" className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center gap-1 text-blue-700 dark:text-blue-300">
+                  {t('dashboard:viewFullReport', 'View Full Report')}
+                  <ArrowRight className="h-3 w-3" />
+                </Badge>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sales Hero Cards - Key KPIs at the top */}
       <section>

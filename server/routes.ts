@@ -22547,7 +22547,8 @@ Important rules:
     generateAndSaveReport, 
     getReportSettings, 
     listReports, 
-    getReportByFileName, 
+    getReportByFileName,
+    getLatestReportByPeriod,
     getLowStockAlerts,
     getReportSchedulerStatus,
     generateHTMLReport 
@@ -22573,6 +22574,26 @@ Important rules:
     } catch (error) {
       console.error('Error fetching reports:', error);
       res.status(500).json({ message: 'Failed to fetch reports' });
+    }
+  });
+
+  // Get latest report by period (for dashboard display)
+  app.get('/api/reports/latest/:period', isAuthenticated, async (req, res) => {
+    try {
+      const { period } = req.params;
+      if (!['daily', 'weekly', 'monthly', 'yearly'].includes(period)) {
+        return res.status(400).json({ message: 'Invalid period. Must be daily, weekly, monthly, or yearly.' });
+      }
+      
+      const report = await getLatestReportByPeriod(period as 'daily' | 'weekly' | 'monthly' | 'yearly');
+      if (!report) {
+        return res.status(404).json({ message: `No ${period} report available yet` });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      console.error('Error fetching latest report:', error);
+      res.status(500).json({ message: 'Failed to fetch report' });
     }
   });
 

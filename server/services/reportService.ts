@@ -385,6 +385,38 @@ export async function getReportByFileName(fileName: string): Promise<ReportData 
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
+export async function getLatestReportByPeriod(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<ReportData | null> {
+  if (!fs.existsSync(REPORTS_DIR)) {
+    return null;
+  }
+  
+  const files = fs.readdirSync(REPORTS_DIR)
+    .filter(f => f.endsWith('.json'))
+    .map(fileName => {
+      const filePath = path.join(REPORTS_DIR, fileName);
+      const stats = fs.statSync(filePath);
+      try {
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        return {
+          fileName,
+          period: content.period || 'unknown',
+          generatedAt: content.generatedAt || stats.mtime.toISOString(),
+          content,
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter(f => f !== null && f.period === period)
+    .sort((a, b) => new Date(b!.generatedAt).getTime() - new Date(a!.generatedAt).getTime());
+  
+  if (files.length === 0) {
+    return null;
+  }
+  
+  return files[0]!.content;
+}
+
 export async function generateHTMLReport(timeframe: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<string> {
   const { start, end } = getDateRange(timeframe);
   const now = new Date();
