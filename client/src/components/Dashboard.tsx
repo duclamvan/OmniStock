@@ -843,7 +843,7 @@ export function Dashboard() {
 
   // Weekly report - check if available
   const { data: weeklyReport } = useQuery<WeeklyReportData>({
-    queryKey: ['/api/reports/latest', 'weekly'],
+    queryKey: ['/api/reports/latest/weekly'],
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
     retry: false,
