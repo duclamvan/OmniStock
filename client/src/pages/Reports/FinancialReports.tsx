@@ -115,13 +115,18 @@ export default function FinancialReports() {
     prevStartDate: Date, 
     prevEndDate: Date
   ): PeriodMetrics => {
+    // Only include shipped+paid orders for accurate revenue/profit calculations
     const currentOrders = (orders as any[]).filter((order: any) => {
       const orderDate = new Date(order.createdAt);
-      return orderDate >= startDate && orderDate <= endDate;
+      const inRange = orderDate >= startDate && orderDate <= endDate;
+      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+      return inRange && isCompleted;
     });
     const prevOrders = (orders as any[]).filter((order: any) => {
       const orderDate = new Date(order.createdAt);
-      return orderDate >= prevStartDate && orderDate <= prevEndDate;
+      const inRange = orderDate >= prevStartDate && orderDate <= prevEndDate;
+      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+      return inRange && isCompleted;
     });
 
     const currentOrderIds = new Set(currentOrders.map((o: any) => o.id));
@@ -135,11 +140,11 @@ export default function FinancialReports() {
       return sum + convertToBaseCurrency(revenue, order.currency || 'CZK');
     }, 0);
 
-    const calcCosts = (items: any[]) => {
-      return items.reduce((sum, item: any) => {
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+    // Use order.totalCost (pre-calculated landed cost) instead of product.importCostCzk
+    const calcCosts = (periodOrders: any[]) => {
+      return periodOrders.reduce((sum, order: any) => {
+        const cost = parseFloat(order.totalCost || '0');
+        return sum + convertToBaseCurrency(cost, order.currency || 'CZK');
       }, 0);
     };
 
@@ -158,8 +163,8 @@ export default function FinancialReports() {
 
     const currentRevenue = calcRevenue(currentOrders);
     const prevRevenue = calcRevenue(prevOrders);
-    const currentProductCosts = calcCosts(currentItems);
-    const prevProductCosts = calcCosts(prevItems);
+    const currentProductCosts = calcCosts(currentOrders);
+    const prevProductCosts = calcCosts(prevOrders);
     const currentExpenseCosts = calcExpenses(currentExpenses);
     const currentTotalCosts = currentProductCosts + currentExpenseCosts;
     const prevTotalCosts = prevProductCosts + calcExpenses(prevExpenses);
@@ -206,9 +211,12 @@ export default function FinancialReports() {
     
     return last12Months.map(monthStart => {
       const monthEnd = endOfMonth(monthStart);
+      // Only include shipped+paid orders for accurate revenue/profit
       const monthOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        return orderDate >= monthStart && orderDate <= monthEnd;
+        const inRange = orderDate >= monthStart && orderDate <= monthEnd;
+        const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+        return inRange && isCompleted;
       });
       
       const monthOrderIds = new Set(monthOrders.map((o: any) => o.id));
@@ -217,10 +225,9 @@ export default function FinancialReports() {
       const revenue = monthOrders.reduce((sum, order: any) => {
         return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
-      const costs = monthItems.reduce((sum, item: any) => {
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      // Use order.totalCost instead of product.importCostCzk
+      const costs = monthOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalCost || '0'), order.currency || 'CZK');
       }, 0);
       
       const monthExpenses = (expenses as any[]).filter((exp: any) => {

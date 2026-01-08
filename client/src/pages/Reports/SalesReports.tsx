@@ -151,14 +151,19 @@ export default function SalesReports() {
     prevStartDate: Date,
     prevEndDate: Date
   ): PeriodMetrics => {
+    // Only include shipped+paid orders for accurate revenue/profit calculations
     const currentOrders = ordersData.filter((order: any) => {
       const orderDate = new Date(order.createdAt);
-      return orderDate >= startDate && orderDate <= endDate;
+      const inRange = orderDate >= startDate && orderDate <= endDate;
+      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+      return inRange && isCompleted;
     });
 
     const prevOrders = ordersData.filter((order: any) => {
       const orderDate = new Date(order.createdAt);
-      return orderDate >= prevStartDate && orderDate <= prevEndDate;
+      const inRange = orderDate >= prevStartDate && orderDate <= prevEndDate;
+      const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+      return inRange && isCompleted;
     });
 
     const currentOrderIds = new Set(currentOrders.map((o: any) => o.id));
@@ -171,17 +176,13 @@ export default function SalesReports() {
       return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
     }, 0);
     
-    const calcProfit = (periodOrders: any[], items: any[], prods: any[]) => {
-      const orderMap = new Map(periodOrders.map((o: any) => [o.id, o]));
+    // Use order.totalCost (pre-calculated landed cost) instead of product.importCostCzk
+    const calcProfit = (periodOrders: any[]) => {
       const revenue = periodOrders.reduce((sum, order: any) => {
         return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
-      const costs = items.reduce((sum, item: any) => {
-        const order = orderMap.get(item.orderId);
-        if (!order) return sum;
-        const product = prods.find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      const costs = periodOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalCost || '0'), order.currency || 'CZK');
       }, 0);
       return revenue - costs;
     };
@@ -190,8 +191,8 @@ export default function SalesReports() {
 
     const currentRevenue = calcRevenue(currentOrders);
     const prevRevenue = calcRevenue(prevOrders);
-    const currentProfit = calcProfit(currentOrders, currentItems, productsData);
-    const prevProfit = calcProfit(prevOrders, prevItems, productsData);
+    const currentProfit = calcProfit(currentOrders);
+    const prevProfit = calcProfit(prevOrders);
 
     const revenueGrowth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
     const profitGrowth = prevProfit !== 0 ? ((currentProfit - prevProfit) / Math.abs(prevProfit)) * 100 : (currentProfit !== 0 ? 100 : 0);
@@ -244,22 +245,20 @@ export default function SalesReports() {
   const dailySalesData = useMemo(() => {
     const last30Days = eachDayOfInterval({ start: subDays(now, 29), end: now });
     return last30Days.map(day => {
+      // Only include shipped+paid orders for accurate revenue/profit
       const dayOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        return isSameDay(orderDate, day);
+        const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+        return isSameDay(orderDate, day) && isCompleted;
       });
       const orderIds = new Set(dayOrders.map((o: any) => o.id));
-      const orderMap = new Map(dayOrders.map((o: any) => [o.id, o]));
       const dayItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = dayOrders.reduce((sum, order: any) => {
         return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
-      const costs = dayItems.reduce((sum, item: any) => {
-        const order = orderMap.get(item.orderId);
-        if (!order) return sum;
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      // Use order.totalCost instead of product.importCostCzk
+      const costs = dayOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalCost || '0'), order.currency || 'CZK');
       }, 0);
       const profit = revenue - costs;
       return {
@@ -277,22 +276,21 @@ export default function SalesReports() {
     const last12Weeks = eachWeekOfInterval({ start: subWeeks(now, 11), end: now }, { weekStartsOn: 1 });
     return last12Weeks.map(weekStart => {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      // Only include shipped+paid orders for accurate revenue/profit
       const weekOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        return orderDate >= weekStart && orderDate <= weekEnd;
+        const inRange = orderDate >= weekStart && orderDate <= weekEnd;
+        const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+        return inRange && isCompleted;
       });
       const orderIds = new Set(weekOrders.map((o: any) => o.id));
-      const orderMap = new Map(weekOrders.map((o: any) => [o.id, o]));
       const weekItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = weekOrders.reduce((sum, order: any) => {
         return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
-      const costs = weekItems.reduce((sum, item: any) => {
-        const order = orderMap.get(item.orderId);
-        if (!order) return sum;
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      // Use order.totalCost instead of product.importCostCzk
+      const costs = weekOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalCost || '0'), order.currency || 'CZK');
       }, 0);
       const profit = revenue - costs;
       return {
@@ -310,22 +308,21 @@ export default function SalesReports() {
     const last12Months = eachMonthOfInterval({ start: subMonths(now, 11), end: now });
     return last12Months.map(monthStart => {
       const monthEnd = endOfMonth(monthStart);
+      // Only include shipped+paid orders for accurate revenue/profit
       const monthOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        return orderDate >= monthStart && orderDate <= monthEnd;
+        const inRange = orderDate >= monthStart && orderDate <= monthEnd;
+        const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+        return inRange && isCompleted;
       });
       const orderIds = new Set(monthOrders.map((o: any) => o.id));
-      const orderMap = new Map(monthOrders.map((o: any) => [o.id, o]));
       const monthItems = (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
       const revenue = monthOrders.reduce((sum, order: any) => {
         return sum + convertToBaseCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'CZK');
       }, 0);
-      const costs = monthItems.reduce((sum, item: any) => {
-        const order = orderMap.get(item.orderId);
-        if (!order) return sum;
-        const product = (products as any[]).find((p: any) => p.id === item.productId);
-        if (!product) return sum;
-        return sum + (parseFloat(product.importCostCzk || '0') * (item.quantity || 0));
+      // Use order.totalCost instead of product.importCostCzk
+      const costs = monthOrders.reduce((sum, order: any) => {
+        return sum + convertToBaseCurrency(parseFloat(order.totalCost || '0'), order.currency || 'CZK');
       }, 0);
       const profit = revenue - costs;
       return {
