@@ -102,6 +102,14 @@ const navigation: NavItem[] = [
     namespace: "inventory"
   },
   {
+    labelKey: "manufacturing",
+    icon: Factory,
+    namespace: "products",
+    children: [
+      { labelKey: "productionPlanner", href: "/manufacturing/production-planner", namespace: "products" },
+    ],
+  },
+  {
     labelKey: "warehouse",
     icon: Warehouse,
     namespace: "warehouse",
@@ -166,15 +174,6 @@ const navigation: NavItem[] = [
     href: "/receiving",
     icon: Package,
     namespace: "warehouse"
-  },
-  {
-    labelKey: "manufacturing",
-    icon: Factory,
-    namespace: "products",
-    children: [
-      { labelKey: "productionPlanner", href: "/manufacturing/production-planner", namespace: "products" },
-    ],
-    adminOnly: true
   },
   {
     labelKey: "employees",
