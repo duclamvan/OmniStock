@@ -19,7 +19,8 @@ import {
   PackageCheck,
   Wrench,
   Ticket,
-  ClipboardList
+  ClipboardList,
+  Factory
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,15 @@ const navigation: NavItem[] = [
     href: "/receiving",
     icon: Package,
     namespace: "warehouse"
+  },
+  {
+    labelKey: "manufacturing",
+    icon: Factory,
+    namespace: "products",
+    children: [
+      { labelKey: "productionPlanner", href: "/manufacturing/production-planner", namespace: "products" },
+    ],
+    adminOnly: true
   },
   {
     labelKey: "employees",

@@ -106,6 +106,7 @@ import WarehouseLabels from "@/pages/Stock/WarehouseLabels";
 import ProductLookup from "@/pages/Public/ProductLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
+import ProductionPlanner from "@/pages/Manufacturing/ProductionPlanner";
 // Legacy imports - some uncommmented for unified add/edit
 // import AllImports from "@/pages/Imports/AllImports";
 import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -469,6 +470,13 @@ function Router() {
         </Route>
         <Route path="/settings/imports">
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
+        </Route>
+        {/* Manufacturing Routes */}
+        <Route path="/manufacturing/production-planner">
+          {() => <ProtectedRoute requireAdmin><ProductionPlanner /></ProtectedRoute>}
+        </Route>
+        <Route path="/manufacturing">
+          {() => <ProtectedRoute requireAdmin><ProductionPlanner /></ProtectedRoute>}
         </Route>
       </Layout>
       <Route component={NotFound} />
