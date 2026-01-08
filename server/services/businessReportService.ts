@@ -71,9 +71,19 @@ async function aggregateBusinessMetrics(): Promise<{
 
   let revenue = 0;
   let cashCollected = 0;
+  let totalCost = 0;
+  
+  // Only count shipped+paid orders for accurate revenue and COGS
   recentOrders.forEach(order => {
     const total = parseFloat(order.grandTotal || '0');
-    revenue += total;
+    const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+    
+    if (isCompleted) {
+      revenue += total;
+      // Use order.totalCost (pre-calculated landed cost) for accurate COGS
+      totalCost += parseFloat(order.totalCost || '0');
+    }
+    
     if (order.paymentStatus === 'paid') {
       cashCollected += total;
     }
@@ -98,7 +108,6 @@ async function aggregateBusinessMetrics(): Promise<{
     .where(gte(orders.createdAt, thirtyDaysAgo));
 
   const productSales: Record<string, { name: string; sku: string; unitsSold: number; revenue: number }> = {};
-  let totalCost = 0;
 
   for (const item of orderItemsData) {
     if (!item.productId) continue;
@@ -122,13 +131,8 @@ async function aggregateBusinessMetrics(): Promise<{
 
   const allProducts = await db.select().from(products);
   
-  for (const product of allProducts) {
-    const salesData = productSales[product.id];
-    if (salesData) {
-      const importCost = parseFloat(product.importCostCzk || '0') || 0;
-      totalCost += importCost * (salesData.unitsSold || 0);
-    }
-  }
+  // COGS is now calculated from order.totalCost in the order loop above
+  // No need to recalculate from product.importCostCzk
   
   // Gross Profit = Revenue - (COGS + Expenses)
   const grossProfit = revenue - (totalCost + expensesTotal);
@@ -137,9 +141,9 @@ async function aggregateBusinessMetrics(): Promise<{
   let totalStockValue = 0;
   
   for (const product of allProducts) {
-    const stock = product.stock || 0;
-    const minStock = product.minStock || 0;
-    const price = parseFloat(product.price || '0');
+    const stock = product.quantity || 0;
+    const minStock = product.lowStockAlert || 0;
+    const price = parseFloat(product.priceCzk || '0');
     
     totalStockValue += stock * price;
     
@@ -153,7 +157,7 @@ async function aggregateBusinessMetrics(): Promise<{
     .from(products)
     .where(
       and(
-        sql`${products.stock} > 0`,
+        sql`${products.quantity} > 0`,
         or(
           isNull(products.lastSoldAt),
           sql`${products.lastSoldAt} < ${ninetyDaysAgoStr}`
@@ -185,9 +189,9 @@ async function aggregateBusinessMetrics(): Promise<{
     const dailyVelocity = (sales.unitsSold || 0) / daysInPeriod;
     if (dailyVelocity <= 0) continue;
     
-    // Use productLocations aggregated stock if available, fallback to product.stock
+    // Use productLocations aggregated stock if available, fallback to product.quantity
     const locationStock = productLocationStockMap[product.id];
-    const currentStock = locationStock !== undefined ? locationStock : (product.stock || 0);
+    const currentStock = locationStock !== undefined ? locationStock : (product.quantity || 0);
     
     if (currentStock <= 0) continue;
     
