@@ -282,6 +282,7 @@ const reports = {
   profitEst: 'Profit (Est.)',
   salesAndOrders: 'Sales & Orders',
   avgOrderCzk: 'Avg Order (CZK)',
+  avgOrder: 'Avg Order',
   activeCustomers: 'Active Customers',
   unitsSold: 'Units Sold',
   topSellingProductsDesc: 'Best performers by units sold',

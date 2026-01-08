@@ -282,6 +282,7 @@ const reports = {
   profitEst: 'Lợi nhuận (Ước tính)',
   salesAndOrders: 'Bán hàng & Đơn hàng',
   avgOrderCzk: 'Đơn hàng TB (CZK)',
+  avgOrder: 'Đơn hàng TB',
   activeCustomers: 'Khách hàng hoạt động',
   unitsSold: 'Đơn vị đã bán',
   topSellingProductsDesc: 'Sản phẩm hoạt động tốt nhất theo đơn vị bán',
