@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -155,33 +155,31 @@ export default function Reports() {
     return `${symbol}${compactValue}`;
   };
 
-  const getDateRange = () => {
+  const { startDate, endDate } = useMemo(() => {
     const now = new Date();
     switch (dateRange) {
       case 'today':
-        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date() };
+        return { startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()), endDate: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999) };
       case 'week':
-        return { start: subDays(now, 7), end: new Date() };
+        return { startDate: subDays(now, 7), endDate: now };
       case 'month':
-        return { start: subMonths(now, 1), end: new Date() };
+        return { startDate: subMonths(now, 1), endDate: now };
       case 'thisMonth':
-        return { start: startOfMonth(now), end: endOfMonth(now) };
+        return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
       case 'year':
-        return { start: startOfYear(now), end: endOfYear(now) };
+        return { startDate: startOfYear(now), endDate: endOfYear(now) };
       case 'lastYear':
         const lastYearDate = subYears(now, 1);
-        return { start: startOfYear(lastYearDate), end: endOfYear(lastYearDate) };
+        return { startDate: startOfYear(lastYearDate), endDate: endOfYear(lastYearDate) };
       case 'custom':
         if (customStartDate && customEndDate) {
-          return { start: customStartDate, end: customEndDate };
+          return { startDate: customStartDate, endDate: customEndDate };
         }
-        return { start: new Date(0), end: new Date() };
+        return { startDate: new Date(0), endDate: now };
       default:
-        return { start: new Date(0), end: new Date() };
+        return { startDate: new Date(0), endDate: now };
     }
-  };
-
-  const { start: startDate, end: endDate } = getDateRange();
+  }, [dateRange, customStartDate, customEndDate]);
 
   const { data: reportData, isLoading } = useQuery<BusinessReportData>({
     queryKey: ['/api/reports/business', startDate.toISOString(), endDate.toISOString(), displayCurrency],
