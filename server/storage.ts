@@ -24,6 +24,7 @@ import {
   productTieredPricing,
   productBundles,
   bundleItems,
+  billOfMaterials,
   dailySequences,
   orders,
   orderItems,
@@ -113,6 +114,8 @@ import {
   type InsertProductBundle,
   type BundleItem,
   type InsertBundleItem,
+  type BillOfMaterials,
+  type InsertBillOfMaterials,
   type DailySequence,
   type InsertDailySequence,
   type Order,
@@ -769,6 +772,30 @@ export interface IStorage {
   // Gamification - Daily Snapshots
   upsertDailySnapshot(snapshot: InsertDailyPerformanceSnapshot): Promise<DailyPerformanceSnapshot>;
   getDailySnapshots(userId: string, startDate: string, endDate: string): Promise<DailyPerformanceSnapshot[]>;
+
+  // Bill of Materials (BOM) / Manufacturing
+  getBomIngredients(parentProductId: string, parentVariantId?: string | null): Promise<(BillOfMaterials & { childProduct: Product; childVariant?: ProductVariant | null })[]>;
+  getBomIngredient(id: string): Promise<BillOfMaterials | undefined>;
+  addBomIngredient(ingredient: InsertBillOfMaterials): Promise<BillOfMaterials>;
+  updateBomIngredient(id: string, ingredient: Partial<InsertBillOfMaterials>): Promise<BillOfMaterials | undefined>;
+  deleteBomIngredient(id: string): Promise<boolean>;
+  calculateProductionRequirements(targetProductId: string, targetVariantId: string | null, quantityToBuild: number): Promise<{
+    ingredients: Array<{
+      bomId: string;
+      childProductId: string;
+      childVariantId: string | null;
+      productName: string;
+      variantName: string | null;
+      sku: string | null;
+      quantityPerUnit: number;
+      totalRequired: number;
+      currentStock: number;
+      missingQty: number;
+      supplierId: string | null;
+    }>;
+    canFullyBuild: boolean;
+    maxBuildable: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -7059,6 +7086,136 @@ export class DatabaseStorage implements IStorage {
   async getProductVariant(id: string): Promise<ProductVariant | undefined> {
     const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, id));
     return variant;
+  }
+
+  // ============================================
+  // BILL OF MATERIALS (BOM) / MANUFACTURING
+  // ============================================
+
+  async getBomIngredients(parentProductId: string, parentVariantId?: string | null): Promise<(BillOfMaterials & { childProduct: Product; childVariant?: ProductVariant | null })[]> {
+    const conditions = [eq(billOfMaterials.parentProductId, parentProductId)];
+    if (parentVariantId) {
+      conditions.push(eq(billOfMaterials.parentVariantId, parentVariantId));
+    } else {
+      conditions.push(isNull(billOfMaterials.parentVariantId));
+    }
+
+    const bomItems = await db
+      .select()
+      .from(billOfMaterials)
+      .where(and(...conditions))
+      .orderBy(asc(billOfMaterials.createdAt));
+
+    const result = [];
+    for (const bom of bomItems) {
+      const [childProduct] = await db.select().from(products).where(eq(products.id, bom.childProductId));
+      let childVariant = null;
+      if (bom.childVariantId) {
+        const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, bom.childVariantId));
+        childVariant = variant || null;
+      }
+      result.push({ ...bom, childProduct, childVariant });
+    }
+    return result;
+  }
+
+  async getBomIngredient(id: string): Promise<BillOfMaterials | undefined> {
+    const [bom] = await db.select().from(billOfMaterials).where(eq(billOfMaterials.id, id));
+    return bom;
+  }
+
+  async addBomIngredient(ingredient: InsertBillOfMaterials): Promise<BillOfMaterials> {
+    const [created] = await db.insert(billOfMaterials).values(ingredient).returning();
+    return created;
+  }
+
+  async updateBomIngredient(id: string, ingredient: Partial<InsertBillOfMaterials>): Promise<BillOfMaterials | undefined> {
+    const [updated] = await db
+      .update(billOfMaterials)
+      .set({ ...ingredient, updatedAt: new Date() })
+      .where(eq(billOfMaterials.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBomIngredient(id: string): Promise<boolean> {
+    const result = await db.delete(billOfMaterials).where(eq(billOfMaterials.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async calculateProductionRequirements(targetProductId: string, targetVariantId: string | null, quantityToBuild: number): Promise<{
+    ingredients: Array<{
+      bomId: string;
+      childProductId: string;
+      childVariantId: string | null;
+      productName: string;
+      variantName: string | null;
+      sku: string | null;
+      quantityPerUnit: number;
+      totalRequired: number;
+      currentStock: number;
+      missingQty: number;
+      supplierId: string | null;
+    }>;
+    canFullyBuild: boolean;
+    maxBuildable: number;
+  }> {
+    const bomItems = await this.getBomIngredients(targetProductId, targetVariantId);
+    
+    const ingredients = [];
+    let canFullyBuild = true;
+    let maxBuildable = Infinity;
+
+    for (const bom of bomItems) {
+      const quantityPerUnit = parseFloat(bom.quantity || '0');
+      const totalRequired = quantityPerUnit * quantityToBuild;
+      
+      let currentStock = 0;
+      let sku: string | null = null;
+      
+      if (bom.childVariantId && bom.childVariant) {
+        currentStock = bom.childVariant.quantity || 0;
+        sku = bom.childVariant.sku || bom.childProduct?.sku || null;
+      } else {
+        currentStock = bom.childProduct?.quantity || 0;
+        sku = bom.childProduct?.sku || null;
+      }
+
+      const missingQty = Math.max(0, totalRequired - currentStock);
+      
+      if (missingQty > 0) {
+        canFullyBuild = false;
+      }
+
+      const possibleUnits = quantityPerUnit > 0 ? Math.floor(currentStock / quantityPerUnit) : Infinity;
+      if (possibleUnits < maxBuildable) {
+        maxBuildable = possibleUnits;
+      }
+
+      ingredients.push({
+        bomId: bom.id,
+        childProductId: bom.childProductId,
+        childVariantId: bom.childVariantId,
+        productName: bom.childProduct?.name || 'Unknown',
+        variantName: bom.childVariant?.name || null,
+        sku,
+        quantityPerUnit,
+        totalRequired,
+        currentStock,
+        missingQty,
+        supplierId: bom.childProduct?.supplierId || null,
+      });
+    }
+
+    if (maxBuildable === Infinity) {
+      maxBuildable = quantityToBuild;
+    }
+
+    return {
+      ingredients,
+      canFullyBuild,
+      maxBuildable,
+    };
   }
 }
 

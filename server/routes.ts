@@ -41,6 +41,7 @@ import {
   warehouseTasks,
   insertWarehouseTaskSchema,
   insertWarehouseLabelSchema,
+  insertBillOfMaterialsSchema,
   productCostHistory,
   products,
   productBundles,
@@ -6327,6 +6328,164 @@ Important:
     } catch (error) {
       console.error("Error fetching product files:", error);
       res.status(500).json({ message: "Failed to fetch product files" });
+    }
+  });
+
+  // ============================================
+  // MANUFACTURING / BILL OF MATERIALS (BOM) ROUTES
+  // ============================================
+
+  // Get recipe/ingredients for a product
+  app.get('/api/products/:id/recipe', isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      const variantId = req.query.variantId as string | undefined;
+      
+      const product = await storage.getProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      const ingredients = await storage.getBomIngredients(productId, variantId || null);
+      res.json({
+        productId,
+        variantId: variantId || null,
+        replenishmentMethod: product.replenishmentMethod || 'buy',
+        ingredients
+      });
+    } catch (error) {
+      console.error("Error fetching product recipe:", error);
+      res.status(500).json({ message: "Failed to fetch product recipe" });
+    }
+  });
+
+  // Add ingredient to recipe
+  app.post('/api/products/:id/recipe', isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      
+      const product = await storage.getProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      const validated = insertBillOfMaterialsSchema.parse({
+        ...req.body,
+        parentProductId: productId
+      });
+
+      const ingredient = await storage.addBomIngredient(validated);
+      res.status(201).json(ingredient);
+    } catch (error: any) {
+      console.error("Error adding ingredient:", error);
+      res.status(400).json({ message: error.message || "Failed to add ingredient" });
+    }
+  });
+
+  // Update ingredient in recipe
+  app.patch('/api/products/:productId/recipe/:ingredientId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { productId, ingredientId } = req.params;
+      
+      const existing = await storage.getBomIngredient(ingredientId);
+      if (!existing || existing.parentProductId !== productId) {
+        return res.status(404).json({ message: "Ingredient not found" });
+      }
+
+      const updated = await storage.updateBomIngredient(ingredientId, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating ingredient:", error);
+      res.status(400).json({ message: error.message || "Failed to update ingredient" });
+    }
+  });
+
+  // Delete ingredient from recipe
+  app.delete('/api/products/:productId/recipe/:ingredientId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { productId, ingredientId } = req.params;
+      
+      const existing = await storage.getBomIngredient(ingredientId);
+      if (!existing || existing.parentProductId !== productId) {
+        return res.status(404).json({ message: "Ingredient not found" });
+      }
+
+      await storage.deleteBomIngredient(ingredientId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ingredient:", error);
+      res.status(500).json({ message: "Failed to delete ingredient" });
+    }
+  });
+
+  // Update product replenishment method
+  app.patch('/api/products/:id/replenishment-method', isAuthenticated, async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      const { replenishmentMethod } = req.body;
+
+      if (!['buy', 'make'].includes(replenishmentMethod)) {
+        return res.status(400).json({ message: "Invalid replenishment method. Must be 'buy' or 'make'" });
+      }
+
+      const updated = await storage.updateProduct(productId, { replenishmentMethod });
+      if (!updated) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating replenishment method:", error);
+      res.status(500).json({ message: "Failed to update replenishment method" });
+    }
+  });
+
+  // Calculate production requirements (the "explode" feature)
+  app.post('/api/manufacturing/calculate-requirements', isAuthenticated, async (req: any, res) => {
+    try {
+      const { targetProductId, targetVariantId, quantityToBuild } = req.body;
+
+      if (!targetProductId || !quantityToBuild || quantityToBuild <= 0) {
+        return res.status(400).json({ message: "targetProductId and positive quantityToBuild are required" });
+      }
+
+      const product = await storage.getProductById(targetProductId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      const requirements = await storage.calculateProductionRequirements(
+        targetProductId,
+        targetVariantId || null,
+        quantityToBuild
+      );
+
+      res.json({
+        product: {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          replenishmentMethod: product.replenishmentMethod || 'buy'
+        },
+        quantityToBuild,
+        ...requirements
+      });
+    } catch (error) {
+      console.error("Error calculating production requirements:", error);
+      res.status(500).json({ message: "Failed to calculate production requirements" });
+    }
+  });
+
+  // Get list of products that can be manufactured (replenishment_method = 'make')
+  app.get('/api/manufacturing/products', isAuthenticated, async (req: any, res) => {
+    try {
+      const allProducts = await storage.getProducts(false);
+      const manufacturableProducts = allProducts.filter(p => p.replenishmentMethod === 'make');
+      
+      res.json(manufacturableProducts);
+    } catch (error) {
+      console.error("Error fetching manufacturable products:", error);
+      res.status(500).json({ message: "Failed to fetch manufacturable products" });
     }
   });
 
