@@ -199,12 +199,12 @@ export default function ProductionPlanner() {
         {requirements && (
           <>
             <div className="grid gap-4 md:grid-cols-3">
-              <Card className={requirements.canFullyBuild ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-orange-500 bg-orange-50 dark:bg-orange-950"}>
+              <Card data-testid="card-build-status" className={requirements.canFullyBuild ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-orange-500 bg-orange-50 dark:bg-orange-950"}>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">{t('products:buildStatus')}</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold" data-testid="text-build-status">
                         {requirements.canFullyBuild ? t('products:canFullyBuild') : t('products:missingIngredients')}
                       </p>
                     </div>
@@ -217,24 +217,24 @@ export default function ProductionPlanner() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card data-testid="card-requested-qty">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">{t('products:requestedQty')}</p>
-                      <p className="text-2xl font-bold">{requirements.requestedQty}</p>
+                      <p className="text-2xl font-bold" data-testid="text-requested-qty">{requirements.requestedQty}</p>
                     </div>
                     <Box className="h-10 w-10 text-primary opacity-50" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card data-testid="card-max-buildable">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">{t('products:maxBuildable')}</p>
-                      <p className="text-2xl font-bold">{requirements.maxBuildable}</p>
+                      <p className="text-2xl font-bold" data-testid="text-max-buildable">{requirements.maxBuildable}</p>
                     </div>
                     <Factory className="h-10 w-10 text-primary opacity-50" />
                   </div>
@@ -253,7 +253,7 @@ export default function ProductionPlanner() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
+                <Table data-testid="table-requirements">
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('products:ingredient')}</TableHead>
@@ -285,12 +285,12 @@ export default function ProductionPlanner() {
                         </TableCell>
                         <TableCell>
                           {ingredient.canFulfill ? (
-                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            <Badge data-testid={`badge-status-sufficient-${idx}`} className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               {t('products:sufficient')}
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">
+                            <Badge data-testid={`badge-status-insufficient-${idx}`} variant="destructive">
                               <AlertTriangle className="h-3 w-3 mr-1" />
                               {t('products:insufficient')}
                             </Badge>
@@ -312,7 +312,7 @@ export default function ProductionPlanner() {
                 </Table>
 
                 {!requirements.canFullyBuild && requirements.ingredients.some(i => !i.canFulfill) && (
-                  <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div data-testid="alert-procurement-needed" className="mt-4 p-4 bg-orange-50 dark:bg-orange-950 rounded-lg border border-orange-200 dark:border-orange-800">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
                       <div>

@@ -250,7 +250,7 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                   {isMakeMode ? t('products:make') : t('products:buy')}
                 </Label>
               </div>
-              <Badge variant={isMakeMode ? "default" : "secondary"}>
+              <Badge variant={isMakeMode ? "default" : "secondary"} data-testid="badge-replenishment-method">
                 {isMakeMode ? (
                   <><Factory className="h-3 w-3 mr-1" /> {t('products:manufacturable')}</>
                 ) : (
@@ -282,7 +282,7 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                     {t('products:addIngredient')}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent data-testid="dialog-add-ingredient">
                   <DialogHeader>
                     <DialogTitle>{t('products:addIngredient')}</DialogTitle>
                   </DialogHeader>
@@ -312,6 +312,7 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                               placeholder={t('products:searchProducts')} 
                               value={searchQuery}
                               onValueChange={setSearchQuery}
+                              data-testid="input-search-product"
                             />
                             <CommandList>
                               <CommandEmpty>{t('products:noProductsFound')}</CommandEmpty>
@@ -324,7 +325,7 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                                       setSelectedProduct(product);
                                       setSearchOpen(false);
                                     }}
-                                    data-testid={`ingredient-option-${product.id}`}
+                                    data-testid={`item-product-${product.id}`}
                                   >
                                     <Check
                                       className={cn(
@@ -402,7 +403,7 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                     const isLowStock = stock < qtyNeeded;
 
                     return (
-                      <TableRow key={item.id} data-testid={`ingredient-row-${item.id}`}>
+                      <TableRow key={item.id} data-testid={`row-ingredient-${item.id}`}>
                         <TableCell className="font-medium">
                           {ingredient?.name || t('common:unknown')}
                         </TableCell>
@@ -418,14 +419,17 @@ export default function RecipeTab({ productId, variantId, replenishmentMethod }:
                               value={editingQty}
                               onChange={(e) => setEditingQty(e.target.value)}
                               className="w-20 ml-auto"
-                              data-testid={`input-edit-qty-${item.id}`}
+                              data-testid={`input-quantity-${item.id}`}
                             />
                           ) : (
                             <span>{item.quantityPerUnit}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant={isLowStock ? "destructive" : "secondary"}>
+                          <Badge 
+                            variant={isLowStock ? "destructive" : "secondary"}
+                            data-testid={`badge-stock-${item.id}`}
+                          >
                             {isLowStock && <AlertCircle className="h-3 w-3 mr-1" />}
                             {stock}
                           </Badge>
