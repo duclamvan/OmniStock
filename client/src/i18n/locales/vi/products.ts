@@ -729,6 +729,7 @@ const products = {
   
   // Manufacturing / BOM
   manufacturing: 'Sản xuất',
+  manufacturingDescription: 'Lập kế hoạch & BOM',
   recipe: 'Công thức',
   recipeTab: 'Công thức',
   replenishmentMethod: 'Phương thức bổ sung',

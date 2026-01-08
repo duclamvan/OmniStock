@@ -622,6 +622,7 @@ const products = {
   
   // Manufacturing / BOM
   manufacturing: 'Manufacturing',
+  manufacturingDescription: 'Production planning & BOM',
   recipe: 'Recipe',
   recipeTab: 'Recipe',
   replenishmentMethod: 'Replenishment Method',

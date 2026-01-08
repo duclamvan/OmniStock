@@ -46,7 +46,8 @@ import {
   Ticket,
   Briefcase,
   Languages,
-  ClipboardList
+  ClipboardList,
+  Factory
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -464,6 +465,15 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
             { name: t('common:packingMaterials'), href: "/packing-materials" },
             { name: t('common:inventoryDashboard'), href: "/inventory/dashboard" },
             { name: t('common:addProduct'), href: "/inventory/add" },
+          ],
+        },
+        {
+          name: t('products:manufacturing'),
+          icon: Factory,
+          color: "text-amber-600 dark:text-amber-400",
+          description: t('products:manufacturingDescription'),
+          children: [
+            { name: t('products:productionPlanner'), href: "/manufacturing/production-planner" },
           ],
         },
         {
