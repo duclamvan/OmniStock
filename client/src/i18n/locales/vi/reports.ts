@@ -752,6 +752,17 @@ const reports = {
   totalPosSales: 'Tổng đơn POS',
   todaysSales: 'Doanh số hôm nay',
   averageSaleValue: 'Giá trị trung bình',
+  
+  // Generated Reports Tab
+  analyticsTab: 'Phân tích',
+  generatedReportsTab: 'Báo cáo tự động',
+  generatedReportsTitle: 'Báo cáo tự động',
+  generatedReportsDesc: 'Báo cáo kinh doanh hàng tuần và hàng tháng được tạo tự động',
+  noGeneratedReports: 'Chưa có báo cáo',
+  noGeneratedReportsDesc: 'Các báo cáo sẽ xuất hiện ở đây khi được tạo tự động.',
+  viewReportDetails: 'Xem báo cáo',
+  reportDetails: 'Chi tiết báo cáo',
+  generatedAt: 'Đã tạo',
   walkInCustomer: 'Khách vãng lai',
   itemsCount: 'Số sản phẩm',
   noPosSalesFound: 'Không tìm thấy đơn POS',

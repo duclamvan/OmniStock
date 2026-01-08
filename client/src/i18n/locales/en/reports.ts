@@ -755,6 +755,17 @@ const reports = {
   walkInCustomer: 'Walk-in Customer',
   itemsCount: 'Items',
   noPosSalesFound: 'No POS sales found',
+  
+  // Generated Reports Tab
+  analyticsTab: 'Analytics',
+  generatedReportsTab: 'Generated Reports',
+  generatedReportsTitle: 'Generated Reports',
+  generatedReportsDesc: 'Automatically generated weekly and monthly business reports',
+  noGeneratedReports: 'No Generated Reports',
+  noGeneratedReportsDesc: 'Reports will appear here once they are automatically generated.',
+  viewReportDetails: 'View Report',
+  reportDetails: 'Report Details',
+  generatedAt: 'Generated',
 } as const;
 
 export default reports;

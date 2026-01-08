@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,9 @@ import { exportToXLSX, exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   TrendingUp,
   TrendingDown,
@@ -28,7 +32,10 @@ import {
   Target,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  Eye,
+  Clock,
+  FileBarChart
 } from "lucide-react";
 import {
   Tooltip,
@@ -90,6 +97,13 @@ interface BusinessReportData {
   };
 }
 
+interface GeneratedReport {
+  fileName: string;
+  period: string;
+  generatedAt: string;
+  size: number;
+}
+
 function MetricCardSkeleton() {
   return (
     <Card className="border-slate-200 dark:border-slate-800">
@@ -140,11 +154,69 @@ export default function Reports() {
   const { toast } = useToast();
   const { t } = useTranslation('reports');
   const { formatCurrency } = useLocalization();
+  const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const [dateRange, setDateRange] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'CZK' | 'EUR' | 'USD'>('CZK');
+  const [selectedReport, setSelectedReport] = useState<GeneratedReport | null>(null);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+
+  const searchParams = new URLSearchParams(searchString);
+  const initialTab = searchParams.get('tab') === 'generated' ? 'generated' : 'analytics';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get('tab') === 'generated') {
+      setActiveTab('generated');
+    }
+  }, [searchString]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'generated') {
+      setLocation('/reports?tab=generated');
+    } else {
+      setLocation('/reports');
+    }
+  };
+
+  const { data: generatedReports = [], isLoading: isLoadingReports } = useQuery<GeneratedReport[]>({
+    queryKey: ['/api/reports'],
+  });
+
+  const { data: reportDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['/api/reports', selectedReport?.fileName],
+    enabled: !!selectedReport?.fileName && isReportDialogOpen,
+  });
+
+  const handleViewReport = (report: GeneratedReport) => {
+    setSelectedReport(report);
+    setIsReportDialogOpen(true);
+  };
+
+  const getPeriodBadgeVariant = (period: string) => {
+    if (period.toLowerCase().includes('daily')) return 'default';
+    if (period.toLowerCase().includes('weekly')) return 'secondary';
+    if (period.toLowerCase().includes('monthly')) return 'outline';
+    return 'default';
+  };
+
+  const getPeriodLabel = (period: string) => {
+    if (period.toLowerCase().includes('daily')) return t('daily');
+    if (period.toLowerCase().includes('weekly')) return t('weekly');
+    if (period.toLowerCase().includes('monthly')) return t('monthly');
+    return period;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const formatCompactCurrency = (amount: number, currencyCode: string): string => {
     const compactValue = formatCompactNumber(amount);
@@ -317,7 +389,25 @@ export default function Reports() {
             {t('comprehensiveAnalytics')}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="analytics" data-testid="tab-analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {t('analyticsTab')}
+          </TabsTrigger>
+          <TabsTrigger value="generated" data-testid="tab-generated">
+            <FileBarChart className="h-4 w-4 mr-2" />
+            {t('generatedReportsTab')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Analytics Tab Content */}
+        <TabsContent value="analytics" className="space-y-4 sm:space-y-6 mt-4">
+          {/* Analytics Controls */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Select value={dateRange} onValueChange={(value) => {
             setDateRange(value);
             if (value === 'custom') {
@@ -418,9 +508,8 @@ export default function Reports() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
 
-      {/* Financial Overview */}
+          {/* Financial Overview */}
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2" data-testid="section-financial-overview">
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
@@ -871,6 +960,137 @@ export default function Reports() {
           </>
         )}
       </div>
+        </TabsContent>
+
+        {/* Generated Reports Tab Content */}
+        <TabsContent value="generated" className="space-y-4 sm:space-y-6 mt-4">
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3 sm:mb-4 flex items-center gap-2" data-testid="section-generated-reports">
+              <FileBarChart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+              {t('generatedReportsTitle')}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              {t('generatedReportsDesc')}
+            </p>
+          </div>
+
+          {isLoadingReports ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="border-slate-200 dark:border-slate-800">
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-9 w-full mt-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : generatedReports.length === 0 ? (
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardContent className="p-12 text-center">
+                <FileBarChart className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                  {t('noGeneratedReports')}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {t('noGeneratedReportsDesc')}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {generatedReports.map((report) => (
+                <Card key={report.fileName} className="border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow" data-testid={`card-report-${report.fileName}`}>
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant={getPeriodBadgeVariant(report.period)} data-testid={`badge-period-${report.fileName}`}>
+                          {getPeriodLabel(report.period)}
+                        </Badge>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {formatFileSize(report.size)}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-100" data-testid={`text-period-${report.fileName}`}>
+                          {report.period}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          <Clock className="h-3 w-3" />
+                          <span data-testid={`text-generated-at-${report.fileName}`}>
+                            {t('generatedAt')}: {format(new Date(report.generatedAt), 'MMM dd, yyyy HH:mm')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Button 
+                        className="w-full mt-2" 
+                        variant="outline"
+                        onClick={() => handleViewReport(report)}
+                        data-testid={`button-view-${report.fileName}`}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {t('viewReportDetails')}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Report Details Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileBarChart className="h-5 w-5" />
+              {t('reportDetails')}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedReport && (
+                <span className="flex items-center gap-2 mt-1">
+                  <Badge variant={getPeriodBadgeVariant(selectedReport.period)}>
+                    {getPeriodLabel(selectedReport.period)}
+                  </Badge>
+                  <span>{selectedReport.period}</span>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {isLoadingDetails ? (
+              <div className="space-y-4 p-4">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : reportDetails ? (
+              <div className="space-y-4 p-4">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                  <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap overflow-auto">
+                    {typeof reportDetails === 'string' 
+                      ? reportDetails 
+                      : JSON.stringify(reportDetails, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                {t('noDataAvailable')}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

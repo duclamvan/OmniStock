@@ -39,7 +39,8 @@ import {
   Layers,
   RefreshCw,
   Clock,
-  Sun
+  Sun,
+  X
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLocalization } from "@/contexts/LocalizationContext";
@@ -849,6 +850,28 @@ export function Dashboard() {
     retry: false,
   });
 
+  // State to dismiss weekly report card (persisted per report)
+  const [dismissedReportId, setDismissedReportId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('dismissedWeeklyReport');
+    } catch {
+      return null;
+    }
+  });
+
+  const handleDismissWeeklyReport = () => {
+    if (weeklyReport?.generatedAt) {
+      try {
+        localStorage.setItem('dismissedWeeklyReport', weeklyReport.generatedAt);
+        setDismissedReportId(weeklyReport.generatedAt);
+      } catch {
+        setDismissedReportId(weeklyReport.generatedAt);
+      }
+    }
+  };
+
+  const showWeeklyReport = weeklyReport && weeklyReport.generatedAt !== dismissedReportId;
+
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Page Header */}
@@ -868,7 +891,7 @@ export function Dashboard() {
       </div>
 
       {/* Weekly Report Summary - Show when available */}
-      {weeklyReport && (
+      {showWeeklyReport && (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800" data-testid="card-weekly-report">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -876,12 +899,22 @@ export function Dashboard() {
                 <BarChart3 className="h-5 w-5" />
                 {t('dashboard:weeklyReportReady', 'Weekly Report Ready')}
               </CardTitle>
-              <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                {new Date(weeklyReport.generatedAt).toLocaleDateString()}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  {new Date(weeklyReport!.generatedAt).toLocaleDateString()}
+                </Badge>
+                <button
+                  onClick={handleDismissWeeklyReport}
+                  className="p-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                  aria-label={t('common:dismiss', 'Dismiss')}
+                  data-testid="button-dismiss-weekly-report"
+                >
+                  <X className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </button>
+              </div>
             </div>
             <CardDescription className="text-blue-700 dark:text-blue-300">
-              {new Date(weeklyReport.startDate).toLocaleDateString()} - {new Date(weeklyReport.endDate).toLocaleDateString()}
+              {new Date(weeklyReport!.startDate).toLocaleDateString()} - {new Date(weeklyReport!.endDate).toLocaleDateString()}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -926,8 +959,8 @@ export function Dashboard() {
               )}
             </div>
             <div className="mt-4 flex items-center justify-end">
-              <Link href="/reports">
-                <Badge variant="outline" className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center gap-1 text-blue-700 dark:text-blue-300">
+              <Link href="/reports?tab=generated">
+                <Badge variant="outline" className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center gap-1 text-blue-700 dark:text-blue-300" data-testid="link-view-full-report">
                   {t('dashboard:viewFullReport', 'View Full Report')}
                   <ArrowRight className="h-3 w-3" />
                 </Badge>
