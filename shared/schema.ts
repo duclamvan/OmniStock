@@ -809,6 +809,8 @@ export const products = pgTable("products", {
   bulkPriceEur: decimal("bulk_price_eur", { precision: 12, scale: 2 }), // Optional special bulk price in EUR
   allowBulkSales: boolean("allow_bulk_sales").default(false), // Whether to show bulk unit option in sales/POS
   unitContentsInfo: text("unit_contents_info"), // Additional info like "12 packs of 10 tablets"
+  // Manufacturing/BOM fields
+  replenishmentMethod: text("replenishment_method").default("buy"), // 'buy' (purchase from supplier) or 'make' (manufacture from ingredients)
 }, (table) => [
   index("products_sku_idx").on(table.sku),
   index("products_barcode_idx").on(table.barcode),
@@ -864,6 +866,33 @@ export const productVariants = pgTable("product_variants", {
   index("product_variants_product_id_idx").on(table.productId),
   index("product_variants_sku_idx").on(table.sku),
   index("product_variants_barcode_idx").on(table.barcode),
+]);
+
+// Bill of Materials table - defines the recipe/ingredients for manufactured products
+export const billOfMaterials = pgTable("bill_of_materials", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  parentProductId: varchar("parent_product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }), // The finished product
+  parentVariantId: varchar("parent_variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }), // Optional: specific variant of parent
+  childProductId: varchar("child_product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }), // The ingredient/component
+  childVariantId: varchar("child_variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }), // Optional: specific variant of ingredient
+  quantity: decimal("quantity", { precision: 10, scale: 4 }).notNull(), // How many children needed for 1 parent
+  unitCostAllocation: decimal("unit_cost_allocation", { precision: 5, scale: 2 }), // Optional: percentage for cost distribution
+  notes: text("notes"), // Optional notes about this ingredient
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("bom_parent_product_idx").on(table.parentProductId),
+  index("bom_child_product_idx").on(table.childProductId),
+  index("bom_parent_variant_idx").on(table.parentVariantId),
+  index("bom_child_variant_idx").on(table.childVariantId),
 ]);
 
 // Product tiered pricing table
@@ -2179,6 +2208,16 @@ export const insertProductSchema = createInsertSchema(products)
 export const insertProductVariantSchema = createInsertSchema(
   productVariants,
 ).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBillOfMaterialsSchema = createInsertSchema(billOfMaterials, {
+  quantity: z
+    .union([z.string(), z.number()])
+    .transform((val) => String(val)),
+  unitCostAllocation: z
+    .union([z.string(), z.number()])
+    .optional()
+    .nullable()
+    .transform((val) => (val ? String(val) : null)),
+}).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(
   productTieredPricing,
   {
@@ -2433,6 +2472,8 @@ export type InsertAiLocationSuggestion = z.infer<
 >;
 export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
+export type BillOfMaterials = typeof billOfMaterials.$inferSelect;
+export type InsertBillOfMaterials = z.infer<typeof insertBillOfMaterialsSchema>;
 export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
 export type InsertProductTieredPricing = z.infer<
   typeof insertProductTieredPricingSchema

@@ -1,0 +1,89 @@
+This is a classic "Bill of Materials" (BOM) problem. To handle this in your Davie Supply WMS, we need to teach the system that the "Finished Jar" is just a wrapper for "Powder + Jar + Label."
+
+Here is the comprehensive plan to implement this using your specific stack (Drizzle, React, Shadcn), followed by the prompt to build it.
+
+### The Implementation Plan
+
+#### 1. Database Changes (The Brain)
+
+We need to add two key concepts to your database:
+
+* **`replenishment_method`**: A flag on the `products` table. Is this item **Bought** (like the empty jar) or **Made** (like the finished acrylic powder)?
+* **`bill_of_materials` (The Recipe)**: A new table that links a "Parent" product to its "Child" ingredients.
+* *Example:* Parent: `Acrylic 660g` -> Child: `Empty Jar` (Qty: 1), Child: `Label` (Qty: 1), Child: `Powder` (Qty: 0.66).
+
+
+
+#### 2. Frontend: The "Recipe" Manager
+
+On your existing **Product Details** page, we will add a new tab called "Recipe" (or Manufacturing).
+
+* Here, you search for your "ingredients" (existing products in your system) and define how many are needed for 1 unit of the finished good.
+
+#### 3. Frontend: The "Restock Wizard" (Answering your specific need)
+
+This is the feature that solves your "ordering labels" problem. instead of just a basic Purchase Order screen, we will create a **"Production Planner"** dialog.
+
+* **Input:** You select "Acrylic Powder 660g" and type "100 units".
+* **Logic:** The system "explodes" the recipe.
+* **Output:** It shows a list:
+* *Needs:* 100 Jars (Stock: 0) -> **Button: Add to PO**
+* *Needs:* 100 Labels (Stock: 0) -> **Button: Add to PO**
+* *Needs:* 66kg Powder (Stock: 500kg) -> **Status: OK**
+
+
+
+---
+
+### The Replit Prompt
+
+Copy and paste this prompt into your Replit chat to generate the code.
+
+```markdown
+I need to implement a Bill of Materials (BOM) and Kitting system into my Davie Supply WMS to handle manufacturing workflows (e.g., combining raw materials into a finished product).
+
+My stack is: React + Vite + Shadcn/ui (Frontend), Express + Drizzle ORM + PostgreSQL (Backend).
+
+Here are the 3 specific steps I need you to implement. Please provide the code for each step.
+
+### Step 1: Database Schema Updates
+Create a new Drizzle schema file `server/db/schema/bom.ts` (and update relations):
+1. Add a `replenishment_method` enum to the `products` table with values `'buy'` (default) and `'make'`.
+2. Create a `bill_of_materials` table with:
+   - `id`: UUID (Primary Key)
+   - `parent_variant_id`: UUID (Foreign Key to product_variants)
+   - `child_variant_id`: UUID (Foreign Key to product_variants)
+   - `quantity`: Decimal (How many children are needed for 1 parent)
+   - `unit_cost_allocation`: Decimal (Optional percentage for cost distribution)
+   - Standard timestamps.
+
+### Step 2: Backend API Endpoints
+Create a new router `server/routes/manufacturing.ts` with these endpoints:
+1. `GET /api/products/:id/recipe`: Fetch the BOM ingredients for a specific product variant.
+2. `POST /api/products/:id/recipe`: Add/Update an ingredient in the recipe.
+3. `POST /api/manufacturing/calculate-requirements`: 
+   - Accepts: `{ target_variant_id, quantity_to_build }`
+   - Logic: Fetches the BOM, calculates total required ingredients (child_qty * build_qty), and compares against current `inventory` levels for those child items.
+   - Returns: A JSON list of ingredients, required qty, current stock, and a "missing_qty" value.
+
+### Step 3: Frontend "Production Planner" Dialog
+Create a new component `client/src/components/manufacturing/ProductionPlanner.tsx`.
+1. It should have a Combobox to search for a "Finished Good" (Parent Product).
+2. An input for "Quantity to Make".
+3. A "Calculate" button that hits the `calculate-requirements` endpoint.
+4. A Results Table showing the ingredients needed.
+5. **Critical Feature**: Inside the results table, add a column "Action".
+   - If `missing_qty > 0`, show a button "Add to Purchase Order".
+   - Clicking this should open a dialog to select a Supplier and create a Draft PO with that ingredient and the missing quantity pre-filled.
+
+Please prioritize "Simple, everyday language" for the UI labels (e.g., use "Ingredients" instead of "Child Components", "Recipe" instead of "Bill of Materials").
+
+```
+
+### How to use this workflow once implemented
+
+1. **Setup:** Go to your **Acrylic Powder 660g** product page. Click the new "Recipe" tab. Add "Empty Jar" (Qty 1) and "Label" (Qty 1).
+2. **Ordering:** When you realize you are low on Acrylic 660g, open the **Production Planner**.
+3. **Action:** Type "50" (for 50 jars).
+4. **Result:** The system will tell you: "You need 50 labels and 50 jars."
+5. **One-Click:** Click **"Add to PO"** next to the labels. Select your Label Supplier. The system creates the PO for you automatically.
