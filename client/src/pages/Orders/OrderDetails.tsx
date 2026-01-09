@@ -790,7 +790,17 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                 <Link href={`/customers/${order.customer.id}`}>
                   <span className="font-semibold text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1.5">
                     {order.customer.country && <span className="text-base">{getCountryFlag(order.customer.country)}</span>}
-                    <User className="h-3.5 w-3.5" />
+                    {order.customer.profilePictureUrl ? (
+                      <img 
+                        src={order.customer.profilePictureUrl} 
+                        alt={order.customer.name || ''} 
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      </div>
+                    )}
                     {order.customer.name}
                   </span>
                 </Link>

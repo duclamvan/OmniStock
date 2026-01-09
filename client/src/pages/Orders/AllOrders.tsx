@@ -26,7 +26,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, User, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays } from "lucide-react";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { format, startOfDay, endOfDay, subDays, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -236,9 +236,23 @@ function MobileOrderCard({
       
       {/* Row 2: Customer + Date */}
       <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="font-medium text-xs text-black dark:text-white truncate flex-1">
-          {order.customer?.name || t('orders:walkInCustomer')}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {order.customer?.country && (
+            <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+          )}
+          {order.customer?.profilePictureUrl ? (
+            <img 
+              src={order.customer.profilePictureUrl} 
+              alt={order.customer.name || ''} 
+              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          )}
+          <span className="font-medium text-xs text-black dark:text-white truncate">
+            {order.customer?.name || t('orders:walkInCustomer')}
+          </span>
+        </div>
         <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
           {formatDate(order.createdAt)}
         </span>
@@ -2221,6 +2235,20 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
+                          {order.customer?.country && (
+                            <span className="text-base flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+                          )}
+                          {order.customer?.profilePictureUrl ? (
+                            <img 
+                              src={order.customer.profilePictureUrl} 
+                              alt={order.customer.name || ''} 
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                              <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                            </div>
+                          )}
                           {order.customerId ? (
                             <Link 
                               href={`/customers/${order.customerId}`}
@@ -2675,10 +2703,21 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               {order.paymentStatus?.replace('_', ' ')}
                             </Badge>
                           </div>
-                          <div className="text-xs mt-0.5">
+                          <div className="text-xs mt-0.5 flex items-center gap-1.5">
+                            {order.customer?.country && (
+                              <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+                            )}
+                            {order.customer?.profilePictureUrl ? (
+                              <img 
+                                src={order.customer.profilePictureUrl} 
+                                alt={order.customer?.name || ''} 
+                                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                            )}
                             {(() => {
                               const customerName = order.customer?.name || 'N/A';
-                              // Generate consistent color based on customer name hash
                               const hash = customerName.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                               const colors = [
                                 'text-blue-600 dark:text-blue-400',
