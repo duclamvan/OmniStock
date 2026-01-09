@@ -1521,6 +1521,7 @@ export default function ProductForm() {
       barcode: data.barcode || undefined,
       warehouseLocation: data.warehouseLocation || undefined,
       packingMaterialId: data.packingMaterialId || undefined,
+      bomQuantityPerParent: data.bomQuantityPerParent ? String(data.bomQuantityPerParent) : undefined,
     };
 
     console.log('Product data to send:', productData);

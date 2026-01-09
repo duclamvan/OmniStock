@@ -22594,7 +22594,7 @@ Important rules:
       const client = new ApifyClient({ token: apiKey });
 
       // Run the Apify actor
-      const run = await client.actor("zQt0UcNu0fsd98YAw").call({
+      const run = await client.actor("devwithbobby/fb-profile-scraper").call({
         profiles: username
       });
 

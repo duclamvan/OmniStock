@@ -1621,7 +1621,7 @@ export default function AllCustomers() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <Avatar className="h-12 w-12 flex-shrink-0">
-                          <AvatarImage src={customer.imageUrl} />
+                          <AvatarImage src={customer.profilePictureUrl || customer.imageUrl} />
                           <AvatarFallback className="text-sm bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 text-cyan-700 dark:text-cyan-300">
                             {customer.name?.charAt(0)?.toUpperCase() || 'C'}
                           </AvatarFallback>
