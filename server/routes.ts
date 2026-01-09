@@ -22595,7 +22595,7 @@ Important rules:
 
       // Run the Apify actor
       const run = await client.actor("devwithbobby/fb-profile-scraper").call({
-        profiles: username
+        profiles: [username]
       });
 
       // Fetch results from the dataset
@@ -22633,7 +22633,7 @@ Important rules:
       }
 
       res.json({
-        name: profile.title || null,
+        name: profile.name || profile.title || null,
         profilePictureUrl: localProfilePictureUrl || profilePicUrl || null,
         facebookId: profile.facebookId || profile.pageId || null,
         username: profile.pageName || username,
