@@ -19,7 +19,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown, RefreshCw, Upload, User } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown, RefreshCw, Upload, User, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -187,6 +188,9 @@ export default function AddCustomer() {
   const [isBillingLabelManuallyEdited, setIsBillingLabelManuallyEdited] = useState(false);
   const [deletingBillingAddressId, setDeletingBillingAddressId] = useState<string | null>(null);
   const [deleteBillingIndex, setDeleteBillingIndex] = useState<number | null>(null);
+  
+  // Delete customer confirmation dialog state
+  const [showDeleteCustomerDialog, setShowDeleteCustomerDialog] = useState(false);
 
   // Track Smart Paste confidence highlighting
   const [shippingFieldConfidence, setShippingFieldConfidence] = useState<Record<string, string>>({});
@@ -1802,6 +1806,33 @@ export default function AddCustomer() {
     createOrUpdateCustomerMutation.mutate(data);
   };
 
+  // Delete customer mutation
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('DELETE', `/api/customers/${customerId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      toast({
+        title: t('customers:success'),
+        description: t('customers:customerDeleted'),
+      });
+      navigate('/customers');
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('customers:error'),
+        description: error.message || t('customers:failedToDeleteCustomer'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteCustomer = () => {
+    setShowDeleteCustomerDialog(false);
+    deleteCustomerMutation.mutate();
+  };
+
   const isCzech = selectedCountry === 'CZ';
   const isEU = selectedCountry ? euCountryCodes.includes(selectedCountry) : false;
 
@@ -1853,20 +1884,70 @@ export default function AddCustomer() {
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-8 p-2 sm:p-4 md:p-6 overflow-x-hidden">
-      <div className="flex items-center gap-2 sm:gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => window.history.back()}
-          data-testid="button-back"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">{t('common:back')}</span>
-        </Button>
-        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
-          {isEditMode ? t('customers:editCustomer') : t('customers:addCustomer')}
-        </h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.history.back()}
+            data-testid="button-back"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">{t('common:back')}</span>
+          </Button>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {isEditMode ? t('customers:editCustomer') : t('customers:addCustomer')}
+          </h1>
+        </div>
+        {isEditMode && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" data-testid="button-customer-menu">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                onClick={() => setShowDeleteCustomerDialog(true)}
+                data-testid="menu-item-delete-customer"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('customers:deleteCustomer')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
+
+      {/* Delete Customer Confirmation Dialog */}
+      <AlertDialog open={showDeleteCustomerDialog} onOpenChange={setShowDeleteCustomerDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('customers:deleteCustomer')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('customers:deleteCustomerConfirmation')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCustomer}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteCustomerMutation.isPending}
+            >
+              {deleteCustomerMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('common:deleting')}
+                </>
+              ) : (
+                t('common:delete')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>

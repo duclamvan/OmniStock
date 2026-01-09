@@ -49,6 +49,8 @@ const customers = {
   failedToLoadCustomers: 'Failed to load customers',
   deletedCustomersSuccess: 'Deleted {{count}} customer(s) successfully',
   failedToDeleteCustomers: 'Failed to delete customers',
+  failedToDeleteCustomer: 'Failed to delete customer',
+  deleteCustomerConfirmation: 'Are you sure you want to delete this customer? This action cannot be undone.',
   cannotDeleteCustomerHasRecords: 'Cannot delete customer with existing orders or records',
   loadingCustomers: 'Loading customers...',
   monitorCustomerRelationships: 'Monitor customer relationships and loyalty',

@@ -221,6 +221,8 @@ const customers = {
   failedToLoadCustomers: 'Không thể tải danh sách khách hàng',
   deletedCustomersSuccess: 'Đã xóa {{count}} khách hàng thành công',
   failedToDeleteCustomers: 'Xóa khách hàng thất bại',
+  failedToDeleteCustomer: 'Không thể xóa khách hàng',
+  deleteCustomerConfirmation: 'Bạn có chắc muốn xóa khách hàng này? Hành động này không thể hoàn tác.',
   cannotDeleteCustomerHasRecords: 'Không thể xóa khách hàng có đơn hàng hoặc bản ghi',
   loadingCustomers: 'Đang tải khách hàng...',
   monitorCustomerRelationships: 'Theo dõi quan hệ và lòng trung thành của khách hàng',
