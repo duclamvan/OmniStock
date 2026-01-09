@@ -666,6 +666,12 @@ const customers = {
   pdfFormatDesc: 'Định dạng PDF để in và chia sẻ',
   exportIncludesAllColumns: 'Xuất sẽ bao gồm tất cả các cột hiển thị dựa trên bộ lọc hiện tại',
   
+  // Profile Picture
+  profilePicture: 'Ảnh đại diện',
+  refetchFromFacebook: 'Tải lại từ Facebook',
+  uploadImage: 'Tải ảnh lên',
+  profilePictureUploaded: 'Tải ảnh đại diện thành công',
+  
 } as const;
 
 export default customers;

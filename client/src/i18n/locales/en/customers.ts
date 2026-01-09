@@ -516,6 +516,12 @@ const customers = {
   pdfFormatDesc: 'PDF format for printing and sharing',
   exportIncludesAllColumns: 'Export will include all visible columns based on current filters',
   
+  // Profile Picture
+  profilePicture: 'Profile Picture',
+  refetchFromFacebook: 'Refetch from Facebook',
+  uploadImage: 'Upload Image',
+  profilePictureUploaded: 'Profile picture uploaded successfully',
+  
 } as const;
 
 export default customers;
