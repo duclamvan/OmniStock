@@ -135,7 +135,19 @@ export default function OrderDetails() {
   const { t } = useTranslation();
   
   // Real-time collaboration - track viewers and locks
-  const { viewers, lockInfo, isLocked, isCurrentUserLockOwner } = useRealTimeOrder(id);
+  const { viewers, lockInfo, isLocked, isCurrentUserLockOwner, requestLock, releaseLock } = useRealTimeOrder(id);
+
+  // Request view lock when viewing order, release on unmount
+  useEffect(() => {
+    if (id && requestLock) {
+      requestLock('view');
+    }
+    return () => {
+      if (id && releaseLock) {
+        releaseLock();
+      }
+    };
+  }, [id, requestLock, releaseLock]);
   const { formatCurrency, formatDate } = useLocalization();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
@@ -676,7 +688,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
     t('orders:lowPriority');
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0 overflow-x-hidden">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0 overflow-x-hidden relative">
+      {/* Lock overlay when another user is editing */}
+      {isLocked && <LockOverlay lockInfo={lockInfo} />}
+      
       {/* Clean Header */}
       <Card>
         <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useRealTimeShipment } from "@/hooks/useSocket";
-import { RealTimeViewers } from "@/components/RealTimeViewers";
+import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,19 @@ export default function ShipmentTracking() {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
   // Real-time collaboration for shipment detail view
-  const { viewers, lockInfo } = useRealTimeShipment(selectedShipment?.id);
+  const { viewers, lockInfo, isLocked, requestLock, releaseLock } = useRealTimeShipment(selectedShipment?.id);
+
+  // Request view lock when viewing shipment details, release on close
+  useEffect(() => {
+    if (selectedShipment?.id && requestLock) {
+      requestLock('view');
+    }
+    return () => {
+      if (selectedShipment?.id && releaseLock) {
+        releaseLock();
+      }
+    };
+  }, [selectedShipment?.id, requestLock, releaseLock]);
 
   // Fetch shipments
   const { data: shipments = [], isLoading } = useQuery({
@@ -371,8 +383,11 @@ export default function ShipmentTracking() {
       {selectedShipment && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center"
              onClick={() => setSelectedShipment(null)}>
-          <div className="bg-background w-full md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6"
+          <div className="bg-background w-full md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6 relative"
                onClick={(e) => e.stopPropagation()}>
+            {/* Lock overlay for when another user has the edit lock */}
+            {isLocked && <LockOverlay lockInfo={lockInfo} />}
+            
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold">{t('imports:shipmentDetails')}</h3>
