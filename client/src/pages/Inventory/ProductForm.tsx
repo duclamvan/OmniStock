@@ -85,7 +85,8 @@ import {
   ListPlus,
   Layers,
   Loader2,
-  Copy
+  Copy,
+  Factory
 } from "lucide-react";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
@@ -164,6 +165,9 @@ const productSchema = z.object({
   isVirtual: z.boolean().optional().default(false),
   masterProductId: z.string().optional(),
   inventoryDeductionRatio: z.coerce.number().min(0.01).optional(),
+  // BOM Parent-Child relationship fields
+  parentProductId: z.string().optional(),
+  bomQuantityPerParent: z.coerce.number().min(0).optional(),
   // Deprecated packaging unit fields (kept for backward compatibility)
   bulkUnitName: z.string().optional(),
   bulkUnitQty: z.coerce.number().min(1).optional(),
@@ -340,6 +344,7 @@ export default function ProductForm() {
   // Inline supplier creation dialog state
   const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
   const [bulkPriceManuallyEdited, setBulkPriceManuallyEdited] = useState(false);
+  const [isBomChildMode, setIsBomChildMode] = useState(false);
   const [newSupplierData, setNewSupplierData] = useState({
     name: "",
     email: "",
@@ -992,6 +997,9 @@ export default function ProductForm() {
         isVirtual: Boolean(product.isVirtual),
         masterProductId: product.masterProductId || '',
         inventoryDeductionRatio: product.inventoryDeductionRatio ? parseFloat(String(product.inventoryDeductionRatio)) : undefined,
+        // BOM Parent-Child relationship fields
+        parentProductId: product.parentProductId || '',
+        bomQuantityPerParent: product.bomQuantityPerParent ? parseFloat(String(product.bomQuantityPerParent)) : undefined,
         // Deprecated packaging unit fields (kept for backward compatibility)
         bulkUnitName: product.bulkUnitName || '',
         bulkUnitQty: product.bulkUnitQty ? (typeof product.bulkUnitQty === 'number' ? product.bulkUnitQty : parseInt(String(product.bulkUnitQty))) : undefined,
@@ -999,6 +1007,9 @@ export default function ProductForm() {
         bulkPriceEur: product.bulkPriceEur ? parseFloat(String(product.bulkPriceEur)) : undefined,
         allowBulkSales: Boolean(product.allowBulkSales),
       });
+      
+      // Set BOM child mode based on whether product has a parent
+      setIsBomChildMode(!!product.parentProductId);
       
       // Reset manual edit tracking refs - mark existing prices as "already set"
       // This prevents auto-conversion from overwriting existing values
@@ -4419,6 +4430,134 @@ export default function ProductForm() {
                         )}
                       </div>
                     )}
+                  </div>
+                  
+                  {/* BOM Parent-Child Relationship Section */}
+                  <Separator className="my-6" />
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                          <Factory className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:bom.title', 'BOM Relationship')}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{t('products:bom.subtitle', 'Define parent-child component relationships')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="isChildItem"
+                          checked={isBomChildMode}
+                          onCheckedChange={(checked) => {
+                            setIsBomChildMode(checked);
+                            if (!checked) {
+                              form.setValue('parentProductId', undefined);
+                              form.setValue('bomQuantityPerParent', undefined);
+                            }
+                          }}
+                          data-testid="switch-is-child-item"
+                        />
+                        <Label htmlFor="isChildItem" className="text-sm cursor-pointer">{t('products:bom.makeChildItem', 'Make this a child item')}</Label>
+                      </div>
+                    </div>
+                    
+                    <Alert className="mb-4 bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800">
+                      <Info className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      <AlertDescription className="text-sm text-teal-700 dark:text-teal-300">
+                        {t('products:bom.description', 'A child item is a component that belongs to a parent product (Bill of Materials). Define how many units of this child are needed to assemble one parent product.')}
+                      </AlertDescription>
+                    </Alert>
+                    
+                    {isBomChildMode && (
+                      <div className="space-y-4 p-4 bg-teal-50/50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="parentProductId" className="text-sm font-medium">{t('products:bom.parentProduct', 'Parent Product')}</Label>
+                            <Select
+                              value={form.watch('parentProductId') || ''}
+                              onValueChange={(value) => form.setValue('parentProductId', value === 'none' ? undefined : value)}
+                            >
+                              <SelectTrigger className="mt-1" data-testid="select-parent-product">
+                                <SelectValue placeholder={t('products:bom.selectParent', 'Select parent product...')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t('products:bom.noParent', 'No parent product')}</SelectItem>
+                                {allProducts?.filter((p: any) => p.id !== params.id).map((p: any) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.sku} - {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:bom.parentProductHelp', 'The assembled product this component belongs to')}</p>
+                          </div>
+                          <div>
+                            <Label htmlFor="bomQuantityPerParent" className="text-sm font-medium">{t('products:bom.quantityPerParent', 'Quantity Per Parent')}</Label>
+                            <Input 
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...form.register('bomQuantityPerParent')} 
+                              placeholder="1"
+                              className="mt-1"
+                              data-testid="input-bom-quantity"
+                              onKeyDown={handleDecimalKeyDown}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">{t('products:bom.quantityPerParentHelp', 'How many of this child are needed to make 1 parent unit')}</p>
+                          </div>
+                        </div>
+                        
+                        {form.watch('parentProductId') && form.watch('bomQuantityPerParent') && (
+                          <div className="bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-700 rounded-lg p-3">
+                            <p className="text-sm font-medium text-teal-700 dark:text-teal-300 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              {t('products:bom.summary', '{{qty}}x {{childName}} is needed to assemble 1x {{parentName}}', {
+                                qty: form.watch('bomQuantityPerParent'),
+                                childName: form.watch('name') || t('products:bom.thisProduct', 'this product'),
+                                parentName: allProducts?.find((p: any) => p.id === form.watch('parentProductId'))?.name || t('products:bom.parentProduct', 'parent product')
+                              })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Child Products Section - shown when editing a product that has children */}
+                    {isEditMode && id && (() => {
+                      const childProducts = allProducts?.filter((p: any) => p.parentProductId === id) || [];
+                      if (childProducts.length === 0) return null;
+                      
+                      return (
+                        <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Layers className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                            <h5 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:bom.childProducts', 'Child Components')}</h5>
+                            <Badge variant="secondary" className="ml-2">{childProducts.length}</Badge>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('products:bom.childProductsDescription', 'Products that are components of this parent product')}</p>
+                          <div className="space-y-2">
+                            {childProducts.map((child: any) => (
+                              <div key={child.id} className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-1.5 bg-teal-100 dark:bg-teal-900 rounded">
+                                    <Package className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{child.name}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{child.sku}</p>
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
+                                  {child.bomQuantityPerParent || 1}x {t('products:bom.perParent', 'per parent')}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </AccordionContent>

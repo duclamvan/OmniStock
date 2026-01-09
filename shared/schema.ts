@@ -811,12 +811,16 @@ export const products = pgTable("products", {
   unitContentsInfo: text("unit_contents_info"), // Additional info like "12 packs of 10 tablets"
   // Manufacturing/BOM fields
   replenishmentMethod: text("replenishment_method").default("buy"), // 'buy' (purchase from supplier) or 'make' (manufacture from ingredients)
+  // BOM Parent-Child relationship - direct hierarchy for inventory items
+  parentProductId: varchar("parent_product_id"), // Self-reference: if set, this product is a child/component of another product
+  bomQuantityPerParent: decimal("bom_quantity_per_parent", { precision: 10, scale: 4 }), // How many of this child are needed per 1 parent unit
 }, (table) => [
   index("products_sku_idx").on(table.sku),
   index("products_barcode_idx").on(table.barcode),
   index("products_name_idx").on(table.name),
   index("products_category_idx").on(table.categoryId),
   index("products_supplier_idx").on(table.supplierId),
+  index("products_parent_product_idx").on(table.parentProductId),
 ]);
 
 // AI Location Suggestions table - stores one AI-generated warehouse location suggestion per product

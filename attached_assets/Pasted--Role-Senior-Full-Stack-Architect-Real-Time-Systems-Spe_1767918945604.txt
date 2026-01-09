@@ -1,0 +1,39 @@
+**Role:** Senior Full-Stack Architect (Real-Time Systems Specialist)
+**Stack:** Node.js, Express, Socket.io, Drizzle ORM, React (Frontend)
+**Goal:** Upgrade the application to be fully "Multi-User Friendly" with real-time collision detection and live progress updates.
+
+**Context:**
+Currently, multiple warehouse workers might try to open or pack the same order simultaneously, causing data overrides or double-shipping. We need a "Google Docs" style experience where users can see who is working on what.
+
+**Action Plan & Requirements:**
+
+1.  **Install & Configure Socket.io (Real-Time Engine):**
+    * Set up a `socket.io` server instance in the backend (`index.ts` or `server.ts`).
+    * Create a `SocketService` to handle room management (e.g., `socket.join('order-123')`).
+    * Ensure the WebSocket server works correctly behind a proxy (configure CORS for Railway/Replit domains).
+
+2.  **Implement "Soft Locking" for Orders:**
+    * **Database Change:** Create a migration to add `locked_by_user_id` and `locked_at` timestamps to the `orders` and `shipments` tables.
+    * **Logic:** When a user opens an order page, emit a `join_order` event. The server should mark the order as "Viewed by [User Name]".
+    * **Visuals:** If User A is on Order #101, User B should see a small avatar or badge "User A is viewing" on that card in the dashboard.
+    * **Safety:** If User A clicks "Start Packing," strictly LOCK the order. If User B tries to open it, show a modal: "Locked by User A. Read-only mode."
+
+3.  **Real-Time Progress Sync (The "Live" Feel):**
+    * When a user scans a barcode or updates a quantity, emit an event (`update_progress`).
+    * Broadcast this change to everyone else in the room immediately. User B's screen should update the "Items Packed" count instantly without refreshing the page.
+    * Use optimistic UI updates (update frontend first, then sync to server) to make scanning feel instant.
+
+4.  **Toast Notifications for Global Actions:**
+    * Broadcast major events globally. Examples:
+        * "User A just generated a shipping label for Order #500."
+        * "User B completed stock intake."
+    * Show these as non-intrusive toast notifications in the corner of the screen for all active managers.
+
+**Technical Constraints:**
+* Do not query the database for every single keystroke. Broadcast temporary state via sockets, save to DB only on "Save" or "Complete" actions.
+* Handle "Disconnects": If a user closes the tab, automatically unlock the order after 10 seconds so it doesn't stay locked forever.
+
+**Output:**
+* Provide the code to initialize Socket.io.
+* Provide the React hook (e.g., `useRealTimeOrder`) to listen for updates.
+* Write the Drizzle migration for the locking columns.
