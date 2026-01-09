@@ -1492,14 +1492,14 @@ export default function AddOrder() {
     },
   });
 
-  // Auto-fetch Facebook profile when URL is entered/changed
-  useEffect(() => {
+  // Fetch Facebook profile on blur (when user leaves the input field)
+  const handleFacebookUrlBlur = () => {
     const url = newCustomer.facebookUrl;
     if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
       setIsFetchingFacebookProfile(true);
       fetchFacebookProfileMutation.mutate(url);
     }
-  }, [newCustomer.facebookUrl]);
+  };
 
   // Manual refetch function for new customer form
   const handleRefetchFacebookProfile = () => {
@@ -5617,33 +5617,47 @@ export default function AddOrder() {
                         id="facebookUrl"
                         value={newCustomer.facebookUrl}
                         onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
+                        onBlur={handleFacebookUrlBlur}
                         placeholder={t('orders:placeUrlOrType')}
                         className="pr-10"
                         autoFocus
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1 h-8 w-8 p-0"
-                        onClick={() => {
-                          if (newCustomer.name) {
-                            setNewCustomer({ ...newCustomer, facebookUrl: newCustomer.name });
-                            toast({
-                              title: t('orders:nameCopied'),
-                              description: t('orders:customerNameCopiedToFacebookUrl'),
-                            });
-                          }
-                        }}
-                        disabled={!newCustomer.name}
-                        title={t('orders:copyCustomerName')}
-                        data-testid="button-copy-facebook-url"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      {(isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending) ? (
+                        <div className="absolute right-1 top-1 h-8 w-8 p-0 flex items-center justify-center">
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0"
+                          onClick={() => {
+                            if (newCustomer.name) {
+                              setNewCustomer({ ...newCustomer, facebookUrl: newCustomer.name });
+                              toast({
+                                title: t('orders:nameCopied'),
+                                description: t('orders:customerNameCopiedToFacebookUrl'),
+                              });
+                            }
+                          }}
+                          disabled={!newCustomer.name}
+                          title={t('orders:copyCustomerName')}
+                          data-testid="button-copy-facebook-url"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
+                    {/* Loading state indicator */}
+                    {(isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending) && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t('customers:fetchingFacebookProfile')}
+                      </div>
+                    )}
                     {/* Profile Picture Preview and Refetch Button */}
-                    {newCustomer.facebookUrl && (
+                    {newCustomer.facebookUrl && !(isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending) && (
                       <div className="flex items-center gap-2 mt-2">
                         {newCustomer.profilePictureUrl ? (
                           <img 
