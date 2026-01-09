@@ -19,7 +19,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown, RefreshCw, Upload, User } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -155,6 +155,7 @@ export default function AddCustomer() {
   const latestDuplicateCheckRef = useRef<string>('');
   const shippingCountryDropdownRef = useRef<HTMLDivElement>(null);
   const billingCountryDropdownRef = useRef<HTMLDivElement>(null);
+  const profilePictureInputRef = useRef<HTMLInputElement>(null);
 
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
@@ -1703,6 +1704,49 @@ export default function AddCustomer() {
     }
   };
 
+  const uploadProfilePictureMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/profile-pictures/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      return res.json();
+    },
+    onSuccess: (data: { path: string }) => {
+      form.setValue('profilePictureUrl', data.path);
+      toast({
+        title: t('customers:success'),
+        description: t('customers:profilePictureUploaded'),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t('customers:error'),
+        description: t('customers:failedToUploadProfilePicture'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadProfilePictureMutation.mutate(file);
+    }
+  };
+
+  const handleRefetchFromFacebook = () => {
+    const url = form.getValues('facebookUrl');
+    if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
+      setIsFetchingFacebookProfile(true);
+      fetchFacebookProfileMutation.mutate(url);
+    }
+  };
+
   const createOrUpdateCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
       let response;
@@ -1956,6 +2000,65 @@ export default function AddCustomer() {
                       </Button>
                     </div>
                   )}
+                </div>
+
+                {/* Profile Picture Section */}
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">{t('customers:profilePicture')}</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-slate-200 dark:border-slate-600">
+                      {form.watch('profilePictureUrl') ? (
+                        <img 
+                          src={form.watch('profilePictureUrl')} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-8 h-8 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      {form.watch('facebookUrl') && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRefetchFromFacebook}
+                          disabled={isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending}
+                          className="gap-2"
+                        >
+                          {(isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          {t('customers:refetchFromFacebook')}
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => profilePictureInputRef.current?.click()}
+                        disabled={uploadProfilePictureMutation.isPending}
+                        className="gap-2"
+                      >
+                        {uploadProfilePictureMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        {t('customers:uploadImage')}
+                      </Button>
+                      <input
+                        ref={profilePictureInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePictureUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div>

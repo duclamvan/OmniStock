@@ -416,6 +416,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/profile-pictures/upload', isAuthenticated, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const PROFILE_PICTURES_DIR = path.join(process.cwd(), 'uploads', 'profile-pictures');
+      await fs.mkdir(PROFILE_PICTURES_DIR, { recursive: true });
+
+      const { randomUUID } = await import('crypto');
+      const filename = `${randomUUID()}.webp`;
+      const filePath = path.join(PROFILE_PICTURES_DIR, filename);
+
+      const sharp = (await import('sharp')).default;
+      await sharp(req.file.buffer)
+        .resize(200, 200, { 
+          fit: 'cover',
+          position: 'center'
+        })
+        .webp({ quality: 80 })
+        .toFile(filePath);
+
+      console.log('[Profile Picture Upload] Saved:', filename);
+      
+      res.json({ path: `/api/profile-pictures/${filename}` });
+    } catch (error) {
+      console.error('[Profile Picture Upload] Error:', error);
+      res.status(500).json({ message: 'Failed to upload profile picture' });
+    }
+  });
+
     app.use('/uploads', staticFileAuth, express.default.static('uploads'));
   
   // Serve protected static files from public/images directory
