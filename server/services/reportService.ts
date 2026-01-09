@@ -84,7 +84,7 @@ export async function getReportSettings(): Promise<ReportSettings> {
   return {
     dailySummaryEnabled: getBoolValue('daily_summary_report_email', false),
     weeklyReportEnabled: getBoolValue('weekly_report_email', true),
-    monthlyReportEnabled: getBoolValue('monthly_report_email', false),
+    monthlyReportEnabled: getBoolValue('monthly_report_email', true),
     yearlyReportEnabled: getBoolValue('yearly_report_email', false),
     lowStockAlertEnabled: getBoolValue('low_stock_alert_email', true),
     orderStatusNotificationsEnabled: getBoolValue('order_status_change_notifications', true),
@@ -801,8 +801,60 @@ let lastWeeklyReport: Date | null = null;
 let lastMonthlyReport: Date | null = null;
 let lastYearlyReport: Date | null = null;
 
+const REPORT_TIMESTAMP_KEYS = {
+  daily: 'last_daily_report_timestamp',
+  weekly: 'last_weekly_report_timestamp',
+  monthly: 'last_monthly_report_timestamp',
+  yearly: 'last_yearly_report_timestamp',
+};
+
+async function getLastReportTimestamp(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<Date | null> {
+  try {
+    const key = REPORT_TIMESTAMP_KEYS[period];
+    const result = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    if (result.length > 0 && result[0].value) {
+      const timestamp = new Date(result[0].value as string);
+      if (!isNaN(timestamp.getTime())) {
+        return timestamp;
+      }
+    }
+  } catch (error) {
+    console.error(`Error loading ${period} report timestamp:`, error);
+  }
+  return null;
+}
+
+async function setLastReportTimestamp(period: 'daily' | 'weekly' | 'monthly' | 'yearly', timestamp: Date): Promise<void> {
+  try {
+    const key = REPORT_TIMESTAMP_KEYS[period];
+    const existing = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    if (existing.length > 0) {
+      await db.update(appSettings).set({ value: timestamp.toISOString() }).where(eq(appSettings.key, key));
+    } else {
+      await db.insert(appSettings).values({ key, value: timestamp.toISOString() });
+    }
+  } catch (error) {
+    console.error(`Error saving ${period} report timestamp:`, error);
+  }
+}
+
+async function loadReportTimestamps(): Promise<void> {
+  lastDailyReport = await getLastReportTimestamp('daily');
+  lastWeeklyReport = await getLastReportTimestamp('weekly');
+  lastMonthlyReport = await getLastReportTimestamp('monthly');
+  lastYearlyReport = await getLastReportTimestamp('yearly');
+  
+  console.log('📊 Loaded report timestamps:');
+  console.log(`   Daily: ${lastDailyReport ? lastDailyReport.toISOString() : 'never'}`);
+  console.log(`   Weekly: ${lastWeeklyReport ? lastWeeklyReport.toISOString() : 'never'}`);
+  console.log(`   Monthly: ${lastMonthlyReport ? lastMonthlyReport.toISOString() : 'never'}`);
+  console.log(`   Yearly: ${lastYearlyReport ? lastYearlyReport.toISOString() : 'never'}`);
+}
+
 export async function startReportScheduler() {
   console.log('📊 Starting report scheduler...');
+  
+  await loadReportTimestamps();
   
   reportSchedulerInterval = setInterval(async () => {
     try {
@@ -818,6 +870,7 @@ export async function startReportScheduler() {
           console.log('⏰ Scheduled daily report triggered');
           await generateAndSaveReport('daily');
           lastDailyReport = now;
+          await setLastReportTimestamp('daily', now);
         }
       }
       
@@ -830,6 +883,7 @@ export async function startReportScheduler() {
           console.log('⏰ Scheduled weekly report triggered');
           await generateAndSaveReport('weekly');
           lastWeeklyReport = now;
+          await setLastReportTimestamp('weekly', now);
         }
       }
       
@@ -842,6 +896,7 @@ export async function startReportScheduler() {
           console.log('⏰ Scheduled monthly report triggered');
           await generateAndSaveReport('monthly');
           lastMonthlyReport = now;
+          await setLastReportTimestamp('monthly', now);
         }
       }
       
@@ -854,6 +909,7 @@ export async function startReportScheduler() {
           console.log('⏰ Scheduled yearly report triggered');
           await generateAndSaveReport('yearly');
           lastYearlyReport = now;
+          await setLastReportTimestamp('yearly', now);
         }
       }
       

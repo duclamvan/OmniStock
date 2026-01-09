@@ -35,8 +35,10 @@ import {
   Activity,
   Eye,
   Clock,
-  FileBarChart
+  FileBarChart,
+  Download
 } from "lucide-react";
+import { ReportViewer } from "@/components/reports/ReportViewer";
 import {
   Tooltip,
   TooltipContent,
@@ -1048,30 +1050,36 @@ export default function Reports() {
 
       {/* Report Details Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileBarChart className="h-5 w-5" />
               {t('reportDetails')}
             </DialogTitle>
-            <DialogDescription>
-              {selectedReport && (
-                <span className="flex items-center gap-2 mt-1">
-                  <Badge variant={getPeriodBadgeVariant(selectedReport.period)}>
-                    {getPeriodLabel(selectedReport.period)}
-                  </Badge>
-                  <span>{selectedReport.period}</span>
-                </span>
-              )}
+            <DialogDescription asChild>
+              <div>
+                {selectedReport && (
+                  <span className="flex items-center gap-2 mt-1">
+                    <Badge variant={getPeriodBadgeVariant(selectedReport.period)}>
+                      {getPeriodLabel(selectedReport.period)}
+                    </Badge>
+                    <span className="text-muted-foreground">{format(new Date(selectedReport.generatedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  </span>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
+          <ScrollArea className="max-h-[75vh]">
             {isLoadingDetails ? (
               <div className="space-y-4 p-4">
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-32 w-full" />
+              </div>
+            ) : reportDetails && typeof reportDetails === 'object' && 'summary' in reportDetails ? (
+              <div className="p-2">
+                <ReportViewer reportData={reportDetails as any} />
               </div>
             ) : reportDetails ? (
               <div className="space-y-4 p-4">
