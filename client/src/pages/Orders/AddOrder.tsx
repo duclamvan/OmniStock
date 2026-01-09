@@ -3892,20 +3892,39 @@ export default function AddOrder() {
     const extractedFbId = extractFacebookId(debouncedCustomerSearch);
     
     if (extractedFbId) {
-      // Search by facebookId or facebookName directly
-      const exactMatches = allCustomers.filter((customer: any) => 
-        customer.facebookId === extractedFbId || 
-        customer.facebookName?.toLowerCase() === extractedFbId.toLowerCase() ||
-        customer.facebookUrl?.includes(extractedFbId)
-      );
+      // Search by facebookId, facebookName, or facebookUrl containing the extracted ID
+      const exactMatches = allCustomers.filter((customer: any) => {
+        // Match by facebookId (exact)
+        if (customer.facebookId === extractedFbId) return true;
+        // Match by facebookName (case-insensitive)
+        if (customer.facebookName?.toLowerCase() === extractedFbId.toLowerCase()) return true;
+        // Match by facebookUrl containing the extracted ID
+        if (customer.facebookUrl && customer.facebookUrl.toLowerCase().includes(extractedFbId.toLowerCase())) return true;
+        return false;
+      });
       
       if (exactMatches.length > 0) {
         return exactMatches;
       }
     }
+    
+    // Also try searching by the full URL if no matches found with extracted ID
+    if (debouncedCustomerSearch.includes('facebook.com')) {
+      const urlMatches = allCustomers.filter((customer: any) => {
+        if (!customer.facebookUrl) return false;
+        // Normalize both URLs for comparison (remove trailing slashes)
+        const normalizedSearch = debouncedCustomerSearch.toLowerCase().replace(/\/+$/, '');
+        const normalizedUrl = customer.facebookUrl.toLowerCase().replace(/\/+$/, '');
+        return normalizedUrl === normalizedSearch || normalizedUrl.includes(normalizedSearch) || normalizedSearch.includes(normalizedUrl);
+      });
+      
+      if (urlMatches.length > 0) {
+        return urlMatches;
+      }
+    }
 
     const results = fuzzySearch(allCustomers, debouncedCustomerSearch, {
-      fields: ['name', 'facebookName', 'email', 'phone', 'company', 'facebookId'],
+      fields: ['name', 'facebookName', 'email', 'phone', 'company', 'facebookId', 'facebookUrl'],
       threshold: 0.2, // Lower threshold for more results
       fuzzy: true,
       vietnameseNormalization: true,
