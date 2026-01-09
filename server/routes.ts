@@ -21379,11 +21379,41 @@ Important:
         return res.status(400).json({ message: 'No packing cartons configured. Add cartons in Packing Materials.' });
       }
 
-      // Call optimization service with carrier constraints
+      // Fetch shipping settings from database for cost calculation
+      const shippingSettingsRows = await db.select()
+        .from(appSettings)
+        .where(
+          sql`${appSettings.key} IN ('ppl_default_shipping_price', 'ppl_default_shipping_price_with_dobirka', 'gls_default_shipping_price', 'dhl_default_shipping_price', 'ppl_shipping_rates', 'gls_shipping_rates', 'dhl_shipping_rates')`
+        );
+      
+      const settingsMap = new Map(shippingSettingsRows.map(s => [s.key, s.value]));
+      
+      const parseJsonSafe = (val: any): any => {
+        if (!val) return undefined;
+        if (typeof val === 'object') return val;
+        try {
+          return JSON.parse(val);
+        } catch {
+          return undefined;
+        }
+      };
+      
+      const shippingRates = {
+        pplDefaultShippingPrice: settingsMap.get('ppl_default_shipping_price') ? parseFloat(String(settingsMap.get('ppl_default_shipping_price'))) : undefined,
+        pplDefaultShippingPriceWithDobirka: settingsMap.get('ppl_default_shipping_price_with_dobirka') ? parseFloat(String(settingsMap.get('ppl_default_shipping_price_with_dobirka'))) : undefined,
+        glsDefaultShippingPrice: settingsMap.get('gls_default_shipping_price') ? parseFloat(String(settingsMap.get('gls_default_shipping_price'))) : undefined,
+        dhlDefaultShippingPrice: settingsMap.get('dhl_default_shipping_price') ? parseFloat(String(settingsMap.get('dhl_default_shipping_price'))) : undefined,
+        pplShippingRates: parseJsonSafe(settingsMap.get('ppl_shipping_rates')),
+        glsShippingRates: parseJsonSafe(settingsMap.get('gls_shipping_rates')),
+        dhlShippingRates: parseJsonSafe(settingsMap.get('dhl_shipping_rates')),
+      };
+
+      // Call optimization service with carrier constraints and shipping rates
       const packingPlan = await optimizeCartonPacking(enrichedItems, cartons, {
         carrierCode,
         shippingCountry,
-        preferBulkWrapping
+        preferBulkWrapping,
+        shippingRates
       });
 
       // Return the optimization plan without saving to database

@@ -93,10 +93,22 @@ interface OrderItemWithDimensions {
   isServicePart?: boolean;
 }
 
+export interface ShippingRates {
+  pplDefaultShippingPrice?: number;
+  pplDefaultShippingPriceWithDobirka?: number;
+  glsDefaultShippingPrice?: number;
+  dhlDefaultShippingPrice?: number;
+  // Weight-based rates from settings (JSON parsed)
+  pplShippingRates?: any;
+  glsShippingRates?: any;
+  dhlShippingRates?: any;
+}
+
 export interface PackingOptions {
   carrierCode?: string;
   shippingCountry?: string;
   preferBulkWrapping?: boolean;
+  shippingRates?: ShippingRates;
 }
 
 interface PartialCarton {
@@ -669,10 +681,86 @@ export async function optimizeCartonPacking(
     let estimatedShippingCost = 0;
     let shippingCurrency = 'EUR';
     
-    for (const carton of cartons) {
-      if (carton.recommendedParcelSize?.costEstimate) {
-        estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
-        shippingCurrency = carton.recommendedParcelSize.currency || 'EUR';
+    // Calculate shipping cost using settings rates if available, otherwise fall back to parcel size estimates
+    const { shippingRates } = options;
+    
+    if (shippingRates && carrierCode) {
+      // Use settings-based shipping rates
+      const normalizedCarrier = carrierCode.toUpperCase().replace(/[-_]/g, ' ');
+      
+      if (normalizedCarrier.includes('PPL')) {
+        // PPL CZ - use default price from settings, currency is CZK
+        if (shippingRates.pplDefaultShippingPrice && shippingRates.pplDefaultShippingPrice > 0) {
+          estimatedShippingCost = shippingRates.pplDefaultShippingPrice;
+          shippingCurrency = 'CZK';
+        } else {
+          // Fall back to parcel size estimates
+          for (const carton of cartons) {
+            if (carton.recommendedParcelSize?.costEstimate) {
+              estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
+              shippingCurrency = carton.recommendedParcelSize.currency || 'CZK';
+            }
+          }
+        }
+      } else if (normalizedCarrier.includes('GLS')) {
+        // GLS DE - use default price from settings, currency is EUR
+        if (shippingRates.glsDefaultShippingPrice && shippingRates.glsDefaultShippingPrice > 0) {
+          estimatedShippingCost = shippingRates.glsDefaultShippingPrice;
+          shippingCurrency = 'EUR';
+        } else {
+          // Fall back to parcel size estimates
+          for (const carton of cartons) {
+            if (carton.recommendedParcelSize?.costEstimate) {
+              estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
+              shippingCurrency = carton.recommendedParcelSize.currency || 'EUR';
+            }
+          }
+        }
+      } else if (normalizedCarrier.includes('DHL')) {
+        // DHL DE - use weight-based rates from settings if available
+        const dhlRates = shippingRates.dhlShippingRates;
+        if (dhlRates && typeof dhlRates === 'object') {
+          // Find the appropriate rate tier based on total weight
+          const sortedTiers = Object.entries(dhlRates)
+            .filter(([key]) => key !== 'nachnahme')
+            .map(([key, value]: [string, any]) => ({
+              key,
+              maxWeight: value.maxWeight || 0,
+              price: value.price || 0
+            }))
+            .sort((a, b) => a.maxWeight - b.maxWeight);
+          
+          // Find the first tier that can handle the total weight
+          const matchingTier = sortedTiers.find(tier => totalWeightKg <= tier.maxWeight);
+          if (matchingTier) {
+            // Cost = price per carton * number of cartons
+            estimatedShippingCost = matchingTier.price * cartons.length;
+            shippingCurrency = 'EUR';
+          }
+        }
+        
+        // Fall back to default price or parcel estimates
+        if (estimatedShippingCost === 0) {
+          if (shippingRates.dhlDefaultShippingPrice && shippingRates.dhlDefaultShippingPrice > 0) {
+            estimatedShippingCost = shippingRates.dhlDefaultShippingPrice;
+            shippingCurrency = 'EUR';
+          } else {
+            for (const carton of cartons) {
+              if (carton.recommendedParcelSize?.costEstimate) {
+                estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
+                shippingCurrency = carton.recommendedParcelSize.currency || 'EUR';
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // No settings rates - use parcel size estimates from carrier constraints
+      for (const carton of cartons) {
+        if (carton.recommendedParcelSize?.costEstimate) {
+          estimatedShippingCost += carton.recommendedParcelSize.costEstimate;
+          shippingCurrency = carton.recommendedParcelSize.currency || 'EUR';
+        }
       }
     }
 
