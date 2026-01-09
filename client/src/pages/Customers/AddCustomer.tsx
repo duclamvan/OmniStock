@@ -1991,10 +1991,7 @@ export default function AddCustomer() {
                       </>
                     )}
                     {isFetchingFacebookProfile && (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" data-testid="loader-facebook-profile" />
-                        <span className="text-xs text-blue-600">{t('customers:fetchingFacebookProfile')}</span>
-                      </>
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-500" data-testid="loader-facebook-profile" />
                     )}
                     {isCheckingDuplicate && (
                       <Loader2 className="h-3 w-3 animate-spin text-slate-400" data-testid="loader-duplicate-check" />

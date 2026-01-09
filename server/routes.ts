@@ -22611,7 +22611,7 @@ Important rules:
       console.log('[Facebook Profile] All profile data:', JSON.stringify(profile));
       
       // Try multiple possible field names for profile picture (Apify actors may use different names)
-      const profilePicUrl = profile.profilePictureUrl || profile.profilePic || profile.pictureUrl || 
+      const profilePicUrl = profile.profile_photo || profile.profilePictureUrl || profile.profilePic || profile.pictureUrl || 
                             profile.photo || profile.image || profile.avatar || profile.profilePhoto ||
                             profile.profileImage || profile.picture || null;
       
@@ -22635,7 +22635,7 @@ Important rules:
       res.json({
         name: profile.name || profile.title || null,
         profilePictureUrl: localProfilePictureUrl || profilePicUrl || null,
-        facebookId: profile.facebookId || profile.pageId || null,
+        facebookId: profile.id || profile.facebookId || profile.pageId || null,
         username: profile.pageName || username,
         success: true
       });
