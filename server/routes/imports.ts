@@ -2673,6 +2673,7 @@ router.post("/purchases", async (req, res) => {
         imageUrl: item.imageUrl || null,
         productId: item.productId || null,
         variantAllocations: item.variantAllocations || null,
+        parentProductId: item.parentProductId || null, // BOM parent product relationship
         sortOrder: index, // Preserve insertion order
         createdAt: new Date(),
         updatedAt: new Date()
@@ -3138,6 +3139,7 @@ router.patch("/purchases/:id", async (req, res) => {
           imageUrl: item.imageUrl || null,
           productId: item.productId || null,
           variantAllocations: item.variantAllocations || null,
+          parentProductId: item.parentProductId || null, // BOM parent product relationship
           createdAt: new Date(),
           updatedAt: new Date()
         }));

@@ -100,6 +100,7 @@ interface PurchaseItem {
   bulkUnitQty?: number | null;
   hasVariants?: boolean;
   variantAllocations?: VariantAllocation[];
+  parentProductId?: string; // BOM parent product this item belongs to
 }
 
 interface Supplier {
@@ -986,7 +987,8 @@ export default function CreatePurchase() {
             processingTimeDays: item.processingTimeDays,
             productId: item.productId?.toString(),
             hasVariants: hasVariants,
-            variantAllocations: variantAllocations
+            variantAllocations: variantAllocations,
+            parentProductId: (item as any).parentProductId?.toString()
           };
         });
         setItems(mappedItems);
@@ -2261,7 +2263,8 @@ export default function CreatePurchase() {
         imageUrl: item.imageUrl || null,
         productId: item.productId || null,
         hasVariants: item.hasVariants || false,
-        variantAllocations: item.variantAllocations || null
+        variantAllocations: item.variantAllocations || null,
+        parentProductId: item.parentProductId || null
       }))
     };
 
@@ -4397,6 +4400,38 @@ export default function CreatePurchase() {
                                   </Select>
                                 </div>
                                 
+                                {/* Parent Product */}
+                                <div className="flex items-center gap-2 p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg">
+                                  <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                                    <Building2 className="h-4 w-4 inline mr-0.5" />
+                                    {t('parentProduct', 'Parent')}:
+                                  </span>
+                                  <Select
+                                    value={item.parentProductId || "none"}
+                                    onValueChange={(value) => {
+                                      const updatedItems = items.map(i => 
+                                        i.id === item.id ? {...i, parentProductId: value === "none" ? undefined : value} : i
+                                      );
+                                      setItems(updatedItems);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 flex-1 max-w-[160px] text-xs border-slate-200 dark:border-slate-700">
+                                      <SelectValue placeholder={t('noParent', 'No Parent')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">{t('noParent', 'No Parent')}</SelectItem>
+                                      {products.map((product: Product) => (
+                                        <SelectItem key={product.id} value={product.id}>
+                                          <div className="flex items-center gap-1 truncate">
+                                            <span className="truncate">{product.name}</span>
+                                            {product.sku && <span className="text-muted-foreground text-[10px]">({product.sku})</span>}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
                                 {/* Price Edit */}
                                 <div className="flex items-center gap-2 p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg">
                                   <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
@@ -4556,6 +4591,7 @@ export default function CreatePurchase() {
                         </TableHead>
                         <TableHead className="w-[48px]">{t('image')}</TableHead>
                         <TableHead className="min-w-[200px]">{t('itemDetails')}</TableHead>
+                        <TableHead className="w-[140px]">{t('parentProduct', 'Parent')}</TableHead>
                         <TableHead className="w-[80px] text-center">{t('qty')}</TableHead>
                         <TableHead className="w-[120px] text-right">{t('unitPrice')}</TableHead>
                         <TableHead className="w-[140px] text-right">{t('costWithShipping')}</TableHead>
@@ -4676,6 +4712,34 @@ export default function CreatePurchase() {
                                 <div className="text-xs text-muted-foreground px-2">{t('dimensions')}: {item.dimensions}</div>
                               )}
                             </div>
+                          </TableCell>
+                          
+                          {/* Parent Product */}
+                          <TableCell className="p-2">
+                            <Select
+                              value={item.parentProductId || "none"}
+                              onValueChange={(value) => {
+                                const updatedItems = items.map(i => 
+                                  i.id === item.id ? {...i, parentProductId: value === "none" ? undefined : value} : i
+                                );
+                                setItems(updatedItems);
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-[130px] text-xs">
+                                <SelectValue placeholder={t('noParent', 'No Parent')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t('noParent', 'No Parent')}</SelectItem>
+                                {products.map((product: Product) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    <div className="flex items-center gap-1 truncate">
+                                      <span className="truncate">{product.name}</span>
+                                      {product.sku && <span className="text-muted-foreground text-[10px]">({product.sku})</span>}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           
                           {/* Quantity */}
