@@ -3618,6 +3618,29 @@ export class DatabaseStorage implements IStorage {
 
   async searchCustomers(query: string): Promise<Customer[]> {
     try {
+      // Extract Facebook ID/username from URL if the query looks like a Facebook URL
+      const extractFacebookIdFromUrl = (url: string): string | null => {
+        if (!url.includes('facebook.com')) return null;
+        try {
+          // Handle various Facebook URL formats
+          const patterns = [
+            /facebook\.com\/profile\.php\?id=(\d+)/i,
+            /facebook\.com\/people\/[^\/]+\/(\d+)/i,
+            /facebook\.com\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i
+          ];
+          for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match && match[1]) {
+              return match[1];
+            }
+          }
+        } catch (e) {}
+        return null;
+      };
+
+      // Check if query is a Facebook URL and extract the ID/username
+      const extractedFacebookId = extractFacebookIdFromUrl(query);
+      
       // Vietnamese diacritics normalization function
       const normalizeVietnamese = (str: string): string => {
         const vietnameseMap: Record<string, string> = {
@@ -3689,7 +3712,22 @@ export class DatabaseStorage implements IStorage {
           const facebookIdScore = calculateScore(customer.facebookId || '', normalizedQuery);
           const facebookUrlScore = calculateScore(customer.facebookUrl || '', normalizedQuery);
           const facebookNameScore = calculateScore(customer.facebookName || '', normalizedQuery);
-          const maxScore = Math.max(nameScore, emailScore, facebookIdScore, facebookUrlScore, facebookNameScore);
+          
+          // If user pasted a Facebook URL, also check if extracted ID matches the customer's facebookId or facebookUrl
+          let extractedIdScore = 0;
+          if (extractedFacebookId) {
+            // Check if extracted ID matches customer's facebookId
+            if (customer.facebookId && customer.facebookId.toLowerCase() === extractedFacebookId.toLowerCase()) {
+              extractedIdScore = 100; // Exact match
+            }
+            // Check if extracted ID is in customer's facebookUrl
+            const customerExtractedId = customer.facebookUrl ? extractFacebookIdFromUrl(customer.facebookUrl) : null;
+            if (customerExtractedId && customerExtractedId.toLowerCase() === extractedFacebookId.toLowerCase()) {
+              extractedIdScore = 100; // Exact match via URL
+            }
+          }
+          
+          const maxScore = Math.max(nameScore, emailScore, facebookIdScore, facebookUrlScore, facebookNameScore, extractedIdScore);
 
           return {
             customer,
