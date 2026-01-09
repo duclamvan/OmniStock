@@ -6,6 +6,9 @@ const TRACK17_API_BASE = "https://api.17track.net/track/v2.2";
 const POLLING_INTERVAL_HOURS = 6;
 const BATCH_SIZE = 40; // 17TRACK API limit per request
 const RATE_LIMIT_DELAY_MS = 200; // Delay between API calls
+const MIN_POLL_DELAY_MS = 60 * 1000; // Minimum 1 minute between polls to prevent loops
+
+let hasActiveShipments = false; // Track if we have shipments to poll
 
 interface Track17TrackInfo {
   number: string;
@@ -241,11 +244,11 @@ async function updateShipmentAggregatedETA(shipmentId: string): Promise<void> {
   }
 }
 
-async function pollAllShipments(): Promise<{ processed: number; updated: number; errors: number }> {
+async function pollAllShipments(): Promise<{ processed: number; updated: number; errors: number; hasShipments: boolean }> {
   const apiKey = process.env.TRACK17_API_KEY;
   if (!apiKey) {
     console.warn('[Track17 Polling] TRACK17_API_KEY not configured, skipping poll');
-    return { processed: 0, updated: 0, errors: 0 };
+    return { processed: 0, updated: 0, errors: 0, hasShipments: false };
   }
 
   console.log('[Track17 Polling] Starting scheduled tracking poll...');
@@ -284,8 +287,8 @@ async function pollAllShipments(): Promise<{ processed: number; updated: number;
   console.log(`[Track17 Polling] Found ${allTrackingNumbers.length} tracking numbers across ${activeShipments.length} shipments`);
 
   if (allTrackingNumbers.length === 0) {
-    console.log('[Track17 Polling] No tracking numbers to poll');
-    return { processed: 0, updated: 0, errors: 0 };
+    console.log('[Track17 Polling] No tracking numbers to poll - scheduler will pause until new shipments are added');
+    return { processed: 0, updated: 0, errors: 0, hasShipments: false };
   }
 
   let processed = 0;
@@ -348,7 +351,7 @@ async function pollAllShipments(): Promise<{ processed: number; updated: number;
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`[Track17 Polling] Completed in ${duration}s - Processed: ${processed}, Updated: ${updated}, Errors: ${errors}`);
 
-  return { processed, updated, errors };
+  return { processed, updated, errors, hasShipments: true };
 }
 
 function getMillisecondsUntilNextPoll(): number {
@@ -365,10 +368,42 @@ function getMillisecondsUntilNextPoll(): number {
     target.setHours(nextPollHour, 0, 0, 0);
   }
 
-  return target.getTime() - now.getTime();
+  const delay = target.getTime() - now.getTime();
+  
+  // Safeguard: ensure minimum delay to prevent infinite loops
+  return Math.max(delay, MIN_POLL_DELAY_MS);
 }
 
 let pollIntervalId: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleNextPoll(): void {
+  // Don't schedule if no active shipments - will be triggered when shipments are added
+  if (!hasActiveShipments) {
+    console.log('[Track17 Polling] No active shipments - polling paused');
+    return;
+  }
+
+  const msUntilNextPoll = getMillisecondsUntilNextPoll();
+  const nextPollDate = new Date(Date.now() + msUntilNextPoll);
+  
+  console.log(`[Track17 Polling] Next poll scheduled for: ${nextPollDate.toISOString()} (in ${(msUntilNextPoll / 1000 / 60).toFixed(1)} minutes)`);
+  
+  if (pollIntervalId) {
+    clearTimeout(pollIntervalId);
+  }
+
+  pollIntervalId = setTimeout(async () => {
+    try {
+      const result = await pollAllShipments();
+      hasActiveShipments = result.hasShipments;
+    } catch (error) {
+      console.error('[Track17 Polling] Error during scheduled poll:', error);
+    }
+    
+    // Schedule next poll after completing
+    scheduleNextPoll();
+  }, msUntilNextPoll);
+}
 
 export function startTrack17PollingScheduler(): void {
   const apiKey = process.env.TRACK17_API_KEY;
@@ -377,35 +412,33 @@ export function startTrack17PollingScheduler(): void {
     return;
   }
 
-  const scheduleNextPoll = () => {
-    const msUntilNextPoll = getMillisecondsUntilNextPoll();
-    const nextPollDate = new Date(Date.now() + msUntilNextPoll);
-    
-    console.log(`[Track17 Polling] Next poll scheduled for: ${nextPollDate.toISOString()} (in ${(msUntilNextPoll / 1000 / 60).toFixed(1)} minutes)`);
-    
-    pollIntervalId = setTimeout(async () => {
-      try {
-        await pollAllShipments();
-      } catch (error) {
-        console.error('[Track17 Polling] Error during scheduled poll:', error);
-      }
-      
-      // Schedule next poll after completing
-      scheduleNextPoll();
-    }, msUntilNextPoll);
-  };
-
   // Run initial poll after a short delay (give server time to start)
   console.log('[Track17 Polling] Scheduler started - running initial poll in 30 seconds...');
   setTimeout(async () => {
     try {
-      await pollAllShipments();
+      const result = await pollAllShipments();
+      hasActiveShipments = result.hasShipments;
     } catch (error) {
       console.error('[Track17 Polling] Error during initial poll:', error);
     }
     // Start the regular schedule
     scheduleNextPoll();
   }, 30000);
+}
+
+// Can be called when a new shipment with tracking is added to resume polling
+export function triggerTrack17Polling(): void {
+  const apiKey = process.env.TRACK17_API_KEY;
+  if (!apiKey) {
+    return;
+  }
+  
+  // If polling was paused, resume it
+  if (!hasActiveShipments) {
+    console.log('[Track17 Polling] Resuming polling due to new shipment');
+    hasActiveShipments = true;
+    scheduleNextPoll();
+  }
 }
 
 export function stopTrack17PollingScheduler(): void {
@@ -418,7 +451,13 @@ export function stopTrack17PollingScheduler(): void {
 
 // Manual trigger for testing/admin use
 export async function manualPollAllShipments(): Promise<{ processed: number; updated: number; errors: number }> {
-  return pollAllShipments();
+  const result = await pollAllShipments();
+  hasActiveShipments = result.hasShipments;
+  // Resume scheduling if we now have shipments
+  if (result.hasShipments && !pollIntervalId) {
+    scheduleNextPoll();
+  }
+  return { processed: result.processed, updated: result.updated, errors: result.errors };
 }
 
 export { updateShipmentAggregatedETA };
