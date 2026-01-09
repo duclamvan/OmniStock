@@ -22594,8 +22594,8 @@ Important rules:
       const client = new ApifyClient({ token: apiKey });
 
       // Run the Apify actor
-      const run = await client.actor("devwithbobby/fb-profile-scraper").call({
-        profiles: username
+      const run = await client.actor("vulnv/facebook-profile-scraper").call({
+        startUrls: [{ url: /^\d+$/.test(username) ? `https://www.facebook.com/profile.php?id=${username}` : `https://www.facebook.com/${username}` }]
       });
 
       // Fetch results from the dataset
