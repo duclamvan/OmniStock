@@ -6429,13 +6429,15 @@ Important:
       await storage.deleteBomIngredient(ingredientId);
       
       // Check if there are any remaining BOM entries for this child product
-      // If not, clear the parentProductId on the child product
+      // If entries remain, update to the most recent parent; otherwise clear
       if (childProductId) {
         const remainingBomEntries = await db.select()
           .from(billOfMaterials)
-          .where(eq(billOfMaterials.childProductId, childProductId));
+          .where(eq(billOfMaterials.childProductId, childProductId))
+          .orderBy(desc(billOfMaterials.updatedAt));
         
         if (remainingBomEntries.length === 0) {
+          // No more BOM entries - clear the parent reference
           await db.update(products)
             .set({
               parentProductId: null,
@@ -6443,9 +6445,18 @@ Important:
               updatedAt: new Date()
             })
             .where(eq(products.id, childProductId));
+        } else {
+          // Update to the most recent remaining parent
+          const mostRecent = remainingBomEntries[0];
+          await db.update(products)
+            .set({
+              parentProductId: mostRecent.parentProductId,
+              bomQuantityPerParent: mostRecent.quantity,
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, childProductId));
         }
       }
-      
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting ingredient:", error);

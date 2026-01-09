@@ -385,6 +385,7 @@ export default function ProductForm() {
   const dimensionsFromUrl = searchParams.get('dimensions');
   const imageUrlFromUrl = searchParams.get('imageUrl');
   const duplicateIdFromUrl = searchParams.get('duplicateId');
+  const parentIdFromUrl = searchParams.get('parentId');
   const isDuplicateMode = !isEditMode && !!duplicateIdFromUrl;
 
   // Fetch product data if in edit mode
@@ -582,6 +583,22 @@ export default function ProductForm() {
       hasDuplicateResetRef.current = true;
     }
   }, [isDuplicateMode, duplicateSourceLoaded, duplicateSource, form]);
+
+  // Track if parent pre-fill has happened
+  const hasParentPreFillRef = useRef(false);
+
+  // Pre-fill parent product from URL parameter (for creating child products)
+  useEffect(() => {
+    if (!isEditMode && parentIdFromUrl && !hasParentPreFillRef.current) {
+      if (import.meta.env.DEV) {
+        console.log('[ProductForm] Pre-filling parent product from URL:', parentIdFromUrl);
+      }
+      form.setValue('parentProductId', parentIdFromUrl);
+      form.setValue('bomQuantityPerParent', 1);
+      setIsBomChildMode(true);
+      hasParentPreFillRef.current = true;
+    }
+  }, [isEditMode, parentIdFromUrl, form]);
 
   // Watch import cost fields for auto-conversion
   const importCostUsd = form.watch('importCostUsd');
@@ -4463,12 +4480,23 @@ export default function ProductForm() {
                       </div>
                     </div>
                     
-                    <Alert className="mb-4 bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800">
-                      <Info className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                      <AlertDescription className="text-sm text-teal-700 dark:text-teal-300">
-                        {t('products:bom.description', 'A child item is a component that belongs to a parent product (Bill of Materials). Define how many units of this child are needed to assemble one parent product.')}
-                      </AlertDescription>
-                    </Alert>
+                    {parentIdFromUrl && !isEditMode ? (
+                      <Alert className="mb-4 bg-teal-100 dark:bg-teal-900/40 border-teal-300 dark:border-teal-700">
+                        <CheckCircle className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                        <AlertDescription className="text-sm text-teal-700 dark:text-teal-300">
+                          {t('products:bom.creatingChildOf', 'Creating as a component of: {{parentName}}', {
+                            parentName: allProducts?.find((p: any) => p.id === parentIdFromUrl)?.name || t('products:bom.parentProduct', 'parent product')
+                          })}
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <Alert className="mb-4 bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800">
+                        <Info className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                        <AlertDescription className="text-sm text-teal-700 dark:text-teal-300">
+                          {t('products:bom.description', 'A child item is a component that belongs to a parent product (Bill of Materials). Define how many units of this child are needed to assemble one parent product.')}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     
                     {isBomChildMode && (
                       <div className="space-y-4 p-4 bg-teal-50/50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800">
@@ -4524,37 +4552,59 @@ export default function ProductForm() {
                       </div>
                     )}
                     
-                    {/* Child Products Section - shown when editing a product that has children */}
+                    {/* Child Products Section - shown when editing a product */}
                     {isEditMode && id && (() => {
                       const childProducts = allProducts?.filter((p: any) => p.parentProductId === id) || [];
-                      if (childProducts.length === 0) return null;
                       
                       return (
                         <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Layers className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                            <h5 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:bom.childProducts', 'Child Components')}</h5>
-                            <Badge variant="secondary" className="ml-2">{childProducts.length}</Badge>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Layers className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                              <h5 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('products:bom.childProducts', 'Child Components')}</h5>
+                              {childProducts.length > 0 && (
+                                <Badge variant="secondary" className="ml-2">{childProducts.length}</Badge>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/30"
+                              onClick={() => setLocation(`/inventory/products/new?parentId=${id}`)}
+                              data-testid="button-add-child-component"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              {t('products:bom.addComponent', 'Add Component')}
+                            </Button>
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('products:bom.childProductsDescription', 'Products that are components of this parent product')}</p>
-                          <div className="space-y-2">
-                            {childProducts.map((child: any) => (
-                              <div key={child.id} className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-1.5 bg-teal-100 dark:bg-teal-900 rounded">
-                                    <Package className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                          {childProducts.length > 0 ? (
+                            <div className="space-y-2">
+                              {childProducts.map((child: any) => (
+                                <div key={child.id} className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-1.5 bg-teal-100 dark:bg-teal-900 rounded">
+                                      <Package className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                                    </div>
+                                    <div>
+                                      <Link href={`/inventory/products/${child.id}`} className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 hover:underline">
+                                        {child.name}
+                                      </Link>
+                                      <p className="text-xs text-slate-500 dark:text-slate-400">{child.sku}</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{child.name}</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">{child.sku}</p>
-                                  </div>
+                                  <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
+                                    {child.bomQuantityPerParent || 1}x {t('products:bom.perParent', 'per parent')}
+                                  </Badge>
                                 </div>
-                                <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
-                                  {child.bomQuantityPerParent || 1}x {t('products:bom.perParent', 'per parent')}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-sm text-slate-500 dark:text-slate-400">
+                              {t('products:bom.noChildProducts', 'No child components yet. Click "Add Component" to create one.')}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
