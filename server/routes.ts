@@ -22595,7 +22595,7 @@ Important rules:
 
       // Run the Apify actor
       const run = await client.actor("vulnv/facebook-profile-scraper").call({
-        urls: [{ url: /^\d+$/.test(username) ? `https://www.facebook.com/profile.php?id=${username}` : `https://www.facebook.com/${username}` }]
+        urls: [/^\d+$/.test(username) ? `https://www.facebook.com/profile.php?id=${username}` : `https://www.facebook.com/${username}`]
       });
 
       // Fetch results from the dataset
