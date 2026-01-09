@@ -2471,8 +2471,18 @@ export default function AddOrder() {
     if (shippingCostManuallyEditedRef.current) return;
     
     if (aiCartonPackingEnabled && packingPlan?.estimatedShippingCost !== undefined && packingPlan?.estimatedShippingCost !== null) {
-      form.setValue('shippingCost', packingPlan.estimatedShippingCost);
-      form.setValue('actualShippingCost', packingPlan.estimatedShippingCost);
+      const orderCurrency = (form.getValues('currency') || 'EUR') as Currency;
+      const shippingCurrency = (packingPlan.shippingCurrency || 'EUR') as Currency;
+      
+      // Convert shipping cost to order currency if different
+      let convertedShippingCost = packingPlan.estimatedShippingCost;
+      if (shippingCurrency !== orderCurrency) {
+        convertedShippingCost = convertCurrency(packingPlan.estimatedShippingCost, shippingCurrency, orderCurrency);
+      }
+      
+      const finalCost = Math.round(convertedShippingCost * 100) / 100;
+      form.setValue('shippingCost', finalCost);
+      form.setValue('actualShippingCost', finalCost); // Both fields use order currency for consistency
     }
   }, [packingPlan, form, aiCartonPackingEnabled]);
 
