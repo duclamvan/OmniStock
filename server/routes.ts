@@ -42,6 +42,7 @@ import {
   insertWarehouseTaskSchema,
   insertWarehouseLabelSchema,
   insertBillOfMaterialsSchema,
+  billOfMaterials,
   productCostHistory,
   products,
   productBundles,
@@ -6375,6 +6376,19 @@ Important:
       });
 
       const ingredient = await storage.addBomIngredient(validated);
+      
+      // Sync parentProductId on the child product
+      // This updates the child product to reference this parent (most recent parent wins if multiple)
+      if (validated.childProductId) {
+        await db.update(products)
+          .set({
+            parentProductId: productId,
+            bomQuantityPerParent: validated.quantity,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, validated.childProductId));
+      }
+      
       res.status(201).json(ingredient);
     } catch (error: any) {
       console.error("Error adding ingredient:", error);
@@ -6410,7 +6424,28 @@ Important:
         return res.status(404).json({ message: "Ingredient not found" });
       }
 
+      const childProductId = existing.childProductId;
+      
       await storage.deleteBomIngredient(ingredientId);
+      
+      // Check if there are any remaining BOM entries for this child product
+      // If not, clear the parentProductId on the child product
+      if (childProductId) {
+        const remainingBomEntries = await db.select()
+          .from(billOfMaterials)
+          .where(eq(billOfMaterials.childProductId, childProductId));
+        
+        if (remainingBomEntries.length === 0) {
+          await db.update(products)
+            .set({
+              parentProductId: null,
+              bomQuantityPerParent: null,
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, childProductId));
+        }
+      }
+      
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting ingredient:", error);
