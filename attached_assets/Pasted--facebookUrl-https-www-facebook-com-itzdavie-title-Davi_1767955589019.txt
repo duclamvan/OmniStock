@@ -1,0 +1,46 @@
+[
+  {
+    "facebookUrl": "https://www.facebook.com/itzdavie",
+    "title": "Davie Lam",
+    "pageName": "itzdavie",
+    "pageId": "1743413442",
+    "facebookId": "1743413442",
+    "categories": [
+      "Profile",
+      "Digital creator"
+    ],
+    "likes": 3529,
+    "followers": 3529,
+    "followings": 1300,
+    "email": null,
+    "phone": null,
+    "website": "",
+    "websites": [],
+    "intro": "Nail Supply tại biên giới Đức và Séc - tp Cheb\nShip nhanh và rẻ trong Đức, Séc, và các nước EU ⚡️⚡️⚡️",
+    "about": {},
+    "profilePictureUrl": "https://scontent-den2-1.xx.fbcdn.net/v/t39.30808-1/473180852_10212214235468092_3331302520211957530_n.png?stp=dst-png_s200x200&_nc_cat=111&ccb=1-7&_nc_sid=fe59b0&_nc_ohc=nP26JJOwzgcQ7kNvwFzM51m&_nc_oc=Admu2VxjRV1XHArv5KhQm4nf6q8HR5Ux5uubkg59m0h0QZqjDw_4SWCmNzGvLHgsihw&_nc_zt=24&_nc_ht=scontent-den2-1.xx&_nc_gid=5YjE7OzkofyqCvgqPf0Y3A&oh=00_AfrI8GkMmlAqufq6WXUkj_yIh5BD-AGItasTO6_bT7f-nA&oe=69669BE1",
+    "coverPhotoUrl": "https://scontent-den2-1.xx.fbcdn.net/v/t39.30808-6/556078575_10213678310509053_1883359848093500153_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=QcJO3PlapxYQ7kNvwF9MiTg&_nc_oc=AdmuRwcJPXNw4z5Jk0sm5O2JIDlwuVZFDHbahgP1wVWDvpSGnd_7dBNYMoKSupdMbA4&_nc_zt=23&_nc_ht=scontent-den2-1.xx&_nc_gid=OId3tlrTKsmfQtVFq1qPZg&oh=00_AfoUYWlOZ8YDjf7u0qAIN_bBAkRADdz6BjZimP3kTfUnDQ&oe=6966C057",
+    "profilePhoto": "https://www.facebook.com/photo/?fbid=10212214235428091&set=a.1179279179154",
+    "address": null,
+    "creation_date": "May 5, 2009",
+    "verified": false,
+    "rating": null,
+    "ratingCount": 0,
+    "ad_status": "This Profile is not currently running ads.",
+    "confirmed_owner": null,
+    "messenger": null,
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "101810139412211"
+    },
+    "info": [
+      "Davie Lam. 3,529 likes",
+      "8 talking about this. Nail Supply tại biên giới Đức và Séc - tp Cheb\nShip nhanh và rẻ trong Đức, Séc, và các nước EU ⚡️⚡️⚡️"
+    ],
+    "extractedAt": "2026-01-09T10:29:08.661Z",
+    "dataSource": "devwithbobby/fb-profile-scraper",
+    "engagementRate": "100.00",
+    "audienceSize": "Micro (<10K)",
+    "isComplete": true
+  }
+]

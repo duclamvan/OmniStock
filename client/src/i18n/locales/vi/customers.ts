@@ -559,6 +559,10 @@ const customers = {
   
   // AddCustomer Form - Hints and Descriptions
   pasteFacebookUrlHint: 'Dán URL Facebook để tự động điền ID',
+  facebookProfileFetched: 'Đã tải hồ sơ Facebook',
+  fetchedProfileFor: 'Đã tải hồ sơ của {{name}}',
+  profileDataFetched: 'Đã lấy ảnh và tên hồ sơ',
+  fetchingFacebookProfile: 'Đang tải hồ sơ...',
   facebookNameOptionalHint: 'Tùy chọn: Tên của khách hàng hiển thị trên Facebook',
   autoSyncsFacebookName: 'Tự động đồng bộ với tên Facebook (có thể chỉnh sửa)',
   countryLocation: 'Quốc gia / Vị trí',

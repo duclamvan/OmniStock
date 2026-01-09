@@ -397,6 +397,10 @@ const customers = {
   
   // AddCustomer Form - Hints and Descriptions
   pasteFacebookUrlHint: 'Paste Facebook profile URL to auto-fill ID',
+  facebookProfileFetched: 'Facebook Profile Loaded',
+  fetchedProfileFor: 'Loaded profile for {{name}}',
+  profileDataFetched: 'Profile picture and name retrieved',
+  fetchingFacebookProfile: 'Fetching profile...',
   facebookNameOptionalHint: "Optional: Customer's name as shown on Facebook",
   autoSyncsFacebookName: 'Auto-syncs with Facebook name (editable)',
   countryLocation: 'Country / Location',

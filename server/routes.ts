@@ -159,6 +159,7 @@ import { PerformanceService } from './services/performanceService';
 import { safeBulkImport, validateProductImport, validateCustomerImport, validateSupplierImport, formatImportResponse } from './utils/safeBulkImport';
 import { validateImageUrl } from './utils/validation';
 import { getCircuitBreaker } from './utils/circuitBreaker';
+import { ApifyClient } from 'apify-client';
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -22411,6 +22412,129 @@ Important rules:
     } catch (error) {
       console.error('Error extracting Facebook name:', error);
       res.status(500).json({ message: 'Failed to extract Facebook name' });
+    }
+  });
+
+  // Fetch Facebook profile data using Apify
+  app.post('/api/facebook/profile', isAuthenticated, async (req, res) => {
+    try {
+      const { facebookUrl } = req.body;
+
+      if (!facebookUrl) {
+        return res.status(400).json({ message: 'Facebook URL is required' });
+      }
+
+      const apiKey = process.env.APIFY_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: 'Apify API key not configured' });
+      }
+
+      // Extract Facebook username/ID from URL - handles many formats
+      let username = '';
+      const cleanUrl = facebookUrl.trim();
+      
+      // Pattern 1: profile.php?id=NUMERIC_ID (highest priority)
+      const profilePhpMatch = cleanUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/i);
+      if (profilePhpMatch) {
+        username = profilePhpMatch[1];
+      }
+      
+      // Pattern 2: /people/Name/NUMERIC_ID format (common for personal profiles)
+      if (!username) {
+        const peopleMatch = cleanUrl.match(/facebook\.com\/people\/[^\/]+\/(\d+)/i);
+        if (peopleMatch) {
+          username = peopleMatch[1];
+        }
+      }
+      
+      // Pattern 3: /pages/category/BusinessName/ID or /pages/BusinessName/ID format
+      if (!username) {
+        const pagesMatch = cleanUrl.match(/facebook\.com\/pages\/(?:[^\/]+\/)*([^\/]+)\/(\d+)/i);
+        if (pagesMatch) {
+          // Prefer numeric ID if available
+          username = pagesMatch[2] || pagesMatch[1];
+        }
+      }
+      
+      // Pattern 4: Any numeric ID (10+ digits) anywhere in the path
+      if (!username) {
+        const numericIdMatch = cleanUrl.match(/facebook\.com\/.*?(\d{10,})/i);
+        if (numericIdMatch) {
+          username = numericIdMatch[1];
+        }
+      }
+      
+      // Pattern 5: Standard username format - facebook.com/username (but not reserved paths)
+      if (!username) {
+        const usernameMatch = cleanUrl.match(/facebook\.com\/([a-zA-Z0-9._-]+)\/?(?:\?|$|#)?/i);
+        if (usernameMatch) {
+          const potentialUsername = usernameMatch[1].toLowerCase();
+          const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg'];
+          if (!skipPaths.includes(potentialUsername)) {
+            username = usernameMatch[1];
+          }
+        }
+      }
+      
+      // Pattern 6: Fallback - extract last meaningful path segment (for complex URLs)
+      if (!username) {
+        try {
+          const url = new URL(cleanUrl);
+          const pathParts = url.pathname.split('/').filter(p => p && p.length > 0);
+          // Find last segment that's either a username pattern or numeric ID
+          for (let i = pathParts.length - 1; i >= 0; i--) {
+            const part = pathParts[i];
+            // If it's a numeric ID (10+ digits) or looks like a username
+            if (/^\d{10,}$/.test(part) || /^[a-zA-Z0-9._-]{3,}$/.test(part)) {
+              const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg', 'category'];
+              if (!skipPaths.includes(part.toLowerCase())) {
+                username = part;
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          console.log('[Facebook Profile] URL parsing fallback failed:', e);
+        }
+      }
+
+      if (!username) {
+        return res.status(400).json({ message: 'Unable to extract Facebook username from URL' });
+      }
+
+      console.log(`[Facebook Profile] Fetching profile for: ${username}`);
+
+      const client = new ApifyClient({ token: apiKey });
+
+      // Run the Apify actor
+      const run = await client.actor("zQt0UcNu0fsd98YAw").call({
+        profiles: username
+      });
+
+      // Fetch results from the dataset
+      const { items } = await client.dataset(run.defaultDatasetId).listItems();
+
+      if (!items || items.length === 0) {
+        return res.status(404).json({ message: 'No profile data found' });
+      }
+
+      const profile = items[0] as any;
+      
+      console.log(`[Facebook Profile] Found: ${profile.title || 'Unknown'}`);
+
+      res.json({
+        name: profile.title || null,
+        profilePictureUrl: profile.profilePictureUrl || null,
+        facebookId: profile.facebookId || profile.pageId || null,
+        username: profile.pageName || username,
+        success: true
+      });
+    } catch (error: any) {
+      console.error('[Facebook Profile] Error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch Facebook profile',
+        error: error.message 
+      });
     }
   });
 

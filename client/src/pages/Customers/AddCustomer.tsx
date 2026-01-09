@@ -149,6 +149,7 @@ export default function AddCustomer() {
   const [extractedFacebookId, setExtractedFacebookId] = useState<string>('');
   const [duplicateCustomer, setDuplicateCustomer] = useState<Customer | null>(null);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [isFetchingFacebookProfile, setIsFetchingFacebookProfile] = useState(false);
   
   // Track the latest Facebook ID being checked for duplicates
   const latestDuplicateCheckRef = useRef<string>('');
@@ -1663,6 +1664,45 @@ export default function AddCustomer() {
     },
   });
 
+
+  // Facebook profile fetch mutation
+  const fetchFacebookProfileMutation = useMutation({
+    mutationFn: async (facebookUrl: string) => {
+      const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl });
+      return res.json();
+    },
+    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; username: string }) => {
+      if (data.name) {
+        form.setValue('facebookName', data.name);
+        // Also set the customer name if it's empty
+        if (!form.getValues('name')) {
+          form.setValue('name', data.name);
+        }
+      }
+      if (data.profilePictureUrl) {
+        form.setValue('profilePictureUrl', data.profilePictureUrl);
+      }
+      setIsFetchingFacebookProfile(false);
+      toast({
+        title: t('customers:facebookProfileFetched'),
+        description: data.name ? t('customers:fetchedProfileFor', { name: data.name }) : t('customers:profileDataFetched'),
+      });
+    },
+    onError: (error: any) => {
+      console.error('Facebook profile fetch error:', error);
+      setIsFetchingFacebookProfile(false);
+    },
+  });
+
+  const handleFacebookUrlBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const url = e.target.value.trim();
+    // Guard against concurrent fetches - don't fetch if already fetching or mutation in progress
+    if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
+      setIsFetchingFacebookProfile(true);
+      fetchFacebookProfileMutation.mutate(url);
+    }
+  };
+
   const createOrUpdateCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
       let response;
@@ -1809,6 +1849,7 @@ export default function AddCustomer() {
                     placeholder={t('customers:facebookUrlPlaceholder')}
                     className="text-base"
                     data-testid="input-facebookUrl"
+                    onBlur={handleFacebookUrlBlur}
                     onChange={(e) => {
                       form.register('facebookUrl').onChange(e);
                       const extractedId = extractFacebookId(e.target.value);
@@ -1822,6 +1863,12 @@ export default function AddCustomer() {
                       <>
                         <span className="text-xs text-slate-400">•</span>
                         <p className="text-xs text-slate-600 font-medium">ID: {extractedFacebookId}</p>
+                      </>
+                    )}
+                    {isFetchingFacebookProfile && (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" data-testid="loader-facebook-profile" />
+                        <span className="text-xs text-blue-600">{t('customers:fetchingFacebookProfile')}</span>
                       </>
                     )}
                     {isCheckingDuplicate && (
@@ -2375,7 +2422,7 @@ export default function AddCustomer() {
                         <Input
                           id="shippingCountry"
                           value={shippingCountryQuery || shippingForm.watch('country') || ''}
-                          onChange={(e) => {
+                    onChange={(e) => {
                             const value = e.target.value;
                             setShippingCountryQuery(value);
                             setShowShippingCountryDropdown(true);
@@ -2800,7 +2847,7 @@ export default function AddCustomer() {
                         <Input
                           id="billingCountry"
                           value={billingCountryQuery || billingAddressForm.watch('country') || ''}
-                          onChange={(e) => {
+                    onChange={(e) => {
                             const value = e.target.value;
                             setBillingCountryQuery(value);
                             setShowBillingCountryDropdown(true);
