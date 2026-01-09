@@ -827,6 +827,7 @@ const orders = {
   customerNameRequired: 'Customer Name *',
   facebookName: 'Facebook Name',
   facebookUrl: 'Facebook URL',
+  pasteUrlToAutoFill: 'Paste Facebook URL to auto-fill name and profile picture',
   nameCopied: 'Name copied',
   customerNameCopiedToFacebookUrl: 'Customer name copied to Facebook URL',
   copyCustomerName: 'Copy customer name',

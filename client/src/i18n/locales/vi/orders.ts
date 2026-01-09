@@ -831,6 +831,7 @@ const orders = {
   customerNameRequired: 'Tên khách hàng *',
   facebookName: 'Tên Facebook',
   facebookUrl: 'URL Facebook',
+  pasteUrlToAutoFill: 'Dán URL Facebook để tự động điền tên và ảnh đại diện',
   nameCopied: 'Đã sao chép tên',
   customerNameCopiedToFacebookUrl: 'Tên khách hàng đã được sao chép vào URL Facebook',
   copyCustomerName: 'Sao chép tên khách hàng',

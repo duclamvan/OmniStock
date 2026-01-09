@@ -5581,6 +5581,7 @@ export default function AddOrder() {
                         name: "",
                         facebookName: "",
                         facebookUrl: "",
+                        profilePictureUrl: "",
                         email: "",
                         phone: "",
                         street: "",
@@ -5601,43 +5602,16 @@ export default function AddOrder() {
                   </Button>
                 </div>
 
-                {/* Basic Information */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Facebook URL First - Auto-fills name and profile picture */}
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="customerName">{t('orders:customerNameRequired')}</Label>
-                    <Input
-                      id="customerName"
-                      value={newCustomer.name}
-                      onChange={(e) => {
-                        const newName = e.target.value;
-                        // Update customer name and sync to Facebook name only if not manually edited
-                        setNewCustomer(prev => ({
-                          ...prev,
-                          name: newName,
-                          // Only sync to Facebook Name if it hasn't been manually edited
-                          facebookName: facebookNameManuallyEdited ? prev.facebookName : newName
-                        }));
-                      }}
-                      placeholder={t('orders:typeHere')}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="facebookName">{t('orders:facebookName')}</Label>
-                    <Input
-                      id="facebookName"
-                      value={newCustomer.facebookName || ""}
-                      onChange={(e) => {
-                        const newValue = e.target.value;
-                        setNewCustomer({ ...newCustomer, facebookName: newValue });
-                        // Only mark as manually edited if value differs from Customer Name
-                        setFacebookNameManuallyEdited(newValue !== newCustomer.name);
-                      }}
-                      placeholder={t('orders:syncedWithCustomerName')}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="facebookUrl">{t('orders:facebookUrl')}</Label>
+                    <Label htmlFor="facebookUrl" className="flex items-center gap-2">
+                      <SiFacebook className="h-4 w-4 text-blue-600" />
+                      {t('orders:facebookUrl')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t('orders:pasteUrlToAutoFill')}
+                    </p>
                     <div className="relative">
                       <Input
                         id="facebookUrl"
@@ -5645,6 +5619,7 @@ export default function AddOrder() {
                         onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
                         placeholder={t('orders:placeUrlOrType')}
                         className="pr-10"
+                        autoFocus
                       />
                       <Button
                         type="button"
@@ -5702,6 +5677,43 @@ export default function AddOrder() {
                         </Button>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="customerName">{t('orders:customerNameRequired')}</Label>
+                    <Input
+                      id="customerName"
+                      value={newCustomer.name}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        // Update customer name and sync to Facebook name only if not manually edited
+                        setNewCustomer(prev => ({
+                          ...prev,
+                          name: newName,
+                          // Only sync to Facebook Name if it hasn't been manually edited
+                          facebookName: facebookNameManuallyEdited ? prev.facebookName : newName
+                        }));
+                      }}
+                      placeholder={t('orders:typeHere')}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="facebookName">{t('orders:facebookName')}</Label>
+                    <Input
+                      id="facebookName"
+                      value={newCustomer.facebookName || ""}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setNewCustomer({ ...newCustomer, facebookName: newValue });
+                        // Only mark as manually edited if value differs from Customer Name
+                        setFacebookNameManuallyEdited(newValue !== newCustomer.name);
+                      }}
+                      placeholder={t('orders:syncedWithCustomerName')}
+                    />
                   </div>
                 </div>
 
