@@ -22595,7 +22595,7 @@ Important rules:
 
       // Run the Apify actor
       const run = await client.actor("devwithbobby/fb-profile-scraper").call({
-        profiles: [username]
+        profiles: username
       });
 
       // Fetch results from the dataset
