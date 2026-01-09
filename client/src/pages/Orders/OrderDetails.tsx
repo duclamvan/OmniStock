@@ -116,6 +116,8 @@ import logoPath from '@assets/logo_1754349267160.png';
 import { useSettings } from "@/contexts/SettingsContext";
 import { ThermalReceipt, useOrderReceiptData, type CompanyInfo } from "@/components/orders/ThermalReceipt";
 import { Receipt } from "lucide-react";
+import { useRealTimeOrder } from "@/hooks/useSocket";
+import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
 
 function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
   const receiptData = useOrderReceiptData(order, order?.currency || 'EUR');
@@ -128,9 +130,12 @@ export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { canViewProfit, canViewMargin, canViewImportCost } = useAuth();
+  const { canViewProfit, canViewMargin, canViewImportCost, user } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
   const { t } = useTranslation();
+  
+  // Real-time collaboration - track viewers and locks
+  const { viewers, lockInfo, isLocked, isCurrentUserLockOwner } = useRealTimeOrder(id);
   const { formatCurrency, formatDate } = useLocalization();
   const invoiceCardRef = useRef<HTMLDivElement>(null);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
@@ -703,6 +708,13 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               
               {/* Action Buttons - Moved to top right */}
               <div className="flex items-center gap-2">
+                {/* Real-time viewers indicator */}
+                <RealTimeViewers 
+                  viewers={viewers} 
+                  lockInfo={lockInfo} 
+                  currentUserId={user?.id}
+                  size="sm"
+                />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-9">

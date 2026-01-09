@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useRealTimeShipment } from "@/hooks/useSocket";
+import { RealTimeViewers } from "@/components/RealTimeViewers";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,8 +63,12 @@ interface Shipment {
 
 export default function ShipmentTracking() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+
+  // Real-time collaboration for shipment detail view
+  const { viewers, lockInfo } = useRealTimeShipment(selectedShipment?.id);
 
   // Fetch shipments
   const { data: shipments = [], isLoading } = useQuery({
@@ -367,7 +374,15 @@ export default function ShipmentTracking() {
           <div className="bg-background w-full md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl md:rounded-xl p-4 md:p-6"
                onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{t('imports:shipmentDetails')}</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">{t('imports:shipmentDetails')}</h3>
+                <RealTimeViewers 
+                  viewers={viewers} 
+                  lockInfo={lockInfo} 
+                  currentUserId={user?.id}
+                  size="sm"
+                />
+              </div>
               <Button variant="ghost" size="icon" onClick={() => setSelectedShipment(null)}>
                 <X className="h-5 w-5" />
               </Button>

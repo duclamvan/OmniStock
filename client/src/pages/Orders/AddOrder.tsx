@@ -102,6 +102,8 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PPLSmartPopup } from "@/components/PPLSmartPopup";
+import { useRealTimeOrder } from "@/hooks/useSocket";
+import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
 
 // Helper function to normalize carrier names for backward compatibility
 const normalizeCarrier = (value: string): string => {
@@ -430,6 +432,17 @@ export default function AddOrder() {
   const { toast } = useToast();
   const { user, canViewProfit, canViewMargin, canViewImportCost } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
+  
+  // Real-time collaboration - track viewers and locks (only in edit mode)
+  const { 
+    viewers, 
+    lockInfo, 
+    isLocked, 
+    isCurrentUserLockOwner,
+    requestLock, 
+    releaseLock 
+  } = useRealTimeOrder(isEditMode ? editOrderId : undefined);
+  
   const { defaultCurrency, defaultPaymentMethod, defaultCarrier, enableCod } = useOrderDefaults();
   const { generalSettings, financialHelpers, shippingSettings, serviceSettings } = useSettings();
   const { formatCurrency, settings: localizationSettings } = useLocalization();
@@ -1163,6 +1176,19 @@ export default function AddOrder() {
     
     return () => subscription.unsubscribe();
   }, [orderId, form]);
+  
+  // Real-time collaboration: Request lock when editing, release on unmount
+  useEffect(() => {
+    if (isEditMode && editOrderId) {
+      // Request edit lock when entering edit mode
+      requestLock('edit');
+      
+      return () => {
+        // Release lock when leaving edit mode
+        releaseLock();
+      };
+    }
+  }, [isEditMode, editOrderId, requestLock, releaseLock]);
   
   // Track order items changes after order creation
   useEffect(() => {
@@ -4258,12 +4284,28 @@ export default function AddOrder() {
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{t('orders:addProductsConfigureDetails')}</p>
               </div>
             </div>
-            <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600 w-fit" : "text-green-600 border-green-600 w-fit"}>
-              {isEditMode ? <Pencil className="h-3 w-3 mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
-              {isEditMode ? t('orders:editOrder') : t('orders:newOrder')}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {/* Real-time viewers indicator (edit mode only) */}
+              {isEditMode && (
+                <RealTimeViewers 
+                  viewers={viewers} 
+                  lockInfo={lockInfo} 
+                  currentUserId={user?.id}
+                  size="sm"
+                />
+              )}
+              <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600 w-fit" : "text-green-600 border-green-600 w-fit"}>
+                {isEditMode ? <Pencil className="h-3 w-3 mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                {isEditMode ? t('orders:editOrder') : t('orders:newOrder')}
+              </Badge>
+            </div>
           </div>
         </div>
+        
+        {/* Lock overlay when another user is editing */}
+        {isEditMode && isLocked && lockInfo && (
+          <LockOverlay lockInfo={lockInfo} />
+        )}
 
         <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
           console.error('Order form validation errors:', errors);
