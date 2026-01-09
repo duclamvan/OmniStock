@@ -17,7 +17,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber, convertCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Factory, CornerDownRight } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -80,6 +80,7 @@ export default function AllInventory() {
   const urlParams = new URLSearchParams(window.location.search);
   const categoryParam = urlParams.get('category');
   const [categoryFilter, setCategoryFilter] = useState(categoryParam || "all");
+  const [bomFilter, setBomFilter] = useState<string>("all"); // 'all', 'parents', 'children'
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
@@ -885,6 +886,20 @@ export default function AllInventory() {
     }
   };
 
+  // Compute child counts for parent products (for display badges)
+  const childCountMap = products?.reduce((acc: { [key: string]: number }, product: any) => {
+    if (product.parentProductId) {
+      acc[product.parentProductId] = (acc[product.parentProductId] || 0) + 1;
+    }
+    return acc;
+  }, {} as { [key: string]: number }) ?? {};
+
+  // Helper to get parent product name
+  const getParentProductName = (parentProductId: string) => {
+    const parent = products?.find((p: any) => p.id === parentProductId);
+    return parent?.name || null;
+  };
+
   // Filter products - search is now done server-side, only apply category filter client-side
   const filteredProducts = products?.filter((product: any) => {
     // Archive filter - only show inactive products in archive mode
@@ -898,6 +913,19 @@ export default function AllInventory() {
     // Category filter (still client-side for now)
     if (categoryFilter !== "all" && String(product.categoryId) !== String(categoryFilter)) {
       return false;
+    }
+
+    // BOM filter - filter by parent/child relationship
+    if (bomFilter === "parents") {
+      // Only show products that have children (are parents)
+      if (!childCountMap[product.id]) {
+        return false;
+      }
+    } else if (bomFilter === "children") {
+      // Only show products that have a parent
+      if (!product.parentProductId) {
+        return false;
+      }
     }
 
     return true;
@@ -982,30 +1010,69 @@ export default function AllInventory() {
       header: t('inventory:productColumn'),
       sortable: true,
       className: "min-w-[200px]",
-      cell: (product) => (
-        <div>
-          <Link href={`/inventory/products/${product.id}`}>
-            <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
-              {product.name}
-              {product.isVirtual && (
-                <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
-                  Virtual
-                </Badge>
-              )}
-              {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">({t('inventory:inactive')})</span>}
-              {product.isActive && !product.isVirtual && getProductStatusBadge(product)}
-            </span>
-          </Link>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {t('inventory:sku')}: {product.sku}
-            {product.isVirtual && product.masterProductName && (
-              <span className="text-purple-500 ml-2">
-                → {product.masterProductName}
+      cell: (product) => {
+        const isParent = childCountMap[product.id] > 0;
+        const isChild = !!product.parentProductId;
+        const parentName = isChild ? getParentProductName(product.parentProductId) : null;
+        const childCount = childCountMap[product.id] || 0;
+        
+        return (
+          <div className={isChild ? "pl-4 border-l-2 border-blue-200 dark:border-blue-800" : ""}>
+            <Link href={`/inventory/products/${product.id}`}>
+              <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                {isChild && (
+                  <CornerDownRight className="inline h-3 w-3 mr-1 text-gray-400" />
+                )}
+                {product.name}
+                {product.isVirtual && (
+                  <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
+                    Virtual
+                  </Badge>
+                )}
+                {isParent && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400 cursor-help">
+                          <Factory className="h-2.5 w-2.5 mr-0.5" />
+                          {childCount}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{childCount} {childCount === 1 ? t('inventory:component') : t('inventory:components')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {!product.isActive && <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">({t('inventory:inactive')})</span>}
+                {product.isActive && !product.isVirtual && getProductStatusBadge(product)}
               </span>
-            )}
-          </p>
-        </div>
-      ),
+            </Link>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {t('inventory:sku')}: {product.sku}
+              {product.isVirtual && product.masterProductName && (
+                <span className="text-purple-500 ml-2">
+                  → {product.masterProductName}
+                </span>
+              )}
+              {isChild && parentName && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-cyan-600 dark:text-cyan-400 ml-2 cursor-help">
+                        ← {parentName.length > 20 ? parentName.substring(0, 20) + '...' : parentName}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('inventory:partOf')}: {parentName}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </p>
+          </div>
+        );
+      },
     },
     {
       key: "categoryId",
@@ -1717,7 +1784,7 @@ export default function AllInventory() {
           </div>
         </CardHeader>
         <CardContent className="px-3 md:px-6">
-          <div className="flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-4">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-4 md:gap-4">
             {/* Search */}
             <div className="md:col-span-1">
               <div className="relative">
@@ -1754,6 +1821,41 @@ export default function AllInventory() {
                   onClick={() => setCategoryFilter("all")}
                   className="h-10 w-10"
                   data-testid="button-clear-category-filter"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* BOM Filter (Parent/Child) */}
+            <div className="flex gap-2">
+              <Select value={bomFilter} onValueChange={setBomFilter}>
+                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700" data-testid="select-bom-filter">
+                  <SelectValue placeholder={t('inventory:filterByBOM')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('inventory:allProducts')}</SelectItem>
+                  <SelectItem value="parents">
+                    <div className="flex items-center gap-2">
+                      <Factory className="h-3 w-3" />
+                      {t('inventory:parentProductsOnly')}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="children">
+                    <div className="flex items-center gap-2">
+                      <CornerDownRight className="h-3 w-3" />
+                      {t('inventory:childProductsOnly')}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {bomFilter !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setBomFilter("all")}
+                  className="h-10 w-10"
+                  data-testid="button-clear-bom-filter"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1931,9 +2033,13 @@ export default function AllInventory() {
             {filteredProducts?.map((product: any) => {
               const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
               const unitsSold = product.unitsSold || 0;
+              const isParentMobile = childCountMap[product.id] > 0;
+              const isChildMobile = !!product.parentProductId;
+              const parentNameMobile = isChildMobile ? getParentProductName(product.parentProductId) : null;
+              const childCountMobile = childCountMap[product.id] || 0;
               
               return (
-                <div key={product.id} className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-4">
+                <div key={product.id} className={`bg-white dark:bg-slate-900 rounded-lg shadow-sm border p-4 ${isChildMobile ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700 border-gray-100 dark:border-slate-800' : 'border-gray-100 dark:border-slate-800'}`}>
                   <div className="space-y-3">
                     {/* Top Row - Product, Stock Status, Actions */}
                     <div className="flex items-start justify-between gap-2">
@@ -1945,10 +2051,17 @@ export default function AllInventory() {
                         <div className="min-w-0 flex-1">
                           <Link href={`/inventory/products/${product.id}`}>
                             <span className={`font-semibold cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
+                              {isChildMobile && <CornerDownRight className="inline h-3 w-3 mr-1 text-gray-400" />}
                               {product.name}
                               {product.isVirtual && (
                                 <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
                                   Virtual
+                                </Badge>
+                              )}
+                              {isParentMobile && (
+                                <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400">
+                                  <Factory className="h-2.5 w-2.5 mr-0.5" />
+                                  {childCountMobile}
                                 </Badge>
                               )}
                               {product.isActive && !product.isVirtual && getProductStatusBadge(product)}
@@ -1958,6 +2071,11 @@ export default function AllInventory() {
                             {t('inventory:sku')}: {product.sku}
                             {product.isVirtual && product.masterProductName && (
                               <span className="text-purple-500 ml-2">→ {product.masterProductName}</span>
+                            )}
+                            {isChildMobile && parentNameMobile && (
+                              <span className="text-cyan-600 dark:text-cyan-400 ml-2">
+                                ← {parentNameMobile.length > 15 ? parentNameMobile.substring(0, 15) + '...' : parentNameMobile}
+                              </span>
                             )}
                             {!product.isActive && <span className="text-amber-600 font-medium ml-2">({t('inventory:inactive')})</span>}
                           </p>

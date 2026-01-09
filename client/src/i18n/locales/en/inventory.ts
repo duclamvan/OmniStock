@@ -86,6 +86,13 @@ const inventory = {
   searchPlaceholder: 'Search products by name, SKU, or description...',
   filterByCategory: 'Filter by Category',
   allCategories: 'All Categories',
+  filterByBOM: 'Filter by BOM',
+  allProducts: 'All Products',
+  parentProductsOnly: 'Parent Products Only',
+  childProductsOnly: 'Child Products Only',
+  component: 'component',
+  components: 'components',
+  partOf: 'Part of',
   
   // Table Columns
   image: 'Image',

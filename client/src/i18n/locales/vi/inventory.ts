@@ -195,6 +195,13 @@ const inventory = {
   searchPlaceholder: 'Tìm kiếm sản phẩm theo tên, SKU hoặc mô tả...',
   filterByCategory: 'Lọc theo danh mục',
   allCategories: 'Tất cả danh mục',
+  filterByBOM: 'Lọc theo BOM',
+  allProducts: 'Tất cả sản phẩm',
+  parentProductsOnly: 'Chỉ sản phẩm cha',
+  childProductsOnly: 'Chỉ sản phẩm con',
+  component: 'thành phần',
+  components: 'thành phần',
+  partOf: 'Thuộc về',
   
   // Table Columns
   image: 'Hình ảnh',
