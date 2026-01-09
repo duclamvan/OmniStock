@@ -782,6 +782,14 @@ const products = {
   clickCalculateToSeeRequirements: 'Nhập số lượng và nhấn Tính toán để xem yêu cầu nguyên liệu',
   noManufacturableProducts: 'Không có sản phẩm có thể sản xuất',
   noManufacturableProductsDescription: 'Đặt sản phẩm sang chế độ "Sản xuất" trong tab Công thức để xem ở đây',
+  parentProductWith: 'Sản phẩm cha với {{count}} thành phần',
+  directComponents: 'Thành phần trực tiếp',
+  directComponentsDescription: 'Sản phẩm là thành phần trực tiếp của {{product}}',
+  manufactured: 'Sản xuất',
+  manufacturedTooltip: 'Sản phẩm này được sản xuất nội bộ',
+  stock: 'Tồn kho',
+  ingredientHasComponents: 'Nguyên liệu này là sản phẩm cha với {{count}} thành phần',
+  manufacturedIngredient: 'Nguyên liệu này được sản xuất nội bộ (phương thức: sản xuất)',
 } as const;
 
 export default products;

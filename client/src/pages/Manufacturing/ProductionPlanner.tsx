@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -10,7 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   Factory, 
   Package, 
@@ -18,9 +23,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Truck,
-  ArrowRight,
   RefreshCw,
-  Box
+  Box,
+  CornerDownRight,
+  Layers,
+  Wrench
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +39,7 @@ interface ManufacturableProduct {
   quantity: number;
   imageUrl?: string;
   replenishmentMethod: string;
+  parentProductId?: string | null;
 }
 
 interface IngredientRequirement {
@@ -60,7 +68,7 @@ interface ProductionRequirements {
 
 export default function ProductionPlanner() {
   usePageTitle('products:productionPlanner', 'Production Planner');
-  const { t } = useTranslation(['products', 'common']);
+  const { t } = useTranslation(['products', 'common', 'inventory']);
   const { toast } = useToast();
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [quantityToBuild, setQuantityToBuild] = useState<string>("1");
@@ -75,6 +83,39 @@ export default function ProductionPlanner() {
       return allProducts.filter((p: ManufacturableProduct) => p.replenishmentMethod === 'make');
     },
   });
+
+  const { data: allProducts = [] } = useQuery<ManufacturableProduct[]>({
+    queryKey: ['/api/products', 'all-for-bom'],
+    queryFn: async () => {
+      const res = await fetch('/api/products?limit=9999');
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const response = await res.json();
+      return Array.isArray(response) ? response : (response.items || []);
+    },
+  });
+
+  const childCountMap = useMemo(() => {
+    return allProducts.reduce((acc: { [key: string]: number }, product: ManufacturableProduct) => {
+      if (product.parentProductId) {
+        acc[product.parentProductId] = (acc[product.parentProductId] || 0) + 1;
+      }
+      return acc;
+    }, {});
+  }, [allProducts]);
+
+  const childrenOfSelected = useMemo(() => {
+    if (!selectedProductId) return [];
+    return allProducts.filter(p => p.parentProductId === selectedProductId);
+  }, [allProducts, selectedProductId]);
+
+  const ingredientHasChildren = (ingredientProductId: string): boolean => {
+    return (childCountMap[ingredientProductId] || 0) > 0;
+  };
+
+  const ingredientIsManufactured = (ingredientProductId: string): boolean => {
+    const product = allProducts.find(p => p.id === ingredientProductId);
+    return product?.replenishmentMethod === 'make';
+  };
 
   const calculateRequirements = useMutation({
     mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
@@ -105,6 +146,7 @@ export default function ProductionPlanner() {
   };
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
+  const selectedProductChildCount = selectedProductId ? (childCountMap[selectedProductId] || 0) : 0;
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
@@ -147,18 +189,27 @@ export default function ProductionPlanner() {
                           {t('products:noManufacturableProducts')}
                         </div>
                       ) : (
-                        products.map((product) => (
-                          <SelectItem 
-                            key={product.id} 
-                            value={product.id}
-                            data-testid={`product-option-${product.id}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>{product.name}</span>
-                              <span className="text-xs text-muted-foreground">({product.sku})</span>
-                            </div>
-                          </SelectItem>
-                        ))
+                        products.map((product) => {
+                          const productChildCount = childCountMap[product.id] || 0;
+                          return (
+                            <SelectItem 
+                              key={product.id} 
+                              value={product.id}
+                              data-testid={`product-option-${product.id}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>{product.name}</span>
+                                <span className="text-xs text-muted-foreground">({product.sku})</span>
+                                {productChildCount > 0 && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400">
+                                    <Factory className="h-2.5 w-2.5 mr-0.5" />
+                                    {productChildCount}
+                                  </Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })
                       )}
                     </SelectContent>
                   </Select>
@@ -193,8 +244,74 @@ export default function ProductionPlanner() {
                 </Button>
               </div>
             </div>
+
+            {selectedProduct && selectedProductChildCount > 0 && (
+              <div className="mt-4 p-3 bg-cyan-50 dark:bg-cyan-950 rounded-lg border border-cyan-200 dark:border-cyan-800" data-testid="parent-product-indicator">
+                <div className="flex items-center gap-2">
+                  <Factory className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                  <span className="text-sm font-medium text-cyan-800 dark:text-cyan-200">
+                    {t('products:parentProductWith', { count: selectedProductChildCount })}
+                  </span>
+                  <Badge variant="outline" className="border-cyan-400 text-cyan-600 dark:text-cyan-400">
+                    <Layers className="h-3 w-3 mr-1" />
+                    {selectedProductChildCount} {selectedProductChildCount === 1 ? t('inventory:component') : t('inventory:components')}
+                  </Badge>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {selectedProductId && childrenOfSelected.length > 0 && (
+          <Card data-testid="card-components">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
+                <Layers className="h-5 w-5" />
+                {t('products:directComponents')}
+              </CardTitle>
+              <CardDescription>
+                {t('products:directComponentsDescription', { product: selectedProduct?.name })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {childrenOfSelected.map((child) => (
+                  <div 
+                    key={child.id} 
+                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
+                    data-testid={`component-${child.id}`}
+                  >
+                    <CornerDownRight className="h-4 w-4 text-gray-400" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{child.name}</span>
+                        <span className="text-xs text-muted-foreground">({child.sku})</span>
+                        {child.replenishmentMethod === 'make' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-teal-400 text-teal-600 dark:text-teal-400">
+                                  <Wrench className="h-2.5 w-2.5 mr-0.5" />
+                                  {t('products:manufactured')}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('products:manufacturedTooltip')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {t('products:stock')}: {child.quantity || 0}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {requirements && (
           <>
@@ -266,48 +383,88 @@ export default function ProductionPlanner() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {requirements.ingredients.map((ingredient, idx) => (
-                      <TableRow key={idx} data-testid={`requirement-row-${idx}`}>
-                        <TableCell className="font-medium">{ingredient.ingredientName}</TableCell>
-                        <TableCell className="font-mono text-sm">{ingredient.ingredientSku}</TableCell>
-                        <TableCell className="text-right font-semibold">{ingredient.requiredQty}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant={ingredient.canFulfill ? "secondary" : "destructive"}>
-                            {ingredient.availableStock}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {ingredient.missingQty > 0 ? (
-                            <span className="text-destructive font-semibold">-{ingredient.missingQty}</span>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {ingredient.canFulfill ? (
-                            <Badge data-testid={`badge-status-sufficient-${idx}`} className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              {t('products:sufficient')}
-                            </Badge>
-                          ) : (
-                            <Badge data-testid={`badge-status-insufficient-${idx}`} variant="destructive">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              {t('products:insufficient')}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {ingredient.supplier ? (
-                            <div className="flex items-center gap-1 text-sm">
-                              <Truck className="h-3 w-3" />
-                              {ingredient.supplier.name}
+                    {requirements.ingredients.map((ingredient, idx) => {
+                      const hasChildren = ingredientHasChildren(ingredient.ingredientProductId);
+                      const isManufactured = ingredientIsManufactured(ingredient.ingredientProductId);
+                      const ingredientChildCount = childCountMap[ingredient.ingredientProductId] || 0;
+                      
+                      return (
+                        <TableRow key={idx} data-testid={`requirement-row-${idx}`}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span>{ingredient.ingredientName}</span>
+                              {hasChildren && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400">
+                                        <Factory className="h-2.5 w-2.5 mr-0.5" />
+                                        {ingredientChildCount}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{t('products:ingredientHasComponents', { count: ingredientChildCount })}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {isManufactured && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-teal-400 text-teal-600 dark:text-teal-400">
+                                        <Wrench className="h-2.5 w-2.5 mr-0.5" />
+                                        {t('products:make')}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{t('products:manufacturedIngredient')}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{ingredient.ingredientSku}</TableCell>
+                          <TableCell className="text-right font-semibold">{ingredient.requiredQty}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={ingredient.canFulfill ? "secondary" : "destructive"}>
+                              {ingredient.availableStock}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {ingredient.missingQty > 0 ? (
+                              <span className="text-destructive font-semibold">-{ingredient.missingQty}</span>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {ingredient.canFulfill ? (
+                              <Badge data-testid={`badge-status-sufficient-${idx}`} className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {t('products:sufficient')}
+                              </Badge>
+                            ) : (
+                              <Badge data-testid={`badge-status-insufficient-${idx}`} variant="destructive">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                {t('products:insufficient')}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {ingredient.supplier ? (
+                              <div className="flex items-center gap-1 text-sm">
+                                <Truck className="h-3 w-3" />
+                                {ingredient.supplier.name}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
 

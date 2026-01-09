@@ -675,6 +675,14 @@ const products = {
   clickCalculateToSeeRequirements: 'Enter quantity and click Calculate to see ingredient requirements',
   noManufacturableProducts: 'No Manufacturable Products',
   noManufacturableProductsDescription: 'Set products to "Make" mode in their Recipe tab to see them here',
+  parentProductWith: 'Parent product with {{count}} component(s)',
+  directComponents: 'Direct Components',
+  directComponentsDescription: 'Products that are direct children of {{product}}',
+  manufactured: 'Manufactured',
+  manufacturedTooltip: 'This product is manufactured in-house',
+  stock: 'Stock',
+  ingredientHasComponents: 'This ingredient is a parent product with {{count}} component(s)',
+  manufacturedIngredient: 'This ingredient is manufactured in-house (replenishment: make)',
 } as const;
 
 export default products;
