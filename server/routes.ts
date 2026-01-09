@@ -22578,19 +22578,33 @@ Important rules:
       const profile = items[0] as any;
       
       console.log(`[Facebook Profile] Found: ${profile.title || 'Unknown'}`);
+      console.log('[Facebook Profile] All profile data:', JSON.stringify(profile));
+      
+      // Try multiple possible field names for profile picture (Apify actors may use different names)
+      const profilePicUrl = profile.profilePictureUrl || profile.profilePic || profile.pictureUrl || 
+                            profile.photo || profile.image || profile.avatar || profile.profilePhoto ||
+                            profile.profileImage || profile.picture || null;
+      
+      console.log('[Facebook Profile] Detected profile picture URL:', profilePicUrl);
 
       // Download and store the profile picture locally if available
       let localProfilePictureUrl: string | null = null;
-      if (profile.profilePictureUrl) {
-        const avatarResult = await downloadAndStoreProfilePicture(profile.profilePictureUrl);
+      if (profilePicUrl) {
+        console.log('[Facebook Profile] Attempting to download profile picture...');
+        const avatarResult = await downloadAndStoreProfilePicture(profilePicUrl);
         if (avatarResult) {
           localProfilePictureUrl = avatarResult.localPath;
+          console.log('[Facebook Profile] Profile picture saved to:', localProfilePictureUrl);
+        } else {
+          console.log('[Facebook Profile] Failed to download profile picture');
         }
+      } else {
+        console.log('[Facebook Profile] No profile picture URL found in response');
       }
 
       res.json({
         name: profile.title || null,
-        profilePictureUrl: localProfilePictureUrl || profile.profilePictureUrl || null,
+        profilePictureUrl: localProfilePictureUrl || profilePicUrl || null,
         facebookId: profile.facebookId || profile.pageId || null,
         username: profile.pageName || username,
         success: true
