@@ -275,6 +275,10 @@ export const shipments = pgTable("shipments", {
   landedCostCalculatedBy: text("landed_cost_calculated_by"), // Who calculated landed cost
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  // Real-time collaboration - soft locking for multi-user
+  lockedByUserId: varchar("locked_by_user_id"),
+  lockedAt: timestamp("locked_at"),
+  viewedBy: jsonb("viewed_by").default([]), // Array of {userId, userName, socketId, joinedAt}
 });
 
 // Per-tracking number metadata for multi-tracking shipments
@@ -1045,6 +1049,10 @@ export const orders = pgTable("orders", {
   channel: varchar("channel").notNull().default("online"), // Values: 'pos', 'online'
   allocated: boolean("allocated").default(false), // Track if order inventory is allocated
   isArchived: boolean("is_archived").notNull().default(false), // Soft delete - moved to trash
+  // Real-time collaboration - soft locking for multi-user
+  lockedByUserId: varchar("locked_by_user_id"),
+  lockedAt: timestamp("locked_at"),
+  viewedBy: jsonb("viewed_by").default([]), // Array of {userId, userName, socketId, joinedAt}
 }, (table) => [
   index("orders_order_id_idx").on(table.orderId),
   index("orders_customer_id_idx").on(table.customerId),

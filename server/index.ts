@@ -3,6 +3,8 @@ import compression from "compression";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeSocketService } from "./socket/SocketService";
+import { getSession } from "./auth";
 
 const app = express();
 
@@ -143,6 +145,20 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   const port = parseInt(process.env.PORT || "3000", 10);
+
+  // Initialize Socket.io for real-time collaboration
+  try {
+    const sessionMiddleware = getSession();
+    initializeSocketService({ 
+      httpServer: server,
+      sessionMiddleware,
+      disconnectTimeout: 10000, // 10 seconds
+      heartbeatInterval: 30000  // 30 seconds
+    });
+    log("Socket.io service initialized");
+  } catch (error) {
+    console.error("Failed to initialize Socket.io:", error);
+  }
 
   // Use standard listen arguments instead of object syntax to avoid container issues
   server.listen(port, "0.0.0.0", async () => {
