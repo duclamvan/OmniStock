@@ -576,6 +576,7 @@ export default function AddOrder() {
     name: "",
     facebookName: "",
     facebookUrl: "",
+    profilePictureUrl: "",
     email: "",
     phone: "",
     street: "",
@@ -590,6 +591,9 @@ export default function AddOrder() {
     pickupPoint: "",
     type: "regular"
   });
+  
+  // Facebook profile fetching state for new customer form
+  const [isFetchingFacebookProfile, setIsFetchingFacebookProfile] = useState(false);
   
   // Track if Facebook Name has been manually edited
   const [facebookNameManuallyEdited, setFacebookNameManuallyEdited] = useState(false);
@@ -1450,6 +1454,62 @@ export default function AddOrder() {
     return `${countryCode}${cleaned}`;
   };
 
+  // Facebook profile fetch mutation for new customer form
+  const fetchFacebookProfileMutation = useMutation({
+    mutationFn: async (facebookUrl: string) => {
+      const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl });
+      return res.json();
+    },
+    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; username: string }) => {
+      // Update customer name if returned and not already set
+      if (data.name && !newCustomer.name) {
+        setNewCustomer(prev => ({
+          ...prev,
+          name: data.name!,
+          facebookName: facebookNameManuallyEdited ? prev.facebookName : data.name!
+        }));
+      }
+      
+      // Update profile picture if returned
+      if (data.profilePictureUrl) {
+        setNewCustomer(prev => ({ ...prev, profilePictureUrl: data.profilePictureUrl! }));
+      }
+      
+      toast({
+        title: t('customers:facebookProfileFetched'),
+        description: data.name ? t('customers:foundProfile', { name: data.name }) : t('customers:profileDataRetrieved'),
+      });
+      setIsFetchingFacebookProfile(false);
+    },
+    onError: (error: any) => {
+      console.error('[Facebook Profile] Error fetching:', error);
+      toast({
+        title: t('customers:facebookFetchFailed'),
+        description: error.message || t('customers:couldNotFetchFacebookProfile'),
+        variant: "destructive",
+      });
+      setIsFetchingFacebookProfile(false);
+    },
+  });
+
+  // Auto-fetch Facebook profile when URL is entered/changed
+  useEffect(() => {
+    const url = newCustomer.facebookUrl;
+    if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
+      setIsFetchingFacebookProfile(true);
+      fetchFacebookProfileMutation.mutate(url);
+    }
+  }, [newCustomer.facebookUrl]);
+
+  // Manual refetch function for new customer form
+  const handleRefetchFacebookProfile = () => {
+    const url = newCustomer.facebookUrl;
+    if (url && url.includes('facebook.com') && !isFetchingFacebookProfile && !fetchFacebookProfileMutation.isPending) {
+      setIsFetchingFacebookProfile(true);
+      fetchFacebookProfileMutation.mutate(url);
+    }
+  };
+
   // Smart Paste mutation for new customer address
   const parseNewCustomerAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
@@ -1953,6 +2013,7 @@ export default function AddOrder() {
               name: selectedCustomer.name,
               facebookName: selectedCustomer.facebookName || undefined,
               facebookUrl: selectedCustomer.facebookUrl || undefined,
+              profilePictureUrl: selectedCustomer.profilePictureUrl || undefined,
               email: selectedCustomer.email || undefined,
               phone: selectedCustomer.phone || undefined,
               address: fullAddress || undefined,
@@ -2152,6 +2213,7 @@ export default function AddOrder() {
           name: selectedCustomer.name,
           facebookName: selectedCustomer.facebookName || undefined,
           facebookUrl: selectedCustomer.facebookUrl || undefined,
+          profilePictureUrl: selectedCustomer.profilePictureUrl || undefined,
           email: selectedCustomer.email || undefined,
           phone: selectedCustomer.phone || undefined,
           address: fullAddress || undefined,
@@ -5605,6 +5667,41 @@ export default function AddOrder() {
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
+                    {/* Profile Picture Preview and Refetch Button */}
+                    {newCustomer.facebookUrl && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {newCustomer.profilePictureUrl ? (
+                          <img 
+                            src={newCustomer.profilePictureUrl} 
+                            alt="Profile" 
+                            className="w-10 h-10 rounded-full object-cover border"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                            <User className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRefetchFacebookProfile}
+                          disabled={isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending}
+                        >
+                          {(isFetchingFacebookProfile || fetchFacebookProfileMutation.isPending) ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t('customers:fetching')}
+                            </>
+                          ) : (
+                            <>
+                              <SiFacebook className="h-4 w-4 mr-2" />
+                              {t('customers:refetchFromFacebook')}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
