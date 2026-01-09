@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated, requireRole } from "./auth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
 import rateLimit from 'express-rate-limit';
+import { downloadAndStoreProfilePicture, getProfilePicturePath } from './services/avatarService';
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
@@ -390,7 +391,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Serve protected static files from uploads directory
-  app.use('/uploads', staticFileAuth, express.default.static('uploads'));
+  // Serve profile pictures with caching (faster access for customer avatars)
+  app.get('/api/profile-pictures/:filename', async (req, res) => {
+    try {
+      const { filename } = req.params;
+      // Sanitize filename to prevent path traversal
+      const sanitizedFilename = path.basename(filename);
+      const filePath = getProfilePicturePath(sanitizedFilename);
+      
+      if (!filePath) {
+        return res.status(404).json({ message: 'Profile picture not found' });
+      }
+      
+      // Set caching headers - profile pictures don't change often
+      res.set({
+        'Cache-Control': 'public, max-age=86400', // 24 hours
+        'Content-Type': 'image/webp'
+      });
+      
+      res.sendFile(filePath);
+    } catch (error) {
+      console.error('[Profile Picture] Error serving image:', error);
+      res.status(500).json({ message: 'Failed to serve profile picture' });
+    }
+  });
+
+    app.use('/uploads', staticFileAuth, express.default.static('uploads'));
   
   // Serve protected static files from public/images directory
   app.use('/images', staticFileAuth, express.default.static('public/images'));
@@ -22522,9 +22548,18 @@ Important rules:
       
       console.log(`[Facebook Profile] Found: ${profile.title || 'Unknown'}`);
 
+      // Download and store the profile picture locally if available
+      let localProfilePictureUrl: string | null = null;
+      if (profile.profilePictureUrl) {
+        const avatarResult = await downloadAndStoreProfilePicture(profile.profilePictureUrl);
+        if (avatarResult) {
+          localProfilePictureUrl = avatarResult.localPath;
+        }
+      }
+
       res.json({
         name: profile.title || null,
-        profilePictureUrl: profile.profilePictureUrl || null,
+        profilePictureUrl: localProfilePictureUrl || profile.profilePictureUrl || null,
         facebookId: profile.facebookId || profile.pageId || null,
         username: profile.pageName || username,
         success: true
