@@ -625,35 +625,20 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
         
         return (
         <div key={section.name}>
-          {/* Section Header - Collapsible */}
+          {/* Section Header - Always visible, no collapse */}
           {!collapsed && (
-            <Collapsible
-              open={isSectionOpen}
-              onOpenChange={() => toggleSection(section.name)}
-            >
+            <>
               <div className={cn(
-                sectionIdx > 0 && "mt-4 pt-4"
+                "px-3 py-2",
+                sectionIdx > 0 && "mt-4 pt-4 border-t border-muted/30"
               )}>
-                <CollapsibleTrigger asChild>
-                  <button
-                    className="w-full flex items-center justify-between px-3 py-2 group transition-all duration-150 hover:bg-muted/50 rounded-md"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-0.5 h-3 bg-primary/40 rounded-full" />
-                      <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">
-                        {section.name}
-                      </h3>
-                    </div>
-                    <ChevronDown className={cn(
-                      "h-3 w-3 transition-transform duration-200 text-muted-foreground/60",
-                      isSectionOpen && "rotate-180"
-                    )} />
-                  </button>
-                </CollapsibleTrigger>
+                <h3 className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">
+                  {section.name}
+                </h3>
               </div>
           
-          {/* Section Items */}
-          <CollapsibleContent>
+          {/* Section Items - Always visible */}
+          <div>
           {section.items?.map((item) => {
         if (item.children) {
           const isOpen = openItems.includes(item.name);
@@ -873,8 +858,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           </div>
         );
       })}
-          </CollapsibleContent>
-            </Collapsible>
+          </div>
+            </>
           )}
           
           {/* Section Items when collapsed - no section headers */}
