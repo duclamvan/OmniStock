@@ -571,7 +571,7 @@ const common = {
   
   // POS Sales
   posSales: 'POS Sales',
-  posSalesDescription: 'View and manage all point of sale transactions',
+  posSalesDescription: 'Sales history',
   cashBalance: 'Cash Balance',
   cashOut: 'Cash Out',
   cashOutDescription: 'Record a cash withdrawal from the register',

@@ -549,7 +549,7 @@ const common = {
   
   // POS Sales
   posSales: 'Bán hàng POS',
-  posSalesDescription: 'Xem và quản lý tất cả giao dịch bán hàng tại quầy',
+  posSalesDescription: 'Lịch sử bán hàng',
   cashBalance: 'Số dư tiền mặt',
   cashOut: 'Rút tiền',
   cashOutDescription: 'Ghi nhận rút tiền mặt từ quầy thu ngân',
