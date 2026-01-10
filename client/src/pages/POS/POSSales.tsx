@@ -82,9 +82,15 @@ export default function POSSales() {
     staleTime: 60000,
   });
 
-  const { data: orderItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/order-items/batch', selectedSale?.id],
-    enabled: !!selectedSale?.id,
+  const { data: orderItems = [], isLoading: isLoadingItems } = useQuery<any[]>({
+    queryKey: ['/api/orders', selectedSale?.id, 'items'],
+    queryFn: async () => {
+      if (!selectedSale?.id) return [];
+      const response = await fetch(`/api/orders/${selectedSale.id}/items`);
+      if (!response.ok) throw new Error('Failed to fetch items');
+      return response.json();
+    },
+    enabled: !!selectedSale?.id && isViewDialogOpen,
   });
 
   const posSales = useMemo(() => {
@@ -594,6 +600,47 @@ export default function POSSales() {
                   <p className="text-sm bg-muted p-2 rounded">{selectedSale.notes}</p>
                 </div>
               )}
+
+              {/* Items Purchased */}
+              <div className="border-t pt-4">
+                <Label className="text-muted-foreground flex items-center gap-2 mb-2">
+                  <Package className="h-4 w-4" />
+                  {t('common:itemsPurchased', 'Items Purchased')} ({orderItems.length})
+                </Label>
+                {isLoadingItems ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : orderItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-3">
+                    {t('common:noItems', 'No items found')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {orderItems.map((item: any, index: number) => (
+                      <div 
+                        key={item.id || index} 
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {item.productName || item.variantName || item.bundleName || t('common:unknownItem', 'Unknown Item')}
+                          </p>
+                          {item.sku && (
+                            <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 shrink-0">
+                          <span className="text-muted-foreground">×{item.quantity}</span>
+                          <span className="font-medium tabular-nums">
+                            {formatCurrency(parseFloat(String(item.unitPrice || 0)) * (item.quantity || 1), selectedSale.currency || 'CZK')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
