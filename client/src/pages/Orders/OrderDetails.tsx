@@ -117,7 +117,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { ThermalReceipt, useOrderReceiptData, type CompanyInfo } from "@/components/orders/ThermalReceipt";
 import { Receipt } from "lucide-react";
 import { useRealTimeOrder } from "@/hooks/useSocket";
-import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
+import { RealTimeViewers } from "@/components/RealTimeViewers";
 
 function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
   const { t } = useTranslation(['common', 'orders']);
@@ -707,8 +707,6 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-0 overflow-x-hidden relative">
-      {/* Lock overlay when another user is editing */}
-      {isLocked && <LockOverlay lockInfo={lockInfo} />}
       
       {/* Clean Header */}
       <Card>
