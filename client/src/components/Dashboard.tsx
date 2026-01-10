@@ -53,6 +53,8 @@ const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ def
 const ExpensesChart = lazy(() => import("./charts/ExpensesChart").then(m => ({ default: m.ExpensesChart })));
 const YearlyChart = lazy(() => import("./charts/YearlyChart").then(m => ({ default: m.YearlyChart })));
 
+import { ReportDetailsModal } from "./reports/ReportDetailsModal";
+
 // TypeScript interfaces for API responses
 interface OperationsPulseData {
   ordersAwaitingFulfillment: number;
@@ -859,6 +861,9 @@ export function Dashboard() {
     }
   });
 
+  // State for report details modal
+  const [showReportModal, setShowReportModal] = useState(false);
+
   const handleDismissWeeklyReport = () => {
     if (weeklyReport?.generatedAt) {
       try {
@@ -959,12 +964,12 @@ export function Dashboard() {
               )}
             </div>
             <div className="mt-4 flex items-center justify-end">
-              <Link href="/reports?tab=generated">
+              <button onClick={() => setShowReportModal(true)}>
                 <Badge variant="outline" className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center gap-1 text-blue-700 dark:text-blue-300" data-testid="link-view-full-report">
                   {t('dashboard:viewFullReport', 'View Full Report')}
                   <ArrowRight className="h-3 w-3" />
                 </Badge>
-              </Link>
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -2310,6 +2315,12 @@ export function Dashboard() {
         )}
       </section>
 
+      <ReportDetailsModal 
+        open={showReportModal} 
+        onOpenChange={setShowReportModal} 
+        report={weeklyReport} 
+        currency={dashboardCurrency} 
+      />
     </div>
   );
 }
