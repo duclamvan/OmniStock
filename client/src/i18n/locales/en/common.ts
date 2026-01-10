@@ -270,6 +270,7 @@ const common = {
   adminSettings: 'Admin Settings',
   profile: 'Profile',
   logout: 'Logout',
+  changeUser: 'Change User',
   darkMode: 'Dark Mode',
   lightMode: 'Light Mode',
   language: 'Language',

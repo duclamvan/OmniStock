@@ -247,6 +247,7 @@ const common = {
   adminSettings: 'Cài đặt quản trị',
   profile: 'Hồ sơ',
   logout: 'Đăng xuất',
+  changeUser: 'Đổi người dùng',
   darkMode: 'Chế độ tối',
   lightMode: 'Chế độ sáng',
   language: 'Ngôn ngữ',

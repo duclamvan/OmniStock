@@ -1284,6 +1284,15 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => {
+                      window.location.href = '/login';
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Users className="mr-2 h-4 w-4 text-blue-600" />
+                    <span>{t('common:changeUser')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
                       window.location.href = '/api/logout';
                     }}
                     className="text-red-600 focus:text-red-600 cursor-pointer"
