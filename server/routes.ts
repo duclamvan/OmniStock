@@ -16825,6 +16825,105 @@ Important:
             }
           }
         }
+
+        // Add store credit to customer when return type is store_credit
+        if (returnType === 'store_credit') {
+          const customerId = returnData.customerId || existingReturn.customerId;
+          const orderId = returnData.orderId || existingReturn.orderId;
+          
+          if (customerId) {
+            try {
+              // SECURITY: Validate return items against original order to prevent price/quantity manipulation
+              const persistedItems = await storage.getReturnItems(req.params.id);
+              if (!persistedItems || persistedItems.length === 0) {
+                console.warn('[Store Credit] No persisted items found for return', req.params.id);
+              } else {
+                let totalReturnValue = 0;
+                
+                // If return is linked to an order, validate prices against order items
+                if (orderId) {
+                  const orderItems = await storage.getOrderItems(orderId);
+                  // Track remaining refundable quantity per product to prevent duplicate line exploitation
+                  const orderItemMap = new Map();
+                  for (const oi of orderItems) {
+                    // Use productId as key, store price and REMAINING quantity from original order
+                    const existingEntry = orderItemMap.get(oi.productId);
+                    if (existingEntry) {
+                      // If same product appears multiple times in order, combine quantities
+                      existingEntry.remainingQty += parseInt(oi.quantity || '0');
+                    } else {
+                      orderItemMap.set(oi.productId, {
+                        price: parseFloat(oi.price || '0'),
+                        remainingQty: parseInt(oi.quantity || '0')
+                      });
+                    }
+                  }
+                  
+                  // Calculate credit using validated prices from original order
+                  // SECURITY: Track remaining quantity to prevent duplicate line exploitation
+                  for (const item of persistedItems) {
+                    const orderItem = orderItemMap.get(item.productId);
+                    if (orderItem && orderItem.remainingQty > 0) {
+                      // Use original order price, not the return item price (prevents manipulation)
+                      const validatedPrice = orderItem.price;
+                      // Cap quantity to remaining allowance
+                      const requestedQty = parseInt(item.quantity || '0');
+                      const validatedQty = Math.min(requestedQty, orderItem.remainingQty);
+                      totalReturnValue += validatedPrice * validatedQty;
+                      // Decrement remaining allowance to prevent duplicate lines from exploiting
+                      orderItem.remainingQty -= validatedQty;
+                      if (requestedQty > validatedQty) {
+                        console.warn(`[Store Credit] Return item ${item.productId} qty ${requestedQty} exceeds remaining allowance ${validatedQty + (requestedQty - validatedQty)}, capped to ${validatedQty}`);
+                      }
+                    } else if (orderItem && orderItem.remainingQty <= 0) {
+                      console.warn(`[Store Credit] Return item ${item.productId} already fully credited, skipping duplicate line`);
+                    } else {
+                      console.warn(`[Store Credit] Return item ${item.productId} not found in order ${orderId}, skipping`);
+                    }
+                  }
+                } else {
+                  // No order linked - SECURITY: Only allow store credit if items were NOT modified in this request
+                  // This prevents operators from submitting inflated items and immediately completing for credit
+                  if (items && items.length > 0) {
+                    console.warn('[Store Credit] BLOCKED: Cannot simultaneously update items and complete a return for store credit without a linked order. Please save items first, then complete.');
+                    // Skip store credit for this case - items were just modified, cannot trust them
+                  } else {
+                    // Items were not modified in this request - use existing persisted items
+                    // Get items that existed BEFORE this request (already in DB from prior save)
+                    for (const item of persistedItems) {
+                      const itemPrice = parseFloat(item.price || '0');
+                      const itemQuantity = parseInt(item.quantity || '0');
+                      totalReturnValue += itemPrice * itemQuantity;
+                    }
+                    
+                    // SECURITY: Apply maximum credit limit for manual returns without order validation
+                    // This provides a safety net against potential abuse while allowing legitimate use
+                    const MAX_MANUAL_RETURN_CREDIT = 10000; // Maximum credit for returns without order
+                    if (totalReturnValue > MAX_MANUAL_RETURN_CREDIT) {
+                      console.warn(`[Store Credit] CAPPED: Manual return credit ${totalReturnValue.toFixed(2)} exceeds limit ${MAX_MANUAL_RETURN_CREDIT}, capping to limit`);
+                      totalReturnValue = MAX_MANUAL_RETURN_CREDIT;
+                    }
+                    console.log('[Store Credit] Using pre-existing persisted prices for return without linked order');
+                  }
+                }
+
+                if (totalReturnValue > 0) {
+                  const customer = await storage.getCustomer(customerId);
+                  if (customer) {
+                    const currentCredit = parseFloat(customer.storeCredit || '0');
+                    const newCredit = currentCredit + totalReturnValue;
+                    await storage.updateCustomer(customerId, {
+                      storeCredit: newCredit.toFixed(2)
+                    });
+                    console.log(`[Store Credit] Added ${totalReturnValue.toFixed(2)} from return ${updatedReturn.returnId} to customer ${customerId}. New balance: ${newCredit.toFixed(2)}`);
+                  }
+                }
+              }
+            } catch (creditError) {
+              console.error('[Store Credit] Failed to add store credit from return:', creditError);
+            }
+          }
+        }
       }
 
       await storage.createUserActivity({
