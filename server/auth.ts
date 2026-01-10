@@ -487,6 +487,9 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/logout", (req, res) => {
+    const redirectUrl = (req.query.redirect as string) || "/login";
+    const safeRedirect = redirectUrl.startsWith('/') ? redirectUrl : '/login';
+    
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
@@ -498,7 +501,7 @@ export async function setupAuth(app: Express) {
           console.error("Session destroy error:", destroyErr);
         }
         res.clearCookie("connect.sid");
-        res.redirect("/login");
+        res.redirect(safeRedirect);
       });
     });
   });

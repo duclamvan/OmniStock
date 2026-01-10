@@ -1284,7 +1284,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => {
-                      window.location.href = '/login';
+                      window.location.href = '/api/logout?redirect=/login';
                     }}
                     className="cursor-pointer"
                   >
