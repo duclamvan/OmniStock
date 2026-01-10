@@ -8291,6 +8291,27 @@ Important:
     }
   }
 
+  // Helper function to recalculate product base stock from all location quantities
+  // This ensures the product.quantity stays in sync with the sum of all productLocations.quantity
+  async function recalculateProductBaseStock(productId: string) {
+    try {
+      // Get all locations for this product and sum their quantities
+      const locations = await storage.getProductLocations(productId);
+      const totalQuantity = locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+      
+      // Update the product's base quantity
+      await db
+        .update(products)
+        .set({ quantity: totalQuantity, updatedAt: new Date() })
+        .where(eq(products.id, productId));
+      
+      console.log(`[Stock Sync] Recalculated base stock for product ${productId}: ${totalQuantity} units from ${locations.length} locations`);
+    } catch (error) {
+      console.error('Failed to recalculate product base stock:', error);
+      // Don't fail the request - this is a sync feature
+    }
+  }
+
   // Product Locations endpoints
   app.get('/api/products/:id/locations', isAuthenticated, async (req, res) => {
     try {
@@ -8374,6 +8395,9 @@ Important:
           // Don't fail the request - location was created successfully
         }
       }
+
+      // Sync base stock with location quantities
+      await recalculateProductBaseStock(productId);
 
       res.status(201).json(location);
     } catch (error: any) {
@@ -8715,6 +8739,9 @@ Important:
         description: `Batch saved ${locations.length} locations for product (${createdCount} new, ${updatedCount} updated, ${totalQuantity} total items)`,
       });
 
+      // Sync base stock with location quantities (for non-variant products)
+      await recalculateProductBaseStock(productId);
+
       res.status(201).json({
         success: true,
         created: createdCount,
@@ -8948,6 +8975,9 @@ Important:
         description: `Updated location ${location.locationCode}`,
       });
 
+      // Sync base stock with location quantities
+      await recalculateProductBaseStock(productId);
+
       res.json(location);
     } catch (error: any) {
       console.error("Error updating product location:", error);
@@ -9068,6 +9098,9 @@ Important:
         entityId: locationId,
         description: `Deleted product location ${loc.locationCode}`,
       });
+
+      // Sync base stock with location quantities
+      await recalculateProductBaseStock(productId);
 
       res.status(204).send();
     } catch (error) {
