@@ -363,6 +363,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   
   // Ref to store clearSelection function from DataTable
   const clearSelectionRef = useRef<(() => void) | null>(null);
+  
+  // State for highlighted order during navigation
+  const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Prevent initial scroll to top and restore position
   useEffect(() => {
@@ -550,8 +554,21 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       }
     }
 
+    // Get the order ID from the target element and highlight it
+    const targetElement = expandedRows[targetIndex];
+    const orderId = targetElement.getAttribute('data-expanded-order');
+    if (orderId) {
+      // Clear any existing timeout before setting new one
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+      setHighlightedOrderId(orderId);
+      // Clear highlight after 3 seconds
+      highlightTimeoutRef.current = setTimeout(() => setHighlightedOrderId(null), 3000);
+    }
+
     window.scrollTo({
-      top: expandedRows[targetIndex].offsetTop - offset,
+      top: targetElement.offsetTop - offset,
       behavior: 'smooth'
     });
   }, []);
@@ -2230,7 +2247,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               defaultExpandAll={expandAll}
               expandable={{
                 render: (order) => (
-                  <div className="space-y-4 max-w-4xl" data-expanded-order={order.id}>
+                  <div 
+                    className={cn(
+                      "space-y-4 max-w-4xl p-2 rounded-lg transition-all duration-300",
+                      highlightedOrderId === order.id 
+                        ? "ring-2 ring-green-500 ring-offset-2 bg-green-50 dark:bg-green-900/20" 
+                        : "ring-0 ring-transparent"
+                    )} 
+                    data-expanded-order={order.id}
+                  >
                     {/* Customer Info Header */}
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex-1">
@@ -3107,7 +3132,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     variant="default"
                     size="icon"
                     onClick={() => scrollToExpandedOrder('prev')}
-                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700"
                     data-testid="button-scroll-up"
                   >
                     <ArrowUp className="h-5 w-5" />
@@ -3126,7 +3151,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     variant="default"
                     size="icon"
                     onClick={() => scrollToExpandedOrder('next')}
-                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                    className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700"
                     data-testid="button-scroll-down"
                   >
                     <ArrowDown className="h-5 w-5" />
