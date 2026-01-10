@@ -923,7 +923,7 @@ export default function AddOrder() {
   });
   
   // Server-side customer search for Facebook URLs and complex searches
-  const { data: searchedCustomers } = useQuery({
+  const { data: searchedCustomers, isFetching: isSearchingCustomers } = useQuery({
     queryKey: ['/api/customers', { search: debouncedCustomerSearch }],
     queryFn: async () => {
       const response = await fetch(`/api/customers?search=${encodeURIComponent(debouncedCustomerSearch)}`);
@@ -5064,8 +5064,16 @@ export default function AddOrder() {
                 </div>
               )}
 
+              {/* Loading state while searching or waiting for debounce */}
+              {showCustomerDropdown && customerSearch.length >= 2 && (isSearchingCustomers || customerSearch !== debouncedCustomerSearch) && (!filteredCustomers || filteredCustomers.length === 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-4 text-center z-50">
+                  <Loader2 className="h-5 w-5 mx-auto mb-2 animate-spin text-blue-500" />
+                  <div className="text-sm text-slate-500 dark:text-slate-400">Searching customers...</div>
+                </div>
+              )}
+
               {/* No results message with Add new customer button */}
-              {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
+              {showCustomerDropdown && customerSearch.length >= 2 && !isSearchingCustomers && customerSearch === debouncedCustomerSearch && (!filteredCustomers || filteredCustomers.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-slate-800 shadow-lg p-3 sm:p-4 text-center text-slate-500 dark:text-slate-400 z-50">
                   <Search className="h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-1.5 sm:mb-2 text-slate-400 dark:text-slate-500" />
                   <div className="text-sm sm:text-base">No customers found for "{customerSearch}"</div>
