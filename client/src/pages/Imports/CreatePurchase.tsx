@@ -134,6 +134,7 @@ interface Product {
   stock?: number;
   importCostUSD?: string | null;
   importCostEUR?: string | null;
+  parentProductId?: string | null;
 }
 
 export default function CreatePurchase() {
@@ -1562,7 +1563,8 @@ export default function CreatePurchase() {
       bulkUnitName: selectedProduct?.bulkUnitName,
       bulkUnitQty: selectedProduct?.bulkUnitQty,
       hasVariants: hasVariantAllocations,
-      variantAllocations: hasVariantAllocations ? activeAllocations : undefined
+      variantAllocations: hasVariantAllocations ? activeAllocations : undefined,
+      parentProductId: selectedProduct?.parentProductId || undefined
     };
 
     const updatedItems = [...items, newItem];
