@@ -296,6 +296,7 @@ const orders = {
   tracking: 'Theo dõi',
   noTrackingNumber: 'Chưa có mã vận đơn',
   noShippingAddress: 'Chưa chọn địa chỉ giao hàng cho đơn hàng này',
+  noShippingAddressesFound: 'Không tìm thấy địa chỉ giao hàng cho khách hàng này',
   shippedAt: 'Giao vận lúc',
   cartons: 'Thùng',
   box: 'thùng',

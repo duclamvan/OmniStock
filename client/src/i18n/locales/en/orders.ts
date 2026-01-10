@@ -302,6 +302,7 @@ const orders = {
   tracking: 'Tracking',
   noTrackingNumber: 'No tracking number',
   noShippingAddress: 'No shipping address selected for this order',
+  noShippingAddressesFound: 'No shipping addresses found for this customer',
   shippedAt: 'Shipped At',
   cartons: 'Cartons',
   box: 'box',
