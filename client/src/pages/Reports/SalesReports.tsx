@@ -12,16 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { 
-  ShoppingCart, TrendingUp, TrendingDown, Package, Coins, 
+  ShoppingCart, TrendingUp, TrendingDown, Package, 
   Calendar, CalendarDays, CalendarRange, BarChart3,
   ArrowUpRight, ArrowDownRight, Target, Zap, Clock, Star,
-  DollarSign, PiggyBank, Activity, Users, Truck, XCircle, CheckCircle
+  DollarSign, PiggyBank, Truck, XCircle, CheckCircle
 } from "lucide-react";
 import { aggregateProductSales, aggregateMonthlyRevenue, preparePieChartData, convertToBaseCurrency } from "@/lib/reportUtils";
 import { formatCurrency, formatCompactNumber } from "@/lib/currencyUtils";
@@ -73,11 +68,11 @@ export default function SalesReports() {
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const { formatCurrency: formatLocalizedCurrency } = useLocalization();
+  const { getDateRangeValues } = useReports();
   const [activeTab, setActiveTab] = useState("overview");
-  const [dateRange, setDateRange] = useState<string>("all");
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
+  
+  // Use shared date range from ReportsContext
+  const { start: filterStartDate, end: filterEndDate } = getDateRangeValues();
 
   const formatCompactCurrency = (amount: number, currencyCode: string = 'CZK'): string => {
     const compactValue = formatCompactNumber(amount);
@@ -103,32 +98,6 @@ export default function SalesReports() {
   const isLoading = ordersLoading || productsLoading || itemsLoading;
 
   const now = useMemo(() => new Date(), []);
-
-  const getDateRange = () => {
-    const today = new Date();
-    switch (dateRange) {
-      case 'today':
-        return { start: startOfDay(today), end: endOfDay(today) };
-      case 'week':
-        return { start: startOfWeek(today, { weekStartsOn: 1 }), end: endOfWeek(today, { weekStartsOn: 1 }) };
-      case 'month':
-        return { start: startOfMonth(today), end: endOfMonth(today) };
-      case 'year':
-        return { start: startOfYear(today), end: endOfYear(today) };
-      case 'lastYear':
-        const lastYearDate = subYears(today, 1);
-        return { start: startOfYear(lastYearDate), end: endOfYear(lastYearDate) };
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return { start: customStartDate, end: customEndDate };
-        }
-        return { start: new Date(0), end: today };
-      default:
-        return { start: new Date(0), end: today };
-    }
-  };
-
-  const { start: filterStartDate, end: filterEndDate } = getDateRange();
 
   const filteredOrdersForAnalysis = useMemo(() => {
     return (orders as any[]).filter((order: any) => {
@@ -243,8 +212,9 @@ export default function SalesReports() {
   }, [orders, orderItems, products, now]);
 
   const dailySalesData = useMemo(() => {
-    const last30Days = eachDayOfInterval({ start: subDays(now, 29), end: now });
-    return last30Days.map(day => {
+    // Use context date range for daily intervals
+    const daysInRange = eachDayOfInterval({ start: filterStartDate, end: filterEndDate });
+    return daysInRange.map(day => {
       // Only include shipped+paid orders for accurate revenue/profit
       const dayOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
@@ -270,16 +240,20 @@ export default function SalesReports() {
         units: dayItems.reduce((sum, item: any) => sum + (item.quantity || 0), 0),
       };
     });
-  }, [orders, orderItems, products, now]);
+  }, [orders, orderItems, filterStartDate, filterEndDate]);
 
   const weeklySalesData = useMemo(() => {
-    const last12Weeks = eachWeekOfInterval({ start: subWeeks(now, 11), end: now }, { weekStartsOn: 1 });
-    return last12Weeks.map(weekStart => {
+    // Use context date range for weekly intervals
+    const weeksInRange = eachWeekOfInterval({ start: startOfWeek(filterStartDate, { weekStartsOn: 1 }), end: filterEndDate }, { weekStartsOn: 1 });
+    return weeksInRange.map(weekStart => {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      // Clip to the filter range to handle partial weeks
+      const effectiveStart = weekStart < filterStartDate ? filterStartDate : weekStart;
+      const effectiveEnd = weekEnd > filterEndDate ? filterEndDate : weekEnd;
       // Only include shipped+paid orders for accurate revenue/profit
       const weekOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        const inRange = orderDate >= weekStart && orderDate <= weekEnd;
+        const inRange = orderDate >= effectiveStart && orderDate <= effectiveEnd;
         const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         return inRange && isCompleted;
       });
@@ -302,16 +276,20 @@ export default function SalesReports() {
         avgOrderValue: weekOrders.length > 0 ? revenue / weekOrders.length : 0,
       };
     });
-  }, [orders, orderItems, products, now]);
+  }, [orders, orderItems, filterStartDate, filterEndDate]);
 
   const monthlySalesData = useMemo(() => {
-    const last12Months = eachMonthOfInterval({ start: subMonths(now, 11), end: now });
-    return last12Months.map(monthStart => {
+    // Use context date range for monthly intervals
+    const monthsInRange = eachMonthOfInterval({ start: startOfMonth(filterStartDate), end: filterEndDate });
+    return monthsInRange.map(monthStart => {
       const monthEnd = endOfMonth(monthStart);
+      // Clip to the filter range to handle partial months
+      const effectiveStart = monthStart < filterStartDate ? filterStartDate : monthStart;
+      const effectiveEnd = monthEnd > filterEndDate ? filterEndDate : monthEnd;
       // Only include shipped+paid orders for accurate revenue/profit
       const monthOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        const inRange = orderDate >= monthStart && orderDate <= monthEnd;
+        const inRange = orderDate >= effectiveStart && orderDate <= effectiveEnd;
         const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         return inRange && isCompleted;
       });
@@ -334,7 +312,7 @@ export default function SalesReports() {
         profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
       };
     });
-  }, [orders, orderItems, products, now]);
+  }, [orders, orderItems, filterStartDate, filterEndDate]);
 
   const dayOfWeekAnalysis = useMemo((): DayOfWeekSales[] => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -592,81 +570,8 @@ export default function SalesReports() {
         description={t('salesReportsDesc')}
         onExportExcel={handleExportExcel}
         onExportPDF={handleExportPDF}
+        showDateFilter
       />
-
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="flex items-center gap-2">
-          <Label className="text-sm font-medium">{t('period')}:</Label>
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[180px]" data-testid="select-date-range">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('allTime')}</SelectItem>
-              <SelectItem value="today">{t('today')}</SelectItem>
-              <SelectItem value="week">{t('thisWeek')}</SelectItem>
-              <SelectItem value="month">{t('thisMonth')}</SelectItem>
-              <SelectItem value="year">{t('thisYear')}</SelectItem>
-              <SelectItem value="lastYear">{t('lastYear')}</SelectItem>
-              <SelectItem value="custom">{t('customPeriod')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {dateRange === 'custom' && (
-          <Popover open={isCustomPickerOpen} onOpenChange={setIsCustomPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2" data-testid="button-custom-date-picker">
-                <Calendar className="h-4 w-4" />
-                {customStartDate && customEndDate ? (
-                  <span>{format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}</span>
-                ) : (
-                  <span>{t('selectDates')}</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-4" align="start">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('startDate')}</Label>
-                  <CalendarPicker
-                    mode="single"
-                    selected={customStartDate}
-                    onSelect={setCustomStartDate}
-                    disabled={(date) => customEndDate ? date > customEndDate : false}
-                    initialFocus
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('endDate')}</Label>
-                  <CalendarPicker
-                    mode="single"
-                    selected={customEndDate}
-                    onSelect={setCustomEndDate}
-                    disabled={(date) => customStartDate ? date < customStartDate : false}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end mt-4">
-                <Button 
-                  size="sm" 
-                  onClick={() => setIsCustomPickerOpen(false)}
-                  disabled={!customStartDate || !customEndDate}
-                  data-testid="button-apply-dates"
-                >
-                  {tCommon('apply')}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-
-        {dateRange !== 'all' && (
-          <Badge variant="secondary" className="text-xs">
-            {t('filteredData')}: {format(filterStartDate, 'dd/MM/yyyy')} - {format(filterEndDate, 'dd/MM/yyyy')}
-          </Badge>
-        )}
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">

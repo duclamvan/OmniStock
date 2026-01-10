@@ -1,26 +1,30 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
+import { useReports } from "@/contexts/ReportsContext";
+import { ReportHeader } from "@/components/reports/ReportHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ShoppingCart, DollarSign, TrendingUp, Calendar,
   Search, Package
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
-import { format, startOfDay, endOfDay, subDays } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 
 export default function POSSalesReports() {
   const { t } = useTranslation('reports');
   const { t: tCommon } = useTranslation('common');
   const { formatCurrency: formatLocalizedCurrency } = useLocalization();
-  const [dateRange, setDateRange] = useState<string>("all");
+  const { getDateRangeValues } = useReports();
   const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // Use shared date range from ReportsContext
+  const { start: filterStartDate, end: filterEndDate } = getDateRangeValues();
 
   const { data: orders = [], isLoading } = useQuery<any[]>({ 
     queryKey: ['/api/orders', 'channel', 'pos'],
@@ -43,24 +47,6 @@ export default function POSSalesReports() {
   });
 
   const now = useMemo(() => new Date(), []);
-
-  const getDateRange = () => {
-    const today = new Date();
-    switch (dateRange) {
-      case 'today':
-        return { start: startOfDay(today), end: endOfDay(today) };
-      case 'week':
-        return { start: startOfDay(subDays(today, 7)), end: endOfDay(today) };
-      case 'month':
-        return { start: startOfDay(subDays(today, 30)), end: endOfDay(today) };
-      case 'year':
-        return { start: startOfDay(subDays(today, 365)), end: endOfDay(today) };
-      default:
-        return { start: new Date(0), end: today };
-    }
-  };
-
-  const { start: filterStartDate, end: filterEndDate } = getDateRange();
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order: any) => {
@@ -176,10 +162,11 @@ export default function POSSalesReports() {
 
   return (
     <div className="space-y-6" data-testid="pos-sales-reports">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{t('posSalesReport')}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{t('businessOverviewDesc')}</p>
-      </div>
+      <ReportHeader
+        title={t('posSalesReport')}
+        description={t('businessOverviewDesc')}
+        showDateFilter
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card data-testid="card-total-pos-sales">
@@ -239,29 +226,15 @@ export default function POSSalesReports() {
               <CardTitle>{t('posSales')}</CardTitle>
               <CardDescription>{t('salesReportsDesc')}</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={tCommon('search')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full sm:w-64"
-                  data-testid="input-search-pos"
-                />
-              </div>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-full sm:w-40" data-testid="select-date-range">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allTime')}</SelectItem>
-                  <SelectItem value="today">{t('today')}</SelectItem>
-                  <SelectItem value="week">{t('last7Days')}</SelectItem>
-                  <SelectItem value="month">{t('last30Days')}</SelectItem>
-                  <SelectItem value="year">{t('lastYear')}</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={tCommon('search')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full sm:w-64"
+                data-testid="input-search-pos"
+              />
             </div>
           </div>
         </CardHeader>

@@ -205,16 +205,51 @@ export default function FinancialReports() {
     );
   }, [orders, orderItems, products, expenses, now]);
 
+  // Filtered metrics based on context date range
+  const filteredMetrics = useMemo(() => {
+    // For comparison, use the same duration in the previous period
+    const duration = endDate.getTime() - startDate.getTime();
+    const prevEndDate = new Date(startDate.getTime() - 1);
+    const prevStartDate = new Date(prevEndDate.getTime() - duration);
+    
+    return calculatePeriodMetrics(startDate, endDate, prevStartDate, prevEndDate);
+  }, [orders, orderItems, products, expenses, startDate, endDate]);
+
+  // Filter orders by context date range for charts and analysis
+  const filteredOrders = useMemo(() => {
+    return (orders as any[]).filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
+  }, [orders, startDate, endDate]);
+
+  const filteredOrderItems = useMemo(() => {
+    const orderIds = new Set(filteredOrders.map((o: any) => o.id));
+    return (orderItems as any[]).filter((item: any) => orderIds.has(item.orderId));
+  }, [orderItems, filteredOrders]);
+
+  const filteredExpenses = useMemo(() => {
+    return (expenses as any[]).filter((exp: any) => {
+      const expDate = new Date(exp.createdAt || exp.date);
+      return expDate >= startDate && expDate <= endDate;
+    });
+  }, [expenses, startDate, endDate]);
+
   const monthlyData = useMemo(() => {
     if (isLoading) return [];
-    const last12Months = eachMonthOfInterval({ start: subMonths(now, 11), end: now });
+    // Use context date range for monthly intervals
+    const monthsInRange = eachMonthOfInterval({ start: startOfMonth(startDate), end: endDate });
     
-    return last12Months.map(monthStart => {
+    return monthsInRange.map(monthStart => {
       const monthEnd = endOfMonth(monthStart);
+      // Clip to the filter range to handle partial months
+      const effectiveStart = monthStart < startDate ? startDate : monthStart;
+      const effectiveEnd = monthEnd > endDate ? endDate : monthEnd;
+      
       // Only include shipped+paid orders for accurate revenue/profit
       const monthOrders = (orders as any[]).filter((order: any) => {
         const orderDate = new Date(order.createdAt);
-        const inRange = orderDate >= monthStart && orderDate <= monthEnd;
+        const inRange = orderDate >= effectiveStart && orderDate <= effectiveEnd;
         const isCompleted = order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         return inRange && isCompleted;
       });
@@ -232,7 +267,7 @@ export default function FinancialReports() {
       
       const monthExpenses = (expenses as any[]).filter((exp: any) => {
         const expDate = new Date(exp.createdAt || exp.date);
-        return expDate >= monthStart && expDate <= monthEnd;
+        return expDate >= effectiveStart && expDate <= effectiveEnd;
       }).reduce((sum, exp: any) => sum + convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency || 'CZK'), 0);
       
       const totalCosts = costs + monthExpenses;
@@ -248,7 +283,7 @@ export default function FinancialReports() {
         orders: monthOrders.length,
       };
     });
-  }, [orders, orderItems, products, expenses, isLoading, now]);
+  }, [orders, orderItems, products, expenses, isLoading, startDate, endDate]);
 
   const cashFlowData = useMemo(() => {
     return monthlyData.map((m, index) => {
@@ -262,10 +297,11 @@ export default function FinancialReports() {
   }, [monthlyData]);
 
   const financialRatios = useMemo(() => {
-    const totalRevenue = yearMetrics.revenue;
-    const totalProfit = yearMetrics.profit;
-    const totalCosts = yearMetrics.costs;
-    const totalOrders = yearMetrics.orders;
+    // Use filtered metrics based on context date range for accurate ratios
+    const totalRevenue = filteredMetrics.revenue;
+    const totalProfit = filteredMetrics.profit;
+    const totalCosts = filteredMetrics.costs;
+    const totalOrders = filteredMetrics.orders;
     
     return {
       grossMargin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0,
@@ -274,12 +310,13 @@ export default function FinancialReports() {
       profitPerOrder: totalOrders > 0 ? totalProfit / totalOrders : 0,
       costEfficiency: totalRevenue > 0 ? ((totalRevenue - totalCosts) / totalRevenue) * 100 : 0,
     };
-  }, [yearMetrics]);
+  }, [filteredMetrics]);
 
   const revenueByCurrencyData = useMemo(() => {
     const currencyTotals: { [key: string]: number } = { CZK: 0, EUR: 0, USD: 0 };
     
-    (orders as any[]).forEach((order: any) => {
+    // Use filtered orders based on context date range
+    filteredOrders.forEach((order: any) => {
       const revenue = parseFloat(order.grandTotal || '0');
       if (currencyTotals[order.currency] !== undefined) {
         currencyTotals[order.currency] += revenue;
@@ -291,18 +328,19 @@ export default function FinancialReports() {
         .filter(([_, value]) => value > 0)
         .map(([name, value]) => ({ name, value: convertToBaseCurrency(value, name as any) }))
     );
-  }, [orders]);
+  }, [filteredOrders]);
 
   const costBreakdownData = useMemo(() => {
+    // Use filtered data based on context date range
     let productCosts = 0;
-    (orderItems as any[]).forEach((item: any) => {
+    filteredOrderItems.forEach((item: any) => {
       const product = (products as any[]).find((p: any) => p.id === item.productId);
       if (product) {
         productCosts += parseFloat(product.importCostCzk || '0') * (item.quantity || 0);
       }
     });
 
-    const expenseCosts = (expenses as any[]).reduce((sum, exp: any) => {
+    const expenseCosts = filteredExpenses.reduce((sum, exp: any) => {
       return sum + convertToBaseCurrency(parseFloat(exp.amount || '0'), exp.currency);
     }, 0);
 
@@ -310,7 +348,7 @@ export default function FinancialReports() {
       { name: t('productCosts'), value: productCosts },
       { name: t('expenses'), value: expenseCosts },
     ].filter(d => d.value > 0));
-  }, [orderItems, products, expenses, t]);
+  }, [filteredOrderItems, products, filteredExpenses, t]);
 
   const handleExportExcel = () => {
     try {
