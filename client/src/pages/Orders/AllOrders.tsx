@@ -2249,12 +2249,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               expandable={{
                 render: (order) => (
                   <div 
-                    className={cn(
-                      "space-y-4 max-w-4xl p-2 rounded-lg transition-all duration-300",
-                      highlightedOrderId === order.id 
-                        ? "ring-2 ring-green-500 ring-offset-2 bg-green-50 dark:bg-green-900/20" 
-                        : "ring-0 ring-transparent"
-                    )} 
+                    className="space-y-4 max-w-4xl p-2 rounded-lg"
                     data-expanded-order={order.id}
                   >
                     {/* Customer Info Header */}

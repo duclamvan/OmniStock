@@ -472,7 +472,7 @@ export function DataTable<T>({
                     className={cn(
                       onRowClick && "cursor-pointer hover:bg-muted/50",
                       isExpanded && "border-b-0",
-                      isHighlighted && "ring-2 ring-green-500 ring-inset bg-green-50 dark:bg-green-900/20"
+                      isHighlighted && "bg-blue-50/50 dark:bg-blue-900/10 transition-colors duration-300"
                     )}
                   >
                     {bulkActions && (
