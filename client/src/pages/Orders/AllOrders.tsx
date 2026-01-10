@@ -514,11 +514,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     });
   };
 
-  // Scroll navigation for expanded orders
+  // Scroll navigation for order rows
   const scrollToExpandedOrder = useCallback((direction: 'next' | 'prev') => {
-    // Get all expanded order rows by data attribute
-    const expandedRows = Array.from(document.querySelectorAll('[data-expanded-order]')) as HTMLElement[];
-    if (expandedRows.length === 0) return;
+    // Get all order rows by data-row-id attribute (added by DataTable)
+    const orderRows = Array.from(document.querySelectorAll('[data-row-id]')) as HTMLElement[];
+    if (orderRows.length === 0) return;
 
     const offset = 150; // Offset for header
     const currentScrollTop = window.scrollY + offset;
@@ -528,8 +528,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
     if (direction === 'next') {
       // Find the first row that is below current scroll position
-      for (let i = 0; i < expandedRows.length; i++) {
-        const rowTop = expandedRows[i].offsetTop;
+      for (let i = 0; i < orderRows.length; i++) {
+        const rowTop = orderRows[i].offsetTop;
         if (rowTop > currentScrollTop + threshold) {
           targetIndex = i;
           break;
@@ -541,8 +541,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       }
     } else {
       // Find the last row that is above current scroll position
-      for (let i = expandedRows.length - 1; i >= 0; i--) {
-        const rowTop = expandedRows[i].offsetTop;
+      for (let i = orderRows.length - 1; i >= 0; i--) {
+        const rowTop = orderRows[i].offsetTop;
         if (rowTop < currentScrollTop - threshold) {
           targetIndex = i;
           break;
@@ -550,13 +550,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       }
       // If none found, wrap to last
       if (targetIndex === -1) {
-        targetIndex = expandedRows.length - 1;
+        targetIndex = orderRows.length - 1;
       }
     }
 
     // Get the order ID from the target element and highlight it
-    const targetElement = expandedRows[targetIndex];
-    const orderId = targetElement.getAttribute('data-expanded-order');
+    const targetElement = orderRows[targetIndex];
+    const orderId = targetElement.getAttribute('data-row-id');
     if (orderId) {
       // Clear any existing timeout before setting new one
       if (highlightTimeoutRef.current) {
@@ -2245,6 +2245,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
               defaultExpandAll={expandAll}
+              highlightedRowId={highlightedOrderId}
               expandable={{
                 render: (order) => (
                   <div 

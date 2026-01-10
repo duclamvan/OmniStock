@@ -72,6 +72,7 @@ interface DataTableProps<T> {
     bulkActions: BulkAction<T>[];
     clearSelection: () => void;
   }) => React.ReactNode;
+  highlightedRowId?: string | null;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -91,6 +92,7 @@ export function DataTable<T>({
   compact = false,
   tableId,
   renderBulkActions,
+  highlightedRowId,
 }: DataTableProps<T>) {
   const { t } = useTranslation(['common']);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -461,13 +463,16 @@ export function DataTable<T>({
                 const isSelected = selectedRows.has(key);
                 const isExpanded = expandedRows.has(key);
                 
+                const isHighlighted = highlightedRowId === key;
                 const elements = [
                   <TableRow 
                     key={key}
                     data-state={isSelected && "selected"}
+                    data-row-id={key}
                     className={cn(
                       onRowClick && "cursor-pointer hover:bg-muted/50",
-                      isExpanded && "border-b-0"
+                      isExpanded && "border-b-0",
+                      isHighlighted && "ring-2 ring-green-500 ring-inset bg-green-50 dark:bg-green-900/20"
                     )}
                   >
                     {bulkActions && (
