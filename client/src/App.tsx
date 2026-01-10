@@ -60,6 +60,7 @@ import EditTicket from "@/pages/Tickets/EditTicket";
 import TicketDetails from "@/pages/Tickets/TicketDetails";
 import Notifications from "@/pages/Notifications";
 import POS from "@/pages/POS/POS";
+import POSSales from "@/pages/POS/POSSales";
 import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import AddPreOrder from "@/pages/PreOrders/AddPreOrder";
 import PreOrderDetails from "@/pages/PreOrders/PreOrderDetails";
@@ -347,6 +348,7 @@ function Router() {
         <Route path="/stock/over-allocated" component={StockInconsistencies} />
         <Route path="/stock/under-allocated" component={StockInconsistencies} />
         <Route path="/pos" component={POS} />
+        <Route path="/pos/sales" component={POSSales} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/shipping/labels" component={ShipmentLabels} />
         <Route path="/files">

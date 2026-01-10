@@ -20,7 +20,8 @@ import {
   Wrench,
   Ticket,
   ClipboardList,
-  Factory
+  Factory,
+  Store
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -126,6 +127,15 @@ const navigation: NavItem[] = [
     children: [
       { labelKey: "stockLookup", href: "/stock", namespace: "inventory" },
       { labelKey: "adjustmentApprovals", href: "/stock/approvals", namespace: "inventory" },
+    ],
+  },
+  {
+    labelKey: "warehouseOperations",
+    icon: Store,
+    namespace: "common",
+    children: [
+      { labelKey: "pointOfSale", href: "/pos", namespace: "common" },
+      { labelKey: "posSales", href: "/pos/sales", namespace: "common" },
     ],
   },
   {
