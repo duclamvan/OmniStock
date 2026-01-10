@@ -53,6 +53,8 @@ export default function POSSalesReports() {
         return { start: startOfDay(subDays(today, 7)), end: endOfDay(today) };
       case 'month':
         return { start: startOfDay(subDays(today, 30)), end: endOfDay(today) };
+      case 'year':
+        return { start: startOfDay(subDays(today, 365)), end: endOfDay(today) };
       default:
         return { start: new Date(0), end: today };
     }
@@ -117,18 +119,18 @@ export default function POSSalesReports() {
   const todayEnd = endOfDay(now);
 
   const metrics = useMemo(() => {
-    const totalSales = orders.length;
-    const totalRevenue = orders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
+    const totalSales = filteredOrders.length;
+    const totalRevenue = filteredOrders.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
     const avgSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
     
-    const todaySales = orders.filter((order: any) => {
+    const todaySales = filteredOrders.filter((order: any) => {
       const orderDate = new Date(order.createdAt);
       return orderDate >= todayStart && orderDate <= todayEnd;
     });
     const todayRevenue = todaySales.reduce((sum, o: any) => sum + parseFloat(o.grandTotal || '0'), 0);
 
     return { totalSales, totalRevenue, avgSaleValue, todaySalesCount: todaySales.length, todayRevenue };
-  }, [orders, todayStart, todayEnd]);
+  }, [filteredOrders, todayStart, todayEnd]);
 
   const getCustomerName = (customerId: number | null) => {
     if (!customerId) return t('walkInCustomer');
@@ -257,6 +259,7 @@ export default function POSSalesReports() {
                   <SelectItem value="today">{t('today')}</SelectItem>
                   <SelectItem value="week">{t('last7Days')}</SelectItem>
                   <SelectItem value="month">{t('last30Days')}</SelectItem>
+                  <SelectItem value="year">{t('lastYear')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
