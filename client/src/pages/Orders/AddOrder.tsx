@@ -88,7 +88,9 @@ import {
   EyeOff,
   Check,
   TicketCheck,
-  Link2
+  Link2,
+  AlertTriangle,
+  UserCheck
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -597,6 +599,10 @@ export default function AddOrder() {
   
   // Track if Facebook Name has been manually edited
   const [facebookNameManuallyEdited, setFacebookNameManuallyEdited] = useState(false);
+  
+  // Duplicate customer detection for new customer form
+  const [duplicateCustomer, setDuplicateCustomer] = useState<any>(null);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   
   const [rawNewCustomerAddress, setRawNewCustomerAddress] = useState("");
 
@@ -1521,6 +1527,46 @@ export default function AddOrder() {
       fetchFacebookProfileMutation.mutate(url);
     }
   };
+
+  // Check for duplicate customer when facebookUrl changes
+  useEffect(() => {
+    const checkDuplicate = async () => {
+      const facebookId = extractFacebookId(newCustomer.facebookUrl);
+      
+      if (!facebookId || facebookId.length < 2) {
+        setDuplicateCustomer(null);
+        setIsCheckingDuplicate(false);
+        return;
+      }
+      
+      setIsCheckingDuplicate(true);
+      
+      try {
+        const response = await fetch(`/api/customers/check-duplicate/${encodeURIComponent(facebookId)}`);
+        if (!response.ok) {
+          setDuplicateCustomer(null);
+          setIsCheckingDuplicate(false);
+          return;
+        }
+        
+        const data = await response.json();
+        if (data.exists && data.customer) {
+          setDuplicateCustomer(data.customer);
+        } else {
+          setDuplicateCustomer(null);
+        }
+      } catch (error) {
+        console.error('Error checking duplicate customer:', error);
+        setDuplicateCustomer(null);
+      } finally {
+        setIsCheckingDuplicate(false);
+      }
+    };
+    
+    // Debounce the check
+    const timeoutId = setTimeout(checkDuplicate, 500);
+    return () => clearTimeout(timeoutId);
+  }, [newCustomer.facebookUrl]);
 
   // Smart Paste mutation for new customer address
   const parseNewCustomerAddressMutation = useMutation({
@@ -5742,6 +5788,89 @@ export default function AddOrder() {
                             </>
                           )}
                         </Button>
+                      </div>
+                    )}
+                    
+                    {/* Duplicate Customer Warning */}
+                    {duplicateCustomer && (
+                      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">
+                              Customer already exists
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              {duplicateCustomer.profilePictureUrl ? (
+                                <img 
+                                  src={duplicateCustomer.profilePictureUrl} 
+                                  alt={duplicateCustomer.name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
+                                  <User className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                                  {duplicateCustomer.name}
+                                </div>
+                                {duplicateCustomer.facebookName && (
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                                    Facebook: {duplicateCustomer.facebookName}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="default"
+                              className="bg-amber-600 hover:bg-amber-700 text-white"
+                              onClick={() => {
+                                // Select this customer instead of creating new
+                                setSelectedCustomer(duplicateCustomer);
+                                setShowNewCustomerForm(false);
+                                setDuplicateCustomer(null);
+                                setNewCustomer({
+                                  name: "",
+                                  facebookName: "",
+                                  facebookUrl: "",
+                                  profilePictureUrl: "",
+                                  email: "",
+                                  phone: "",
+                                  street: "",
+                                  streetNumber: "",
+                                  city: "",
+                                  state: "",
+                                  zipCode: "",
+                                  country: "",
+                                  company: "",
+                                  firstName: "",
+                                  lastName: "",
+                                  pickupPoint: "",
+                                  type: "regular"
+                                });
+                                toast({
+                                  title: "Customer selected",
+                                  description: `Selected existing customer: ${duplicateCustomer.name}`,
+                                });
+                              }}
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Select Customer
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Checking duplicate indicator */}
+                    {isCheckingDuplicate && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Checking for existing customer...
                       </div>
                     )}
                   </div>
