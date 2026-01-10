@@ -120,8 +120,26 @@ import { useRealTimeOrder } from "@/hooks/useSocket";
 import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
 
 function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
+  const { t } = useTranslation(['common', 'orders']);
   const receiptData = useOrderReceiptData(order, order?.currency || 'EUR');
-  if (!receiptData) return null;
+  
+  if (!receiptData || !receiptData.items || receiptData.items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+        <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-3 mb-4">
+          <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">{t('orders:noItemsToDisplay', 'No Items to Display')}</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t('orders:cannotGenerateReceiptNoItems', 'Cannot generate receipt because this order has no items.')}
+        </p>
+        <Button variant="outline" onClick={onClose}>
+          {t('common:close')}
+        </Button>
+      </div>
+    );
+  }
+  
   return <ThermalReceipt data={receiptData} onClose={onClose} companyInfo={companyInfo} fullOrderId={order?.id} />;
 }
 
