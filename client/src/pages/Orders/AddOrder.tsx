@@ -3891,6 +3891,14 @@ export default function AddOrder() {
     // Check if the search query is a Facebook URL
     const extractedFbId = extractFacebookId(debouncedCustomerSearch);
     
+    // DEBUG: Log what we're searching for
+    console.log('[CustomerSearch] Query:', debouncedCustomerSearch, 'Extracted FB ID:', extractedFbId);
+    console.log('[CustomerSearch] Total customers:', allCustomers.length);
+    
+    // DEBUG: Log customers with facebookUrl
+    const customersWithFbUrl = allCustomers.filter((c: any) => c.facebookUrl);
+    console.log('[CustomerSearch] Customers with facebookUrl:', customersWithFbUrl.map((c: any) => ({ name: c.name, facebookUrl: c.facebookUrl, facebookId: c.facebookId })));
+    
     if (extractedFbId) {
       // Search by facebookId, facebookName, or facebookUrl containing the extracted ID
       const exactMatches = allCustomers.filter((customer: any) => {
@@ -3902,6 +3910,8 @@ export default function AddOrder() {
         if (customer.facebookUrl && customer.facebookUrl.toLowerCase().includes(extractedFbId.toLowerCase())) return true;
         return false;
       });
+      
+      console.log('[CustomerSearch] Exact matches found:', exactMatches.length);
       
       if (exactMatches.length > 0) {
         return exactMatches;
