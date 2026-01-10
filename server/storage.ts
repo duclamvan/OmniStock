@@ -3676,6 +3676,29 @@ export class DatabaseStorage implements IStorage {
 
       const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
 
+      // PRIORITY 1: If a Facebook ID was extracted from a URL, do exact match first
+      if (extractedFacebookId) {
+        const allCustomers = await this.getCustomers();
+        const exactMatches = allCustomers.filter(customer => {
+          // Check if extracted ID matches customer's facebookId exactly
+          if (customer.facebookId && customer.facebookId.toLowerCase() === extractedFacebookId.toLowerCase()) {
+            return true;
+          }
+          // Check if extracted ID matches the ID in customer's facebookUrl
+          const customerExtractedId = customer.facebookUrl ? extractFacebookIdFromUrl(customer.facebookUrl) : null;
+          if (customerExtractedId && customerExtractedId.toLowerCase() === extractedFacebookId.toLowerCase()) {
+            return true;
+          }
+          return false;
+        });
+        
+        // If we found exact matches, return only those
+        if (exactMatches.length > 0) {
+          return exactMatches;
+        }
+        // If no exact matches, fall through to fuzzy search
+      }
+
       // Fuzzy search scoring function
       const calculateScore = (text: string, query: string): number => {
         const normalizedText = normalizeVietnamese(text.toLowerCase());
@@ -3713,21 +3736,7 @@ export class DatabaseStorage implements IStorage {
           const facebookUrlScore = calculateScore(customer.facebookUrl || '', normalizedQuery);
           const facebookNameScore = calculateScore(customer.facebookName || '', normalizedQuery);
           
-          // If user pasted a Facebook URL, also check if extracted ID matches the customer's facebookId or facebookUrl
-          let extractedIdScore = 0;
-          if (extractedFacebookId) {
-            // Check if extracted ID matches customer's facebookId
-            if (customer.facebookId && customer.facebookId.toLowerCase() === extractedFacebookId.toLowerCase()) {
-              extractedIdScore = 100; // Exact match
-            }
-            // Check if extracted ID is in customer's facebookUrl
-            const customerExtractedId = customer.facebookUrl ? extractFacebookIdFromUrl(customer.facebookUrl) : null;
-            if (customerExtractedId && customerExtractedId.toLowerCase() === extractedFacebookId.toLowerCase()) {
-              extractedIdScore = 100; // Exact match via URL
-            }
-          }
-          
-          const maxScore = Math.max(nameScore, emailScore, facebookIdScore, facebookUrlScore, facebookNameScore, extractedIdScore);
+          const maxScore = Math.max(nameScore, emailScore, facebookIdScore, facebookUrlScore, facebookNameScore);
 
           return {
             customer,
