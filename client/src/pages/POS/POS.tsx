@@ -1487,95 +1487,36 @@ export default function POS() {
 
       {/* Cash Payment Dialog - Enhanced for older users */}
       <Dialog open={showCashDialog} onOpenChange={setShowCashDialog}>
-        <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden">
-          {/* Header with Icon */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-full">
-                <Banknote className="h-8 w-8" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">{t('pos:cashPayment', 'Cash Payment')}</h2>
-                <p className="text-white/80 text-sm">{t('pos:enterAmountReceived', 'Enter amount received from customer')}</p>
-              </div>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-emerald-600 p-6 text-white">
+            <div className="flex items-center gap-3 mb-1">
+              <Banknote className="h-6 w-6" />
+              <DialogTitle className="text-xl font-bold">{t('financial:cashPayment')}</DialogTitle>
             </div>
+            <DialogDescription className="text-emerald-50/90 text-sm">
+              {t('pos:enterAmountReceived', 'Enter amount received from customer')}
+            </DialogDescription>
           </div>
-          
-          <div className="p-4 space-y-4">
-            {/* Total Due - Hero Block */}
-            <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-center">
-              <p className="text-sm font-medium text-muted-foreground mb-1">
+
+          <div className="p-6 space-y-6 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border shadow-sm flex flex-col items-center justify-center text-center">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
                 {t('pos:totalDue', 'Total Due')} / Cần thu
               </p>
-              <p className="text-4xl font-bold text-primary tabular-nums">
+              <p className="text-4xl font-black text-slate-900 dark:text-white">
                 {total.toFixed(2)} {currencySymbol}
               </p>
             </div>
 
-            {/* Customer Pays Section */}
             <div className="space-y-3">
-              <p className="text-sm font-medium text-muted-foreground">
+              <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                 {t('pos:customerPays', 'Customer Pays')} / Khách đưa
-              </p>
-              
-              {/* Quick Amount Buttons - Large Touch Targets */}
-              <div className="grid grid-cols-3 gap-2">
-                {/* Exact Amount Button */}
-                <Button
-                  variant={cashReceived === total.toFixed(2) ? "default" : "outline"}
-                  className="h-16 text-base font-bold flex-col gap-0.5"
-                  onClick={() => setCashReceived(total.toFixed(2))}
-                  data-testid="button-exact-amount"
-                >
-                  <span className="text-xs opacity-70">{t('pos:exact', 'Exact')}</span>
-                  <span className="tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
-                </Button>
-                
-                {/* Rounded to nearest integer */}
-                {(() => {
-                  const roundedUp = Math.ceil(total);
-                  if (roundedUp > total) {
-                    return (
-                      <Button
-                        variant={cashReceived === roundedUp.toString() ? "default" : "outline"}
-                        className="h-16 text-lg font-bold"
-                        onClick={() => setCashReceived(roundedUp.toString())}
-                        data-testid={`button-quick-cash-${roundedUp}`}
-                      >
-                        {roundedUp} {currencySymbol}
-                      </Button>
-                    );
-                  }
-                  return null;
-                })()}
-                
-                {/* Rounded to nearest 10 */}
-                {(() => {
-                  const roundedUp10 = Math.ceil(total / 10) * 10;
-                  const roundedUp = Math.ceil(total);
-                  if (roundedUp10 > roundedUp) {
-                    return (
-                      <Button
-                        variant={cashReceived === roundedUp10.toString() ? "default" : "outline"}
-                        className="h-16 text-lg font-bold"
-                        onClick={() => setCashReceived(roundedUp10.toString())}
-                        data-testid={`button-quick-cash-${roundedUp10}`}
-                      >
-                        {roundedUp10} {currencySymbol}
-                      </Button>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-              
-              {/* Custom Amount Input - Auto-focused with select all on focus */}
-              <div className="relative">
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
-                  {currencySymbol}
-                </div>
+              </Label>
+              <div className="relative group">
                 <Input
-                  type="number"
+                  autoFocus
+                  type="text"
+                  inputMode="decimal"
                   value={cashReceived}
                   onChange={(e) => setCashReceived(e.target.value)}
                   onFocus={(e) => e.target.select()}
@@ -1586,7 +1527,86 @@ export default function POS() {
                       handleCashPayment();
                     }
                   }}
+                  className="h-20 text-4xl font-bold text-center border-2 focus-visible:ring-emerald-500 border-slate-200 dark:border-slate-700 rounded-xl transition-all"
                   placeholder="0.00"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
+                  {currencySymbol}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-12 font-bold border-2 border-emerald-100 hover:bg-emerald-50 text-emerald-700"
+                  onClick={() => setCashReceived(total.toFixed(2))}
+                >
+                  {t('pos:exact', 'Exact')} {total.toFixed(2)}
+                </Button>
+                {(() => {
+                  const roundedUp = Math.ceil(total);
+                  if (roundedUp > total) {
+                    return (
+                      <Button
+                        variant="outline"
+                        className="h-12 font-bold border-2"
+                        onClick={() => setCashReceived(roundedUp.toString())}
+                      >
+                        {roundedUp} {currencySymbol}
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+
+            {parseDecimal(cashReceived) > total && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <RotateCcw className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">
+                    {t('pos:changeToGive', 'Change to Give')} / Tiền thối
+                  </span>
+                </div>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(parseDecimal(cashReceived) - total, currency)}
+                </span>
+              </div>
+            )}
+
+            <div className="pt-2">
+              <Button 
+                size="lg" 
+                className="w-full h-16 text-xl font-bold bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none"
+                disabled={createOrderMutation.isPending || parseDecimal(cashReceived || '0') < total}
+                onClick={() => handleCashPayment()}
+              >
+                {createOrderMutation.isPending ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-6 w-6" />
+                    <span>{t('pos:completeSale', 'Complete Sale')}</span>
+                    <span className="text-sm font-normal opacity-70 ml-2">(Enter)</span>
+                  </div>
+                )}
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full mt-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowCashDialog(false)}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {t('common:back')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
                   className="h-16 text-3xl font-bold text-center pl-4 pr-16 tabular-nums"
                   autoFocus
                   data-testid="input-cash-amount"

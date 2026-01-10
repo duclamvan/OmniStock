@@ -251,6 +251,7 @@ const common = {
   darkMode: 'Chế độ tối',
   lightMode: 'Chế độ sáng',
   language: 'Ngôn ngữ',
+  orderId: 'Mã đơn hàng',
   previousSlide: 'Trang trước',
   nextSlide: 'Trang sau',
   allCurrencies: 'Tất cả tiền tệ',

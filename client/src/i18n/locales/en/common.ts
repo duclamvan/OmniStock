@@ -274,6 +274,7 @@ const common = {
   darkMode: 'Dark Mode',
   lightMode: 'Light Mode',
   language: 'Language',
+  orderId: 'Order ID',
   previousSlide: 'Previous slide',
   nextSlide: 'Next slide',
   allCurrencies: 'All Currencies',

@@ -319,7 +319,7 @@ export default function POSSales() {
   const columns = [
     {
       key: 'orderId',
-      header: t('orders:orderId'),
+      header: t('common:orderId'),
       sortable: true,
       cell: (sale: POSSale) => (
         <span className="font-mono text-sm">{sale.orderId || sale.id.slice(0, 8)}</span>
