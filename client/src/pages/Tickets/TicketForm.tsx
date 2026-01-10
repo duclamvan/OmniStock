@@ -83,6 +83,7 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
     const params = new URLSearchParams(window.location.search);
     return {
       orderId: params.get('orderId') || undefined,
+      customerId: params.get('customerId') || undefined,
     };
   }, []);
 
@@ -148,6 +149,20 @@ export default function TicketForm({ ticket, mode }: TicketFormProps) {
       }
     }
   }, [mode, urlParams.orderId, orders, customers, form]);
+
+  // Auto-fill customer from URL parameters (for creating ticket from Customer Details)
+  useEffect(() => {
+    if (mode !== 'add') return; // Only in add mode
+    if (!urlParams.customerId) return; // Only if customerId in URL
+    if (urlParams.orderId) return; // Don't override if orderId is also present
+    if (!customers.length) return; // Wait for data to load
+
+    const customer = customers.find((c: any) => c.id === urlParams.customerId);
+    if (customer) {
+      form.setValue('customerId', customer.id);
+      setCustomerSearch(customer.name);
+    }
+  }, [mode, urlParams.customerId, urlParams.orderId, customers, form]);
 
   // AI Subject Generation function
   const generateSubject = async (descriptionText: string) => {
