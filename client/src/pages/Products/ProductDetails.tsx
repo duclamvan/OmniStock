@@ -46,7 +46,8 @@ import {
   Settings2,
   History,
   Minus,
-  ExternalLink
+  ExternalLink,
+  GitBranch
 } from "lucide-react";
 import {
   Dialog,
@@ -119,6 +120,14 @@ export default function ProductDetails() {
     queryKey: ['/api/bundles'],
     staleTime: 5 * 60 * 1000,
   });
+  const { data: recipeData } = useQuery<any>({
+    queryKey: ['/api/products', id, 'recipe'],
+    enabled: !!id,
+  });
+  const { data: allProducts = [] } = useQuery<any[]>({
+    queryKey: ['/api/products'],
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Calculate cost trend from history
   const costTrend = (() => {
@@ -171,6 +180,11 @@ export default function ProductDetails() {
     },
   });
 
+  // Check if BOM section should be shown
+  const bomIngredients = recipeData?.ingredients || [];
+  const hasBomData = bomIngredients.length > 0 || product?.parentProductId;
+  const parentProduct = product?.parentProductId ? allProducts.find((p: any) => p.id === product.parentProductId) : null;
+
   // Build navigation sections dynamically
   const navSections: NavSection[] = [
     { id: 'overview', label: t('products:overview', 'Overview'), icon: Info },
@@ -180,6 +194,7 @@ export default function ProductDetails() {
     { id: 'warehouse', label: t('common:warehouseLocation', 'Warehouse'), icon: Warehouse },
     ...(variants.length > 0 ? [{ id: 'variants', label: t('products:variantsTab', 'Variants'), icon: Sparkles }] : []),
     ...(tieredPricing.length > 0 ? [{ id: 'tiered', label: t('products:tieredPricing.title', 'Tiered Pricing'), icon: BarChart3 }] : []),
+    ...(hasBomData ? [{ id: 'bom', label: t('products:manufacturing', 'BOM'), icon: GitBranch }] : []),
     { id: 'packing', label: t('products:packingInstructions', 'Packing'), icon: Package },
     { id: 'files', label: t('products:productFiles', 'Files'), icon: FileText },
   ];
@@ -1124,6 +1139,106 @@ export default function ProductDetails() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* BOM / Manufacturing Section */}
+          {hasBomData && (
+            <>
+              <Separator />
+              <section 
+                id="bom" 
+                ref={setSectionRef('bom')}
+                className="scroll-mt-32 lg:scroll-mt-24 space-y-2 sm:space-y-4"
+              >
+                <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                  <GitBranch className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('products:manufacturing', 'Bill of Materials')}
+                </h2>
+                
+                <div className="rounded-lg sm:rounded-xl border bg-card p-2.5 sm:p-4 space-y-3 sm:space-y-4">
+                  {/* If this product is a child (used as ingredient in parent) */}
+                  {parentProduct && (
+                    <div className="p-2 sm:p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                      <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                        {t('products:usedAsIngredientIn', 'Used as ingredient in')}
+                      </p>
+                      <Link href={`/products/${parentProduct.id}`} className="group">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm sm:text-base font-bold text-primary group-hover:underline">
+                            {parentProduct.name}
+                          </p>
+                          {product.bomQuantityPerParent && (
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                              {product.bomQuantityPerParent}× {t('common:perUnit', 'per unit')}
+                            </Badge>
+                          )}
+                          <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground group-hover:text-primary" />
+                        </div>
+                      </Link>
+                      {parentProduct.sku && (
+                        <p className="text-[10px] sm:text-xs text-muted-foreground font-mono mt-0.5">
+                          {parentProduct.sku}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* If this product has ingredients (is a parent) */}
+                  {bomIngredients.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                        <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        {t('products:ingredients', 'Ingredients')} ({bomIngredients.length})
+                      </h3>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        {bomIngredients.map((ingredient: any) => {
+                          const childProduct = allProducts.find((p: any) => p.id === ingredient.childProductId);
+                          return (
+                            <div key={ingredient.bomId} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-muted/30">
+                              <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <Link href={`/products/${ingredient.childProductId}`}>
+                                  <p className="text-xs sm:text-base font-medium text-primary hover:underline truncate">
+                                    {ingredient.productName}
+                                    {ingredient.variantName && (
+                                      <span className="text-muted-foreground"> - {ingredient.variantName}</span>
+                                    )}
+                                  </p>
+                                </Link>
+                                {ingredient.sku && (
+                                  <p className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">
+                                    {ingredient.sku}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <Badge variant="outline" className="text-xs sm:text-sm font-bold">
+                                  {ingredient.quantityPerUnit}×
+                                </Badge>
+                                {childProduct && (
+                                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                                    {t('common:stock', 'Stock')}: {childProduct.quantity ?? 0}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty state - shouldn't happen but just in case */}
+                  {!parentProduct && bomIngredients.length === 0 && (
+                    <p className="text-xs sm:text-sm text-muted-foreground text-center py-4">
+                      {t('products:noIngredientsYet', 'No BOM data available')}
+                    </p>
+                  )}
                 </div>
               </section>
             </>

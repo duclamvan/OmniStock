@@ -637,6 +637,7 @@ const products = {
   ingredient: 'Ingredient',
   addIngredient: 'Add Ingredient',
   selectIngredient: 'Select Ingredient',
+  usedAsIngredientIn: 'Used as ingredient in',
   ingredientAdded: 'Ingredient added successfully',
   ingredientAddError: 'Failed to add ingredient',
   ingredientUpdated: 'Ingredient updated successfully',

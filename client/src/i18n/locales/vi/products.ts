@@ -744,6 +744,7 @@ const products = {
   ingredient: 'Nguyên liệu',
   addIngredient: 'Thêm nguyên liệu',
   selectIngredient: 'Chọn nguyên liệu',
+  usedAsIngredientIn: 'Được sử dụng làm nguyên liệu trong',
   ingredientAdded: 'Thêm nguyên liệu thành công',
   ingredientAddError: 'Thêm nguyên liệu thất bại',
   ingredientUpdated: 'Cập nhật nguyên liệu thành công',
