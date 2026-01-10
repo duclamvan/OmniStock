@@ -416,6 +416,13 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           description: t('common:pointOfSale')
         },
         {
+          name: t('common:posSales'),
+          href: "/pos/sales",
+          icon: Receipt,
+          color: "text-emerald-600 dark:text-emerald-400",
+          description: t('common:posSalesDescription')
+        },
+        {
           name: t('common:shipping'),
           icon: Send,
           color: "text-blue-500 dark:text-blue-400",
