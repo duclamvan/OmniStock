@@ -565,9 +565,9 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return response.json();
     },
     retry: false,
-    refetchInterval: 30000, // Reduced from 10s to 30s for less frequent refetches
+    refetchInterval: 30000,
     refetchOnWindowFocus: true,
-    staleTime: 15000, // Increased from 5s to 15s
+    staleTime: 15000,
     gcTime: 300000,
   });
 
@@ -2759,6 +2759,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               </div>
           )}
           </div>
+          
         </CardContent>
       </Card>
 

@@ -589,6 +589,7 @@ const orders = {
   variants: 'loại',
   previousOrder: 'Đơn hàng trước',
   nextOrder: 'Đơn hàng tiếp theo',
+  loadMore: 'Tải thêm',
   
   // Filters
   filterByStatus: 'Lọc theo trạng thái',

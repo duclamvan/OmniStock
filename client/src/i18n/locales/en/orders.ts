@@ -585,6 +585,7 @@ const orders = {
   variants: 'variants',
   previousOrder: 'Previous Order',
   nextOrder: 'Next Order',
+  loadMore: 'Load More',
   
   // Filters
   filterByStatus: 'Filter by Status',
