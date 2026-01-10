@@ -1046,6 +1046,8 @@ export const orders = pgTable("orders", {
   // COD (Cash on Delivery) fields
   codAmount: decimal("cod_amount", { precision: 10, scale: 2 }),
   codCurrency: varchar("cod_currency"),
+  // Store credit adjustment for this order (positive = deduction from invoice, negative = additional charge)
+  storeCreditAdjustment: decimal("store_credit_adjustment", { precision: 10, scale: 2 }).default("0"),
   channel: varchar("channel").notNull().default("online"), // Values: 'pos', 'online'
   allocated: boolean("allocated").default(false), // Track if order inventory is allocated
   isArchived: boolean("is_archived").notNull().default(false), // Soft delete - moved to trash
