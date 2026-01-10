@@ -32,6 +32,7 @@ const common = {
   ago: 'ago',
   search: 'Search',
   searchPlaceholder: 'Search {{item}}...',
+  searchEmployees: 'Search employees...',
   filter: 'Filter',
   filtersAndSearch: 'Filters & Search',
   filtersSearch: 'Filters & Search',
@@ -254,6 +255,13 @@ const common = {
   filterByType: 'Filter by type',
   allStatuses: 'All Statuses',
   allTypes: 'All Types',
+  allDepartments: 'All Departments',
+  clearFilters: 'Clear Filters',
+  noResultsFound: 'No results found',
+  tryAdjustingFilters: 'Try adjusting your search or filters',
+  selectStatus: 'Select status',
+  updateInformation: 'Update information',
+  addNewMember: 'Add a new team member',
   
   // Navigation
   menu: 'Menu',
@@ -678,7 +686,6 @@ const common = {
   paid: 'Paid',
   unpaid: 'Unpaid',
   failed: 'Failed',
-  ninetyDayCohort: '90-day cohort',
   systemAlertsAndActivity: 'System Alerts & Activity',
   criticalAlertsAndActivities: 'Critical alerts and recent activities',
   returnsSpikeDetection: 'Returns Spike Detection',
@@ -698,7 +705,6 @@ const common = {
   yearlyReport: 'Yearly Report',
   purchased: 'Purchased',
   soldAmount: 'Sold Amount',
-  healthy: 'healthy',
   
   // Authentication Module
   auth: {
@@ -1172,8 +1178,6 @@ const common = {
   deleteLocation: 'Delete Location',
   deleteLocations: 'Delete Locations',
   selectedCount: '{{count}} selected',
-  clearSelection: 'Clear',
-  selectAll: 'Select all',
   locationsDeletedSuccessfully: '{{count}} locations deleted successfully',
   failedToDeleteLocations: 'Failed to delete locations',
   partialSuccess: 'Partial Success',
@@ -1294,7 +1298,6 @@ const common = {
   typeAtLeastTwoCharacters: 'Type at least 2 characters to search...',
   searching: 'Searching...',
   noResultsFoundFor: 'No results found for "{{query}}"',
-  currentStock: 'Current Stock',
   available: 'available',
   allocated: 'allocated',
   reserved: 'reserved',
