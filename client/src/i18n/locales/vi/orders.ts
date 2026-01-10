@@ -349,6 +349,11 @@ const orders = {
   shipping: 'Vận chuyển',
   adjustment: 'Điều chỉnh',
   grandTotal: 'Tổng cộng',
+  storeCredit: 'Tín dụng cửa hàng',
+  applyStoreCredit: 'Áp dụng tín dụng cửa hàng',
+  storeCreditAvailable: 'Tín dụng khả dụng',
+  storeCreditAdjustment: 'Điều chỉnh tín dụng cửa hàng',
+  removeStoreCredit: 'Bỏ điều chỉnh tín dụng',
   itemTotal: 'Tổng sản phẩm',
   addNotes: 'Thêm ghi chú',
   editNotes: 'Sửa ghi chú',
@@ -1167,7 +1172,6 @@ const orders = {
   picked: 'Đã lấy',
   pickAll: 'Lấy tất cả',
   partiallyPicked: 'Lấy một phần',
-  variants: 'biến thể',
   notFound: 'Không tìm thấy',
   itemReview: 'Xem lại sản phẩm',
   
@@ -1856,7 +1860,6 @@ const orders = {
   trackingUpdated: 'Đã Cập nhật Theo dõi',
   trackingNumbersReceived: 'Đã nhận mã theo dõi thực từ hãng vận chuyển',
   trackingPending: 'Đang Chờ Theo dõi',
-  trackingNotYetAvailable: 'Mã theo dõi chưa có từ hãng vận chuyển. Vui lòng thử lại sau vài phút.',
   
   // DHL Bookmarklet Autofill
   prepareDhlAutofill: 'Chuẩn bị DHL Autofill',
@@ -1994,7 +1997,6 @@ const orders = {
   permanentDeleteTitle: 'Xóa vĩnh viễn đơn hàng?',
   permanentDeleteWarning: 'Hành động này không thể hoàn tác. Đơn hàng {{orderId}} sẽ bị xóa vĩnh viễn và tồn kho sẽ được khôi phục.',
   deletedOn: 'Đã xóa',
-  orderDate: 'Ngày đặt hàng',
   searchTrash: 'Tìm theo mã đơn hoặc khách hàng...',
   noSearchResults: 'Không tìm thấy kết quả',
   tryDifferentSearch: 'Thử từ khóa khác',
@@ -2019,8 +2021,6 @@ const orders = {
   markServicesComplete: 'Hoàn thành dịch vụ',
   lines: 'dòng',
   groupedByProduct: 'Theo sản phẩm',
-  itemsToPick: 'Sản phẩm cần lấy',
-  pickingProgress: 'Tiến độ lấy hàng',
   
 } as const;
 

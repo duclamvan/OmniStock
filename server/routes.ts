@@ -13478,6 +13478,25 @@ Important:
           await storage.updateOrder(order.id, { totalCost: totalCost.toFixed(2) });
         }
       }
+      // Deduct store credit from customer if applied
+      if (order.customerId && order.storeCreditAdjustment) {
+        const storeCreditUsed = parseFloat(order.storeCreditAdjustment);
+        if (storeCreditUsed > 0) {
+          try {
+            const customer = await storage.getCustomer(order.customerId);
+            if (customer) {
+              const currentCredit = parseFloat(customer.storeCredit || '0');
+              const newCredit = currentCredit - storeCreditUsed;
+              await storage.updateCustomer(order.customerId, { 
+                storeCredit: newCredit.toFixed(2) 
+              });
+              console.log(`[Store Credit] Deducted ${storeCreditUsed} from customer ${order.customerId}. New balance: ${newCredit.toFixed(2)}`);
+            }
+          } catch (creditError) {
+            console.error('[Store Credit] Failed to deduct store credit:', creditError);
+          }
+        }
+      }
 
       // Invalidate allocated quantities cache after order creation
       storage.invalidateAllocatedQuantitiesCache();

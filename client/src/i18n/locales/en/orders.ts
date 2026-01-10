@@ -355,6 +355,11 @@ const orders = {
   shipping: 'Shipping',
   adjustment: 'Adjustment',
   grandTotal: 'Grand Total',
+  storeCredit: 'Store Credit',
+  applyStoreCredit: 'Apply Store Credit',
+  storeCreditAvailable: 'Available credit',
+  storeCreditAdjustment: 'Store Credit Adjustment',
+  removeStoreCredit: 'Remove credit adjustment',
   itemTotal: 'Item Total',
   addNotes: 'Add notes',
   editNotes: 'Edit notes',
@@ -1163,7 +1168,6 @@ const orders = {
   picked: 'Picked',
   pickAll: 'Pick All',
   partiallyPicked: 'Partially Picked',
-  variants: 'variants',
   notFound: 'Not Found',
   itemReview: 'Item Review',
   
@@ -1868,7 +1872,6 @@ const orders = {
   trackingUpdated: 'Tracking Updated',
   trackingNumbersReceived: 'Real tracking numbers have been received from the carrier',
   trackingPending: 'Tracking Pending',
-  trackingNotYetAvailable: 'Tracking numbers are not yet available from the carrier. Please try again in a few minutes.',
   
   // DHL Bookmarklet Autofill
   prepareDhlAutofill: 'Prepare DHL Autofill',
@@ -2006,7 +2009,6 @@ const orders = {
   permanentDeleteTitle: 'Permanently Delete Order?',
   permanentDeleteWarning: 'This action cannot be undone. Order {{orderId}} will be permanently deleted and inventory will be restored.',
   deletedOn: 'Deleted',
-  orderDate: 'Order Date',
   searchTrash: 'Search by order ID or customer...',
   noSearchResults: 'No Results Found',
   tryDifferentSearch: 'Try a different search term',
@@ -2031,8 +2033,6 @@ const orders = {
   markServicesComplete: 'Mark Services Complete',
   lines: 'lines',
   groupedByProduct: 'Grouped by Product',
-  itemsToPick: 'Items to Pick',
-  pickingProgress: 'Picking Progress',
   
 } as const;
 

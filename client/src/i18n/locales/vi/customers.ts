@@ -41,6 +41,15 @@ const customers = {
   balance: 'Số dư',
   totalOrders: 'Tổng đơn hàng',
   totalSpent: 'Tổng chi tiêu',
+  storeCredit: 'Tín dụng cửa hàng',
+  editStoreCredit: 'Chỉnh sửa tín dụng cửa hàng',
+  storeCreditUpdated: 'Đã cập nhật tín dụng cửa hàng',
+  failedToUpdateStoreCredit: 'Không thể cập nhật tín dụng cửa hàng',
+  positiveCredit: 'Có tín dụng',
+  negativeCredit: 'Số dư nợ',
+  noCredit: 'Không có tín dụng',
+  storeCreditNotes: 'Ghi chú (tùy chọn)',
+  storeCreditNotesPlaceholder: 'Lý do điều chỉnh tín dụng...',
   
   // Messages
   customerCreated: 'Tạo khách hàng thành công',

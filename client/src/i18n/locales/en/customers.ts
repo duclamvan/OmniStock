@@ -41,6 +41,15 @@ const customers = {
   balance: 'Balance',
   totalOrders: 'Total Orders',
   totalSpent: 'Total Spent',
+  storeCredit: 'Store Credit',
+  editStoreCredit: 'Edit Store Credit',
+  storeCreditUpdated: 'Store credit updated successfully',
+  failedToUpdateStoreCredit: 'Failed to update store credit',
+  positiveCredit: 'Credit available',
+  negativeCredit: 'Balance owed',
+  noCredit: 'No credit',
+  storeCreditNotes: 'Notes (optional)',
+  storeCreditNotesPlaceholder: 'Reason for credit adjustment...',
   
   // Messages
   customerCreated: 'Customer created successfully',

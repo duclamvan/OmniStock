@@ -458,6 +458,8 @@ export default function AddOrder() {
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [applyStoreCredit, setApplyStoreCredit] = useState(true);
+  const [storeCreditAmount, setStoreCreditAmount] = useState<number>(0);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
@@ -706,6 +708,29 @@ export default function AddOrder() {
       setShowDiscountColumn(true);
     }
   }, [orderItems, showDiscountColumn]);
+
+  // Reset store credit state when customer changes
+  useEffect(() => {
+    setApplyStoreCredit(false);
+    setStoreCreditAmount(0);
+  }, [selectedCustomer?.id]);
+
+  // Initialize store credit amount when customer is selected
+  useEffect(() => {
+    if (selectedCustomer?.storeCredit) {
+      const availableCredit = parseFloat(selectedCustomer.storeCredit) || 0;
+      if (availableCredit > 0) {
+        setStoreCreditAmount(availableCredit);
+        setApplyStoreCredit(true);
+      } else {
+        setStoreCreditAmount(0);
+        setApplyStoreCredit(false);
+      }
+    } else {
+      setStoreCreditAmount(0);
+      setApplyStoreCredit(false);
+    }
+  }, [selectedCustomer?.id, selectedCustomer?.storeCredit]);
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
@@ -3647,19 +3672,23 @@ export default function AddOrder() {
 
     const totalBeforeStoreCredit = calculated.grandTotal + shipping + adjustment;
     
-    // Calculate store credit to apply (up to available credit or order total, whichever is less)
+    // Calculate store credit to apply based on user control
     const availableStoreCredit = selectedCustomer?.storeCredit ? parseFloat(selectedCustomer.storeCredit) : 0;
-    const storeCreditApplied = Math.min(availableStoreCredit, Math.max(0, totalBeforeStoreCredit));
+    // Only apply store credit if user has enabled it, and cap to available credit and order total
+    const maxApplicableCredit = Math.min(availableStoreCredit, Math.max(0, totalBeforeStoreCredit));
+    const storeCreditAppliedAmount = applyStoreCredit ? Math.min(storeCreditAmount, maxApplicableCredit) : 0;
 
     return {
       subtotal: rawSubtotal,
       discountAmount: actualDiscount,
       tax: calculated.taxAmount,
       taxAmount: calculated.taxAmount,
-      storeCreditApplied: storeCreditApplied,
-      grandTotal: totalBeforeStoreCredit - storeCreditApplied,
+      availableStoreCredit: availableStoreCredit,
+      maxApplicableCredit: maxApplicableCredit,
+      storeCreditApplied: storeCreditAppliedAmount,
+      grandTotal: totalBeforeStoreCredit - storeCreditAppliedAmount,
     };
-  }, [orderItems, form.watch('currency'), form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('adjustment'), form.watch('taxRate'), showTaxInvoice, financialHelpers, selectedCustomer]);
+  }, [orderItems, form.watch('currency'), form.watch('shippingCost'), form.watch('discountValue'), form.watch('discountType'), form.watch('adjustment'), form.watch('taxRate'), showTaxInvoice, financialHelpers, selectedCustomer, applyStoreCredit, storeCreditAmount]);
 
   // Legacy helper functions for backward compatibility
   const calculateSubtotal = () => totals.subtotal;
@@ -3828,6 +3857,7 @@ export default function AddOrder() {
       adjustment: (data.adjustment || 0).toString(),
       codAmount: data.codAmount && data.codAmount > 0 ? data.codAmount.toString() : null,
       codCurrency: data.codAmount && data.codAmount > 0 ? (data.codCurrency || 'CZK') : null,
+      ...(applyStoreCredit && totals.storeCreditApplied > 0 ? { storeCreditAdjustment: totals.storeCreditApplied.toString() } : {}),
       // PPL SMART pickup location data
       pickupLocationCode: selectedPickupLocation?.code || null,
       pickupLocationName: selectedPickupLocation?.name || null,
@@ -8463,15 +8493,46 @@ export default function AddOrder() {
                           </div>
                         ) : null;
                       })()}
-                      {totals.storeCreditApplied > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600 flex items-center gap-1">
-                            <CreditCard className="h-3 w-3" />
-                            {t('orders:storeCredit')}:
-                          </span>
-                          <span className="font-medium text-blue-600">
-                            -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
-                          </span>
+                      {totals.availableStoreCredit > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={applyStoreCredit}
+                                onChange={(e) => setApplyStoreCredit(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <CreditCard className="h-3 w-3" />
+                              {t('orders:applyStoreCredit')}
+                            </label>
+                            <span className="text-xs text-gray-500">
+                              {t('orders:storeCreditAvailable')}: {formatCurrency(totals.availableStoreCredit, form.watch('currency'))}
+                            </span>
+                          </div>
+                          {applyStoreCredit && (
+                            <div className="flex items-center justify-between pl-6">
+                              <span className="text-sm text-gray-600">{t('orders:storeCreditAdjustment')}:</span>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={selectedCustomer?.storeCredit || 0}
+                                  step="0.01"
+                                  value={storeCreditAmount}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value) || 0;
+                                    const maxCredit = selectedCustomer?.storeCredit || 0;
+                                    setStoreCreditAmount(Math.min(value, maxCredit));
+                                  }}
+                                  className="w-24 h-7 text-sm text-right"
+                                />
+                                <span className="font-medium text-blue-600 w-20 text-right">
+                                  -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -8762,15 +8823,46 @@ export default function AddOrder() {
                     </div>
                   ) : null;
                 })()}
-                {totals.storeCreditApplied > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <CreditCard className="h-3 w-3" />
-                      {t('orders:storeCredit')}:
-                    </span>
-                    <span className="font-medium text-blue-600">
-                      -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
-                    </span>
+                {totals.availableStoreCredit > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={applyStoreCredit}
+                          onChange={(e) => setApplyStoreCredit(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <CreditCard className="h-3 w-3" />
+                        {t('orders:applyStoreCredit')}
+                      </label>
+                      <span className="text-xs text-gray-500">
+                        {t('orders:storeCreditAvailable')}: {formatCurrency(totals.availableStoreCredit, form.watch('currency'))}
+                      </span>
+                    </div>
+                    {applyStoreCredit && (
+                      <div className="flex items-center justify-between pl-6">
+                        <span className="text-sm text-gray-600">{t('orders:storeCreditAdjustment')}:</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={selectedCustomer?.storeCredit || 0}
+                            step="0.01"
+                            value={storeCreditAmount}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              const maxCredit = selectedCustomer?.storeCredit || 0;
+                              setStoreCreditAmount(Math.min(value, maxCredit));
+                            }}
+                            className="w-24 h-7 text-sm text-right"
+                          />
+                          <span className="font-medium text-blue-600 w-20 text-right">
+                            -{formatCurrency(totals.storeCreditApplied, form.watch('currency'))}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

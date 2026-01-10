@@ -51,8 +51,19 @@ import {
   Copy,
   ExternalLink,
   Ban,
-  ShieldCheck
+  ShieldCheck,
+  Wallet
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Facebook } from "lucide-react";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { CustomerPrices } from "./CustomerPrices";
@@ -74,6 +85,8 @@ export default function CustomerDetails() {
     return saved === 'true';
   });
   const [orderSearch, setOrderSearch] = useState('');
+  const [storeCreditDialogOpen, setStoreCreditDialogOpen] = useState(false);
+  const [storeCreditValue, setStoreCreditValue] = useState('');
 
   // Fetch customer data
   const { data: customer, isLoading: customerLoading } = useQuery<any>({
@@ -130,6 +143,43 @@ export default function CustomerDetails() {
       });
     },
   });
+
+  // Store credit update mutation
+  const storeCreditMutation = useMutation({
+    mutationFn: async (storeCredit: string) => {
+      return apiRequest('PATCH', `/api/customers/${id}`, {
+        storeCredit,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/customers/${id}`] });
+      toast({
+        title: t('common:success'),
+        description: t('customers:storeCreditUpdated'),
+      });
+      setStoreCreditDialogOpen(false);
+      setStoreCreditValue('');
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: t('common:error'),
+        description: t('customers:failedToUpdateStoreCredit'),
+      });
+    },
+  });
+
+  const handleStoreCreditSubmit = () => {
+    const value = parseFloat(storeCreditValue);
+    if (!isNaN(value)) {
+      storeCreditMutation.mutate(String(value.toFixed(2)));
+    }
+  };
+
+  const openStoreCreditDialog = () => {
+    setStoreCreditValue(customer?.storeCredit?.toString() || '0');
+    setStoreCreditDialogOpen(true);
+  };
 
   const isLoading = customerLoading || ordersLoading || shippingAddressesLoading || billingAddressesLoading;
 
@@ -633,6 +683,56 @@ export default function CustomerDetails() {
                       <p className="text-sm text-slate-500 dark:text-slate-400">{t('customers:noTaxInfo')}</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Store Credit Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-base lg:text-lg">
+                      <Wallet className="h-5 w-5 text-green-600" />
+                      {t('customers:storeCredit')}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={openStoreCreditDialog}
+                      data-testid="button-editStoreCredit"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      {t('common:edit')}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const creditValue = Number(customer.storeCredit) || 0;
+                    const isPositive = creditValue > 0;
+                    const isNegative = creditValue < 0;
+                    const isZero = creditValue === 0;
+                    
+                    return (
+                      <div className="text-center py-4">
+                        <div className={`text-3xl font-bold mb-2 ${
+                          isPositive ? 'text-green-600 dark:text-green-400' :
+                          isNegative ? 'text-red-600 dark:text-red-400' :
+                          'text-slate-500 dark:text-slate-400'
+                        }`} data-testid="text-storeCredit">
+                          {formatCurrency(creditValue, customerCurrency)}
+                        </div>
+                        <div className={`text-sm ${
+                          isPositive ? 'text-green-600 dark:text-green-400' :
+                          isNegative ? 'text-red-600 dark:text-red-400' :
+                          'text-slate-500 dark:text-slate-400'
+                        }`}>
+                          {isPositive && t('customers:positiveCredit')}
+                          {isNegative && t('customers:negativeCredit')}
+                          {isZero && t('customers:noCredit')}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
@@ -1206,6 +1306,50 @@ export default function CustomerDetails() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Store Credit Edit Dialog */}
+      <Dialog open={storeCreditDialogOpen} onOpenChange={setStoreCreditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-green-600" />
+              {t('customers:editStoreCredit')}
+            </DialogTitle>
+            <DialogDescription>
+              {customer?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="storeCredit">{t('customers:storeCredit')}</Label>
+              <Input
+                id="storeCredit"
+                type="number"
+                step="0.01"
+                value={storeCreditValue}
+                onChange={(e) => setStoreCreditValue(e.target.value)}
+                placeholder="0.00"
+                data-testid="input-storeCredit"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStoreCreditDialogOpen(false)}
+            >
+              {t('common:cancel')}
+            </Button>
+            <Button
+              onClick={handleStoreCreditSubmit}
+              disabled={storeCreditMutation.isPending}
+              data-testid="button-saveStoreCredit"
+            >
+              {storeCreditMutation.isPending ? t('common:saving') : t('common:save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
