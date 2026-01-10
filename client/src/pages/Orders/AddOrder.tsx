@@ -921,6 +921,18 @@ export default function AddOrder() {
     queryKey: ['/api/customers', { includeBadges: true }],
     staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
   });
+  
+  // Server-side customer search for Facebook URLs and complex searches
+  const { data: searchedCustomers } = useQuery({
+    queryKey: ['/api/customers', { search: debouncedCustomerSearch }],
+    queryFn: async () => {
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(debouncedCustomerSearch)}`);
+      if (!response.ok) throw new Error('Failed to search customers');
+      return response.json();
+    },
+    enabled: !!debouncedCustomerSearch && debouncedCustomerSearch.length >= 2,
+    staleTime: 30 * 1000, // 30 seconds
+  });
 
   // Fetch shipping addresses for selected customer
   const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
@@ -3885,33 +3897,29 @@ export default function AddOrder() {
   }, [allProducts, allServices, allBundles, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
+  // Uses server-side search results as primary source, with client-side filtering as fallback
   const filteredCustomers = useMemo(() => {
-    if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
+    if (!debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
+
+    // Use server-side search results if available (more reliable for Facebook URL matching)
+    if (Array.isArray(searchedCustomers) && searchedCustomers.length > 0) {
+      return searchedCustomers.slice(0, 8);
+    }
+
+    // Fall back to client-side filtering if allCustomers is available
+    if (!Array.isArray(allCustomers)) return [];
 
     // Check if the search query is a Facebook URL
     const extractedFbId = extractFacebookId(debouncedCustomerSearch);
     
-    // DEBUG: Log what we're searching for
-    console.log('[CustomerSearch] Query:', debouncedCustomerSearch, 'Extracted FB ID:', extractedFbId);
-    console.log('[CustomerSearch] Total customers:', allCustomers.length);
-    
-    // DEBUG: Log customers with facebookUrl
-    const customersWithFbUrl = allCustomers.filter((c: any) => c.facebookUrl);
-    console.log('[CustomerSearch] Customers with facebookUrl:', customersWithFbUrl.map((c: any) => ({ name: c.name, facebookUrl: c.facebookUrl, facebookId: c.facebookId })));
-    
     if (extractedFbId) {
       // Search by facebookId, facebookName, or facebookUrl containing the extracted ID
       const exactMatches = allCustomers.filter((customer: any) => {
-        // Match by facebookId (exact)
         if (customer.facebookId === extractedFbId) return true;
-        // Match by facebookName (case-insensitive)
         if (customer.facebookName?.toLowerCase() === extractedFbId.toLowerCase()) return true;
-        // Match by facebookUrl containing the extracted ID
         if (customer.facebookUrl && customer.facebookUrl.toLowerCase().includes(extractedFbId.toLowerCase())) return true;
         return false;
       });
-      
-      console.log('[CustomerSearch] Exact matches found:', exactMatches.length);
       
       if (exactMatches.length > 0) {
         return exactMatches;
@@ -3922,7 +3930,6 @@ export default function AddOrder() {
     if (debouncedCustomerSearch.includes('facebook.com')) {
       const urlMatches = allCustomers.filter((customer: any) => {
         if (!customer.facebookUrl) return false;
-        // Normalize both URLs for comparison (remove trailing slashes)
         const normalizedSearch = debouncedCustomerSearch.toLowerCase().replace(/\/+$/, '');
         const normalizedUrl = customer.facebookUrl.toLowerCase().replace(/\/+$/, '');
         return normalizedUrl === normalizedSearch || normalizedUrl.includes(normalizedSearch) || normalizedSearch.includes(normalizedUrl);
@@ -3935,14 +3942,13 @@ export default function AddOrder() {
 
     const results = fuzzySearch(allCustomers, debouncedCustomerSearch, {
       fields: ['name', 'facebookName', 'email', 'phone', 'company', 'facebookId', 'facebookUrl'],
-      threshold: 0.2, // Lower threshold for more results
+      threshold: 0.2,
       fuzzy: true,
       vietnameseNormalization: true,
     });
 
-    // Limit to top 8 results
     return results.slice(0, 8).map(r => r.item);
-  }, [allCustomers, debouncedCustomerSearch]);
+  }, [allCustomers, searchedCustomers, debouncedCustomerSearch]);
 
   // Fetch available discounts (always get fresh data)
   const { data: discounts } = useQuery({
