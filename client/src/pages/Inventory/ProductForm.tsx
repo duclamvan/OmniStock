@@ -157,6 +157,7 @@ const productSchema = z.object({
   width: z.coerce.number().min(0).optional(),
   height: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
+  weightUnit: z.string().optional().default('kg'),
   packingMaterialId: z.string().optional(),
   // Multi-unit fields
   sellingUnitName: z.string().optional().default('piece'),
@@ -550,6 +551,7 @@ export default function ProductForm() {
         width: parseFloat(duplicateSource.width) || undefined,
         height: parseFloat(duplicateSource.height) || undefined,
         weight: parseFloat(duplicateSource.weight) || undefined,
+        weightUnit: duplicateSource.weightUnit || 'kg',
         packingMaterialId: duplicateSource.packingMaterialId || undefined,
         sellingUnitName: duplicateSource.sellingUnitName || 'piece',
         unitContentsInfo: duplicateSource.unitContentsInfo || '',
@@ -1006,6 +1008,7 @@ export default function ProductForm() {
         width: product.width ? parseFloat(String(product.width)) : undefined,
         height: product.height ? parseFloat(String(product.height)) : undefined,
         weight: product.weight ? parseFloat(String(product.weight)) : undefined,
+        weightUnit: product.weightUnit || 'kg',
         
         // Multi-unit fields
         sellingUnitName: product.sellingUnitName || 'piece',
