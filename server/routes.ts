@@ -19949,14 +19949,23 @@ Important:
       }
 
       // Prepare recipient info (customer receiving the package)
-      const recipientName = shippingAddress.company?.trim() || 
-                           `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || 
-                           customer?.name || 
-                           'Unknown';
-
-      const contactName = shippingAddress.company?.trim() 
-        ? `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() 
-        : undefined;
+      // PPL API: name = contact person full name, name2 = company name
+      const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
+      const recipientName = fullName || customer?.name || 'Unknown';
+      const companyName = shippingAddress.company?.trim() || undefined;
+      
+      // Build full street address with house number and orientation number
+      let recipientStreet = shippingAddress.street?.trim() || '';
+      if (shippingAddress.houseNumber?.trim()) {
+        recipientStreet += ` ${shippingAddress.houseNumber.trim()}`;
+      }
+      if (shippingAddress.orientationNumber?.trim()) {
+        recipientStreet += `/${shippingAddress.orientationNumber.trim()}`;
+      }
+      if (shippingAddress.addressLine2?.trim()) {
+        recipientStreet += `, ${shippingAddress.addressLine2.trim()}`;
+      }
+      recipientStreet = recipientStreet.trim();
 
       // Prepare PPL shipment data
       // For multi-carton orders, we use shipmentSet to create ONE shipment with multiple cartons
@@ -19995,8 +20004,8 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            name2: contactName,
-            street: shippingAddress.street,
+            name2: companyName,
+            street: recipientStreet,
             city: shippingAddress.city,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
@@ -20054,8 +20063,8 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            name2: contactName,
-            street: shippingAddress.street,
+            name2: companyName,
+            street: recipientStreet,
             city: shippingAddress.city,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined

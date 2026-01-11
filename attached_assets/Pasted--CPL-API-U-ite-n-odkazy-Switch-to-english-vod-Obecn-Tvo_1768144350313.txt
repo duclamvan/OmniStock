@@ -1,0 +1,123 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Úvod
+Obecné
+Tvorba zásilek a objednávek
+Historie verzí
+Autentizace
+API Metody
+Vícekusá zásilka
+Více zásilek v jednom požadavku
+Zásilka do zahraničí s dobírkou i bez - balíky v sadě
+Odpověď – vyzvednutí etiket (PDF A4) z GET shipment/batch/{batchId}/label
+Odpověď – vyzvednutí etiket (ZPL)
+Odpověď – vyzvednutí etiket (JPG)
+Spojování zásilek
+Často kladené otázky
+Postman kolekce
+Postman flows
+Příklady požadavků a odpovědí
+Vícekusá zásilka
+Pokud chcete v jedné zásilce odeslat více kusů balíků, je potřeba tento údaj uvést v poli shipmentSet.numberOfShipments. Níže je uveden příklad požadavku s třemi balíky v sadě.
+Všimněte si také, že hodnota isCompleteLabelRequested je nastavena na true – díky tomu získáte jednu společnou url pro celou sadu etiket.
+body požadavku POST shipment/batch na vytvoření zásilky s více kusy balíků v sadě
+{
+  "returnChannel": {
+    "type": "Email",
+    "address": "jakub.test@ppl.cz"
+  },
+  "labelSettings": {
+    "format": "Pdf",
+    "dpi": 300,
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": true
+    }
+  },
+  "shipments": [
+    {
+      "referenceId": "123456",
+      "productType": "BUSS",
+      "note": "poznamka k etiketě",
+      "depot": "07",
+      "shipmentSet": {
+        "numberOfShipments": 3
+      },
+      "sender": {
+        "name": "Mirek test",
+        "street": "Testovaci 222",
+        "city": "Praha",
+        "zipCode": "11000",
+        "country": "CZ",
+        "phone": "123456789",
+        "email": "kuba@seznam.cz"
+      },
+      "recipient": {
+        "name": "Test recipient",
+        "street": "HLinska 2",
+        "city": "České Budějovice",
+        "zipCode": "37001",
+        "country": "CZ",
+        "phone": "1236547895",
+        "email": "xxx@email.cz"
+      }
+    }
+  ]
+}
+Po vytvoření takovéto zásilky dostanete v metodě GET shipment/batch/{batchId} jako odpověď následující
+odpověď z GET shipment/batch/{batchId}
+{
+  "completeLabel": {
+      "labelUrls": [
+          "https://api-dev.dhl.com/ecs/ppl/myapi2/shipment/batch/cdf7496e-02a3-4d48-9500-7608c7dcc5c2/label?pageSize=Default&position=1&limit=200&offset=0"
+      ]
+  },
+  "items": [
+      {
+          "referenceId": "123456",
+          "shipmentNumber": "80050527927",
+          "labelUrl": "https://api-dev.dhl.com/ecs/ppl/myapi2/data/95d48050-f9ad-451c-7a22-08dd6b49c76d",
+          "importState": "Complete",
+          "relatedItems": [
+              {
+                  "shipmentNumber": "80050527928",
+                  "labelUrl": "https://api-dev.dhl.com/ecs/ppl/myapi2/data/cb3abe84-3785-48b8-6385-08dd6b49c76c",
+                  "importState": "Complete",
+                  "relationType": "ShipmentSet"
+              },
+              {
+                  "shipmentNumber": "80050527929",
+                  "labelUrl": "https://api-dev.dhl.com/ecs/ppl/myapi2/data/1897234a-567c-4974-7a21-08dd6b49c76d",
+                  "importState": "Complete",
+                  "relationType": "ShipmentSet"
+              }
+          ]
+      }
+  ]
+}
+V horní části odpovědi se nachází objekt completeLabel. Ten je součástí odpovědi pouze tehdy, pokud v požadavku nastavíte "isCompleteLabelRequested":true a jeho url obsahuje všechny etikety v sadě.
+{
+  "completeLabel": {
+      "labelUrls": [
+          "https://api-dev.dhl.com/ecs/ppl/myapi2/shipment/batch/cdf7496e-02a3-4d48-9500-7608c7dcc5c2/label?pageSize=Default&position=1&limit=200&offset=0"
+      ]
+  },
+  
+image.png
+Pod completeLabel jsou potom jednotlivé balíky, z nichž první je vždy nosná zásilka a ostatní jsou balíky v sadě. Každý balík poté obsahuje vlastní labelUrl s příslušící etiketou.
+Zde je ukázka nosné zásilky:
+"items": [
+       {
+           "referenceId": "123456",
+           "shipmentNumber": "80050527927",
+           "labelUrl": "https://api-dev.dhl.com/ecs/ppl/myapi2/data/95d48050-f9ad-451c-7a22-08dd6b49c76d",
+           "importState": "Complete",
+   
+image.png
+Modified at 9 months ago
+Previous
+API Metody
+Next
+Více zásilek v jednom požadavku
