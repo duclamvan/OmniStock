@@ -28,7 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
-import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check, Wrench, ChevronDown } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Database, Shield, Plug, Bot, AlertTriangle, Trash2, Download, HardDrive, Clock, Archive, RefreshCw, Check, Wrench, ChevronDown, Printer } from "lucide-react";
+import PrinterSettings from "@/components/PrinterSettings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -313,7 +314,7 @@ export default function SystemSettings() {
       <div className="space-y-4 sm:space-y-6">
         <Tabs defaultValue="system" className="w-full">
           <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 pb-1">
-            <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-5 gap-1 p-1">
+            <TabsList className="inline-flex w-auto min-w-max sm:grid sm:w-full sm:grid-cols-6 gap-1 p-1">
               <TabsTrigger value="system" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
                 <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {t('settings:system', 'System')}
@@ -333,6 +334,10 @@ export default function SystemSettings() {
               <TabsTrigger value="ai" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
                 <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {t('settings:aiAutomation', 'AI')}
+              </TabsTrigger>
+              <TabsTrigger value="printer" className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm whitespace-nowrap min-h-[40px]">
+                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {t('settings:printer', 'Printer')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1151,6 +1156,11 @@ export default function SystemSettings() {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tab 6: Printer Settings */}
+          <TabsContent value="printer" className="space-y-4">
+            <PrinterSettings />
           </TabsContent>
         </Tabs>
 

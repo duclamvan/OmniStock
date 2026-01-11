@@ -192,30 +192,75 @@ export const printFromUrl = async (
   });
 };
 
-export const PRINTER_STORAGE_KEY = 'qz_default_printer';
-export const LABEL_PRINTER_STORAGE_KEY = 'qz_label_printer';
-export const DOCUMENT_PRINTER_STORAGE_KEY = 'qz_document_printer';
+export type PrinterContext = 
+  | 'label_printer_name'
+  | 'document_printer_name'
+  | 'ppl_label_printer'
+  | 'packing_list_printer'
+  | 'invoice_printer'
+  | 'pos_receipt_printer'
+  | 'order_detail_label_printer'
+  | 'pick_pack_label_printer';
 
-export const getSavedPrinter = (type: 'label' | 'document' | 'default' = 'default'): string | null => {
-  const key = type === 'label' 
-    ? LABEL_PRINTER_STORAGE_KEY 
-    : type === 'document' 
-      ? DOCUMENT_PRINTER_STORAGE_KEY 
-      : PRINTER_STORAGE_KEY;
-  return localStorage.getItem(key);
+export const getSavedPrinter = (context: PrinterContext): string | null => {
+  return localStorage.getItem(context);
 };
 
-export const savePrinter = (printerName: string, type: 'label' | 'document' | 'default' = 'default'): void => {
-  const key = type === 'label' 
-    ? LABEL_PRINTER_STORAGE_KEY 
-    : type === 'document' 
-      ? DOCUMENT_PRINTER_STORAGE_KEY 
-      : PRINTER_STORAGE_KEY;
-  localStorage.setItem(key, printerName);
+export const savePrinter = (printerName: string, context: PrinterContext): void => {
+  localStorage.setItem(context, printerName);
 };
 
-export const quickPrintLabel = async (pdfBase64: string): Promise<boolean> => {
-  const printerName = getSavedPrinter('label') || getSavedPrinter('default');
+export const getAllSavedPrinters = (): Record<PrinterContext, string | null> => {
+  const contexts: PrinterContext[] = [
+    'label_printer_name',
+    'document_printer_name',
+    'ppl_label_printer',
+    'packing_list_printer',
+    'invoice_printer',
+    'pos_receipt_printer',
+    'order_detail_label_printer',
+    'pick_pack_label_printer'
+  ];
+  
+  return contexts.reduce((acc, context) => {
+    acc[context] = localStorage.getItem(context);
+    return acc;
+  }, {} as Record<PrinterContext, string | null>);
+};
+
+export const printRawZPL = async (
+  printerName: string,
+  zplCommand: string
+): Promise<void> => {
+  const connected = await connectToQZ();
+  if (!connected) {
+    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
+  }
+
+  const config = qz.configs.create(printerName);
+  const data = [{
+    type: 'raw' as const,
+    format: 'plain' as const,
+    flavor: 'base64' as const,
+    data: btoa(zplCommand)
+  }];
+
+  try {
+    await qz.print(config, data);
+    console.log(`Successfully sent ZPL to ${printerName}`);
+  } catch (err) {
+    console.error("ZPL printing failed:", err);
+    throw err;
+  }
+};
+
+export const testPrintZPL = async (printerName: string): Promise<void> => {
+  const testZPL = '^XA^FO50,50^ADN,36,20^FDTest Print OK^FS^XZ';
+  return printRawZPL(printerName, testZPL);
+};
+
+export const quickPrintLabel = async (pdfBase64: string, context: PrinterContext = 'label_printer_name'): Promise<boolean> => {
+  const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
   
   if (!printerName) {
     return false;
@@ -230,8 +275,8 @@ export const quickPrintLabel = async (pdfBase64: string): Promise<boolean> => {
   }
 };
 
-export const quickPrintDocument = async (pdfBase64: string): Promise<boolean> => {
-  const printerName = getSavedPrinter('document') || getSavedPrinter('default');
+export const quickPrintDocument = async (pdfBase64: string, context: PrinterContext = 'document_printer_name'): Promise<boolean> => {
+  const printerName = getSavedPrinter(context) || getSavedPrinter('document_printer_name');
   
   if (!printerName) {
     return false;
@@ -242,6 +287,22 @@ export const quickPrintDocument = async (pdfBase64: string): Promise<boolean> =>
     return true;
   } catch (err) {
     console.error("Quick print failed:", err);
+    throw err;
+  }
+};
+
+export const quickPrintPPLLabel = async (pdfBase64: string): Promise<boolean> => {
+  const printerName = getSavedPrinter('ppl_label_printer') || getSavedPrinter('label_printer_name');
+  
+  if (!printerName) {
+    return false;
+  }
+  
+  try {
+    await printLabelPDF(printerName, pdfBase64, '4x6');
+    return true;
+  } catch (err) {
+    console.error("PPL label print failed:", err);
     throw err;
   }
 };

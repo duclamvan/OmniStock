@@ -5,108 +5,148 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
 import { Printer, RefreshCw, Wifi, WifiOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   connectToQZ,
-  disconnectFromQZ,
   getPrinters,
   isQZConnected,
   getSavedPrinter,
   savePrinter,
-  printPDF
+  testPrintZPL,
+  type PrinterContext
 } from '@/utils/printer';
+
+interface PrinterConfig {
+  context: PrinterContext;
+  label: string;
+  description: string;
+  type: 'label' | 'document';
+}
+
+const PRINTER_CONFIGS: PrinterConfig[] = [
+  {
+    context: 'label_printer_name',
+    label: 'Default Label Printer',
+    description: 'Default thermal printer for shipping labels (Zebra, etc.)',
+    type: 'label'
+  },
+  {
+    context: 'document_printer_name',
+    label: 'Default Document Printer',
+    description: 'Default printer for invoices and documents',
+    type: 'document'
+  },
+  {
+    context: 'ppl_label_printer',
+    label: 'PPL Shipping Labels',
+    description: 'Printer for PPL shipping labels',
+    type: 'label'
+  },
+  {
+    context: 'packing_list_printer',
+    label: 'Packing List Printer',
+    description: 'Printer for packing lists',
+    type: 'document'
+  },
+  {
+    context: 'invoice_printer',
+    label: 'Invoice Printer',
+    description: 'Printer for customer invoices',
+    type: 'document'
+  },
+  {
+    context: 'pos_receipt_printer',
+    label: 'POS Receipt Printer',
+    description: 'Printer for point of sale receipts',
+    type: 'document'
+  },
+  {
+    context: 'order_detail_label_printer',
+    label: 'Order Detail Labels',
+    description: 'Printer for labels from order detail page',
+    type: 'label'
+  },
+  {
+    context: 'pick_pack_label_printer',
+    label: 'Pick & Pack Labels',
+    description: 'Printer for labels during pick and pack',
+    type: 'label'
+  }
+];
 
 export function PrinterSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [printers, setPrinters] = useState<string[]>([]);
   const [isLoadingPrinters, setIsLoadingPrinters] = useState(false);
-  const [labelPrinter, setLabelPrinter] = useState<string>(getSavedPrinter('label') || '');
-  const [documentPrinter, setDocumentPrinter] = useState<string>(getSavedPrinter('document') || '');
-  const [testPrinting, setTestPrinting] = useState<string | null>(null);
+  const [savedPrinters, setSavedPrinters] = useState<Record<PrinterContext, string>>({} as Record<PrinterContext, string>);
+  const [testingPrinter, setTestingPrinter] = useState<PrinterContext | null>(null);
 
-  const checkConnection = useCallback(() => {
-    setIsConnected(isQZConnected());
+  const loadSavedPrinters = useCallback(() => {
+    const saved: Record<PrinterContext, string> = {} as Record<PrinterContext, string>;
+    PRINTER_CONFIGS.forEach(config => {
+      const printer = getSavedPrinter(config.context);
+      if (printer) {
+        saved[config.context] = printer;
+      }
+    });
+    setSavedPrinters(saved);
   }, []);
 
-  const handleConnect = async () => {
+  const autoConnect = useCallback(async () => {
+    if (isQZConnected()) {
+      setIsConnected(true);
+      setConnectionError(null);
+      return true;
+    }
+
     setIsConnecting(true);
+    setConnectionError(null);
+
     try {
       const connected = await connectToQZ();
       setIsConnected(connected);
-      if (connected) {
-        toast({
-          title: t('printer.connected', 'Connected to QZ Tray'),
-          description: t('printer.connectedDesc', 'You can now print directly to your printers'),
-        });
-        await loadPrinters();
-      } else {
-        toast({
-          title: t('printer.connectionFailed', 'Connection Failed'),
-          description: t('printer.connectionFailedDesc', 'Please ensure QZ Tray is running on your computer'),
-          variant: 'destructive',
-        });
+      if (!connected) {
+        setConnectionError(t('printer.pleaseStartQZ', 'Please start QZ Tray on your computer'));
       }
+      return connected;
     } catch (error) {
-      toast({
-        title: t('printer.error', 'Error'),
-        description: String(error),
-        variant: 'destructive',
-      });
+      setConnectionError(t('printer.pleaseStartQZ', 'Please start QZ Tray on your computer'));
+      setIsConnected(false);
+      return false;
     } finally {
       setIsConnecting(false);
     }
-  };
+  }, [t]);
 
-  const handleDisconnect = async () => {
-    await disconnectFromQZ();
-    setIsConnected(false);
-    setPrinters([]);
-    toast({
-      title: t('printer.disconnected', 'Disconnected'),
-      description: t('printer.disconnectedDesc', 'Disconnected from QZ Tray'),
-    });
-  };
-
-  const loadPrinters = async () => {
+  const loadPrinters = useCallback(async () => {
     setIsLoadingPrinters(true);
     try {
       const availablePrinters = await getPrinters();
       setPrinters(availablePrinters);
     } catch (error) {
       console.error('Failed to load printers:', error);
-      toast({
-        title: t('printer.loadFailed', 'Failed to load printers'),
-        description: String(error),
-        variant: 'destructive',
-      });
     } finally {
       setIsLoadingPrinters(false);
     }
-  };
+  }, []);
 
-  const handleLabelPrinterChange = (value: string) => {
-    setLabelPrinter(value);
-    savePrinter(value, 'label');
+  const handlePrinterChange = (context: PrinterContext, value: string) => {
+    savePrinter(value, context);
+    setSavedPrinters(prev => ({ ...prev, [context]: value }));
     toast({
       title: t('printer.saved', 'Printer Saved'),
-      description: t('printer.labelPrinterSaved', 'Label printer set to: ') + value,
+      description: value,
     });
   };
 
-  const handleDocumentPrinterChange = (value: string) => {
-    setDocumentPrinter(value);
-    savePrinter(value, 'document');
-    toast({
-      title: t('printer.saved', 'Printer Saved'),
-      description: t('printer.documentPrinterSaved', 'Document printer set to: ') + value,
-    });
-  };
-
-  const handleTestPrint = async (printerName: string, type: 'label' | 'document') => {
+  const handleTestPrint = async (context: PrinterContext) => {
+    const printerName = savedPrinters[context];
     if (!printerName) {
       toast({
         title: t('printer.selectFirst', 'Select Printer'),
@@ -116,15 +156,12 @@ export function PrinterSettings() {
       return;
     }
 
-    setTestPrinting(type);
+    setTestingPrinter(context);
     try {
-      const testPdf = generateTestPDF();
-      await printPDF(printerName, testPdf, {
-        size: type === 'label' ? { width: 4, height: 6, units: 'in' } : undefined
-      });
+      await testPrintZPL(printerName);
       toast({
         title: t('printer.testSuccess', 'Test Print Sent'),
-        description: t('printer.testSuccessDesc', 'Test page sent to: ') + printerName,
+        description: t('printer.testSuccessDesc', 'ZPL test sent to: ') + printerName,
       });
     } catch (error) {
       toast({
@@ -133,21 +170,35 @@ export function PrinterSettings() {
         variant: 'destructive',
       });
     } finally {
-      setTestPrinting(null);
+      setTestingPrinter(null);
     }
   };
 
   useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 5000);
-    return () => clearInterval(interval);
-  }, [checkConnection]);
+    loadSavedPrinters();
+    autoConnect().then(connected => {
+      if (connected) {
+        loadPrinters();
+      }
+    });
+  }, [autoConnect, loadPrinters, loadSavedPrinters]);
 
   useEffect(() => {
-    if (isConnected && printers.length === 0) {
-      loadPrinters();
-    }
-  }, [isConnected]);
+    const interval = setInterval(() => {
+      const connected = isQZConnected();
+      if (connected !== isConnected) {
+        setIsConnected(connected);
+        if (connected) {
+          setConnectionError(null);
+          loadPrinters();
+        }
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isConnected, loadPrinters]);
+
+  const labelPrinters = PRINTER_CONFIGS.filter(c => c.type === 'label');
+  const documentPrinters = PRINTER_CONFIGS.filter(c => c.type === 'document');
 
   return (
     <Card>
@@ -157,13 +208,20 @@ export function PrinterSettings() {
           {t('printer.settings', 'Printer Settings')}
         </CardTitle>
         <CardDescription>
-          {t('printer.description', 'Configure direct printing to your label and document printers using QZ Tray')}
+          {t('printer.description', 'Configure direct printing using QZ Tray')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
           <div className="flex items-center gap-3">
-            {isConnected ? (
+            {isConnecting ? (
+              <>
+                <RefreshCw className="h-5 w-5 animate-spin text-blue-500" />
+                <div>
+                  <p className="font-medium">{t('printer.connecting', 'Connecting to QZ Tray...')}</p>
+                </div>
+              </>
+            ) : isConnected ? (
               <>
                 <Wifi className="h-5 w-5 text-green-500" />
                 <div>
@@ -171,7 +229,7 @@ export function PrinterSettings() {
                     {t('printer.qzConnected', 'QZ Tray Connected')}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {t('printer.readyToPrint', 'Ready to print')}
+                    {printers.length} {t('printer.printersFound', 'printers found')}
                   </p>
                 </div>
               </>
@@ -182,46 +240,37 @@ export function PrinterSettings() {
                   <p className="font-medium text-red-700 dark:text-red-400">
                     {t('printer.qzDisconnected', 'QZ Tray Not Connected')}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t('printer.startQZ', 'Start QZ Tray on your computer to enable direct printing')}
-                  </p>
+                  {connectionError && (
+                    <p className="text-sm text-red-600">{connectionError}</p>
+                  )}
                 </div>
               </>
             )}
           </div>
           <Button
-            variant={isConnected ? "outline" : "default"}
-            onClick={isConnected ? handleDisconnect : handleConnect}
+            variant="outline"
+            onClick={() => autoConnect().then(c => c && loadPrinters())}
             disabled={isConnecting}
           >
-            {isConnecting ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : isConnected ? (
-              <WifiOff className="h-4 w-4 mr-2" />
-            ) : (
-              <Wifi className="h-4 w-4 mr-2" />
-            )}
-            {isConnected 
-              ? t('printer.disconnect', 'Disconnect')
-              : t('printer.connect', 'Connect')
-            }
+            <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
+            {t('printer.retry', 'Retry')}
           </Button>
         </div>
 
-        {!isConnected && (
-          <Alert>
+        {!isConnected && !isConnecting && (
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {t('printer.downloadQZ', 'Download and install QZ Tray from')}{' '}
+              {t('printer.pleaseStartQZ', 'Please start QZ Tray on your computer.')}
+              {' '}
               <a 
                 href="https://qz.io/download/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="font-medium underline"
               >
-                qz.io/download
+                {t('printer.downloadHere', 'Download here')}
               </a>
-              {' '}{t('printer.toEnablePrinting', 'to enable direct printing')}
             </AlertDescription>
           </Alert>
         )}
@@ -240,90 +289,100 @@ export function PrinterSettings() {
               </Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
                   <Badge variant="secondary">{t('printer.labels', 'Labels')}</Badge>
-                  <span className="text-sm font-medium">
-                    {t('printer.labelPrinter', 'Label Printer')}
-                  </span>
+                  {t('printer.labelPrinters', 'Label Printers')}
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {labelPrinters.map(config => (
+                    <div key={config.context} className="space-y-2 p-4 border rounded-lg">
+                      <Label className="font-medium">{config.label}</Label>
+                      <p className="text-sm text-muted-foreground">{config.description}</p>
+                      <Select 
+                        value={savedPrinters[config.context] || ''} 
+                        onValueChange={(v) => handlePrinterChange(config.context, v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('printer.selectPrinter', 'Select printer...')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {printers.map((printer) => (
+                            <SelectItem key={printer} value={printer}>
+                              {printer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTestPrint(config.context)}
+                        disabled={!savedPrinters[config.context] || testingPrinter === config.context}
+                      >
+                        {testingPrinter === config.context ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Printer className="h-4 w-4 mr-2" />
+                        )}
+                        {t('printer.testPrint', 'Test Print')}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {t('printer.labelPrinterDesc', 'For shipping labels (PPL, etc.) - typically a Zebra or thermal printer')}
-                </p>
-                <Select value={labelPrinter} onValueChange={handleLabelPrinterChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('printer.selectPrinter', 'Select printer...')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {printers.map((printer) => (
-                      <SelectItem key={printer} value={printer}>
-                        {printer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTestPrint(labelPrinter, 'label')}
-                  disabled={!labelPrinter || testPrinting === 'label'}
-                >
-                  {testPrinting === 'label' ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Printer className="h-4 w-4 mr-2" />
-                  )}
-                  {t('printer.testPrint', 'Test Print')}
-                </Button>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+              <div>
+                <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
                   <Badge variant="secondary">{t('printer.documents', 'Documents')}</Badge>
-                  <span className="text-sm font-medium">
-                    {t('printer.documentPrinter', 'Document Printer')}
-                  </span>
+                  {t('printer.documentPrinters', 'Document Printers')}
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {documentPrinters.map(config => (
+                    <div key={config.context} className="space-y-2 p-4 border rounded-lg">
+                      <Label className="font-medium">{config.label}</Label>
+                      <p className="text-sm text-muted-foreground">{config.description}</p>
+                      <Select 
+                        value={savedPrinters[config.context] || ''} 
+                        onValueChange={(v) => handlePrinterChange(config.context, v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('printer.selectPrinter', 'Select printer...')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {printers.map((printer) => (
+                            <SelectItem key={printer} value={printer}>
+                              {printer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTestPrint(config.context)}
+                        disabled={!savedPrinters[config.context] || testingPrinter === config.context}
+                      >
+                        {testingPrinter === config.context ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Printer className="h-4 w-4 mr-2" />
+                        )}
+                        {t('printer.testPrint', 'Test Print')}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {t('printer.documentPrinterDesc', 'For invoices and packing lists - typically an office printer')}
-                </p>
-                <Select value={documentPrinter} onValueChange={handleDocumentPrinterChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('printer.selectPrinter', 'Select printer...')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {printers.map((printer) => (
-                      <SelectItem key={printer} value={printer}>
-                        {printer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTestPrint(documentPrinter, 'document')}
-                  disabled={!documentPrinter || testPrinting === 'document'}
-                >
-                  {testPrinting === 'document' ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Printer className="h-4 w-4 mr-2" />
-                  )}
-                  {t('printer.testPrint', 'Test Print')}
-                </Button>
               </div>
             </div>
 
-            {labelPrinter && documentPrinter && (
+            {Object.keys(savedPrinters).length > 0 && (
               <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700 dark:text-green-300">
-                  {t('printer.allConfigured', 'All printers configured! Shipping labels will print to ')}
-                  <strong>{labelPrinter}</strong>
-                  {t('printer.andDocuments', ' and documents to ')}
-                  <strong>{documentPrinter}</strong>
+                  {t('printer.printersConfigured', 'Printers configured: ')}
+                  {Object.keys(savedPrinters).length}/{PRINTER_CONFIGS.length}
                 </AlertDescription>
               </Alert>
             )}
@@ -332,39 +391,6 @@ export function PrinterSettings() {
       </CardContent>
     </Card>
   );
-}
-
-function generateTestPDF(): string {
-  const pdfContent = `%PDF-1.4
-1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
-2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
-3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 288 432] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
-4 0 obj << /Length 150 >> stream
-BT
-/F1 24 Tf
-50 380 Td
-(QZ Tray Test) Tj
-0 -40 Td
-/F1 14 Tf
-(Printer is working!) Tj
-0 -30 Td
-(${new Date().toLocaleString()}) Tj
-ET
-endstream endobj
-5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000266 00000 n 
-0000000466 00000 n 
-trailer << /Size 6 /Root 1 0 R >>
-startxref
-545
-%%EOF`;
-  return btoa(pdfContent);
 }
 
 export default PrinterSettings;
