@@ -19949,13 +19949,16 @@ Important:
       }
 
       // Prepare recipient info (customer receiving the package)
-      // PPL API fields: name (main), name2 (secondary), contact (person), street (with number)
+      // PPL API fields: name (main person), name2 (company), contact (person), street (with number)
       const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
-      const companyName = shippingAddress.company?.trim();
+      const companyName = shippingAddress.company?.trim() || undefined;
       
-      // PPL mapping: if company exists, use company as name and person as contact
-      // Otherwise use person name as the main name
-      const recipientName = companyName || fullName || customer?.name || 'Unknown';
+      // PPL mapping:
+      // name = person's full name (main recipient line on label)
+      // name2 = company name (second line on label)
+      // contact = contact person for delivery
+      const recipientName = fullName || customer?.name || 'Unknown';
+      const recipientName2 = companyName;
       const recipientContact = fullName || customer?.name || undefined;
       
       // Build full street address with street number
@@ -20002,9 +20005,10 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            contact: recipientContact,
+            name2: recipientName2,
             street: recipientStreet,
             city: shippingAddress.city,
+            contact: recipientContact,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
@@ -20061,9 +20065,10 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            contact: recipientContact,
+            name2: recipientName2,
             street: recipientStreet,
             city: shippingAddress.city,
+            contact: recipientContact,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
