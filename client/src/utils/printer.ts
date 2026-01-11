@@ -132,9 +132,9 @@ export const printPDF = async (
   });
 
   const data = [{
-    type: 'pixel',
-    format: 'pdf',
-    flavor: 'base64',
+    type: 'pixel' as const,
+    format: 'pdf' as const,
+    flavor: 'base64' as const,
     data: pdfBase64
   }];
 
@@ -254,9 +254,36 @@ export const printRawZPL = async (
   }
 };
 
+const TEST_PDF_BASE64 = 'JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKL01lZGlhQm94IFswIDAgMjg4IDI4OF0KPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCAyODggMjg4XQovQ29udGVudHMgNCAwIFIKL1Jlc291cmNlcyA8PAovRm9udCA8PCAvRjEgNSAwIFIgPj4KPj4KPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0xlbmd0aCA4OAo+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjUwIDIwMCBUZAooVGVzdCBQcmludCBPSykgVGoKRVQKQlQKL0YxIDE0IFRmCjUwIDE1MCBUZAooUVogVHJheSBDb25uZWN0ZWQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PAovVHlwZSAvRm9udAovU3VidHlwZSAvVHlwZTEKL0Jhc2VGb250IC9IZWx2ZXRpY2EKPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxNDcgMDAwMDAgbiAKMDAwMDAwMDI5OSAwMDAwMCBuIAowMDAwMDAwNDQwIDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNgovUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNTIwCiUlRU9G';
+
+export const testPrint = async (printerName: string): Promise<void> => {
+  const connected = await connectToQZ();
+  if (!connected) {
+    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
+  }
+
+  const config = qz.configs.create(printerName, {
+    scaleContent: true
+  });
+
+  const data = [{
+    type: 'pixel' as const,
+    format: 'pdf' as const,
+    flavor: 'base64' as const,
+    data: TEST_PDF_BASE64
+  }];
+
+  try {
+    await qz.print(config, data);
+    console.log(`Successfully sent test print to ${printerName}`);
+  } catch (err) {
+    console.error("Test print failed:", err);
+    throw err;
+  }
+};
+
 export const testPrintZPL = async (printerName: string): Promise<void> => {
-  const testZPL = '^XA^FO50,50^ADN,36,20^FDTest Print OK^FS^XZ';
-  return printRawZPL(printerName, testZPL);
+  return testPrint(printerName);
 };
 
 export const quickPrintLabel = async (pdfBase64: string, context: PrinterContext = 'label_printer_name'): Promise<boolean> => {

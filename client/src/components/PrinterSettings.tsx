@@ -14,7 +14,7 @@ import {
   isQZConnected,
   getSavedPrinter,
   savePrinter,
-  testPrintZPL,
+  testPrint,
   type PrinterContext
 } from '@/utils/printer';
 
@@ -158,10 +158,10 @@ export function PrinterSettings() {
 
     setTestingPrinter(context);
     try {
-      await testPrintZPL(printerName);
+      await testPrint(printerName);
       toast({
         title: t('printer.testSuccess', 'Test Print Sent'),
-        description: t('printer.testSuccessDesc', 'ZPL test sent to: ') + printerName,
+        description: t('printer.testSuccessDesc', 'Test page sent to: ') + printerName,
       });
     } catch (error) {
       toast({
@@ -249,7 +249,7 @@ export function PrinterSettings() {
           </div>
           <Button
             variant="outline"
-            onClick={() => autoConnect().then(c => c && loadPrinters())}
+            onClick={() => { autoConnect().then(c => { if (c) loadPrinters(); }); }}
             disabled={isConnecting}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isConnecting ? 'animate-spin' : ''}`} />
