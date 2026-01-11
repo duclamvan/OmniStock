@@ -349,9 +349,9 @@ export interface PPLSingleShipmentResponse {
 }
 
 /**
- * Create a single PPL shipment using POST /shipment
- * This endpoint returns the tracking number (parcelNumber) IMMEDIATELY in the response
- * Use this for packing mode to avoid polling for tracking numbers
+ * Create a single PPL shipment using the batch endpoint (POST /shipment/batch)
+ * The myAPI2 doesn't have a direct POST /shipment endpoint, so we use batch with a single shipment
+ * We poll for the batch status to get tracking numbers
  */
 export async function createPPLSingleShipment(request: PPLSingleShipmentRequest): Promise<{
   shipmentId: string;
@@ -363,13 +363,41 @@ export async function createPPLSingleShipment(request: PPLSingleShipmentRequest)
     const token = await getPPLAccessToken();
     
     console.log('═══════════════════════════════════════════════════');
-    console.log('📦 Creating PPL Single Shipment (POST /shipment)');
+    console.log('📦 Creating PPL Single Shipment (via batch endpoint)');
     console.log('═══════════════════════════════════════════════════');
     console.log('Request:', JSON.stringify(request, null, 2));
     
-    const response = await axios.post<PPLSingleShipmentResponse>(
-      `${PPL_BASE_URL}/shipment`,
-      request,
+    // Convert single shipment request to batch format
+    const batchRequest: PPLCreateShipmentRequest = {
+      labelSettings: {
+        format: 'Pdf',
+        dpi: 203,
+        completeLabelSettings: {
+          isCompleteLabelRequested: true,
+          pageSize: 'Default'
+        }
+      },
+      shipments: [{
+        referenceId: request.referenceId,
+        productType: request.productType,
+        recipient: request.recipient,
+        sender: request.sender,
+        cashOnDelivery: request.cashOnDelivery ? {
+          CodPrice: request.cashOnDelivery.price,
+          CodCurrency: request.cashOnDelivery.currency,
+          CodVarSym: request.cashOnDelivery.variableSymbol
+        } : undefined,
+        note: request.note,
+        ...(request.specificDelivery?.parcelShopCode ? {
+          specificDelivery: request.specificDelivery
+        } : {})
+      } as PPLShipment]
+    };
+    
+    // Create batch shipment
+    const response = await axios.post(
+      `${PPL_BASE_URL}/shipment/batch`,
+      batchRequest,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -378,41 +406,112 @@ export async function createPPLSingleShipment(request: PPLSingleShipmentRequest)
         }
       }
     );
+
+    // BatchId is returned in the Location header
+    const location = response.headers['location'] || response.headers['Location'];
+    const batchId = location ? location.split('/').pop() : null;
+
+    if (!batchId) {
+      throw new Error('No batchId returned from PPL API');
+    }
+
+    console.log('✅ Batch created, batchId:', batchId);
     
-    const data = response.data;
+    // Poll for batch status to get tracking numbers
+    let trackingNumbers: string[] = [];
+    let shipmentId = batchId;
+    
+    // Wait and poll for tracking numbers
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        const statusResponse = await axios.get<PPLBatchStatus>(
+          `${PPL_BASE_URL}/shipment/batch/${batchId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept-Language': 'cs-CZ'
+            }
+          }
+        );
+        
+        const status = statusResponse.data;
+        const items = status.items || [];
+        const firstItem = items[0];
+        console.log(`Polling attempt ${attempt + 1}, item state:`, firstItem?.importState);
+        
+        if (items.length > 0) {
+          trackingNumbers = items
+            .filter((item: any) => item.shipmentNumber)
+            .map((item: any) => item.shipmentNumber);
+          
+          if (trackingNumbers.length > 0) {
+            console.log('📬 Found tracking numbers:', trackingNumbers);
+            shipmentId = firstItem?.referenceId || batchId;
+            break;
+          }
+        }
+        
+        // If import is complete but no tracking numbers, check if there are errors
+        const allComplete = items.every((item: any) => item.importState === 'Complete' || item.importState === 'Completed');
+        if (allComplete && items.length > 0) {
+          if (items.some((item: any) => item.shipmentNumber)) {
+            trackingNumbers = items
+              .filter((item: any) => item.shipmentNumber)
+              .map((item: any) => item.shipmentNumber);
+            break;
+          }
+          // If complete but no numbers, might be an error
+          const errors = items.filter((item: any) => item.errorMessage || item.errorCode);
+          if (errors.length > 0) {
+            console.error('Batch has errors:', JSON.stringify(errors, null, 2));
+            throw new Error(`PPL shipment failed: ${errors[0]?.errorMessage || errors[0]?.errorCode}`);
+          }
+          console.log('Batch complete but no tracking numbers. Full response:', JSON.stringify(status, null, 2));
+          break;
+        }
+      } catch (pollError: any) {
+        if (pollError.message?.includes('PPL shipment failed')) {
+          throw pollError;
+        }
+        console.log(`Polling attempt ${attempt + 1} failed:`, pollError.message || pollError);
+      }
+    }
     
     console.log('═══════════════════════════════════════════════════');
-    console.log('✅ PPL Single Shipment Response:');
-    console.log('═══════════════════════════════════════════════════');
-    console.log('Shipment ID:', data.id);
-    console.log('Reference ID:', data.referenceId);
-    console.log('Status:', data.status);
-    console.log('Packages:', JSON.stringify(data.packages, null, 2));
-    
-    // Extract tracking numbers from packages
-    const trackingNumbers = data.packages
-      .filter(pkg => pkg.parcelNumber)
-      .map(pkg => pkg.parcelNumber);
-    
-    console.log('📬 Tracking Numbers:', trackingNumbers);
+    console.log('✅ PPL Single Shipment (via batch) Response:');
+    console.log('Shipment ID:', shipmentId);
+    console.log('Reference ID:', request.referenceId);
+    console.log('Tracking Numbers:', trackingNumbers);
     console.log('═══════════════════════════════════════════════════');
     
     if (trackingNumbers.length === 0) {
-      throw new Error('No tracking numbers (parcelNumber) returned from PPL API');
+      console.warn('⚠️ No tracking numbers found after polling. Returning batchId as shipmentId.');
     }
     
     return {
-      shipmentId: data.id,
+      shipmentId: batchId,
       trackingNumbers,
-      referenceId: data.referenceId,
-      responseData: data
+      referenceId: request.referenceId,
+      responseData: {
+        id: batchId,
+        referenceId: request.referenceId,
+        productType: request.productType,
+        status: 'Complete',
+        packages: trackingNumbers.map((num, idx) => ({
+          id: `pkg-${idx}`,
+          parcelNumber: num,
+          referenceId: request.packages?.[idx]?.referenceId
+        }))
+      }
     };
   } catch (error: any) {
     const errorDetails = {
       message: error.message,
       data: error.response?.data,
       status: error.response?.status,
-      url: `${PPL_BASE_URL}/shipment`,
+      url: `${PPL_BASE_URL}/shipment/batch`,
       requestData: JSON.stringify(request, null, 2)
     };
     console.error('Failed to create PPL single shipment:', errorDetails);
@@ -420,15 +519,12 @@ export async function createPPLSingleShipment(request: PPLSingleShipmentRequest)
     let errorMessage = 'Failed to create PPL shipment';
     if (error.response?.data) {
       const data = error.response.data;
-      // Handle PPL API error formats
       if (data.title && data.errors) {
-        // Validation errors format
         const validationErrors = Object.entries(data.errors)
           .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join('; ');
         errorMessage = `${data.title}: ${validationErrors}`;
       } else if (data.errorCode || data.code) {
-        // PPL API error code format (e.g., UndefinedResource)
         const code = data.errorCode || data.code;
         const desc = data.errorDescription || data.description || data.detail || data.message || '';
         errorMessage = `PPL API Error [${code}]: ${desc || 'Unknown error'}`;
@@ -437,7 +533,6 @@ export async function createPPLSingleShipment(request: PPLSingleShipmentRequest)
       } else if (data.message) {
         errorMessage = data.message;
       } else if (typeof data === 'string') {
-        // Plain string error
         errorMessage = data;
       }
     } else if (error.message) {

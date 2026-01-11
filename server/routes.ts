@@ -18702,7 +18702,7 @@ Important:
         // Product type: BUSD for Czech domestic COD, COND for international COD (Slovakia, etc.)
         const recipientCountryCode = normalizeCountry(shippingAddress.country);
         // COD shipments: BUSD (Czech) or COND (International)
-        const productType = recipientCountryCode === 'CZ' ? '2' : '37'; // 2=Czech COD, 37=International COD
+        const productType = recipientCountryCode === 'CZ' ? 'BUSD' : 'COND'; // BUSD=Czech COD, COND=International COD
         const pplShipment: any = {
           referenceId,
           productType,
@@ -19931,7 +19931,7 @@ Important:
       if (isSmartShipment) {
         // PPL SMART - delivery to ParcelShop/ParcelBox pickup location
         // SMAR product type is for SMART service with pickup location
-        productType = hasCOD ? '47' : '46'; // PPL SMART with/without COD
+        productType = hasCOD ? 'SMAD' : 'SMAE'; // PPL Smart: SMAD=COD, SMAE=no COD
         
         // Ensure parcelShopCode is present for SMAR product
         if (!order.pickupLocationCode) {
@@ -19942,10 +19942,10 @@ Important:
         // Use the parcelShopCode as-is - PPL API accepts KM prefix format
       } else if (recipientCountryCode === 'CZ') {
         // Czech domestic shipment
-        productType = hasCOD ? '2' : '1'; // Czech domestic: 2=Business COD, 1=Business
+        productType = hasCOD ? 'BUSD' : 'BUSS'; // Czech domestic: BUSD=COD, BUSS=no COD
       } else {
         // International shipment (Slovakia, etc.)
-        productType = hasCOD ? '37' : '36'; // International: 37=Connect COD, 36=Connect
+        productType = hasCOD ? 'COND' : 'CONN'; // International: COND=COD, CONN=no COD
       }
 
       // Prepare recipient info (customer receiving the package)
