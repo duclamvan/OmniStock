@@ -970,7 +970,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
 
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex-col transition-all duration-300",
+        "hidden lg:flex fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-700 flex-col transition-all duration-300 group",
         isCollapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
@@ -989,7 +989,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
               "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
               "hover:bg-gray-100 dark:hover:bg-slate-800",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-              isCollapsed && "mx-auto"
+              "opacity-0 group-hover:opacity-100",
+              isCollapsed && "mx-auto opacity-100"
             )}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
