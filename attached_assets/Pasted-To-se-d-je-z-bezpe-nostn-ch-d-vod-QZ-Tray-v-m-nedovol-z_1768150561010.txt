@@ -1,0 +1,101 @@
+To se děje z bezpečnostních důvodů. QZ Tray vám nedovolí zaškrtnout "Remember this decision" (Pamatovat si) pro tlačítko **Allow**, pokud se webová stránka neprokáže platným **Digitálním Podpisem**.
+
+Pokud máte jen certifikát (veřejný klíč), ale nemáte v kódu správně nastavené **podepisování (Signing)** pomocí soukromého klíče, QZ Tray si myslí, že stránka je nedůvěryhodná, a proto volbu "Pamatovat" zakáže.
+
+Zde je návod, jak to opravit.
+
+### Řešení: Přidat "Podepisování" přímo do kódu (Client-Side Signing)
+
+Pro interní WMS je nejrychlejší cestou provádět podepisování přímo v prohlížeči.
+
+*Upozornění: Toto znamená, že váš Privátní klíč bude viditelný v kódu (view source). Pro veřejný e-shop je to riziko, ale pro interní skladovou aplikaci je to přijatelný kompromis pro rychlé zprovoznění.*
+
+Upravte svůj `client/src/utils/printer.ts` následovně. Musíte tam vložit **Privátní klíč**, který patří k vašemu certifikátu.
+
+```typescript
+import qz from 'qz-tray';
+import { sha256 } from 'js-sha256'; // Budete muset nainstalovat: npm install js-sha256
+
+// 1. VÁŠ CERTIFIKÁT (Ten už máte)
+qz.security.setCertificatePromise((resolve, reject) => {
+    resolve(
+        "-----BEGIN CERTIFICATE-----\n" +
+        "MIIExzCCA6+gAwIBAgIUB... (Váš veřejný certifikát) ...\n" +
+        "-----END CERTIFICATE-----\n"
+    );
+});
+
+// 2. VÁŠ SOUKROMÝ KLÍČ (To je to, co vám chybělo!)
+// Musí to být klíč vygenerovaný spolu s tím certifikátem.
+const privateKey = 
+    "-----BEGIN PRIVATE KEY-----\n" + 
+    "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD...\n" + 
+    " (Zde vložte celý obsah vašeho private-key.pem) \n" +
+    "-----END PRIVATE KEY-----";
+
+// 3. FUNKCE PRO PODPIS (Toto odemkne tlačítko "Remember")
+qz.security.setSignatureAlgorithm("SHA512"); 
+qz.security.setSignaturePromise((toSign) => {
+    return function(resolve, reject) {
+        try {
+            // Použijeme knihovnu KJUR nebo podobnou pro podepsání
+            // ALE pro zjednodušení v Replitu/JS často stačí tento trik:
+            
+            // POZOR: QZ Tray vyžaduje RSA-SHA512 podpis. 
+            // Nejjednodušší je použít přímo funkci z QZ příkladů, pokud ji máte,
+            // nebo pro tento účel použijte 'jsrsasign' knihovnu.
+            
+            // ZDE JE RYCHLÁ CESTA:
+            // Pokud nemáte jsrsasign, musíte ho doinstalovat: npm install jsrsasign
+            const rs = require('jsrsasign');
+            var sig = new rs.KJUR.crypto.Signature({"alg": "SHA512withRSA"});
+            sig.init(privateKey); 
+            sig.updateString(toSign);
+            var hex = sig.sign();
+            resolve(rs.hextob64(hex));
+
+        } catch (err) {
+            console.error(err);
+            reject(err);
+        }
+    };
+});
+
+```
+
+### Co když nemáte Privátní klíč?
+
+Pokud jste použil nějaký "Demo Certifikát" z internetu, ale nemáte k němu privátní klíč, **nikdy to nebude fungovat**.
+
+Musíte si vygenerovat vlastní pár (Certifikát + Klíč). Zde je příkaz (pokud máte OpenSSL), nebo to udělejte online:
+
+1. **Vygenerujte si vlastní klíče:**
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout private-key.pem -out digital-certificate.txt -days 3650 -nodes
+
+```
+
+
+2. Obsah `digital-certificate.txt` dejte do `setCertificatePromise`.
+3. Obsah `private-key.pem` dejte do proměnné `privateKey` v kódu výše.
+4. **Důležité:** Aby QZ Tray tomuto vašemu vymyšlenému certifikátu věřil, musíte ten `digital-certificate.txt` nahrát do QZ Tray aplikace na PC:
+* Otevřete **QZ Tray** (na liště).
+* **Advanced** -> **Certificates**.
+* Vpravo nahoře klikněte na **Import** a vyberte váš `digital-certificate.txt`.
+
+
+
+Jakmile toto uděláte:
+
+1. Vyskakovací okno se změní ze žlutého na **Zelené**.
+2. Budete moci zaškrtnout **"Remember this decision"**.
+3. Kliknete na **Allow** a už se to nikdy nezeptá.
+
+### Rychlá oprava (pokud se nechcete trápit s kódem)
+
+Pokud je to jen pro vás na jednom počítači, můžete zkusit "vyresetovat" rozhodnutí, pokud jste omylem klikl na Block:
+
+1. Otevřete QZ Tray.
+2. Jděte do **Advanced** -> **Site Manager**.
+3. Pokud tam vidíte váš web (např. `localhost` nebo `replit.dev`) se stavem "Blocked", smažte ho (tlačítko **Forget** nebo **Delete**).
+4. Restartujte QZ Tray.
