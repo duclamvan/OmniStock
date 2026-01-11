@@ -784,6 +784,11 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                                   )}
                                 </div>
                               )}
+                              {child.href === '/stock/approvals' && pendingStockAdjustmentsCount > 0 && (
+                                <Badge variant="default" className="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                  {pendingStockAdjustmentsCount}
+                                </Badge>
+                              )}
                             </button>
                           </Link>
                         </div>
@@ -852,12 +857,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                 {item.name === "Tickets" && dueTicketsCount > 0 && (
                   <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
                     {dueTicketsCount}
-                  </Badge>
-                )}
-                {/* Number badges for warehouse operations */}
-                {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs h-5 min-w-[20px] px-1.5 rounded-full flex items-center justify-center">
-                    {pendingStockAdjustmentsCount}
                   </Badge>
                 )}
               </button>
@@ -932,12 +931,6 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    {/* Number badges for collapsed sidebar */}
-                    {item.href === "/stock" && pendingStockAdjustmentsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
-                        {pendingStockAdjustmentsCount > 9 ? '9+' : pendingStockAdjustmentsCount}
-                      </span>
-                    )}
                   </button>
                 </Link>
               </TooltipTrigger>

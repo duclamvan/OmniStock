@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info } from "lucide-react";
+import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -425,6 +425,17 @@ export default function StockLookup() {
           <div className="flex items-center justify-between mb-2.5">
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('stockLookup')}</h1>
             <div className="flex items-center gap-2">
+              <Link href="/stock/approvals">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  data-testid="button-adjustment-approvals"
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                  {t('adjustmentApprovals')}
+                </Button>
+              </Link>
               <Link href="/stock/labels">
                 <Button
                   variant="outline"
