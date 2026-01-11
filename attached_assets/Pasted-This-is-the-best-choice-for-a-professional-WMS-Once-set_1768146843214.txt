@@ -1,0 +1,169 @@
+This is the best choice for a professional WMS. Once set up, your warehouse team can print a label to the "Zebra" and an invoice to the "Brother" instantly, with zero clicks.
+
+Here is your step-by-step guide to integrating **QZ Tray** into your web app.
+
+### Phase 1: The Local Setup (Windows PC)
+
+You need the software that "listens" for your website's commands.
+
+1. **Download & Install:** Go to the [QZ Tray Download Page](https://qz.io/download/) and install the latest version (currently 2.2+).
+2. **Launch It:** Open QZ Tray on your computer. You will see a little green printer icon in your system tray (near the clock).
+3. **Verify:** Right-click the icon -> **Advanced** -> **Troubleshoot**. It should say "Connected" or show a green status.
+
+---
+
+### Phase 2: The Code Integration
+
+You need to add the QZ library to your Replit project so your code can talk to that little green icon.
+
+#### 1. Install the Package
+
+In your Replit Shell (or terminal), run:
+
+```bash
+npm install qz-tray
+
+```
+
+#### 2. Create the Print Service
+
+Create a new file `client/src/utils/printer.ts` (or `services/printer.ts`). This will handle the messy connection logic.
+
+**Copy/Paste this code:**
+
+```typescript
+import qz from 'qz-tray';
+
+// 1. SETUP CERTIFICATE (Paste your trusted certificate code here)
+qz.security.setCertificatePromise((resolve, reject) => {
+    // ... PASTE YOUR CERTIFICATE STRING HERE ...
+    resolve("-----BEGIN CERTIFICATE-----\n..."); 
+});
+
+// 2. SIGNING PROMISE (Required to silence the popup)
+// For local dev/testing, you can use this "dummy" signer.
+// For production, you usually move this logic to the backend.
+qz.security.setSignatureAlgorithm("SHA512"); 
+qz.security.setSignaturePromise((toSign) => {
+    return function(resolve, reject) {
+        // In a real app, send 'toSign' to your backend to be signed privately
+        // For now/local, this might just resolve if using the self-signed cert approach
+        resolve("...signature..."); 
+    };
+});
+
+// --- CORE FUNCTIONS ---
+
+export const connectToQZ = async () => {
+    if (!qz.websocket.isActive()) {
+        try {
+            await qz.websocket.connect();
+            console.log("Connected to QZ Tray!");
+        } catch (err) {
+            console.error("QZ Tray not running. Please start it.", err);
+            alert("Please start QZ Tray software on your PC.");
+        }
+    }
+};
+
+export const getPrinters = async () => {
+    await connectToQZ();
+    // Returns array of printer names: ["Zebra", "Microsoft PDF", ...]
+    return await qz.printers.find(); 
+};
+
+export const printPDF = async (printerName: string, pdfBase64: string) => {
+    await connectToQZ();
+
+    // Configuration: optimize for labels (high density)
+    const config = qz.configs.create(printerName, { 
+        scaleContent: true,
+        size: { width: 4, height: 6, units: 'in' } // Adjust to your PPL Label size
+    });
+
+    const data = [{
+        type: 'pixel',
+        format: 'pdf',
+        flavor: 'base64',
+        data: pdfBase64
+    }];
+
+    try {
+        await qz.print(config, data);
+        console.log(`Sent to ${printerName}`);
+    } catch (err) {
+        console.error("Printing failed", err);
+        throw err;
+    }
+};
+
+```
+
+#### 3. Frontend Implementation (The Dropdown)
+
+Now, add this logic to your Settings page or Packing page so the user can select their printer.
+
+**In `PackingPage.tsx` (React):**
+
+```tsx
+import { useState, useEffect } from 'react';
+import { getPrinters, printPDF } from '../utils/printer';
+
+export function PrinterSettings() {
+  const [printers, setPrinters] = useState<string[]>([]);
+  const [selectedPrinter, setSelectedPrinter] = useState(localStorage.getItem('saved_printer') || '');
+
+  useEffect(() => {
+    // Fetch printers when page loads
+    getPrinters().then(setPrinters);
+  }, []);
+
+  const savePrinter = (e: any) => {
+    const name = e.target.value;
+    setSelectedPrinter(name);
+    localStorage.setItem('saved_printer', name); // Save preference
+  };
+
+  return (
+    <select value={selectedPrinter} onChange={savePrinter} className="border p-2 rounded">
+      <option value="">-- Select Label Printer --</option>
+      {printers.map(p => <option key={p} value={p}>{p}</option>)}
+    </select>
+  );
+}
+
+```
+
+#### 4. The "Print" Action (Converting URL to Base64)
+
+Since PPL gives you a URL (e.g., `https://api.ppl.cz/...pdf`), but QZ Tray wants **Base64** data, you need a tiny helper to convert it before sending.
+
+```typescript
+// Helper: Fetch PDF URL and convert to Base64 string for QZ
+async function printLabelFromUrl(url: string) {
+    const printerName = localStorage.getItem('saved_printer');
+    if (!printerName) return alert("Please select a printer first!");
+
+    // 1. Fetch the PDF data
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    // 2. Convert to Base64
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = async () => {
+        const base64data = (reader.result as string).split(',')[1]; // Remove "data:application/pdf..." header
+        
+        // 3. Send to QZ
+        await printPDF(printerName, base64data);
+    };
+}
+
+```
+
+### 🎯 Summary
+
+1. **QZ Tray** runs on your PC.
+2. **`printer.ts`** connects your Replit app to QZ Tray.
+3. **Dropdown** lets you pick "Zebra ZD420" once.
+4. **`printLabelFromUrl`** grabs the PPL PDF, turns it into code, and silently sends it to the Zebra. Zero clicks.
