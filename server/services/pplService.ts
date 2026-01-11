@@ -303,19 +303,23 @@ export interface PPLSingleShipmentRequest {
   referenceId: string;
   recipient: {
     name: string;
+    name2?: string;
     street: string;
     city: string;
     zipCode: string;
     country: string;
+    contact?: string;
     phone?: string;
     email?: string;
   };
   sender?: {
     name: string;
+    name2?: string;
     street: string;
     city: string;
     zipCode: string;
     country: string;
+    contact?: string;
     phone?: string;
     email?: string;
   };
