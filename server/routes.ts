@@ -9375,6 +9375,9 @@ Important:
         description: `Direct stock adjustment: ${adjustmentType} ${quantity} units (${reason}). Old: ${location.quantity}, New: ${newQuantity}`,
       });
 
+
+      // Sync base stock with location quantities
+      await recalculateProductBaseStock(productId);
       res.json({ success: true, newQuantity, oldQuantity: location.quantity });
     } catch (error: any) {
       console.error("Error performing direct stock adjustment:", error);
@@ -9442,6 +9445,73 @@ Important:
     }
   });
 
+  // Sync all product base quantities with their location sums - Admin only
+  app.post('/api/stock/sync-base-quantities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const userRole = req.user?.role;
+      
+      // Admin only
+      if (userRole !== 'administrator') {
+        return res.status(403).json({ message: "Administrator access required" });
+      }
+      
+      // Get all products
+      const allProducts = await storage.getProducts();
+      
+      let updatedCount = 0;
+      let skippedCount = 0;
+      const details: { productId: string; name: string; oldQty: number; newQty: number }[] = [];
+      
+      for (const product of allProducts) {
+        // Get all locations for this product
+        const locations = await storage.getProductLocations(product.id);
+        const totalLocationQty = locations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+        
+        const currentQty = product.quantity || 0;
+        
+        // Only update if there are locations AND the quantity differs
+        if (locations.length > 0 && currentQty !== totalLocationQty) {
+          await db
+            .update(products)
+            .set({ quantity: totalLocationQty, updatedAt: new Date() })
+            .where(eq(products.id, product.id));
+          
+          details.push({
+            productId: product.id,
+            name: product.name || 'Unknown',
+            oldQty: currentQty,
+            newQty: totalLocationQty
+          });
+          updatedCount++;
+        } else {
+          skippedCount++;
+        }
+      }
+      
+      // Create audit trail
+      await storage.createUserActivity({
+        userId: userId,
+        action: 'synced',
+        entityType: 'stock',
+        entityId: 'all-products',
+        description: `Synced ${updatedCount} product quantities with location sums (${skippedCount} skipped)`,
+      });
+      
+      console.log(`[Stock Sync] Admin sync completed: ${updatedCount} updated, ${skippedCount} skipped`);
+      
+      res.json({ 
+        success: true, 
+        updatedCount,
+        skippedCount,
+        details: details.slice(0, 50)
+      });
+    } catch (error: any) {
+      console.error("Error syncing base quantities:", error);
+      res.status(500).json({ message: error.message || "Failed to sync base quantities" });
+    }
+  });
+
   app.patch('/api/stock-adjustment-requests/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -9461,6 +9531,9 @@ Important:
         description: `Approved stock adjustment: ${request.adjustmentType} ${request.requestedQuantity}`,
       });
 
+
+      // Sync base stock with location quantities
+      await recalculateProductBaseStock(request.productId);
       res.json(request);
     } catch (error: any) {
       console.error("Error approving stock adjustment request:", error);
