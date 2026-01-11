@@ -9532,8 +9532,6 @@ Important:
       });
 
 
-      // Sync base stock with location quantities
-      await recalculateProductBaseStock(request.productId);
       res.json(request);
     } catch (error: any) {
       console.error("Error approving stock adjustment request:", error);

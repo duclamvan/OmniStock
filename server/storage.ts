@@ -3297,6 +3297,21 @@ export class DatabaseStorage implements IStorage {
           .where(eq(stockAdjustmentRequests.id, id))
           .returning();
 
+        // Recalculate base stock INSIDE the transaction to read committed data
+        const allLocations = await tx
+          .select({ quantity: productLocations.quantity })
+          .from(productLocations)
+          .where(eq(productLocations.productId, request.productId));
+        
+        const totalQuantity = allLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+        
+        await tx
+          .update(products)
+          .set({ quantity: totalQuantity, updatedAt: new Date() })
+          .where(eq(products.id, request.productId));
+        
+        console.log(`[Stock Adjustment Approved] Product ${request.productId}: location ${request.locationId} updated to ${newQuantity}, base stock = ${totalQuantity}`);
+
         return updatedRequest;
       });
     } catch (error) {
