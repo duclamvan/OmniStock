@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, Download, Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { usePrinter } from '@/hooks/usePrinter';
 
 export interface ReceiptItem {
   name: string;
@@ -47,11 +48,26 @@ interface ThermalReceiptProps {
   fullOrderId?: string; // Full order ID for packing list print
 }
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderId }: ThermalReceiptProps) {
-  const { t } = useTranslation(['common', 'financial']);
+  const { t } = useTranslation(['common', 'financial', 'orders']);
   const { toast } = useToast();
+  const { printDocument, isPrinting: isPrintingQZ } = usePrinter({ context: 'pos_receipt_printer' });
+  const { printDocument: printPackingList, isPrinting: isPrintingPackingQZ } = usePrinter({ context: 'packing_list_printer' });
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrintingPackingList, setIsPrintingPackingList] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(true);
   const cachedBlobRef = useRef<Blob | null>(null);
@@ -166,10 +182,15 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
         blob = await response.blob();
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const base64 = await blobToBase64(blob);
+      const result = await printDocument(base64, false);
       
-      // Open PDF in new window for printing (works with Chrome kiosk mode)
-      // Use minimal popup that auto-triggers print
+      if (result.success && result.usedQZ) {
+        onPrint?.();
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
       const printWindow = window.open(url, '_blank', 'width=450,height=700,menubar=no,toolbar=no,location=no,status=no');
       
       if (printWindow) {
@@ -177,13 +198,10 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
           printWindow.focus();
           printWindow.print();
         };
-        // Cleanup after delay
         setTimeout(() => {
           window.URL.revokeObjectURL(url);
         }, 60000);
       } else {
-        // Popup blocked - use native window.print() on current page
-        // The .no-print class hides buttons during printing
         window.URL.revokeObjectURL(url);
         window.print();
       }
@@ -198,6 +216,46 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
       });
     } finally {
       setIsPrinting(false);
+    }
+  };
+
+  const handlePrintPackingList = async () => {
+    if (!fullOrderId) return;
+    
+    setIsPrintingPackingList(true);
+    try {
+      const response = await fetch(`/api/orders/${fullOrderId}/packing-list.pdf`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch packing list PDF');
+      
+      const blob = await response.blob();
+      const base64 = await blobToBase64(blob);
+      const result = await printPackingList(base64, false);
+      
+      if (result.success && result.usedQZ) {
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 60000);
+      }
+    } catch (error) {
+      console.error('Error printing packing list:', error);
+      toast({
+        title: t('common:error'),
+        description: t('orders:packingListPrintFailed', 'Failed to print packing list'),
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPrintingPackingList(false);
     }
   };
 
@@ -290,18 +348,16 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
         {fullOrderId && (
           <Button 
             size="default"
-            onClick={() => {
-              const printWindow = window.open(`/api/orders/${fullOrderId}/packing-list.pdf`, '_blank');
-              if (printWindow) {
-                printWindow.onload = () => {
-                  printWindow.print();
-                };
-              }
-            }}
+            onClick={handlePrintPackingList}
+            disabled={isPrintingPackingList || isPrintingPackingQZ}
             className="h-10 sm:h-11 px-3 sm:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm"
             data-testid="button-print-packing-list"
           >
-            <FileText className="h-4 w-4 sm:mr-2" />
+            {isPrintingPackingList || isPrintingPackingQZ ? (
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4 sm:mr-2" />
+            )}
             <span className="hidden sm:inline">{t('orders:packingList', 'Packing List')}</span>
             <span className="sm:hidden ml-1.5">Pack</span>
           </Button>
@@ -310,11 +366,11 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
           size="default" 
           variant="secondary" 
           onClick={handlePrint} 
-          disabled={isPrinting || isLoadingPdf} 
+          disabled={isPrinting || isPrintingQZ || isLoadingPdf} 
           className="h-10 sm:h-11 px-3 sm:px-6 text-xs sm:text-sm" 
           data-testid="button-print-receipt"
         >
-          {isPrinting ? (
+          {isPrinting || isPrintingQZ ? (
             <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
           ) : (
             <Printer className="h-4 w-4 sm:mr-2" />
