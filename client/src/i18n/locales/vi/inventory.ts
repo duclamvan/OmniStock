@@ -2,6 +2,8 @@ const inventory = {
   // Module Name
   inventory: 'Tồn kho',
   stockManagement: 'Quản lý tồn kho',
+  stock: 'Tồn kho',
+  adjustmentApprovals: 'Duyệt điều chỉnh',
   
   // Actions
   receiveStock: 'Nhập kho',

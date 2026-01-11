@@ -2,6 +2,8 @@ const inventory = {
   // Module Name
   inventory: 'Inventory',
   stockManagement: 'Stock Management',
+  stock: 'Stock',
+  adjustmentApprovals: 'Adjustment Approvals',
   
   // Actions
   receiveStock: 'Receive Stock',
