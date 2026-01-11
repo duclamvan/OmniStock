@@ -420,17 +420,31 @@ export async function createPPLSingleShipment(request: PPLSingleShipmentRequest)
     let errorMessage = 'Failed to create PPL shipment';
     if (error.response?.data) {
       const data = error.response.data;
+      // Handle PPL API error formats
       if (data.title && data.errors) {
+        // Validation errors format
         const validationErrors = Object.entries(data.errors)
           .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join('; ');
         errorMessage = `${data.title}: ${validationErrors}`;
+      } else if (data.errorCode || data.code) {
+        // PPL API error code format (e.g., UndefinedResource)
+        const code = data.errorCode || data.code;
+        const desc = data.errorDescription || data.description || data.detail || data.message || '';
+        errorMessage = `PPL API Error [${code}]: ${desc || 'Unknown error'}`;
       } else if (data.detail) {
         errorMessage = data.detail;
       } else if (data.message) {
         errorMessage = data.message;
+      } else if (typeof data === 'string') {
+        // Plain string error
+        errorMessage = data;
       }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
+    
+    console.error('PPL API Error Full Response:', JSON.stringify(error.response?.data, null, 2));
     
     const err = new Error(errorMessage) as any;
     err.details = errorDetails;
@@ -555,18 +569,31 @@ export async function createPPLShipment(request: PPLCreateShipmentRequest): Prom
     let errorMessage = 'Failed to create PPL shipment';
     if (error.response?.data) {
       const data = error.response.data;
+      // Handle PPL API error formats
       if (data.title && data.errors) {
         // Validation errors format
         const validationErrors = Object.entries(data.errors)
           .map(([field, msgs]: [string, any]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join('; ');
         errorMessage = `${data.title}: ${validationErrors}`;
+      } else if (data.errorCode || data.code) {
+        // PPL API error code format (e.g., UndefinedResource)
+        const code = data.errorCode || data.code;
+        const desc = data.errorDescription || data.description || data.detail || data.message || '';
+        errorMessage = `PPL API Error [${code}]: ${desc || 'Unknown error'}`;
       } else if (data.detail) {
         errorMessage = data.detail;
       } else if (data.message) {
         errorMessage = data.message;
+      } else if (typeof data === 'string') {
+        // Plain string error
+        errorMessage = data;
       }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
+    
+    console.error('PPL Batch API Error Full Response:', JSON.stringify(error.response?.data, null, 2));
     
     const err = new Error(errorMessage) as any;
     err.details = errorDetails;

@@ -61,8 +61,11 @@ export function useKeyboardBarcodeScanner({
     const now = Date.now();
     const timeSinceLastKey = now - lastKeyTimeRef.current;
 
+    // Safety check - buffer might be undefined during unmount
+    const currentBuffer = bufferRef.current ?? '';
+
     // If too much time has passed, start fresh
-    if (timeSinceLastKey > maxInputTime && bufferRef.current.length > 0) {
+    if (timeSinceLastKey > maxInputTime && currentBuffer.length > 0) {
       resetBuffer();
     }
 
@@ -70,9 +73,10 @@ export function useKeyboardBarcodeScanner({
 
     // Handle Enter key - this signals end of barcode
     if (event.key === 'Enter') {
-      if (bufferRef.current.length >= minLength) {
+      const enterBuffer = bufferRef.current ?? '';
+      if (enterBuffer.length >= minLength) {
         // We have a valid barcode!
-        const barcode = bufferRef.current.trim();
+        const barcode = enterBuffer.trim();
         resetBuffer();
         
         // Prevent default form submission if we captured a barcode
