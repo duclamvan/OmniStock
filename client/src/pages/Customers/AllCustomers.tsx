@@ -1801,6 +1801,12 @@ export default function AllCustomers() {
                 >
                   {t('common:sales')}
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.storeCredit !== false}
+                  onCheckedChange={() => toggleColumnVisibility('storeCredit')}
+                >
+                  {t('customers:storeCredit')}
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
