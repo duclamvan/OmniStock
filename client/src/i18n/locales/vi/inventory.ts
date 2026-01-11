@@ -742,7 +742,6 @@ const inventory = {
   stockAlreadyZero: 'Tồn kho đã về 0',
   noWarehouseLocations: 'Chưa chỉ định vị trí kho',
   noLocation: 'Chưa có vị trí',
-  addLocation: 'Thêm vị trí',
   viewDescription: 'Xem mô tả',
   showingUnderAllocatedItems: 'Hiển thị mặt hàng phân bổ thiếu',
   discrepanciesBetweenRecorded: 'Sản phẩm dưới đây có chênh lệch giữa số lượng đã ghi và số lượng tại vị trí kho',
@@ -946,7 +945,6 @@ const inventory = {
   productsMovedSuccess: 'Đã di chuyển {count} sản phẩm vào danh mục này',
   productsMoveFailed: 'Không thể di chuyển sản phẩm',
   productName: 'Tên sản phẩm',
-  stock: 'Tồn kho',
   priceEUR: 'Giá (EUR)',
   priceCZK: 'Giá (CZK)',
   

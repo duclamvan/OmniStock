@@ -853,7 +853,6 @@ const inventory = {
   productsMovedSuccess: '{count} products moved to this category',
   productsMoveFailed: 'Failed to move products',
   productName: 'Product Name',
-  stock: 'Stock',
   priceEUR: 'Price (EUR)',
   priceCZK: 'Price (CZK)',
   
