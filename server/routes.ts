@@ -20164,8 +20164,7 @@ Important:
           shipmentNumbers = result.trackingNumbers;
           
           // Get label using the shipment ID
-          const labelBuffer = await getPPLLabel(batchId, 'pdf');
-          label = { labelContent: labelBuffer.toString('base64') };
+          label = await getPPLLabel(batchId, 'pdf');
         } catch (singleError: any) {
           console.error('❌ Single shipment creation failed:', singleError.message);
           return res.status(500).json({ 
@@ -20385,8 +20384,7 @@ Important:
       try {
         if (shipmentId) {
           // Single shipment - use shipment ID to get label
-          const labelBuffer = await getPPLLabel(batchId, 'pdf');
-          label = { labelContent: labelBuffer.toString('base64') };
+          label = await getPPLLabel(batchId, 'pdf');
         } else {
           // Batch shipment - use batch ID to get label
           label = await getPPLLabel(batchId!, 'pdf');
