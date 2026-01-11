@@ -18169,8 +18169,8 @@ Important:
         recipient: {
           country: normalizeCountry(shippingAddress.country),
           zipCode: shippingAddress.zipCode.trim(),
-          name: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
-          name2: shippingAddress.company?.trim() || undefined,
+          name: shippingAddress.company?.trim() || `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
+          name2: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
           street: shippingAddress.streetNumber ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}` : shippingAddress.street.trim(),
           city: shippingAddress.city.trim(),
           contact: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
@@ -18720,8 +18720,8 @@ Important:
           recipient: {
             country: normalizeCountry(shippingAddress.country),
             zipCode: shippingAddress.zipCode.trim(),
-            name: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
-            name2: shippingAddress.company?.trim() || undefined,
+            name: shippingAddress.company?.trim() || `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
+            name2: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
             street: shippingAddress.streetNumber ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}` : shippingAddress.street.trim(),
             city: shippingAddress.city.trim(),
             contact: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
@@ -19957,12 +19957,12 @@ Important:
       const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
       const companyName = shippingAddress.company?.trim() || undefined;
       
-      // PPL mapping:
-      // name = person's full name (main recipient line on label)
-      // name2 = company name (second line on label)
+      // PPL mapping (per PPL API docs):
+      // name = company name (main line on label)
+      // name2 = person's full name (second line on label)
       // contact = contact person for delivery
-      const recipientName = fullName || customer?.name || 'Unknown';
-      const recipientName2 = companyName;
+      const recipientName = companyName || fullName || customer?.name || 'Unknown';
+      const recipientName2 = fullName || customer?.name || undefined;
       const recipientContact = fullName || customer?.name || undefined;
       
       console.log('📦 PPL Recipient mapping:', {
