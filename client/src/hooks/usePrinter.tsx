@@ -112,8 +112,10 @@ export function usePrinter(options: UsePrinterOptions = {}) {
   ): Promise<PrintResult> => {
     const printerName = getSavedPrinter(context) || getSavedPrinter('document_printer_name');
     
+    // If no printer configured, use browser print directly
     if (!printerName) {
       if (fallbackToBrowser) {
+        console.log('[usePrinter] No printer configured, using browser print');
         openPdfInBrowser(pdfBase64);
         return { success: true, usedQZ: false };
       }
@@ -125,12 +127,14 @@ export function usePrinter(options: UsePrinterOptions = {}) {
       const connected = await connectToQZ();
       if (!connected) {
         if (fallbackToBrowser) {
+          console.log('[usePrinter] QZ not connected, using browser print');
           openPdfInBrowser(pdfBase64);
           return { success: true, usedQZ: false };
         }
         return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
       }
 
+      console.log('[usePrinter] Printing via QZ Tray to:', printerName);
       await printPDF(printerName, pdfBase64);
       toast({
         title: t('printer:printSuccess', 'Print sent'),
@@ -138,7 +142,7 @@ export function usePrinter(options: UsePrinterOptions = {}) {
       });
       return { success: true, usedQZ: true };
     } catch (error) {
-      console.error('Print error:', error);
+      console.error('[usePrinter] Print error:', error);
       if (fallbackToBrowser) {
         openPdfInBrowser(pdfBase64);
         return { success: true, usedQZ: false };
@@ -164,6 +168,7 @@ export function usePrinter(options: UsePrinterOptions = {}) {
 
 function openPdfInBrowser(base64Data: string) {
   try {
+    console.log('[usePrinter] Opening PDF in browser for printing...');
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -172,15 +177,40 @@ function openPdfInBrowser(base64Data: string) {
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
-    const printWindow = window.open(blobUrl, '_blank');
+    
+    // Open in a popup window with specific dimensions to trigger print dialog
+    const printWindow = window.open(blobUrl, '_blank', 'width=800,height=600,menubar=no,toolbar=no,location=no,status=no');
     if (printWindow) {
       printWindow.onload = () => {
-        printWindow.print();
+        console.log('[usePrinter] Print window loaded, triggering print dialog...');
+        printWindow.focus();
+        // Small delay to ensure PDF is rendered before printing
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
       };
+    } else {
+      // Popup blocked - try iframe approach
+      console.log('[usePrinter] Popup blocked, trying iframe approach...');
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe.contentWindow?.print();
+          // Cleanup after print
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
+        }, 500);
+      };
+      return;
     }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   } catch (error) {
-    console.error('Failed to open PDF in browser:', error);
+    console.error('[usePrinter] Failed to open PDF in browser:', error);
   }
 }
 

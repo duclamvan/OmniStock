@@ -183,30 +183,19 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
       }
 
       const base64 = await blobToBase64(blob);
-      const result = await printDocument(base64, false);
       
-      if (result.success && result.usedQZ) {
+      // Try QZ Tray first with browser fallback enabled
+      const result = await printDocument(base64, true);
+      
+      if (result.success) {
+        if (result.usedQZ) {
+          toast({
+            title: t('printer:printSuccess', 'Print sent'),
+            description: t('printer:sentToQZ', 'Sent to printer via QZ Tray'),
+          });
+        }
         onPrint?.();
-        return;
       }
-
-      const url = window.URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank', 'width=450,height=700,menubar=no,toolbar=no,location=no,status=no');
-      
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-        };
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 60000);
-      } else {
-        window.URL.revokeObjectURL(url);
-        window.print();
-      }
-      
-      onPrint?.();
     } catch (error) {
       console.error('Error printing PDF:', error);
       toast({
@@ -231,21 +220,17 @@ export function ThermalReceipt({ data, onClose, onPrint, companyInfo, fullOrderI
       
       const blob = await response.blob();
       const base64 = await blobToBase64(blob);
-      const result = await printPackingList(base64, false);
       
-      if (result.success && result.usedQZ) {
-        return;
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 60000);
+      // Try QZ Tray first with browser fallback enabled
+      const result = await printPackingList(base64, true);
+      
+      if (result.success) {
+        if (result.usedQZ) {
+          toast({
+            title: t('printer:printSuccess', 'Print sent'),
+            description: t('printer:sentToQZ', 'Sent to printer via QZ Tray'),
+          });
+        }
       }
     } catch (error) {
       console.error('Error printing packing list:', error);
