@@ -55,6 +55,7 @@ import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
 import { COUNTRY_TO_GERMAN } from "@/lib/dhlBookmarklet";
 import { useTranslation } from 'react-i18next';
+import { usePPLLabelPrinter } from "@/hooks/usePrinter";
 import { 
   Dialog, 
   DialogContent, 
@@ -4101,6 +4102,7 @@ const ItemPrimaryLocation = memo(({
 export default function PickPack() {
   const { t } = useTranslation('orders');
   const { toast } = useToast();
+  const { printLabel, isPrinting: isPrintingQZ } = usePPLLabelPrinter();
   const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
@@ -13246,47 +13248,36 @@ export default function PickPack() {
                       onClick={async () => {
                         try {
                           setIsPrintingAllLabels(true);
-                          console.log('🖨️ Printing all PPL labels...');
+                          console.log('🖨️ Printing all PPL labels via QZ Tray...');
                           
-                          // Print each label that has PDF data
+                          // Print each label that has PDF data using QZ Tray direct print
                           for (let i = 0; i < shipmentLabelsFromDB.length; i++) {
                             const label = shipmentLabelsFromDB[i];
                             if (label.labelBase64) {
-                              const labelBlob = new Blob(
-                                [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                { type: 'application/pdf' }
-                              );
-                              const url = URL.createObjectURL(labelBlob);
+                              const result = await printLabel(label.labelBase64);
                               
-                              const printWindow = window.open(url, '_blank');
-                              if (printWindow) {
-                                printWindow.onload = () => {
-                                  printWindow.print();
-                                };
+                              // Only mark as printed if print was successful
+                              if (result.success) {
+                                const trackingNumber = label.trackingNumbers?.[0];
+                                if (trackingNumber) {
+                                  setPrintedPPLLabels(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.add(trackingNumber);
+                                    return newSet;
+                                  });
+                                }
                               }
                               
-                              setTimeout(() => URL.revokeObjectURL(url), 1000);
-                              
-                              // Mark as printed using tracking number
-                              const trackingNumber = label.trackingNumbers?.[0];
-                              if (trackingNumber) {
-                                setPrintedPPLLabels(prev => {
-                                  const newSet = new Set(prev);
-                                  newSet.add(trackingNumber);
-                                  return newSet;
-                                });
-                              }
-                              
-                              // Small delay between prints to prevent browser blocking
+                              // Small delay between prints
                               if (i < shipmentLabelsFromDB.length - 1) {
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                                await new Promise(resolve => setTimeout(resolve, 300));
                               }
                             }
                           }
                           
                           toast({
                             title: t('labelsSentToPrinter'),
-                            description: `${shipmentLabelsFromDB.length} label(s) opened for printing`,
+                            description: `${shipmentLabelsFromDB.length} label(s) sent to printer`,
                           });
                         } catch (error: any) {
                           console.error('Error printing labels:', error);
@@ -13299,7 +13290,7 @@ export default function PickPack() {
                           setIsPrintingAllLabels(false);
                         }
                       }}
-                      disabled={isPrintingAllLabels}
+                      disabled={isPrintingAllLabels || isPrintingQZ}
                       data-testid="button-print-all-ppl-labels"
                     >
                       {isPrintingAllLabels ? (
@@ -13438,29 +13429,25 @@ export default function PickPack() {
                                 onClick={async () => {
                                   try {
                                     if (label.labelBase64) {
-                                      const labelBlob = new Blob(
-                                        [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                        { type: 'application/pdf' }
-                                      );
-                                      const url = URL.createObjectURL(labelBlob);
-                                      const printWindow = window.open(url, '_blank');
-                                      if (printWindow) {
-                                        printWindow.onload = () => {
-                                          printWindow.print();
-                                          // Track that this label was printed using tracking number
-                                          const trackingNumber = label.trackingNumbers?.[0];
-                                          if (trackingNumber) {
-                                            setPrintedPPLLabels(prev => {
-                                              const newSet = new Set(prev);
-                                              newSet.add(trackingNumber);
-                                              return newSet;
-                                            });
-                                          }
-                                          // Refresh labels to ensure UI is up to date
-                                          fetchShipmentLabels();
-                                        };
+                                      const result = await printLabel(label.labelBase64);
+                                      
+                                      // Only track as printed if print was successful
+                                      if (result.success) {
+                                        const trackingNumber = label.trackingNumbers?.[0];
+                                        if (trackingNumber) {
+                                          setPrintedPPLLabels(prev => {
+                                            const newSet = new Set(prev);
+                                            newSet.add(trackingNumber);
+                                            return newSet;
+                                          });
+                                        }
+                                      } else if (result.error) {
+                                        toast({
+                                          title: t('error'),
+                                          description: result.error,
+                                          variant: "destructive"
+                                        });
                                       }
-                                      setTimeout(() => URL.revokeObjectURL(url), 1000);
                                     }
                                   } catch (error) {
                                     toast({
@@ -13773,7 +13760,6 @@ export default function PickPack() {
                                               console.log('🖨️ Print button clicked for label:', {
                                                 labelId: label.id,
                                                 hasLabelBase64: !!label.labelBase64,
-                                                labelBase64Length: label.labelBase64?.length,
                                                 trackingNumbers: label.trackingNumbers
                                               });
                                               
@@ -13787,41 +13773,28 @@ export default function PickPack() {
                                                 return;
                                               }
                                               
-                                              // Mark as printed immediately when clicked (optimistic update)
-                                              const trackingNumber = label.trackingNumbers?.[0];
-                                              if (trackingNumber) {
-                                                setPrintedPPLLabels(prev => {
-                                                  const newSet = new Set(prev);
-                                                  newSet.add(trackingNumber);
-                                                  return newSet;
-                                                });
-                                              }
+                                              console.log('🖨️ Sending to QZ Tray printer...');
+                                              const result = await printLabel(label.labelBase64);
                                               
-                                              console.log('📄 Creating PDF blob...');
-                                              const labelBlob = new Blob(
-                                                [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                                { type: 'application/pdf' }
-                                              );
-                                              console.log('✅ Blob created, size:', labelBlob.size);
-                                              
-                                              const url = URL.createObjectURL(labelBlob);
-                                              console.log('🔗 Opening print window...');
-                                              const printWindow = window.open(url, '_blank');
-                                              
-                                              if (printWindow) {
-                                                printWindow.onload = () => {
-                                                  console.log('✅ Print window loaded, triggering print dialog');
-                                                  printWindow.print();
-                                                };
-                                              } else {
-                                                console.error('❌ Failed to open print window - might be blocked by popup blocker');
+                                              // Only mark as printed if print was successful
+                                              if (result.success) {
+                                                console.log('✅ Print sent successfully');
+                                                const trackingNumber = label.trackingNumbers?.[0];
+                                                if (trackingNumber) {
+                                                  setPrintedPPLLabels(prev => {
+                                                    const newSet = new Set(prev);
+                                                    newSet.add(trackingNumber);
+                                                    return newSet;
+                                                  });
+                                                }
+                                              } else if (result.error) {
+                                                console.error('❌ Print failed:', result.error);
                                                 toast({
                                                   title: t('errorTitle'),
-                                                  description: t('couldNotOpenPrintWindow'),
+                                                  description: result.error,
                                                   variant: "destructive"
                                                 });
                                               }
-                                              setTimeout(() => URL.revokeObjectURL(url), 1000);
                                             } catch (error: any) {
                                               console.error('❌ Print error:', error);
                                               toast({
@@ -13945,39 +13918,30 @@ export default function PickPack() {
                                         return;
                                       }
                                       
-                                      // Mark all labels as printed immediately (optimistic update)
-                                      shipmentLabelsFromDB.forEach(lbl => {
-                                        const trackingNumber = lbl.trackingNumbers?.[0];
-                                        if (trackingNumber) {
-                                          setPrintedPPLLabels(prev => {
-                                            const newSet = new Set(prev);
-                                            newSet.add(trackingNumber);
-                                            return newSet;
-                                          });
-                                        }
-                                      });
+                                      console.log('🖨️ Printing all labels from batch PDF via QZ Tray...');
+                                      const result = await printLabel(labelWithPDF.labelBase64);
                                       
-                                      console.log('🖨️ Printing all labels from batch PDF...');
-                                      const labelBlob = new Blob(
-                                        [Uint8Array.from(atob(labelWithPDF.labelBase64), c => c.charCodeAt(0))],
-                                        { type: 'application/pdf' }
-                                      );
-                                      
-                                      const url = URL.createObjectURL(labelBlob);
-                                      const printWindow = window.open(url, '_blank');
-                                      
-                                      if (printWindow) {
-                                        printWindow.onload = () => {
-                                          printWindow.print();
-                                        };
-                                      } else {
+                                      // Only mark labels as printed if print was successful
+                                      if (result.success) {
+                                        console.log('✅ Batch print sent successfully');
+                                        shipmentLabelsFromDB.forEach(lbl => {
+                                          const trackingNumber = lbl.trackingNumbers?.[0];
+                                          if (trackingNumber) {
+                                            setPrintedPPLLabels(prev => {
+                                              const newSet = new Set(prev);
+                                              newSet.add(trackingNumber);
+                                              return newSet;
+                                            });
+                                          }
+                                        });
+                                      } else if (result.error) {
+                                        console.error('❌ Print failed:', result.error);
                                         toast({
                                           title: t('errorTitle'),
-                                          description: t('couldNotOpenPrintWindow'),
+                                          description: result.error,
                                           variant: "destructive"
                                         });
                                       }
-                                      setTimeout(() => URL.revokeObjectURL(url), 1000);
                                     } catch (error: any) {
                                       console.error('❌ Print error:', error);
                                       toast({
@@ -14064,28 +14028,25 @@ export default function PickPack() {
                                       }`}
                                       onClick={async () => {
                                         try {
-                                          // Mark as printed immediately (optimistic update)
-                                          const trackingNumber = label.trackingNumbers?.[0];
-                                          if (trackingNumber) {
-                                            setPrintedPPLLabels(prev => {
-                                              const newSet = new Set(prev);
-                                              newSet.add(trackingNumber);
-                                              return newSet;
+                                          const result = await printLabel(label.labelBase64);
+                                          
+                                          // Only mark as printed if print was successful
+                                          if (result.success) {
+                                            const trackingNumber = label.trackingNumbers?.[0];
+                                            if (trackingNumber) {
+                                              setPrintedPPLLabels(prev => {
+                                                const newSet = new Set(prev);
+                                                newSet.add(trackingNumber);
+                                                return newSet;
+                                              });
+                                            }
+                                          } else if (result.error) {
+                                            toast({
+                                              title: t('error'),
+                                              description: result.error,
+                                              variant: "destructive"
                                             });
                                           }
-                                          
-                                          const labelBlob = new Blob(
-                                            [Uint8Array.from(atob(label.labelBase64), c => c.charCodeAt(0))],
-                                            { type: 'application/pdf' }
-                                          );
-                                          const url = URL.createObjectURL(labelBlob);
-                                          const printWindow = window.open(url, '_blank');
-                                          if (printWindow) {
-                                            printWindow.onload = () => {
-                                              printWindow.print();
-                                            };
-                                          }
-                                          setTimeout(() => URL.revokeObjectURL(url), 1000);
                                         } catch (error) {
                                           toast({
                                             title: t('error'),
