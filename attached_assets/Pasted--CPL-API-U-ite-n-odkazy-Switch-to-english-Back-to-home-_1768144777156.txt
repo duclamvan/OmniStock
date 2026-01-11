@@ -1,0 +1,456 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+Slouží k vytvoření objednávky. Odpověď je v header (Location)
+POST
+Získaní stavu objednávky
+GET
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Vytvoření zásilky
+POST
+/shipment/batch
+Maintainer:
+Not configured
+Metoda shipment/batch slouží k vytvoření požadavku na získání zásilky , nebo skupiny zásilek. Při zavolání metody je návratovou hodnotou batchId, které následně slouží pro získávání stavu zpracovaní zásilky a následně pro získání etikety. Batch id je v odpovědi zobrazeno v hlavičce (headers) Location.
+BatchId je globální unikátní identifikátor (GUID), který se generuje pro každé zavolání metody pro vytvoření zásilky a pro další jeho zpracování je potřeba si jej uchovat.
+Je zapsané jako 32 hexadecimálních znaků rozdělených čtyřmi pomlčkami.
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Body Params
+application/json
+returnChannel
+optional
+Sekce návratových hodnot pro tisk štítku. Pokud vyplníte returnChannel a typ email, tak Vám přijde pro každou požádanou zásilku etiketa na uvedený email. Toto nefunguje na testovacím prostředí. Využití má toto spíše pro return zásilky, kdy žadateli přijde na email rovnou vytvořená etiketa. Chodí ovšem prázdný email bez jakéhokoliv textu pouze s pdf etiketou.
+One of:
+
+object
+
+EmptyNullableObject
+type
+optional
+Typ návratové cesty štítku. S FTP není podporováno!
+address
+string  | 
+null 
+optional
+Pokud je vybrán Type = Email, pak zde vyplňovat email adresu. Pokud je vybrán Type = Ftp, pak zde vyplňovat FTP cestu.
+Email formát: xxxxxxx@yyyy.zzz
+FTP formát: ftp://user:password@host:port/path
+Délka: 100
+<= 100 characters
+labelSettings
+optional
+labbelSettings slouží pro definici parametrů štítků
+One of:
+
+object
+
+EmptyNullableObject
+format
+enum<string> 
+(Eps.Api.MyApi2.Web.Constants.ConstLabelFormat)
+Eps.Api.MyApi2.Web.Constants.ConstLabelFormat
+optional
+Label format
+Allowed values:
+Zpl
+Pdf
+Jpeg
+Png
+Svg
+dpi
+integer <int32> | 
+null 
+optional
+Volba DPI pro ZPL
+>= 203
+<= 1200
+completeLabelSettings
+optional
+ZPL kodování base64, více etiket
+v jedné odpovědi
+shipments
+array [object] 
+required
+Zásilky
+>= 1 items
+referenceId
+string 
+required
+Jedinečná reference
+>= 1 characters
+<= 128 characters
+shipmentNumber
+string  | 
+null 
+optional
+Uvadí se zde vlastní číslo zásilky.
+V případě přání na generovaní vlastních čísel zásilek, PPL poskytne zákazníkovi číselnou řadu v daném rozsahu a zákazník si může generovat čísla zásilek sám.
+productType
+string 
+required
+Typ produktu. Více informací o jednotlivých typech na codelist/product
+>= 1 characters
+note
+string  | 
+null 
+optional
+Poznámka Délka: 300
+depot
+string  | 
+null 
+optional
+Nepoužívat. Délka: 2
+ageCheck
+string  | 
+null 
+optional
+Služba kontrola věku (15,18+),
+integratorId
+integer <int32> | 
+null 
+optional
+ID integrátora – pouze pro typ: integrátor
+>= 1
+shipmentSet
+optional
+Sada zásilek
+backAddress
+optional
+Adresa pro vrácení nedoručených
+zásilek
+sender
+optional
+Odesílatel zásilky
+senderMask
+optional
+Odesílatel zásilky – Alternativní adresa
+(v případě jiného odesílatele na etiketě,
+než je v evidenci.
+recipient
+object 
+required
+Příjemce zásilky
+specificDelivery
+optional
+cashOnDelivery
+optional
+Platební informace pro dobírkové produkty. Dobírka je vázána k produktu, pro to aby požadavek s dobírkou prošel je nutné zadat správný typ produktu v zásilce (PRID, BUSD, SMAD, COND, DOPD, SMED).
+insurance
+optional
+Pojištění balíků. Přidává pojištění pro balík nebo balíky v zásilce. Používejte pokud máte jeden balík v zásilce nebo více balíků se stejnou cenou v sadě. Pro balíky v sadě které mají různou cenu pro které chcete pojištění zadejte insurance v shipmentSetItems.
+externalNumbers
+array [object]  | 
+null 
+optional
+ExternalNumbers jsou externí čísla pro zákaznické identifikace. Např. číslo objednávky, nebo určitý kód zboží. Nejčastěji se používá code CUST jako zákaznické. Toto číslo se následně tiskne i přímo na etiketu a zároveň se propisuje zákazníkovi do fakturace. Více v codelist/externalNumbers
+services
+array [object]  | 
+null 
+optional
+Služby
+dormant
+optional
+shipmentRouting
+optional
+directInjection
+optional
+Využito v případě přímého závozu zásilek do zahraničního depa. Musí být dohodnuto a přiděleno obch. zástupcem.
+labelService
+optional
+shipmentsOrderBy
+string  | 
+null 
+optional
+Řazení etiket - ReferenceId, ShipmentNumber
+Example
+{
+  "returnChannel": {
+    "type": "<string>",
+    "address": "<string>"
+  },
+  "labelSettings": {
+    "format": "<string>",
+    "dpi": "<integer>",
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": "<boolean>",
+      "pageSize": "<string>",
+      "position": "<integer>"
+    }
+  },
+  "shipments": [
+    {
+      "productType": "<string>",
+      "referenceId": "<string>",
+      "shipmentNumber": "<string>",
+      "note": "<string>",
+      "depot": "<string>",
+      "ageCheck": "<string>",
+      "integratorId": "<integer>",
+      "shipmentSet": {
+        "numberOfShipments": "<integer>",
+        "additionallyAdded": "<boolean>",
+        "shipmentSetItems": [
+          {
+            "shipmentNumber": "<string>",
+            "weighedShipmentInfo": {
+              "weight": "<double>"
+            },
+            "externalNumbers": [
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              },
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              }
+            ],
+            "insurance": {
+              "insuranceCurrency": "<string>",
+              "insurancePrice": "<double>"
+            }
+          },
+          {
+            "shipmentNumber": "<string>",
+            "weighedShipmentInfo": {
+              "weight": "<double>"
+            },
+            "externalNumbers": [
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              },
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              }
+            ],
+            "insurance": {
+              "insuranceCurrency": "<string>",
+              "insurancePrice": "<double>"
+            }
+          }
+        ]
+      },
+      "backAddress": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "sender": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "senderMask": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "recipient": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "specificDelivery": {
+        "specificDeliveryDate": "<dateTime>",
+        "specificDeliveryTimeFrom": "<dateTime>",
+        "specificDeliveryTimeTo": "<dateTime>",
+        "specificTakeDate": "<dateTime>",
+        "parcelShopCode": "<string>"
+      },
+      "cashOnDelivery": {
+        "codCurrency": "<string>",
+        "codPrice": "<double>",
+        "codVarSym": "088919",
+        "iban": "<string>",
+        "swift": "<string>",
+        "specSymbol": "<string>",
+        "account": "<string>",
+        "accountPre": "<string>",
+        "bankCode": "<string>"
+      },
+      "insurance": {
+        "insuranceCurrency": "<string>",
+        "insurancePrice": "<double>"
+      },
+      "externalNumbers": [
+        {
+          "code": "<string>",
+          "externalNumber": "<string>"
+        },
+        {
+          "code": "<string>",
+          "externalNumber": "<string>"
+        }
+      ],
+      "services": [
+        {
+          "code": "<string>"
+        },
+        {
+          "code": "<string>"
+        }
+      ],
+      "dormant": {
+        "shipmentNumber": "<string>",
+        "note": "<string>",
+        "recipient": {
+          "country": "<string>",
+          "zipCode": "<string>",
+          "name": "<string>",
+          "name2": "<string>",
+          "street": "<string>",
+          "city": "<string>",
+          "contact": "<string>",
+          "phone": "<string>",
+          "email": "<string>"
+        },
+        "externalNumbers": [
+          {
+            "code": "<string>",
+            "externalNumber": "<string>"
+          },
+          {
+            "code": "<string>",
+            "externalNumber": "<string>"
+          }
+        ],
+        "services": [
+          {
+            "code": "<string>"
+          },
+          {
+            "code": "<string>"
+          }
+        ],
+        "weighedShipmentInfo": {
+          "weight": "<double>"
+        }
+      },
+      "shipmentRouting": {
+        "inputRouteCode": "28696"
+      },
+      "directInjection": {
+        "directAddressing": "<boolean>",
+        "gatewayZipCode": "<string>",
+        "gatewayCity": "<string>",
+        "country": "<string>"
+      },
+      "labelService": {
+        "labelless": "<boolean>"
+      }
+    }
+  ],
+  "shipmentsOrderBy": "<string>"
+}
+Request Code Samples
+Responses
+🟢201
+Created
+application/json
+Created
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Location
+string 
+optional
+Součástí location je BatchId které je v uuid formátu
+Body
+object
+ 
+Example
+{}
+🟠400
+Bad Request
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at about 2 months ago
+Previous
+Slouží ke spojení sad zásilek
+Next
+Slouží k úpravě výstupního formátu štítku

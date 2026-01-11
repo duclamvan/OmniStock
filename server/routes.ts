@@ -19949,21 +19949,19 @@ Important:
       }
 
       // Prepare recipient info (customer receiving the package)
-      // PPL API: name = contact person full name, name2 = company name
+      // PPL API fields: name (main), name2 (secondary), contact (person), street (with number)
       const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
-      const recipientName = fullName || customer?.name || 'Unknown';
-      const companyName = shippingAddress.company?.trim() || undefined;
+      const companyName = shippingAddress.company?.trim();
       
-      // Build full street address with house number and orientation number
+      // PPL mapping: if company exists, use company as name and person as contact
+      // Otherwise use person name as the main name
+      const recipientName = companyName || fullName || customer?.name || 'Unknown';
+      const recipientContact = fullName || customer?.name || undefined;
+      
+      // Build full street address with street number
       let recipientStreet = shippingAddress.street?.trim() || '';
-      if (shippingAddress.houseNumber?.trim()) {
-        recipientStreet += ` ${shippingAddress.houseNumber.trim()}`;
-      }
-      if (shippingAddress.orientationNumber?.trim()) {
-        recipientStreet += `/${shippingAddress.orientationNumber.trim()}`;
-      }
-      if (shippingAddress.addressLine2?.trim()) {
-        recipientStreet += `, ${shippingAddress.addressLine2.trim()}`;
+      if (shippingAddress.streetNumber?.trim()) {
+        recipientStreet += ` ${shippingAddress.streetNumber.trim()}`;
       }
       recipientStreet = recipientStreet.trim();
 
@@ -20004,7 +20002,7 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            name2: companyName,
+            contact: recipientContact,
             street: recipientStreet,
             city: shippingAddress.city,
             phone: shippingAddress.tel || customer?.phone || undefined,
@@ -20063,7 +20061,7 @@ Important:
             country: recipientCountryCode,
             zipCode: shippingAddress.zipCode.trim(),
             name: recipientName,
-            name2: companyName,
+            contact: recipientContact,
             street: recipientStreet,
             city: shippingAddress.city,
             phone: shippingAddress.tel || customer?.phone || undefined,
