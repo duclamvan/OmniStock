@@ -19961,6 +19961,16 @@ Important:
       const recipientName2 = companyName;
       const recipientContact = fullName || customer?.name || undefined;
       
+      console.log('📦 PPL Recipient mapping:', {
+        shippingAddressCompany: shippingAddress.company,
+        fullName,
+        companyName,
+        recipientName,
+        recipientName2,
+        recipientContact,
+        recipientStreet: shippingAddress.street + ' ' + (shippingAddress.streetNumber || '')
+      });
+      
       // Build full street address with street number
       let recipientStreet = shippingAddress.street?.trim() || '';
       if (shippingAddress.streetNumber?.trim()) {
