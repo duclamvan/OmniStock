@@ -104,6 +104,7 @@ export default function AllCustomers() {
       lastOrderDate: true,
       orderCount: true,
       totalSpent: true,
+      storeCredit: true,
     };
   });
 
@@ -381,6 +382,20 @@ export default function AllCustomers() {
           {formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR')}
         </span>
       ),
+    },
+    {
+      key: "storeCredit",
+      header: t('customers:storeCredit'),
+      sortable: true,
+      className: "text-right",
+      cell: (customer) => {
+        const creditValue = parseFloat(customer.storeCredit || '0');
+        return (
+          <span className={`text-xs lg:text-sm font-medium ${creditValue > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+            {formatCurrency(creditValue, 'EUR')}
+          </span>
+        );
+      },
     },
     {
       key: "actions",
