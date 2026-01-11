@@ -55,7 +55,7 @@ import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
 import { GLS_COUNTRY_MAP } from "@/lib/gls";
 import { COUNTRY_TO_GERMAN } from "@/lib/dhlBookmarklet";
 import { useTranslation } from 'react-i18next';
-import { usePPLLabelPrinter } from "@/hooks/usePrinter";
+import { usePPLLabelPrinter, usePackingListPrinter } from "@/hooks/usePrinter";
 import { 
   Dialog, 
   DialogContent, 
@@ -4103,6 +4103,7 @@ export default function PickPack() {
   const { t } = useTranslation('orders');
   const { toast } = useToast();
   const { printLabel, isPrinting: isPrintingQZ } = usePPLLabelPrinter();
+  const { printDocument: printPackingDoc, isPrinting: isPrintingPackingDoc } = usePackingListPrinter();
   const { generalSettings, inventorySettings } = useSettings();
   const aiCartonPackingEnabled = generalSettings?.enableAiCartonPacking ?? false;
   const scanningEnabled = inventorySettings.enableBarcodeScanning ?? true;
@@ -19473,32 +19474,23 @@ export default function PickPack() {
           {/* Action Buttons */}
           <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-center gap-3">
             <Button
-              onClick={() => {
-                // Print the label
-                const printWindow = window.open('', '_blank');
-                if (printWindow) {
-                  printWindow.document.write(`
-                    <html>
-                      <head><title>${t('shippingLabel')} - ${labelPreviewData?.orderId}</title></head>
-                      <body style="margin:0">
-                        <embed src="data:application/pdf;base64,${labelPreviewData?.labelBase64}" 
-                               type="application/pdf" 
-                               width="100%" 
-                               height="100%" />
-                      </body>
-                    </html>
-                  `);
-                  printWindow.document.close();
-                  setTimeout(() => {
-                    printWindow.print();
-                  }, 250);
+              onClick={async () => {
+                if (labelPreviewData?.labelBase64) {
+                  const result = await printLabel(labelPreviewData.labelBase64);
+                  if (result.success) {
+                    playSound('success');
+                  }
                 }
-                playSound('success');
               }}
+              disabled={isPrintingQZ}
               className="bg-emerald-600 dark:bg-emerald-700 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white shadow-sm px-6"
               size="lg"
             >
-              <Printer className="h-4 w-4 mr-2" />
+              {isPrintingQZ ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
               {t('printLabel')}
             </Button>
             <Button
