@@ -1,0 +1,1039 @@
+
+
+CPL API
+Užitečné odkazy
+Switch to english
+Back to home
+API Metody
+AccessPoint
+AddressWhisper
+Codelist
+Customer
+Data
+Info
+Order
+OrderBatch
+Slouží k vytvoření objednávky. Odpověď je v header (Location)
+POST
+Získaní stavu objednávky
+GET
+OrderEvent
+ShipmentBatch
+Slouží ke spojení sad zásilek
+POST
+Vytvoření zásilky
+POST
+Slouží k úpravě výstupního formátu štítku
+PUT
+Získání stavu importu zásilky
+GET
+Získání etikety
+GET
+ShipmentEvent
+VersionInformation
+ShipmentBatch
+Vytvoření zásilky
+POST
+/shipment/batch
+Maintainer:
+Not configured
+Metoda shipment/batch slouží k vytvoření požadavku na získání zásilky , nebo skupiny zásilek. Při zavolání metody je návratovou hodnotou batchId, které následně slouží pro získávání stavu zpracovaní zásilky a následně pro získání etikety. Batch id je v odpovědi zobrazeno v hlavičce (headers) Location.
+BatchId je globální unikátní identifikátor (GUID), který se generuje pro každé zavolání metody pro vytvoření zásilky a pro další jeho zpracování je potřeba si jej uchovat.
+Je zapsané jako 32 hexadecimálních znaků rozdělených čtyřmi pomlčkami.
+Request
+Authorization
+JWT Bearer
+Add the parameter Authorization to Headers，whose value is to concatenate the Token after the Bearer.
+Example:
+Authorization: Bearer ********************
+Header Params
+Name
+Type
+Required
+Description
+Accept-Language
+string 
+(AcceptLanguageSchema)
+Language specification, default language: cs-CZ
+X-Correlation-ID
+string 
+(XCorrelationIdSchema)
+Correlation Id of request
+X-LogLevel
+enum<string> 
+(XLogLevelSchema)
+The forced log level
+Allowed values:
+Trace
+Debug
+Information
+Warning
+Error
+Critical
+Body Params
+application/json
+returnChannel
+optional
+Sekce návratových hodnot pro tisk štítku. Pokud vyplníte returnChannel a typ email, tak Vám přijde pro každou požádanou zásilku etiketa na uvedený email. Toto nefunguje na testovacím prostředí. Využití má toto spíše pro return zásilky, kdy žadateli přijde na email rovnou vytvořená etiketa. Chodí ovšem prázdný email bez jakéhokoliv textu pouze s pdf etiketou.
+One of:
+
+object
+
+EmptyNullableObject
+type
+optional
+Typ návratové cesty štítku. S FTP není podporováno!
+address
+string  | 
+null 
+optional
+Pokud je vybrán Type = Email, pak zde vyplňovat email adresu. Pokud je vybrán Type = Ftp, pak zde vyplňovat FTP cestu.
+Email formát: xxxxxxx@yyyy.zzz
+FTP formát: ftp://user:password@host:port/path
+Délka: 100
+<= 100 characters
+labelSettings
+optional
+labbelSettings slouží pro definici parametrů štítků
+One of:
+
+object
+
+EmptyNullableObject
+format
+enum<string> 
+(Eps.Api.MyApi2.Web.Constants.ConstLabelFormat)
+Eps.Api.MyApi2.Web.Constants.ConstLabelFormat
+optional
+Label format
+Allowed values:
+Zpl
+Pdf
+Jpeg
+Png
+Svg
+dpi
+integer <int32> | 
+null 
+optional
+Volba DPI pro ZPL
+>= 203
+<= 1200
+completeLabelSettings
+optional
+ZPL kodování base64, více etiket
+v jedné odpovědi
+One of:
+
+object
+
+EmptyNullableObject
+isCompleteLabelRequested
+boolean 
+optional
+pokud je true vygeneruje URL se všemi štítky do jednoho souboru (max 1000 štítků per request; max 50 kusů na zásilku)
+pageSize
+enum<string> 
+(Eps.Api.MyApi2.Business.Enums.ConstPageSize)
+Eps.Api.MyApi2.Business.Enums.ConstPageSize
+optional
+Pouze jedá hodnota - "A4"
+Allowed values:
+Default
+A4
+position
+integer <int32> | 
+null 
+optional
+Pro A4 je pozice v rozmezí 1-4
+>= 1
+<= 4
+shipments
+array [object] 
+required
+Zásilky
+>= 1 items
+referenceId
+string 
+required
+Jedinečná reference
+>= 1 characters
+<= 128 characters
+shipmentNumber
+string  | 
+null 
+optional
+Uvadí se zde vlastní číslo zásilky.
+V případě přání na generovaní vlastních čísel zásilek, PPL poskytne zákazníkovi číselnou řadu v daném rozsahu a zákazník si může generovat čísla zásilek sám.
+productType
+string 
+required
+Typ produktu. Více informací o jednotlivých typech na codelist/product
+>= 1 characters
+note
+string  | 
+null 
+optional
+Poznámka Délka: 300
+depot
+string  | 
+null 
+optional
+Nepoužívat. Délka: 2
+ageCheck
+string  | 
+null 
+optional
+Služba kontrola věku (15,18+),
+integratorId
+integer <int32> | 
+null 
+optional
+ID integrátora – pouze pro typ: integrátor
+>= 1
+shipmentSet
+optional
+Sada zásilek
+One of:
+
+object
+
+EmptyNullableObject
+numberOfShipments
+integer <int32>
+required
+Počet balíků na adresu - Max 50
+>= 0
+additionallyAdded
+boolean 
+optional
+Pokud je true je možné spojit zásilku do sady. Na štítku bude číslování x/y.
+shipmentSetItems
+array [object]  | 
+null 
+optional
+Sada zásilek. Slouží především pro zadávání konkrétních vah a hodnot připojištění, pokud je v sadě více balíků.
+backAddress
+optional
+Adresa pro vrácení nedoručených
+zásilek
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+optional
+Název firmy / jméno Délka: 50
+<= 50 characters
+name2
+string  | 
+null 
+optional
+Dodatek (Název firmy / jméno) Délka: 50
+<= 50 characters
+street
+string  | 
+null 
+optional
+Ulice Délka: 60
+<= 60 characters
+city
+string  | 
+null 
+optional
+Město Délka: 50
+<= 50 characters
+zipCode
+string 
+required
+PSČ Délka: 10
+>= 1 characters
+<= 10 characters
+country
+string 
+required
+Kód země podle číselníku - /codelist/country Délka: 2
+1.
+Pokud se jedná o mezinárodní
+zásilku (ProductType = COPL,
+BUED, IMPO, CONN, COND, SMEU,
+SMED), pak se země odesílatele nesmí
+rovnat země příjemce a zároveň je pak
+toto pole povinné.
+2.
+Pokud se jedná o tuzemskou zásilku
+(ProductType = BUSS, BUSD,
+DOPD, DOPD, PRIV, PRID, RETD,
+SMAR, SMAD), pak se země
+odesílatele musí rovnat země příjemce
+>= 1 characters
+contact
+string  | 
+null 
+optional
+Kontaktní osoba. Délka: 50
+<= 50 characters
+phone
+string  | 
+null 
+optional
+Telefon Délka: 30
+Vyplněný kontaktní údaj výrazně
+zvyšuje úspěšnost doručení
+<= 30 characters
+email
+string  | 
+null 
+optional
+Email Délka: 50
+Vyplněný kontaktní údaj výrazně
+zvyšuje úspěšnost doručení
+<= 50 characters
+sender
+optional
+Odesílatel zásilky
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+required
+Název firmy / jméno Délka: 50
+<= 50 characters
+name2
+string  | 
+null 
+optional
+Dodatek (Název firmy / jméno) Délka: 50
+<= 50 characters
+street
+string  | 
+null 
+required
+Ulice Délka: 60
+<= 60 characters
+city
+string  | 
+null 
+required
+Město Délka: 50
+<= 50 characters
+zipCode
+string 
+required
+PSČ Délka: 10
+>= 1 characters
+<= 10 characters
+country
+string 
+required
+Kód země podle číselníku - /codelist/country Délka: 2
+1.
+Pokud se jedná o mezinárodní
+zásilku (ProductType = COPL,
+BUED, IMPO, CONN, COND, SMEU,
+SMED), pak se země odesílatele nesmí
+rovnat země příjemce a zároveň je pak
+toto pole povinné.
+2.
+Pokud se jedná o tuzemskou zásilku
+(ProductType = BUSS, BUSD,
+DOPD, DOPD, PRIV, PRID, RETD,
+SMAR, SMAD), pak se země
+odesílatele musí rovnat země příjemce
+>= 1 characters
+contact
+string  | 
+null 
+optional
+Kontaktní osoba. Délka: 50
+<= 50 characters
+phone
+string  | 
+null 
+optional
+Telefon Délka: 30
+Vyplněný kontaktní údaj výrazně
+zvyšuje úspěšnost doručení
+<= 30 characters
+email
+string  | 
+null 
+optional
+Email Délka: 50
+Vyplněný kontaktní údaj výrazně
+zvyšuje úspěšnost doručení
+<= 50 characters
+senderMask
+optional
+Odesílatel zásilky – Alternativní adresa
+(v případě jiného odesílatele na etiketě,
+než je v evidenci.
+One of:
+
+object
+
+EmptyNullableObject
+name
+string  | 
+null 
+optional
+Název firmy / jméno Délka: 50
+<= 50 characters
+name2
+string  | 
+null 
+optional
+Dodatek (Název firmy / jméno) Délka: 50
+<= 50 characters
+street
+string  | 
+null 
+optional
+Ulice Délka: 60
+<= 60 characters
+city
+string  | 
+null 
+optional
+Město Délka: 50
+<= 50 characters
+zipCode
+string 
+required
+PSČ Délka: 10
+>= 1 characters
+<= 10 characters
+country
+string 
+required
+Kód země podle číselníku - /codelist/country Délka: 2
+>= 1 characters
+contact
+string  | 
+null 
+optional
+Kontaktní osoba. Délka: 50
+<= 50 characters
+phone
+string  | 
+null 
+optional
+Telefon Délka: 30
+<= 30 characters
+email
+string  | 
+null 
+optional
+Email Délka: 50
+<= 50 characters
+recipient
+object 
+required
+Příjemce zásilky
+name
+string  | 
+null 
+optional
+Název firmy / jméno Délka: 50
+<= 50 characters
+name2
+string  | 
+null 
+optional
+Dodatek (Název firmy / jméno) Délka: 50
+Kontaktní osoba V případě zásilky na Výdejní místo, zde uvádět kontakt příjemce (jméno nebo firma) nebo duplikovat
+
+<= 50 characters
+street
+string  | 
+null 
+optional
+Ulice Délka: 60
+<= 60 characters
+city
+string  | 
+null 
+optional
+Město Délka: 50
+<= 50 characters
+zipCode
+string 
+required
+PSČ Délka: 10
+Vyjímka
+Irsko: Město kopírujte do PSČ
+GB dle vzoru:
+A9 9AA
+A99 9AA
+A9A 9AA
+AA9 9AA
+AA99 9AA
+AA9A 9AA
+NL dle vzoru: 1234 AA
+>= 1 characters
+<= 10 characters
+country
+string 
+required
+Kód země podle číselníku - /codelist/country Délka: 2
+1.
+Pokud se jedná o mezinárodní
+zásilku (ProductType = COPL,
+BUED, IMPO, CONN, COND, SMEU,
+SMED), pak se země odesílatele nesmí
+rovnat země příjemce a zároveň je pak
+toto pole povinné.
+2.
+Pokud se jedná o tuzemskou zásilku
+(ProductType = BUSS, BUSD,
+DOPD, DOPD, PRIV, PRID, RETD,
+SMAR, SMAD), pak se země
+odesílatele musí rovnat země příjemce
+>= 1 characters
+contact
+string  | 
+null 
+optional
+Kontaktní osoba. Délka: 50
+V případě zásilky na Výdejní místo, zde uvádět kontakt příjemce (jméno nebo firma) nebo duplikovat
+
+<= 50 characters
+phone
+string  | 
+null 
+optional
+Telefon Délka: 30
+Vyplněný kontaktní údaj výrazně zvyšuje úspěšnost doručení
+<= 30 characters
+email
+string  | 
+null 
+optional
+Email Délka: 50
+Vyplněný kontaktní údaj výrazně zvyšuje úspěšnost doručení
+<= 50 characters
+specificDelivery
+optional
+One of:
+
+object
+
+EmptyNullableObject
+specificDeliveryDate
+string <date-time> | 
+null 
+optional
+Specifické datum doručení
+specificDeliveryTimeFrom
+string <date-time> | 
+null 
+optional
+Specifický čas doručení -Od
+specificDeliveryTimeTo
+string <date-time> | 
+null 
+optional
+Specifický čas doručení -Do
+specificTakeDate
+string <date-time> | 
+null 
+optional
+Specifické datum převzetí
+parcelShopCode
+string  | 
+null 
+optional
+Kód výdejního místa Délka: 50
+1.
+ProductType pouze PRIV, PRID, CONN, COND, SMAR, SMAD, SBOX, SBOD !!
+2.
+Validace proti seznamu, který vrací metoda AccessPoint
+cashOnDelivery
+optional
+Platební informace pro dobírkové produkty. Dobírka je vázána k produktu, pro to aby požadavek s dobírkou prošel je nutné zadat správný typ produktu v zásilce (PRID, BUSD, SMAD, COND, DOPD, SMED).
+One of:
+
+object
+
+EmptyNullableObject
+iban
+string  | 
+null 
+optional
+IBAN Délka: 50
+1.
+IBAN pokud je vyplněn, pak musí být vyplněno i pole SWIFT.
+2.
+Pokud je vyplněno IBAN a SWIFT, pak nemůže být vyplněny BankAccount a BankCode
+swift
+string  | 
+null 
+optional
+Swift Délka: 50
+1.
+SWIFT, pokud je vyplněno, pak musí být vyplněno i pole IBAN.
+2.
+Pokud je vyplněno IBAN a SWIFT, pak nemůže být vyplněny BankAccount a BankCode.
+3.
+Validace podle Číselník SWIFT
+specSymbol
+string  | 
+null 
+optional
+Specifický symbol Délka: 6
+Omezení na 0-10 čísel
+<= 6 characters
+account
+string  | 
+null 
+optional
+Číslo bankovního účtu Délka: 10
+1.
+BankAccount pokud je vyplněno, pak musí být vyplněno i pole BankCode.
+2.
+Pokud je vyplněno BankAccount a BankCode, pak nemůže být vyplněn IBAN a SWIFT
+accountPre
+string  | 
+null 
+optional
+Před číslo bankovního účtu Délka: 10
+bankCode
+string  | 
+null 
+optional
+Kód banky Délka: 4
+1.
+BankCode pokud je vyplněn, pak musí být vyplněno i pole BankAccount.
+2.
+Pokud je vyplněno BankAccount a BankCode, pak nemůže být vyplněn IBAN a SWIFT.
+3.
+Validace podle Číselník bankovních kódů
+codPrice
+number <double>
+required
+Částka dobírky. Částka je oddělena tečkou. Pouze kladné číslo. Pokud je v CZK a země CZ, pak zaokrouhlená na celé částky
+1.
+Pokud je CodPrice vyplněné, pak musí být vyplněno i CodCurrency. Délka: 12.4
+2.
+Částka nesmí být záporná.
+3.
+max limity - /codelist/servicePriceLimit
+>= 0
+codCurrency
+string 
+required
+Měna dobírky, povolené měny - /codelist/currency Délka: 3
+1.
+Pokud je vyplněno CodCurrency, pak musí být vyplněno i CodPrice.
+2.
+Validace podle Číselník měn
+>= 1 characters
+codVarSym
+string 
+required
+Variabilní symbol dobírky. POUZE čísla Délka: 10
+Omezení na 0-10 čísel. Pokud jsou vyplněny elementy CodCurrency nebo CodPrice, pak CodVarSym musí být vyplněn.
+>= 1 characters
+<= 10 characters
+Match pattern:
+^\d+
+insurance
+optional
+Pojištění balíků. Přidává pojištění pro balík nebo balíky v zásilce. Používejte pokud máte jeden balík v zásilce nebo více balíků se stejnou cenou v sadě. Pro balíky v sadě které mají různou cenu pro které chcete pojištění zadejte insurance v shipmentSetItems.
+One of:
+
+object
+
+EmptyNullableObject
+insurancePrice
+number <double>
+required
+Cena na kterou chcete balík pojistit.
+Max limity - /codelist/servicePriceLimit
+Délka: 12,4
+Zadává se zde cena balíku. Standardní pojištění zásilky se zde neuvádí (automaticky do hodnoty 50.000 Kč u balíku, 100.000 Kč balíky do zahraničí.
+1.
+Pokud je InsurancePrice vyplněné, pak musí být vyplněno i InsuranceCurrency.
+2.
+Částka nesmí být záporná ani nulová.
+3.
+Částka může být maximálně viz /codelist/servicePriceLimit
+>= 0
+insuranceCurrency
+string 
+required
+Pojištění může být pouze v rámci naší národní měny – CZK
+Délka: 3
+1.
+Pokud je InsurCurrency vyplněné, pak musí být vyplněno i InsurPrice.
+2.
+Pouze CZK
+>= 1 characters
+externalNumbers
+array [object]  | 
+null 
+optional
+ExternalNumbers jsou externí čísla pro zákaznické identifikace. Např. číslo objednávky, nebo určitý kód zboží. Nejčastěji se používá code CUST jako zákaznické. Toto číslo se následně tiskne i přímo na etiketu a zároveň se propisuje zákazníkovi do fakturace. Více v codelist/externalNumbers
+externalNumber
+string 
+required
+Externí číslo zásilky Délka: 50
+>= 1 characters
+<= 100 characters
+code
+string 
+required
+Kód typu externího čísla podle číselníku codelist/externalNumber Délka: 4
+>= 1 characters
+services
+array [object]  | 
+null 
+optional
+Služby
+code
+string 
+required
+Kód služby - Validace podle /codelist/service Délka: 4
+>= 1 characters
+dormant
+optional
+One of:
+
+object
+
+EmptyNullableObject
+shipmentNumber
+string  | 
+null 
+optional
+Číslo zásilky
+note
+string  | 
+null 
+optional
+Poznámka Délka: 300
+recipient
+optional
+externalNumbers
+array [object]  | 
+null 
+optional
+Externí čísla
+services
+array [object]  | 
+null 
+optional
+Služby
+weighedShipmentInfo
+optional
+shipmentRouting
+optional
+One of:
+
+Eps.Api.MyApi2.Web.Models.ShipmentBatch.ShipmentRoutingModel
+
+EmptyNullableObject
+object
+ShipmentRoutingModel
+inputRouteCode
+string  | 
+null 
+optional
+Nepoužívá se Délka: 5
+Match pattern:
+^(([0-9]){5})$
+directInjection
+optional
+Využito v případě přímého závozu zásilek do zahraničního depa. Musí být dohodnuto a přiděleno obch. zástupcem.
+One of:
+
+Eps.Api.MyApi2.Web.Models.ShipmentBatch.DirectInjectionFeatureModel
+
+EmptyNullableObject
+object
+DirectInjectionFeatureModel
+directAddressing
+boolean 
+optional
+true / false
+gatewayZipCode
+string  | 
+null 
+optional
+PSČ Délka: 10
+>= 1 characters
+<= 10 characters
+gatewayCity
+string  | 
+null 
+optional
+Město Délka: 35
+>= 1 characters
+<= 35 characters
+country
+string  | 
+null 
+optional
+Země Délka: 2
+>= 1 characters
+labelService
+optional
+One of:
+
+object
+
+EmptyNullableObject
+labelless
+boolean 
+optional
+true / false
+Možnost volby tisku label / QR kód se smart PIN. Defaultně label. Pro QR je nutné nejprve kontaktovat obchodního zástupce k nastavení
+shipmentsOrderBy
+string  | 
+null 
+optional
+Řazení etiket - ReferenceId, ShipmentNumber
+Example
+{
+  "returnChannel": {
+    "type": "<string>",
+    "address": "<string>"
+  },
+  "labelSettings": {
+    "format": "<string>",
+    "dpi": "<integer>",
+    "completeLabelSettings": {
+      "isCompleteLabelRequested": "<boolean>",
+      "pageSize": "<string>",
+      "position": "<integer>"
+    }
+  },
+  "shipments": [
+    {
+      "productType": "<string>",
+      "referenceId": "<string>",
+      "shipmentNumber": "<string>",
+      "note": "<string>",
+      "depot": "<string>",
+      "ageCheck": "<string>",
+      "integratorId": "<integer>",
+      "shipmentSet": {
+        "numberOfShipments": "<integer>",
+        "additionallyAdded": "<boolean>",
+        "shipmentSetItems": [
+          {
+            "shipmentNumber": "<string>",
+            "weighedShipmentInfo": {
+              "weight": "<double>"
+            },
+            "externalNumbers": [
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              },
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              }
+            ],
+            "insurance": {
+              "insuranceCurrency": "<string>",
+              "insurancePrice": "<double>"
+            }
+          },
+          {
+            "shipmentNumber": "<string>",
+            "weighedShipmentInfo": {
+              "weight": "<double>"
+            },
+            "externalNumbers": [
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              },
+              {
+                "code": "<string>",
+                "externalNumber": "<string>"
+              }
+            ],
+            "insurance": {
+              "insuranceCurrency": "<string>",
+              "insurancePrice": "<double>"
+            }
+          }
+        ]
+      },
+      "backAddress": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "sender": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "senderMask": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "recipient": {
+        "country": "<string>",
+        "zipCode": "<string>",
+        "name": "<string>",
+        "name2": "<string>",
+        "street": "<string>",
+        "city": "<string>",
+        "contact": "<string>",
+        "phone": "<string>",
+        "email": "<string>"
+      },
+      "specificDelivery": {
+        "specificDeliveryDate": "<dateTime>",
+        "specificDeliveryTimeFrom": "<dateTime>",
+        "specificDeliveryTimeTo": "<dateTime>",
+        "specificTakeDate": "<dateTime>",
+        "parcelShopCode": "<string>"
+      },
+      "cashOnDelivery": {
+        "codCurrency": "<string>",
+        "codPrice": "<double>",
+        "codVarSym": "088919",
+        "iban": "<string>",
+        "swift": "<string>",
+        "specSymbol": "<string>",
+        "account": "<string>",
+        "accountPre": "<string>",
+        "bankCode": "<string>"
+      },
+      "insurance": {
+        "insuranceCurrency": "<string>",
+        "insurancePrice": "<double>"
+      },
+      "externalNumbers": [
+        {
+          "code": "<string>",
+          "externalNumber": "<string>"
+        },
+        {
+          "code": "<string>",
+          "externalNumber": "<string>"
+        }
+      ],
+      "services": [
+        {
+          "code": "<string>"
+        },
+        {
+          "code": "<string>"
+        }
+      ],
+      "dormant": {
+        "shipmentNumber": "<string>",
+        "note": "<string>",
+        "recipient": {
+          "country": "<string>",
+          "zipCode": "<string>",
+          "name": "<string>",
+          "name2": "<string>",
+          "street": "<string>",
+          "city": "<string>",
+          "contact": "<string>",
+          "phone": "<string>",
+          "email": "<string>"
+        },
+        "externalNumbers": [
+          {
+            "code": "<string>",
+            "externalNumber": "<string>"
+          },
+          {
+            "code": "<string>",
+            "externalNumber": "<string>"
+          }
+        ],
+        "services": [
+          {
+            "code": "<string>"
+          },
+          {
+            "code": "<string>"
+          }
+        ],
+        "weighedShipmentInfo": {
+          "weight": "<double>"
+        }
+      },
+      "shipmentRouting": {
+        "inputRouteCode": "28696"
+      },
+      "directInjection": {
+        "directAddressing": "<boolean>",
+        "gatewayZipCode": "<string>",
+        "gatewayCity": "<string>",
+        "country": "<string>"
+      },
+      "labelService": {
+        "labelless": "<boolean>"
+      }
+    }
+  ],
+  "shipmentsOrderBy": "<string>"
+}
+Request Code Samples
+Responses
+🟢201
+Created
+application/json
+Created
+Headers
+X-Correlation-ID
+string 
+optional
+Correlation Id of request otherwise id of response
+Location
+string 
+optional
+Součástí location je BatchId které je v uuid formátu
+Body
+object
+ 
+Example
+{}
+🟠400
+Bad Request
+🔴500
+Server Error
+🔴503
+Service Unavailable
+Modified at about 2 months ago
+Previous
+Slouží ke spojení sad zásilek
+Next
+Slouží k úpravě výstupního formátu štítku

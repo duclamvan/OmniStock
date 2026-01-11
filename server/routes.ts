@@ -18169,9 +18169,11 @@ Important:
         recipient: {
           country: normalizeCountry(shippingAddress.country),
           zipCode: shippingAddress.zipCode.trim(),
-          name: `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || customer?.name || 'Unknown',
-          street: shippingAddress.street.trim(),
+          name: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
+          name2: shippingAddress.company?.trim() || undefined,
+          street: shippingAddress.streetNumber ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}` : shippingAddress.street.trim(),
           city: shippingAddress.city.trim(),
+          contact: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
           phone: shippingAddress.tel || customer?.phone || undefined,
           email: shippingAddress.email || customer?.email || undefined
         },
@@ -18719,8 +18721,10 @@ Important:
             country: normalizeCountry(shippingAddress.country),
             zipCode: shippingAddress.zipCode.trim(),
             name: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || 'Unknown',
-            street: shippingAddress.street.trim(),
+            name2: shippingAddress.company?.trim() || undefined,
+            street: shippingAddress.streetNumber ? `${shippingAddress.street.trim()} ${shippingAddress.streetNumber.trim()}` : shippingAddress.street.trim(),
             city: shippingAddress.city.trim(),
+            contact: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim() || customer?.name || undefined,
             phone: shippingAddress.tel || customer?.phone || undefined,
             email: shippingAddress.email || customer?.email || undefined
           },
@@ -20148,19 +20152,23 @@ Important:
           referenceId: singleShipmentData.referenceId,
           recipient: {
             name: singleShipmentData.recipient.name,
+            name2: singleShipmentData.recipient.name2,
             street: singleShipmentData.recipient.street,
             city: singleShipmentData.recipient.city,
             zipCode: singleShipmentData.recipient.zipCode,
             country: singleShipmentData.recipient.country,
+            contact: singleShipmentData.recipient.contact,
             phone: singleShipmentData.recipient.phone,
             email: singleShipmentData.recipient.email
           },
           sender: singleShipmentData.sender ? {
             name: singleShipmentData.sender.name,
+            name2: singleShipmentData.sender.name2,
             street: singleShipmentData.sender.street,
             city: singleShipmentData.sender.city,
             zipCode: singleShipmentData.sender.zipCode,
             country: singleShipmentData.sender.country,
+            contact: singleShipmentData.sender.contact,
             phone: singleShipmentData.sender.phone,
             email: singleShipmentData.sender.email
           } : undefined,
