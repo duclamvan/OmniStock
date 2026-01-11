@@ -9515,7 +9515,7 @@ Important:
   app.patch('/api/stock-adjustment-requests/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const approvedBy = req.body.approvedBy || "test-user";
+      const approvedBy = req.user?.id || req.body.approvedBy;
 
       const request = await storage.approveStockAdjustmentRequest(id, approvedBy);
 
@@ -9546,7 +9546,8 @@ Important:
   app.patch('/api/stock-adjustment-requests/:id/reject', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { approvedBy = "test-user", reason } = req.body;
+      const { reason } = req.body;
+      const approvedBy = req.user?.id;
 
       if (!reason) {
         return res.status(400).json({ message: "Rejection reason is required" });
