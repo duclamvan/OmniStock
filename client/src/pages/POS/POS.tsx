@@ -74,11 +74,13 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  type: 'product' | 'variant' | 'bundle';
+  type: 'product' | 'variant' | 'bundle' | 'custom';
   sku?: string;
   barcode?: string;
   imageUrl?: string;
   discount?: number;
+  cost?: number;
+  profit?: number;
 }
 
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'bank_transfer_private' | 'bank_transfer_invoice' | 'pay_later' | 'qr_czk';
@@ -539,6 +541,14 @@ export default function POS() {
     }
   };
 
+  const updatePrice = (cartId: string, price: number) => {
+    if (price >= 0) {
+      setCart(cart.map(item => 
+        item.cartId === cartId ? { ...item, price } : item
+      ));
+    }
+  };
+
   const removeFromCart = (cartId: string) => {
     setCart(cart.filter(item => item.cartId !== cartId));
   };
@@ -575,7 +585,7 @@ export default function POS() {
       name: customItemName.trim(),
       price,
       quantity: 1,
-      type: 'custom' as any,
+      type: 'custom',
       sku: undefined,
       barcode: undefined,
       imageUrl: undefined,
@@ -1272,9 +1282,34 @@ export default function POS() {
                         <p className="text-sm font-bold text-primary tabular-nums">
                           {(item.price * item.quantity).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
                         </p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">
-                          {item.price.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currencySymbol}
-                        </p>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={item.price.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+                              const num = parseFloat(val);
+                              if (!isNaN(num) && num >= 0) {
+                                updatePrice(item.cartId, num);
+                              }
+                            }}
+                            onFocus={(e) => {
+                              e.target.value = item.price.toString();
+                              e.target.select();
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+                              const num = parseFloat(val);
+                              if (isNaN(num) || num < 0) {
+                                updatePrice(item.cartId, 0);
+                              }
+                            }}
+                            className="w-[70px] text-[10px] text-right text-muted-foreground tabular-nums bg-transparent border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded px-1 py-0.5 outline-none"
+                            data-testid={`input-price-${item.cartId}`}
+                          />
+                          <span className="text-[10px] text-muted-foreground">{currencySymbol}</span>
+                        </div>
                       </div>
                       
                       <Button
