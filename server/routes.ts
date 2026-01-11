@@ -20160,11 +20160,11 @@ Important:
 
         try {
           const result = await createPPLSingleShipment(singleShipmentRequest);
-          shipmentId = result.shipmentId;
+          batchId = result.shipmentId; // This is the batchId from batch creation
           shipmentNumbers = result.trackingNumbers;
           
           // Get label using the shipment ID
-          const labelBuffer = await getPPLLabelByShipmentId(shipmentId, 'pdf');
+          const labelBuffer = await getPPLLabel(batchId, 'pdf');
           label = { labelContent: labelBuffer.toString('base64') };
         } catch (singleError: any) {
           console.error('❌ Single shipment creation failed:', singleError.message);
@@ -20385,7 +20385,7 @@ Important:
       try {
         if (shipmentId) {
           // Single shipment - use shipment ID to get label
-          const labelBuffer = await getPPLLabelByShipmentId(shipmentId, 'pdf');
+          const labelBuffer = await getPPLLabel(batchId, 'pdf');
           label = { labelContent: labelBuffer.toString('base64') };
         } else {
           // Batch shipment - use batch ID to get label
