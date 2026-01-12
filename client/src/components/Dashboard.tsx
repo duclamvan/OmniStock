@@ -40,7 +40,8 @@ import {
   RefreshCw,
   Clock,
   Sun,
-  X
+  X,
+  Factory
 } from "lucide-react";
 import { Link } from "wouter";
 import { useLocalization } from "@/contexts/LocalizationContext";
@@ -823,6 +824,13 @@ export function Dashboard() {
     refetchInterval: 30 * 1000,
   });
 
+  // Manufacturing notifications - unread count
+  const { data: manufacturingNotificationsCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/manufacturing/notifications/unread-count'],
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
   // Sales growth KPIs
   const { data: salesGrowth, isLoading: salesGrowthLoading } = useQuery<SalesGrowthData>({
     queryKey: ['/api/dashboard/sales-growth'],
@@ -1496,6 +1504,38 @@ export function Dashboard() {
                 </CardContent>
               </Card>
             </Link>
+
+            {/* Manufacturing Notifications */}
+            {(manufacturingNotificationsCount?.count || 0) > 0 && (
+              <Link href="/manufacturing/production-planner">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800" data-testid="card-manufacturing-action">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <Factory className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                        {t('products:manufacturing')}
+                      </CardTitle>
+                      <Badge variant="default" className="bg-orange-600 hover:bg-orange-700">
+                        {manufacturingNotificationsCount.count}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                        {manufacturingNotificationsCount.count === 1 
+                          ? t('products:newManufacturingCompletion')
+                          : t('products:newManufacturingCompletions', { count: manufacturingNotificationsCount.count })
+                        }
+                      </p>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                        View All <ArrowRight className="h-3 w-3" />
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
           </div>
         )}
       </section>

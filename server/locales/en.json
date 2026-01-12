@@ -72,7 +72,10 @@
     "editProduct": "Edit Product",
     "deleteProduct": "Delete Product",
     "stock": "Stock",
-    "lowStock": "Low Stock"
+    "lowStock": "Low Stock",
+    "manufacturing": "Manufacturing",
+    "newManufacturingCompletion": "New manufacturing completion",
+    "newManufacturingCompletions": "{{count}} new manufacturing completions"
   },
   "customers": {
     "customers": "Customers",

@@ -43,6 +43,7 @@ import {
   insertWarehouseTaskSchema,
   insertWarehouseLabelSchema,
   insertBillOfMaterialsSchema,
+  insertManufacturingRunSchema,
   billOfMaterials,
   productCostHistory,
   products,
@@ -27238,6 +27239,218 @@ Important rules:
     } catch (error) {
       console.error('Error queuing label job:', error);
       res.status(500).json({ message: 'Failed to queue label generation' });
+    }
+  });
+
+
+  // =====================================================
+  // MANUFACTURING ROUTES
+  // =====================================================
+
+  // Get products with BOM recipes (products that can be manufactured)
+  app.get('/api/manufacturing/products-with-bom', isAuthenticated, async (req, res) => {
+    try {
+      // Get distinct parent product IDs from BOM
+      const bomParents = await db.selectDistinct({ parentProductId: billOfMaterials.parentProductId })
+        .from(billOfMaterials);
+      
+      const parentIds = bomParents.map(b => b.parentProductId);
+      
+      if (parentIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get products with their BOM ingredients
+      const productsWithBom = await db.select()
+        .from(products)
+        .where(inArray(products.id, parentIds));
+      
+      // Get BOM ingredients for each product
+      const result = await Promise.all(productsWithBom.map(async (product) => {
+        const bomItems = await storage.getBomIngredients(product.id);
+        return {
+          ...product,
+          bomIngredients: bomItems.map(bom => ({
+            id: bom.id,
+            childProductId: bom.childProductId,
+            childVariantId: bom.childVariantId,
+            quantity: bom.quantity,
+            yieldQuantity: bom.yieldQuantity,
+            childProduct: bom.childProduct,
+            childVariant: bom.childVariant,
+          })),
+        };
+      }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching products with BOM:', error);
+      res.status(500).json({ message: 'Failed to fetch products with BOM' });
+    }
+  });
+
+  // Calculate production requirements
+  app.get('/api/manufacturing/calculate-requirements', isAuthenticated, async (req, res) => {
+    try {
+      const { productId, variantId, quantity } = req.query;
+      
+      if (!productId || !quantity) {
+        return res.status(400).json({ message: 'productId and quantity are required' });
+      }
+      
+      const quantityNum = parseInt(quantity as string, 10);
+      if (isNaN(quantityNum) || quantityNum < 1) {
+        return res.status(400).json({ message: 'quantity must be a positive integer' });
+      }
+      
+      const requirements = await storage.calculateProductionRequirements(
+        productId as string,
+        (variantId as string) || null,
+        quantityNum
+      );
+      
+      res.json(requirements);
+    } catch (error) {
+      console.error('Error calculating production requirements:', error);
+      res.status(500).json({ message: 'Failed to calculate production requirements' });
+    }
+  });
+
+  // List manufacturing runs
+  app.get('/api/manufacturing/runs', isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.query;
+      const runs = await storage.getManufacturingRuns(status as string | undefined);
+      res.json(runs);
+    } catch (error) {
+      console.error('Error fetching manufacturing runs:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing runs' });
+    }
+  });
+
+  // Get single manufacturing run
+  app.get('/api/manufacturing/runs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const run = await storage.getManufacturingRun(req.params.id);
+      if (!run) {
+        return res.status(404).json({ message: 'Manufacturing run not found' });
+      }
+      res.json(run);
+    } catch (error) {
+      console.error('Error fetching manufacturing run:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing run' });
+    }
+  });
+
+  // Create new manufacturing run
+  app.post('/api/manufacturing/runs', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertManufacturingRunSchema.parse(req.body);
+      
+      // Auto-generate run number
+      const runNumber = await storage.generateManufacturingRunNumber();
+      
+      const run = await storage.createManufacturingRun({
+        ...validated,
+        runNumber,
+        createdBy: req.user?.id,
+      });
+      
+      res.status(201).json(run);
+    } catch (error) {
+      console.error('Error creating manufacturing run:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create manufacturing run' });
+    }
+  });
+
+  // Complete a manufacturing run
+  app.post('/api/manufacturing/runs/:id/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const run = await storage.completeManufacturingRun(req.params.id, userId);
+      if (!run) {
+        return res.status(404).json({ message: 'Manufacturing run not found' });
+      }
+      
+      // Get all admins and create notifications for each
+      const allUsers = await storage.getAllUsers();
+      const admins = allUsers.filter(u => u.role === 'administrator');
+      
+      await Promise.all(admins.map(admin =>
+        storage.createManufacturingNotification({
+          manufacturingRunId: req.params.id,
+          userId: admin.id,
+        })
+      ));
+      
+      res.json(run);
+    } catch (error) {
+      console.error('Error completing manufacturing run:', error);
+      res.status(500).json({ message: 'Failed to complete manufacturing run' });
+    }
+  });
+
+  // Archive a completed manufacturing run
+  app.post('/api/manufacturing/runs/:id/archive', isAuthenticated, async (req, res) => {
+    try {
+      const run = await storage.archiveManufacturingRun(req.params.id);
+      if (!run) {
+        return res.status(404).json({ message: 'Manufacturing run not found' });
+      }
+      res.json(run);
+    } catch (error) {
+      console.error('Error archiving manufacturing run:', error);
+      res.status(500).json({ message: 'Failed to archive manufacturing run' });
+    }
+  });
+
+  // Get manufacturing notifications for current user
+  app.get('/api/manufacturing/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const notifications = await storage.getManufacturingNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching manufacturing notifications:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing notifications' });
+    }
+  });
+
+  // Get unread manufacturing notification count for current user
+  app.get('/api/manufacturing/notifications/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const count = await storage.getUnreadManufacturingNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching unread notification count:', error);
+      res.status(500).json({ message: 'Failed to fetch unread notification count' });
+    }
+  });
+
+  // Mark manufacturing notification as read
+  app.post('/api/manufacturing/notifications/:id/read', isAuthenticated, async (req, res) => {
+    try {
+      await storage.markManufacturingNotificationRead(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ message: 'Failed to mark notification as read' });
     }
   });
 

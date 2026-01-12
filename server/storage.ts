@@ -190,7 +190,13 @@ import {
   type InsertPerformanceEvent,
   dailyPerformanceSnapshots,
   type DailyPerformanceSnapshot,
-  type InsertDailyPerformanceSnapshot
+  type InsertDailyPerformanceSnapshot,
+  manufacturingRuns,
+  manufacturingNotifications,
+  type ManufacturingRun,
+  type InsertManufacturingRun,
+  type ManufacturingNotification,
+  type InsertManufacturingNotification
 } from "@shared/schema";
 import { db as database } from "./db";
 import { eq, desc, and, or, like, ilike, sql, gte, lte, lt, inArray, ne, asc, isNull, notInArray, not } from "drizzle-orm";
@@ -796,6 +802,20 @@ export interface IStorage {
     canFullyBuild: boolean;
     maxBuildable: number;
   }>;
+
+  // Manufacturing Runs
+  getManufacturingRuns(status?: string): Promise<ManufacturingRun[]>;
+  getManufacturingRun(id: string): Promise<ManufacturingRun | undefined>;
+  createManufacturingRun(run: InsertManufacturingRun): Promise<ManufacturingRun>;
+  completeManufacturingRun(id: string, userId: string): Promise<ManufacturingRun | undefined>;
+  archiveManufacturingRun(id: string): Promise<ManufacturingRun | undefined>;
+  generateManufacturingRunNumber(): Promise<string>;
+
+  // Manufacturing Notifications
+  getManufacturingNotifications(userId: string): Promise<ManufacturingNotification[]>;
+  getUnreadManufacturingNotificationCount(userId: string): Promise<number>;
+  markManufacturingNotificationRead(id: string): Promise<void>;
+  createManufacturingNotification(notification: InsertManufacturingNotification): Promise<ManufacturingNotification>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -7278,6 +7298,195 @@ export class DatabaseStorage implements IStorage {
       canFullyBuild,
       maxBuildable,
     };
+  }
+
+  // Manufacturing Runs
+  async getManufacturingRuns(status?: string): Promise<ManufacturingRun[]> {
+    if (status) {
+      return await db.select().from(manufacturingRuns).where(eq(manufacturingRuns.status, status)).orderBy(desc(manufacturingRuns.createdAt));
+    }
+    return await db.select().from(manufacturingRuns).orderBy(desc(manufacturingRuns.createdAt));
+  }
+
+  async getManufacturingRun(id: string): Promise<ManufacturingRun | undefined> {
+    const [run] = await db.select().from(manufacturingRuns).where(eq(manufacturingRuns.id, id));
+    return run;
+  }
+
+  async createManufacturingRun(run: InsertManufacturingRun): Promise<ManufacturingRun> {
+    const runNumber = await this.generateManufacturingRunNumber();
+    const [created] = await db.insert(manufacturingRuns).values({
+      ...run,
+      runNumber,
+    }).returning();
+    return created;
+  }
+
+  async completeManufacturingRun(id: string, userId: string): Promise<ManufacturingRun | undefined> {
+    const run = await this.getManufacturingRun(id);
+    if (!run) return undefined;
+    if (run.status === 'completed' || run.status === 'archived') return run;
+
+    const componentsConsumed = run.componentsConsumed as Array<{
+      productId: string;
+      productName: string;
+      variantId?: string;
+      variantName?: string;
+      quantityConsumed: number;
+      locationCode: string;
+      yieldQuantity: number;
+    }> || [];
+
+    await db.transaction(async (tx) => {
+      for (const component of componentsConsumed) {
+        const [location] = await tx.select().from(productLocations)
+          .where(and(
+            eq(productLocations.productId, component.productId),
+            eq(productLocations.locationCode, component.locationCode)
+          ));
+        
+        if (location) {
+          const previousQuantity = location.quantity || 0;
+          const newQuantity = Math.max(0, previousQuantity - component.quantityConsumed);
+          
+          await tx.update(productLocations)
+            .set({ quantity: newQuantity, updatedAt: new Date() })
+            .where(eq(productLocations.id, location.id));
+          
+          await tx.insert(stockAdjustmentHistory).values({
+            productId: component.productId,
+            locationId: location.id,
+            adjustmentType: 'remove',
+            previousQuantity,
+            adjustedQuantity: component.quantityConsumed,
+            newQuantity,
+            reason: `Manufacturing run ${run.runNumber}: consumed for production`,
+            source: 'manufacturing',
+            referenceId: id,
+            adjustedBy: userId,
+          });
+        }
+      }
+
+      if (run.finishedLocationCode && run.finishedProductId) {
+        let [finishedLocation] = await tx.select().from(productLocations)
+          .where(and(
+            eq(productLocations.productId, run.finishedProductId),
+            eq(productLocations.locationCode, run.finishedLocationCode)
+          ));
+        
+        if (!finishedLocation) {
+          const [created] = await tx.insert(productLocations).values({
+            productId: run.finishedProductId,
+            locationCode: run.finishedLocationCode,
+            quantity: 0,
+          }).returning();
+          finishedLocation = created;
+        }
+
+        const previousQuantity = finishedLocation.quantity || 0;
+        const newQuantity = previousQuantity + run.quantityProduced;
+        
+        await tx.update(productLocations)
+          .set({ quantity: newQuantity, updatedAt: new Date() })
+          .where(eq(productLocations.id, finishedLocation.id));
+        
+        await tx.insert(stockAdjustmentHistory).values({
+          productId: run.finishedProductId,
+          locationId: finishedLocation.id,
+          adjustmentType: 'add',
+          previousQuantity,
+          adjustedQuantity: run.quantityProduced,
+          newQuantity,
+          reason: `Manufacturing run ${run.runNumber}: produced finished goods`,
+          source: 'manufacturing',
+          referenceId: id,
+          adjustedBy: userId,
+        });
+      }
+
+      await tx.update(manufacturingRuns)
+        .set({
+          status: 'completed',
+          completedBy: userId,
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(manufacturingRuns.id, id));
+
+      const adminUsers = await tx.select().from(users).where(eq(users.role, 'administrator'));
+      for (const admin of adminUsers) {
+        await tx.insert(manufacturingNotifications).values({
+          manufacturingRunId: id,
+          userId: admin.id,
+          isRead: false,
+        });
+      }
+    });
+
+    return await this.getManufacturingRun(id);
+  }
+
+  async archiveManufacturingRun(id: string): Promise<ManufacturingRun | undefined> {
+    const [updated] = await db.update(manufacturingRuns)
+      .set({
+        status: 'archived',
+        archivedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(manufacturingRuns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async generateManufacturingRunNumber(): Promise<string> {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const prefix = `MFG-${dateStr}`;
+    
+    const existing = await db.select()
+      .from(manufacturingRuns)
+      .where(like(manufacturingRuns.runNumber, `${prefix}-%`))
+      .orderBy(desc(manufacturingRuns.runNumber))
+      .limit(1);
+    
+    let sequence = 1;
+    if (existing.length > 0) {
+      const lastNumber = existing[0].runNumber;
+      const lastSeq = parseInt(lastNumber.split('-').pop() || '0', 10);
+      sequence = lastSeq + 1;
+    }
+    
+    return `${prefix}-${String(sequence).padStart(3, '0')}`;
+  }
+
+  // Manufacturing Notifications
+  async getManufacturingNotifications(userId: string): Promise<ManufacturingNotification[]> {
+    return await db.select()
+      .from(manufacturingNotifications)
+      .where(eq(manufacturingNotifications.userId, userId))
+      .orderBy(desc(manufacturingNotifications.createdAt));
+  }
+
+  async getUnreadManufacturingNotificationCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(manufacturingNotifications)
+      .where(and(
+        eq(manufacturingNotifications.userId, userId),
+        eq(manufacturingNotifications.isRead, false)
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async markManufacturingNotificationRead(id: string): Promise<void> {
+    await db.update(manufacturingNotifications)
+      .set({ isRead: true })
+      .where(eq(manufacturingNotifications.id, id));
+  }
+
+  async createManufacturingNotification(notification: InsertManufacturingNotification): Promise<ManufacturingNotification> {
+    const [created] = await db.insert(manufacturingNotifications).values(notification).returning();
+    return created;
   }
 }
 

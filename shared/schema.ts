@@ -894,6 +894,7 @@ export const billOfMaterials = pgTable("bill_of_materials", {
   childVariantId: varchar("child_variant_id")
     .references(() => productVariants.id, { onDelete: "cascade" }), // Optional: specific variant of ingredient
   quantity: decimal("quantity", { precision: 10, scale: 4 }).notNull(), // How many children needed for 1 parent
+  yieldQuantity: integer("yield_quantity").default(1), // How many finished products 1 unit of this component yields (e.g., 1 bucket yields 17 jars)
   unitCostAllocation: decimal("unit_cost_allocation", { precision: 5, scale: 2 }), // Optional: percentage for cost distribution
   notes: text("notes"), // Optional notes about this ingredient
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -2228,6 +2229,12 @@ export const insertBillOfMaterialsSchema = createInsertSchema(billOfMaterials, {
   quantity: z
     .union([z.string(), z.number()])
     .transform((val) => String(val)),
+  yieldQuantity: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .default(1),
   unitCostAllocation: z
     .union([z.string(), z.number()])
     .optional()
@@ -2528,6 +2535,7 @@ export const insertStockAdjustmentHistorySchema = createInsertSchema(
       "approved_request",
       "receiving",
       "order_fulfillment",
+      "manufacturing",
     ]),
     previousQuantity: z.number().int().min(0),
     adjustedQuantity: z.number().int(),
@@ -3753,3 +3761,80 @@ export const insertDailyPerformanceSnapshotSchema = createInsertSchema(dailyPerf
 
 export type DailyPerformanceSnapshot = typeof dailyPerformanceSnapshots.$inferSelect;
 export type InsertDailyPerformanceSnapshot = z.infer<typeof insertDailyPerformanceSnapshotSchema>;
+
+// Manufacturing Runs - tracks conversion of raw materials to finished products
+export const manufacturingRuns = pgTable("manufacturing_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  runNumber: varchar("run_number").notNull().unique(), // MFG-20260112-001 format
+  finishedProductId: varchar("finished_product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }), // The product being manufactured
+  finishedVariantId: varchar("finished_variant_id")
+    .references(() => productVariants.id, { onDelete: "cascade" }), // Optional specific variant
+  quantityProduced: integer("quantity_produced").notNull(), // How many finished products were made
+  finishedLocationCode: varchar("finished_location_code"), // Where finished products are stored
+  status: varchar("status").notNull().default("pending"), // pending, in_progress, completed, archived
+  // Component consumption details stored as JSON for audit trail
+  componentsConsumed: jsonb("components_consumed").$type<{
+    productId: string;
+    productName: string;
+    variantId?: string;
+    variantName?: string;
+    quantityConsumed: number;
+    locationCode: string;
+    yieldQuantity: number; // snapshot at time of run
+  }[]>(),
+  notes: text("notes"),
+  createdBy: varchar("created_by").references(() => users.id),
+  completedBy: varchar("completed_by").references(() => users.id),
+  completedAt: timestamp("completed_at"),
+  archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("mfg_runs_finished_product_idx").on(table.finishedProductId),
+  index("mfg_runs_status_idx").on(table.status),
+  index("mfg_runs_created_at_idx").on(table.createdAt),
+]);
+
+export const insertManufacturingRunSchema = createInsertSchema(manufacturingRuns, {
+  quantityProduced: z.number().int().min(1, "Must produce at least 1"),
+  status: z.enum(["pending", "in_progress", "completed", "archived"]).default("pending"),
+  componentsConsumed: z.array(z.object({
+    productId: z.string(),
+    productName: z.string(),
+    variantId: z.string().optional(),
+    variantName: z.string().optional(),
+    quantityConsumed: z.number().int().min(1),
+    locationCode: z.string(),
+    yieldQuantity: z.number().int().min(1),
+  })).optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ManufacturingRun = typeof manufacturingRuns.$inferSelect;
+export type InsertManufacturingRun = z.infer<typeof insertManufacturingRunSchema>;
+
+// Manufacturing Notifications - alerts for admins when manufacturing completes
+export const manufacturingNotifications = pgTable("manufacturing_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  manufacturingRunId: varchar("manufacturing_run_id")
+    .notNull()
+    .references(() => manufacturingRuns.id, { onDelete: "cascade" }),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }), // Admin to notify
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertManufacturingNotificationSchema = createInsertSchema(manufacturingNotifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ManufacturingNotification = typeof manufacturingNotifications.$inferSelect;
+export type InsertManufacturingNotification = z.infer<typeof insertManufacturingNotificationSchema>;

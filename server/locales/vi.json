@@ -72,7 +72,10 @@
     "editProduct": "Chỉnh sửa sản phẩm",
     "deleteProduct": "Xóa sản phẩm",
     "stock": "Kho hàng",
-    "lowStock": "Kho hàng thấp"
+    "lowStock": "Kho hàng thấp",
+    "manufacturing": "Sản xuất",
+    "newManufacturingCompletion": "Hoàn thành sản xuất mới",
+    "newManufacturingCompletions": "{{count}} hoàn thành sản xuất mới"
   },
   "customers": {
     "customers": "Khách hàng",
