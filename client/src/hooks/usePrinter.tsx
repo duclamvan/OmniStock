@@ -163,6 +163,7 @@ export function usePrinter(options: UsePrinterOptions = {}) {
 
   const printLabelHTML = useCallback(async (
     htmlContent: string,
+    options?: { orientation?: 'portrait' | 'landscape'; width?: number; height?: number },
     fallbackToBrowser: boolean = true
   ): Promise<PrintResult> => {
     const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
@@ -190,8 +191,16 @@ export function usePrinter(options: UsePrinterOptions = {}) {
         return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
       }
 
-      console.log('[usePrinter] Printing HTML via QZ Tray to:', printerName);
-      await printHTML(printerName, htmlContent);
+      const printOptions: Record<string, unknown> = {};
+      if (options?.orientation) {
+        printOptions.orientation = options.orientation;
+      }
+      if (options?.width && options?.height) {
+        printOptions.size = { width: options.width, height: options.height };
+      }
+
+      console.log('[usePrinter] Printing HTML via QZ Tray to:', printerName, 'options:', printOptions);
+      await printHTML(printerName, htmlContent, printOptions);
       toast({
         title: t('printer:printSuccess', 'Print sent'),
         description: printerName,

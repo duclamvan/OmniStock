@@ -312,13 +312,21 @@ export const printHTML = async (
     throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
   }
 
-  const config = qz.configs.create(printerName, {
+  const configOptions: Record<string, unknown> = {
     scaleContent: options.scaleContent ?? false,
     copies: options.copies ?? 1,
-    orientation: options.orientation,
     margins: options.margins ?? { top: 0, right: 0, bottom: 0, left: 0 },
-    size: options.size
-  });
+  };
+  
+  if (options.orientation) {
+    configOptions.orientation = options.orientation;
+  }
+  
+  if (options.size) {
+    configOptions.size = options.size;
+  }
+
+  const config = qz.configs.create(printerName, configOptions);
 
   const data = [{
     type: 'pixel' as const,

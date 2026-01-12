@@ -268,6 +268,7 @@ export default function WarehouseLabelPreview({
 
   const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
+      const orientation = width > height ? 'landscape' : 'portrait';
       const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -279,7 +280,7 @@ body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
 <body>${htmlContent}</body>
 </html>`;
       
-      const result = await printLabelHTML(fullHtml);
+      const result = await printLabelHTML(fullHtml, { orientation, width, height });
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
