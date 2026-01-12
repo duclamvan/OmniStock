@@ -265,7 +265,7 @@ export default function WarehouseLabelPreview({
   const { t } = useTranslation(["inventory", "common"]);
   const isMobile = useIsMobile();
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
-  const { printLabel, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
+  const { printLabelImage, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
   const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
@@ -282,7 +282,7 @@ export default function WarehouseLabelPreview({
       
       document.body.removeChild(container);
       
-      const result = await printLabel(base64);
+      const result = await printLabelImage(base64);
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);

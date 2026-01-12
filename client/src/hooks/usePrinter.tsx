@@ -6,6 +6,7 @@ import {
   isQZConnected,
   printPDF,
   printLabelPDF,
+  printImage,
   getSavedPrinter,
   type PrinterContext
 } from '@/utils/printer';
@@ -106,6 +107,59 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     }
   }, [context, toast, t]);
 
+  const printLabelImage = useCallback(async (
+    imageBase64: string,
+    fallbackToBrowser: boolean = true
+  ): Promise<PrintResult> => {
+    const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
+    
+    if (!printerName) {
+      if (fallbackToBrowser) {
+        openImageInBrowser(imageBase64);
+        return { success: true, usedQZ: false };
+      }
+      return { success: false, usedQZ: false, error: 'No printer configured' };
+    }
+
+    setIsPrinting(true);
+    try {
+      const connected = await connectToQZ();
+      if (!connected) {
+        if (fallbackToBrowser) {
+          openImageInBrowser(imageBase64);
+          toast({
+            title: t('printer:qzNotConnected', 'QZ Tray not connected'),
+            description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
+          });
+          return { success: true, usedQZ: false };
+        }
+        return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
+      }
+
+      console.log('[usePrinter] Printing image via QZ Tray to:', printerName);
+      await printImage(printerName, imageBase64);
+      toast({
+        title: t('printer:printSuccess', 'Print sent'),
+        description: printerName,
+      });
+      return { success: true, usedQZ: true };
+    } catch (error) {
+      console.error('[usePrinter] Print image error:', error);
+      if (fallbackToBrowser) {
+        openImageInBrowser(imageBase64);
+        toast({
+          title: t('printer:printError', 'Direct print failed'),
+          description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
+          variant: 'destructive',
+        });
+        return { success: true, usedQZ: false };
+      }
+      return { success: false, usedQZ: false, error: String(error) };
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [context, toast, t]);
+
   const printDocument = useCallback(async (
     pdfBase64: string,
     fallbackToBrowser: boolean = true
@@ -161,9 +215,47 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     savedPrinter,
     canDirectPrint,
     printLabel,
+    printLabelImage,
     printDocument,
     refreshConnection,
   };
+}
+
+function openImageInBrowser(base64Data: string) {
+  try {
+    console.log('[usePrinter] Opening image in browser for printing...');
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/png' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    const printWindow = window.open('', '_blank', 'width=600,height=400');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Label</title>
+            <style>
+              @page { size: auto; margin: 0; }
+              body { margin: 0; display: flex; justify-content: center; align-items: center; }
+              img { max-width: 100%; height: auto; }
+            </style>
+          </head>
+          <body>
+            <img src="${blobUrl}" onload="window.print(); window.close();" />
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  } catch (error) {
+    console.error('[usePrinter] Failed to open image in browser:', error);
+  }
 }
 
 function openPdfInBrowser(base64Data: string) {
