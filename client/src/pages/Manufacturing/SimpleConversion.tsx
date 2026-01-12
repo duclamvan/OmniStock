@@ -23,10 +23,10 @@ import {
   Plus,
   MapPin,
   Loader2,
-  Archive,
   History,
+  Calendar,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
 
 interface ProductWithBom {
   id: string;
@@ -108,7 +108,7 @@ export default function SimpleConversion() {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
-  const [historyTab, setHistoryTab] = useState<string>("all");
+  const [historyTab, setHistoryTab] = useState<string>("week");
 
   const { data: productsWithBom = [], isLoading: isLoadingProducts } = useQuery<ProductWithBom[]>({
     queryKey: ["/api/manufacturing/products-with-bom"],
@@ -139,26 +139,6 @@ export default function SimpleConversion() {
     setQuantity(alert.recommendedBuild);
     setSelectedLocationId("");
   };
-
-  const archiveMutation = useMutation({
-    mutationFn: async (runId: string) => {
-      await apiRequest("POST", `/api/manufacturing/runs/${runId}/archive`);
-    },
-    onSuccess: () => {
-      toast({
-        title: t("archiveSuccess", "Run archived successfully"),
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/runs"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t("error", "Error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const manufacturingMutation = useMutation({
     mutationFn: async () => {
@@ -603,14 +583,15 @@ export default function SimpleConversion() {
           <CardContent>
             <Tabs value={historyTab} onValueChange={setHistoryTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="all" className="text-base">
-                  {t("all", "All")}
+                <TabsTrigger value="week" className="text-base flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  {t("thisWeek", "This Week")}
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="text-base">
-                  {t("completed", "Completed")}
+                <TabsTrigger value="month" className="text-base">
+                  {t("thisMonth", "This Month")}
                 </TabsTrigger>
-                <TabsTrigger value="archived" className="text-base">
-                  {t("archived", "Archived")}
+                <TabsTrigger value="year" className="text-base">
+                  {t("thisYear", "This Year")}
                 </TabsTrigger>
               </TabsList>
 
@@ -620,27 +601,25 @@ export default function SimpleConversion() {
                 </div>
               ) : (
                 <>
-                  {["all", "completed", "archived"].map((tab) => {
+                  {["week", "month", "year"].map((tab) => {
                     const filteredRuns = manufacturingRuns.filter((run) => {
-                      if (tab === "all") return run.status === "completed" || run.status === "archived";
-                      return run.status === tab;
+                      const runDate = new Date(run.completedAt || run.createdAt);
+                      if (tab === "week") return isThisWeek(runDate);
+                      if (tab === "month") return isThisMonth(runDate);
+                      return isThisYear(runDate);
                     });
 
                     return (
                       <TabsContent key={tab} value={tab} className="space-y-3">
                         {filteredRuns.length === 0 ? (
                           <div className="text-center py-8 text-muted-foreground text-lg">
-                            {t("noRuns", "No manufacturing runs yet")}
+                            {t("noRunsInPeriod", "No manufacturing runs in this period")}
                           </div>
                         ) : (
                           filteredRuns.map((run) => (
                             <div
                               key={run.id}
-                              className={`p-4 rounded-lg border ${
-                                run.status === "completed"
-                                  ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
-                                  : "bg-gray-50 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700"
-                              }`}
+                              className="p-4 rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
                             >
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="space-y-1">
@@ -648,16 +627,8 @@ export default function SimpleConversion() {
                                     <span className="text-lg font-bold">
                                       {t("runNumber", "Run #")}{run.runNumber}
                                     </span>
-                                    <span
-                                      className={`text-sm px-2 py-0.5 rounded-full ${
-                                        run.status === "completed"
-                                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                          : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                                      }`}
-                                    >
-                                      {run.status === "completed"
-                                        ? t("completed", "Completed")
-                                        : t("archived", "Archived")}
+                                    <span className="text-sm px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                      {t("completed", "Completed")}
                                     </span>
                                   </div>
                                   <div className="text-base text-muted-foreground">
@@ -672,22 +643,6 @@ export default function SimpleConversion() {
                                     </span>
                                   </div>
                                 </div>
-                                {run.status === "completed" && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => archiveMutation.mutate(run.id)}
-                                    disabled={archiveMutation.isPending}
-                                    className="flex items-center gap-2"
-                                  >
-                                    {archiveMutation.isPending ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Archive className="h-4 w-4" />
-                                    )}
-                                    {t("archive", "Archive")}
-                                  </Button>
-                                )}
                               </div>
                             </div>
                           ))
