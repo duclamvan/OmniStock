@@ -272,7 +272,6 @@ export default function WarehouseLabelPreview({
       const dpi = 203;
       const pixelWidth = Math.round((widthMm / 25.4) * dpi);
       const pixelHeight = Math.round((heightMm / 25.4) * dpi);
-      const pixelRatio = dpi / 96;
 
       const container = document.createElement('div');
       container.innerHTML = htmlContent;
@@ -282,16 +281,16 @@ export default function WarehouseLabelPreview({
       container.style.width = `${widthMm}mm`;
       container.style.height = `${heightMm}mm`;
       container.style.background = 'white';
-      container.style.visibility = 'hidden';
+      container.style.overflow = 'hidden';
       document.body.appendChild(container);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       const dataUrl = await toPng(container, {
         width: pixelWidth,
         height: pixelHeight,
-        pixelRatio: pixelRatio,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        cacheBust: true
       });
       const base64 = dataUrl.split(',')[1];
 

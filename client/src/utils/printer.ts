@@ -326,8 +326,8 @@ export const printLabelImage = async (
     copies: options.copies ?? 1,
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
     size: { 
-      width: options.widthMm, 
-      height: options.heightMm, 
+      width: options.heightMm, 
+      height: options.widthMm, 
       units: 'mm' 
     },
     density: { cross: dpi, down: dpi }
@@ -341,7 +341,7 @@ export const printLabelImage = async (
   }];
 
   try {
-    console.log(`Printing label ${options.widthMm}x${options.heightMm}mm at ${dpi} DPI to ${printerName}`);
+    console.log(`Printing label ${options.widthMm}x${options.heightMm}mm (QZ: ${options.heightMm}x${options.widthMm}) at ${dpi} DPI to ${printerName}`);
     await qz.print(config, data);
     console.log(`Successfully sent label image to ${printerName}`);
   } catch (err) {
