@@ -69,6 +69,38 @@ interface ManufacturingRun {
   createdAt: string;
 }
 
+interface ComponentLocation {
+  locationCode: string;
+  quantity: number;
+}
+
+interface LowStockComponent {
+  childProductId: string;
+  childVariantId: string | null;
+  productName: string;
+  variantName: string | null;
+  sku: string | null;
+  quantityPerUnit: number;
+  requiredForRecommended: number;
+  totalStock: number;
+  shortfall: number;
+  canFulfill: boolean;
+  locations: ComponentLocation[];
+  yieldQuantity: number;
+}
+
+interface LowStockAlert {
+  productId: string;
+  productName: string;
+  sku: string;
+  currentStock: number;
+  threshold: number;
+  recommendedBuild: number;
+  allComponentsAvailable: boolean;
+  components: LowStockComponent[];
+  locations: ComponentLocation[];
+}
+
 export default function SimpleConversion() {
   const { t } = useTranslation("inventory");
   const { toast } = useToast();
@@ -95,6 +127,18 @@ export default function SimpleConversion() {
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
   });
+
+  const { data: lowStockAlerts = [], isLoading: isLoadingLowStock } = useQuery<LowStockAlert[]>({
+    queryKey: ["/api/manufacturing/low-stock"],
+  });
+
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+
+  const handleStartConversion = (alert: LowStockAlert) => {
+    setSelectedProductId(alert.productId);
+    setQuantity(alert.recommendedBuild);
+    setSelectedLocationId("");
+  };
 
   const archiveMutation = useMutation({
     mutationFn: async (runId: string) => {
@@ -138,6 +182,7 @@ export default function SimpleConversion() {
       setSelectedLocationId("");
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/runs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/low-stock"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
@@ -178,6 +223,151 @@ export default function SimpleConversion() {
             {t("simpleConversion", "Simple Conversion")}
           </h1>
         </div>
+
+        {/* Low Stock Manufacturing Alerts */}
+        {isLoadingLowStock ? (
+          <Card>
+            <CardContent className="py-8">
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : lowStockAlerts.length > 0 && (
+          <Card className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                <AlertTriangle className="h-6 w-6" />
+                {t("lowStockManufacturingAlerts", "Low Stock Alerts - Need Manufacturing")}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("lowStockManufacturingDesc", "Products running low that can be manufactured")}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {lowStockAlerts.map((alert) => (
+                <div
+                  key={alert.productId}
+                  className="bg-white dark:bg-background rounded-lg border p-4 space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold">{alert.productName}</h3>
+                      <p className="text-sm text-muted-foreground">SKU: {alert.sku}</p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-red-600">{alert.currentStock}</div>
+                        <div className="text-xs text-muted-foreground">{t("currentStock", "Current Stock")}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold">{alert.threshold}</div>
+                        <div className="text-xs text-muted-foreground">{t("stockThreshold", "Threshold")}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-green-600">{alert.recommendedBuild}</div>
+                        <div className="text-xs text-muted-foreground">{t("recommendedBuild", "Recommended Build")}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Locations */}
+                  {alert.locations.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {alert.locations.map((loc, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                          <MapPin className="h-3 w-3" />
+                          {loc.locationCode}: {loc.quantity}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Component availability indicator */}
+                  <div className="flex items-center gap-2">
+                    {alert.allComponentsAvailable ? (
+                      <span className="inline-flex items-center gap-1 text-green-600 text-sm">
+                        <Check className="h-4 w-4" />
+                        {t("allComponentsAvailable", "All components available")}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-orange-600 text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        {t("someComponentsMissing", "Some components missing")}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Expandable component details */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-sm"
+                    onClick={() => setExpandedAlertId(expandedAlertId === alert.productId ? null : alert.productId)}
+                  >
+                    {expandedAlertId === alert.productId ? "Hide" : "Show"} {t("manufacturingChildComponents", "Components")} ({alert.components.length})
+                  </Button>
+
+                  {expandedAlertId === alert.productId && (
+                    <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                      {alert.components.map((comp, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`p-3 rounded-lg text-sm ${
+                            comp.canFulfill 
+                              ? "bg-green-50 dark:bg-green-950/30" 
+                              : "bg-red-50 dark:bg-red-950/30"
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <span className="font-medium">{comp.productName}</span>
+                              {comp.variantName && <span className="text-muted-foreground ml-1">({comp.variantName})</span>}
+                              {comp.sku && <span className="text-muted-foreground text-xs ml-2">SKU: {comp.sku}</span>}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-muted-foreground">
+                                {t("requiredQty", "Required")}: {comp.requiredForRecommended.toFixed(1)}
+                              </span>
+                              <span className={comp.canFulfill ? "text-green-600" : "text-red-600"}>
+                                {t("manufacturingTotalStock", "Total Stock")}: {comp.totalStock}
+                              </span>
+                              {!comp.canFulfill && (
+                                <span className="text-red-600 font-medium">
+                                  {t("manufacturingShortfall", "Shortfall")}: {comp.shortfall.toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Component locations */}
+                          {comp.locations.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {comp.locations.map((loc, locIdx) => (
+                                <span key={locIdx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                                  <MapPin className="h-2.5 w-2.5" />
+                                  {loc.locationCode}: {loc.quantity}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action button */}
+                  <Button
+                    onClick={() => handleStartConversion(alert)}
+                    className="w-full sm:w-auto mt-2 py-4 text-lg"
+                    disabled={!alert.allComponentsAvailable}
+                  >
+                    {t("startConversion", "Start Conversion")}
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-4">

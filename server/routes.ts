@@ -27289,6 +27289,135 @@ Important rules:
     }
   });
 
+
+  // Get low-stock products that need manufacturing
+  app.get('/api/manufacturing/low-stock', isAuthenticated, async (req, res) => {
+    try {
+      // Get distinct parent product IDs from BOM
+      const bomParents = await db.selectDistinct({ parentProductId: billOfMaterials.parentProductId })
+        .from(billOfMaterials);
+      
+      const parentIds = bomParents.map(b => b.parentProductId);
+      
+      if (parentIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get products with BOM
+      const productsWithBom = await db.select()
+        .from(products)
+        .where(inArray(products.id, parentIds));
+      
+      const lowStockAlerts = [];
+      
+      for (const product of productsWithBom) {
+        // Get total stock across all locations
+        const productLocs = await db.select()
+          .from(productLocations)
+          .where(eq(productLocations.productId, product.id));
+        
+        const totalStock = productLocs.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+        
+        // Determine threshold based on lowStockAlertType
+        let threshold = 0;
+        if (product.lowStockAlertType === 'amount') {
+          threshold = product.lowStockAlert || 0;
+        } else {
+          // percentage-based - use some reasonable default max stock estimate
+          const maxStock = 100; // Default reference for percentage calculation
+          threshold = Math.ceil(maxStock * ((product.lowStockAlert || 45) / 100));
+        }
+        
+        // Check if below threshold
+        if (totalStock < threshold) {
+          // Calculate recommended build quantity to reach threshold
+          const recommendedBuild = Math.max(1, threshold - totalStock);
+          
+          // Get BOM ingredients with their stock levels
+          const bomItems = await storage.getBomIngredients(product.id);
+          
+          // Get component stock by location
+          const components = await Promise.all(bomItems.map(async (bom) => {
+            const childProductId = bom.childProductId;
+            const childVariantId = bom.childVariantId;
+            
+            // Get locations for this component
+            let componentLocations: Array<{locationCode: string; quantity: number}> = [];
+            let componentTotalStock = 0;
+            
+            if (childVariantId) {
+              // Variant-specific stock
+              const variantLocs = await db.select()
+                .from(productLocations)
+                .where(and(
+                  eq(productLocations.productId, childProductId),
+                  eq(productLocations.variantId, childVariantId)
+                ));
+              componentLocations = variantLocs.map(loc => ({
+                locationCode: loc.locationCode || 'Default',
+                quantity: loc.quantity || 0
+              }));
+              componentTotalStock = variantLocs.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+            } else {
+              // Product-level stock
+              const prodLocs = await db.select()
+                .from(productLocations)
+                .where(eq(productLocations.productId, childProductId));
+              componentLocations = prodLocs.map(loc => ({
+                locationCode: loc.locationCode || 'Default',
+                quantity: loc.quantity || 0
+              }));
+              componentTotalStock = prodLocs.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+            }
+            
+            const quantityPerUnit = parseFloat(bom.quantity || '0');
+            const requiredForRecommended = quantityPerUnit * recommendedBuild;
+            const shortfall = Math.max(0, requiredForRecommended - componentTotalStock);
+            
+            return {
+              childProductId,
+              childVariantId,
+              productName: bom.childProduct?.name || 'Unknown',
+              variantName: bom.childVariant?.name || null,
+              sku: bom.childVariant?.sku || bom.childProduct?.sku || null,
+              quantityPerUnit,
+              requiredForRecommended,
+              totalStock: componentTotalStock,
+              shortfall,
+              canFulfill: shortfall === 0,
+              locations: componentLocations,
+              yieldQuantity: bom.yieldQuantity || 1,
+            };
+          }));
+          
+          const allComponentsAvailable = components.every(c => c.canFulfill);
+          
+          lowStockAlerts.push({
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            currentStock: totalStock,
+            threshold,
+            recommendedBuild,
+            allComponentsAvailable,
+            components,
+            locations: productLocs.map(loc => ({
+              locationCode: loc.locationCode || 'Default',
+              quantity: loc.quantity || 0
+            })),
+          });
+        }
+      }
+      
+      // Sort by urgency (lowest stock ratio first)
+      lowStockAlerts.sort((a, b) => (a.currentStock / a.threshold) - (b.currentStock / b.threshold));
+      
+      res.json(lowStockAlerts);
+    } catch (error) {
+      console.error('Error fetching low-stock manufacturing alerts:', error);
+      res.status(500).json({ message: 'Failed to fetch low-stock manufacturing alerts' });
+    }
+  });
   // Calculate production requirements
   app.get('/api/manufacturing/calculate-requirements', isAuthenticated, async (req, res) => {
     try {

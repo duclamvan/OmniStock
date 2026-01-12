@@ -1437,6 +1437,7 @@ const inventory = {
   // Manufacturing / Simple Conversion
   simpleConversion: 'Simple Conversion',
   simpleManufacturing: 'Simple Manufacturing',
+  convertMaterials: 'Convert raw materials',
   selectProductToMake: 'Select Product to Make',
   noProductsWithBom: 'No products with recipes found',
   quantityToMake: 'Quantity to Make',
@@ -1459,6 +1460,22 @@ const inventory = {
   manufacturingNotifications: 'Manufacturing Notifications',
   newManufacturingCompletion: 'New manufacturing completion',
   newManufacturingCompletions: '{{count}} new manufacturing completions',
+  
+  // Low Stock Manufacturing Alerts
+  lowStockManufacturingAlerts: 'Low Stock Alerts - Need Manufacturing',
+  lowStockManufacturingDesc: 'Products running low that can be manufactured',
+  noLowStockManufacturing: 'All manufacturable products have sufficient stock',
+  stockThreshold: 'Threshold',
+  recommendedBuild: 'Recommended Build',
+  componentAvailability: 'Component Availability',
+  allComponentsAvailable: 'All components available',
+  someComponentsMissing: 'Some components missing',
+  startConversion: 'Start Conversion',
+  manufacturingParentProduct: 'Product',
+  manufacturingChildComponents: 'Components',
+  locationStock: 'Location Stock',
+  manufacturingTotalStock: 'Total Stock',
+  manufacturingShortfall: 'Shortfall',
   
 } as const;
 

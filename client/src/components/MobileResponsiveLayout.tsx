@@ -402,11 +402,11 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
           description: t('common:incomingShipments')
         },
         {
-          name: t('manufacturing:simpleConversion', 'Simple Conversion'),
+          name: t('inventory:simpleConversion', 'Simple Conversion'),
           href: "/manufacturing/simple-conversion",
           icon: Factory,
           color: "text-orange-600 dark:text-orange-400",
-          description: t('manufacturing:convertMaterials', 'Convert raw materials')
+          description: t('inventory:convertMaterials', 'Convert raw materials')
         },
         {
           name: t('common:stock'),

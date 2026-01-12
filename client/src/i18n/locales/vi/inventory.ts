@@ -1510,6 +1510,7 @@ const inventory = {
   // Manufacturing / Simple Conversion
   simpleConversion: 'Chuyển đổi đơn giản',
   simpleManufacturing: 'Sản xuất đơn giản',
+  convertMaterials: 'Chuyển đổi nguyên liệu',
   selectProductToMake: 'Chọn sản phẩm cần làm',
   noProductsWithBom: 'Không tìm thấy sản phẩm có công thức',
   quantityToMake: 'Số lượng cần làm',
@@ -1532,6 +1533,22 @@ const inventory = {
   manufacturingNotifications: 'Thông báo sản xuất',
   newManufacturingCompletion: 'Hoàn thành sản xuất mới',
   newManufacturingCompletions: '{{count}} lần hoàn thành sản xuất mới',
+  
+  // Low Stock Manufacturing Alerts
+  lowStockManufacturingAlerts: 'Cảnh báo tồn kho thấp - Cần sản xuất',
+  lowStockManufacturingDesc: 'Sản phẩm sắp hết có thể sản xuất được',
+  noLowStockManufacturing: 'Tất cả sản phẩm có thể sản xuất đều đủ hàng',
+  stockThreshold: 'Ngưỡng',
+  recommendedBuild: 'Số lượng nên làm',
+  componentAvailability: 'Tình trạng nguyên liệu',
+  allComponentsAvailable: 'Đủ nguyên liệu',
+  someComponentsMissing: 'Thiếu một số nguyên liệu',
+  startConversion: 'Bắt đầu chuyển đổi',
+  manufacturingParentProduct: 'Sản phẩm',
+  manufacturingChildComponents: 'Nguyên liệu',
+  locationStock: 'Tồn kho theo vị trí',
+  manufacturingTotalStock: 'Tổng tồn kho',
+  manufacturingShortfall: 'Thiếu',
   
 } as const;
 
