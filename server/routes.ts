@@ -27250,27 +27250,49 @@ Important rules:
   // Get products with BOM recipes (products that can be manufactured)
   app.get('/api/manufacturing/products-with-bom', isAuthenticated, async (req, res) => {
     try {
-      // Get distinct parent product IDs from BOM
+      // Get parent product IDs from two sources:
+      // 1. billOfMaterials table (explicit BOM)
+      // 2. Products that have children via parentProductId field
+      
+      // Source 1: BOM table
       const bomParents = await db.selectDistinct({ parentProductId: billOfMaterials.parentProductId })
         .from(billOfMaterials);
+      const bomParentIds = bomParents.map(b => b.parentProductId);
       
-      const parentIds = bomParents.map(b => b.parentProductId);
+      // Source 2: Products that have children (products referencing them as parent)
+      const childProducts = await db.selectDistinct({ parentProductId: products.parentProductId })
+        .from(products)
+        .where(isNotNull(products.parentProductId));
+      const parentChildIds = childProducts.map(c => c.parentProductId).filter(Boolean) as string[];
       
-      if (parentIds.length === 0) {
+      // Combine both sources
+      const allParentIds = [...new Set([...bomParentIds, ...parentChildIds])];
+      
+      if (allParentIds.length === 0) {
         return res.json([]);
       }
       
       // Get products with their BOM ingredients
       const productsWithBom = await db.select()
         .from(products)
-        .where(inArray(products.id, parentIds));
+        .where(inArray(products.id, allParentIds));
       
-      // Get BOM ingredients for each product
+      // Get BOM ingredients for each product (from both sources)
       const result = await Promise.all(productsWithBom.map(async (product) => {
+        // Get from billOfMaterials table
         const bomItems = await storage.getBomIngredients(product.id);
-        return {
-          ...product,
-          bomIngredients: bomItems.map(bom => ({
+        
+        // Also get children via parentProductId
+        const childrenViaParentId = await db.select()
+          .from(products)
+          .where(eq(products.parentProductId, product.id));
+        
+        // Merge both sources with deduplication (prefer BOM entries over parentProductId)
+        const bomChildIds = new Set(bomItems.map(bom => bom.childProductId));
+        const uniqueParentIdChildren = childrenViaParentId.filter(child => !bomChildIds.has(child.id));
+        
+        const allIngredients = [
+          ...bomItems.map(bom => ({
             id: bom.id,
             childProductId: bom.childProductId,
             childVariantId: bom.childVariantId,
@@ -27279,6 +27301,21 @@ Important rules:
             childProduct: bom.childProduct,
             childVariant: bom.childVariant,
           })),
+          // Add children from parentProductId relationship (only if not already in BOM)
+          ...uniqueParentIdChildren.map(child => ({
+            id: `child-${child.id}`,
+            childProductId: child.id,
+            childVariantId: null,
+            quantity: '1', // Default quantity for parent-child relationship
+            yieldQuantity: '1',
+            childProduct: child, // Full product object
+            childVariant: null,
+          })),
+        ];
+        
+        return {
+          ...product,
+          bomIngredients: allIngredients,
         };
       }));
       
@@ -27293,20 +27330,32 @@ Important rules:
   // Get low-stock products that need manufacturing
   app.get('/api/manufacturing/low-stock', isAuthenticated, async (req, res) => {
     try {
-      // Get distinct parent product IDs from BOM
+      // Get parent product IDs from two sources:
+      // 1. billOfMaterials table (explicit BOM)
+      // 2. Products that have children via parentProductId field
+      
+      // Source 1: BOM table
       const bomParents = await db.selectDistinct({ parentProductId: billOfMaterials.parentProductId })
         .from(billOfMaterials);
+      const bomParentIds = bomParents.map(b => b.parentProductId);
       
-      const parentIds = bomParents.map(b => b.parentProductId);
+      // Source 2: Products that have children (products referencing them as parent)
+      const childProducts = await db.selectDistinct({ parentProductId: products.parentProductId })
+        .from(products)
+        .where(isNotNull(products.parentProductId));
+      const parentChildIds = childProducts.map(c => c.parentProductId).filter(Boolean) as string[];
       
-      if (parentIds.length === 0) {
+      // Combine both sources
+      const allParentIds = [...new Set([...bomParentIds, ...parentChildIds])];
+      
+      if (allParentIds.length === 0) {
         return res.json([]);
       }
       
-      // Get products with BOM
+      // Get products with BOM (from either source)
       const productsWithBom = await db.select()
         .from(products)
-        .where(inArray(products.id, parentIds));
+        .where(inArray(products.id, allParentIds));
       
       const lowStockAlerts = [];
       
@@ -27334,11 +27383,40 @@ Important rules:
           // Calculate recommended build quantity to reach threshold
           const recommendedBuild = Math.max(1, threshold - totalStock);
           
-          // Get BOM ingredients with their stock levels
+          // Get BOM ingredients with their stock levels from both sources
           const bomItems = await storage.getBomIngredients(product.id);
           
+          // Also get children via parentProductId
+          const childrenViaParentId = await db.select()
+            .from(products)
+            .where(eq(products.parentProductId, product.id));
+          
+          // Combine both sources with deduplication (prefer BOM entries over parentProductId)
+          const bomChildIds = new Set(bomItems.map(bom => bom.childProductId));
+          const uniqueParentIdChildren = childrenViaParentId.filter(child => !bomChildIds.has(child.id));
+          
+          const allBomItems = [
+            ...bomItems.map(bom => ({
+              childProductId: bom.childProductId,
+              childVariantId: bom.childVariantId,
+              quantity: bom.quantity || '1',
+              yieldQuantity: bom.yieldQuantity || '1',
+              childProduct: bom.childProduct,
+              childVariant: bom.childVariant,
+            })),
+            // Only add children from parentProductId if not already in BOM
+            ...uniqueParentIdChildren.map(child => ({
+              childProductId: child.id,
+              childVariantId: null,
+              quantity: '1',
+              yieldQuantity: '1', 
+              childProduct: child, // Full product object
+              childVariant: null,
+            })),
+          ];
+          
           // Get component stock by location
-          const components = await Promise.all(bomItems.map(async (bom) => {
+          const components = await Promise.all(allBomItems.map(async (bom) => {
             const childProductId = bom.childProductId;
             const childVariantId = bom.childVariantId;
             
