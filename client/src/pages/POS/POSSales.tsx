@@ -27,7 +27,8 @@ import {
   Loader2,
   Wallet,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  ShoppingBag
 } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +36,7 @@ import { formatCurrency } from '@/lib/currencyUtils';
 import { useTranslation } from 'react-i18next';
 import { DataTable } from '@/components/ui/data-table';
 import { format, parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
-import type { Order, Customer } from '@shared/schema';
+import type { Order, Customer, Expense } from '@shared/schema';
 
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'bank_transfer_private' | 'bank_transfer_invoice' | 'pay_later' | 'qr_czk';
 
@@ -69,6 +70,10 @@ export default function POSSales() {
   }>({ notes: '', paymentMethod: 'cash' });
   const [cashOutAmount, setCashOutAmount] = useState('');
   const [cashOutNotes, setCashOutNotes] = useState('');
+  const [isCustomCostDialogOpen, setIsCustomCostDialogOpen] = useState(false);
+  const [customCostAmount, setCustomCostAmount] = useState('');
+  const [customCostDescription, setCustomCostDescription] = useState('');
+  const [customCostCategory, setCustomCostCategory] = useState<'parts' | 'food' | 'water' | 'supplies' | 'other'>('other');
   
   const { toast } = useToast();
 
@@ -80,6 +85,11 @@ export default function POSSales() {
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ['/api/customers'],
     staleTime: 60000,
+  });
+
+  const { data: expenses = [] } = useQuery<Expense[]>({
+    queryKey: ['/api/expenses'],
+    staleTime: 30000,
   });
 
   const { data: orderItems = [], isLoading: isLoadingItems } = useQuery<any[]>({
@@ -152,8 +162,36 @@ export default function POSSales() {
     const todayCash = filteredSales
       .filter(sale => sale.paymentMethod === 'cash' && sale.orderStatus !== 'cancelled')
       .reduce((sum, sale) => sum + parseFloat(String(sale.grandTotal || 0)), 0);
-    return todayCash;
-  }, [filteredSales]);
+    
+    const now = new Date();
+    let startDate: Date;
+    switch (dateFilter) {
+      case 'today':
+        startDate = startOfDay(now);
+        break;
+      case 'week':
+        startDate = subDays(startOfDay(now), 7);
+        break;
+      case 'month':
+        startDate = subDays(startOfDay(now), 30);
+        break;
+      default:
+        startDate = new Date(0);
+    }
+    
+    const cashExpenseCategories = ['cash_out', 'parts', 'food', 'water', 'supplies', 'other'];
+    const totalExpenses = expenses
+      .filter(exp => {
+        if (!exp.date) return false;
+        const expDate = new Date(exp.date);
+        const inDateRange = expDate >= startDate && expDate <= endOfDay(now);
+        const isCashExpense = cashExpenseCategories.includes(exp.category || '');
+        return inDateRange && isCashExpense && exp.status === 'completed';
+      })
+      .reduce((sum, exp) => sum + parseFloat(String(exp.amount || 0)), 0);
+    
+    return todayCash - totalExpenses;
+  }, [filteredSales, expenses, dateFilter]);
 
   const totalSales = useMemo(() => {
     return filteredSales
@@ -239,6 +277,48 @@ export default function POSSales() {
     },
   });
 
+  const customCostMutation = useMutation({
+    mutationFn: async (data: { amount: string; description: string; category: string }) => {
+      const timestamp = Date.now();
+      const categoryLabels: Record<string, string> = {
+        parts: 'Parts/Materials',
+        food: 'Food',
+        water: 'Water/Beverages',
+        supplies: 'Office Supplies',
+        other: 'Other Expense',
+      };
+      return apiRequest('POST', '/api/expenses', {
+        expenseId: `COST-${timestamp}`,
+        name: categoryLabels[data.category] || 'Custom Cost',
+        description: data.description || `${categoryLabels[data.category]} purchase`,
+        amount: data.amount,
+        currency: 'CZK',
+        category: data.category,
+        paymentMethod: 'cash',
+        status: 'completed',
+        date: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      toast({
+        title: t('common:success'),
+        description: t('common:customCostRecorded', { amount: formatCurrency(parseFloat(customCostAmount), 'CZK') }),
+      });
+      setIsCustomCostDialogOpen(false);
+      setCustomCostAmount('');
+      setCustomCostDescription('');
+      setCustomCostCategory('other');
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('common:updateFailed'),
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleViewSale = (sale: POSSale) => {
     setSelectedSale(sale);
     setIsViewDialogOpen(true);
@@ -294,6 +374,24 @@ export default function POSSales() {
     cashOutMutation.mutate({
       amount: cashOutAmount,
       notes: cashOutNotes,
+    });
+  };
+
+  const handleCustomCost = () => {
+    const amount = parseFloat(customCostAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: t('common:error'),
+        description: t('common:invalidAmount'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    customCostMutation.mutate({
+      amount: customCostAmount,
+      description: customCostDescription,
+      category: customCostCategory,
     });
   };
 
@@ -448,15 +546,25 @@ export default function POSSales() {
                 <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
-            <Button 
-              onClick={() => setIsCashOutDialogOpen(true)}
-              className="w-full mt-4"
-              variant="outline"
-              disabled={cashBalance <= 0}
-            >
-              <ArrowDownToLine className="h-4 w-4 mr-2" />
-              {t('common:cashOut')}
-            </Button>
+            <div className="flex gap-2 mt-4">
+              <Button 
+                onClick={() => setIsCashOutDialogOpen(true)}
+                className="flex-1"
+                variant="outline"
+                disabled={cashBalance <= 0}
+              >
+                <ArrowDownToLine className="h-4 w-4 mr-2" />
+                {t('common:cashOut')}
+              </Button>
+              <Button 
+                onClick={() => setIsCustomCostDialogOpen(true)}
+                className="flex-1"
+                variant="outline"
+              >
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                {t('common:customCost', 'Cost')}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -782,6 +890,63 @@ export default function POSSales() {
             </Button>
             <Button onClick={handleCashOut} disabled={cashOutMutation.isPending}>
               {cashOutMutation.isPending ? t('common:processing') : t('common:confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCustomCostDialogOpen} onOpenChange={setIsCustomCostDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5" />
+              {t('common:customCost', 'Custom Cost')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('common:customCostDescription', 'Record employee purchases (parts, food, water, supplies)')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('common:category', 'Category')}</Label>
+              <Select value={customCostCategory} onValueChange={(v) => setCustomCostCategory(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parts">{t('common:costCategoryParts', 'Parts/Materials')}</SelectItem>
+                  <SelectItem value="food">{t('common:costCategoryFood', 'Food')}</SelectItem>
+                  <SelectItem value="water">{t('common:costCategoryWater', 'Water/Beverages')}</SelectItem>
+                  <SelectItem value="supplies">{t('common:costCategorySupplies', 'Office Supplies')}</SelectItem>
+                  <SelectItem value="other">{t('common:costCategoryOther', 'Other')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common:amount')}</Label>
+              <Input
+                type="number"
+                value={customCostAmount}
+                onChange={(e) => setCustomCostAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common:description', 'Description')}</Label>
+              <Textarea
+                value={customCostDescription}
+                onChange={(e) => setCustomCostDescription(e.target.value)}
+                placeholder={t('common:customCostPlaceholder', 'What was purchased...')}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCustomCostDialogOpen(false)}>
+              {t('common:cancel')}
+            </Button>
+            <Button onClick={handleCustomCost} disabled={customCostMutation.isPending}>
+              {customCostMutation.isPending ? t('common:processing') : t('common:confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
