@@ -314,11 +314,10 @@ export const printHTML = async (
   }
 
   const configOptions: any = {
-    scaleContent: true,
-    rasterize: true,
+    scaleContent: options.scaleContent ?? true,
     copies: options.copies ?? 1,
     orientation: options.orientation,
-    margins: { top: 1, right: 1, bottom: 1, left: 1 }
+    margins: options.margins ?? { top: 0, right: 0, bottom: 0, left: 0 }
   };
 
   if (labelSize) {
