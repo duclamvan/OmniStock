@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { usePrinter } from "@/hooks/usePrinter";
 import { LabelContent, type LabelProduct } from "@/components/warehouse/WarehouseLabelPreview";
 import { generateProductQRUrl } from "@shared/qrUtils";
-import { toPng } from "html-to-image";
 import QRCode from "qrcode";
 import {
   ArrowLeft,
@@ -98,38 +97,25 @@ export default function WarehouseLabels() {
   const [includeVariantsFor, setIncludeVariantsFor] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "abc" | "variants">("newest");
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
-  const { printLabelWithSize, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
+  const { printLabelHTML, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
   const printHtmlViaQZ = async (htmlContent: string, widthMm: number, heightMm: number): Promise<boolean> => {
     try {
-      const dpi = 203;
-      const pixelWidth = Math.round((widthMm / 25.4) * dpi);
-      const pixelHeight = Math.round((heightMm / 25.4) * dpi);
-
-      const container = document.createElement('div');
-      container.innerHTML = htmlContent;
-      container.style.position = 'fixed';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = `${widthMm}mm`;
-      container.style.height = `${heightMm}mm`;
-      container.style.background = 'white';
-      container.style.overflow = 'hidden';
-      document.body.appendChild(container);
-
-      await new Promise(resolve => setTimeout(resolve, 150));
-
-      const dataUrl = await toPng(container, {
-        width: pixelWidth,
-        height: pixelHeight,
-        backgroundColor: 'white',
-        cacheBust: true
-      });
-      const base64 = dataUrl.split(',')[1];
-
-      document.body.removeChild(container);
-
-      const result = await printLabelWithSize(base64, { widthMm, heightMm, dpi });
+      const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: ${widthMm}mm; height: ${heightMm}mm; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: white; }
+</style>
+</head>
+<body>${htmlContent}</body>
+</html>`;
+      
+      const result = await printLabelHTML(fullHtml, { widthMm, heightMm });
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
