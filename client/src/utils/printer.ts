@@ -392,6 +392,48 @@ export const printHTML = async (
   }
 };
 
+export const printLabelHTMLDirect = async (
+  printerName: string,
+  htmlContent: string,
+  options: LabelPrintOptions
+): Promise<void> => {
+  const connected = await connectToQZ();
+  if (!connected) {
+    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
+  }
+
+  const dpi = options.dpi ?? 203;
+
+  const config = qz.configs.create(printerName, {
+    scaleContent: false,
+    copies: options.copies ?? 1,
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    size: { 
+      width: options.widthMm, 
+      height: options.heightMm, 
+      units: 'mm' 
+    },
+    density: { cross: dpi, down: dpi },
+    rasterize: true
+  });
+
+  const data = [{
+    type: 'pixel' as const,
+    format: 'html' as const,
+    flavor: 'plain' as const,
+    data: htmlContent
+  }];
+
+  try {
+    console.log(`Printing HTML label ${options.widthMm}x${options.heightMm}mm at ${dpi} DPI to ${printerName}`);
+    await qz.print(config, data);
+    console.log(`Successfully sent HTML label to ${printerName}`);
+  } catch (err) {
+    console.error("HTML label printing failed:", err);
+    throw err;
+  }
+};
+
 export const printRawZPL = async (
   printerName: string,
   zplCommand: string

@@ -9,6 +9,7 @@ import {
   printImage,
   printLabelImage as printLabelImageQZ,
   printHTML,
+  printLabelHTMLDirect,
   getSavedPrinter,
   type PrinterContext,
   type LabelPrintOptions
@@ -223,7 +224,7 @@ export function usePrinter(options: UsePrinterOptions = {}) {
 
   const printLabelHTML = useCallback(async (
     htmlContent: string,
-    options?: { widthMm?: number; heightMm?: number },
+    options: { widthMm: number; heightMm: number; dpi?: number },
     fallbackToBrowser: boolean = true
   ): Promise<PrintResult> => {
     const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
@@ -251,21 +252,12 @@ export function usePrinter(options: UsePrinterOptions = {}) {
         return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
       }
 
-      const printOptions: Record<string, unknown> = {
-        scaleContent: false,
-        margins: { top: 0, right: 0, bottom: 0, left: 0 }
-      };
-      if (options?.widthMm && options?.heightMm) {
-        printOptions.size = { 
-          width: options.heightMm, 
-          height: options.widthMm, 
-          units: 'mm' 
-        };
-        printOptions.orientation = 'landscape';
-      }
-
-      console.log('[usePrinter] Printing HTML via QZ Tray to:', printerName, 'size:', options?.widthMm, 'x', options?.heightMm, 'mm');
-      await printHTML(printerName, htmlContent, printOptions);
+      console.log('[usePrinter] Printing HTML label via QZ Tray to:', printerName, 'size:', options.widthMm, 'x', options.heightMm, 'mm');
+      await printLabelHTMLDirect(printerName, htmlContent, {
+        widthMm: options.widthMm,
+        heightMm: options.heightMm,
+        dpi: options.dpi ?? 203
+      });
       toast({
         title: t('printer:printSuccess', 'Print sent'),
         description: printerName,

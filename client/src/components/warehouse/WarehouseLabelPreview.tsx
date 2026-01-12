@@ -480,7 +480,7 @@ body { font-family: Arial, sans-serif; background: white; }
       </div>
     `;
 
-    const qzSuccess = await printHtmlViaQZ(labelHtmlForQZ, 378, 113);
+    const qzSuccess = await printHtmlViaQZ(labelHtmlForQZ, 100, 30);
     if (qzSuccess) {
       return;
     }
@@ -541,7 +541,7 @@ body { font-family: Arial, sans-serif; background: white; }
       </div>
     `;
 
-    const qzSuccess = await printHtmlViaQZ(largeLabelHtmlForQZ, 560, 397);
+    const qzSuccess = await printHtmlViaQZ(largeLabelHtmlForQZ, 148, 105);
     if (qzSuccess) {
       return;
     }
