@@ -7,6 +7,7 @@ import {
   printPDF,
   printLabelPDF,
   printImage,
+  printHTML,
   getSavedPrinter,
   type PrinterContext
 } from '@/utils/printer';
@@ -160,6 +161,59 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     }
   }, [context, toast, t]);
 
+  const printLabelHTML = useCallback(async (
+    htmlContent: string,
+    fallbackToBrowser: boolean = true
+  ): Promise<PrintResult> => {
+    const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
+    
+    if (!printerName) {
+      if (fallbackToBrowser) {
+        openHtmlInBrowser(htmlContent);
+        return { success: true, usedQZ: false };
+      }
+      return { success: false, usedQZ: false, error: 'No printer configured' };
+    }
+
+    setIsPrinting(true);
+    try {
+      const connected = await connectToQZ();
+      if (!connected) {
+        if (fallbackToBrowser) {
+          openHtmlInBrowser(htmlContent);
+          toast({
+            title: t('printer:qzNotConnected', 'QZ Tray not connected'),
+            description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
+          });
+          return { success: true, usedQZ: false };
+        }
+        return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
+      }
+
+      console.log('[usePrinter] Printing HTML via QZ Tray to:', printerName);
+      await printHTML(printerName, htmlContent);
+      toast({
+        title: t('printer:printSuccess', 'Print sent'),
+        description: printerName,
+      });
+      return { success: true, usedQZ: true };
+    } catch (error) {
+      console.error('[usePrinter] Print HTML error:', error);
+      if (fallbackToBrowser) {
+        openHtmlInBrowser(htmlContent);
+        toast({
+          title: t('printer:printError', 'Direct print failed'),
+          description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
+          variant: 'destructive',
+        });
+        return { success: true, usedQZ: false };
+      }
+      return { success: false, usedQZ: false, error: String(error) };
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [context, toast, t]);
+
   const printDocument = useCallback(async (
     pdfBase64: string,
     fallbackToBrowser: boolean = true
@@ -216,9 +270,28 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     canDirectPrint,
     printLabel,
     printLabelImage,
+    printLabelHTML,
     printDocument,
     refreshConnection,
   };
+}
+
+function openHtmlInBrowser(htmlContent: string) {
+  try {
+    console.log('[usePrinter] Opening HTML in browser for printing...');
+    const printWindow = window.open('', '_blank', 'width=600,height=400');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 100);
+      };
+    }
+  } catch (error) {
+    console.error('[usePrinter] Failed to open HTML in browser:', error);
+  }
 }
 
 function openImageInBrowser(base64Data: string) {

@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { usePrinter } from "@/hooks/usePrinter";
 import { LabelContent, type LabelProduct } from "@/components/warehouse/WarehouseLabelPreview";
 import { generateProductQRUrl } from "@shared/qrUtils";
-import { toPng } from "html-to-image";
 import QRCode from "qrcode";
 import {
   ArrowLeft,
@@ -98,24 +97,22 @@ export default function WarehouseLabels() {
   const [includeVariantsFor, setIncludeVariantsFor] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "abc" | "variants">("newest");
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
-  const { printLabelImage, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
+  const { printLabelHTML, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
   const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
-      const container = document.createElement('div');
-      container.innerHTML = htmlContent;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = `${width}px`;
-      container.style.height = `${height}px`;
-      document.body.appendChild(container);
+      const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+@page { size: ${width}mm ${height}mm; margin: 0; }
+body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
+</style>
+</head>
+<body>${htmlContent}</body>
+</html>`;
       
-      const dataUrl = await toPng(container, { quality: 1.0 });
-      const base64 = dataUrl.split(',')[1];
-      
-      document.body.removeChild(container);
-      
-      const result = await printLabelImage(base64);
+      const result = await printLabelHTML(fullHtml);
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
