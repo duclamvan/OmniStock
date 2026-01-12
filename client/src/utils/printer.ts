@@ -305,31 +305,43 @@ export const printImage = async (
 export const printHTML = async (
   printerName: string,
   htmlContent: string,
-  options: PrintOptions = {}
+  options: PrintOptions = {},
+  labelSize?: { width: number; height: number }
 ): Promise<void> => {
   const connected = await connectToQZ();
   if (!connected) {
     throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
   }
 
-  const config = qz.configs.create(printerName, {
-    scaleContent: options.scaleContent ?? false,
+  const configOptions: any = {
+    scaleContent: options.scaleContent ?? true,
     copies: options.copies ?? 1,
     orientation: options.orientation,
-    margins: options.margins ?? { top: 0, right: 0, bottom: 0, left: 0 },
-    size: options.size
-  });
+    margins: options.margins ?? { top: 0, right: 0, bottom: 0, left: 0 }
+  };
+
+  if (labelSize) {
+    configOptions.size = {
+      width: labelSize.width,
+      height: labelSize.height
+    };
+    configOptions.units = 'mm';
+  } else if (options.size) {
+    configOptions.size = options.size;
+  }
+
+  const config = qz.configs.create(printerName, configOptions);
 
   const data = [{
-    type: 'pixel' as const,
-    format: 'html' as const,
-    flavor: 'plain' as const,
+    type: 'pixel',
+    format: 'html',
+    flavor: 'plain',
     data: htmlContent
-  }];
+  }] as any;
 
   try {
     await qz.print(config, data);
-    console.log(`Successfully sent HTML to ${printerName}`);
+    console.log(`Successfully sent HTML to ${printerName}`, labelSize ? `(${labelSize.width}x${labelSize.height}mm)` : '');
   } catch (err) {
     console.error("HTML printing failed:", err);
     throw err;

@@ -114,7 +114,7 @@ html, body { margin: 0 !important; padding: 0 !important; width: ${width}mm; hei
 <body style="margin:0 !important;padding:0 !important;">${htmlContent}</body>
 </html>`;
       
-      const result = await printLabelHTML(fullHtml);
+      const result = await printLabelHTML(fullHtml, true, { width, height });
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
