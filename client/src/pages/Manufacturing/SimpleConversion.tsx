@@ -184,22 +184,26 @@ export default function SimpleConversion() {
     setQuantity(Math.max(1, value));
   };
 
+  // Allow manufacturing when: product selected, quantity > 0, location selected, and either:
+  // 1. No ingredients required (empty BOM = always buildable), or
+  // 2. All ingredients can be fulfilled (canFullyBuild = true)
+  const hasNoIngredients = requirements && (!requirements.ingredients || requirements.ingredients.length === 0);
   const canSubmit =
     selectedProductId &&
     quantity > 0 &&
     selectedLocationId &&
-    requirements?.canFullyBuild;
+    (hasNoIngredients || requirements?.canFullyBuild);
 
   const hasInsufficientStock = requirements?.ingredients?.some(
     (ing) => !ing.canFulfill
-  );
+  ) && !hasNoIngredients;
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Factory className="h-10 w-10 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold">
+        <div className="flex items-center gap-4 mb-8">
+          <Factory className="h-12 w-12 text-green-600" />
+          <h1 className="text-3xl sm:text-4xl font-bold">
             {t("simpleConversion", "Simple Conversion")}
           </h1>
         </div>
@@ -338,7 +342,7 @@ export default function SimpleConversion() {
                   {/* Action button */}
                   <Button
                     onClick={() => handleStartConversion(alert)}
-                    className="w-full sm:w-auto mt-2 py-4 text-lg"
+                    className="w-full sm:w-auto mt-3 py-5 text-xl font-semibold bg-green-600 hover:bg-green-700 text-white"
                     disabled={!alert.allComponentsAvailable}
                   >
                     {t("startConversion", "Start Conversion")}
@@ -349,10 +353,10 @@ export default function SimpleConversion() {
           </Card>
         )}
 
-        <Card>
+        <Card className="shadow-md">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
-              <Package className="h-6 w-6" />
+            <CardTitle className="text-2xl sm:text-3xl flex items-center gap-3">
+              <Package className="h-8 w-8 text-green-600" />
               {t("selectProductToMake", "Select Product to Make")}
             </CardTitle>
           </CardHeader>
@@ -373,7 +377,7 @@ export default function SimpleConversion() {
                   setSelectedLocationId("");
                 }}
               >
-                <SelectTrigger className="h-14 text-lg">
+                <SelectTrigger className="h-16 text-xl">
                   <SelectValue
                     placeholder={t("selectProductToMake", "Select Product to Make")}
                   />
@@ -383,7 +387,7 @@ export default function SimpleConversion() {
                     <SelectItem
                       key={product.id}
                       value={product.id}
-                      className="text-lg py-3"
+                      className="text-xl py-4"
                     >
                       {product.name} ({product.sku})
                     </SelectItem>
@@ -395,37 +399,37 @@ export default function SimpleConversion() {
         </Card>
 
         {selectedProductId && (
-          <Card>
+          <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-2xl">
+              <CardTitle className="text-2xl sm:text-3xl">
                 {t("quantityToMake", "Quantity to Make")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center justify-center gap-6">
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-16 w-16 text-2xl font-bold"
+                  className="h-20 w-20 text-3xl font-bold border-2"
                   onClick={() => handleQuantityChange(-1)}
                   disabled={quantity <= 1}
                 >
-                  <Minus className="h-8 w-8" />
+                  <Minus className="h-10 w-10" />
                 </Button>
                 <Input
                   type="number"
                   value={quantity}
                   onChange={handleInputChange}
-                  className="h-16 w-32 text-center text-3xl font-bold"
+                  className="h-20 w-36 text-center text-4xl font-bold"
                   min={1}
                 />
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-16 w-16 text-2xl font-bold"
+                  className="h-20 w-20 text-3xl font-bold border-2"
                   onClick={() => handleQuantityChange(1)}
                 >
-                  <Plus className="h-8 w-8" />
+                  <Plus className="h-10 w-10" />
                 </Button>
               </div>
             </CardContent>
@@ -433,9 +437,9 @@ export default function SimpleConversion() {
         )}
 
         {selectedProductId && (
-          <Card>
+          <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-2xl">
+              <CardTitle className="text-2xl sm:text-3xl">
                 {t("componentsNeeded", "Components Needed")}
               </CardTitle>
             </CardHeader>
@@ -445,8 +449,14 @@ export default function SimpleConversion() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : !requirements?.ingredients?.length ? (
-                <div className="text-center py-8 text-muted-foreground text-lg">
-                  {t("noComponents", "No components required")}
+                <div className="text-center py-10 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
+                  <Check className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                  <p className="text-xl font-semibold text-green-700 dark:text-green-400">
+                    {t("noComponents", "No components required")}
+                  </p>
+                  <p className="text-base text-muted-foreground mt-2">
+                    {t("readyToManufacture", "Ready to manufacture - select a location below")}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -506,10 +516,10 @@ export default function SimpleConversion() {
         )}
 
         {selectedProductId && locations.length > 0 && (
-          <Card>
+          <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
-                <MapPin className="h-6 w-6" />
+              <CardTitle className="text-2xl sm:text-3xl flex items-center gap-3">
+                <MapPin className="h-8 w-8 text-green-600" />
                 {t("storageLocation", "Storage Location")}
               </CardTitle>
             </CardHeader>
@@ -518,9 +528,9 @@ export default function SimpleConversion() {
                 value={selectedLocationId}
                 onValueChange={setSelectedLocationId}
               >
-                <SelectTrigger className="h-14 text-lg">
+                <SelectTrigger className="h-16 text-xl">
                   <SelectValue
-                    placeholder={t("storageLocation", "Storage Location")}
+                    placeholder={t("storageLocation", "Select Storage Location")}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -528,7 +538,7 @@ export default function SimpleConversion() {
                     <SelectItem
                       key={location.id}
                       value={location.id}
-                      className="text-lg py-3"
+                      className="text-xl py-4"
                     >
                       {location.code}
                       {location.name ? ` - ${location.name}` : ""}
@@ -542,19 +552,19 @@ export default function SimpleConversion() {
 
         {selectedProductId && (
           <Button
-            className="w-full py-6 text-xl font-bold"
+            className="w-full py-8 text-2xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg"
             size="lg"
             disabled={!canSubmit || manufacturingMutation.isPending}
             onClick={() => manufacturingMutation.mutate()}
           >
             {manufacturingMutation.isPending ? (
               <>
-                <Loader2 className="h-6 w-6 mr-2 animate-spin" />
+                <Loader2 className="h-8 w-8 mr-3 animate-spin" />
                 {t("processing", "Processing...")}
               </>
             ) : (
               <>
-                <Factory className="h-6 w-6 mr-2" />
+                <Factory className="h-8 w-8 mr-3" />
                 {t("startManufacturing", "Start Manufacturing")}
               </>
             )}
