@@ -56,6 +56,7 @@ interface LocationCode {
   id: string;
   code: string;
   name?: string;
+  stock?: number;
 }
 
 interface ManufacturingRun {
@@ -119,9 +120,9 @@ export default function SimpleConversion() {
     enabled: !!selectedProductId && quantity > 0,
   });
 
-  const { data: locations = [] } = useQuery<LocationCode[]>({
-    queryKey: ["/api/locations", { productId: selectedProductId }],
-    enabled: !!selectedProductId,
+  const { data: locations = [], isLoading: isLoadingLocations } = useQuery<LocationCode[]>({
+    queryKey: ["/api/manufacturing/locations", { productId: selectedProductId }],
+    enabled: true,
   });
 
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
@@ -515,7 +516,7 @@ export default function SimpleConversion() {
           </Card>
         )}
 
-        {selectedProductId && locations.length > 0 && (
+        {selectedProductId && (
           <Card className="shadow-md">
             <CardHeader className="pb-4">
               <CardTitle className="text-2xl sm:text-3xl flex items-center gap-3">
@@ -524,28 +525,42 @@ export default function SimpleConversion() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Select
-                value={selectedLocationId}
-                onValueChange={setSelectedLocationId}
-              >
-                <SelectTrigger className="h-16 text-xl">
-                  <SelectValue
-                    placeholder={t("storageLocation", "Select Storage Location")}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem
-                      key={location.id}
-                      value={location.id}
-                      className="text-xl py-4"
-                    >
-                      {location.code}
-                      {location.name ? ` - ${location.name}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingLocations ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : locations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-lg">
+                  {t("noLocationsConfigured", "No warehouse locations configured")}
+                </div>
+              ) : (
+                <Select
+                  value={selectedLocationId}
+                  onValueChange={setSelectedLocationId}
+                >
+                  <SelectTrigger className="h-16 text-xl">
+                    <SelectValue
+                      placeholder={t("storageLocation", "Select Storage Location")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((location) => (
+                      <SelectItem
+                        key={location.id}
+                        value={location.id}
+                        className="text-xl py-4"
+                      >
+                        <div className="flex justify-between items-center w-full gap-4">
+                          <span>{location.code}</span>
+                          <span className="text-muted-foreground">
+                            ({location.stock || 0} in stock)
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </CardContent>
           </Card>
         )}

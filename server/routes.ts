@@ -27524,6 +27524,40 @@ Important rules:
     }
   });
 
+  // Get all unique locations with stock info for manufacturing
+  app.get('/api/manufacturing/locations', isAuthenticated, async (req, res) => {
+    try {
+      const { productId } = req.query;
+      
+      // Get all unique location codes from product_locations
+      const allLocations = await db.selectDistinct({ locationCode: productLocations.locationCode })
+        .from(productLocations)
+        .where(isNotNull(productLocations.locationCode));
+      
+      const uniqueLocationCodes = [...new Set(allLocations.map(l => l.locationCode).filter(Boolean))];
+      
+      // If productId provided, get stock at each location
+      const locationsWithStock = await Promise.all(uniqueLocationCodes.map(async (code) => {
+        let stock = 0;
+        if (productId) {
+          const [loc] = await db.select({ quantity: productLocations.quantity })
+            .from(productLocations)
+            .where(and(
+              eq(productLocations.productId, productId as string),
+              eq(productLocations.locationCode, code)
+            ));
+          stock = loc?.quantity || 0;
+        }
+        return { id: code, code, name: code, stock };
+      }));
+      
+      res.json(locationsWithStock);
+    } catch (error) {
+      console.error('Error fetching manufacturing locations:', error);
+      res.status(500).json({ message: 'Failed to fetch locations' });
+    }
+  });
+
   // List manufacturing runs
   app.get('/api/manufacturing/runs', isAuthenticated, async (req, res) => {
     try {
