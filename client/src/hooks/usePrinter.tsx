@@ -7,12 +7,9 @@ import {
   printPDF,
   printLabelPDF,
   printImage,
-  printLabelImage as printLabelImageQZ,
   printHTML,
-  printLabelHTMLDirect,
   getSavedPrinter,
-  type PrinterContext,
-  type LabelPrintOptions
+  type PrinterContext
 } from '@/utils/printer';
 
 interface UsePrinterOptions {
@@ -164,67 +161,8 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     }
   }, [context, toast, t]);
 
-  const printLabelWithSize = useCallback(async (
-    imageBase64: string,
-    options: { widthMm: number; heightMm: number; dpi?: number },
-    fallbackToBrowser: boolean = true
-  ): Promise<PrintResult> => {
-    const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
-    
-    if (!printerName) {
-      if (fallbackToBrowser) {
-        openImageInBrowser(imageBase64);
-        return { success: true, usedQZ: false };
-      }
-      return { success: false, usedQZ: false, error: 'No printer configured' };
-    }
-
-    setIsPrinting(true);
-    try {
-      const connected = await connectToQZ();
-      if (!connected) {
-        if (fallbackToBrowser) {
-          openImageInBrowser(imageBase64);
-          toast({
-            title: t('printer:qzNotConnected', 'QZ Tray not connected'),
-            description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
-          });
-          return { success: true, usedQZ: false };
-        }
-        return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
-      }
-
-      console.log('[usePrinter] Printing label image via QZ Tray to:', printerName, 'size:', options);
-      await printLabelImageQZ(printerName, imageBase64, {
-        widthMm: options.widthMm,
-        heightMm: options.heightMm,
-        dpi: options.dpi ?? 203
-      });
-      toast({
-        title: t('printer:printSuccess', 'Print sent'),
-        description: printerName,
-      });
-      return { success: true, usedQZ: true };
-    } catch (error) {
-      console.error('[usePrinter] Print label error:', error);
-      if (fallbackToBrowser) {
-        openImageInBrowser(imageBase64);
-        toast({
-          title: t('printer:printError', 'Direct print failed'),
-          description: t('printer:usingBrowserPrint', 'Using browser print dialog instead'),
-          variant: 'destructive',
-        });
-        return { success: true, usedQZ: false };
-      }
-      return { success: false, usedQZ: false, error: String(error) };
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [context, toast, t]);
-
   const printLabelHTML = useCallback(async (
     htmlContent: string,
-    options: { widthMm: number; heightMm: number; dpi?: number },
     fallbackToBrowser: boolean = true
   ): Promise<PrintResult> => {
     const printerName = getSavedPrinter(context) || getSavedPrinter('label_printer_name');
@@ -252,12 +190,8 @@ export function usePrinter(options: UsePrinterOptions = {}) {
         return { success: false, usedQZ: false, error: 'QZ Tray not connected' };
       }
 
-      console.log('[usePrinter] Printing HTML label via QZ Tray to:', printerName, 'size:', options.widthMm, 'x', options.heightMm, 'mm');
-      await printLabelHTMLDirect(printerName, htmlContent, {
-        widthMm: options.widthMm,
-        heightMm: options.heightMm,
-        dpi: options.dpi ?? 203
-      });
+      console.log('[usePrinter] Printing HTML via QZ Tray to:', printerName);
+      await printHTML(printerName, htmlContent);
       toast({
         title: t('printer:printSuccess', 'Print sent'),
         description: printerName,
@@ -336,7 +270,6 @@ export function usePrinter(options: UsePrinterOptions = {}) {
     canDirectPrint,
     printLabel,
     printLabelImage,
-    printLabelWithSize,
     printLabelHTML,
     printDocument,
     refreshConnection,

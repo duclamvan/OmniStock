@@ -268,13 +268,6 @@ export const getAllSavedPrinters = (): Record<PrinterContext, string | null> => 
   }, {} as Record<PrinterContext, string | null>);
 };
 
-export interface LabelPrintOptions {
-  widthMm: number;
-  heightMm: number;
-  dpi?: number;
-  copies?: number;
-}
-
 export const printImage = async (
   printerName: string,
   imageBase64: string,
@@ -309,47 +302,6 @@ export const printImage = async (
   }
 };
 
-export const printLabelImage = async (
-  printerName: string,
-  imageBase64: string,
-  options: LabelPrintOptions
-): Promise<void> => {
-  const connected = await connectToQZ();
-  if (!connected) {
-    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
-  }
-
-  const dpi = options.dpi ?? 203;
-  
-  const config = qz.configs.create(printerName, {
-    scaleContent: false,
-    copies: options.copies ?? 1,
-    margins: { top: 0, right: 0, bottom: 0, left: 0 },
-    size: { 
-      width: options.heightMm, 
-      height: options.widthMm, 
-      units: 'mm' 
-    },
-    density: { cross: dpi, down: dpi }
-  });
-
-  const data = [{
-    type: 'pixel' as const,
-    format: 'image' as const,
-    flavor: 'base64' as const,
-    data: imageBase64
-  }];
-
-  try {
-    console.log(`Printing label ${options.widthMm}x${options.heightMm}mm (QZ: ${options.heightMm}x${options.widthMm}) at ${dpi} DPI to ${printerName}`);
-    await qz.print(config, data);
-    console.log(`Successfully sent label image to ${printerName}`);
-  } catch (err) {
-    console.error("Label image printing failed:", err);
-    throw err;
-  }
-};
-
 export const printHTML = async (
   printerName: string,
   htmlContent: string,
@@ -360,21 +312,13 @@ export const printHTML = async (
     throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
   }
 
-  const configOptions: Record<string, unknown> = {
+  const config = qz.configs.create(printerName, {
     scaleContent: options.scaleContent ?? false,
     copies: options.copies ?? 1,
+    orientation: options.orientation,
     margins: options.margins ?? { top: 0, right: 0, bottom: 0, left: 0 },
-  };
-  
-  if (options.orientation) {
-    configOptions.orientation = options.orientation;
-  }
-  
-  if (options.size) {
-    configOptions.size = options.size;
-  }
-
-  const config = qz.configs.create(printerName, configOptions);
+    size: options.size
+  });
 
   const data = [{
     type: 'pixel' as const,
@@ -388,48 +332,6 @@ export const printHTML = async (
     console.log(`Successfully sent HTML to ${printerName}`);
   } catch (err) {
     console.error("HTML printing failed:", err);
-    throw err;
-  }
-};
-
-export const printLabelHTMLDirect = async (
-  printerName: string,
-  htmlContent: string,
-  options: LabelPrintOptions
-): Promise<void> => {
-  const connected = await connectToQZ();
-  if (!connected) {
-    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
-  }
-
-  const dpi = options.dpi ?? 203;
-
-  const config = qz.configs.create(printerName, {
-    scaleContent: false,
-    copies: options.copies ?? 1,
-    margins: { top: 0, right: 0, bottom: 0, left: 0 },
-    size: { 
-      width: options.widthMm, 
-      height: options.heightMm, 
-      units: 'mm' 
-    },
-    density: { cross: dpi, down: dpi },
-    rasterize: true
-  });
-
-  const data = [{
-    type: 'pixel' as const,
-    format: 'html' as const,
-    flavor: 'plain' as const,
-    data: htmlContent
-  }];
-
-  try {
-    console.log(`Printing HTML label ${options.widthMm}x${options.heightMm}mm at ${dpi} DPI to ${printerName}`);
-    await qz.print(config, data);
-    console.log(`Successfully sent HTML label to ${printerName}`);
-  } catch (err) {
-    console.error("HTML label printing failed:", err);
     throw err;
   }
 };

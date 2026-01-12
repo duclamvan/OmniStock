@@ -99,23 +99,20 @@ export default function WarehouseLabels() {
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
   const { printLabelHTML, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
-  const printHtmlViaQZ = async (htmlContent: string, widthMm: number, heightMm: number): Promise<boolean> => {
+  const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
       const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
 <style>
-@page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: ${widthMm}mm; height: ${heightMm}mm; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: white; }
+@page { size: ${width}mm ${height}mm; margin: 0; }
+body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
 </style>
 </head>
 <body>${htmlContent}</body>
 </html>`;
       
-      const result = await printLabelHTML(fullHtml, { widthMm, heightMm });
+      const result = await printLabelHTML(fullHtml);
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
