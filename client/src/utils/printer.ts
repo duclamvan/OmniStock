@@ -268,6 +268,13 @@ export const getAllSavedPrinters = (): Record<PrinterContext, string | null> => 
   }, {} as Record<PrinterContext, string | null>);
 };
 
+export interface LabelPrintOptions {
+  widthMm: number;
+  heightMm: number;
+  dpi?: number;
+  copies?: number;
+}
+
 export const printImage = async (
   printerName: string,
   imageBase64: string,
@@ -298,6 +305,47 @@ export const printImage = async (
     console.log(`Successfully sent image to ${printerName}`);
   } catch (err) {
     console.error("Image printing failed:", err);
+    throw err;
+  }
+};
+
+export const printLabelImage = async (
+  printerName: string,
+  imageBase64: string,
+  options: LabelPrintOptions
+): Promise<void> => {
+  const connected = await connectToQZ();
+  if (!connected) {
+    throw new Error("Could not connect to QZ Tray. Please ensure QZ Tray is running.");
+  }
+
+  const dpi = options.dpi ?? 203;
+  
+  const config = qz.configs.create(printerName, {
+    scaleContent: false,
+    copies: options.copies ?? 1,
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    size: { 
+      width: options.widthMm, 
+      height: options.heightMm, 
+      units: 'mm' 
+    },
+    density: { cross: dpi, down: dpi }
+  });
+
+  const data = [{
+    type: 'pixel' as const,
+    format: 'image' as const,
+    flavor: 'base64' as const,
+    data: imageBase64
+  }];
+
+  try {
+    console.log(`Printing label ${options.widthMm}x${options.heightMm}mm at ${dpi} DPI to ${printerName}`);
+    await qz.print(config, data);
+    console.log(`Successfully sent label image to ${printerName}`);
+  } catch (err) {
+    console.error("Label image printing failed:", err);
     throw err;
   }
 };

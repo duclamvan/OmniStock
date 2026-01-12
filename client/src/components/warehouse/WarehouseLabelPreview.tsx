@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePrinter } from "@/hooks/usePrinter";
 import { apiRequest } from "@/lib/queryClient";
 import { generateProductQRUrl } from "@shared/qrUtils";
+import { toPng } from "html-to-image";
 import QRCode from "qrcode";
 
 interface WarehouseLabelPreviewProps {
@@ -264,23 +265,39 @@ export default function WarehouseLabelPreview({
   const { t } = useTranslation(["inventory", "common"]);
   const isMobile = useIsMobile();
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
-  const { printLabelHTML, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
+  const { printLabelWithSize, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
-  const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
+  const printHtmlViaQZ = async (htmlContent: string, widthMm: number, heightMm: number): Promise<boolean> => {
     try {
-      const orientation = width > height ? 'landscape' : 'portrait';
-      const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-<style>
-@page { size: ${width}mm ${height}mm; margin: 0; }
-body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
-</style>
-</head>
-<body>${htmlContent}</body>
-</html>`;
-      
-      const result = await printLabelHTML(fullHtml, { orientation, width, height });
+      const dpi = 203;
+      const pixelWidth = Math.round((widthMm / 25.4) * dpi);
+      const pixelHeight = Math.round((heightMm / 25.4) * dpi);
+      const pixelRatio = dpi / 96;
+
+      const container = document.createElement('div');
+      container.innerHTML = htmlContent;
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = `${widthMm}mm`;
+      container.style.height = `${heightMm}mm`;
+      container.style.background = 'white';
+      container.style.visibility = 'hidden';
+      document.body.appendChild(container);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const dataUrl = await toPng(container, {
+        width: pixelWidth,
+        height: pixelHeight,
+        pixelRatio: pixelRatio,
+        backgroundColor: 'white'
+      });
+      const base64 = dataUrl.split(',')[1];
+
+      document.body.removeChild(container);
+
+      const result = await printLabelWithSize(base64, { widthMm, heightMm, dpi });
       return result.success && result.usedQZ;
     } catch (error) {
       console.error('QZ print failed:', error);
