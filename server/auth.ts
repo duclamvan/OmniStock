@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
 import { storage } from "./storage";
+import { pool } from "./db";
 import type { User } from "@shared/schema";
 
 // Password complexity requirements
@@ -157,10 +158,11 @@ export function getSession() {
   if (!sessionMiddleware) {
     sessionMiddleware = session({
       store: new PgSession({
-        conString: process.env.DATABASE_URL,
+        pool: pool,
         createTableIfMissing: true,
         tableName: 'session',
         pruneSessionInterval: 60 * 15, // Clear expired sessions every 15 minutes
+        errorLog: (err) => console.error('[Session Store Error]', err.message),
       }),
       secret: process.env.SESSION_SECRET!,
       resave: false,
