@@ -1507,6 +1507,32 @@ const inventory = {
   matrixUpdateErrors: 'Không thể cập nhật {{count}} sản phẩm',
   matrixTip: 'Mẹo: Nhấp vào ô để chỉnh sửa. Dùng Tab để di chuyển. Tự động lưu thay đổi.',
   
+  // Manufacturing / Simple Conversion
+  simpleConversion: 'Chuyển đổi đơn giản',
+  simpleManufacturing: 'Sản xuất đơn giản',
+  selectProductToMake: 'Chọn sản phẩm cần làm',
+  noProductsWithBom: 'Không tìm thấy sản phẩm có công thức',
+  quantityToMake: 'Số lượng cần làm',
+  componentsNeeded: 'Nguyên liệu cần thiết',
+  noComponents: 'Không cần nguyên liệu',
+  requiredQty: 'Cần',
+  sufficient: 'Đủ',
+  insufficient: 'Thiếu',
+  storageLocation: 'Vị trí lưu trữ',
+  startManufacturing: 'Bắt đầu sản xuất',
+  manufacturingSuccess: 'Sản xuất hoàn thành thành công',
+  archiveSuccess: 'Đã lưu trữ lần chạy',
+  manufacturingHistory: 'Lịch sử sản xuất',
+  noRuns: 'Chưa có lần sản xuất nào',
+  runNumber: 'Lần #',
+  produced: 'Đã sản xuất',
+  archive: 'Lưu trữ',
+  yieldQuantity: 'Số lượng đầu ra',
+  yieldQuantityHint: '1 đơn vị nguyên liệu này tạo ra bao nhiêu sản phẩm?',
+  manufacturingNotifications: 'Thông báo sản xuất',
+  newManufacturingCompletion: 'Hoàn thành sản xuất mới',
+  newManufacturingCompletions: '{{count}} lần hoàn thành sản xuất mới',
+  
 } as const;
 
 export default inventory;

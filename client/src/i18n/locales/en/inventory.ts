@@ -1434,6 +1434,32 @@ const inventory = {
   matrixUpdateErrors: 'Failed to update {{count}} product(s)',
   matrixTip: 'Tip: Click any cell to edit inline. Use Tab to navigate. Changes save automatically.',
   
+  // Manufacturing / Simple Conversion
+  simpleConversion: 'Simple Conversion',
+  simpleManufacturing: 'Simple Manufacturing',
+  selectProductToMake: 'Select Product to Make',
+  noProductsWithBom: 'No products with recipes found',
+  quantityToMake: 'Quantity to Make',
+  componentsNeeded: 'Components Needed',
+  noComponents: 'No components required',
+  requiredQty: 'Required',
+  sufficient: 'Sufficient',
+  insufficient: 'Insufficient',
+  storageLocation: 'Storage Location',
+  startManufacturing: 'Start Manufacturing',
+  manufacturingSuccess: 'Manufacturing completed successfully',
+  archiveSuccess: 'Run archived successfully',
+  manufacturingHistory: 'Manufacturing History',
+  noRuns: 'No manufacturing runs yet',
+  runNumber: 'Run #',
+  produced: 'Produced',
+  archive: 'Archive',
+  yieldQuantity: 'Yield Quantity',
+  yieldQuantityHint: 'How many finished products does 1 unit of this component yield?',
+  manufacturingNotifications: 'Manufacturing Notifications',
+  newManufacturingCompletion: 'New manufacturing completion',
+  newManufacturingCompletions: '{{count}} new manufacturing completions',
+  
 } as const;
 
 export default inventory;

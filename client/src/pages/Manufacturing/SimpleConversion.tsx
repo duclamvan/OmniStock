@@ -70,7 +70,7 @@ interface ManufacturingRun {
 }
 
 export default function SimpleConversion() {
-  const { t } = useTranslation("manufacturing");
+  const { t } = useTranslation("inventory");
   const { toast } = useToast();
 
   const [selectedProductId, setSelectedProductId] = useState<string>("");
@@ -183,7 +183,7 @@ export default function SimpleConversion() {
           <CardHeader className="pb-4">
             <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
               <Package className="h-6 w-6" />
-              {t("selectProduct", "Select Product to Make")}
+              {t("selectProductToMake", "Select Product to Make")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -205,7 +205,7 @@ export default function SimpleConversion() {
               >
                 <SelectTrigger className="h-14 text-lg">
                   <SelectValue
-                    placeholder={t("selectProduct", "Select Product to Make")}
+                    placeholder={t("selectProductToMake", "Select Product to Make")}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,7 +282,7 @@ export default function SimpleConversion() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-4 gap-2 text-sm font-semibold text-muted-foreground border-b pb-2">
                     <div>{t("component", "Component")}</div>
-                    <div className="text-center">{t("required", "Required")}</div>
+                    <div className="text-center">{t("requiredQty", "Required")}</div>
                     <div className="text-center">{t("inStock", "In Stock")}</div>
                     <div className="text-center">{t("status", "Status")}</div>
                   </div>
@@ -407,7 +407,7 @@ export default function SimpleConversion() {
           <CardHeader className="pb-4">
             <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
               <History className="h-6 w-6" />
-              {t("history", "Manufacturing History")}
+              {t("manufacturingHistory", "Manufacturing History")}
             </CardTitle>
           </CardHeader>
           <CardContent>
