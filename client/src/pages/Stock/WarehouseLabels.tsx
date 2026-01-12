@@ -102,14 +102,16 @@ export default function WarehouseLabels() {
   const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
       const fullHtml = `<!DOCTYPE html>
-<html>
+<html style="margin:0;padding:0;">
 <head>
 <style>
-@page { size: ${width}mm ${height}mm; margin: 0; }
-body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
+* { box-sizing: border-box; }
+@page { size: ${width}mm ${height}mm; margin: 0 !important; padding: 0 !important; }
+@media print { html, body { margin: 0 !important; padding: 0 !important; } }
+html, body { margin: 0 !important; padding: 0 !important; width: ${width}mm; height: ${height}mm; }
 </style>
 </head>
-<body>${htmlContent}</body>
+<body style="margin:0 !important;padding:0 !important;">${htmlContent}</body>
 </html>`;
       
       const result = await printLabelHTML(fullHtml);
@@ -349,45 +351,45 @@ body { margin: 0; padding: 0; width: ${width}mm; height: ${height}mm; }
         let qzLabelHtml = '';
         if (currentLabelSize === 'large') {
           qzLabelHtml = `
-            <div style="width:560px;height:397px;display:grid;grid-template-columns:113px 1fr;grid-template-rows:1fr 91px;background:white;color:black;overflow:hidden;border:3px solid black;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-              <div style="grid-row:1/3;border-right:2px solid black;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:11px;gap:8px;">
-                <img src="${qrDataUrl}" style="width:76px;height:76px;" alt="QR" />
-                <div style="font-size:12px;font-weight:900;font-family:'Courier New',monospace;text-align:center;word-break:break-all;padding:6px 8px;background:black;color:white;width:100%;">${product.sku || productCode}</div>
+            <div style="width:148mm;height:105mm;display:grid;grid-template-columns:30mm 1fr;grid-template-rows:1fr 24mm;background:white;color:black;overflow:hidden;border:3px solid black;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+              <div style="grid-row:1/3;border-right:2px solid black;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3mm;gap:2mm;">
+                <img src="${qrDataUrl}" style="width:20mm;height:20mm;" alt="QR" />
+                <div style="font-size:9pt;font-weight:900;font-family:'Courier New',monospace;text-align:center;word-break:break-all;padding:1.5mm 2mm;background:black;color:white;width:100%;">${product.sku || productCode}</div>
               </div>
-              <div style="padding:15px 19px 11px 19px;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:hidden;">
-                <div style="font-weight:900;font-size:50px;line-height:1.0;text-transform:uppercase;word-break:break-word;letter-spacing:-1px;color:black;">${vietnameseName}</div>
-                ${vietnameseName !== product.name ? `<div style="font-size:27px;font-weight:600;line-height:1.1;letter-spacing:0.5px;text-transform:uppercase;color:#444;word-break:break-word;border-top:1px solid black;padding-top:8px;margin-top:4px;">${product.name}</div>` : ''}
+              <div style="padding:4mm 5mm 3mm 5mm;display:flex;flex-direction:column;justify-content:center;gap:2mm;overflow:hidden;">
+                <div style="font-weight:900;font-size:38pt;line-height:1.0;text-transform:uppercase;word-break:break-word;letter-spacing:-1pt;color:black;">${vietnameseName}</div>
+                ${vietnameseName !== product.name ? `<div style="font-size:20pt;font-weight:600;line-height:1.1;letter-spacing:0.3pt;text-transform:uppercase;color:#444;word-break:break-word;border-top:1px solid black;padding-top:2mm;margin-top:1mm;">${product.name}</div>` : ''}
               </div>
-              <div style="border-top:3px solid black;display:flex;align-items:center;justify-content:space-between;padding:0 19px;gap:23px;background:white;">
-                ${hasBulkInfo ? `<div style="font-size:19px;font-weight:900;color:black;border:2px solid black;padding:8px 15px;">${displayText}</div>` : '<div></div>'}
+              <div style="border-top:3px solid black;display:flex;align-items:center;justify-content:space-between;padding:0 5mm;gap:6mm;background:white;">
+                ${hasBulkInfo ? `<div style="font-size:14pt;font-weight:900;color:black;border:2px solid black;padding:2mm 4mm;">${displayText}</div>` : '<div></div>'}
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0;">
-                  ${priceEur !== null ? `<div style="font-weight:900;font-size:43px;line-height:1;color:black;letter-spacing:-0.5px;">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ''}
-                  ${priceCzk !== null ? `<div style="font-weight:700;font-size:29px;line-height:1.1;color:black;opacity:0.7;letter-spacing:-0.3px;">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ''}
+                  ${priceEur !== null ? `<div style="font-weight:900;font-size:32pt;line-height:1;color:black;letter-spacing:-0.5pt;">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>` : ''}
+                  ${priceCzk !== null ? `<div style="font-weight:700;font-size:22pt;line-height:1.1;color:black;opacity:0.7;letter-spacing:-0.3pt;">${priceCzk.toLocaleString("cs-CZ")} Kč</div>` : ''}
                 </div>
               </div>
             </div>
           `;
         } else {
           qzLabelHtml = `
-            <div style="width:378px;height:113px;display:flex;flex-direction:row;align-items:stretch;background:white;color:black;overflow:hidden;border:2px solid black;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-              <div style="flex-shrink:0;width:83px;display:flex;align-items:center;justify-content:center;padding:5px;background:white;border-right:2px solid black;">
-                <img src="${qrDataUrl}" style="width:72px;height:72px;" alt="QR" />
+            <div style="width:100mm;height:30mm;display:flex;flex-direction:row;align-items:stretch;background:white;color:black;overflow:hidden;border:2px solid black;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+              <div style="flex-shrink:0;width:22mm;display:flex;align-items:center;justify-content:center;padding:1.5mm;background:white;border-right:2px solid black;">
+                <img src="${qrDataUrl}" style="width:19mm;height:19mm;" alt="QR" />
               </div>
-              <div style="flex:1;padding:5px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;min-width:0;background:white;">
-                <div style="font-weight:900;font-size:13px;line-height:1.2;text-transform:uppercase;word-break:break-word;">${vietnameseName}</div>
-                <div style="font-size:12px;font-weight:500;line-height:1.2;color:#1f2937;margin-top:3px;word-break:break-word;">${product.name}</div>
-                ${product.sku ? `<div style="font-size:11px;line-height:1.1;color:black;margin-top:3px;font-family:monospace;font-weight:bold;background:#f3f4f6;padding:2px 4px;display:inline-block;">${product.sku}</div>` : ""}
+              <div style="flex:1;padding:1.5mm 2mm;display:flex;flex-direction:column;justify-content:center;overflow:hidden;min-width:0;background:white;">
+                <div style="font-weight:900;font-size:10pt;line-height:1.2;text-transform:uppercase;word-break:break-word;">${vietnameseName}</div>
+                <div style="font-size:9pt;font-weight:500;line-height:1.2;color:#1f2937;margin-top:1mm;word-break:break-word;">${product.name}</div>
+                ${product.sku ? `<div style="font-size:8pt;line-height:1.1;color:black;margin-top:1mm;font-family:monospace;font-weight:bold;background:#f3f4f6;padding:0.5mm 1mm;display:inline-block;">${product.sku}</div>` : ""}
               </div>
-              <div style="flex-shrink:0;width:98px;display:flex;flex-direction:column;border-left:2px solid black;">
-                ${priceEur !== null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;background:black;"><span style="font-weight:900;font-size:18px;line-height:1;color:white;">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
-                ${priceCzk !== null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;background:white;border-top:1px solid black;"><span style="font-weight:bold;font-size:16px;line-height:1;color:black;">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
-                ${priceEur === null && priceCzk === null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;"><span style="font-size:13px;color:#6b7280;font-weight:500;">N/A</span></div>` : ""}
+              <div style="flex-shrink:0;width:26mm;display:flex;flex-direction:column;border-left:2px solid black;">
+                ${priceEur !== null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;background:black;"><span style="font-weight:900;font-size:14pt;line-height:1;color:white;">€${priceEur.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>` : ""}
+                ${priceCzk !== null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;background:white;border-top:1px solid black;"><span style="font-weight:bold;font-size:12pt;line-height:1;color:black;">${priceCzk.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
+                ${priceEur === null && priceCzk === null ? `<div style="flex:1;display:flex;align-items:center;justify-content:center;"><span style="font-size:10pt;color:#6b7280;font-weight:500;">N/A</span></div>` : ""}
               </div>
             </div>
           `;
         }
         
-        const qzSuccess = await printHtmlViaQZ(qzLabelHtml, currentLabelSize === 'large' ? 560 : 378, currentLabelSize === 'large' ? 397 : 113);
+        const qzSuccess = await printHtmlViaQZ(qzLabelHtml, currentLabelSize === 'large' ? 148 : 100, currentLabelSize === 'large' ? 105 : 30);
         if (!qzSuccess) {
           allQZSuccess = false;
           break;
