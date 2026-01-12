@@ -236,6 +236,7 @@ export type PrinterContext =
   | 'ppl_label_printer'
   | 'packing_list_printer'
   | 'invoice_printer'
+  | 'warehouse_label_printer'
   | 'pos_receipt_printer'
   | 'order_detail_label_printer'
   | 'pick_pack_label_printer';
@@ -257,7 +258,8 @@ export const getAllSavedPrinters = (): Record<PrinterContext, string | null> => 
     'invoice_printer',
     'pos_receipt_printer',
     'order_detail_label_printer',
-    'pick_pack_label_printer'
+    'pick_pack_label_printer',
+    'warehouse_label_printer'
   ];
   
   return contexts.reduce((acc, context) => {

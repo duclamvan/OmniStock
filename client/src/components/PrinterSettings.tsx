@@ -73,6 +73,12 @@ const PRINTER_CONFIGS: PrinterConfig[] = [
     label: 'Pick & Pack Labels',
     description: 'Printer for labels during pick and pack',
     type: 'label'
+  },
+  {
+    context: 'warehouse_label_printer',
+    label: 'Warehouse Labels',
+    description: 'Printer for warehouse location labels (/stock)',
+    type: 'label'
   }
 ];
 
