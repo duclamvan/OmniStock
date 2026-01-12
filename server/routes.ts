@@ -27319,13 +27319,14 @@ Important rules:
         const totalStock = productLocs.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
         
         // Determine threshold based on lowStockAlertType
-        let threshold = 0;
-        if (product.lowStockAlertType === 'amount') {
-          threshold = product.lowStockAlert || 0;
-        } else {
+        // Default to 10 units when no explicit low-stock settings are configured
+        let threshold = 10; // Default threshold for products without explicit settings
+        if (product.lowStockAlertType === 'amount' && product.lowStockAlert !== null) {
+          threshold = product.lowStockAlert || 10;
+        } else if (product.lowStockAlertType === 'percentage' && product.lowStockAlert !== null) {
           // percentage-based - use some reasonable default max stock estimate
           const maxStock = 100; // Default reference for percentage calculation
-          threshold = Math.ceil(maxStock * ((product.lowStockAlert || 45) / 100));
+          threshold = Math.ceil(maxStock * (product.lowStockAlert / 100));
         }
         
         // Check if below threshold
