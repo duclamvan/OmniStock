@@ -233,3 +233,7 @@ export function usePickPackPrinter() {
 export function useOrderDetailPrinter() {
   return usePrinter({ context: 'order_detail_label_printer' });
 }
+
+export function useWarehouseLabelPrinter() {
+  return usePrinter({ context: 'warehouse_label_printer' });
+}

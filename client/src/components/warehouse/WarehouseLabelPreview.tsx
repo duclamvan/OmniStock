@@ -265,7 +265,7 @@ export default function WarehouseLabelPreview({
   const { t } = useTranslation(["inventory", "common"]);
   const isMobile = useIsMobile();
   const [labelSize, setLabelSize] = useState<"small" | "large">("small");
-  const { printLabel, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'label_printer_name' });
+  const { printLabel, isPrinting: isPrintingQZ, canDirectPrint } = usePrinter({ context: 'warehouse_label_printer' });
 
   const printHtmlViaQZ = async (htmlContent: string, width: number, height: number): Promise<boolean> => {
     try {
