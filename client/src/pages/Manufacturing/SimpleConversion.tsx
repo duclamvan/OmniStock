@@ -25,6 +25,10 @@ import {
   Loader2,
   History,
   Calendar,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Box,
 } from "lucide-react";
 import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
 
@@ -102,6 +106,37 @@ interface LowStockAlert {
   locations: ComponentLocation[];
 }
 
+interface ParentChildLocation {
+  locationCode: string;
+  quantity: number;
+}
+
+interface ChildProduct {
+  id: string;
+  name: string;
+  sku?: string;
+  quantity: number;
+  yieldQuantity: number;
+  source: 'bom' | 'parentField';
+  totalStock: number;
+  lowStockThreshold: number;
+  isLowStock: boolean;
+  locations: ParentChildLocation[];
+}
+
+interface ParentChildStock {
+  id: string;
+  name: string;
+  sku?: string;
+  vietnameseName?: string;
+  totalStock: number;
+  lowStockThreshold: number;
+  isLowStock: boolean;
+  locations: ParentChildLocation[];
+  children: ChildProduct[];
+  source: 'bom' | 'parentField';
+}
+
 export default function SimpleConversion() {
   const { t } = useTranslation("inventory");
   const { toast } = useToast();
@@ -133,7 +168,12 @@ export default function SimpleConversion() {
     queryKey: ["/api/manufacturing/low-stock"],
   });
 
+  const { data: parentChildStock = [], isLoading: isLoadingParentChild } = useQuery<ParentChildStock[]>({
+    queryKey: ["/api/manufacturing/parent-child-stock"],
+  });
+
   const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+  const [expandedParentId, setExpandedParentId] = useState<string | null>(null);
 
   const handleStartConversion = (alert: LowStockAlert) => {
     setSelectedProductId(alert.productId);
@@ -164,6 +204,7 @@ export default function SimpleConversion() {
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/runs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/low-stock"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/parent-child-stock"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
@@ -353,6 +394,164 @@ export default function SimpleConversion() {
             </CardContent>
           </Card>
         )}
+
+        {/* Parent/Child Stock Overview */}
+        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 text-blue-700 dark:text-blue-400">
+              <Layers className="h-6 w-6" />
+              {t("parentChildStockOverview", "Product Stock Overview")}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t("parentChildStockDesc", "View all products with components and their stock levels")}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isLoadingParentChild ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : parentChildStock.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {t("noParentChildProducts", "No products with components found")}
+              </div>
+            ) : (
+              parentChildStock.map((parent) => (
+                <div
+                  key={parent.id}
+                  className="bg-white dark:bg-background rounded-lg border overflow-hidden"
+                >
+                  {/* Parent header - clickable to expand */}
+                  <button
+                    onClick={() => setExpandedParentId(expandedParentId === parent.id ? null : parent.id)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {expandedParentId === parent.id ? (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <div className="text-left">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold">{parent.name}</h3>
+                          {parent.isLowStock && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-full text-xs font-medium">
+                              {t("lowStock", "Low Stock")}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs">
+                            {parent.source === 'bom' ? 'BOM' : 'Variant'}
+                          </span>
+                        </div>
+                        {parent.sku && (
+                          <p className="text-sm text-muted-foreground">SKU: {parent.sku}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 text-right">
+                      <div>
+                        <div className={`text-xl font-bold ${parent.isLowStock ? 'text-red-600' : 'text-green-600'}`}>
+                          {parent.totalStock}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{t("stock", "Stock")}</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-medium text-muted-foreground">{parent.lowStockThreshold}</div>
+                        <div className="text-xs text-muted-foreground">{t("threshold", "Threshold")}</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Parent locations */}
+                  {parent.locations.length > 0 && (
+                    <div className="px-4 pb-2 flex flex-wrap gap-2">
+                      {parent.locations.map((loc, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                          <MapPin className="h-3 w-3" />
+                          {loc.locationCode}: {loc.quantity}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Expanded children section */}
+                  {expandedParentId === parent.id && parent.children.length > 0 && (
+                    <div className="border-t bg-gray-50 dark:bg-gray-900/50 p-4 space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-3">
+                        <Box className="h-4 w-4" />
+                        {t("componentsIngredients", "Components / Ingredients")} ({parent.children.length})
+                      </h4>
+                      {parent.children.map((child) => (
+                        <div
+                          key={child.id}
+                          className={`p-3 rounded-lg ${
+                            child.isLowStock
+                              ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
+                              : 'bg-white dark:bg-background border'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <span className="font-medium">{child.name}</span>
+                              {child.sku && (
+                                <span className="text-muted-foreground text-xs ml-2">SKU: {child.sku}</span>
+                              )}
+                              {child.isLowStock && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded text-xs">
+                                  {t("lowStock", "Low Stock")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className={child.isLowStock ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+                                {t("stock", "Stock")}: {child.totalStock}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {t("threshold", "Threshold")}: {child.lowStockThreshold}
+                              </span>
+                              {child.quantity > 1 && (
+                                <span className="text-muted-foreground">
+                                  {t("qtyNeeded", "Qty")}: {child.quantity}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Child locations */}
+                          {child.locations.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {child.locations.map((loc, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                                  <MapPin className="h-2.5 w-2.5" />
+                                  {loc.locationCode}: {loc.quantity}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {/* Quick manufacture button if parent is low stock */}
+                      {parent.isLowStock && (
+                        <Button
+                          onClick={() => {
+                            setSelectedProductId(parent.id);
+                            setQuantity(Math.max(1, parent.lowStockThreshold - parent.totalStock + 5));
+                            setSelectedLocationId("");
+                          }}
+                          className="w-full mt-3 py-4 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Factory className="h-5 w-5 mr-2" />
+                          {t("manufactureThis", "Manufacture This Product")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="shadow-md">
           <CardHeader className="pb-4">

@@ -1482,6 +1482,14 @@ const inventory = {
   manufacturingTotalStock: 'Total Stock',
   manufacturingShortfall: 'Shortfall',
   
+  // Parent/Child Stock Overview
+  parentChildStockOverview: 'Product Stock Overview',
+  parentChildStockDesc: 'View all products with components and their stock levels',
+  noParentChildProducts: 'No products with components found',
+  componentsIngredients: 'Components / Ingredients',
+  manufactureThis: 'Manufacture This Product',
+  qtyNeeded: 'Qty',
+  
 } as const;
 
 export default inventory;

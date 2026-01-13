@@ -1555,6 +1555,14 @@ const inventory = {
   manufacturingTotalStock: 'Tổng tồn kho',
   manufacturingShortfall: 'Thiếu',
   
+  // Parent/Child Stock Overview
+  parentChildStockOverview: 'Tổng quan tồn kho sản phẩm',
+  parentChildStockDesc: 'Xem tất cả sản phẩm có nguyên liệu và mức tồn kho',
+  noParentChildProducts: 'Không tìm thấy sản phẩm có nguyên liệu',
+  componentsIngredients: 'Nguyên liệu / Thành phần',
+  manufactureThis: 'Sản xuất sản phẩm này',
+  qtyNeeded: 'SL',
+  
 } as const;
 
 export default inventory;
