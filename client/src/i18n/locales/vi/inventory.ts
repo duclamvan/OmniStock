@@ -1516,6 +1516,8 @@ const inventory = {
   quantityToMake: 'Số lượng cần làm',
   componentsNeeded: 'Nguyên liệu cần thiết',
   noComponents: 'Không cần nguyên liệu',
+  readyToManufacture: 'Sẵn sàng sản xuất - chọn vị trí lưu trữ bên dưới',
+  noLocationsConfigured: 'Chưa cấu hình vị trí kho',
   requiredQty: 'Cần',
   sufficient: 'Đủ',
   insufficient: 'Thiếu',

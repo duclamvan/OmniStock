@@ -1443,6 +1443,8 @@ const inventory = {
   quantityToMake: 'Quantity to Make',
   componentsNeeded: 'Components Needed',
   noComponents: 'No components required',
+  readyToManufacture: 'Ready to manufacture - select a location below',
+  noLocationsConfigured: 'No warehouse locations configured',
   requiredQty: 'Required',
   sufficient: 'Sufficient',
   insufficient: 'Insufficient',
