@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Truck, Package, CheckCircle2, AlertCircle, Clock, MapPin, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Truck, Package, CheckCircle2, AlertCircle, Clock, MapPin, RefreshCw, ChevronDown, ChevronUp, Copy, ExternalLink } from "lucide-react";
 import { formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { getCarrierTrackingUrl } from "@/lib/carrierTracking";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface OrderTrackingPanelProps {
   orderId: string;
@@ -68,6 +70,30 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
       return next;
     });
   };
+  
+  const handleCopyTrackingUrl = useCallback((carrier: string, trackingNumber: string) => {
+    const url = getCarrierTrackingUrl(carrier, trackingNumber);
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast({
+        title: t('orders:trackingUrlCopied'),
+        description: t('orders:trackingUrlCopiedDesc'),
+      });
+    } else {
+      navigator.clipboard.writeText(trackingNumber);
+      toast({
+        title: t('orders:trackingNumberCopied'),
+        description: trackingNumber,
+      });
+    }
+  }, [toast, t]);
+  
+  const handleOpenTrackingUrl = useCallback((carrier: string, trackingNumber: string) => {
+    const url = getCarrierTrackingUrl(carrier, trackingNumber);
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
   
   // Early return if tracking is disabled
   if (!enableTracking) {
@@ -162,10 +188,46 @@ export function OrderTrackingPanel({ orderId }: OrderTrackingPanelProps) {
             <div key={shipment.id} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge variant={config.variant as any} className="font-mono">
                       {shipment.carrier.toUpperCase()}: {shipment.trackingNumber}
                     </Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleCopyTrackingUrl(shipment.carrier, shipment.trackingNumber)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t('orders:copyTrackingUrl')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    {getCarrierTrackingUrl(shipment.carrier, shipment.trackingNumber) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleOpenTrackingUrl(shipment.carrier, shipment.trackingNumber)}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('orders:openTrackingPage')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Icon className={`h-4 w-4 ${config.color}`} />
