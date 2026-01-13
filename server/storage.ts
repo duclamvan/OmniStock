@@ -7327,7 +7327,8 @@ export class DatabaseStorage implements IStorage {
     if (!run) return undefined;
     if (run.status === 'completed' || run.status === 'archived') return run;
 
-    const componentsConsumed = run.componentsConsumed as Array<{
+    // Calculate components consumed from BOM if not already set
+    let componentsConsumed = run.componentsConsumed as Array<{
       productId: string;
       productName: string;
       variantId?: string;
@@ -7336,6 +7337,42 @@ export class DatabaseStorage implements IStorage {
       locationCode: string;
       yieldQuantity: number;
     }> || [];
+
+    // If componentsConsumed is empty, calculate from BOM
+    if (componentsConsumed.length === 0) {
+      const bomEntries = await db.select({
+        childProductId: billOfMaterials.childProductId,
+        childVariantId: billOfMaterials.childVariantId,
+        quantity: billOfMaterials.quantity,
+        yieldQuantity: billOfMaterials.yieldQuantity,
+      }).from(billOfMaterials).where(eq(billOfMaterials.parentProductId, run.finishedProductId));
+
+      for (const bom of bomEntries) {
+        // Get product name
+        const [childProduct] = await db.select().from(products).where(eq(products.id, bom.childProductId));
+        
+        // Get first available location for this product
+        const [location] = await db.select().from(productLocations)
+          .where(eq(productLocations.productId, bom.childProductId))
+          .orderBy(desc(productLocations.quantity));
+        
+        const yieldQty = Number(bom.yieldQuantity) || 1;
+        const bomQty = Number(bom.quantity) || 1;
+        const quantityConsumed = Math.ceil(run.quantityProduced / yieldQty) * bomQty;
+        
+        if (childProduct && location) {
+          componentsConsumed.push({
+            productId: bom.childProductId,
+            productName: childProduct.name,
+            variantId: bom.childVariantId || undefined,
+            variantName: undefined,
+            quantityConsumed: Math.round(quantityConsumed),
+            locationCode: location.locationCode,
+            yieldQuantity: Math.round(yieldQty),
+          });
+        }
+      }
+    }
 
     await db.transaction(async (tx) => {
       for (const component of componentsConsumed) {
@@ -7411,6 +7448,7 @@ export class DatabaseStorage implements IStorage {
           completedBy: userId,
           completedAt: new Date(),
           updatedAt: new Date(),
+          componentsConsumed: componentsConsumed.length > 0 ? componentsConsumed : undefined,
         })
         .where(eq(manufacturingRuns.id, id));
 
