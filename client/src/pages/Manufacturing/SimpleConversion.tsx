@@ -63,6 +63,16 @@ interface LocationCode {
   stock?: number;
 }
 
+interface ConsumedComponent {
+  productId: string;
+  productName: string;
+  variantId?: string;
+  variantName?: string;
+  quantityConsumed: number;
+  locationCode: string;
+  yieldQuantity: number;
+}
+
 interface ManufacturingRun {
   id: string;
   runNumber: string;
@@ -72,6 +82,7 @@ interface ManufacturingRun {
   status: string;
   completedAt?: string;
   createdAt: string;
+  componentsConsumed?: ConsumedComponent[];
 }
 
 interface ComponentLocation {
@@ -845,27 +856,38 @@ export default function SimpleConversion() {
                               key={run.id}
                               className="p-4 rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
                             >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg font-bold">
-                                      {t("runNumber", "Run #")}{run.runNumber}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-base font-bold">
+                                    {run.runNumber}
+                                  </span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                    {t("completed", "Completed")}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {format(new Date(run.completedAt || run.createdAt), "PPp")}
+                                  </span>
+                                </div>
+                                {/* Conversion details: components -> finished product */}
+                                <div className="text-lg font-semibold flex flex-wrap items-center gap-2">
+                                  {run.componentsConsumed && run.componentsConsumed.length > 0 ? (
+                                    <>
+                                      {run.componentsConsumed.map((comp, idx) => (
+                                        <span key={idx} className="text-orange-700 dark:text-orange-400">
+                                          {comp.quantityConsumed} {comp.productName}
+                                          {idx < (run.componentsConsumed?.length || 0) - 1 && " + "}
+                                        </span>
+                                      ))}
+                                      <span className="text-muted-foreground mx-1">→</span>
+                                      <span className="text-green-700 dark:text-green-400">
+                                        {run.quantity} {run.productName}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="text-green-700 dark:text-green-400">
+                                      {run.quantity} {run.productName}
                                     </span>
-                                    <span className="text-sm px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                      {t("completed", "Completed")}
-                                    </span>
-                                  </div>
-                                  <div className="text-base text-muted-foreground">
-                                    {run.productName}
-                                  </div>
-                                  <div className="flex items-center gap-4 text-base">
-                                    <span>
-                                      {t("produced", "Produced")}: <strong>{run.quantity}</strong>
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                      {format(new Date(run.completedAt || run.createdAt), "PPp")}
-                                    </span>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                             </div>

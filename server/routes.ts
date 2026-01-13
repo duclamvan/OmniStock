@@ -27594,7 +27594,22 @@ Important rules:
     try {
       const { status } = req.query;
       const runs = await storage.getManufacturingRuns(status as string | undefined);
-      res.json(runs);
+      
+      // Enrich runs with product names
+      const allProducts = await storage.getProducts();
+      const productMap = new Map(allProducts.map(p => [p.id, p]));
+      
+      const enrichedRuns = runs.map(run => {
+        const finishedProduct = productMap.get(run.finishedProductId);
+        return {
+          ...run,
+          productId: run.finishedProductId,
+          productName: finishedProduct?.name || 'Unknown Product',
+          quantity: run.quantityProduced,
+        };
+      });
+      
+      res.json(enrichedRuns);
     } catch (error) {
       console.error('Error fetching manufacturing runs:', error);
       res.status(500).json({ message: 'Failed to fetch manufacturing runs' });
