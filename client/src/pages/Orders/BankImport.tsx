@@ -30,7 +30,11 @@ import {
   Trash2,
   Loader2,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  Building2,
+  Calendar,
+  User,
+  CreditCard
 } from "lucide-react";
 
 interface ParsedRow {
@@ -39,6 +43,7 @@ interface ParsedRow {
   currency: string;
   payee: string;
   note: string;
+  account: string;
   rawData: Record<string, string>;
 }
 
@@ -83,6 +88,21 @@ export default function BankImport() {
   const { formatDate } = useLocalization();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const formatPaymentDate = useCallback((dateStr: string): string => {
+    if (!dateStr) return '-';
+    const parsedDate = new Date(dateStr);
+    if (isNaN(parsedDate.getTime())) {
+      const parts = dateStr.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);
+      if (parts) {
+        const [, day, month, year] = parts;
+        const fullYear = year.length === 2 ? `20${year}` : year;
+        return formatDate(new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`));
+      }
+      return dateStr;
+    }
+    return formatDate(parsedDate);
+  }, [formatDate]);
   
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
@@ -176,6 +196,14 @@ export default function BankImport() {
           h.toLowerCase().includes('message') ||
           h.toLowerCase().includes('zpráva')
         );
+        const accountCol = headers.find(h => 
+          h.toLowerCase().includes('account') || 
+          h.toLowerCase().includes('konto') ||
+          h.toLowerCase().includes('účet') ||
+          h.toLowerCase().includes('ucet') ||
+          h.toLowerCase().includes('source') ||
+          h.toLowerCase().includes('bank')
+        );
         
         return {
           date: dateCol ? rawData[dateCol] : '',
@@ -183,6 +211,7 @@ export default function BankImport() {
           currency: currencyCol ? rawData[currencyCol] : 'CZK',
           payee: payeeCol ? rawData[payeeCol] : '',
           note: noteCol ? rawData[noteCol] : '',
+          account: accountCol ? rawData[accountCol] : '',
           rawData,
         };
       });
@@ -559,10 +588,10 @@ export default function BankImport() {
                           <TableHeader>
                             <TableRow>
                               <TableHead className="w-10"></TableHead>
+                              <TableHead>{t('orders:account')}</TableHead>
                               <TableHead>{t('orders:paymentDate')}</TableHead>
                               <TableHead>{t('orders:amount')}</TableHead>
-                              <TableHead className="hidden md:table-cell">{t('orders:payee')}</TableHead>
-                              <TableHead className="hidden lg:table-cell">{t('orders:note')}</TableHead>
+                              <TableHead className="hidden lg:table-cell">{t('orders:payee')}</TableHead>
                               <TableHead className="w-8"></TableHead>
                               <TableHead>{t('orders:orderNumber')}</TableHead>
                               <TableHead>{t('orders:customer')}</TableHead>
@@ -583,15 +612,21 @@ export default function BankImport() {
                                       onCheckedChange={() => toggleMatchSelection(key)}
                                     />
                                   </TableCell>
-                                  <TableCell className="whitespace-nowrap">{match.payment.date}</TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    {match.payment.account ? (
+                                      <Badge variant="outline" className="font-normal">
+                                        {match.payment.account}
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">{formatPaymentDate(match.payment.date)}</TableCell>
                                   <TableCell className="whitespace-nowrap font-medium">
                                     {formatCurrency(match.payment.amount, match.payment.currency)}
                                   </TableCell>
-                                  <TableCell className="hidden md:table-cell max-w-[150px] truncate">
-                                    {match.payment.payee}
-                                  </TableCell>
                                   <TableCell className="hidden lg:table-cell max-w-[150px] truncate">
-                                    {match.payment.note}
+                                    {match.payment.payee}
                                   </TableCell>
                                   <TableCell>
                                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
@@ -603,7 +638,7 @@ export default function BankImport() {
                                   </TableCell>
                                   <TableCell>{match.customerName}</TableCell>
                                   <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
-                                    {match.orderCreatedAt ? new Date(match.orderCreatedAt).toLocaleDateString() : '-'}
+                                    {match.orderCreatedAt ? formatDate(new Date(match.orderCreatedAt)) : '-'}
                                   </TableCell>
                                   <TableCell className="whitespace-nowrap">
                                     {formatCurrency(match.orderTotal, match.payment.currency)}
@@ -658,43 +693,58 @@ export default function BankImport() {
                       {t('orders:noReviewItems')}
                     </p>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 lg:grid-cols-2">
                       {results.needsReview.map((item, idx) => {
                         const paymentKey = `${item.payment.date}-${item.payment.amount}`;
+                        const selectedCandidate = item.candidates.find(c => c.orderDbId === reviewSelections[paymentKey]);
+                        const amountDiff = selectedCandidate ? item.payment.amount - selectedCandidate.orderTotal : 0;
+                        
                         return (
                           <Card key={idx} className="bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800">
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-base flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                                {t('orders:payment')}
-                              </CardTitle>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                                  {t('orders:payment')}
+                                </CardTitle>
+                                {item.payment.account && (
+                                  <Badge variant="outline" className="font-normal">
+                                    <Building2 className="h-3 w-3 mr-1" />
+                                    {item.payment.account}
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardDescription className="mt-1">
+                                {item.candidates.length} {t('orders:possibleMatches')}
+                              </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div>
-                                  <span className="text-muted-foreground">{t('orders:date')}:</span>
-                                  <span className="ml-2 font-medium">{item.payment.date}</span>
+                              <div className="bg-white/50 dark:bg-black/20 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 text-lg font-bold text-foreground">
+                                  <CreditCard className="h-5 w-5 text-primary" />
+                                  {formatCurrency(item.payment.amount, item.payment.currency)}
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">{t('orders:amount')}:</span>
-                                  <span className="ml-2 font-bold">
-                                    {formatCurrency(item.payment.amount, item.payment.currency)}
-                                  </span>
-                                </div>
-                                <div className="col-span-2">
-                                  <span className="text-muted-foreground">{t('orders:payee')}:</span>
-                                  <span className="ml-2">{item.payment.payee}</span>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>{formatPaymentDate(item.payment.date)}</span>
+                                  </div>
+                                  {item.payment.payee && (
+                                    <div className="flex items-center gap-2 col-span-2">
+                                      <User className="h-4 w-4 text-muted-foreground" />
+                                      <span className="truncate">{item.payment.payee}</span>
+                                    </div>
+                                  )}
                                 </div>
                                 {item.payment.note && (
-                                  <div className="col-span-2">
-                                    <span className="text-muted-foreground">{t('orders:note')}:</span>
-                                    <span className="ml-2 text-xs">{item.payment.note}</span>
-                                  </div>
+                                  <p className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                                    {item.payment.note}
+                                  </p>
                                 )}
                               </div>
 
                               <div className="space-y-2">
-                                <Label className="text-lg">{t('orders:selectOrder')}</Label>
+                                <Label className="text-base font-medium">{t('orders:selectOrder')}</Label>
                                 <Select
                                   value={reviewSelections[paymentKey] || ''}
                                   onValueChange={(value) => setReviewSelections(prev => ({
@@ -702,23 +752,62 @@ export default function BankImport() {
                                     [paymentKey]: value,
                                   }))}
                                 >
-                                  <SelectTrigger className="w-full">
+                                  <SelectTrigger className="w-full h-auto min-h-[44px]">
                                     <SelectValue placeholder={t('orders:selectAnOrder')} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {item.candidates.map((candidate) => (
-                                      <SelectItem key={candidate.orderDbId} value={candidate.orderDbId}>
-                                        <div className="flex flex-col">
-                                          <span className="font-mono font-medium">{candidate.orderId}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {candidate.customerName} • {formatCurrency(candidate.orderTotal, item.payment.currency)} • {candidate.daysDiff}d
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
+                                    {item.candidates.map((candidate) => {
+                                      const diff = item.payment.amount - candidate.orderTotal;
+                                      return (
+                                        <SelectItem key={candidate.orderDbId} value={candidate.orderDbId}>
+                                          <div className="flex flex-col py-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-mono font-medium">{candidate.orderId}</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                ({candidate.daysDiff > 0 ? '+' : ''}{candidate.daysDiff}d)
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm">
+                                              <span>{candidate.customerName}</span>
+                                              <span className="text-muted-foreground">•</span>
+                                              <span className="font-medium">{formatCurrency(candidate.orderTotal, item.payment.currency)}</span>
+                                              {diff !== 0 && (
+                                                <span className={cn(
+                                                  "text-xs",
+                                                  diff > 0 ? "text-green-600" : "text-red-600"
+                                                )}>
+                                                  ({diff > 0 ? '+' : ''}{formatCurrency(diff, item.payment.currency)})
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
                                   </SelectContent>
                                 </Select>
                               </div>
+
+                              {selectedCandidate && (
+                                <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-3 text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">{t('orders:selectedOrder')}:</span>
+                                    <Link href={`/orders/${selectedCandidate.orderDbId}`} className="text-primary hover:underline font-mono flex items-center gap-1">
+                                      {selectedCandidate.orderId}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </Link>
+                                  </div>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-muted-foreground">{t('orders:matchDifference')}:</span>
+                                    <span className={cn(
+                                      "font-medium",
+                                      amountDiff === 0 ? "text-green-600" : amountDiff > 0 ? "text-yellow-600" : "text-red-600"
+                                    )}>
+                                      {amountDiff === 0 ? t('orders:exact') : (amountDiff > 0 ? '+' : '') + formatCurrency(amountDiff, item.payment.currency)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
 
                               <Button
                                 onClick={() => handleConfirmReviewItem(paymentKey, reviewSelections[paymentKey])}
