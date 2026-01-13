@@ -26,7 +26,8 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, User, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays } from "lucide-react";
+import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, User, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays, Copy, Link2 } from "lucide-react";
+import { getCarrierTrackingUrl } from "@/lib/carrierTracking";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { format, startOfDay, endOfDay, subDays, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1209,6 +1210,37 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         if (order.orderStatus !== 'shipped' && order.orderStatus !== 'delivered') {
           return <span className="text-muted-foreground text-xs">—</span>;
         }
+        
+        const handleCopyTrackingUrl = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const carrier = order.shippingMethod || 'ppl';
+          const trackingUrl = getCarrierTrackingUrl(carrier, order.trackingNumber);
+          if (trackingUrl) {
+            navigator.clipboard.writeText(trackingUrl);
+            toast({
+              title: t('orders:trackingUrlCopied'),
+              description: t('orders:trackingUrlCopiedDesc'),
+            });
+          } else {
+            navigator.clipboard.writeText(order.trackingNumber);
+            toast({
+              title: t('orders:trackingNumberCopied'),
+              description: order.trackingNumber,
+            });
+          }
+        };
+        
+        const handleOpenTracking = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const carrier = order.shippingMethod || 'ppl';
+          const trackingUrl = getCarrierTrackingUrl(carrier, order.trackingNumber);
+          if (trackingUrl) {
+            window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+          }
+        };
+        
         return (
           <div className="flex flex-col gap-1">
             <TrackingStatusBadge 
@@ -1216,9 +1248,47 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               orderStatus={order.orderStatus}
             />
             {order.trackingNumber && (
-              <span className="font-mono text-xs text-slate-600 dark:text-slate-400 truncate max-w-[120px]" title={order.trackingNumber}>
-                {order.trackingNumber}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 truncate max-w-[80px]" title={order.trackingNumber}>
+                  {order.trackingNumber}
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 shrink-0"
+                        onClick={handleCopyTrackingUrl}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('orders:copyTrackingUrl')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {getCarrierTrackingUrl(order.shippingMethod || 'ppl', order.trackingNumber) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 shrink-0"
+                          onClick={handleOpenTracking}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t('orders:openTrackingPage')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             )}
           </div>
         );
