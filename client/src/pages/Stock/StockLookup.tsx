@@ -167,6 +167,11 @@ export default function StockLookup() {
     queryKey: ['/api/categories'],
   });
 
+  // Fetch all product locations for display in collapsed view
+  const { data: productLocationsMap = {} } = useQuery<Record<string, { locationCode: string; quantity: number }[]>>({
+    queryKey: ['/api/products/primary-locations'],
+  });
+
   // Fetch stock inconsistencies (unified: over-allocated + under-allocated)
   const { data: stockInconsistencies } = useQuery<{
     items: any[];
@@ -211,6 +216,14 @@ export default function StockLookup() {
       // Note: We don't have variants data here yet, this will be enhanced with a better API
       const productQuantity = parseInt(p.quantity) || 0;
       
+      // Get locations from the batch-fetched data
+      const productLocs = productLocationsMap[p.id] || [];
+      const enrichedLocations = productLocs.map(loc => ({
+        id: loc.locationCode,
+        locationCode: loc.locationCode,
+        quantity: loc.quantity,
+      }));
+      
       return {
         id: p.id,
         name: p.name,
@@ -222,14 +235,14 @@ export default function StockLookup() {
         quantity: productQuantity,
         variants: [], // Will be fetched on-demand when product is expanded
         totalStock: productQuantity, // Will include variants when fetched
-        locations: p.locations,
+        locations: enrichedLocations.length > 0 ? enrichedLocations : p.locations,
         imageUrl: primaryImage,
         images: p.images,
         priceCzk: p.priceCzk,
         priceEur: p.priceEur
       };
     });
-  }, [rawProducts]);
+  }, [rawProducts, productLocationsMap]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {

@@ -6065,6 +6065,37 @@ Important:
   });
 
   // Products endpoints
+  
+  // Get all product locations for collapsed view display
+  app.get('/api/products/primary-locations', isAuthenticated, async (req, res) => {
+    try {
+      const allLocations = await db
+        .select({
+          productId: productLocations.productId,
+          locationCode: productLocations.locationCode,
+          quantity: productLocations.quantity,
+          isPrimary: productLocations.isPrimary,
+        })
+        .from(productLocations)
+        .where(isNotNull(productLocations.locationCode));
+      
+      const locationMap: Record<string, { locationCode: string; quantity: number }[]> = {};
+      for (const loc of allLocations) {
+        if (!locationMap[loc.productId]) {
+          locationMap[loc.productId] = [];
+        }
+        locationMap[loc.productId].push({
+          locationCode: loc.locationCode!,
+          quantity: loc.quantity || 0,
+        });
+      }
+      
+      res.json(locationMap);
+    } catch (error) {
+      console.error('Error fetching primary locations:', error);
+      res.status(500).json({ message: 'Failed to fetch primary locations' });
+    }
+  });
   app.get('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const search = req.query.search as string;
