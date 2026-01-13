@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "wouter";
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo, useState, lazy, Suspense } from "react";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +91,6 @@ import {
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
-import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
 import { cn } from "@/lib/utils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
@@ -118,6 +117,24 @@ import { ThermalReceipt, useOrderReceiptData, type CompanyInfo } from "@/compone
 import { Receipt } from "lucide-react";
 import { useRealTimeOrder } from "@/hooks/useSocket";
 import { RealTimeViewers } from "@/components/RealTimeViewers";
+
+const OrderTrackingPanel = lazy(() => import("@/components/orders/OrderTrackingPanel").then(m => ({ default: m.OrderTrackingPanel })));
+
+function TrackingPanelSkeleton() {
+  return (
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4 animate-pulse">
+      <div className="flex items-center gap-2">
+        <div className="h-5 w-5 rounded bg-muted" />
+        <div className="h-5 w-32 rounded bg-muted" />
+      </div>
+      <div className="h-4 w-48 rounded bg-muted" />
+      <div className="space-y-3">
+        <div className="h-20 rounded bg-muted" />
+        <div className="h-20 rounded bg-muted" />
+      </div>
+    </div>
+  );
+}
 
 function OrderReceiptContent({ order, onClose, companyInfo }: { order: any; onClose: () => void; companyInfo: CompanyInfo }) {
   const { t } = useTranslation(['common', 'orders']);
@@ -2209,7 +2226,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
 
           {/* Shipment Tracking */}
           {order.orderStatus === 'shipped' && (
-            <OrderTrackingPanel orderId={order.id} />
+            <Suspense fallback={<TrackingPanelSkeleton />}>
+              <OrderTrackingPanel orderId={order.id} />
+            </Suspense>
           )}
 
           {/* Pick & Pack Activity Logs */}
