@@ -1775,8 +1775,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Bank Import Button - Show for Pay Later filter */}
-          {paymentFilter === 'pay_later' && (
+          {/* Bank Import Button - Show for Pay Later filter or pay_later route */}
+          {(paymentFilter === 'pay_later' || filter === 'pay_later') && (
             <Link href="/orders/bank-import">
               <Button variant="outline" className="h-9 sm:h-10 px-3 sm:px-4">
                 <Upload className="h-4 w-4" />
