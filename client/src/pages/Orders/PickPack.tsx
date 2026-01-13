@@ -17219,27 +17219,43 @@ export default function PickPack() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('manageOrderFulfillment')}</p>
             </div>
 
-            {/* Quick Stats Overview */}
+            {/* Quick Stats Overview - Clickable to switch tabs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center" data-testid="stat-pending">
+              <div 
+                onClick={() => setSelectedTab('pending')}
+                className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-2 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:border-orange-300 dark:hover:border-orange-600 transition-colors" 
+                data-testid="stat-pending"
+              >
                 <div className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.pending}
                 </div>
                 <div className="text-xs text-orange-700 dark:text-orange-200">{t('pending')}</div>
               </div>
-              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center" data-testid="stat-picking">
+              <div 
+                onClick={() => setSelectedTab('picking')}
+                className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600 transition-colors" 
+                data-testid="stat-picking"
+              >
                 <div className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.picking}
                 </div>
                 <div className="text-xs text-blue-700 dark:text-blue-200 dark:text-blue-100">{t('picking')}</div>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center" data-testid="stat-packing">
+              <div 
+                onClick={() => setSelectedTab('packing')}
+                className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg p-2 text-center cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:border-purple-300 dark:hover:border-purple-600 transition-colors" 
+                data-testid="stat-packing"
+              >
                 <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.packing}
                 </div>
                 <div className="text-xs text-purple-700 dark:text-purple-200">{t('packing')}</div>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center" data-testid="stat-ready">
+              <div 
+                onClick={() => setSelectedTab('ready')}
+                className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 text-center cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/50 hover:border-green-300 dark:hover:border-green-600 transition-colors" 
+                data-testid="stat-ready"
+              >
                 <div className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 dark:text-green-300">
                   {isInitialLoad ? <Skeleton className="h-6 sm:h-8 w-8 mx-auto" /> : stats.ready}
                 </div>
