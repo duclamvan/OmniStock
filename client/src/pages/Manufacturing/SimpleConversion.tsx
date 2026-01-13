@@ -144,9 +144,9 @@ export default function SimpleConversion() {
   const manufacturingMutation = useMutation({
     mutationFn: async () => {
       const runRes = await apiRequest("POST", "/api/manufacturing/runs", {
-        productId: selectedProductId,
-        quantity,
-        locationId: selectedLocationId,
+        finishedProductId: selectedProductId,
+        quantityProduced: quantity,
+        finishedLocationCode: selectedLocationId || undefined,
       });
       const runData = await runRes.json();
 

@@ -3811,6 +3811,7 @@ export const insertManufacturingRunSchema = createInsertSchema(manufacturingRuns
   })).optional(),
 }).omit({
   id: true,
+  runNumber: true,
   createdAt: true,
   updatedAt: true,
 });
