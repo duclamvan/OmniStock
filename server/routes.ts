@@ -27880,6 +27880,7 @@ Important rules:
         orderDbId: string;
         customerName: string;
         orderTotal: number;
+        orderCreatedAt: string;
         matchType: 'exact' | 'fuzzy';
         difference: number;
       }> = [];
@@ -27891,6 +27892,7 @@ Important rules:
           orderDbId: string;
           customerName: string;
           orderTotal: number;
+        orderCreatedAt: string;
           orderDate: string;
           daysDiff: number;
         }>;
@@ -27968,6 +27970,7 @@ Important rules:
                 orderDbId: order.id,
                 customerName,
                 orderTotal,
+                orderCreatedAt: order.createdAt?.toISOString() || '',
                 matchType: 'exact',
                 difference: amountDiff,
               });
@@ -28028,6 +28031,7 @@ Important rules:
               orderDbId: candidate.order.id,
               customerName,
               orderTotal: parseFloat(candidate.order.grandTotal) || 0,
+              orderCreatedAt: candidate.order.createdAt?.toISOString() || '',
               matchType: 'fuzzy',
               difference: candidate.amountDifference,
             });

@@ -48,6 +48,7 @@ interface MatchedPayment {
   orderDbId: string;
   customerName: string;
   orderTotal: number;
+  orderCreatedAt: string;
   matchType: 'exact' | 'fuzzy';
   difference: number;
 }
@@ -565,6 +566,7 @@ export default function BankImport() {
                               <TableHead className="w-8"></TableHead>
                               <TableHead>{t('orders:orderNumber')}</TableHead>
                               <TableHead>{t('orders:customer')}</TableHead>
+                              <TableHead>{t('common:created')}</TableHead>
                               <TableHead>{t('orders:orderTotal')}</TableHead>
                               <TableHead>{t('orders:matchType')}</TableHead>
                               <TableHead>{t('orders:matchDifference')}</TableHead>
@@ -600,6 +602,9 @@ export default function BankImport() {
                                     </Link>
                                   </TableCell>
                                   <TableCell>{match.customerName}</TableCell>
+                                  <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                                    {match.orderCreatedAt ? new Date(match.orderCreatedAt).toLocaleDateString() : '-'}
+                                  </TableCell>
                                   <TableCell className="whitespace-nowrap">
                                     {formatCurrency(match.orderTotal, match.payment.currency)}
                                   </TableCell>
