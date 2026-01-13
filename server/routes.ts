@@ -27861,6 +27861,306 @@ Important rules:
     }
   });
 
+
+  // Bank Import API - Match bank transactions to orders
+  app.post('/api/orders/bank-import', isAuthenticated, async (req, res) => {
+    try {
+      const { rows, enableFuzzyMatching = true, amountTolerance = 2.0 } = req.body;
+      const fuzzyMatchingEnabled = enableFuzzyMatching;
+
+      if (!Array.isArray(rows)) {
+        return res.status(400).json({ message: 'rows must be an array of payment transactions' });
+      }
+
+      console.log(`[Bank Import] Processing ${rows.length} payment rows`);
+
+      const matched: Array<{
+        payment: any;
+        orderId: string;
+        orderDbId: string;
+        customerName: string;
+        orderTotal: number;
+        matchType: 'exact' | 'fuzzy';
+        difference: number;
+      }> = [];
+
+      const needsReview: Array<{
+        payment: any;
+        candidates: Array<{
+          orderId: string;
+          orderDbId: string;
+          customerName: string;
+          orderTotal: number;
+          orderDate: string;
+          daysDiff: number;
+        }>;
+      }> = [];
+
+      const unmatched: Array<{
+        payment: any;
+        reason: string;
+      }> = [];
+
+      // Helper function to get customer name
+      const getCustomerName = async (customerId: string | null): Promise<string> => {
+        if (!customerId) return 'Unknown Customer';
+        try {
+          const [customer] = await db.select()
+            .from(customers)
+            .where(eq(customers.id, customerId))
+            .limit(1);
+          return customer?.name || 'Unknown Customer';
+        } catch {
+          return 'Unknown Customer';
+        }
+      };
+
+      // Regex patterns to extract order ID from note field
+      const orderIdPatterns = [
+        /rechnung\s*nr\.?\s*(\d+)/i,
+        /renr\s*(\d+)/i,
+        /nr\s*(\d+)/i,
+        /(\d{7,10})/  // Raw 7-10 digit numbers
+      ];
+
+      function extractOrderId(note: string): string | null {
+        if (!note) return null;
+        for (const pattern of orderIdPatterns) {
+          const match = note.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        return null;
+      }
+
+      for (const paymentRow of rows) {
+        const { note, amount, date, currency, payee } = paymentRow;
+        const paymentAmount = parseFloat(amount) || 0;
+        const paymentDate = date ? new Date(date) : new Date();
+
+        let isMatched = false;
+
+        // Tier 1: Exact Match by Order ID
+        const extractedOrderId = extractOrderId(note);
+        if (extractedOrderId) {
+          // Search for orders containing this ID in their orderId field
+          const matchingOrders = await db.select()
+            .from(orders)
+            .where(
+              or(
+                eq(orders.orderId, extractedOrderId),
+                ilike(orders.orderId, `%${extractedOrderId}%`)
+              )
+            );
+
+          for (const order of matchingOrders) {
+            const orderTotal = parseFloat(order.grandTotal) || 0;
+            const amountDiff = Math.abs(orderTotal - paymentAmount);
+            const percentDiff = orderTotal > 0 ? amountDiff / orderTotal : 1;
+
+            // Amount tolerance: within 1% for exact match
+            if (percentDiff <= 0.01) {
+              const customerName = await getCustomerName(order.customerId);
+              matched.push({
+                payment: paymentRow,
+                orderId: order.orderId,
+                orderDbId: order.id,
+                customerName,
+                orderTotal,
+                matchType: 'exact',
+                difference: amountDiff,
+              });
+              isMatched = true;
+              console.log(`[Bank Import] Exact match: Payment ${note} -> Order ${order.orderId}`);
+              break;
+            }
+          }
+        }
+
+        // Tier 2: Fuzzy Match (only if Tier 1 failed and fuzzy matching enabled)
+        if (!isMatched && fuzzyMatchingEnabled) {
+          // Query unpaid orders created within 30 days before payment date
+          const thirtyDaysAgo = new Date(paymentDate);
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const unpaidOrders = await db.select()
+            .from(orders)
+            .where(
+              and(
+                inArray(orders.paymentStatus, ['pending', 'pay_later']),
+                gt(orders.createdAt, thirtyDaysAgo),
+                lt(orders.createdAt, paymentDate)
+              )
+            );
+
+          // Filter by amount tolerance
+          const candidates = unpaidOrders
+            .map(order => {
+              const orderTotal = parseFloat(order.grandTotal) || 0;
+              const amountDiff = Math.abs(orderTotal - paymentAmount);
+              const daysDiff = Math.floor((paymentDate.getTime() - new Date(order.createdAt!).getTime()) / (1000 * 60 * 60 * 24));
+
+              // Score calculation: higher is better
+              // Base score of 100, minus penalties for amount diff and date diff
+              const amountScore = Math.max(0, 50 - (amountDiff / amountTolerance) * 50);
+              const dateScore = Math.max(0, 50 - daysDiff);
+              const score = amountScore + dateScore;
+
+              return {
+                order,
+                amountDifference: amountDiff,
+                daysDifference: daysDiff,
+                score
+              };
+            })
+            .filter(c => c.amountDifference <= amountTolerance)
+            .sort((a, b) => b.score - a.score);
+
+          if (candidates.length === 1) {
+            // Exactly one match - auto-match as fuzzy
+            const candidate = candidates[0];
+            const customerName = await getCustomerName(candidate.order.customerId);
+
+            matched.push({
+              payment: paymentRow,
+              orderId: candidate.order.orderId,
+              orderDbId: candidate.order.id,
+              customerName,
+              orderTotal: parseFloat(candidate.order.grandTotal) || 0,
+              matchType: 'fuzzy',
+              difference: candidate.amountDifference,
+            });
+            isMatched = true;
+            console.log(`[Bank Import] Fuzzy match: Payment ${amount} -> Order ${candidate.order.orderId}`);
+          } else if (candidates.length > 1) {
+            // Multiple matches - needs review
+            const reviewCandidates = await Promise.all(
+              candidates.slice(0, 5).map(async (c) => {
+                const customerName = await getCustomerName(c.order.customerId);
+                const orderDate = c.order.createdAt
+                  ? new Date(c.order.createdAt).toISOString().split('T')[0]
+                  : '';
+                return {
+                  orderId: c.order.orderId,
+                  orderDbId: c.order.id,
+                  customerName,
+                  orderTotal: parseFloat(c.order.grandTotal) || 0,
+                  orderDate,
+                  daysDiff: c.daysDifference,
+                };
+              })
+            );
+
+            needsReview.push({
+              payment: paymentRow,
+              candidates: reviewCandidates
+            });
+            isMatched = true;
+            console.log(`[Bank Import] Ambiguous: Payment ${amount} has ${candidates.length} potential matches`);
+          }
+        }
+
+        // Tier 3: Unmatched
+        if (!isMatched) {
+          let reason = 'No matching order found';
+          if (extractedOrderId) {
+            reason = `Order ID "${extractedOrderId}" not found or amount mismatch`;
+          } else if (!fuzzyMatchingEnabled) {
+            reason = 'No order ID found in note and fuzzy matching is disabled';
+          } else {
+            reason = 'No orders match the amount within tolerance';
+          }
+
+          unmatched.push({
+            payment: paymentRow,
+            reason
+          });
+          console.log(`[Bank Import] Unmatched: ${reason}`);
+        }
+      }
+
+      const result = {
+        matched,
+        needsReview,
+        unmatched,
+        summary: {
+          total: rows.length,
+          matched: matched.length,
+          needsReview: needsReview.length,
+          unmatched: unmatched.length
+        }
+      };
+
+      console.log(`[Bank Import] Results: ${matched.length} matched, ${needsReview.length} needs review, ${unmatched.length} unmatched`);
+      res.json(result);
+    } catch (error) {
+      console.error('[Bank Import] Error processing bank import:', error);
+      res.status(500).json({ message: 'Failed to process bank import' });
+    }
+  });
+
+
+  // Bank Import Confirm - Update matched orders as paid
+  app.post('/api/orders/bank-import/confirm', isAuthenticated, async (req, res) => {
+    try {
+      const { matches } = req.body;
+
+      if (!Array.isArray(matches)) {
+        return res.status(400).json({ message: 'matches must be an array' });
+      }
+
+      console.log(`[Bank Import Confirm] Confirming ${matches.length} matches`);
+
+      let confirmedCount = 0;
+      const errors: Array<{ orderDbId: string; error: string }> = [];
+
+      for (const match of matches) {
+        const { orderDbId, paymentInfo } = match;
+
+        try {
+          // Find the order by id (orderDbId is the database UUID)
+          const [order] = await db.select()
+            .from(orders)
+            .where(eq(orders.id, orderDbId))
+            .limit(1);
+
+          if (!order) {
+            errors.push({ orderDbId, error: 'Order not found' });
+            continue;
+          }
+
+          // Update order payment status to paid
+          await db.update(orders)
+            .set({
+              paymentStatus: 'paid',
+              notes: order.notes 
+                ? `${order.notes}\n[Bank Import] Marked as paid. Date: ${paymentInfo.date}, Amount: ${paymentInfo.amount} ${paymentInfo.currency}`
+                : `[Bank Import] Marked as paid. Date: ${paymentInfo.date}, Amount: ${paymentInfo.amount} ${paymentInfo.currency}`,
+              updatedAt: new Date()
+            })
+            .where(eq(orders.id, orderDbId));
+
+          confirmedCount++;
+          console.log(`[Bank Import Confirm] Updated order ${order.orderId} (${orderDbId}) to paid`);
+        } catch (err) {
+          console.error(`[Bank Import Confirm] Error updating order ${orderDbId}:`, err);
+          errors.push({ orderDbId, error: 'Failed to update order' });
+        }
+      }
+
+      res.json({
+        success: true,
+        confirmed: confirmedCount,
+        total: matches.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error('[Bank Import Confirm] Error confirming matches:', error);
+      res.status(500).json({ message: 'Failed to confirm bank import matches' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

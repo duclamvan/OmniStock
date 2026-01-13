@@ -27594,7 +27594,22 @@ Important rules:
     try {
       const { status } = req.query;
       const runs = await storage.getManufacturingRuns(status as string | undefined);
-      res.json(runs);
+      
+      // Enrich runs with product names
+      const allProducts = await storage.getProducts();
+      const productMap = new Map(allProducts.map(p => [p.id, p]));
+      
+      const enrichedRuns = runs.map(run => {
+        const finishedProduct = productMap.get(run.finishedProductId);
+        return {
+          ...run,
+          productId: run.finishedProductId,
+          productName: finishedProduct?.name || 'Unknown Product',
+          quantity: run.quantityProduced,
+        };
+      });
+      
+      res.json(enrichedRuns);
     } catch (error) {
       console.error('Error fetching manufacturing runs:', error);
       res.status(500).json({ message: 'Failed to fetch manufacturing runs' });
@@ -27716,6 +27731,125 @@ Important rules:
     }
   });
 
+
+  // Get parent-child stock with locations
+  app.get('/api/manufacturing/parent-child-stock', isAuthenticated, async (req, res) => {
+    try {
+      // Get all products that are parents (have BOM entries or have children via parentProductId)
+      const allProducts = await storage.getProducts();
+      const allBomEntries = await db.select().from(billOfMaterials);
+      
+      // Create a map of parent product IDs from BOM entries
+      const bomParentIds = new Set(allBomEntries.map(b => b.parentProductId));
+      
+      // Also find products that have children via parentProductId field
+      const productsWithChildren = allProducts.filter(p => 
+        allProducts.some(child => child.parentProductId === p.id)
+      );
+      const parentViaFieldIds = new Set(productsWithChildren.map(p => p.id));
+      
+      // Combine both sets
+      const allParentIds = new Set([...bomParentIds, ...parentViaFieldIds]);
+      
+      // Get all product locations for stock data
+      const allLocations = await db.select().from(productLocations);
+      
+      // Build parent-child stock data
+      const parentChildStock = [];
+      
+      for (const parentId of allParentIds) {
+        const parent = allProducts.find(p => p.id === parentId);
+        if (!parent) continue;
+        
+        // Get children from BOM
+        const bomChildren = allBomEntries
+          .filter(b => b.parentProductId === parentId)
+          .map(b => {
+            const childProduct = allProducts.find(p => p.id === b.childProductId);
+            return {
+              id: b.childProductId,
+              name: childProduct?.name || 'Unknown',
+              sku: childProduct?.sku,
+              quantity: b.quantity,
+              yieldQuantity: b.yieldQuantity || 1,
+              source: 'bom' as const,
+              totalStock: childProduct?.quantity || 0,
+              lowStockThreshold: childProduct?.lowStockThreshold || 5,
+            };
+          });
+        
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            quantity: 1,
+            yieldQuantity: 1,
+            source: 'parentField' as const,
+            totalStock: p.quantity || 0,
+            lowStockThreshold: p.lowStockThreshold || 5,
+          }));
+        
+        // Combine children
+        const children = [...bomChildren, ...fieldChildren];
+        
+        // Get parent's locations
+        const parentLocations = allLocations
+          .filter(l => l.productId === parentId)
+          .map(l => ({
+            locationCode: l.locationCode,
+            quantity: l.quantity || 0,
+          }));
+        
+        // Get each child's locations
+        const childrenWithLocations = children.map(child => {
+          const childLocs = allLocations
+            .filter(l => l.productId === child.id)
+            .map(l => ({
+              locationCode: l.locationCode,
+              quantity: l.quantity || 0,
+            }));
+          return {
+            ...child,
+            locations: childLocs,
+            isLowStock: child.totalStock <= child.lowStockThreshold,
+          };
+        });
+        
+        // Calculate if parent is low stock
+        const parentTotalStock = parent.quantity || 0;
+        const parentThreshold = parent.lowStockThreshold || 5;
+        
+        parentChildStock.push({
+          id: parent.id,
+          name: parent.name,
+          sku: parent.sku,
+          vietnameseName: parent.vietnameseName,
+          totalStock: parentTotalStock,
+          lowStockThreshold: parentThreshold,
+          isLowStock: parentTotalStock <= parentThreshold,
+          locations: parentLocations,
+          children: childrenWithLocations,
+          source: bomParentIds.has(parentId) ? 'bom' : 'parentField',
+        });
+      }
+      
+      // Sort by low stock first, then by name
+      parentChildStock.sort((a, b) => {
+        if (a.isLowStock && !b.isLowStock) return -1;
+        if (!a.isLowStock && b.isLowStock) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      
+      res.json(parentChildStock);
+    } catch (error) {
+      console.error('Error fetching parent-child stock:', error);
+      res.status(500).json({ message: 'Failed to fetch parent-child stock data' });
+    }
+  });
   // Mark manufacturing notification as read
   app.post('/api/manufacturing/notifications/:id/read', isAuthenticated, async (req, res) => {
     try {
@@ -27727,6 +27861,263 @@ Important rules:
     }
   });
 
+
+  // Bank Import API - Match bank transactions to orders
+  app.post('/api/orders/bank-import', isAuthenticated, async (req, res) => {
+    try {
+      const { rows, enableFuzzyMatching = true, amountTolerance = 2.0 } = req.body;
+
+      if (!Array.isArray(rows)) {
+        return res.status(400).json({ message: 'rows must be an array of payment transactions' });
+      }
+
+      console.log(`[Bank Import] Processing ${rows.length} payment rows`);
+
+      const autoMatched: Array<{
+        paymentRow: any;
+        order: any;
+        matchType: 'exact' | 'fuzzy';
+        amountDifference: number;
+        confidence: number;
+      }> = [];
+
+      const ambiguous: Array<{
+        paymentRow: any;
+        candidates: Array<{
+          order: any;
+          amountDifference: number;
+          daysDifference: number;
+          score: number;
+        }>;
+      }> = [];
+
+      const unmatched: Array<{
+        paymentRow: any;
+        reason: string;
+      }> = [];
+
+      // Regex patterns to extract order ID from note field
+      const orderIdPatterns = [
+        /rechnung\s*nr\.?\s*(\d+)/i,
+        /renr\s*(\d+)/i,
+        /nr\s*(\d+)/i,
+        /(\d{7,10})/  // Raw 7-10 digit numbers
+      ];
+
+      function extractOrderId(note: string): string | null {
+        if (!note) return null;
+        for (const pattern of orderIdPatterns) {
+          const match = note.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        return null;
+      }
+
+      for (const paymentRow of rows) {
+        const { note, amount, date, account, currency, payee } = paymentRow;
+        const paymentAmount = parseFloat(amount) || 0;
+        const paymentDate = date ? new Date(date) : new Date();
+
+        let matched = false;
+
+        // Tier 1: Exact Match by Order ID
+        const extractedOrderId = extractOrderId(note);
+        if (extractedOrderId) {
+          // Search for orders containing this ID in their orderId field
+          const matchingOrders = await db.select()
+            .from(orders)
+            .where(
+              or(
+                eq(orders.orderId, extractedOrderId),
+                ilike(orders.orderId, `%${extractedOrderId}%`)
+              )
+            );
+
+          for (const order of matchingOrders) {
+            const orderTotal = parseFloat(order.grandTotal) || 0;
+            const amountDiff = Math.abs(orderTotal - paymentAmount);
+            const percentDiff = orderTotal > 0 ? amountDiff / orderTotal : 1;
+
+            // Amount tolerance: within 1% for exact match
+            if (percentDiff <= 0.01) {
+              autoMatched.push({
+                paymentRow,
+                order,
+                matchType: 'exact',
+                amountDifference: amountDiff,
+                confidence: 100
+              });
+              matched = true;
+              console.log(`[Bank Import] Exact match: Payment ${note} -> Order ${order.orderId}`);
+              break;
+            }
+          }
+        }
+
+        // Tier 2: Fuzzy Match (only if Tier 1 failed and fuzzy matching enabled)
+        if (!matched && enableFuzzyMatching) {
+          // Query unpaid orders created within 30 days before payment date
+          const thirtyDaysAgo = new Date(paymentDate);
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const unpaidOrders = await db.select()
+            .from(orders)
+            .where(
+              and(
+                inArray(orders.paymentStatus, ['pending', 'pay_later']),
+                gt(orders.createdAt, thirtyDaysAgo),
+                lt(orders.createdAt, paymentDate)
+              )
+            );
+
+          // Filter by amount tolerance
+          const candidates = unpaidOrders
+            .map(order => {
+              const orderTotal = parseFloat(order.grandTotal) || 0;
+              const amountDiff = Math.abs(orderTotal - paymentAmount);
+              const daysDiff = Math.floor((paymentDate.getTime() - new Date(order.createdAt!).getTime()) / (1000 * 60 * 60 * 24));
+              
+              // Score calculation: higher is better
+              // Base score of 100, minus penalties for amount diff and date diff
+              const amountScore = Math.max(0, 50 - (amountDiff / amountTolerance) * 50);
+              const dateScore = Math.max(0, 50 - daysDiff);
+              const score = amountScore + dateScore;
+
+              return {
+                order,
+                amountDifference: amountDiff,
+                daysDifference: daysDiff,
+                score
+              };
+            })
+            .filter(c => c.amountDifference <= amountTolerance)
+            .sort((a, b) => b.score - a.score);
+
+          if (candidates.length === 1) {
+            // Exactly one match - auto-match as fuzzy
+            const candidate = candidates[0];
+            const confidence = Math.min(95, Math.max(80, 95 - (candidate.amountDifference / amountTolerance) * 15));
+            
+            autoMatched.push({
+              paymentRow,
+              order: candidate.order,
+              matchType: 'fuzzy',
+              amountDifference: candidate.amountDifference,
+              confidence: Math.round(confidence)
+            });
+            matched = true;
+            console.log(`[Bank Import] Fuzzy match: Payment ${amount} -> Order ${candidate.order.orderId} (confidence: ${confidence}%)`);
+          } else if (candidates.length > 1) {
+            // Multiple matches - ambiguous
+            ambiguous.push({
+              paymentRow,
+              candidates: candidates.slice(0, 5) // Limit to top 5 candidates
+            });
+            matched = true;
+            console.log(`[Bank Import] Ambiguous: Payment ${amount} has ${candidates.length} potential matches`);
+          }
+        }
+
+        // Tier 3: Unmatched
+        if (!matched) {
+          let reason = 'No matching order found';
+          if (extractedOrderId) {
+            reason = `Order ID "${extractedOrderId}" not found or amount mismatch`;
+          } else if (!enableFuzzyMatching) {
+            reason = 'No order ID found in note and fuzzy matching is disabled';
+          } else {
+            reason = 'No orders match the amount within tolerance';
+          }
+          
+          unmatched.push({
+            paymentRow,
+            reason
+          });
+          console.log(`[Bank Import] Unmatched: ${reason}`);
+        }
+      }
+
+      const result = {
+        autoMatched,
+        ambiguous,
+        unmatched,
+        summary: {
+          total: rows.length,
+          autoMatchedCount: autoMatched.length,
+          ambiguousCount: ambiguous.length,
+          unmatchedCount: unmatched.length
+        }
+      };
+
+      console.log(`[Bank Import] Results: ${autoMatched.length} auto-matched, ${ambiguous.length} ambiguous, ${unmatched.length} unmatched`);
+      res.json(result);
+    } catch (error) {
+      console.error('[Bank Import] Error processing bank import:', error);
+      res.status(500).json({ message: 'Failed to process bank import' });
+    }
+  });
+
+  // Bank Import Confirm - Update matched orders as paid
+  app.post('/api/orders/bank-import/confirm', isAuthenticated, async (req, res) => {
+    try {
+      const { matches } = req.body;
+
+      if (!Array.isArray(matches)) {
+        return res.status(400).json({ message: 'matches must be an array' });
+      }
+
+      console.log(`[Bank Import Confirm] Confirming ${matches.length} matches`);
+
+      let updatedCount = 0;
+      const errors: Array<{ orderId: string; error: string }> = [];
+
+      for (const match of matches) {
+        const { orderId, paymentNote, matchType } = match;
+
+        try {
+          // Find the order by orderId field
+          const [order] = await db.select()
+            .from(orders)
+            .where(eq(orders.orderId, orderId))
+            .limit(1);
+
+          if (!order) {
+            errors.push({ orderId, error: 'Order not found' });
+            continue;
+          }
+
+          // Update order payment status to paid
+          await db.update(orders)
+            .set({
+              paymentStatus: 'paid',
+              notes: order.notes 
+                ? `${order.notes}\n[Bank Import] Marked as paid via ${matchType} match. Note: ${paymentNote || 'N/A'}`
+                : `[Bank Import] Marked as paid via ${matchType} match. Note: ${paymentNote || 'N/A'}`,
+              updatedAt: new Date()
+            })
+            .where(eq(orders.id, order.id));
+
+          updatedCount++;
+          console.log(`[Bank Import Confirm] Updated order ${orderId} to paid`);
+        } catch (err) {
+          console.error(`[Bank Import Confirm] Error updating order ${orderId}:`, err);
+          errors.push({ orderId, error: 'Failed to update order' });
+        }
+      }
+
+      res.json({
+        success: true,
+        updatedCount,
+        totalRequested: matches.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error('[Bank Import Confirm] Error confirming matches:', error);
+      res.status(500).json({ message: 'Failed to confirm bank import matches' });
+    }
+  });
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -93,6 +93,7 @@ const navigation: NavItem[] = [
       { labelKey: "toFulfill", href: "/orders/to-fulfill", namespace: "orders" },
       { labelKey: "shipped", href: "/orders/shipped", namespace: "orders" },
       { labelKey: "payLater", href: "/orders/pay-later", namespace: "orders" },
+      { labelKey: "bankImport", href: "/orders/bank-import", namespace: "orders" },
       { labelKey: "preOrders", href: "/orders/pre-orders", namespace: "orders" },
     ],
   },

@@ -22,6 +22,7 @@ import Home from "@/pages/Home";
 import AllOrders from "@/pages/Orders/AllOrders";
 import OrdersTrash from "@/pages/Orders/OrdersTrash";
 import AddOrder from "@/pages/Orders/AddOrder";
+import BankImport from "@/pages/Orders/BankImport";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
 import InventoryDashboard from "@/pages/Inventory/InventoryDashboard";
@@ -149,6 +150,9 @@ function Router() {
         </Route>
         <Route path="/orders/pay-later">
           {() => <ProtectedRoute requireAdmin><AllOrders filter="pay_later" /></ProtectedRoute>}
+        </Route>
+        <Route path="/orders/bank-import">
+          {() => <ProtectedRoute requireAdmin><BankImport /></ProtectedRoute>}
         </Route>
         <Route path="/orders/trash">
           {() => <ProtectedRoute requireAdmin><OrdersTrash /></ProtectedRoute>}
