@@ -191,6 +191,7 @@ const orders = {
   failedToLoadLabel: 'Không thể tải nhãn vận chuyển',
   
   // Toast Messages - Address
+  tapItemsToModify: 'Chạm vào các mục bên dưới để chỉnh sửa nếu cần',
   success: 'Thành công',
   addressSavedWithCustomer: 'Địa chỉ đã lưu (sẽ được tạo cùng khách hàng)',
   

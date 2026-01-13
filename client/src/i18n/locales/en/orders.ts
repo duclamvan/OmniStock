@@ -191,6 +191,7 @@ const orders = {
   failedToLoadLabel: 'Failed to load shipping label',
   
   // Toast Messages - Address
+  tapItemsToModify: 'Tap items below to modify if needed',
   success: 'Success',
   addressSavedWithCustomer: 'Address saved (will be created with customer)',
   
