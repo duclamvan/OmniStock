@@ -5857,15 +5857,16 @@ function StorageShipmentCard({ shipment, isAdministrator }: { shipment: any; isA
                         <span className="text-xs text-muted-foreground">{item.category}</span>
                       )}
                       {item.locations && item.locations.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-wrap gap-2 mt-1">
                           {item.locations.map((loc: any, locIdx: number) => (
                             <Badge 
                               key={locIdx} 
                               variant="outline" 
-                              className="text-xs font-mono bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                              className="text-sm font-mono bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800 px-2 py-1"
                             >
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {loc.locationCode}: {loc.quantity}
+                              <MapPin className="h-3.5 w-3.5 mr-1.5" />
+                              <span>{loc.locationCode}:</span>
+                              <span className="font-bold ml-1">{loc.quantity}</span>
                             </Badge>
                           ))}
                         </div>
@@ -6383,17 +6384,17 @@ function ShipmentReportDialog({
                                             ×{variant.totalQty}
                                           </span>
                                         </div>
-                                        <div className="flex flex-wrap gap-0.5 mt-1">
+                                        <div className="flex flex-wrap gap-1 mt-1">
                                           {variant.locations.slice(0, isExpanded ? undefined : 3).map((loc, idx) => (
                                             <span 
                                               key={idx} 
-                                              className="text-[9px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded"
+                                              className="text-xs font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
                                             >
-                                              {loc.locationCode}×{loc.quantity}
+                                              {loc.locationCode}×<span className="font-bold">{loc.quantity}</span>
                                             </span>
                                           ))}
                                           {!isExpanded && variant.locations.length > 3 && (
-                                            <span className="text-[9px] text-muted-foreground">
+                                            <span className="text-xs text-muted-foreground">
                                               +{variant.locations.length - 3}
                                             </span>
                                           )}

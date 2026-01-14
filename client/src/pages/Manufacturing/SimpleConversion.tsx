@@ -312,9 +312,10 @@ export default function SimpleConversion() {
                   {alert.locations.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {alert.locations.map((loc, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                          <MapPin className="h-3 w-3" />
-                          {loc.locationCode}: {loc.quantity}
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 rounded text-base font-medium">
+                          <MapPin className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-600 dark:text-slate-400">{loc.locationCode}:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{loc.quantity}</span>
                         </span>
                       ))}
                     </div>
@@ -378,11 +379,16 @@ export default function SimpleConversion() {
                           </div>
                           {/* Component locations */}
                           {comp.locations.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               {comp.locations.map((loc, locIdx) => (
-                                <span key={locIdx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">
-                                  <MapPin className="h-2.5 w-2.5" />
-                                  {loc.locationCode}: {loc.quantity}
+                                <span key={locIdx} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-sm font-medium ${
+                                  loc.quantity === 0 
+                                    ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' 
+                                    : 'bg-gray-100 dark:bg-gray-800'
+                                }`}>
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span className="text-slate-600 dark:text-slate-400">{loc.locationCode}:</span>
+                                  <span className={`font-bold ${loc.quantity === 0 ? 'text-red-700 dark:text-red-300' : 'text-slate-900 dark:text-slate-100'}`}>{loc.quantity}</span>
                                 </span>
                               ))}
                             </div>
@@ -478,9 +484,10 @@ export default function SimpleConversion() {
                   {parent.locations.length > 0 && (
                     <div className="px-4 pb-2 flex flex-wrap gap-2">
                       {parent.locations.map((loc, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                          <MapPin className="h-3 w-3" />
-                          {loc.locationCode}: {loc.quantity}
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 rounded text-base font-medium">
+                          <MapPin className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-600 dark:text-slate-400">{loc.locationCode}:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{loc.quantity}</span>
                         </span>
                       ))}
                     </div>
@@ -530,11 +537,16 @@ export default function SimpleConversion() {
                           </div>
                           {/* Child locations */}
                           {child.locations.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-2">
                               {child.locations.map((loc, idx) => (
-                                <span key={idx} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">
-                                  <MapPin className="h-2.5 w-2.5" />
-                                  {loc.locationCode}: {loc.quantity}
+                                <span key={idx} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-sm font-medium ${
+                                  loc.quantity === 0 
+                                    ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' 
+                                    : 'bg-gray-100 dark:bg-gray-800'
+                                }`}>
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span className="text-slate-600 dark:text-slate-400">{loc.locationCode}:</span>
+                                  <span className={`font-bold ${loc.quantity === 0 ? 'text-red-700 dark:text-red-300' : 'text-slate-900 dark:text-slate-100'}`}>{loc.quantity}</span>
                                 </span>
                               ))}
                             </div>

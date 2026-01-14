@@ -127,8 +127,12 @@ function LocationCodeDisplay({ code, quantity }: { code: string; quantity?: numb
           </div>
         </div>
       ))}
-      {quantity !== undefined && quantity > 0 && (
-        <div className="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200" title="Quantity at this location">
+      {quantity !== undefined && (
+        <div className={`ml-1.5 px-2 py-0.5 rounded text-sm font-bold ${
+          quantity === 0 
+            ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200' 
+            : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200'
+        }`} title="Quantity at this location">
           ×{quantity}
         </div>
       )}
