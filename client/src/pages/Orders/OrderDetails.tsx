@@ -110,6 +110,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Crown, Trophy, Sparkles, Heart, RefreshCw, AlertTriangle, ExternalLink, Gift, Percent, Tag, TrendingDown } from "lucide-react";
+import { getCarrierTrackingUrl } from "@/lib/carrierTracking";
 import { toPng } from "html-to-image";
 import logoPath from '@assets/logo_1754349267160.png';
 import { useSettings } from "@/contexts/SettingsContext";
@@ -1920,14 +1921,46 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                     <code className="text-xs bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded font-mono">
                                       {carton.trackingNumber}
                                     </code>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => copyToClipboard(carton.trackingNumber, "Tracking number")}
-                                    >
-                                      <Copy className="h-3 w-3" />
-                                    </Button>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          onClick={() => {
+                                            const carrier = order.shippingMethod || 'ppl';
+                                            const trackingUrl = getCarrierTrackingUrl(carrier, carton.trackingNumber);
+                                            if (trackingUrl) {
+                                              navigator.clipboard.writeText(trackingUrl);
+                                              toast({ title: t('orders:trackingUrlCopied'), description: t('orders:trackingUrlCopiedDesc') });
+                                            } else {
+                                              copyToClipboard(carton.trackingNumber, "Tracking number");
+                                            }
+                                          }}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>{t('orders:copyTrackingUrl')}</TooltipContent>
+                                    </Tooltip>
+                                    {getCarrierTrackingUrl(order.shippingMethod || 'ppl', carton.trackingNumber) && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => {
+                                              const trackingUrl = getCarrierTrackingUrl(order.shippingMethod || 'ppl', carton.trackingNumber);
+                                              if (trackingUrl) window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+                                            }}
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('orders:openTrackingPage')}</TooltipContent>
+                                      </Tooltip>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -2150,16 +2183,57 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               {t('orders:shippingLabelCarrier', { carrier: label.carrier?.toUpperCase() || t('orders:carrierUnknown') })}
                             </p>
                             {label.trackingNumbers && label.trackingNumbers.length > 0 && (
-                              <div className="flex items-center gap-1 mt-0.5">
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                                 <Hash className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
                                 {label.trackingNumbers.some((tn: string) => tn.startsWith('PENDING-')) ? (
                                   <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                                     {t('orders:pendingTrackingNumber')}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-emerald-700 dark:text-emerald-300">
-                                    {label.trackingNumbers.join(', ')}
-                                  </span>
+                                  <>
+                                    <span className="text-xs text-emerald-700 dark:text-emerald-300">
+                                      {label.trackingNumbers.join(', ')}
+                                    </span>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-5 w-5"
+                                          onClick={() => {
+                                            const trackingUrl = getCarrierTrackingUrl(label.carrier, label.trackingNumbers[0]);
+                                            if (trackingUrl) {
+                                              navigator.clipboard.writeText(trackingUrl);
+                                              toast({ title: t('orders:trackingUrlCopied'), description: t('orders:trackingUrlCopiedDesc') });
+                                            } else {
+                                              copyToClipboard(label.trackingNumbers[0], "Tracking number");
+                                            }
+                                          }}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>{t('orders:copyTrackingUrl')}</TooltipContent>
+                                    </Tooltip>
+                                    {getCarrierTrackingUrl(label.carrier, label.trackingNumbers[0]) && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5"
+                                            onClick={() => {
+                                              const trackingUrl = getCarrierTrackingUrl(label.carrier, label.trackingNumbers[0]);
+                                              if (trackingUrl) window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+                                            }}
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t('orders:openTrackingPage')}</TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             )}
