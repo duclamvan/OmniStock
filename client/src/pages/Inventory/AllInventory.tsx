@@ -183,6 +183,8 @@ export default function AllInventory() {
 
   const products = productsData?.items ?? [];
   const totalProducts = productsData?.total ?? 0;
+  const lowStockCount = (productsData as any)?.lowStockCount ?? 0;
+  const outOfStockCount = (productsData as any)?.outOfStockCount ?? 0;
   const totalPages = Math.ceil(totalProducts / pageSize);
 
   const { data: categories = [] } = useQuery({
@@ -1637,11 +1639,11 @@ export default function AllInventory() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate cursor-help">
-                          {formatCompactNumber(filteredProducts?.length || 0)}
+                          {formatCompactNumber(totalProducts)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.length || 0).toLocaleString()} {t('inventory:products')}</p>
+                        <p className="font-mono">{totalProducts.toLocaleString()} {t('inventory:products')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1665,11 +1667,11 @@ export default function AllInventory() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-400 truncate cursor-help">
-                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0)}
+                          {formatCompactNumber(lowStockCount)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity > 0 && p.quantity <= p.lowStockAlert).length || 0).toLocaleString()} {t('inventory:itemsCount')}</p>
+                        <p className="font-mono">{lowStockCount.toLocaleString()} {t('inventory:itemsCount')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -1693,11 +1695,11 @@ export default function AllInventory() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 truncate cursor-help">
-                          {formatCompactNumber(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0)}
+                          {formatCompactNumber(outOfStockCount)}
                         </p>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="font-mono">{(filteredProducts?.filter((p: any) => p.quantity === 0).length || 0).toLocaleString()} {t('inventory:itemsCount')}</p>
+                        <p className="font-mono">{outOfStockCount.toLocaleString()} {t('inventory:itemsCount')}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

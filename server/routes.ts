@@ -6145,9 +6145,15 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
+          const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         return res.json(filtered);
       }
@@ -6278,9 +6284,15 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
+          const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       } else {
@@ -6290,9 +6302,15 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
+          const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       }
@@ -11550,9 +11568,15 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
+          const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       } else {
@@ -11562,9 +11586,15 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
+          const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       }
