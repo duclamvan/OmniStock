@@ -65,7 +65,7 @@ export default function AllInventory() {
   
   // Server-side pagination state
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   
   // Debounce search query for server-side search
   useEffect(() => {
