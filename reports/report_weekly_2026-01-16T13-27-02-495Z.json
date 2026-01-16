@@ -1,0 +1,52 @@
+{
+  "period": "weekly",
+  "startDate": "2026-01-09T00:00:00.000Z",
+  "endDate": "2026-01-16T23:59:59.999Z",
+  "generatedAt": "2026-01-16T13:27:02.494Z",
+  "summary": {
+    "totalOrders": 2,
+    "completedOrders": 1,
+    "pendingOrders": 0,
+    "cancelledOrders": 0,
+    "totalRevenue": 10325,
+    "totalItemsSold": 2,
+    "averageOrderValue": 5162.5,
+    "newCustomers": 4
+  },
+  "inventory": {
+    "totalProducts": 532,
+    "lowStockProducts": 1,
+    "outOfStockProducts": 530,
+    "stockAdjustments": 8,
+    "itemsReceived": 0
+  },
+  "topProducts": [
+    {
+      "id": "test-prod-10",
+      "name": "Chaos Daemon Prince",
+      "quantity": 1,
+      "revenue": 1625,
+      "quantitySold": 1
+    },
+    {
+      "id": "test-prod-8",
+      "name": "Bot dap Makeup Pink",
+      "quantity": 1,
+      "revenue": 1050,
+      "quantitySold": 1
+    }
+  ],
+  "topCustomers": [
+    {
+      "id": "07568cb6-bcb9-42f9-a585-914e0c5b4eef",
+      "name": "Davie Lam",
+      "orderCount": 1,
+      "totalSpent": 2825
+    }
+  ],
+  "financials": {
+    "totalExpenses": 0,
+    "grossProfit": 10325,
+    "expensesByCategory": {}
+  }
+}

@@ -26850,15 +26850,15 @@ Important rules:
 
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
-      const sideMargin = 8; // Better side margins for breathing room
+      const sideMargin = 4; // Better side margins for breathing room
       const contentWidth = pageWidth - (sideMargin * 2);
-      const topMargin = 8; // Top margin for cleaner look
+      const topMargin = 4; // Top margin for cleaner look
 
       // Calculate content height with improved spacing (Vietnamese needs extra height for diacritics)
       const baseLineHeight = isVietnamese ? 16 : 14;
       const smallLineHeight = isVietnamese ? 14 : 12;
       
-      let estimatedHeight = topMargin + 8; // Top padding
+      let estimatedHeight = topMargin + 4; // Top padding
       estimatedHeight += 20 * lineHeightMultiplier; // Company name (larger)
       if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += baseLineHeight;
       if (companyInfo.phone || companyInfo.country) estimatedHeight += baseLineHeight;
@@ -26938,7 +26938,7 @@ Important rules:
         }
       };
 
-      let yPos = topMargin + 8; // Comfortable top padding
+      let yPos = topMargin + 4; // Comfortable top padding
 
       // Company Header - Centered with good spacing
       doc.fontSize(12)
@@ -26981,7 +26981,7 @@ Important rules:
       yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
-      const labelColumnWidth = 80; // Wide enough for Czech "Číslo účtenky:"
+      const labelColumnWidth = 70; // Wide enough for Czech "Číslo účtenky:"
       const valueColumnWidth = contentWidth - labelColumnWidth;
       
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
