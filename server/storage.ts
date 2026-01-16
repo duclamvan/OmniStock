@@ -2606,13 +2606,10 @@ export class DatabaseStorage implements IStorage {
     
     const normalizedProduct = normalizeForSKU(productName);
     const categoryPart = normalizeForSKU(categoryName).slice(0, 3) || 'GEN';
-    const productPart = normalizedProduct.slice(0, 6) || 'ITEM';
-    // Use more letters from product name for suffix, plus 2 random letters for uniqueness
-    const extraPart = normalizedProduct.slice(6, 10) || '';
-    const randomLetters = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
-                          String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    // Use up to 12 letters from product name (no random letters)
+    const productPart = normalizedProduct.slice(0, 12) || 'ITEM';
     
-    return `${categoryPart}-${productPart}${extraPart}${randomLetters}`;
+    return `${categoryPart}-${productPart}`;
   }
 
   // Product Variants
