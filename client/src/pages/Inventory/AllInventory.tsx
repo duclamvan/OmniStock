@@ -2399,8 +2399,8 @@ export default function AllInventory() {
               columns={visibleColumns}
               bulkActions={bulkActions}
               getRowKey={(product) => product.id}
-              itemsPerPageOptions={[10, 20, 50, 100]}
-              defaultItemsPerPage={20}
+              showPagination={false}
+              defaultItemsPerPage={100}
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
                 <div className="px-4 sm:px-0 pb-3 space-y-2">
                   {/* Row 1: Title and Selection Count */}
@@ -2441,6 +2441,54 @@ export default function AllInventory() {
                 </div>
               )}
             />
+            
+            {/* Desktop Pagination Controls */}
+            <div className="flex items-center justify-between py-4 px-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <div className="text-sm text-muted-foreground">
+                {t('inventory:showingProducts', { 
+                  from: ((page - 1) * pageSize) + 1, 
+                  to: Math.min(page * pageSize, totalProducts), 
+                  total: totalProducts 
+                })}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium px-2">
+                  {page} / {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
