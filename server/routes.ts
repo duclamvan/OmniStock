@@ -26850,15 +26850,15 @@ Important rules:
 
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
-      const sideMargin = 4; // Better side margins for breathing room
+      const sideMargin = 12; // Account for thermal printer hardware margins (~4mm per side)
       const contentWidth = pageWidth - (sideMargin * 2);
-      const topMargin = 4; // Top margin for cleaner look
+      const topMargin = 8; // Top margin for cleaner look
 
       // Calculate content height with improved spacing (Vietnamese needs extra height for diacritics)
       const baseLineHeight = isVietnamese ? 16 : 14;
       const smallLineHeight = isVietnamese ? 14 : 12;
       
-      let estimatedHeight = topMargin + 4; // Top padding
+      let estimatedHeight = topMargin + 6; // Top padding
       estimatedHeight += 20 * lineHeightMultiplier; // Company name (larger)
       if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += baseLineHeight;
       if (companyInfo.phone || companyInfo.country) estimatedHeight += baseLineHeight;
@@ -26938,7 +26938,7 @@ Important rules:
         }
       };
 
-      let yPos = topMargin + 4; // Comfortable top padding
+      let yPos = topMargin + 6; // Comfortable top padding
 
       // Company Header - Centered with good spacing
       doc.fontSize(12)
@@ -26981,7 +26981,7 @@ Important rules:
       yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
-      const labelColumnWidth = 70; // Wide enough for Czech "Číslo účtenky:"
+      const labelColumnWidth = 55; // Wide enough for Czech "Číslo účtenky:"
       const valueColumnWidth = contentWidth - labelColumnWidth;
       
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
@@ -27018,7 +27018,7 @@ Important rules:
       yPos += baseLineHeight;
 
       doc.fontSize(8).font('Receipt');
-      const priceColumnWidth = 75; // Wider to fit large prices like "27 615.00 Kč"
+      const priceColumnWidth = 60; // Wider to fit large prices like "27 615.00 Kč"
       for (const item of items) {
         if (!item || typeof item !== 'object') continue;
         
@@ -27036,7 +27036,7 @@ Important rules:
         const nameHeight = doc.heightOfString(itemText, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         
         doc.text(itemText, sideMargin, yPos, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
-        doc.text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' });
+        doc.fontSize(7).text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' }); doc.fontSize(8);
         yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 5;
       }
 
@@ -27044,7 +27044,7 @@ Important rules:
       yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
-      const totalsValueWidth = 85; // Wide enough for large totals like "27 615.00 Kč"
+      const totalsValueWidth = 70; // Wide enough for large totals like "27 615.00 Kč"
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
       doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
