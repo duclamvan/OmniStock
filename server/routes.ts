@@ -6145,7 +6145,7 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length;
+          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
           const paginated = filtered.slice(offset, offset + limit);
           return res.json({ items: paginated, total, limit, offset });
         }
@@ -6278,7 +6278,7 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length;
+          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
           const paginated = filtered.slice(offset, offset + limit);
           return res.json({ items: paginated, total, limit, offset });
         }
@@ -6290,7 +6290,7 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length;
+          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
           const paginated = filtered.slice(offset, offset + limit);
           return res.json({ items: paginated, total, limit, offset });
         }
@@ -11550,7 +11550,7 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length;
+          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
           const paginated = filtered.slice(offset, offset + limit);
           return res.json({ items: paginated, total, limit, offset });
         }
@@ -11562,7 +11562,7 @@ Important:
         
         // Apply server-side pagination if limit is provided
         if (limit) {
-          const total = filtered.length;
+          const total = filtered.length; console.log(`[Products API] Total products: ${total}, offset: ${offset}, limit: ${limit}`);
           const paginated = filtered.slice(offset, offset + limit);
           return res.json({ items: paginated, total, limit, offset });
         }
