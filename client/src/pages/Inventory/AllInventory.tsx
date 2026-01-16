@@ -2394,7 +2394,7 @@ export default function AllInventory() {
           {/* Desktop Table View */}
           <div className="hidden md:block">
             <DataTable
-              key={visibleColumns.map(col => col.key).join(',')}
+              key={`${page}-${visibleColumns.map(col => col.key).join(',')}`}
               data={filteredProducts}
               columns={visibleColumns}
               bulkActions={bulkActions}
@@ -2443,13 +2443,36 @@ export default function AllInventory() {
             />
             
             {/* Desktop Pagination Controls */}
-            <div className="flex items-center justify-between py-4 px-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-              <div className="text-sm text-muted-foreground">
-                {t('inventory:showingProducts', { 
-                  from: ((page - 1) * pageSize) + 1, 
-                  to: Math.min(page * pageSize, totalProducts), 
-                  total: totalProducts 
-                })}
+            <div className="flex items-center justify-between py-4 px-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  {t('inventory:showingProducts', { 
+                    from: ((page - 1) * pageSize) + 1, 
+                    to: Math.min(page * pageSize, totalProducts), 
+                    total: totalProducts 
+                  })}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Show</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => {
+                      setPageSize(Number(value));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">{t('common:perPage')}</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button
