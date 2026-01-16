@@ -2604,11 +2604,15 @@ export class DatabaseStorage implements IStorage {
   async generateSKU(categoryName: string, productName: string): Promise<string> {
     const { normalizeForSKU } = await import('@shared/vietnameseUtils');
     
+    const normalizedProduct = normalizeForSKU(productName);
     const categoryPart = normalizeForSKU(categoryName).slice(0, 3) || 'GEN';
-    const productPart = normalizeForSKU(productName).slice(0, 6) || 'ITEM';
-    const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
+    const productPart = normalizedProduct.slice(0, 6) || 'ITEM';
+    // Use more letters from product name for suffix, plus 2 random letters for uniqueness
+    const extraPart = normalizedProduct.slice(6, 10) || '';
+    const randomLetters = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + 
+                          String.fromCharCode(65 + Math.floor(Math.random() * 26));
     
-    return `${categoryPart}-${productPart}-${randomSuffix}`;
+    return `${categoryPart}-${productPart}${extraPart}${randomLetters}`;
   }
 
   // Product Variants
