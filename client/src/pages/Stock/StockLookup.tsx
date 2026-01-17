@@ -1068,15 +1068,33 @@ export default function StockLookup() {
                               >
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
                                         {loc.locationCode}
                                       </p>
-                                      {loc.variantName && (
-                                        <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                          {loc.variantName}
-                                        </Badge>
-                                      )}
+                                      {/* Show variant badge - check both variantName from JOIN and cross-reference with variant locationCode */}
+                                      {(() => {
+                                        // First check if we have variantName from the JOIN
+                                        if (loc.variantName) {
+                                          return (
+                                            <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                              {loc.variantName}
+                                            </Badge>
+                                          );
+                                        }
+                                        // Otherwise, cross-reference with variant's locationCode
+                                        const matchingVariant = selectedProductData?.variants?.find(
+                                          v => v.locationCode === loc.locationCode
+                                        );
+                                        if (matchingVariant) {
+                                          return (
+                                            <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                              {matchingVariant.name}
+                                            </Badge>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                     {loc.isPrimary && (
                                       <Badge variant="default" className="mt-1 h-5 text-xs">
@@ -1578,6 +1596,44 @@ export default function StockLookup() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Variant Selector - only show if product has variants */}
+            {selectedProductData?.variants && selectedProductData.variants.length > 0 && (
+              <div>
+                <Label htmlFor="add-location-variant">{t('common:selectVariant')}</Label>
+                <Select
+                  value={addLocationVariantId || "none"}
+                  onValueChange={(value) => {
+                    if (value === "none") {
+                      setAddLocationVariantId(null);
+                      setAddLocationVariantName("");
+                    } else {
+                      const variant = selectedProductData.variants.find(v => v.id === value);
+                      setAddLocationVariantId(value);
+                      setAddLocationVariantName(variant?.name || "");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-variant-for-location">
+                    <SelectValue placeholder={t('common:selectVariant')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-gray-500">{t('common:baseProduct')} ({t('common:noVariant')})</span>
+                    </SelectItem>
+                    {selectedProductData.variants.map((variant) => (
+                      <SelectItem key={variant.id} value={variant.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{variant.name}</span>
+                          <span className="text-xs text-gray-500">({variant.quantity} {t('units')})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">{t('common:selectWhichVariantAtLocation')}</p>
+              </div>
+            )}
+
             <WarehouseLocationSelector
               value={newLocationCode}
               onChange={setNewLocationCode}
