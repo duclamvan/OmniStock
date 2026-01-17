@@ -8081,12 +8081,16 @@ Important:
   // Product Variants
   app.get('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
-      const variants = await storage.getProductVariants(req.params.productId);
+      const productId = req.params.productId;
+      const variants = await storage.getProductVariants(productId);
       
       // Get allocated quantities to calculate availability for each variant (same as parent products)
       const allocatedMap = await storage.getAllocatedQuantities();
       
-      // Enrich variants with allocation info - use SKU first, then variantId as fallback
+      // Get all product locations to find variant-specific locations
+      const productLocations = await storage.getProductLocations(productId);
+      
+      // Enrich variants with allocation info and location data
       const enrichedVariants = variants.map((variant: any) => {
         let allocated = 0;
         
@@ -8106,10 +8110,16 @@ Important:
         const onHand = variant.quantity || 0;
         const available = Math.max(0, onHand - allocated);
         
+        // Find location for this specific variant
+        const variantLocation = productLocations.find((loc: any) => loc.variantId === variant.id);
+        
         return {
           ...variant,
           allocatedQuantity: allocated,
-          availableQuantity: available
+          availableQuantity: available,
+          locationCode: variantLocation?.locationCode || null,
+          locationId: variantLocation?.id || null,
+          locationQuantity: variantLocation?.quantity || 0
         };
       });
       

@@ -46,6 +46,9 @@ interface Variant {
   imageUrl?: string;
   priceCzk?: number;
   priceEur?: number;
+  locationCode?: string | null;
+  locationId?: string | null;
+  locationQuantity?: number;
 }
 
 interface ProductLocation {
@@ -118,6 +121,8 @@ export default function StockLookup() {
   const [addLocationDialogOpen, setAddLocationDialogOpen] = useState(false);
   const [addLocationProductId, setAddLocationProductId] = useState<string | null>(null);
   const [addLocationProductName, setAddLocationProductName] = useState<string>("");
+  const [addLocationVariantId, setAddLocationVariantId] = useState<string | null>(null);
+  const [addLocationVariantName, setAddLocationVariantName] = useState<string>("");
   const [newLocationType, setNewLocationType] = useState<LocationType>("warehouse");
   const [newLocationCode, setNewLocationCode] = useState("");
   const [newLocationQuantity, setNewLocationQuantity] = useState(0);
@@ -341,8 +346,9 @@ export default function StockLookup() {
 
   // Add location mutation
   const addLocationMutation = useMutation({
-    mutationFn: async (data: { productId: string; locationType: LocationType; locationCode: string; quantity: number; notes: string; isPrimary: boolean }) => {
+    mutationFn: async (data: { productId: string; variantId?: string | null; locationType: LocationType; locationCode: string; quantity: number; notes: string; isPrimary: boolean }) => {
       return await apiRequest('POST', `/api/products/${data.productId}/locations`, {
+        variantId: data.variantId || null,
         locationType: data.locationType,
         locationCode: data.locationCode,
         quantity: data.quantity,
@@ -352,6 +358,7 @@ export default function StockLookup() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${addLocationProductId}/locations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${addLocationProductId}/variants`] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
         title: t('common:success'),
@@ -375,6 +382,8 @@ export default function StockLookup() {
     setNewLocationQuantity(0);
     setNewLocationNotes("");
     setNewLocationIsPrimary(true);
+    setAddLocationVariantId(null);
+    setAddLocationVariantName("");
   };
 
   const handleOpenAddLocationDialog = (productId: string, productName: string) => {
@@ -395,10 +404,11 @@ export default function StockLookup() {
     }
     addLocationMutation.mutate({
       productId: addLocationProductId,
+      variantId: addLocationVariantId,
       locationType: newLocationType,
       locationCode: newLocationCode,
       quantity: newLocationQuantity,
-      notes: newLocationNotes,
+      notes: addLocationVariantName ? `Variant: ${addLocationVariantName}` : newLocationNotes,
       isPrimary: newLocationIsPrimary,
     });
   };
@@ -903,6 +913,34 @@ export default function StockLookup() {
                                       <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                                         {variant.barcode}
                                       </p>
+                                    )}
+                                    {variant.locationCode ? (
+                                      <div className="flex items-center gap-1 mt-1">
+                                        <MapPin className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                          {variant.locationCode}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAddLocationProductId(selectedProductData.id);
+                                          setAddLocationProductName(selectedProductData.name);
+                                          setAddLocationVariantId(variant.id);
+                                          setAddLocationVariantName(variant.name);
+                                          setNewLocationType("warehouse");
+                                          setNewLocationCode("");
+                                          setNewLocationQuantity(variant.quantity || 0);
+                                          setNewLocationIsPrimary(false);
+                                          setNewLocationNotes("");
+                                          setAddLocationDialogOpen(true);
+                                        }}
+                                        className="flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        {t('common:addLocation')}
+                                      </button>
                                     )}
                                     {(variant.priceCzk || variant.priceEur) && (
                                       <div className="flex items-center gap-2 text-[11px] font-medium mt-1">
@@ -1464,7 +1502,9 @@ export default function StockLookup() {
           <DialogHeader>
             <DialogTitle>{t('common:addProductLocation')}</DialogTitle>
             <DialogDescription>
-              {t('common:addStorageLocationFor', { productName: addLocationProductName })}
+              {addLocationVariantName 
+                ? `${addLocationProductName} - ${addLocationVariantName}`
+                : t('common:addStorageLocationFor', { productName: addLocationProductName })}
             </DialogDescription>
           </DialogHeader>
 
