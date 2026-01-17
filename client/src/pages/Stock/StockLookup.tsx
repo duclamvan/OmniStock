@@ -466,6 +466,8 @@ export default function StockLookup() {
 
     if (product) {
       setSelectedProduct(product.id);
+      setVariantSearch("");
+      setExpandedVariants(new Set());
     }
   };
 
@@ -803,7 +805,13 @@ export default function StockLookup() {
               <Card
                 key={product.id}
                 className="border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedProduct(isExpanded ? null : product.id)}
+                onClick={() => {
+                  setSelectedProduct(isExpanded ? null : product.id);
+                  if (!isExpanded) {
+                    setVariantSearch("");
+                    setExpandedVariants(new Set());
+                  }
+                }}
                 data-testid={`card-product-${product.id}`}
               >
                 <CardContent className="p-3">
