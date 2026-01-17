@@ -1031,7 +1031,10 @@ export default function StockLookup() {
                                   {/* Variant header - clickable to expand/collapse */}
                                   <div 
                                     className="flex items-center gap-3 cursor-pointer"
-                                    onClick={toggleExpand}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleExpand();
+                                    }}
                                   >
                                     {/* Expand/Collapse toggle */}
                                     <Button
