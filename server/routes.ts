@@ -8125,16 +8125,33 @@ Important:
         const onHand = variant.quantity || 0;
         const available = Math.max(0, onHand - allocated);
         
-        // Find location for this specific variant
-        const variantLocation = productLocations.find((loc: any) => loc.variantId === variant.id);
+        // Find locations for this specific variant
+        // 1. Check productLocations table for entries with this variantId
+        const variantLocations = productLocations.filter((loc: any) => loc.variantId === variant.id);
+        
+        // 2. Use variant's own locationCode field (stored directly on variant record)
+        // This is the primary location code from the variant table
+        const primaryLocationCode = variant.locationCode || null;
+        
+        // 3. If variant has a locationCode, find matching productLocation for stock controls
+        const matchingLocation = primaryLocationCode 
+          ? productLocations.find((loc: any) => loc.locationCode === primaryLocationCode)
+          : (variantLocations.length > 0 ? variantLocations[0] : null);
+        
+        // 4. Get all location codes for this variant (from both sources)
+        const allLocationCodes = [
+          ...(primaryLocationCode ? [primaryLocationCode] : []),
+          ...variantLocations.map((loc: any) => loc.locationCode).filter((code: string) => code !== primaryLocationCode)
+        ];
         
         return {
           ...variant,
           allocatedQuantity: allocated,
           availableQuantity: available,
-          locationCode: variantLocation?.locationCode || null,
-          locationId: variantLocation?.id || null,
-          locationQuantity: variantLocation?.quantity || 0
+          locationCode: primaryLocationCode || (variantLocations[0]?.locationCode || null),
+          locationId: matchingLocation?.id || null,
+          locationQuantity: matchingLocation?.quantity || variant.quantity || 0,
+          allLocationCodes: allLocationCodes.length > 0 ? allLocationCodes : null
         };
       });
       
