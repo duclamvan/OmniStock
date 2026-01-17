@@ -8432,10 +8432,11 @@ Important:
         productId
       });
 
-      // Check if location already exists for this product
+      // Check if location already exists for this product (matching both locationCode AND variantId)
       const existingLocations = await storage.getProductLocations(productId);
       const existingLocation = existingLocations.find(
-        loc => loc.locationCode === locationData.locationCode
+        loc => loc.locationCode === locationData.locationCode && 
+               (loc.variantId || null) === (locationData.variantId || null)
       );
 
       let location;
