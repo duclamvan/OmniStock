@@ -6146,8 +6146,14 @@ Important:
         // Apply server-side pagination if limit is provided
         if (limit) {
           const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         return res.json(filtered);
       }
@@ -6279,8 +6285,14 @@ Important:
         // Apply server-side pagination if limit is provided
         if (limit) {
           const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       } else {
@@ -6291,8 +6303,14 @@ Important:
         // Apply server-side pagination if limit is provided
         if (limit) {
           const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       }
@@ -6379,10 +6397,23 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // Get product locations from productLocations table
+      // Get product locations from productLocations table with variant info
       const locations = await db
-        .select()
+        .select({
+          id: productLocations.id,
+          productId: productLocations.productId,
+          variantId: productLocations.variantId,
+          locationType: productLocations.locationType,
+          locationCode: productLocations.locationCode,
+          quantity: productLocations.quantity,
+          isPrimary: productLocations.isPrimary,
+          notes: productLocations.notes,
+          createdAt: productLocations.createdAt,
+          updatedAt: productLocations.updatedAt,
+          variantName: productVariants.name,
+        })
         .from(productLocations)
+        .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
         .where(eq(productLocations.productId, productId))
         .orderBy(desc(productLocations.isPrimary), desc(productLocations.quantity));
 
@@ -6393,7 +6424,9 @@ Important:
         locationCode: product.warehouseLocation,
         quantity: product.quantity || 0,
         isPrimary: true,
-        locationType: 'warehouse'
+        locationType: 'warehouse',
+        variantId: null,
+        variantName: null
       }];
 
       const locationsData = locations.length === 0 && product.warehouseLocation ? legacyLocation : locations;
@@ -8063,12 +8096,16 @@ Important:
   // Product Variants
   app.get('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
-      const variants = await storage.getProductVariants(req.params.productId);
+      const productId = req.params.productId;
+      const variants = await storage.getProductVariants(productId);
       
       // Get allocated quantities to calculate availability for each variant (same as parent products)
       const allocatedMap = await storage.getAllocatedQuantities();
       
-      // Enrich variants with allocation info - use SKU first, then variantId as fallback
+      // Get all product locations to find variant-specific locations
+      const productLocations = await storage.getProductLocations(productId);
+      
+      // Enrich variants with allocation info and location data
       const enrichedVariants = variants.map((variant: any) => {
         let allocated = 0;
         
@@ -8088,10 +8125,33 @@ Important:
         const onHand = variant.quantity || 0;
         const available = Math.max(0, onHand - allocated);
         
+        // Find locations for this specific variant
+        // 1. Check productLocations table for entries with this variantId
+        const variantLocations = productLocations.filter((loc: any) => loc.variantId === variant.id);
+        
+        // 2. Use variant's own locationCode field (stored directly on variant record)
+        // This is the primary location code from the variant table
+        const primaryLocationCode = variant.locationCode || null;
+        
+        // 3. If variant has a locationCode, find matching productLocation for stock controls
+        const matchingLocation = primaryLocationCode 
+          ? productLocations.find((loc: any) => loc.locationCode === primaryLocationCode)
+          : (variantLocations.length > 0 ? variantLocations[0] : null);
+        
+        // 4. Get all location codes for this variant (from both sources)
+        const allLocationCodes = [
+          ...(primaryLocationCode ? [primaryLocationCode] : []),
+          ...variantLocations.map((loc: any) => loc.locationCode).filter((code: string) => code !== primaryLocationCode)
+        ];
+        
         return {
           ...variant,
           allocatedQuantity: allocated,
-          availableQuantity: available
+          availableQuantity: available,
+          locationCode: primaryLocationCode || (variantLocations[0]?.locationCode || null),
+          locationId: matchingLocation?.id || null,
+          locationQuantity: matchingLocation?.quantity || variant.quantity || 0,
+          allLocationCodes: allLocationCodes.length > 0 ? allLocationCodes : null
         };
       });
       
@@ -8113,6 +8173,26 @@ Important:
       });
 
       const variant = await storage.createProductVariant(data);
+
+      // If variant has a locationCode, also create a productLocation entry
+      if (data.locationCode && data.locationCode.trim()) {
+        const existingLocations = await storage.getProductLocations(req.params.productId);
+        const existingLocation = existingLocations.find(
+          loc => loc.locationCode === data.locationCode && loc.variantId === variant.id
+        );
+        
+        if (!existingLocation) {
+          await storage.createProductLocation({
+            productId: req.params.productId,
+            variantId: variant.id,
+            locationType: 'warehouse',
+            locationCode: data.locationCode.trim().toUpperCase(),
+            quantity: data.quantity || 0,
+            isPrimary: true,
+            notes: null
+          });
+        }
+      }
 
       await storage.createUserActivity({
         userId: "test-user",
@@ -8158,6 +8238,52 @@ Important:
       const updates = req.body;
       const variant = await storage.updateProductVariant(req.params.id, updates);
 
+      // If locationCode is being updated, sync to productLocations table
+      if (updates.locationCode !== undefined) {
+        const productId = req.params.productId;
+        const variantId = req.params.id;
+        const newLocationCode = updates.locationCode?.trim().toUpperCase() || null;
+        
+        // Get existing locations for this variant
+        const existingLocations = await storage.getProductLocations(productId);
+        const primaryLocation = existingLocations.find(
+          loc => loc.variantId === variantId && loc.isPrimary
+        );
+        
+        if (newLocationCode) {
+          // Check if a location with the new code already exists for this variant
+          const existingWithCode = existingLocations.find(
+            loc => loc.locationCode === newLocationCode && loc.variantId === variantId
+          );
+          
+          if (existingWithCode) {
+            // Update existing location to be primary
+            await storage.updateProductLocation(existingWithCode.id, { isPrimary: true });
+            // If there was a different primary, make it non-primary
+            if (primaryLocation && primaryLocation.id !== existingWithCode.id) {
+              await storage.updateProductLocation(primaryLocation.id, { isPrimary: false });
+            }
+          } else if (primaryLocation) {
+            // Update primary location's code
+            await storage.updateProductLocation(primaryLocation.id, { locationCode: newLocationCode });
+          } else {
+            // Create new primary location
+            await storage.createProductLocation({
+              productId: productId,
+              variantId: variantId,
+              locationType: 'warehouse',
+              locationCode: newLocationCode,
+              quantity: variant.quantity || 0,
+              isPrimary: true,
+              notes: null
+            });
+          }
+        } else if (primaryLocation) {
+          // LocationCode is being cleared - remove primary flag but keep the location
+          await storage.updateProductLocation(primaryLocation.id, { isPrimary: false });
+        }
+      }
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -8175,14 +8301,24 @@ Important:
 
   app.delete('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
     try {
-      await storage.deleteProductVariant(req.params.id);
+      const variantId = req.params.id;
+      const productId = req.params.productId;
+      
+      // Delete associated productLocations for this variant first
+      const existingLocations = await storage.getProductLocations(productId);
+      const variantLocations = existingLocations.filter(loc => loc.variantId === variantId);
+      for (const loc of variantLocations) {
+        await storage.deleteProductLocation(loc.id);
+      }
+      
+      await storage.deleteProductVariant(variantId);
 
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
         entityType: 'product_variant',
-        entityId: req.params.id,
-        description: `Deleted product variant`,
+        entityId: variantId,
+        description: `Deleted product variant and ${variantLocations.length} associated locations`,
       });
 
       res.status(204).send();
@@ -8200,22 +8336,44 @@ Important:
         return res.status(400).json({ message: "Variants must be an array" });
       }
 
+      const productId = req.params.productId;
       const createdVariants = [];
+      
       for (const variantData of variants) {
         const data = insertProductVariantSchema.parse({
           ...variantData,
-          productId: req.params.productId
+          productId: productId
         });
 
         const variant = await storage.createProductVariant(data);
         createdVariants.push(variant);
+        
+        // If variant has a locationCode, also create a productLocation entry
+        if (data.locationCode && data.locationCode.trim()) {
+          const existingLocations = await storage.getProductLocations(productId);
+          const existingLocation = existingLocations.find(
+            loc => loc.locationCode === data.locationCode && loc.variantId === variant.id
+          );
+          
+          if (!existingLocation) {
+            await storage.createProductLocation({
+              productId: productId,
+              variantId: variant.id,
+              locationType: 'warehouse',
+              locationCode: data.locationCode.trim().toUpperCase(),
+              quantity: data.quantity || 0,
+              isPrimary: true,
+              notes: null
+            });
+          }
+        }
       }
 
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
         entityType: 'product_variant',
-        entityId: req.params.productId,
+        entityId: productId,
         description: `Created ${createdVariants.length} product variants`,
       });
 
@@ -8372,10 +8530,11 @@ Important:
         productId
       });
 
-      // Check if location already exists for this product
+      // Check if location already exists for this product (matching both locationCode AND variantId)
       const existingLocations = await storage.getProductLocations(productId);
       const existingLocation = existingLocations.find(
-        loc => loc.locationCode === locationData.locationCode
+        loc => loc.locationCode === locationData.locationCode && 
+               (loc.variantId || null) === (locationData.variantId || null)
       );
 
       let location;
@@ -9541,6 +9700,115 @@ Important:
     } catch (error: any) {
       console.error("Error syncing base quantities:", error);
       res.status(500).json({ message: error.message || "Failed to sync base quantities" });
+    }
+  });
+
+  // Migrate variant locationCodes to productLocations table - Admin only
+  // This is a one-time migration to unify location storage
+  app.post('/api/stock/migrate-variant-locations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const userRole = req.user?.role;
+      
+      // Admin only
+      if (userRole !== 'administrator') {
+        return res.status(403).json({ message: "Administrator access required" });
+      }
+      
+      console.log('[Migration] Starting variant location migration...');
+      
+      // Get all product variants that have a locationCode
+      const variantsWithLocation = await db
+        .select()
+        .from(productVariants)
+        .where(isNotNull(productVariants.locationCode));
+      
+      console.log(`[Migration] Found ${variantsWithLocation.length} variants with locationCode`);
+      
+      let createdCount = 0;
+      let skippedCount = 0;
+      let updatedCount = 0;
+      const details: { variantId: string; variantName: string; locationCode: string; action: string }[] = [];
+      
+      for (const variant of variantsWithLocation) {
+        if (!variant.locationCode) continue;
+        
+        // Check if there's already a productLocation entry for this variant with this locationCode
+        const existingLocations = await db
+          .select()
+          .from(productLocations)
+          .where(and(
+            eq(productLocations.variantId, variant.id),
+            eq(productLocations.locationCode, variant.locationCode)
+          ));
+        
+        if (existingLocations.length > 0) {
+          // Already exists - update isPrimary if not set
+          const existing = existingLocations[0];
+          if (!existing.isPrimary) {
+            await db
+              .update(productLocations)
+              .set({ isPrimary: true, updatedAt: new Date() })
+              .where(eq(productLocations.id, existing.id));
+            
+            details.push({
+              variantId: variant.id,
+              variantName: variant.name,
+              locationCode: variant.locationCode,
+              action: 'updated_primary'
+            });
+            updatedCount++;
+          } else {
+            skippedCount++;
+          }
+        } else {
+          // Create new productLocation entry
+          const newLocationId = crypto.randomUUID();
+          await db.insert(productLocations).values({
+            id: newLocationId,
+            productId: variant.productId,
+            variantId: variant.id,
+            locationType: 'warehouse',
+            locationCode: variant.locationCode,
+            quantity: variant.quantity || 0,
+            isPrimary: true,
+            notes: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          
+          details.push({
+            variantId: variant.id,
+            variantName: variant.name,
+            locationCode: variant.locationCode,
+            action: 'created'
+          });
+          createdCount++;
+        }
+      }
+      
+      // Create audit trail
+      await storage.createUserActivity({
+        userId: userId,
+        action: 'migrated',
+        entityType: 'variant_locations',
+        entityId: 'all-variants',
+        description: `Migrated variant locations: ${createdCount} created, ${updatedCount} updated, ${skippedCount} skipped`,
+      });
+      
+      console.log(`[Migration] Complete: ${createdCount} created, ${updatedCount} updated, ${skippedCount} skipped`);
+      
+      res.json({ 
+        success: true, 
+        createdCount,
+        updatedCount,
+        skippedCount,
+        total: variantsWithLocation.length,
+        details: details.slice(0, 100)
+      });
+    } catch (error: any) {
+      console.error("Error migrating variant locations:", error);
+      res.status(500).json({ message: error.message || "Failed to migrate variant locations" });
     }
   });
 
@@ -11551,8 +11819,14 @@ Important:
         // Apply server-side pagination if limit is provided
         if (limit) {
           const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       } else {
@@ -11563,8 +11837,14 @@ Important:
         // Apply server-side pagination if limit is provided
         if (limit) {
           const total = filtered.length;
+          const lowStockCount = filtered.filter((p: any) => {
+            const qty = p.quantity || 0;
+            const threshold = p.lowStockAlert || 0;
+            return qty > 0 && qty <= threshold;
+          }).length;
+          const outOfStockCount = filtered.filter((p: any) => (p.quantity || 0) === 0).length;
           const paginated = filtered.slice(offset, offset + limit);
-          return res.json({ items: paginated, total, limit, offset });
+          return res.json({ items: paginated, total, limit, offset, lowStockCount, outOfStockCount });
         }
         res.json(filtered);
       }
@@ -13309,7 +13589,8 @@ Important:
             .where(
               and(
                 sql`created_at > ${cutoffTime}`,
-                eq(orders.customerId, customerId)
+                eq(orders.customerId, customerId),
+                eq(orders.isArchived, false)
               )
             )
             .limit(1);
@@ -13335,6 +13616,7 @@ Important:
                 and(
                   sql`created_at > ${cutoffTime}`,
                   sql`customer_id IS NULL`,
+                  eq(orders.isArchived, false),
                   or(...guestConditions)
                 )
               )
@@ -16171,7 +16453,7 @@ Important:
         const orderRecords = await db
           .select({ id: orders.id, orderId: orders.orderId })
           .from(orders)
-          .where(inArray(orders.id, Array.from(matchedOrderIds)));
+          .where(and(inArray(orders.id, Array.from(matchedOrderIds)), eq(orders.isArchived, false)));
         orderDisplayMap = Object.fromEntries(
           orderRecords.map(o => [o.id, o.orderId])
         );
@@ -22047,6 +22329,102 @@ Important:
       res.status(500).json({ message: 'Failed to fetch address suggestions' });
     }
   });
+  // Google Places API Autocomplete - Returns business names and accurate addresses
+  app.get('/api/addresses/autocomplete-google', isAuthenticated, async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      const sessionToken = req.query.sessionToken as string || '';
+
+      if (!query) {
+        return res.status(400).json({ message: 'Query parameter "q" is required' });
+      }
+
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn('GOOGLE_MAPS_API_KEY not configured, falling back to Nominatim');
+        return res.json({ fallback: true, results: [] });
+      }
+
+      // Use Google Places Autocomplete API
+      const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address|establishment&key=${apiKey}${sessionToken ? `&sessiontoken=${sessionToken}` : ''}`;
+      
+      const autocompleteResponse = await fetch(autocompleteUrl);
+      const autocompleteData = await autocompleteResponse.json();
+
+      if (autocompleteData.status !== 'OK' && autocompleteData.status !== 'ZERO_RESULTS') {
+        console.error('Google Places Autocomplete error:', autocompleteData.status, autocompleteData.error_message);
+        return res.status(500).json({ message: `Google API error: ${autocompleteData.status}` });
+      }
+
+      if (!autocompleteData.predictions || autocompleteData.predictions.length === 0) {
+        return res.json([]);
+      }
+
+      // Get place details for each prediction to extract full address components
+      const results = await Promise.all(
+        autocompleteData.predictions.slice(0, 5).map(async (prediction: any) => {
+          try {
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=formatted_address,name,address_components,geometry,types&key=${apiKey}${sessionToken ? `&sessiontoken=${sessionToken}` : ''}`;
+            const detailsResponse = await fetch(detailsUrl);
+            const detailsData = await detailsResponse.json();
+
+            if (detailsData.status !== 'OK') {
+              return null;
+            }
+
+            const place = detailsData.result;
+            const components = place.address_components || [];
+            
+            // Extract address components
+            const getComponent = (types: string[]) => {
+              const component = components.find((c: any) => 
+                types.some(t => c.types.includes(t))
+              );
+              return component?.long_name || '';
+            };
+
+            const streetNumber = getComponent(['street_number']);
+            const street = getComponent(['route']);
+            const city = getComponent(['locality', 'administrative_area_level_2', 'postal_town']);
+            const zipCode = getComponent(['postal_code']);
+            const country = getComponent(['country']);
+            const countryCode = components.find((c: any) => c.types.includes('country'))?.short_name || '';
+
+            // Determine if this is a business/establishment
+            const isEstablishment = place.types?.some((t: string) => 
+              ['establishment', 'point_of_interest', 'store', 'food', 'restaurant', 'cafe', 'bar', 'lodging', 'shopping_mall', 'grocery_or_supermarket'].includes(t)
+            );
+
+            return {
+              displayName: place.formatted_address,
+              businessName: isEstablishment ? place.name : null,
+              name: place.name,
+              street: street,
+              streetNumber: streetNumber,
+              city: city,
+              zipCode: zipCode,
+              country: country,
+              countryCode: countryCode,
+              lat: place.geometry?.location?.lat,
+              lon: place.geometry?.location?.lng,
+              placeId: prediction.place_id,
+              types: place.types,
+              isEstablishment: isEstablishment
+            };
+          } catch (err) {
+            console.error('Error fetching place details:', err);
+            return null;
+          }
+        })
+      );
+
+      res.json(results.filter(Boolean));
+    } catch (error) {
+      console.error('Error fetching Google address autocomplete:', error);
+      res.status(500).json({ message: 'Failed to fetch address suggestions from Google' });
+    }
+  });
+
 
   // Helper function to look up postal code from Nominatim when missing
   // Includes timeout protection and rate limiting awareness
@@ -26850,7 +27228,7 @@ Important rules:
 
       // 80mm = 226.77 points (1mm = 2.834645669 points)
       const pageWidth = 227;
-      const sideMargin = 8; // Better side margins for breathing room
+      const sideMargin = 12; // Account for thermal printer hardware margins (~4mm per side)
       const contentWidth = pageWidth - (sideMargin * 2);
       const topMargin = 8; // Top margin for cleaner look
 
@@ -26858,7 +27236,7 @@ Important rules:
       const baseLineHeight = isVietnamese ? 16 : 14;
       const smallLineHeight = isVietnamese ? 14 : 12;
       
-      let estimatedHeight = topMargin + 8; // Top padding
+      let estimatedHeight = topMargin + 6; // Top padding
       estimatedHeight += 20 * lineHeightMultiplier; // Company name (larger)
       if (companyInfo.address || companyInfo.city || companyInfo.zip) estimatedHeight += baseLineHeight;
       if (companyInfo.phone || companyInfo.country) estimatedHeight += baseLineHeight;
@@ -26938,7 +27316,7 @@ Important rules:
         }
       };
 
-      let yPos = topMargin + 8; // Comfortable top padding
+      let yPos = topMargin + 6; // Comfortable top padding
 
       // Company Header - Centered with good spacing
       doc.fontSize(12)
@@ -26981,7 +27359,7 @@ Important rules:
       yPos += smallLineHeight;
 
       // Transaction Details with comfortable spacing
-      const labelColumnWidth = 80; // Wide enough for Czech "Číslo účtenky:"
+      const labelColumnWidth = 55; // Wide enough for Czech "Číslo účtenky:"
       const valueColumnWidth = contentWidth - labelColumnWidth;
       
       const dateStr = receiptDate.toLocaleDateString(language === 'cs' ? 'cs-CZ' : language === 'de' ? 'de-DE' : language === 'vi' ? 'vi-VN' : 'en-US', { 
@@ -27018,7 +27396,7 @@ Important rules:
       yPos += baseLineHeight;
 
       doc.fontSize(8).font('Receipt');
-      const priceColumnWidth = 75; // Wider to fit large prices like "27 615.00 Kč"
+      const priceColumnWidth = 60; // Wider to fit large prices like "27 615.00 Kč"
       for (const item of items) {
         if (!item || typeof item !== 'object') continue;
         
@@ -27036,7 +27414,7 @@ Important rules:
         const nameHeight = doc.heightOfString(itemText, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         
         doc.text(itemText, sideMargin, yPos, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
-        doc.text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' });
+        doc.fontSize(7).text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' }); doc.fontSize(8);
         yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 5;
       }
 
@@ -27044,7 +27422,7 @@ Important rules:
       yPos += smallLineHeight;
 
       // Totals Section with clear hierarchy
-      const totalsValueWidth = 85; // Wide enough for large totals like "27 615.00 Kč"
+      const totalsValueWidth = 70; // Wide enough for large totals like "27 615.00 Kč"
       doc.fontSize(8).font('Receipt').fillColor('#000000');
       doc.text(`${t.subtotal}:`, sideMargin, yPos, { width: labelColumnWidth, lineGap: isVietnamese ? 3 : 1 });
       doc.text(formatMoney(subtotal), sideMargin + contentWidth - totalsValueWidth, yPos, { width: totalsValueWidth, align: 'right' });
@@ -27866,6 +28244,7 @@ Important rules:
   app.post('/api/orders/bank-import', isAuthenticated, async (req, res) => {
     try {
       const { rows, enableFuzzyMatching = true, amountTolerance = 2.0 } = req.body;
+      const fuzzyMatchingEnabled = enableFuzzyMatching;
 
       if (!Array.isArray(rows)) {
         return res.status(400).json({ message: 'rows must be an array of payment transactions' });
@@ -27873,28 +28252,48 @@ Important rules:
 
       console.log(`[Bank Import] Processing ${rows.length} payment rows`);
 
-      const autoMatched: Array<{
-        paymentRow: any;
-        order: any;
+      const matched: Array<{
+        payment: any;
+        orderId: string;
+        orderDbId: string;
+        customerName: string;
+        orderTotal: number;
+        orderCreatedAt: string;
         matchType: 'exact' | 'fuzzy';
-        amountDifference: number;
-        confidence: number;
+        difference: number;
       }> = [];
 
-      const ambiguous: Array<{
-        paymentRow: any;
+      const needsReview: Array<{
+        payment: any;
         candidates: Array<{
-          order: any;
-          amountDifference: number;
-          daysDifference: number;
-          score: number;
+          orderId: string;
+          orderDbId: string;
+          customerName: string;
+          orderTotal: number;
+        orderCreatedAt: string;
+          orderDate: string;
+          daysDiff: number;
         }>;
       }> = [];
 
       const unmatched: Array<{
-        paymentRow: any;
+        payment: any;
         reason: string;
       }> = [];
+
+      // Helper function to get customer name
+      const getCustomerName = async (customerId: string | null): Promise<string> => {
+        if (!customerId) return 'Unknown Customer';
+        try {
+          const [customer] = await db.select()
+            .from(customers)
+            .where(eq(customers.id, customerId))
+            .limit(1);
+          return customer?.name || 'Unknown Customer';
+        } catch {
+          return 'Unknown Customer';
+        }
+      };
 
       // Regex patterns to extract order ID from note field
       const orderIdPatterns = [
@@ -27916,11 +28315,11 @@ Important rules:
       }
 
       for (const paymentRow of rows) {
-        const { note, amount, date, account, currency, payee } = paymentRow;
+        const { note, amount, date, currency, payee } = paymentRow;
         const paymentAmount = parseFloat(amount) || 0;
         const paymentDate = date ? new Date(date) : new Date();
 
-        let matched = false;
+        let isMatched = false;
 
         // Tier 1: Exact Match by Order ID
         const extractedOrderId = extractOrderId(note);
@@ -27929,9 +28328,12 @@ Important rules:
           const matchingOrders = await db.select()
             .from(orders)
             .where(
-              or(
-                eq(orders.orderId, extractedOrderId),
-                ilike(orders.orderId, `%${extractedOrderId}%`)
+              and(
+                eq(orders.isArchived, false),
+                or(
+                  eq(orders.orderId, extractedOrderId),
+                  ilike(orders.orderId, `%${extractedOrderId}%`)
+                )
               )
             );
 
@@ -27942,14 +28344,18 @@ Important rules:
 
             // Amount tolerance: within 1% for exact match
             if (percentDiff <= 0.01) {
-              autoMatched.push({
-                paymentRow,
-                order,
+              const customerName = await getCustomerName(order.customerId);
+              matched.push({
+                payment: paymentRow,
+                orderId: order.orderId,
+                orderDbId: order.id,
+                customerName,
+                orderTotal,
+                orderCreatedAt: order.createdAt?.toISOString() || '',
                 matchType: 'exact',
-                amountDifference: amountDiff,
-                confidence: 100
+                difference: amountDiff,
               });
-              matched = true;
+              isMatched = true;
               console.log(`[Bank Import] Exact match: Payment ${note} -> Order ${order.orderId}`);
               break;
             }
@@ -27957,7 +28363,7 @@ Important rules:
         }
 
         // Tier 2: Fuzzy Match (only if Tier 1 failed and fuzzy matching enabled)
-        if (!matched && enableFuzzyMatching) {
+        if (!isMatched && fuzzyMatchingEnabled) {
           // Query unpaid orders created within 30 days before payment date
           const thirtyDaysAgo = new Date(paymentDate);
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -27966,6 +28372,7 @@ Important rules:
             .from(orders)
             .where(
               and(
+                eq(orders.isArchived, false),
                 inArray(orders.paymentStatus, ['pending', 'pay_later']),
                 gt(orders.createdAt, thirtyDaysAgo),
                 lt(orders.createdAt, paymentDate)
@@ -27978,7 +28385,7 @@ Important rules:
               const orderTotal = parseFloat(order.grandTotal) || 0;
               const amountDiff = Math.abs(orderTotal - paymentAmount);
               const daysDiff = Math.floor((paymentDate.getTime() - new Date(order.createdAt!).getTime()) / (1000 * 60 * 60 * 24));
-              
+
               // Score calculation: higher is better
               // Base score of 100, minus penalties for amount diff and date diff
               const amountScore = Math.max(0, 50 - (amountDiff / amountTolerance) * 50);
@@ -27998,41 +28405,61 @@ Important rules:
           if (candidates.length === 1) {
             // Exactly one match - auto-match as fuzzy
             const candidate = candidates[0];
-            const confidence = Math.min(95, Math.max(80, 95 - (candidate.amountDifference / amountTolerance) * 15));
-            
-            autoMatched.push({
-              paymentRow,
-              order: candidate.order,
+            const customerName = await getCustomerName(candidate.order.customerId);
+
+            matched.push({
+              payment: paymentRow,
+              orderId: candidate.order.orderId,
+              orderDbId: candidate.order.id,
+              customerName,
+              orderTotal: parseFloat(candidate.order.grandTotal) || 0,
+              orderCreatedAt: candidate.order.createdAt?.toISOString() || '',
               matchType: 'fuzzy',
-              amountDifference: candidate.amountDifference,
-              confidence: Math.round(confidence)
+              difference: candidate.amountDifference,
             });
-            matched = true;
-            console.log(`[Bank Import] Fuzzy match: Payment ${amount} -> Order ${candidate.order.orderId} (confidence: ${confidence}%)`);
+            isMatched = true;
+            console.log(`[Bank Import] Fuzzy match: Payment ${amount} -> Order ${candidate.order.orderId}`);
           } else if (candidates.length > 1) {
-            // Multiple matches - ambiguous
-            ambiguous.push({
-              paymentRow,
-              candidates: candidates.slice(0, 5) // Limit to top 5 candidates
+            // Multiple matches - needs review
+            const reviewCandidates = await Promise.all(
+              candidates.slice(0, 5).map(async (c) => {
+                const customerName = await getCustomerName(c.order.customerId);
+                const orderDate = c.order.createdAt
+                  ? new Date(c.order.createdAt).toISOString().split('T')[0]
+                  : '';
+                return {
+                  orderId: c.order.orderId,
+                  orderDbId: c.order.id,
+                  customerName,
+                  orderTotal: parseFloat(c.order.grandTotal) || 0,
+                  orderDate,
+                  daysDiff: c.daysDifference,
+                };
+              })
+            );
+
+            needsReview.push({
+              payment: paymentRow,
+              candidates: reviewCandidates
             });
-            matched = true;
+            isMatched = true;
             console.log(`[Bank Import] Ambiguous: Payment ${amount} has ${candidates.length} potential matches`);
           }
         }
 
         // Tier 3: Unmatched
-        if (!matched) {
+        if (!isMatched) {
           let reason = 'No matching order found';
           if (extractedOrderId) {
             reason = `Order ID "${extractedOrderId}" not found or amount mismatch`;
-          } else if (!enableFuzzyMatching) {
+          } else if (!fuzzyMatchingEnabled) {
             reason = 'No order ID found in note and fuzzy matching is disabled';
           } else {
             reason = 'No orders match the amount within tolerance';
           }
-          
+
           unmatched.push({
-            paymentRow,
+            payment: paymentRow,
             reason
           });
           console.log(`[Bank Import] Unmatched: ${reason}`);
@@ -28040,24 +28467,25 @@ Important rules:
       }
 
       const result = {
-        autoMatched,
-        ambiguous,
+        matched,
+        needsReview,
         unmatched,
         summary: {
           total: rows.length,
-          autoMatchedCount: autoMatched.length,
-          ambiguousCount: ambiguous.length,
-          unmatchedCount: unmatched.length
+          matched: matched.length,
+          needsReview: needsReview.length,
+          unmatched: unmatched.length
         }
       };
 
-      console.log(`[Bank Import] Results: ${autoMatched.length} auto-matched, ${ambiguous.length} ambiguous, ${unmatched.length} unmatched`);
+      console.log(`[Bank Import] Results: ${matched.length} matched, ${needsReview.length} needs review, ${unmatched.length} unmatched`);
       res.json(result);
     } catch (error) {
       console.error('[Bank Import] Error processing bank import:', error);
       res.status(500).json({ message: 'Failed to process bank import' });
     }
   });
+
 
   // Bank Import Confirm - Update matched orders as paid
   app.post('/api/orders/bank-import/confirm', isAuthenticated, async (req, res) => {
@@ -28070,21 +28498,21 @@ Important rules:
 
       console.log(`[Bank Import Confirm] Confirming ${matches.length} matches`);
 
-      let updatedCount = 0;
-      const errors: Array<{ orderId: string; error: string }> = [];
+      let confirmedCount = 0;
+      const errors: Array<{ orderDbId: string; error: string }> = [];
 
       for (const match of matches) {
-        const { orderId, paymentNote, matchType } = match;
+        const { orderDbId, paymentInfo } = match;
 
         try {
-          // Find the order by orderId field
+          // Find the order by id (orderDbId is the database UUID)
           const [order] = await db.select()
             .from(orders)
-            .where(eq(orders.orderId, orderId))
+            .where(eq(orders.id, orderDbId))
             .limit(1);
 
           if (!order) {
-            errors.push({ orderId, error: 'Order not found' });
+            errors.push({ orderDbId, error: 'Order not found' });
             continue;
           }
 
@@ -28093,24 +28521,24 @@ Important rules:
             .set({
               paymentStatus: 'paid',
               notes: order.notes 
-                ? `${order.notes}\n[Bank Import] Marked as paid via ${matchType} match. Note: ${paymentNote || 'N/A'}`
-                : `[Bank Import] Marked as paid via ${matchType} match. Note: ${paymentNote || 'N/A'}`,
+                ? `${order.notes}\n[Bank Import] Marked as paid. Date: ${paymentInfo.date}, Amount: ${paymentInfo.amount} ${paymentInfo.currency}`
+                : `[Bank Import] Marked as paid. Date: ${paymentInfo.date}, Amount: ${paymentInfo.amount} ${paymentInfo.currency}`,
               updatedAt: new Date()
             })
-            .where(eq(orders.id, order.id));
+            .where(eq(orders.id, orderDbId));
 
-          updatedCount++;
-          console.log(`[Bank Import Confirm] Updated order ${orderId} to paid`);
+          confirmedCount++;
+          console.log(`[Bank Import Confirm] Updated order ${order.orderId} (${orderDbId}) to paid`);
         } catch (err) {
-          console.error(`[Bank Import Confirm] Error updating order ${orderId}:`, err);
-          errors.push({ orderId, error: 'Failed to update order' });
+          console.error(`[Bank Import Confirm] Error updating order ${orderDbId}:`, err);
+          errors.push({ orderDbId, error: 'Failed to update order' });
         }
       }
 
       res.json({
         success: true,
-        updatedCount,
-        totalRequested: matches.length,
+        confirmed: confirmedCount,
+        total: matches.length,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
@@ -28118,6 +28546,7 @@ Important rules:
       res.status(500).json({ message: 'Failed to confirm bank import matches' });
     }
   });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -6107,6 +6107,7 @@ Important:
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
       
+      const categoryId = req.query.categoryId as string;
       let productsResult;
 
       if (search) {
@@ -6115,6 +6116,11 @@ Important:
         productsResult = await storage.getProducts(includeInactive);
       }
 
+      
+      // Filter by category if provided
+      if (categoryId && categoryId !== 'all') {
+        productsResult = productsResult.filter((p: any) => String(p.categoryId) === String(categoryId));
+      }
       // Fast path: if no availability or landing cost needed, return products directly
       if (!includeAvailability && !includeLandingCost) {
         // Just enrich virtual products with master product data (minimal processing)

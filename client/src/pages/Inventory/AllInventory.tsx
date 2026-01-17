@@ -75,11 +75,16 @@ export default function AllInventory() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  
+
   // Read category from URL parameter
   const urlParams = new URLSearchParams(window.location.search);
   const categoryParam = urlParams.get('category');
   const [categoryFilter, setCategoryFilter] = useState(categoryParam || "all");
+  
+  // Reset page when categoryFilter changes
+  useEffect(() => {
+    setPage(1);
+  }, [categoryFilter]);
   const [bomFilter, setBomFilter] = useState<string>("all"); // 'all', 'parents', 'children'
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
@@ -151,13 +156,13 @@ export default function AllInventory() {
   }, [columnVisibility]);
 
   // Server-side paginated query
-  const { data: productsData, isLoading, error } = useQuery<{
+  const { data: productsData, isLoading, isFetching, error } = useQuery<{
     items: any[];
     total: number;
     limit: number;
     offset: number;
   }>({
-    queryKey: ['/api/products', { page, pageSize, search: debouncedSearch, archive: showArchive }],
+    queryKey: ['/api/products', { page, pageSize, search: debouncedSearch, archive: showArchive, category: categoryFilter }],
     queryFn: async () => {
       const offset = (page - 1) * pageSize;
       const params = new URLSearchParams({
@@ -168,6 +173,9 @@ export default function AllInventory() {
       });
       if (debouncedSearch) {
         params.set('search', debouncedSearch);
+      }
+      if (categoryFilter !== 'all') {
+        params.set('categoryId', categoryFilter);
       }
       const response = await fetch(`/api/products?${params}`, {
         credentials: 'include',
@@ -902,18 +910,13 @@ export default function AllInventory() {
     return parent?.name || null;
   };
 
-  // Filter products - search is now done server-side, only apply category filter client-side
+  // Filter products - search and category are now done server-side, only apply local filters
   const filteredProducts = products?.filter((product: any) => {
     // Archive filter - only show inactive products in archive mode
     if (showArchive && product.isActive) {
       return false;
     }
     if (!showArchive && !product.isActive) {
-      return false;
-    }
-
-    // Category filter (still client-side for now)
-    if (categoryFilter !== "all" && String(product.categoryId) !== String(categoryFilter)) {
       return false;
     }
 
@@ -2340,54 +2343,83 @@ export default function AllInventory() {
           </div>
 
           {/* Pagination Controls - Mobile */}
-          <div className="md:hidden flex flex-col items-center gap-3 py-4 px-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <div className="text-sm text-muted-foreground">
-              {t('inventory:showingProducts', { 
-                from: ((page - 1) * pageSize) + 1, 
-                to: Math.min(page * pageSize, totalProducts), 
-                total: totalProducts 
-              })}
+          <div className="md:hidden flex flex-col items-center gap-3 py-4 px-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+            {/* Item count - more prominent */}
+            <div className="flex items-center gap-2 w-full justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {totalProducts} {t('inventory:products')}
+                </span>
+                {isFetching && (
+                  <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              {/* Compact page size selector */}
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[72px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setPage(1)}
-                disabled={page === 1}
-                className="h-9 w-9"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="h-9 w-9"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="px-3 py-2 text-sm font-medium">
-                {page} / {totalPages || 1}
+            
+            {/* Pagination info and controls */}
+            <div className="flex items-center gap-2 w-full justify-between">
+              <span className="text-xs text-muted-foreground">
+                {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, totalProducts)} of {totalProducts}
               </span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="h-9 w-9"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setPage(totalPages)}
-                disabled={page >= totalPages}
-                className="h-9 w-9"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage(1)}
+                  disabled={page === 1 || isFetching}
+                  className="h-10 w-10"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1 || isFetching}
+                  className="h-10 w-10"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-3 py-2 text-sm font-medium min-w-[60px] text-center">
+                  {page} / {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isFetching}
+                  className="h-10 w-10"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages || isFetching}
+                  className="h-10 w-10"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
