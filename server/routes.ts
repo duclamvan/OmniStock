@@ -8174,6 +8174,26 @@ Important:
 
       const variant = await storage.createProductVariant(data);
 
+      // If variant has a locationCode, also create a productLocation entry
+      if (data.locationCode && data.locationCode.trim()) {
+        const existingLocations = await storage.getProductLocations(req.params.productId);
+        const existingLocation = existingLocations.find(
+          loc => loc.locationCode === data.locationCode && loc.variantId === variant.id
+        );
+        
+        if (!existingLocation) {
+          await storage.createProductLocation({
+            productId: req.params.productId,
+            variantId: variant.id,
+            locationType: 'warehouse',
+            locationCode: data.locationCode.trim().toUpperCase(),
+            quantity: data.quantity || 0,
+            isPrimary: true,
+            notes: null
+          });
+        }
+      }
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
@@ -8218,6 +8238,52 @@ Important:
       const updates = req.body;
       const variant = await storage.updateProductVariant(req.params.id, updates);
 
+      // If locationCode is being updated, sync to productLocations table
+      if (updates.locationCode !== undefined) {
+        const productId = req.params.productId;
+        const variantId = req.params.id;
+        const newLocationCode = updates.locationCode?.trim().toUpperCase() || null;
+        
+        // Get existing locations for this variant
+        const existingLocations = await storage.getProductLocations(productId);
+        const primaryLocation = existingLocations.find(
+          loc => loc.variantId === variantId && loc.isPrimary
+        );
+        
+        if (newLocationCode) {
+          // Check if a location with the new code already exists for this variant
+          const existingWithCode = existingLocations.find(
+            loc => loc.locationCode === newLocationCode && loc.variantId === variantId
+          );
+          
+          if (existingWithCode) {
+            // Update existing location to be primary
+            await storage.updateProductLocation(existingWithCode.id, { isPrimary: true });
+            // If there was a different primary, make it non-primary
+            if (primaryLocation && primaryLocation.id !== existingWithCode.id) {
+              await storage.updateProductLocation(primaryLocation.id, { isPrimary: false });
+            }
+          } else if (primaryLocation) {
+            // Update primary location's code
+            await storage.updateProductLocation(primaryLocation.id, { locationCode: newLocationCode });
+          } else {
+            // Create new primary location
+            await storage.createProductLocation({
+              productId: productId,
+              variantId: variantId,
+              locationType: 'warehouse',
+              locationCode: newLocationCode,
+              quantity: variant.quantity || 0,
+              isPrimary: true,
+              notes: null
+            });
+          }
+        } else if (primaryLocation) {
+          // LocationCode is being cleared - remove primary flag but keep the location
+          await storage.updateProductLocation(primaryLocation.id, { isPrimary: false });
+        }
+      }
+
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',
@@ -8235,14 +8301,24 @@ Important:
 
   app.delete('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
     try {
-      await storage.deleteProductVariant(req.params.id);
+      const variantId = req.params.id;
+      const productId = req.params.productId;
+      
+      // Delete associated productLocations for this variant first
+      const existingLocations = await storage.getProductLocations(productId);
+      const variantLocations = existingLocations.filter(loc => loc.variantId === variantId);
+      for (const loc of variantLocations) {
+        await storage.deleteProductLocation(loc.id);
+      }
+      
+      await storage.deleteProductVariant(variantId);
 
       await storage.createUserActivity({
         userId: "test-user",
         action: 'deleted',
         entityType: 'product_variant',
-        entityId: req.params.id,
-        description: `Deleted product variant`,
+        entityId: variantId,
+        description: `Deleted product variant and ${variantLocations.length} associated locations`,
       });
 
       res.status(204).send();
@@ -8260,22 +8336,44 @@ Important:
         return res.status(400).json({ message: "Variants must be an array" });
       }
 
+      const productId = req.params.productId;
       const createdVariants = [];
+      
       for (const variantData of variants) {
         const data = insertProductVariantSchema.parse({
           ...variantData,
-          productId: req.params.productId
+          productId: productId
         });
 
         const variant = await storage.createProductVariant(data);
         createdVariants.push(variant);
+        
+        // If variant has a locationCode, also create a productLocation entry
+        if (data.locationCode && data.locationCode.trim()) {
+          const existingLocations = await storage.getProductLocations(productId);
+          const existingLocation = existingLocations.find(
+            loc => loc.locationCode === data.locationCode && loc.variantId === variant.id
+          );
+          
+          if (!existingLocation) {
+            await storage.createProductLocation({
+              productId: productId,
+              variantId: variant.id,
+              locationType: 'warehouse',
+              locationCode: data.locationCode.trim().toUpperCase(),
+              quantity: data.quantity || 0,
+              isPrimary: true,
+              notes: null
+            });
+          }
+        }
       }
 
       await storage.createUserActivity({
         userId: "test-user",
         action: 'created',
         entityType: 'product_variant',
-        entityId: req.params.productId,
+        entityId: productId,
         description: `Created ${createdVariants.length} product variants`,
       });
 
