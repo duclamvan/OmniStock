@@ -925,154 +925,53 @@ export default function StockLookup() {
                           </h4>
                           <div className="space-y-2">
                             {selectedProductData.variants.map((variant) => {
-                              // Find the matching location from productLocations for this variant
-                              const matchingLocation = selectedProductData.locations?.find(
-                                loc => loc.locationCode === variant.locationCode
-                              );
+                              // Find ALL locations for this variant from productLocations table
+                              const variantLocations = selectedProductData.locations?.filter(
+                                loc => loc.variantId === variant.id
+                              ) || [];
+                              
+                              // Check if variant has any locations
+                              const hasLocations = variantLocations.length > 0;
+                              
                               return (
                                 <div
                                   key={variant.id}
                                   className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
                                   data-testid={`variant-location-card-${variant.id}`}
                                 >
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-3 flex-1">
-                                      {variant.imageUrl ? (
-                                        <img
-                                          src={variant.imageUrl}
-                                          alt={variant.name}
-                                          className="h-10 w-10 rounded object-cover flex-shrink-0"
-                                        />
-                                      ) : (
-                                        <div className="h-10 w-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                          <Package className="h-5 w-5 text-gray-400" />
-                                        </div>
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                            {variant.name}
-                                          </Badge>
-                                          {variant.locationCode ? (
-                                            <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                                              {variant.locationCode}
-                                            </span>
-                                          ) : (
-                                            <span className="text-sm text-gray-400 italic">{t('common:noLocationAssigned')}</span>
-                                          )}
-                                        </div>
-                                        {variant.barcode && (
-                                          <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
-                                            {variant.barcode}
-                                          </p>
-                                        )}
+                                  {/* Variant header */}
+                                  <div className="flex items-center gap-3 mb-2">
+                                    {variant.imageUrl ? (
+                                      <img
+                                        src={variant.imageUrl}
+                                        alt={variant.name}
+                                        className="h-10 w-10 rounded object-cover flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="h-10 w-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                        <Package className="h-5 w-5 text-gray-400" />
                                       </div>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 ml-2">
-                                      {variant.locationCode && matchingLocation ? (
-                                        <>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              if ((matchingLocation?.quantity || variant.quantity) <= 0) {
-                                                toast({
-                                                  title: t('cannotReduce'),
-                                                  description: t('stockAlreadyZero'),
-                                                  variant: "destructive"
-                                                });
-                                                return;
-                                              }
-                                              setSelectedLocation(matchingLocation);
-                                              setQuickButtonType('remove');
-                                              setAdjustDialogOpen(true);
-                                            }}
-                                            disabled={(matchingLocation?.quantity || variant.quantity) <= 0}
-                                            title={t('quickRemoveStock')}
-                                          >
-                                            <Minus className="h-3.5 w-3.5" />
-                                          </Button>
-                                          <Badge variant="secondary" className="px-2.5">
-                                            {matchingLocation?.quantity || variant.quantity} {t('units')}
-                                          </Badge>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setSelectedLocation(matchingLocation);
-                                              setQuickButtonType('add');
-                                              setAdjustDialogOpen(true);
-                                            }}
-                                            title={t('quickAddStock')}
-                                          >
-                                            <Plus className="h-3.5 w-3.5" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <Badge variant="secondary" className="px-2.5">
-                                          {variant.quantity} {t('units')}
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                          {variant.name}
                                         </Badge>
+                                        <Badge variant="secondary" className="px-2">
+                                          {variant.quantity} {t('units')} {t('total')}
+                                        </Badge>
+                                      </div>
+                                      {variant.barcode && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
+                                          {variant.barcode}
+                                        </p>
                                       )}
                                     </div>
-                                  </div>
-                                  {/* Action buttons */}
-                                  {variant.locationCode && matchingLocation ? (
-                                    <div className="flex gap-2 mt-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-8 text-xs"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedLocation(matchingLocation);
-                                          setMoveDialogOpen(true);
-                                        }}
-                                      >
-                                        <MoveRight className="h-3 w-3 mr-1" />
-                                        {t('move')}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-8 text-xs"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setAddLocationProductId(selectedProductData.id);
-                                          setAddLocationProductName(selectedProductData.name);
-                                          setAddLocationVariantId(variant.id);
-                                          setAddLocationVariantName(variant.name);
-                                          setNewLocationType("warehouse");
-                                          setNewLocationCode("");
-                                          setNewLocationQuantity(0);
-                                          setNewLocationIsPrimary(false);
-                                          setNewLocationNotes("");
-                                          setAddLocationDialogOpen(true);
-                                        }}
-                                      >
-                                        <MapPinPlus className="h-3 w-3 mr-1" />
-                                        {t('common:addLocation')}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-8 text-xs"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedLocation(matchingLocation);
-                                          setQuickButtonType(null);
-                                          setAdjustDialogOpen(true);
-                                        }}
-                                      >
-                                        <ArrowUpDown className="h-3 w-3 mr-1" />
-                                        {t('adjust')}
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <button
+                                    {/* Add Location button for variant */}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setAddLocationProductId(selectedProductData.id);
@@ -1081,16 +980,104 @@ export default function StockLookup() {
                                         setAddLocationVariantName(variant.name);
                                         setNewLocationType("warehouse");
                                         setNewLocationCode("");
-                                        setNewLocationQuantity(variant.quantity || 0);
+                                        setNewLocationQuantity(0);
                                         setNewLocationIsPrimary(false);
                                         setNewLocationNotes("");
                                         setAddLocationDialogOpen(true);
                                       }}
-                                      className="flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                                     >
-                                      <Plus className="h-3 w-3" />
+                                      <MapPinPlus className="h-3 w-3 mr-1" />
                                       {t('common:addLocation')}
-                                    </button>
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Location rows for this variant */}
+                                  {hasLocations ? (
+                                    <div className="space-y-2 mt-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
+                                      {variantLocations.map((location) => (
+                                        <div key={location.id} className="bg-white dark:bg-gray-900 rounded p-2">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                              {location.locationCode}
+                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                              <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (location.quantity <= 0) {
+                                                    toast({
+                                                      title: t('cannotReduce'),
+                                                      description: t('stockAlreadyZero'),
+                                                      variant: "destructive"
+                                                    });
+                                                    return;
+                                                  }
+                                                  setSelectedLocation(location);
+                                                  setQuickButtonType('remove');
+                                                  setAdjustDialogOpen(true);
+                                                }}
+                                                disabled={location.quantity <= 0}
+                                                title={t('quickRemoveStock')}
+                                              >
+                                                <Minus className="h-3.5 w-3.5" />
+                                              </Button>
+                                              <Badge variant="secondary" className="px-2.5">
+                                                {location.quantity} {t('units')}
+                                              </Badge>
+                                              <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedLocation(location);
+                                                  setQuickButtonType('add');
+                                                  setAdjustDialogOpen(true);
+                                                }}
+                                                title={t('quickAddStock')}
+                                              >
+                                                <Plus className="h-3.5 w-3.5" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                          {/* Action buttons for this location */}
+                                          <div className="flex gap-2 mt-2">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="flex-1 h-8 text-xs"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedLocation(location);
+                                                setMoveDialogOpen(true);
+                                              }}
+                                            >
+                                              <MoveRight className="h-3 w-3 mr-1" />
+                                              {t('move')}
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="flex-1 h-8 text-xs"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedLocation(location);
+                                                setQuickButtonType(null);
+                                                setAdjustDialogOpen(true);
+                                              }}
+                                            >
+                                              <ArrowUpDown className="h-3 w-3 mr-1" />
+                                              {t('adjust')}
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-gray-400 italic mt-2">{t('common:noLocationAssigned')}</p>
                                   )}
                                 </div>
                               );
