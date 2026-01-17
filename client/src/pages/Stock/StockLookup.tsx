@@ -925,13 +925,40 @@ export default function StockLookup() {
                           </h4>
                           <div className="space-y-2">
                             {selectedProductData.variants.map((variant) => {
-                              // Find ALL locations for this variant from productLocations table
-                              const variantLocations = selectedProductData.locations?.filter(
+                              // Find locations from productLocations table for this variant
+                              const tableLocations = selectedProductData.locations?.filter(
                                 loc => loc.variantId === variant.id
                               ) || [];
                               
+                              // Also check if variant has its own locationCode field (primary location stored directly on variant)
+                              // Create a pseudo-location entry for it if it exists and isn't already in tableLocations
+                              const primaryLocationCode = variant.locationCode;
+                              const primaryLocationInTable = primaryLocationCode 
+                                ? tableLocations.find(loc => loc.locationCode === primaryLocationCode)
+                                : null;
+                              
+                              // If variant has a locationCode but it's not in productLocations, create a pseudo entry
+                              const primaryLocation = primaryLocationCode && !primaryLocationInTable
+                                ? {
+                                    id: `variant-${variant.id}-primary`,
+                                    productId: selectedProductData.id,
+                                    variantId: variant.id,
+                                    locationCode: primaryLocationCode,
+                                    quantity: variant.quantity || 0,
+                                    isPrimary: true,
+                                    notes: null,
+                                    locationType: 'warehouse' as const
+                                  }
+                                : null;
+                              
+                              // Combine: primary location first, then additional locations from table
+                              const allLocations = [
+                                ...(primaryLocation ? [primaryLocation] : []),
+                                ...tableLocations
+                              ];
+                              
                               // Check if variant has any locations
-                              const hasLocations = variantLocations.length > 0;
+                              const hasLocations = allLocations.length > 0;
                               
                               return (
                                 <div
@@ -994,7 +1021,7 @@ export default function StockLookup() {
                                   {/* Location rows for this variant */}
                                   {hasLocations ? (
                                     <div className="space-y-2 mt-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
-                                      {variantLocations.map((location) => (
+                                      {allLocations.map((location) => (
                                         <div key={location.id} className="bg-white dark:bg-gray-900 rounded p-2">
                                           <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
