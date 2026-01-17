@@ -54,10 +54,12 @@ interface Variant {
 interface ProductLocation {
   id: string;
   productId: string;
-  warehouseId: string;
+  warehouseId?: string;
   locationCode: string;
   quantity: number;
   isPrimary: boolean;
+  variantId?: string | null;
+  variantName?: string | null;
 }
 
 interface EnrichedProduct {
@@ -1066,9 +1068,16 @@ export default function StockLookup() {
                               >
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                                      {loc.locationCode}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                        {loc.locationCode}
+                                      </p>
+                                      {loc.variantName && (
+                                        <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                          {loc.variantName}
+                                        </Badge>
+                                      )}
+                                    </div>
                                     {loc.isPrimary && (
                                       <Badge variant="default" className="mt-1 h-5 text-xs">
                                         {t('primary')}

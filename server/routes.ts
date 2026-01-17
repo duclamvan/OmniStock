@@ -6397,10 +6397,23 @@ Important:
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // Get product locations from productLocations table
+      // Get product locations from productLocations table with variant info
       const locations = await db
-        .select()
+        .select({
+          id: productLocations.id,
+          productId: productLocations.productId,
+          variantId: productLocations.variantId,
+          locationType: productLocations.locationType,
+          locationCode: productLocations.locationCode,
+          quantity: productLocations.quantity,
+          isPrimary: productLocations.isPrimary,
+          notes: productLocations.notes,
+          createdAt: productLocations.createdAt,
+          updatedAt: productLocations.updatedAt,
+          variantName: productVariants.name,
+        })
         .from(productLocations)
+        .leftJoin(productVariants, eq(productLocations.variantId, productVariants.id))
         .where(eq(productLocations.productId, productId))
         .orderBy(desc(productLocations.isPrimary), desc(productLocations.quantity));
 
@@ -6411,7 +6424,9 @@ Important:
         locationCode: product.warehouseLocation,
         quantity: product.quantity || 0,
         isPrimary: true,
-        locationType: 'warehouse'
+        locationType: 'warehouse',
+        variantId: null,
+        variantName: null
       }];
 
       const locationsData = locations.length === 0 && product.warehouseLocation ? legacyLocation : locations;
