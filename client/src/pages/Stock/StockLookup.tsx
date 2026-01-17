@@ -987,41 +987,24 @@ export default function StockLookup() {
                                 const search = variantSearch.toLowerCase();
                                 const nameMatch = variant.name?.toLowerCase().includes(search);
                                 const barcodeMatch = variant.barcode?.toLowerCase().includes(search);
-                                const locationMatch = variant.locationCode?.toLowerCase().includes(search);
+                                // Search by location codes from productLocations table
+                                const variantLocationCodes = selectedProductData.locations
+                                  ?.filter(loc => loc.variantId === variant.id)
+                                  .map(loc => loc.locationCode?.toLowerCase()) || [];
+                                const locationMatch = variantLocationCodes.some(code => code?.includes(search));
                                 return nameMatch || barcodeMatch || locationMatch;
                               })
                               .map((variant) => {
-                              // Find locations from productLocations table for this variant
-                              const tableLocations = selectedProductData.locations?.filter(
+                              // Get all locations for this variant from productLocations table
+                              // This is the single source of truth for variant locations
+                              const allLocations = (selectedProductData.locations?.filter(
                                 loc => loc.variantId === variant.id
-                              ) || [];
-                              
-                              // Also check if variant has its own locationCode field (primary location stored directly on variant)
-                              // Create a pseudo-location entry for it if it exists and isn't already in tableLocations
-                              const primaryLocationCode = variant.locationCode;
-                              const primaryLocationInTable = primaryLocationCode 
-                                ? tableLocations.find(loc => loc.locationCode === primaryLocationCode)
-                                : null;
-                              
-                              // If variant has a locationCode but it's not in productLocations, create a pseudo entry
-                              const primaryLocation = primaryLocationCode && !primaryLocationInTable
-                                ? {
-                                    id: `variant-${variant.id}-primary`,
-                                    productId: selectedProductData.id,
-                                    variantId: variant.id,
-                                    locationCode: primaryLocationCode,
-                                    quantity: variant.quantity || 0,
-                                    isPrimary: true,
-                                    notes: null,
-                                    locationType: 'warehouse' as const
-                                  }
-                                : null;
-                              
-                              // Combine: primary location first, then additional locations from table
-                              const allLocations = [
-                                ...(primaryLocation ? [primaryLocation] : []),
-                                ...tableLocations
-                              ];
+                              ) || []).sort((a, b) => {
+                                // Primary location first
+                                if (a.isPrimary && !b.isPrimary) return -1;
+                                if (!a.isPrimary && b.isPrimary) return 1;
+                                return 0;
+                              });
                               
                               // Check if variant has any locations
                               const hasLocations = allLocations.length > 0;
@@ -1122,9 +1105,16 @@ export default function StockLookup() {
                                       {allLocations.map((location) => (
                                         <div key={location.id} className="bg-white dark:bg-gray-900 rounded p-2">
                                           <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                                              {location.locationCode}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                                {location.locationCode}
+                                              </span>
+                                              {location.isPrimary && (
+                                                <Badge variant="outline" className="h-4 text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
+                                                  {t('common:primary')}
+                                                </Badge>
+                                              )}
+                                            </div>
                                             <div className="flex items-center gap-1.5">
                                               <Button
                                                 variant="outline"

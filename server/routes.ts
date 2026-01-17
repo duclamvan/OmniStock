@@ -9604,6 +9604,115 @@ Important:
     }
   });
 
+  // Migrate variant locationCodes to productLocations table - Admin only
+  // This is a one-time migration to unify location storage
+  app.post('/api/stock/migrate-variant-locations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || "test-user";
+      const userRole = req.user?.role;
+      
+      // Admin only
+      if (userRole !== 'administrator') {
+        return res.status(403).json({ message: "Administrator access required" });
+      }
+      
+      console.log('[Migration] Starting variant location migration...');
+      
+      // Get all product variants that have a locationCode
+      const variantsWithLocation = await db
+        .select()
+        .from(productVariants)
+        .where(isNotNull(productVariants.locationCode));
+      
+      console.log(`[Migration] Found ${variantsWithLocation.length} variants with locationCode`);
+      
+      let createdCount = 0;
+      let skippedCount = 0;
+      let updatedCount = 0;
+      const details: { variantId: string; variantName: string; locationCode: string; action: string }[] = [];
+      
+      for (const variant of variantsWithLocation) {
+        if (!variant.locationCode) continue;
+        
+        // Check if there's already a productLocation entry for this variant with this locationCode
+        const existingLocations = await db
+          .select()
+          .from(productLocations)
+          .where(and(
+            eq(productLocations.variantId, variant.id),
+            eq(productLocations.locationCode, variant.locationCode)
+          ));
+        
+        if (existingLocations.length > 0) {
+          // Already exists - update isPrimary if not set
+          const existing = existingLocations[0];
+          if (!existing.isPrimary) {
+            await db
+              .update(productLocations)
+              .set({ isPrimary: true, updatedAt: new Date() })
+              .where(eq(productLocations.id, existing.id));
+            
+            details.push({
+              variantId: variant.id,
+              variantName: variant.name,
+              locationCode: variant.locationCode,
+              action: 'updated_primary'
+            });
+            updatedCount++;
+          } else {
+            skippedCount++;
+          }
+        } else {
+          // Create new productLocation entry
+          const newLocationId = crypto.randomUUID();
+          await db.insert(productLocations).values({
+            id: newLocationId,
+            productId: variant.productId,
+            variantId: variant.id,
+            locationType: 'warehouse',
+            locationCode: variant.locationCode,
+            quantity: variant.quantity || 0,
+            isPrimary: true,
+            notes: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          
+          details.push({
+            variantId: variant.id,
+            variantName: variant.name,
+            locationCode: variant.locationCode,
+            action: 'created'
+          });
+          createdCount++;
+        }
+      }
+      
+      // Create audit trail
+      await storage.createUserActivity({
+        userId: userId,
+        action: 'migrated',
+        entityType: 'variant_locations',
+        entityId: 'all-variants',
+        description: `Migrated variant locations: ${createdCount} created, ${updatedCount} updated, ${skippedCount} skipped`,
+      });
+      
+      console.log(`[Migration] Complete: ${createdCount} created, ${updatedCount} updated, ${skippedCount} skipped`);
+      
+      res.json({ 
+        success: true, 
+        createdCount,
+        updatedCount,
+        skippedCount,
+        total: variantsWithLocation.length,
+        details: details.slice(0, 100)
+      });
+    } catch (error: any) {
+      console.error("Error migrating variant locations:", error);
+      res.status(500).json({ message: error.message || "Failed to migrate variant locations" });
+    }
+  });
+
   app.patch('/api/stock-adjustment-requests/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
