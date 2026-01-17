@@ -123,6 +123,8 @@ export default function StockLookup() {
   const [addLocationProductName, setAddLocationProductName] = useState<string>("");
   const [addLocationVariantId, setAddLocationVariantId] = useState<string | null>(null);
   const [addLocationVariantName, setAddLocationVariantName] = useState<string>("");
+  const [deleteLocationId, setDeleteLocationId] = useState<string | null>(null);
+  const [deleteLocationProductId, setDeleteLocationProductId] = useState<string | null>(null);
   const [newLocationType, setNewLocationType] = useState<LocationType>("warehouse");
   const [newLocationCode, setNewLocationCode] = useState("");
   const [newLocationQuantity, setNewLocationQuantity] = useState(0);
@@ -375,6 +377,38 @@ export default function StockLookup() {
       });
     },
   });
+
+  // Delete location mutation
+  const deleteLocationMutation = useMutation({
+    mutationFn: async (data: { productId: string; locationId: string }) => {
+      return await apiRequest('DELETE', `/api/products/${data.productId}/locations/${data.locationId}`);
+    },
+    onSuccess: () => {
+      if (deleteLocationProductId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${deleteLocationProductId}/locations`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${deleteLocationProductId}/variants`] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: t('common:success'),
+        description: t('common:locationDeletedSuccessfully'),
+      });
+      setDeleteLocationId(null);
+      setDeleteLocationProductId(null);
+    },
+    onError: () => {
+      toast({
+        title: t('common:error'),
+        description: t('common:failedToDeleteLocation'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteVariantLocation = (productId: string, locationId: string) => {
+    setDeleteLocationProductId(productId);
+    deleteLocationMutation.mutate({ productId, locationId });
+  };
 
   const resetAddLocationForm = () => {
     setNewLocationType("warehouse");
@@ -920,6 +954,32 @@ export default function StockLookup() {
                                         <span className="text-xs text-green-600 dark:text-green-400 font-medium">
                                           {variant.locationCode}
                                         </span>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button 
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded ml-1"
+                                            >
+                                              <svg className="h-3 w-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                              </svg>
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                            <DropdownMenuItem
+                                              className="text-red-600 dark:text-red-400"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (variant.locationId) {
+                                                  handleDeleteVariantLocation(selectedProductData.id, variant.locationId);
+                                                }
+                                              }}
+                                            >
+                                              <X className="h-4 w-4 mr-2" />
+                                              {t('common:deleteLocation')}
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       </div>
                                     ) : (
                                       <button
