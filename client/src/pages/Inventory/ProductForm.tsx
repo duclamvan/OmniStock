@@ -1767,7 +1767,8 @@ export default function ProductForm() {
     if (match) {
       const start = parseInt(match[1]);
       const end = parseInt(match[2]);
-      const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
+      // Keep the original pattern for direct replacement (e.g., "N<1-15>" -> "N1", "N2", etc.)
+      const namePattern = seriesInput.trim();
       const count = end - start + 1;
       
       if (count > 200) {
@@ -1808,7 +1809,7 @@ export default function ProductForm() {
           variantLocationCode = parentLocation;
         }
         
-        const variantName = `${baseName} ${i}`;
+        const variantName = namePattern.replace(/<\d+-\d+>/, String(i));
         const parentSku = form.getValues('sku') || '';
         const variantSku = generateVariantSku(parentSku, variantName);
         
