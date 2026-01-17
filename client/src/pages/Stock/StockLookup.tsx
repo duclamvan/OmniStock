@@ -928,7 +928,7 @@ export default function StockLookup() {
 
                       {/* Unified Variant Locations - shows variant with its location in one row */}
                       {selectedProductData.variants.length > 0 && (
-                        <div>
+                        <div onClick={(e) => e.stopPropagation()}>
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                             <MapPin className="h-4 w-4" />
                             {t('common:variantLocations')} ({selectedProductData.variants.length})
