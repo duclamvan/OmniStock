@@ -13589,7 +13589,8 @@ Important:
             .where(
               and(
                 sql`created_at > ${cutoffTime}`,
-                eq(orders.customerId, customerId)
+                eq(orders.customerId, customerId),
+                eq(orders.isArchived, false)
               )
             )
             .limit(1);
@@ -13615,6 +13616,7 @@ Important:
                 and(
                   sql`created_at > ${cutoffTime}`,
                   sql`customer_id IS NULL`,
+                  eq(orders.isArchived, false),
                   or(...guestConditions)
                 )
               )
@@ -16451,7 +16453,7 @@ Important:
         const orderRecords = await db
           .select({ id: orders.id, orderId: orders.orderId })
           .from(orders)
-          .where(inArray(orders.id, Array.from(matchedOrderIds)));
+          .where(and(inArray(orders.id, Array.from(matchedOrderIds)), eq(orders.isArchived, false)));
         orderDisplayMap = Object.fromEntries(
           orderRecords.map(o => [o.id, o.orderId])
         );
@@ -28326,9 +28328,12 @@ Important rules:
           const matchingOrders = await db.select()
             .from(orders)
             .where(
-              or(
-                eq(orders.orderId, extractedOrderId),
-                ilike(orders.orderId, `%${extractedOrderId}%`)
+              and(
+                eq(orders.isArchived, false),
+                or(
+                  eq(orders.orderId, extractedOrderId),
+                  ilike(orders.orderId, `%${extractedOrderId}%`)
+                )
               )
             );
 
@@ -28367,6 +28372,7 @@ Important rules:
             .from(orders)
             .where(
               and(
+                eq(orders.isArchived, false),
                 inArray(orders.paymentStatus, ['pending', 'pay_later']),
                 gt(orders.createdAt, thirtyDaysAgo),
                 lt(orders.createdAt, paymentDate)

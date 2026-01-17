@@ -67,7 +67,10 @@ async function aggregateBusinessMetrics(): Promise<{
 
   const recentOrders = await db.select()
     .from(orders)
-    .where(gte(orders.createdAt, thirtyDaysAgo));
+    .where(and(
+      gte(orders.createdAt, thirtyDaysAgo),
+      eq(orders.isArchived, false)
+    ));
 
   let revenue = 0;
   let cashCollected = 0;
@@ -105,7 +108,10 @@ async function aggregateBusinessMetrics(): Promise<{
   })
     .from(orderItems)
     .innerJoin(orders, eq(orderItems.orderId, orders.id))
-    .where(gte(orders.createdAt, thirtyDaysAgo));
+    .where(and(
+      gte(orders.createdAt, thirtyDaysAgo),
+      eq(orders.isArchived, false)
+    ));
 
   const productSales: Record<string, { name: string; sku: string; unitsSold: number; revenue: number }> = {};
 
