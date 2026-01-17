@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
+import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1034,6 +1034,27 @@ export default function StockLookup() {
                                       >
                                         <MoveRight className="h-3 w-3 mr-1" />
                                         {t('move')}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAddLocationProductId(selectedProductData.id);
+                                          setAddLocationProductName(selectedProductData.name);
+                                          setAddLocationVariantId(variant.id);
+                                          setAddLocationVariantName(variant.name);
+                                          setNewLocationType("warehouse");
+                                          setNewLocationCode("");
+                                          setNewLocationQuantity(0);
+                                          setNewLocationIsPrimary(false);
+                                          setNewLocationNotes("");
+                                          setAddLocationDialogOpen(true);
+                                        }}
+                                      >
+                                        <MapPinPlus className="h-3 w-3 mr-1" />
+                                        {t('common:addLocation')}
                                       </Button>
                                       <Button
                                         variant="outline"
