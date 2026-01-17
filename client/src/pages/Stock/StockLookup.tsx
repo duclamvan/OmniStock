@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
+import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -146,6 +146,8 @@ export default function StockLookup() {
 
   // Check for query parameter and auto-populate search
   const [isFromUnderAllocated, setIsFromUnderAllocated] = useState(false);
+  const [variantSearch, setVariantSearch] = useState("");
+  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -923,8 +925,64 @@ export default function StockLookup() {
                             <MapPin className="h-4 w-4" />
                             {t('common:variantLocations')} ({selectedProductData.variants.length})
                           </h4>
+                          
+                          {/* Search filter for variants */}
+                          <div className="relative mb-3">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                              placeholder={t('common:searchVariants')}
+                              value={variantSearch}
+                              onChange={(e) => setVariantSearch(e.target.value)}
+                              className="pl-9 h-9"
+                            />
+                            {variantSearch && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                onClick={() => setVariantSearch("")}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* Expand All / Collapse All buttons */}
+                          <div className="flex gap-2 mb-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => {
+                                const allVariantIds = selectedProductData.variants.map(v => v.id);
+                                setExpandedVariants(new Set(allVariantIds));
+                              }}
+                            >
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                              {t('common:expandAll')}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => setExpandedVariants(new Set())}
+                            >
+                              <ChevronUp className="h-3 w-3 mr-1" />
+                              {t('common:collapseAll')}
+                            </Button>
+                          </div>
+                          
                           <div className="space-y-2">
-                            {selectedProductData.variants.map((variant) => {
+                            {selectedProductData.variants
+                              .filter((variant) => {
+                                if (!variantSearch) return true;
+                                const search = variantSearch.toLowerCase();
+                                const nameMatch = variant.name?.toLowerCase().includes(search);
+                                const barcodeMatch = variant.barcode?.toLowerCase().includes(search);
+                                const locationMatch = variant.locationCode?.toLowerCase().includes(search);
+                                return nameMatch || barcodeMatch || locationMatch;
+                              })
+                              .map((variant) => {
                               // Find locations from productLocations table for this variant
                               const tableLocations = selectedProductData.locations?.filter(
                                 loc => loc.variantId === variant.id
@@ -960,14 +1018,46 @@ export default function StockLookup() {
                               // Check if variant has any locations
                               const hasLocations = allLocations.length > 0;
                               
+                              const isExpanded = expandedVariants.has(variant.id);
+                              const toggleExpand = () => {
+                                setExpandedVariants(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(variant.id)) {
+                                    next.delete(variant.id);
+                                  } else {
+                                    next.add(variant.id);
+                                  }
+                                  return next;
+                                });
+                              };
+                              
                               return (
                                 <div
                                   key={variant.id}
                                   className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
                                   data-testid={`variant-location-card-${variant.id}`}
                                 >
-                                  {/* Variant header */}
-                                  <div className="flex items-center gap-3 mb-2">
+                                  {/* Variant header - clickable to expand/collapse */}
+                                  <div 
+                                    className="flex items-center gap-3 cursor-pointer"
+                                    onClick={toggleExpand}
+                                  >
+                                    {/* Expand/Collapse toggle */}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 flex-shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleExpand();
+                                      }}
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                      )}
+                                    </Button>
                                     {variant.imageUrl ? (
                                       <img
                                         src={variant.imageUrl}
@@ -1018,8 +1108,8 @@ export default function StockLookup() {
                                     </Button>
                                   </div>
                                   
-                                  {/* Location rows for this variant */}
-                                  {hasLocations ? (
+                                  {/* Location rows for this variant - only shown when expanded */}
+                                  {isExpanded && hasLocations && (
                                     <div className="space-y-2 mt-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
                                       {allLocations.map((location) => (
                                         <div key={location.id} className="bg-white dark:bg-gray-900 rounded p-2">
@@ -1103,7 +1193,8 @@ export default function StockLookup() {
                                         </div>
                                       ))}
                                     </div>
-                                  ) : (
+                                  )}
+                                  {isExpanded && !hasLocations && (
                                     <p className="text-sm text-gray-400 italic mt-2">{t('common:noLocationAssigned')}</p>
                                   )}
                                 </div>
