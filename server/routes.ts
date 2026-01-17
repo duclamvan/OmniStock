@@ -22327,6 +22327,102 @@ Important:
       res.status(500).json({ message: 'Failed to fetch address suggestions' });
     }
   });
+  // Google Places API Autocomplete - Returns business names and accurate addresses
+  app.get('/api/addresses/autocomplete-google', isAuthenticated, async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      const sessionToken = req.query.sessionToken as string || '';
+
+      if (!query) {
+        return res.status(400).json({ message: 'Query parameter "q" is required' });
+      }
+
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.warn('GOOGLE_MAPS_API_KEY not configured, falling back to Nominatim');
+        return res.json({ fallback: true, results: [] });
+      }
+
+      // Use Google Places Autocomplete API
+      const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address|establishment&key=${apiKey}${sessionToken ? `&sessiontoken=${sessionToken}` : ''}`;
+      
+      const autocompleteResponse = await fetch(autocompleteUrl);
+      const autocompleteData = await autocompleteResponse.json();
+
+      if (autocompleteData.status !== 'OK' && autocompleteData.status !== 'ZERO_RESULTS') {
+        console.error('Google Places Autocomplete error:', autocompleteData.status, autocompleteData.error_message);
+        return res.status(500).json({ message: `Google API error: ${autocompleteData.status}` });
+      }
+
+      if (!autocompleteData.predictions || autocompleteData.predictions.length === 0) {
+        return res.json([]);
+      }
+
+      // Get place details for each prediction to extract full address components
+      const results = await Promise.all(
+        autocompleteData.predictions.slice(0, 5).map(async (prediction: any) => {
+          try {
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=formatted_address,name,address_components,geometry,types&key=${apiKey}${sessionToken ? `&sessiontoken=${sessionToken}` : ''}`;
+            const detailsResponse = await fetch(detailsUrl);
+            const detailsData = await detailsResponse.json();
+
+            if (detailsData.status !== 'OK') {
+              return null;
+            }
+
+            const place = detailsData.result;
+            const components = place.address_components || [];
+            
+            // Extract address components
+            const getComponent = (types: string[]) => {
+              const component = components.find((c: any) => 
+                types.some(t => c.types.includes(t))
+              );
+              return component?.long_name || '';
+            };
+
+            const streetNumber = getComponent(['street_number']);
+            const street = getComponent(['route']);
+            const city = getComponent(['locality', 'administrative_area_level_2', 'postal_town']);
+            const zipCode = getComponent(['postal_code']);
+            const country = getComponent(['country']);
+            const countryCode = components.find((c: any) => c.types.includes('country'))?.short_name || '';
+
+            // Determine if this is a business/establishment
+            const isEstablishment = place.types?.some((t: string) => 
+              ['establishment', 'point_of_interest', 'store', 'food', 'restaurant', 'cafe', 'bar', 'lodging', 'shopping_mall', 'grocery_or_supermarket'].includes(t)
+            );
+
+            return {
+              displayName: place.formatted_address,
+              businessName: isEstablishment ? place.name : null,
+              name: place.name,
+              street: street,
+              streetNumber: streetNumber,
+              city: city,
+              zipCode: zipCode,
+              country: country,
+              countryCode: countryCode,
+              lat: place.geometry?.location?.lat,
+              lon: place.geometry?.location?.lng,
+              placeId: prediction.place_id,
+              types: place.types,
+              isEstablishment: isEstablishment
+            };
+          } catch (err) {
+            console.error('Error fetching place details:', err);
+            return null;
+          }
+        })
+      );
+
+      res.json(results.filter(Boolean));
+    } catch (error) {
+      console.error('Error fetching Google address autocomplete:', error);
+      res.status(500).json({ message: 'Failed to fetch address suggestions from Google' });
+    }
+  });
+
 
   // Helper function to look up postal code from Nominatim when missing
   // Includes timeout protection and rate limiting awareness

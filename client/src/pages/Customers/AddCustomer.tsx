@@ -96,11 +96,19 @@ type BillingAddressFormData = z.infer<ReturnType<typeof createBillingAddressSche
 
 interface AddressAutocompleteResult {
   displayName: string;
+  businessName?: string | null;
+  name?: string;
   street: string;
   streetNumber: string;
   city: string;
   zipCode: string;
   country: string;
+  countryCode?: string;
+  lat?: number;
+  lon?: number;
+  placeId?: string;
+  types?: string[];
+  isEstablishment?: boolean;
 }
 
 interface AresLookupResult {
@@ -675,6 +683,16 @@ export default function AddCustomer() {
   const fetchAddressAutocomplete = async (query: string): Promise<AddressAutocompleteResult[]> => {
     if (query.length < 3) return [];
     try {
+      // Try Google Places API first (returns business names)
+      const googleResponse = await fetch(`/api/addresses/autocomplete-google?q=${encodeURIComponent(query)}`);
+      if (googleResponse.ok) {
+        const googleData = await googleResponse.json();
+        // Check if Google returned results (not fallback mode)
+        if (!googleData.fallback && Array.isArray(googleData) && googleData.length > 0) {
+          return googleData;
+        }
+      }
+      // Fall back to Nominatim (when Google unavailable or returns no results)
       const response = await fetch(`/api/addresses/autocomplete?q=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Failed to fetch addresses');
       return await response.json();
