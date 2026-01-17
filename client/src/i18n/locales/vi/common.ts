@@ -1153,6 +1153,8 @@ const common = {
   baseProduct: 'Sản phẩm gốc',
   noVariant: 'Không có biến thể',
   selectWhichVariantAtLocation: 'Chọn biến thể để lưu trữ tại vị trí này',
+  variantLocations: 'Vị trí biến thể',
+  noLocationAssigned: 'Chưa có vị trí',
   quantityAtLocation: 'Số lượng tại Vị trí',
   setAsPrimaryLocation: 'Đặt làm Vị trí Chính',
   optionalNotesAboutLocation: 'Ghi chú tùy chọn về vị trí này',

@@ -916,124 +916,170 @@ export default function StockLookup() {
                         )}
                       </div>
 
-                      {/* Variants List */}
+                      {/* Unified Variant Locations - shows variant with its location in one row */}
                       {selectedProductData.variants.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                            <Layers className="h-4 w-4" />
-                            {t('productVariants')} ({selectedProductData.variants.length})
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            {t('common:variantLocations')} ({selectedProductData.variants.length})
                           </h4>
                           <div className="space-y-2">
-                            {selectedProductData.variants.map((variant) => (
-                              <div
-                                key={variant.id}
-                                className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
-                              >
-                                <div className="flex items-center gap-3 flex-1">
-                                  {variant.imageUrl ? (
-                                    <img
-                                      src={variant.imageUrl}
-                                      alt={variant.name}
-                                      className="h-10 w-10 rounded object-cover"
-                                    />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                      <Package className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {variant.name}
-                                    </p>
-                                    {variant.barcode && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {variant.barcode}
-                                      </p>
-                                    )}
-                                    {variant.locationCode ? (
-                                      <div className="flex items-center gap-1 mt-1">
-                                        <MapPin className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                          {variant.locationCode}
-                                        </span>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <button 
-                                              onClick={(e) => e.stopPropagation()}
-                                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded ml-1"
-                                            >
-                                              <svg className="h-3 w-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                              </svg>
-                                            </button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                            <DropdownMenuItem
-                                              className="text-red-600 dark:text-red-400"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (variant.locationId) {
-                                                  handleDeleteVariantLocation(selectedProductData.id, variant.locationId);
-                                                }
-                                              }}
-                                            >
-                                              <X className="h-4 w-4 mr-2" />
-                                              {t('common:deleteLocation')}
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
+                            {selectedProductData.variants.map((variant) => {
+                              // Find the matching location from productLocations for this variant
+                              const matchingLocation = selectedProductData.locations?.find(
+                                loc => loc.locationCode === variant.locationCode
+                              );
+                              return (
+                                <div
+                                  key={variant.id}
+                                  className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                                  data-testid={`variant-location-card-${variant.id}`}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-3 flex-1">
+                                      {variant.imageUrl ? (
+                                        <img
+                                          src={variant.imageUrl}
+                                          alt={variant.name}
+                                          className="h-10 w-10 rounded object-cover flex-shrink-0"
+                                        />
+                                      ) : (
+                                        <div className="h-10 w-10 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                          <Package className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                            {variant.name}
+                                          </Badge>
+                                          {variant.locationCode ? (
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                              {variant.locationCode}
+                                            </span>
+                                          ) : (
+                                            <span className="text-sm text-gray-400 italic">{t('common:noLocationAssigned')}</span>
+                                          )}
+                                        </div>
+                                        {variant.barcode && (
+                                          <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
+                                            {variant.barcode}
+                                          </p>
+                                        )}
                                       </div>
-                                    ) : (
-                                      <button
+                                    </div>
+                                    <div className="flex items-center gap-1.5 ml-2">
+                                      {variant.locationCode && matchingLocation ? (
+                                        <>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if ((matchingLocation?.quantity || variant.quantity) <= 0) {
+                                                toast({
+                                                  title: t('cannotReduce'),
+                                                  description: t('stockAlreadyZero'),
+                                                  variant: "destructive"
+                                                });
+                                                return;
+                                              }
+                                              setSelectedLocation(matchingLocation);
+                                              setQuickButtonType('remove');
+                                              setAdjustDialogOpen(true);
+                                            }}
+                                            disabled={(matchingLocation?.quantity || variant.quantity) <= 0}
+                                            title={t('quickRemoveStock')}
+                                          >
+                                            <Minus className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Badge variant="secondary" className="px-2.5">
+                                            {matchingLocation?.quantity || variant.quantity} {t('units')}
+                                          </Badge>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedLocation(matchingLocation);
+                                              setQuickButtonType('add');
+                                              setAdjustDialogOpen(true);
+                                            }}
+                                            title={t('quickAddStock')}
+                                          >
+                                            <Plus className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <Badge variant="secondary" className="px-2.5">
+                                          {variant.quantity} {t('units')}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Action buttons */}
+                                  {variant.locationCode && matchingLocation ? (
+                                    <div className="flex gap-2 mt-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setAddLocationProductId(selectedProductData.id);
-                                          setAddLocationProductName(selectedProductData.name);
-                                          setAddLocationVariantId(variant.id);
-                                          setAddLocationVariantName(variant.name);
-                                          setNewLocationType("warehouse");
-                                          setNewLocationCode("");
-                                          setNewLocationQuantity(variant.quantity || 0);
-                                          setNewLocationIsPrimary(false);
-                                          setNewLocationNotes("");
-                                          setAddLocationDialogOpen(true);
+                                          setSelectedLocation(matchingLocation);
+                                          setMoveDialogOpen(true);
                                         }}
-                                        className="flex items-center gap-1 mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                                       >
-                                        <Plus className="h-3 w-3" />
-                                        {t('common:addLocation')}
-                                      </button>
-                                    )}
-                                    {(variant.priceCzk || variant.priceEur) && (
-                                      <div className="flex items-center gap-2 text-[11px] font-medium mt-1">
-                                        {variant.priceCzk && (
-                                          <span className="text-blue-600 dark:text-blue-400">
-                                            {Number(variant.priceCzk).toLocaleString('cs-CZ')} Kč
-                                          </span>
-                                        )}
-                                        {variant.priceCzk && variant.priceEur && (
-                                          <span className="text-gray-400 dark:text-gray-600">•</span>
-                                        )}
-                                        {variant.priceEur && (
-                                          <span className="text-green-600 dark:text-green-400">
-                                            €{Number(variant.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                        <MoveRight className="h-3 w-3 mr-1" />
+                                        {t('move')}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedLocation(matchingLocation);
+                                          setQuickButtonType(null);
+                                          setAdjustDialogOpen(true);
+                                        }}
+                                      >
+                                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                                        {t('adjust')}
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAddLocationProductId(selectedProductData.id);
+                                        setAddLocationProductName(selectedProductData.name);
+                                        setAddLocationVariantId(variant.id);
+                                        setAddLocationVariantName(variant.name);
+                                        setNewLocationType("warehouse");
+                                        setNewLocationCode("");
+                                        setNewLocationQuantity(variant.quantity || 0);
+                                        setNewLocationIsPrimary(false);
+                                        setNewLocationNotes("");
+                                        setAddLocationDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                      {t('common:addLocation')}
+                                    </button>
+                                  )}
                                 </div>
-                                <Badge variant="secondary" className="ml-2 flex-shrink-0">
-                                  {variant.quantity} {t('units')}
-                                </Badge>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
 
-                      {/* Warehouse Locations */}
-                      {locationsLoading ? (
+                      {/* Warehouse Locations - Only show for products WITHOUT variants */}
+                      {selectedProductData.variants.length === 0 && (locationsLoading ? (
                         <div className="space-y-2">
                           <Skeleton className="h-4 w-32" />
                           <Skeleton className="h-16 w-full" />
@@ -1209,7 +1255,7 @@ export default function StockLookup() {
                             </Button>
                           </div>
                         </div>
-                      )}
+                      ))}
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">

@@ -1194,6 +1194,8 @@ const common = {
   baseProduct: 'Base Product',
   noVariant: 'No Variant',
   selectWhichVariantAtLocation: 'Choose which variant to store at this location',
+  variantLocations: 'Variant Locations',
+  noLocationAssigned: 'No location assigned',
   quantityAtLocation: 'Quantity at Location',
   setAsPrimaryLocation: 'Set as Primary Location',
   optionalNotesAboutLocation: 'Optional notes about this location',
