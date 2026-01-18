@@ -48,6 +48,7 @@ import { useLocalization } from "@/contexts/LocalizationContext";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
+import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 
 // Lazy load chart components
 const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
@@ -421,13 +422,14 @@ interface PeriodMetrics {
 }
 
 interface SalesAnalyticsSectionProps {
-  formatCurrency: (amount: number, currency: string) => string;
+  formatCurrency: (amount: number, fromCurrency?: Currency) => string;
   t: (key: string) => string;
   salesGrowth: SalesGrowthData | undefined;
   isLoading: boolean;
+  dashboardCurrency: string;
 }
 
-const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading }: SalesAnalyticsSectionProps) => {
+const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading, dashboardCurrency }: SalesAnalyticsSectionProps) => {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily');
   
   const { chartData, metrics } = useMemo(() => {
@@ -524,7 +526,7 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
           <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value, 'EUR')}
+              {entry.name}: {formatCurrency(entry.value)}
             </p>
           ))}
         </div>
@@ -672,7 +674,7 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
             <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
               <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">{t('periodRevenue')}</p>
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-revenue">
-                {formatCurrency(metrics.totalRevenue, 'EUR')}
+                {formatCurrency(metrics.totalRevenue)}
               </p>
               <div className="flex items-center gap-1 mt-2">
                 {metrics.revenueChange >= 0 ? (
@@ -689,7 +691,7 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
             <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-4">
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{t('periodProfit')}</p>
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-profit">
-                {formatCurrency(metrics.totalProfit, 'EUR')}
+                {formatCurrency(metrics.totalProfit)}
               </p>
               <div className="flex items-center gap-1 mt-2">
                 {metrics.profitChange >= 0 ? (
@@ -706,7 +708,7 @@ const SalesAnalyticsSection = memo(({ formatCurrency, t, salesGrowth, isLoading 
             <div className="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-4">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">{t('periodCost')}</p>
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1" data-testid="value-period-cost">
-                {formatCurrency(metrics.totalCost, 'EUR')}
+                {formatCurrency(metrics.totalCost)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {((metrics.totalCost / metrics.totalRevenue) * 100).toFixed(1)}% of revenue
@@ -741,10 +743,13 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CNY: '¥',
 };
 
-function formatCompactCurrency(amount: number, currency: string): string {
-  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-  const absAmount = Math.abs(amount);
-  const sign = amount < 0 ? '-' : '';
+function formatCompactCurrency(amount: number, targetCurrency: string, fromCurrency: string = 'EUR'): string {
+  const convertedAmount = fromCurrency !== targetCurrency 
+    ? convertCurrency(amount, fromCurrency as Currency, targetCurrency as Currency)
+    : amount;
+  const symbol = CURRENCY_SYMBOLS[targetCurrency] || targetCurrency;
+  const absAmount = Math.abs(convertedAmount);
+  const sign = convertedAmount < 0 ? '-' : '';
   
   if (absAmount >= 1_000_000) {
     return `${sign}${symbol}${(absAmount / 1_000_000).toFixed(1)}M`;
@@ -759,6 +764,15 @@ export function Dashboard() {
   const { t } = useTranslation(['dashboard', 'common']);
   const { formatCurrency } = useLocalization();
   const [dashboardCurrency, setDashboardCurrency] = useState<string>('EUR');
+  
+  const formatDashboardCurrency = useMemo(() => {
+    return (amount: number, fromCurrency: Currency = 'EUR') => {
+      const converted = fromCurrency !== dashboardCurrency 
+        ? convertCurrency(amount, fromCurrency, dashboardCurrency as Currency)
+        : amount;
+      return formatCurrency(converted, dashboardCurrency);
+    };
+  }, [dashboardCurrency, formatCurrency]);
   
   // Query all dashboard endpoints
   // Operations pulse - faster polling (15s) for critical fulfillment metrics
@@ -940,7 +954,7 @@ export function Dashboard() {
               </div>
               <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
                 <p className="text-2xl font-bold text-green-700 dark:text-green-400" data-testid="weekly-revenue">
-                  {formatCurrency(weeklyReport.summary.totalRevenue, dashboardCurrency)}
+                  {formatDashboardCurrency(weeklyReport.summary.totalRevenue)}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:revenue', 'Revenue')}</p>
               </div>
@@ -952,7 +966,7 @@ export function Dashboard() {
               </div>
               <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
                 <p className="text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="weekly-aov">
-                  {formatCurrency(weeklyReport.summary.averageOrderValue, dashboardCurrency)}
+                  {formatDashboardCurrency(weeklyReport.summary.averageOrderValue)}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:avgOrderValue', 'Avg Order Value')}</p>
               </div>
@@ -965,7 +979,7 @@ export function Dashboard() {
               {weeklyReport.financials && (
                 <div className="text-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-lg">
                   <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400" data-testid="weekly-profit">
-                    {formatCurrency(weeklyReport.financials.grossProfit, dashboardCurrency)}
+                    {formatDashboardCurrency(weeklyReport.financials.grossProfit)}
                   </p>
                   <p className="text-xs text-blue-700 dark:text-blue-300">{t('dashboard:grossProfit', 'Gross Profit')}</p>
                 </div>
@@ -1113,7 +1127,7 @@ export function Dashboard() {
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
       {/* Sales Analytics - Modern Tabbed Chart */}
-      <SalesAnalyticsSection formatCurrency={formatCurrency} t={t} salesGrowth={salesGrowth} isLoading={salesGrowthLoading} />
+      <SalesAnalyticsSection formatCurrency={formatDashboardCurrency} t={t} salesGrowth={salesGrowth} isLoading={salesGrowthLoading} dashboardCurrency={dashboardCurrency} />
 
       <Separator className="bg-slate-200 dark:bg-slate-700" />
 
@@ -1567,7 +1581,7 @@ export function Dashboard() {
                     <Euro className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-total-revenue">
-                    {formatCurrency(financialControl?.totalRevenueEur || 0, 'EUR')}
+                    {formatDashboardCurrency(financialControl?.totalRevenueEur || 0)}
                   </p>
                   {financialControl?.cashConversionByCurrency.EUR && (
                     <div className="flex items-center gap-1 mt-2">
@@ -1592,7 +1606,7 @@ export function Dashboard() {
                     <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-net-profit">
-                    {formatCurrency(financialControl?.netProfit || 0, 'EUR')}
+                    {formatDashboardCurrency(financialControl?.netProfit || 0)}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                     {t('common:margin')}: <span className="font-semibold text-green-600 dark:text-green-400" data-testid="value-profit-margin">{financialControl?.profitMarginPercent.toFixed(1)}%</span>
@@ -1608,7 +1622,7 @@ export function Dashboard() {
                     <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="value-average-order-value">
-                    {formatCurrency(financialControl?.averageOrderValue || 0, 'EUR')}
+                    {formatDashboardCurrency(financialControl?.averageOrderValue || 0)}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{t('perTransaction')}</p>
                 </CardContent>
@@ -1625,19 +1639,19 @@ export function Dashboard() {
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600 dark:text-gray-400">30-60d:</span>
                       <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid="value-receivables-30-60">
-                        {formatCurrency(financialControl?.agedReceivables['30-60days'] || 0, 'EUR')}
+                        {formatDashboardCurrency(financialControl?.agedReceivables['30-60days'] || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600 dark:text-gray-400">60-90d:</span>
                       <span className="font-semibold text-orange-600 dark:text-orange-400" data-testid="value-receivables-60-90">
-                        {formatCurrency(financialControl?.agedReceivables['60-90days'] || 0, 'EUR')}
+                        {formatDashboardCurrency(financialControl?.agedReceivables['60-90days'] || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600 dark:text-gray-400">90+ days:</span>
                       <span className="font-semibold text-red-600 dark:text-red-400" data-testid="value-receivables-90-plus">
-                        {formatCurrency(financialControl?.agedReceivables['90plus'] || 0, 'EUR')}
+                        {formatDashboardCurrency(financialControl?.agedReceivables['90plus'] || 0)}
                       </span>
                     </div>
                   </div>
@@ -1913,7 +1927,7 @@ export function Dashboard() {
                         <span className="font-medium text-gray-900 dark:text-gray-100" data-testid={`customer-name-${index}`}>{customer.name}</span>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-gray-100" data-testid={`customer-revenue-${index}`}>
-                        {formatCurrency(customer.revenue, 'EUR')}
+                        {formatDashboardCurrency(customer.revenue)}
                       </span>
                     </div>
                   ))}
