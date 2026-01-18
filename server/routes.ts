@@ -13893,6 +13893,127 @@ Important:
           await storage.updateOrder(order.id, { totalCost: totalCost.toFixed(2) });
         }
       }
+
+      // === POS INVENTORY DEDUCTION ===
+      // For POS orders with fulfillmentStage 'completed', immediately deduct inventory
+      if (orderType === 'pos' && data.fulfillmentStage === 'completed') {
+        console.log(`[POS Inventory] Processing inventory deduction for POS order ${order.orderId}`);
+        
+        // Helper function to deduct inventory for a single product/variant
+        async function deductInventoryForItem(productId: string, variantId: string | null, quantity: number) {
+          try {
+            // Get product to check if it's virtual
+            const product = await storage.getProductById(productId);
+            if (!product) return;
+
+            // Handle virtual SKU - deduct from master product
+            let targetProductId = productId;
+            let deductionQty = quantity;
+            if (product.isVirtual && product.masterProductId) {
+              targetProductId = product.masterProductId;
+              const ratio = parseFloat(product.inventoryDeductionRatio || '1');
+              deductionQty = quantity * ratio;
+            }
+
+            // Get locations for the target product (optionally filtered by variantId)
+            const locations = await storage.getProductLocations(targetProductId);
+            
+            // Find locations for this specific variant (or base product if no variant)
+            const relevantLocations = variantId 
+              ? locations.filter(loc => loc.variantId === variantId)
+              : locations.filter(loc => !loc.variantId);
+            
+            // Priority 1: Primary location
+            let targetLocation = relevantLocations.find(loc => loc.isPrimary);
+            
+            // Priority 2: First location with sufficient stock
+            if (!targetLocation) {
+              targetLocation = relevantLocations.find(loc => (loc.quantity || 0) >= deductionQty);
+            }
+            
+            // Priority 3: Any location (partial deduction if needed)
+            if (!targetLocation && relevantLocations.length > 0) {
+              targetLocation = relevantLocations[0];
+            }
+
+            if (targetLocation) {
+              // Deduct from location
+              const currentQty = targetLocation.quantity || 0;
+              const newQty = Math.max(0, currentQty - deductionQty);
+              await storage.updateProductLocation(targetLocation.id, { quantity: newQty });
+              console.log(`[POS Inventory] Deducted ${deductionQty} from location ${targetLocation.locationCode} (was ${currentQty}, now ${newQty})`);
+              
+              // ALSO update the product/variant base quantity to stay in sync
+              if (variantId) {
+                // Update variant quantity 
+                const variant = await storage.getProductVariant(variantId);
+                if (variant) {
+                  const currentVariantQty = variant.quantity || 0;
+                  const newVariantQty = Math.max(0, currentVariantQty - deductionQty);
+                  await storage.updateProductVariant(variantId, { quantity: newVariantQty });
+                  console.log(`[POS Inventory] Also updated variant ${variantId} quantity (was ${currentVariantQty}, now ${newVariantQty})`);
+                }
+              } else {
+                // Update product base quantity
+                const targetProduct = await storage.getProductById(targetProductId);
+                if (targetProduct) {
+                  const currentProductQty = targetProduct.quantity || 0;
+                  const newProductQty = Math.max(0, currentProductQty - deductionQty);
+                  await storage.updateProduct(targetProductId, { quantity: newProductQty });
+                  console.log(`[POS Inventory] Also updated product ${targetProductId} quantity (was ${currentProductQty}, now ${newProductQty})`);
+                }
+              }
+            } else {
+              // No location found - deduct from product/variant base quantity
+              if (variantId) {
+                const variant = await storage.getProductVariant(variantId);
+                if (variant) {
+                  const currentQty = variant.quantity || 0;
+                  const newQty = Math.max(0, currentQty - deductionQty);
+                  await storage.updateProductVariant(variantId, { quantity: newQty });
+                  console.log(`[POS Inventory] Deducted ${deductionQty} from variant ${variantId} (was ${currentQty}, now ${newQty})`);
+                }
+              } else {
+                // Update base product quantity
+                const targetProduct = await storage.getProductById(targetProductId);
+                if (targetProduct) {
+                  const currentQty = targetProduct.quantity || 0;
+                  const newQty = Math.max(0, currentQty - deductionQty);
+                  await storage.updateProduct(targetProductId, { quantity: newQty });
+                  console.log(`[POS Inventory] Deducted ${deductionQty} from product ${targetProductId} (was ${currentQty}, now ${newQty})`);
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`[POS Inventory] Failed to deduct inventory for product ${productId}:`, err);
+          }
+        }
+
+        // Process each order item for inventory deduction
+        for (const item of items) {
+          const quantity = item.quantity || 1;
+          
+          if (item.bundleId && bundleItemsMap.has(item.bundleId)) {
+            // Handle bundle - deduct each component
+            const bundleItemsList = bundleItemsMap.get(item.bundleId)!;
+            for (const bi of bundleItemsList) {
+              const componentQty = (bi.quantity || 1) * quantity;
+              await deductInventoryForItem(bi.productId, bi.variantId || null, componentQty);
+            }
+          } else if (item.variantId) {
+            // Handle variant
+            const variant = variantsMap.get(item.variantId);
+            if (variant) {
+              await deductInventoryForItem(variant.productId, item.variantId, quantity);
+            }
+          } else if (item.productId) {
+            // Handle regular product
+            await deductInventoryForItem(item.productId, null, quantity);
+          }
+        }
+        
+        console.log(`[POS Inventory] Completed inventory deduction for POS order ${order.orderId}`);
+      }
       // Deduct store credit from customer if applied
       if (order.customerId && order.storeCreditAdjustment) {
         const storeCreditUsed = parseFloat(order.storeCreditAdjustment);
