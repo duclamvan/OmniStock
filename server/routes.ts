@@ -4266,7 +4266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/categories/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/categories/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const category = await storage.getCategoryById(req.params.id);
       if (!category) {
@@ -4584,7 +4584,7 @@ Important:
     }
   });
 
-  app.delete('/api/warehouses/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/warehouses/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const warehouse = await storage.getWarehouse(req.params.id);
       if (!warehouse) {
@@ -5474,7 +5474,7 @@ Important:
     }
   });
 
-  app.delete('/api/suppliers/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/suppliers/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
@@ -5963,7 +5963,7 @@ Important:
     }
   });
 
-  app.delete('/api/bundles/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/bundles/:id', requireRole(['administrator']), async (req, res) => {
     try {
       await storage.deleteBundle(req.params.id);
       res.status(204).send();
@@ -8022,7 +8022,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/products/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const product = await storage.getProductById(req.params.id);
       if (!product) {
@@ -8310,7 +8310,7 @@ Important:
     }
   });
 
-  app.delete('/api/products/:productId/variants/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/products/:productId/variants/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const variantId = req.params.id;
       const productId = req.params.productId;
@@ -9975,7 +9975,7 @@ Important:
     }
   });
 
-  app.delete('/api/packing-materials/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/packing-materials/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       await storage.deletePackingMaterial(req.params.id);
 
@@ -10182,7 +10182,7 @@ Important:
     }
   });
 
-  app.delete('/api/pm-suppliers/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/pm-suppliers/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       await storage.deletePmSupplier(req.params.id);
 
@@ -11112,7 +11112,7 @@ Important:
     }
   });
 
-  app.delete('/api/customers/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/customers/:id', requireRole(['administrator']), async (req: any, res) => {
     try {
       const customer = await storage.getCustomerById(req.params.id);
       if (!customer) {
