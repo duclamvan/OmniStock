@@ -24,7 +24,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MoveRight, Package, AlertCircle, Scan, Keyboard, MapPin } from "lucide-react";
+import { MoveRight, Package, AlertCircle, Scan, Keyboard, MapPin, Copy, ChevronsRight, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Select,
   SelectContent,
@@ -65,6 +67,7 @@ export default function MoveInventoryDialog({
   const { t } = useTranslation(['warehouse', 'common']);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { isAdministrator } = useAuth();
   const [moveToLocation, setMoveToLocation] = useState<string>("");
   const [moveQuantity, setMoveQuantity] = useState(0);
   const [locationInputMode, setLocationInputMode] = useState<"select" | "scan">("scan");
@@ -254,19 +257,33 @@ export default function MoveInventoryDialog({
               </TabsList>
               
               <TabsContent value="scan" className="mt-2 space-y-2">
-                <div className="relative">
-                  <Input
-                    ref={locationInputRef}
-                    id="location-code-input"
-                    value={locationCodeInput}
-                    onChange={(e) => handleLocationCodeChange(e.target.value)}
-                    onKeyDown={handleLocationCodeKeyDown}
-                    placeholder={t('warehouse:enterLocationCode')}
-                    className="font-mono pr-10 uppercase"
-                    disabled={moveInventoryMutation.isPending}
-                    data-testid="input-location-code"
-                  />
-                  <Scan className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={locationInputRef}
+                      id="location-code-input"
+                      value={locationCodeInput}
+                      onChange={(e) => handleLocationCodeChange(e.target.value)}
+                      onKeyDown={handleLocationCodeKeyDown}
+                      placeholder={t('warehouse:enterLocationCode')}
+                      className="font-mono pr-10 uppercase"
+                      disabled={moveInventoryMutation.isPending}
+                      data-testid="input-location-code"
+                    />
+                    <Scan className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                  {fromLocation?.locationCode && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0"
+                      onClick={() => handleLocationCodeChange(fromLocation.locationCode)}
+                      title={t('warehouse:copyCurrentLocation')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t('warehouse:locationCodeFormatExtended')}
@@ -353,16 +370,30 @@ export default function MoveInventoryDialog({
             <Label htmlFor="move-quantity" className="text-xs">
               {t('warehouse:quantityToMove')}
             </Label>
-            <Input
-              id="move-quantity"
-              type="number"
-              min={1}
-              max={fromLocation.quantity}
-              value={moveQuantity}
-              onChange={(e) => setMoveQuantity(parseInt(e.target.value) || 0)}
-              disabled={moveInventoryMutation.isPending}
-              data-testid="input-move-quantity"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="move-quantity"
+                type="number"
+                min={1}
+                max={fromLocation.quantity}
+                value={moveQuantity}
+                onChange={(e) => setMoveQuantity(parseInt(e.target.value) || 0)}
+                disabled={moveInventoryMutation.isPending}
+                data-testid="input-move-quantity"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 shrink-0 px-3"
+                onClick={() => setMoveQuantity(fromLocation.quantity)}
+                title={t('common:selectAll')}
+              >
+                <ChevronsRight className="h-4 w-4 mr-1" />
+                {t('common:all')} ({fromLocation.quantity})
+              </Button>
+            </div>
             {moveQuantity > fromLocation.quantity && (
               <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                 <AlertCircle className="h-3 w-3" />
@@ -372,9 +403,19 @@ export default function MoveInventoryDialog({
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1">
-            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-              <Package className="h-3 w-3" />
-              <span>{t('warehouse:product')}: {productName}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                <Package className="h-3 w-3" />
+                <span>{t('warehouse:product')}: {productName}</span>
+              </div>
+              {isAdministrator && (
+                <Link href={`/inventory/products/${productId}`}>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    {t('common:view')}
+                  </Button>
+                </Link>
+              )}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
               {t('warehouse:afterMove')}: {fromLocation.quantity - moveQuantity} {t('warehouse:unitsRemaining')}
