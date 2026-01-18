@@ -211,16 +211,18 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     
     const query = searchQuery.trim();
     
-    // Filter inventory items locally
+    // Filter inventory items locally - exclude items with empty names
     const filteredInventory = preloadedData.inventoryItems?.filter(item => 
-      matchesQuery(item.name || '', query) || matchesQuery(item.sku || '', query)
+      item.name?.trim() && (matchesQuery(item.name || '', query) || matchesQuery(item.sku || '', query))
     ) || [];
     
-    // Filter customers locally
+    // Filter customers locally - exclude customers with empty names
     const filteredCustomers = preloadedData.customers?.filter(customer =>
-      matchesQuery(customer.name || '', query) || 
-      matchesQuery(customer.email || '', query) ||
-      matchesQuery(customer.company || '', query)
+      customer.name?.trim() && (
+        matchesQuery(customer.name || '', query) || 
+        matchesQuery(customer.email || '', query) ||
+        matchesQuery(customer.company || '', query)
+      )
     ) || [];
     
     // Return null if no local matches found - this allows loading skeleton to show
@@ -256,7 +258,19 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
   
   // Use server results only when they match current query (not placeholder from previous query)
   const hasFreshServerResults = serverResults && debouncedQuery === searchQuery && !isPlaceholderData;
-  const results = hasFreshServerResults ? serverResults : localFilteredResults;
+  
+  // Clean server results to filter out empty names
+  const cleanedServerResults = useMemo((): SearchResult | null => {
+    if (!serverResults) return null;
+    return {
+      inventoryItems: serverResults.inventoryItems?.filter(item => item.name?.trim()) || [],
+      shipmentItems: serverResults.shipmentItems?.filter(item => item.name?.trim()) || [],
+      customers: serverResults.customers?.filter(customer => customer.name?.trim()) || [],
+      orders: serverResults.orders?.filter(order => order.orderId?.trim() || order.customerName?.trim()) || [],
+    };
+  }, [serverResults]);
+  
+  const results = hasFreshServerResults ? cleanedServerResults : localFilteredResults;
   
   // Detect if debounce is pending (query changed but server hasn't fetched yet)
   const isDebouncing = debouncedQuery !== searchQuery && searchQuery.trim().length >= 1;
