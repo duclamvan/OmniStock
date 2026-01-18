@@ -2802,19 +2802,39 @@ export class DatabaseStorage implements IStorage {
 
   async createProductLocation(location: InsertProductLocation): Promise<ProductLocation> {
     try {
-      // Check if location code already exists for this product
-      const existing = await db
-        .select()
-        .from(productLocations)
-        .where(
-          and(
-            eq(productLocations.productId, location.productId),
-            eq(productLocations.locationCode, location.locationCode)
-          )
-        );
+      // Check if location code already exists for this product AND variant combination
+      // Different variants can have the same location code (they are stored separately)
+      const variantId = location.variantId || null;
+      
+      let existing;
+      if (variantId) {
+        // Check for productId + locationCode + specific variantId
+        existing = await db
+          .select()
+          .from(productLocations)
+          .where(
+            and(
+              eq(productLocations.productId, location.productId),
+              eq(productLocations.locationCode, location.locationCode),
+              eq(productLocations.variantId, variantId)
+            )
+          );
+      } else {
+        // Check for productId + locationCode + NULL variantId (base product location)
+        existing = await db
+          .select()
+          .from(productLocations)
+          .where(
+            and(
+              eq(productLocations.productId, location.productId),
+              eq(productLocations.locationCode, location.locationCode),
+              isNull(productLocations.variantId)
+            )
+          );
+      }
 
       if (existing.length > 0) {
-        throw new Error('Location code already exists for this product');
+        throw new Error('Location code already exists for this product/variant');
       }
 
       // If this is marked as primary, unset other primary locations

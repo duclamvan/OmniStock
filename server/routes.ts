@@ -7945,7 +7945,7 @@ Important:
               try {
                 const locationCode = variant.locationCode.toUpperCase();
                 const existingLocations = await storage.getProductLocations(productId);
-                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode);
+                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode && loc.variantId === createdVariant.id);
                 
                 if (existingLoc) {
                   // Add to existing location quantity
@@ -7958,6 +7958,7 @@ Important:
                   await storage.createProductLocation({
                     productId,
                     locationCode,
+                    variantId: createdVariant.id,
                     quantity: variant.quantity,
                     isPrimary: false,
                     notes: `Variant: ${variant.name}`,
@@ -7976,7 +7977,7 @@ Important:
               try {
                 const locationCode = variant.locationCode.toUpperCase();
                 const existingLocations = await storage.getProductLocations(productId);
-                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode);
+                const existingLoc = existingLocations.find(loc => loc.locationCode.toUpperCase() === locationCode && loc.variantId === variant.id);
                 
                 if (existingLoc) {
                   // Update existing location (use variant quantity as the location quantity)
@@ -7989,6 +7990,7 @@ Important:
                   await storage.createProductLocation({
                     productId,
                     locationCode,
+                    variantId: variant.id,
                     quantity: variant.quantity,
                     isPrimary: false,
                     notes: `Variant: ${variant.name}`,
@@ -8507,18 +8509,6 @@ Important:
       // Don't fail the request - this is a sync feature
     }
   }
-
-  // Product Locations endpoints
-  app.get('/api/products/:id/locations', isAuthenticated, async (req, res) => {
-    try {
-      const productId = req.params.id;
-      const locations = await storage.getProductLocations(productId);
-      res.json(locations);
-    } catch (error) {
-      console.error("Error fetching product locations:", error);
-      res.status(500).json({ message: "Failed to fetch product locations" });
-    }
-  });
 
   app.post('/api/products/:id/locations', isAuthenticated, async (req: any, res) => {
     try {
