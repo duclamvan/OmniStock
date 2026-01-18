@@ -276,7 +276,10 @@ async function getCurrencyConverter() {
     };
   } catch (error) {
     console.error('Error fetching exchange rates:', error);
-    return (amount: number, currency: string) => currency === 'EUR' ? amount : amount;
+    return (amount: number, currency: string) => {
+      console.error(`[CURRENCY] Fallback used - returning 0 for non-EUR ${currency} amount ${amount} (API unavailable)`);
+      return currency === 'EUR' ? amount : 0;
+    };
   }
 }
 
@@ -12881,6 +12884,19 @@ Important:
         await storage.updateProduct(targetProductId, { quantity: newProductQty });
       }
       
+
+      // Also update variant quantity if the location is a variant location (CRITICAL: prevents desync)
+      if (location.variantId && !isVirtualSku) {
+        const variant = await storage.getProductVariant(location.variantId);
+        if (variant) {
+          const currentVariantQty = variant.quantity || 0;
+          const newVariantQty = action === 'restore'
+            ? currentVariantQty + actualQuantity
+            : Math.max(0, currentVariantQty - actualQuantity);
+          await storage.updateProductVariant(location.variantId, { quantity: newVariantQty });
+        }
+      }
+
       // Log the activity
       await storage.createPickPackLog({
         orderId: req.params.id,
@@ -17762,15 +17778,46 @@ Important:
         });
       }
 
-      // Calculate summary
-      const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || order.total || '0'), 0);
-      const totalCost = filteredOrders.reduce((sum, order) => sum + parseFloat(order.totalCost || '0'), 0);
+      // Filter to only shipped/paid orders for accurate financial reporting
+      const completedOrders = filteredOrders.filter(order => 
+        order.orderStatus === 'shipped' || order.orderStatus === 'paid' || 
+        order.status === 'shipped' || order.status === 'paid'
+      );
+      
+      // Fetch exchange rates for currency conversion
+      let exchangeRates: any = null;
+      try {
+        const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+        exchangeRates = await exchangeRateResponse.json();
+      } catch (e) {
+        console.error('Failed to fetch exchange rates for sales summary');
+      }
+      
+      const convertToEur = (amount: number, currency: string): number => {
+        if (!amount || !currency) return 0;
+        if (currency === 'EUR') return amount;
+        if (!exchangeRates?.rates) return 0;
+        const rate = exchangeRates.rates[currency.toUpperCase()];
+        return rate ? amount / rate : 0;
+      };
+
+      // Calculate summary with currency conversion to EUR
+      const totalRevenue = completedOrders.reduce((sum, order) => {
+        const amount = parseFloat(order.grandTotal || order.total || '0');
+        return sum + convertToEur(amount, order.currency || 'EUR');
+      }, 0);
+      const totalCost = completedOrders.reduce((sum, order) => {
+        const amount = parseFloat(order.totalCost || '0');
+        return sum + convertToEur(amount, order.currency || 'EUR');
+      }, 0);
       const summary = {
-        totalOrders: filteredOrders.length,
+        totalOrders: completedOrders.length,
         totalRevenue,
         totalCost,
         totalProfit: totalRevenue - totalCost,
-        averageOrderValue: filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0,
+        averageOrderValue: completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0,
+        currency: 'EUR',
+        note: 'All monetary values are converted to EUR',
         ordersByStatus: filteredOrders.reduce((acc, order) => {
           acc[order.orderStatus || order.status] = (acc[order.orderStatus || order.status] || 0) + 1;
           return acc;
@@ -17780,7 +17827,6 @@ Important:
           return acc;
         }, {} as Record<string, number>)
       };
-
       res.json(summary);
     } catch (error) {
       console.error("Error generating sales summary:", error);
