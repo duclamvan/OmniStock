@@ -1,25 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ScrollToTopProps {
   threshold?: number;
   className?: string;
+  fadeDelay?: number;
 }
 
-export function ScrollToTop({ threshold = 300, className }: ScrollToTopProps) {
+export function ScrollToTop({ threshold = 300, className, fadeDelay = 3000 }: ScrollToTopProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [isFaded, setIsFaded] = useState(false);
+  const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const resetFadeTimer = () => {
+      setIsFaded(false);
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
+      fadeTimeoutRef.current = setTimeout(() => {
+        setIsFaded(true);
+      }, fadeDelay);
+    };
+
     const handleScroll = () => {
       const scrollY = window.scrollY || document.documentElement.scrollTop;
       setIsVisible(scrollY > threshold);
+      resetFadeTimer();
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [threshold]);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
+    };
+  }, [threshold, fadeDelay]);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -44,7 +63,9 @@ export function ScrollToTop({ threshold = 300, className }: ScrollToTopProps) {
         "bottom-6 right-4 sm:bottom-8 sm:right-6",
         "h-11 w-11 sm:h-12 sm:w-12",
         isVisible 
-          ? "opacity-100 translate-y-0 pointer-events-auto" 
+          ? isFaded 
+            ? "opacity-30 translate-y-0 pointer-events-auto hover:opacity-100" 
+            : "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-4 pointer-events-none",
         className
       )}
