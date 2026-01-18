@@ -68,6 +68,8 @@ interface SearchResult {
     availableQuantity?: number;
     allocatedQuantity?: number;
     imageUrl?: string;
+    priceEur?: number | string;
+    priceCzk?: number | string;
     type: 'inventory';
   }>;
   shipmentItems: Array<{
@@ -584,6 +586,19 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                             className="font-mono text-xs text-gray-500 dark:text-gray-400"
                             dangerouslySetInnerHTML={{ __html: highlightMatch(item.sku, searchQuery) }}
                           />
+                          {/* Prices */}
+                          <div className="flex gap-2 text-xs">
+                            {item.priceEur && (
+                              <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                €{Number(item.priceEur).toFixed(2)}
+                              </span>
+                            )}
+                            {item.priceCzk && (
+                              <span className="text-gray-500 dark:text-gray-400">
+                                {Number(item.priceCzk).toFixed(0)} Kč
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Stock Badge */}

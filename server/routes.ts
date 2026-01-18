@@ -3899,6 +3899,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableQuantity: available,
           allocatedQuantity: allocated,
           imageUrl: product.imageUrl,
+          priceEur: product.priceEur,
+          priceCzk: product.priceCzk,
           type: 'inventory' as const
         };
       });
@@ -4155,6 +4157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           availableQuantity: available,
           allocatedQuantity: allocated,
           imageUrl: product.imageUrl,
+          priceEur: product.priceEur,
+          priceCzk: product.priceCzk,
           type: 'inventory' as const
         };
       });
@@ -26826,6 +26830,8 @@ Important rules:
                 productName: product.name,
                 sku: product.sku,
                 imageUrl: product.imageUrl,
+          priceEur: product.priceEur,
+          priceCzk: product.priceCzk,
                 prices: {
                   priceCzk: product.priceCzk,
                   priceEur: product.priceEur,
@@ -26869,6 +26875,8 @@ Important rules:
                     productName: product.name,
                     sku: product.sku,
                     imageUrl: product.imageUrl,
+          priceEur: product.priceEur,
+          priceCzk: product.priceCzk,
                     prices: {
                       priceCzk: product.priceCzk,
                       priceEur: product.priceEur,
