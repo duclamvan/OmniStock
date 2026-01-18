@@ -25995,8 +25995,15 @@ Important rules:
         }
         
         // Step 3c: Clean up productLocations for items that had stored locations
+        // Track affected variantIds for recalculation
+        const affectedVariantIds = new Set<string>();
+        const affectedProductIdsForRecalc = new Set<string>();
+        
         for (const item of allReceiptItems) {
           if (!item.productId || !item.storedLocations) continue;
+          
+          // Track product for recalculation
+          affectedProductIdsForRecalc.add(item.productId);
           
           try {
             // Parse stored locations
@@ -26023,6 +26030,11 @@ Important rules:
                 ));
               
               if (productLocation) {
+                // Track variantId if present for recalculation
+                if (productLocation.variantId) {
+                  affectedVariantIds.add(productLocation.variantId);
+                }
+                
                 const newQuantity = Math.max(0, (productLocation.quantity || 0) - quantity);
                 
                 if (newQuantity === 0) {
@@ -26057,6 +26069,42 @@ Important rules:
           } catch (locError) {
             console.error(`Error reverting locations for receipt item ${item.id}:`, locError);
           }
+        }
+        
+        // Step 3d: Recalculate product base stock from locations after location cleanup
+        // This ensures product.quantity stays in sync with the sum of productLocations.quantity
+        for (const productId of affectedProductIdsForRecalc) {
+          try {
+            await recalculateProductBaseStock(productId);
+          } catch (recalcError) {
+            console.error(`[revert-to-receiving] Error recalculating base stock for product ${productId}:`, recalcError);
+          }
+        }
+        console.log(`[revert-to-receiving] Recalculated base stock for ${affectedProductIdsForRecalc.size} products`);
+        
+        // Step 3e: Recalculate variant quantities from their locations
+        // For each affected variant, sum its location quantities and update variant.quantity
+        for (const variantId of affectedVariantIds) {
+          try {
+            const variantLocations = await db
+              .select({ quantity: productLocations.quantity })
+              .from(productLocations)
+              .where(eq(productLocations.variantId, variantId));
+            
+            const totalVariantQty = variantLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+            
+            await db
+              .update(productVariants)
+              .set({ quantity: totalVariantQty, updatedAt: new Date() })
+              .where(eq(productVariants.id, variantId));
+            
+            console.log(`[revert-to-receiving] Recalculated variant ${variantId} quantity: ${totalVariantQty} units`);
+          } catch (variantError) {
+            console.error(`[revert-to-receiving] Error recalculating variant ${variantId} quantity:`, variantError);
+          }
+        }
+        if (affectedVariantIds.size > 0) {
+          console.log(`[revert-to-receiving] Recalculated quantities for ${affectedVariantIds.size} variants`);
         }
         
         // Step 4: Remove cost history entries and restore product costs to pre-completion values

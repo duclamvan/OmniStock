@@ -3367,6 +3367,23 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`[Stock Adjustment Approved] Product ${request.productId}: location ${request.locationId} updated to ${newQuantity}, base stock = ${totalQuantity}`);
 
+        // If the location has a variantId, recalculate and update the variant quantity
+        if (location.variantId) {
+          const variantLocations = await tx
+            .select({ quantity: productLocations.quantity })
+            .from(productLocations)
+            .where(eq(productLocations.variantId, location.variantId));
+          
+          const variantTotalQuantity = variantLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+          
+          await tx
+            .update(productVariants)
+            .set({ quantity: variantTotalQuantity, updatedAt: new Date() })
+            .where(eq(productVariants.id, location.variantId));
+          
+          console.log(`[Stock Adjustment Approved] Variant ${location.variantId}: total quantity updated to ${variantTotalQuantity}`);
+        }
+
         return updatedRequest;
       });
     } catch (error) {
