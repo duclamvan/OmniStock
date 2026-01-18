@@ -421,6 +421,7 @@ export interface IStorage {
 
   // Product Locations
   getProductLocations(productId: string): Promise<ProductLocation[]>;
+  getProductLocation(id: string): Promise<ProductLocation | undefined>;
   createProductLocation(location: InsertProductLocation): Promise<ProductLocation>;
   updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
   deleteProductLocation(id: string): Promise<boolean>;
@@ -2783,6 +2784,19 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching product locations:', error);
       return [];
+    }
+  }
+
+  async getProductLocation(id: string): Promise<ProductLocation | undefined> {
+    try {
+      const [location] = await db
+        .select()
+        .from(productLocations)
+        .where(eq(productLocations.id, id));
+      return location;
+    } catch (error) {
+      console.error('Error fetching product location:', error);
+      return undefined;
     }
   }
 
