@@ -13,41 +13,33 @@ import { formatCurrency } from '@/lib/currencyUtils';
 // Track if we've already preloaded search data (singleton across component remounts)
 let hasPreloadedSearch = false;
 
-// Framer Motion animation variants
+// Framer Motion animation variants - simplified for reliability
 const dropdownVariants = {
   hidden: { 
     opacity: 0, 
-    y: -10, 
-    scale: 0.95,
-    filter: 'blur(4px)'
+    y: -8
   },
   visible: { 
     opacity: 1, 
-    y: 0, 
-    scale: 1,
-    filter: 'blur(0px)',
+    y: 0,
     transition: {
-      type: 'spring',
-      stiffness: 400,
-      damping: 25,
-      staggerChildren: 0.03
+      duration: 0.15,
+      ease: 'easeOut',
+      staggerChildren: 0.02
     }
   },
   exit: { 
     opacity: 0, 
-    y: -8, 
-    scale: 0.96,
-    filter: 'blur(2px)',
-    transition: { duration: 0.15, ease: 'easeOut' }
+    y: -4,
+    transition: { duration: 0.1, ease: 'easeOut' }
   }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -10 },
+  hidden: { opacity: 0 },
   visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { type: 'spring', stiffness: 500, damping: 30 }
+    opacity: 1,
+    transition: { duration: 0.1 }
   }
 };
 
@@ -55,16 +47,15 @@ const skeletonVariants = {
   hidden: { opacity: 0 },
   visible: { 
     opacity: 1,
-    transition: { staggerChildren: 0.08 }
+    transition: { duration: 0.1 }
   }
 };
 
 const skeletonItemVariants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0.5 },
   visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { type: 'spring', stiffness: 300, damping: 24 }
+    opacity: 1,
+    transition: { duration: 0.1 }
   }
 };
 
