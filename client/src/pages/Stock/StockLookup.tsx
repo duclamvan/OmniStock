@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck } from "lucide-react";
+import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck, MoreVertical, Star, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -127,6 +127,8 @@ export default function StockLookup() {
   const [addLocationVariantName, setAddLocationVariantName] = useState<string>("");
   const [deleteLocationId, setDeleteLocationId] = useState<string | null>(null);
   const [deleteLocationProductId, setDeleteLocationProductId] = useState<string | null>(null);
+  const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false);
+  const [locationToDelete, setLocationToDelete] = useState<ProductLocation | null>(null);
   const [newLocationType, setNewLocationType] = useState<LocationType>("warehouse");
   const [newLocationCode, setNewLocationCode] = useState("");
   const [newLocationQuantity, setNewLocationQuantity] = useState(0);
@@ -394,12 +396,15 @@ export default function StockLookup() {
         queryClient.invalidateQueries({ queryKey: [`/api/products/${deleteLocationProductId}/variants`] });
       }
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products/primary-locations'] });
       toast({
         title: t('common:success'),
         description: t('common:locationDeletedSuccessfully'),
       });
       setDeleteLocationId(null);
       setDeleteLocationProductId(null);
+      setDeleteConfirmDialogOpen(false);
+      setLocationToDelete(null);
     },
     onError: () => {
       toast({
@@ -413,6 +418,55 @@ export default function StockLookup() {
   const handleDeleteVariantLocation = (productId: string, locationId: string) => {
     setDeleteLocationProductId(productId);
     deleteLocationMutation.mutate({ productId, locationId });
+  };
+
+  // Set primary location mutation
+  const setPrimaryMutation = useMutation({
+    mutationFn: async ({ productId, locationId }: { productId: string; locationId: string }) => {
+      return await apiRequest('PATCH', `/api/products/${productId}/locations/${locationId}`, {
+        isPrimary: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${selectedProduct}/locations`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products/primary-locations'] });
+      toast({
+        title: t('primaryLocationSet'),
+        description: t('primaryLocationSetSuccessfully'),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t('common:error'),
+        description: error.message || t('failedToSetPrimaryLocation'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteLocation = (loc: ProductLocation) => {
+    setLocationToDelete(loc);
+    setDeleteConfirmDialogOpen(true);
+  };
+
+  const handleSetPrimaryLocation = (loc: ProductLocation) => {
+    setPrimaryMutation.mutate({
+      productId: loc.productId,
+      locationId: loc.id,
+    });
+  };
+
+  const confirmDeleteLocation = () => {
+    if (locationToDelete) {
+      setDeleteLocationProductId(locationToDelete.productId);
+      deleteLocationMutation.mutate({
+        productId: locationToDelete.productId,
+        locationId: locationToDelete.id,
+      });
+      setDeleteConfirmDialogOpen(false);
+      setLocationToDelete(null);
+    }
   };
 
   const resetAddLocationForm = () => {
@@ -1280,6 +1334,41 @@ export default function StockLookup() {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1.5 ml-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        {!loc.isPrimary && (
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleSetPrimaryLocation(loc);
+                                            }}
+                                          >
+                                            <Star className="h-4 w-4 mr-2" />
+                                            {t('setPrimaryLocation')}
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem
+                                          className="text-red-600 focus:text-red-600"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteLocation(loc);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          {t('deleteLocation')}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <Button
                                       variant="outline"
                                       size="icon"
@@ -1877,6 +1966,30 @@ export default function StockLookup() {
               data-testid="button-save-add-location"
             >
               {t('common:addLocation')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Location Confirmation Dialog */}
+      <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('deleteLocation')}</DialogTitle>
+            <DialogDescription>
+              {t('deleteLocationConfirmation', { location: locationToDelete?.locationCode })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmDialogOpen(false)}>
+              {t('common:cancel')}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteLocation}
+              disabled={deleteLocationMutation.isPending}
+            >
+              {deleteLocationMutation.isPending ? t('common:deleting') : t('common:delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

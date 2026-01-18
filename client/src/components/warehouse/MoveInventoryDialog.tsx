@@ -43,6 +43,8 @@ interface ProductLocation {
   quantity: number;
   isPrimary: boolean;
   notes?: string;
+  variantId?: string | null;
+  variantName?: string | null;
 }
 
 interface MoveInventoryDialogProps {
@@ -208,6 +210,7 @@ export default function MoveInventoryDialog({
         ? { toLocationCode: moveToLocation.replace("new:", "") }
         : { toLocationId: moveToLocation }),
       quantity: moveQuantity,
+      ...(fromLocation.variantId ? { variantId: fromLocation.variantId } : {}),
     });
   };
 
