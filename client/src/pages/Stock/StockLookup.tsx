@@ -373,10 +373,11 @@ export default function StockLookup() {
       setAddLocationDialogOpen(false);
       resetAddLocationForm();
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Add location error:', error);
       toast({
         title: t('common:error'),
-        description: t('common:failedToAddLocation'),
+        description: error?.message || t('common:failedToAddLocation'),
         variant: "destructive",
       });
     },
@@ -1009,6 +1010,9 @@ export default function StockLookup() {
                               // Check if variant has any locations
                               const hasLocations = allLocations.length > 0;
                               
+                              // Calculate actual variant stock from locations (source of truth)
+                              const variantLocationStock = allLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+                              
                               const isExpanded = expandedVariants.has(variant.id);
                               const toggleExpand = () => {
                                 setExpandedVariants(prev => {
@@ -1069,7 +1073,7 @@ export default function StockLookup() {
                                           {variant.name}
                                         </Badge>
                                         <Badge variant="secondary" className="px-2">
-                                          {variant.quantity} {t('units')} {t('total')}
+                                          {variantLocationStock} {t('units')} {t('total')}
                                         </Badge>
                                       </div>
                                       {variant.barcode && (
