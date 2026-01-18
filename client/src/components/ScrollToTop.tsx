@@ -55,11 +55,13 @@ export function ScrollToTop({ threshold = 300, className, fadeDelay = 3000 }: Sc
       className={cn(
         "fixed z-50 flex items-center justify-center",
         "transition-all duration-300 ease-out",
-        "bg-primary hover:bg-primary/90",
-        "shadow-lg",
-        "text-primary-foreground",
+        "bg-slate-800/90 dark:bg-slate-700/90",
+        "hover:bg-slate-700 dark:hover:bg-slate-600",
+        "backdrop-blur-sm shadow-lg",
+        "border border-slate-700/50 dark:border-slate-600/50",
+        "text-white",
         "rounded-full",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         "bottom-6 right-4 sm:bottom-8 sm:right-6",
         "h-11 w-11 sm:h-12 sm:w-12",
         isVisible 
