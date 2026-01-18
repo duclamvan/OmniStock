@@ -498,7 +498,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
             className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[60vh] sm:max-h-[80vh] overflow-y-auto z-[100] shadow-2xl dark:shadow-gray-900/50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl"
             style={{ originY: 0 }}
           >
-            {isLoading && !results ? (
+            {isLoading || (!results && isFetching) ? (
               <motion.div 
                 variants={skeletonVariants}
                 initial="hidden"
@@ -520,7 +520,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                   </motion.div>
                 ))}
               </motion.div>
-            ) : totalResults === 0 ? (
+            ) : !results || totalResults === 0 ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
