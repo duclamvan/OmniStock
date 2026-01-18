@@ -73,7 +73,7 @@ export default function StockAdjustmentDialog({
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { inventorySettings } = useSettings();
-  const approvalRequired = inventorySettings.stockAdjustmentApprovalRequired ?? true;
+  const approvalRequired = inventorySettings.stockAdjustmentApprovalRequired ?? false;
   const [adjustmentType, setAdjustmentType] = useState<"set" | "increment" | "decrement">("set");
   const [newQuantity, setNewQuantity] = useState(0);
   const [adjustmentAmount, setAdjustmentAmount] = useState(0);
