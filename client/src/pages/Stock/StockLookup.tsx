@@ -327,16 +327,21 @@ export default function StockLookup() {
   }, [products, searchQuery, selectedCategory, sortBy]);
 
   // Fetch variants for selected product
-  const { data: selectedVariants = [] } = useQuery<Variant[]>({
-    queryKey: [`/api/products/${selectedProduct}/variants`],
+  const { data: selectedVariants = [], isLoading: variantsLoading } = useQuery<Variant[]>({
+    queryKey: ['/api/products', selectedProduct, 'variants'],
     enabled: !!selectedProduct,
+    staleTime: 0,
   });
 
   // Fetch locations for selected product
   const { data: selectedLocations = [], isLoading: locationsLoading } = useQuery<ProductLocation[]>({
-    queryKey: [`/api/products/${selectedProduct}/locations`],
+    queryKey: ['/api/products', selectedProduct, 'locations'],
     enabled: !!selectedProduct,
+    staleTime: 0,
   });
+  
+  // Combined loading state for expanded details
+  const expandedDataLoading = variantsLoading || locationsLoading;
 
   // Get enriched selected product with variants and locations
   const selectedProductData = useMemo(() => {
@@ -1002,9 +1007,18 @@ export default function StockLookup() {
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
-                  {isExpanded && selectedProductData && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                  {/* Expanded Details - with smooth animation */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Loading skeleton while fetching details */}
+                      {expandedDataLoading ? (
+                        <div className="space-y-3 animate-pulse">
+                          <div className="h-16 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                          <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                          <div className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                        </div>
+                      ) : selectedProductData && (
+                        <>
                       {/* Virtual Product Message */}
                       {product.productType === 'virtual' && (
                         <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-4 flex items-center gap-3">
@@ -1661,6 +1675,8 @@ export default function StockLookup() {
                           <span className="hidden sm:inline">{t('showInfo')}</span>
                         </Button>
                       </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
