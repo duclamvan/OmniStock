@@ -1,0 +1,38 @@
+-- Address Validation Migration
+-- Date: 2026-01-19
+-- Purpose: Validate and autocorrect all customer addresses using OpenStreetMap Nominatim API
+-- 
+-- This migration updates the following fields based on geocoding validation:
+-- - customers.city (main address city)
+-- - customers.zipCode (main address postal code)
+-- - customers.country (main address country)
+-- - customers.billingStreet (billing address street name)
+-- - customers.billingStreetNumber (billing address street number)
+-- - customers.billingCity (billing address city)
+-- - customers.billingZipCode (billing address postal code)
+-- - customers.billingCountry (billing address country)
+--
+-- Key corrections made:
+-- 1. Countries corrected (e.g., "Germany" -> "Deutschland", wrong countries fixed)
+-- 2. Missing cities filled in from geocoding
+-- 3. Postal codes corrected and formatted properly
+-- 4. Billing addresses validated and corrected to match main address corrections
+--
+-- Note: This migration was run via the address-validation-migration.ts script
+-- which uses the OpenStreetMap Nominatim API for geocoding validation.
+-- The script respects API rate limits (1 request/second).
+
+-- Verification query to check updates:
+-- SELECT 
+--   id, name, address, city, zip_code, country,
+--   billing_street, billing_city, billing_zip_code, billing_country,
+--   updated_at
+-- FROM customers
+-- WHERE updated_at > '2026-01-19'
+-- ORDER BY updated_at DESC
+-- LIMIT 100;
+
+-- Count of updated addresses:
+-- SELECT COUNT(*) FROM customers 
+-- WHERE updated_at > '2026-01-19' 
+-- AND (city IS NOT NULL OR country IS NOT NULL);
