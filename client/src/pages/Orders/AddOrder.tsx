@@ -5055,14 +5055,29 @@ export default function AddOrder() {
                         
                         {/* Customer Info - Clean 3-row layout */}
                         <div className="flex-1 min-w-0">
-                          {/* Row 1: Name + Badges */}
+                          {/* Row 1: Name + User ID + Badges */}
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-semibold text-sm text-slate-900 dark:text-white truncate max-w-[180px]">
                               {customer.name}
                             </span>
+                            {(customer.facebookId || customer.facebookName || customer.phone) && (
+                              <span className="text-xs text-slate-400 font-normal">
+                                ({customer.facebookId || customer.facebookName || (customer.phone?.startsWith('+') ? customer.phone : '+' + customer.phone)})
+                              </span>
+                            )}
                             {customer.hasPayLaterBadge && (
                               <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-0">
                                 Pay Later
+                              </Badge>
+                            )}
+                            {customer.isVip && (
+                              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-0">
+                                VIP
+                              </Badge>
+                            )}
+                            {customer.isBlocked && (
+                              <Badge className="text-[10px] px-1.5 py-0 h-4 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-0">
+                                Blocked
                               </Badge>
                             )}
                             {customer.type && customer.type !== 'regular' && (

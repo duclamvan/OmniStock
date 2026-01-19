@@ -314,41 +314,82 @@ export default function AllCustomers() {
       key: "name",
       header: t('customers:customer'),
       sortable: true,
-      className: "min-w-[150px]",
-      cell: (customer) => (
-        <div>
-          <Link href={`/customers/${customer.id}`}>
-            <div className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1 lg:gap-2">
-              <span className="truncate max-w-[120px] lg:max-w-none">{customer.name}</span>
+      className: "min-w-[180px]",
+      cell: (customer) => {
+        const userId = customer.facebookId || customer.facebookName || customer.phone;
+        const formattedUserId = userId ? (
+          customer.phone && !customer.facebookId && !customer.facebookName
+            ? `(${customer.phone.startsWith('+') ? customer.phone : '+' + customer.phone})`
+            : `(${userId})`
+        ) : null;
+        
+        return (
+          <div className="space-y-1">
+            <Link href={`/customers/${customer.id}`}>
+              <div className="font-medium text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                {customer.name}
+                {formattedUserId && (
+                  <span className="text-gray-400 font-normal text-xs ml-1">{formattedUserId}</span>
+                )}
+              </div>
+            </Link>
+            <div className="flex items-center gap-1 flex-wrap">
               {customer.isNew && (
-                <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-green-50 border-green-300 text-green-700 hidden sm:flex">
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-green-100 text-green-700 border-0">
                   {t('customers:newBadge')}
                 </Badge>
               )}
               {customer.hasPayLaterBadge && (
-                <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-yellow-50 border-yellow-300 text-yellow-700 hidden sm:flex">
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-yellow-100 text-yellow-700 border-0">
                   {t('customers:payLater')}
                 </Badge>
               )}
+              {customer.isVip && (
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-0">
+                  VIP
+                </Badge>
+              )}
+              {customer.isBlocked && (
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-red-100 text-red-700 border-0">
+                  {t('customers:blocked')}
+                </Badge>
+              )}
+              {customer.preferredCurrency && customer.preferredCurrency !== 'EUR' && (
+                <Badge className="text-[10px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 border-0">
+                  {customer.preferredCurrency}
+                </Badge>
+              )}
             </div>
-          </Link>
-          {customer.facebookName && (
-            <div className="text-xs text-gray-500 truncate max-w-[120px] lg:max-w-none">{t('customers:fbPrefix')} {customer.facebookName}</div>
-          )}
-        </div>
-      ),
+          </div>
+        );
+      },
     },
     {
       key: "country",
       header: t('customers:country'),
       sortable: true,
       className: "hidden lg:table-cell",
-      cell: (customer) => customer.country ? (
-        <div className="flex items-center gap-1 text-xs">
-          <MapPin className="h-3 w-3 text-gray-400" />
-          {customer.country}
-        </div>
-      ) : '-',
+      cell: (customer) => {
+        const countryFlags: Record<string, string> = {
+          'Deutschland': '🇩🇪', 'Österreich': '🇦🇹', 'Česko': '🇨🇿',
+          'Slovensko': '🇸🇰', 'Polska': '🇵🇱', 'Nederland': '🇳🇱',
+          'België': '🇧🇪', 'France': '🇫🇷', 'España': '🇪🇸',
+          'Italia': '🇮🇹', 'Schweiz': '🇨🇭', 'United Kingdom': '🇬🇧',
+          'United States': '🇺🇸', 'Việt Nam': '🇻🇳', 'Eesti': '🇪🇪',
+          'Sverige': '🇸🇪', 'Suomi': '🇫🇮', 'Danmark': '🇩🇰',
+          'Norge': '🇳🇴', 'Hrvatska': '🇭🇷', 'Slovenija': '🇸🇮',
+          'Magyarország': '🇭🇺', 'România': '🇷🇴', 'Türkiye': '🇹🇷',
+          'Srbija': '🇷🇸', 'Indonesia': '🇮🇩', 'Portugal': '🇵🇹',
+        };
+        const flag = customer.country ? countryFlags[customer.country] || '🌍' : null;
+        
+        return customer.country ? (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-base">{flag}</span>
+            <span className="text-gray-600">{customer.country}</span>
+          </div>
+        ) : <span className="text-gray-400">-</span>;
+      },
     },
     {
       key: "lastOrderDate",
