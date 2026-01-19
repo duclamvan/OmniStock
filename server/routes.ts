@@ -9305,7 +9305,7 @@ Important:
   app.post('/api/products/:id/locations/move', isAuthenticated, async (req: any, res) => {
     try {
       const productId = req.params.id;
-      const { fromLocationId, toLocationId, toLocationCode, quantity } = req.body;
+      const { fromLocationId, toLocationId, toLocationCode, quantity, variantId } = req.body;
 
       // Validate required fields
       if (!fromLocationId || (!toLocationId && !toLocationCode) || !quantity) {
@@ -9324,18 +9324,20 @@ Important:
 
       // If toLocationCode is provided instead of toLocationId, find or create the location
       if (!toLocationId && toLocationCode) {
-        // Check if location already exists for this product
+        // Check if location already exists for this product (and variant if applicable)
         const existingLocations = await storage.getProductLocations(productId);
         const existingLocation = existingLocations.find(
-          loc => loc.locationCode.toUpperCase() === toLocationCode.toUpperCase()
+          loc => loc.locationCode.toUpperCase() === toLocationCode.toUpperCase() &&
+                 (variantId ? loc.variantId === variantId : !loc.variantId)
         );
 
         if (existingLocation) {
           finalToLocationId = existingLocation.id;
         } else {
-          // Create new location for this product
+          // Create new location for this product (and variant if applicable)
           const newLocation = await storage.createProductLocation({
             productId,
+            variantId: variantId || null,
             locationCode: toLocationCode.toUpperCase(),
             quantity: 0, // Will be updated by moveInventory
             isPrimary: false,

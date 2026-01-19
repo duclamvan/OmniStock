@@ -1013,32 +1013,32 @@ export default function StockLookup() {
                           </div>
                           
                           {/* Expand All / Collapse All buttons */}
-                          <div className="flex gap-2 mb-3 flex-wrap">
+                          <div className="flex gap-1.5 sm:gap-2 mb-3 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs h-7"
+                              className="text-xs h-8 sm:h-7 px-2 sm:px-3"
                               onClick={() => {
                                 const allVariantIds = selectedProductData.variants.map(v => v.id);
                                 setExpandedVariants(new Set(allVariantIds));
                               }}
                             >
-                              <ChevronDown className="h-3 w-3 mr-1" />
-                              {t('common:expandAll')}
+                              <ChevronDown className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">{t('common:expandAll')}</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs h-7"
+                              className="text-xs h-8 sm:h-7 px-2 sm:px-3"
                               onClick={() => setExpandedVariants(new Set())}
                             >
-                              <ChevronUp className="h-3 w-3 mr-1" />
-                              {t('common:collapseAll')}
+                              <ChevronUp className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">{t('common:collapseAll')}</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-xs h-7"
+                              className="text-xs h-8 sm:h-7 px-2 sm:px-3"
                               onClick={() => {
                                 selectedProductData.variants.forEach(variant => {
                                   const variantLabelProduct = {
@@ -1055,8 +1055,8 @@ export default function StockLookup() {
                                 setVariantLabelDialogOpen(true);
                               }}
                             >
-                              <Printer className="h-3 w-3 mr-1" />
-                              {t('generateAllLabels')}
+                              <Printer className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">{t('generateAllLabels')}</span>
                             </Button>
                           </div>
                           
@@ -1165,7 +1165,7 @@ export default function StockLookup() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="h-7 text-xs"
+                                      className="h-8 sm:h-7 text-xs px-2 sm:px-3"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setAddLocationProductId(selectedProductData.id);
@@ -1180,14 +1180,14 @@ export default function StockLookup() {
                                         setAddLocationDialogOpen(true);
                                       }}
                                     >
-                                      <MapPinPlus className="h-3 w-3 mr-1" />
-                                      {t('common:addLocation')}
+                                      <MapPinPlus className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                                      <span className="hidden sm:inline">{t('common:addLocation')}</span>
                                     </Button>
                                     {/* Generate Label button for variant */}
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="h-7 text-xs"
+                                      className="h-8 sm:h-7 text-xs px-2 sm:px-3"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         const variantLabelProduct = {
@@ -1203,8 +1203,8 @@ export default function StockLookup() {
                                         setVariantLabelDialogOpen(true);
                                       }}
                                     >
-                                      <Printer className="h-3 w-3 mr-1" />
-                                      {t('generateLabel')}
+                                      <Printer className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                                      <span className="hidden sm:inline">{t('generateLabel')}</span>
                                     </Button>
                                   </div>
                                   
