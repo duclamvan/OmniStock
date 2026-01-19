@@ -1,6 +1,7 @@
 -- Address Validation Migration
 -- Date: 2026-01-19
 -- Purpose: Validate and autocorrect all customer addresses using OpenStreetMap Nominatim API
+-- RESULTS: 304 customer addresses validated and corrected
 -- 
 -- This migration updates the following fields based on geocoding validation:
 -- - customers.city (main address city)
