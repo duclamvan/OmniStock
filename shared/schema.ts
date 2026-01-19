@@ -821,6 +821,11 @@ export const products = pgTable("products", {
   // BOM Parent-Child relationship - direct hierarchy for inventory items
   parentProductId: varchar("parent_product_id"), // Self-reference: if set, this product is a child/component of another product
   bomQuantityPerParent: decimal("bom_quantity_per_parent", { precision: 10, scale: 4 }), // How many of this child are needed per 1 parent unit
+  // Product type for inventory tracking behavior
+  // 'standard' = normal physical product with location + quantity tracking
+  // 'physical_no_quantity' = physical product with location but no quantity tracking (always available)
+  // 'virtual' = non-physical product (services, digital items) - no location, no quantity, auto-picked
+  productType: text("product_type").default("standard"),
 }, (table) => [
   index("products_sku_idx").on(table.sku),
   index("products_barcode_idx").on(table.barcode),
@@ -2222,6 +2227,8 @@ export const insertProductSchema = createInsertSchema(products)
       .optional()
       .nullable()
       .transform((val) => (val ? String(val) : null)),
+    // Product type for inventory tracking behavior
+    productType: z.enum(['standard', 'physical_no_quantity', 'virtual']).optional().default('standard'),
   });
 export const insertProductVariantSchema = createInsertSchema(
   productVariants,
