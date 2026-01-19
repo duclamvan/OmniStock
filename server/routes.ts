@@ -161,7 +161,6 @@ import { PerformanceService } from './services/performanceService';
 import { safeBulkImport, validateProductImport, validateCustomerImport, validateSupplierImport, formatImportResponse } from './utils/safeBulkImport';
 import { validateImageUrl } from './utils/validation';
 import { getCircuitBreaker } from './utils/circuitBreaker';
-import { ApifyClient } from 'apify-client';
 
 // Vietnamese and Czech diacritics normalization for accent-insensitive search
 function normalizeVietnamese(str: string): string {
@@ -23330,7 +23329,7 @@ Important rules:
     }
   });
 
-  // Fetch Facebook profile data using Apify
+  // Fetch Facebook profile data using Bright Data API
   app.post('/api/facebook/profile', isAuthenticated, async (req, res) => {
     try {
       const { facebookUrl } = req.body;
@@ -23339,9 +23338,9 @@ Important rules:
         return res.status(400).json({ message: 'Facebook URL is required' });
       }
 
-      const apiKey = process.env.APIFY_API_KEY;
+      const apiKey = process.env.BRIGHT_DATA_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ message: 'Apify API key not configured' });
+        return res.status(500).json({ message: 'Bright Data API key not configured' });
       }
 
       // Extract Facebook username/ID from URL - handles many formats
@@ -23366,7 +23365,6 @@ Important rules:
       if (!username) {
         const pagesMatch = cleanUrl.match(/facebook\.com\/pages\/(?:[^\/]+\/)*([^\/]+)\/(\d+)/i);
         if (pagesMatch) {
-          // Prefer numeric ID if available
           username = pagesMatch[2] || pagesMatch[1];
         }
       }
@@ -23391,15 +23389,13 @@ Important rules:
         }
       }
       
-      // Pattern 6: Fallback - extract last meaningful path segment (for complex URLs)
+      // Pattern 6: Fallback - extract last meaningful path segment
       if (!username) {
         try {
           const url = new URL(cleanUrl);
           const pathParts = url.pathname.split('/').filter(p => p && p.length > 0);
-          // Find last segment that's either a username pattern or numeric ID
           for (let i = pathParts.length - 1; i >= 0; i--) {
             const part = pathParts[i];
-            // If it's a numeric ID (10+ digits) or looks like a username
             if (/^\d{10,}$/.test(part) || /^[a-zA-Z0-9._-]{3,}$/.test(part)) {
               const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg', 'category'];
               if (!skipPaths.includes(part.toLowerCase())) {
@@ -23417,39 +23413,84 @@ Important rules:
         return res.status(400).json({ message: 'Unable to extract Facebook username from URL' });
       }
 
-      console.log(`[Facebook Profile] Fetching profile for: ${username}`);
+      console.log(`[Facebook Profile] Fetching profile for: ${username} using Bright Data`);
 
-      const client = new ApifyClient({ token: apiKey });
+      const profileUrl = /^\d+$/.test(username) 
+        ? `https://www.facebook.com/profile.php?id=${username}` 
+        : `https://www.facebook.com/${username}`;
 
-      // Run the Apify actor
-      const run = await client.actor("vulnv/facebook-profile-scraper").call({
-        urls: [/^\d+$/.test(username) ? `https://www.facebook.com/profile.php?id=${username}` : `https://www.facebook.com/${username}`]
+      // Call Bright Data Profiles API
+      const brightDataResponse = await fetch('https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_l1vikznt1wgvvqz95w&include_errors=true&format=json', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify([{ url: profileUrl }])
       });
 
-      // Fetch results from the dataset
-      const { items } = await client.dataset(run.defaultDatasetId).listItems();
-
-      if (!items || items.length === 0) {
-        return res.status(404).json({ message: 'No profile data found' });
+      if (!brightDataResponse.ok) {
+        const errorText = await brightDataResponse.text();
+        console.error('[Facebook Profile] Bright Data API error:', errorText);
+        return res.status(500).json({ message: 'Failed to fetch Facebook profile from Bright Data' });
       }
 
-      const profile = items[0] as any;
+      const snapshotInfo = await brightDataResponse.json();
+      console.log('[Facebook Profile] Bright Data snapshot info:', JSON.stringify(snapshotInfo));
+
+      // Wait for snapshot to complete (poll for results)
+      const snapshotId = snapshotInfo.snapshot_id;
+      let profile: any = null;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds max wait
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+
+        const statusResponse = await fetch(`https://api.brightdata.com/datasets/v3/snapshot/${snapshotId}?format=json`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+
+        if (statusResponse.status === 200) {
+          const results = await statusResponse.json();
+          if (results && results.length > 0) {
+            profile = results[0];
+            break;
+          }
+        } else if (statusResponse.status === 202) {
+          // Still processing
+          continue;
+        } else {
+          console.log('[Facebook Profile] Status check returned:', statusResponse.status);
+        }
+      }
+
+      if (!profile) {
+        return res.status(404).json({ message: 'No profile data found or request timed out' });
+      }
       
-      console.log(`[Facebook Profile] Found: ${profile.title || 'Unknown'}`);
+      console.log(`[Facebook Profile] Found: ${profile.name || profile.account || 'Unknown'}`);
       console.log('[Facebook Profile] All profile data:', JSON.stringify(profile));
       
-      // Try multiple possible field names for profile picture (Apify actors may use different names)
-      const profilePicUrl = profile.profile_photo || profile.profilePictureUrl || profile.profilePic || profile.pictureUrl || 
-                            profile.photo || profile.image || profile.avatar || profile.profilePhoto ||
-                            profile.profileImage || profile.picture || null;
+      // Extract numeric ID (FBID) from Bright Data response
+      const numericId = profile.fbid || profile.id || profile.user_id || null;
+      const profileName = profile.name || profile.account || profile.handle || null;
       
-      console.log('[Facebook Profile] Detected profile picture URL:', profilePicUrl);
+      // Construct Facebook profile picture URL using numeric ID
+      let profilePictureUrl = null;
+      if (numericId && /^\d+$/.test(String(numericId))) {
+        profilePictureUrl = `https://graph.facebook.com/${numericId}/picture?type=large`;
+        console.log('[Facebook Profile] Constructed profile picture URL:', profilePictureUrl);
+      } else if (profile.profile_image) {
+        profilePictureUrl = profile.profile_image;
+      }
 
       // Download and store the profile picture locally if available
       let localProfilePictureUrl: string | null = null;
-      if (profilePicUrl) {
+      if (profilePictureUrl) {
         console.log('[Facebook Profile] Attempting to download profile picture...');
-        const avatarResult = await downloadAndStoreProfilePicture(profilePicUrl);
+        const avatarResult = await downloadAndStoreProfilePicture(profilePictureUrl);
         if (avatarResult) {
           localProfilePictureUrl = avatarResult.localPath;
           console.log('[Facebook Profile] Profile picture saved to:', localProfilePictureUrl);
@@ -23461,10 +23502,11 @@ Important rules:
       }
 
       res.json({
-        name: profile.name || profile.title || null,
-        profilePictureUrl: localProfilePictureUrl || profilePicUrl || null,
-        facebookId: profile.id || profile.facebookId || profile.pageId || null,
-        username: profile.pageName || username,
+        name: profileName,
+        profilePictureUrl: localProfilePictureUrl || profilePictureUrl || null,
+        facebookId: profile.handle || username,
+        facebookNumericId: numericId ? String(numericId) : null,
+        username: profile.handle || username,
         success: true
       });
     } catch (error: any) {
@@ -23475,7 +23517,6 @@ Important rules:
       });
     }
   });
-
   // Exchange Rates endpoint - provides EUR-based conversion rates
   app.get('/api/exchange-rates', isAuthenticated, async (req, res) => {
     try {
