@@ -379,8 +379,8 @@ export default function MoveInventoryDialog({
                 type="number"
                 min={1}
                 max={fromLocation.quantity}
-                value={moveQuantity}
-                onChange={(e) => setMoveQuantity(parseInt(e.target.value) || 0)}
+                value={moveQuantity === 0 ? '' : moveQuantity}
+                onChange={(e) => setMoveQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                 disabled={moveInventoryMutation.isPending}
                 data-testid="input-move-quantity"
                 className="flex-1"

@@ -1913,8 +1913,8 @@ export default function StockLookup() {
                 <Input
                   id="add-location-quantity"
                   type="number"
-                  value={newLocationQuantity}
-                  onChange={(e) => setNewLocationQuantity(parseInt(e.target.value) || 0)}
+                  value={newLocationQuantity === 0 ? '' : newLocationQuantity}
+                  onChange={(e) => setNewLocationQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                   min="0"
                   data-testid="input-add-location-quantity"
                 />

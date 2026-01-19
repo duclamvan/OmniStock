@@ -365,9 +365,9 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                   <Input
                     id="variant-quantity"
                     type="number"
-                    value={newVariant.quantity}
+                    value={newVariant.quantity === 0 ? '' : newVariant.quantity}
                     onChange={(e) =>
-                      setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
+                      setNewVariant((prev) => ({ ...prev, quantity: e.target.value === '' ? 0 : parseInt(e.target.value) }))
                     }
                     placeholder="0"
                   />

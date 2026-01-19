@@ -441,8 +441,8 @@ export default function BulkAddCartons() {
                             className="h-9 w-16 text-center"
                             type="number"
                             min="0"
-                            value={carton.stockQuantity}
-                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', parseInt(e.target.value) || 0)}
+                            value={carton.stockQuantity === 0 ? '' : carton.stockQuantity}
+                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', e.target.value === '' ? 0 : parseInt(e.target.value))}
                             data-testid={`input-stock-${index}`}
                           />
                         </div>
@@ -578,8 +578,8 @@ export default function BulkAddCartons() {
                             className="h-11 text-center"
                             type="number"
                             min="0"
-                            value={carton.stockQuantity}
-                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', parseInt(e.target.value) || 0)}
+                            value={carton.stockQuantity === 0 ? '' : carton.stockQuantity}
+                            onChange={(e) => updateCarton(carton.id, 'stockQuantity', e.target.value === '' ? 0 : parseInt(e.target.value))}
                           />
                         </div>
                         <div>

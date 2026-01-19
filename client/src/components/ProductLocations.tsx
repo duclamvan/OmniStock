@@ -604,8 +604,8 @@ export default function ProductLocations({
                       <Input
                         id="quantity"
                         type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                        value={quantity === 0 ? '' : quantity}
+                        onChange={(e) => setQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                         min="0"
                         data-testid="input-quantity"
                       />
@@ -1141,8 +1141,8 @@ export default function ProductLocations({
                 <Input
                   id="edit-quantity"
                   type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                  value={quantity === 0 ? '' : quantity}
+                  onChange={(e) => setQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                   min="0"
                   data-testid="input-edit-quantity"
                 />
@@ -1250,8 +1250,8 @@ export default function ProductLocations({
               <Input
                 id="move-quantity"
                 type="number"
-                value={moveQuantity}
-                onChange={(e) => setMoveQuantity(parseInt(e.target.value) || 0)}
+                value={moveQuantity === 0 ? '' : moveQuantity}
+                onChange={(e) => setMoveQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                 min="1"
                 max={moveFromLocation?.quantity || 0}
                 data-testid="input-move-quantity"

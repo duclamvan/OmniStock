@@ -409,8 +409,8 @@ export default function StockAdjustmentDialog({
                 id="new-quantity"
                 type="number"
                 min={0}
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(parseInt(e.target.value) || 0)}
+                value={newQuantity === 0 ? '' : newQuantity}
+                onChange={(e) => setNewQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                 disabled={createRequestMutation.isPending}
                 data-testid="input-new-quantity"
               />
@@ -475,8 +475,8 @@ export default function StockAdjustmentDialog({
                   id="adjustment-amount"
                   type="number"
                   min={0}
-                  value={adjustmentAmount}
-                  onChange={(e) => setAdjustmentAmount(parseInt(e.target.value) || 0)}
+                  value={adjustmentAmount === 0 ? '' : adjustmentAmount}
+                  onChange={(e) => setAdjustmentAmount(e.target.value === '' ? 0 : parseInt(e.target.value))}
                   disabled={createRequestMutation.isPending}
                   data-testid="input-adjustment-amount"
                 />
