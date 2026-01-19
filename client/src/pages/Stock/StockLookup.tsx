@@ -892,76 +892,65 @@ export default function StockLookup() {
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      {/* Top Row: Name + Stock */}
-                      <div>
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-base leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
-                              {product.name}
-                            </h3>
-                            {/* Product Type Badges */}
-                            {product.productType === 'physical_no_quantity' && (
-                              <Badge variant="outline" className="h-5 text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 flex items-center gap-0.5">
-                                <MapPin className="h-2.5 w-2.5" />
-                                {t('noQty')}
-                              </Badge>
-                            )}
-                            {product.productType === 'virtual' && (
-                              <Badge variant="outline" className="h-5 text-[10px] bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 flex items-center gap-0.5">
-                                <Cloud className="h-2.5 w-2.5" />
-                                {t('virtual')}
-                              </Badge>
-                            )}
-                          </div>
-                          {/* Stock Badge - show ∞ for virtual/no-qty products */}
-                          {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
-                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 flex-shrink-0 h-8 px-3">
-                              <span className="font-bold text-xl">∞</span>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      {/* Product Name - Full text, no truncation */}
+                      <h3 className="font-semibold text-base leading-snug text-gray-900 dark:text-white mb-1" data-testid={`text-product-name-${product.id}`}>
+                        {product.name}
+                      </h3>
+                      
+                      {/* Product Type Badges */}
+                      {(product.productType === 'physical_no_quantity' || product.productType === 'virtual') && (
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {product.productType === 'physical_no_quantity' && (
+                            <Badge variant="outline" className="h-5 text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 flex items-center gap-0.5">
+                              <MapPin className="h-2.5 w-2.5" />
+                              {t('noQty')}
                             </Badge>
-                          ) : (
-                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1.5 flex-shrink-0 h-8 px-3`}>
-                              <StatusIcon className="h-4 w-4" />
-                              <span className="font-bold text-lg">{displayProduct.totalStock}</span>
+                          )}
+                          {product.productType === 'virtual' && (
+                            <Badge variant="outline" className="h-5 text-[10px] bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 flex items-center gap-0.5">
+                              <Cloud className="h-2.5 w-2.5" />
+                              {t('virtual')}
                             </Badge>
                           )}
                         </div>
-                        
-                        {/* SKU and Category */}
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                          {product.sku && (
-                            <span className="flex items-center gap-1 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                              <Barcode className="h-3.5 w-3.5" />
-                              {product.sku}
-                            </span>
-                          )}
-                          {product.categoryName && (
-                            <span className="truncate text-gray-600 dark:text-gray-400">{product.categoryName}</span>
-                          )}
-                        </div>
-
-                        {/* Prices - Larger for mobile */}
-                        {(product.priceCzk || product.priceEur) && (
-                          <div className="flex items-center gap-3 text-sm font-semibold">
-                            {product.priceCzk && (
-                              <span className="text-blue-600 dark:text-blue-400">
-                                {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
-                              </span>
-                            )}
-                            {product.priceCzk && product.priceEur && (
-                              <span className="text-gray-300 dark:text-gray-600">|</span>
-                            )}
-                            {product.priceEur && (
-                              <span className="text-green-600 dark:text-green-400">
-                                €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            )}
-                          </div>
+                      )}
+                      
+                      {/* SKU and Category */}
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                        {product.sku && (
+                          <span className="flex items-center gap-1 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                            <Barcode className="h-3.5 w-3.5" />
+                            {product.sku}
+                          </span>
+                        )}
+                        {product.categoryName && (
+                          <span className="text-gray-600 dark:text-gray-400">{product.categoryName}</span>
                         )}
                       </div>
 
-                      {/* Bottom Row: Location info - or message for virtual products */}
-                      <div className="flex items-center justify-between mt-2">
+                      {/* Prices */}
+                      {(product.priceCzk || product.priceEur) && (
+                        <div className="flex items-center gap-3 text-sm font-semibold mb-2">
+                          {product.priceCzk && (
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
+                            </span>
+                          )}
+                          {product.priceCzk && product.priceEur && (
+                            <span className="text-gray-300 dark:text-gray-600">|</span>
+                          )}
+                          {product.priceEur && (
+                            <span className="text-green-600 dark:text-green-400">
+                              €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bottom Row: Location + Stock + Arrow */}
+                      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                        {/* Location */}
                         {product.productType === 'virtual' ? (
                           <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
                             <Cloud className="h-4 w-4" />
@@ -983,12 +972,25 @@ export default function StockLookup() {
                             <span className="text-xs">{t('noLocation')}</span>
                           </div>
                         )}
+                        
+                        {/* Stock Badge + Arrow */}
+                        <div className="flex items-center gap-2">
+                          {/* Stock Badge */}
+                          {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
+                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 h-8 px-3">
+                              <span className="font-bold text-lg">∞</span>
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1.5 h-8 px-3`}>
+                              <StatusIcon className="h-4 w-4" />
+                              <span className="font-bold text-lg">{displayProduct.totalStock}</span>
+                            </Badge>
+                          )}
+                          
+                          {/* Expand Arrow */}
+                          <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Expand Indicator - Larger touch target */}
-                    <div className="flex-shrink-0 self-center p-2 -mr-2">
-                      <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                     </div>
                   </div>
 
@@ -1610,45 +1612,45 @@ export default function StockLookup() {
                         </div>
                       ))}
 
-                      {/* Action Buttons */}
+                      {/* Action Buttons - Icon only on mobile */}
                       <div className="flex gap-2">
                         {selectedProductData.description && (
                           <Button
                             variant="outline"
-                            className="flex-1 h-10"
+                            className="h-12 px-3 sm:px-4 sm:flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDescriptionDialogOpen(true);
                             }}
                             data-testid={`button-view-description-${product.id}`}
                           >
-                            <FileText className="h-4 w-4 mr-2" />
-                            {t('viewItemDescription')}
+                            <FileText className="h-5 w-5 sm:mr-2" />
+                            <span className="hidden sm:inline">{t('viewItemDescription')}</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
-                          className="flex-1 h-10"
+                          className="h-12 px-3 sm:px-4 sm:flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setLabelDialogOpen(true);
                           }}
                           data-testid={`button-generate-label-${product.id}`}
                         >
-                          <Printer className="h-4 w-4 mr-2" />
-                          {t('generateLabel')}
+                          <Printer className="h-5 w-5 sm:mr-2" />
+                          <span className="hidden sm:inline">{t('generateLabel')}</span>
                         </Button>
                         <Button
                           variant="outline"
-                          className="flex-1 h-10"
+                          className="h-12 px-3 sm:px-4 sm:flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setInfoDialogOpen(true);
                           }}
                           data-testid={`button-show-info-${product.id}`}
                         >
-                          <Info className="h-4 w-4 mr-2" />
-                          {t('showInfo')}
+                          <Info className="h-5 w-5 sm:mr-2" />
+                          <span className="hidden sm:inline">{t('showInfo')}</span>
                         </Button>
                       </div>
                     </div>
