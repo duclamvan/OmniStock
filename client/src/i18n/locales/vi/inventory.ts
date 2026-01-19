@@ -753,6 +753,7 @@ const inventory = {
   itemDescription: 'Mô tả sản phẩm',
   viewItemDescription: 'Xem mô tả sản phẩm',
   generateLabel: 'Tạo nhãn',
+  generateAllLabels: 'Tạo tất cả nhãn',
   showInfo: 'Xem thông tin',
   productInformation: 'Thông tin sản phẩm',
   totalStock: 'Tổng tồn kho',

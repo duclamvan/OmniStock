@@ -88,6 +88,8 @@ export default function StockLookup() {
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [variantLabelDialogOpen, setVariantLabelDialogOpen] = useState(false);
+  const [selectedVariantForLabel, setSelectedVariantForLabel] = useState<Variant | null>(null);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
@@ -1011,7 +1013,7 @@ export default function StockLookup() {
                           </div>
                           
                           {/* Expand All / Collapse All buttons */}
-                          <div className="flex gap-2 mb-3">
+                          <div className="flex gap-2 mb-3 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
@@ -1032,6 +1034,29 @@ export default function StockLookup() {
                             >
                               <ChevronUp className="h-3 w-3 mr-1" />
                               {t('common:collapseAll')}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7"
+                              onClick={() => {
+                                selectedProductData.variants.forEach(variant => {
+                                  const variantLabelProduct = {
+                                    id: variant.id,
+                                    name: `${selectedProductData.name} - ${variant.name}`,
+                                    vietnameseName: selectedProductData.vietnameseName ? `${selectedProductData.vietnameseName} - ${variant.name}` : null,
+                                    sku: variant.barcode || selectedProductData.sku,
+                                    barcode: variant.barcode,
+                                    priceEur: variant.priceEur ?? selectedProductData.priceEur,
+                                    priceCzk: variant.priceCzk ?? selectedProductData.priceCzk,
+                                  };
+                                  setSelectedVariantForLabel(variantLabelProduct as any);
+                                });
+                                setVariantLabelDialogOpen(true);
+                              }}
+                            >
+                              <Printer className="h-3 w-3 mr-1" />
+                              {t('generateAllLabels')}
                             </Button>
                           </div>
                           
@@ -1157,6 +1182,29 @@ export default function StockLookup() {
                                     >
                                       <MapPinPlus className="h-3 w-3 mr-1" />
                                       {t('common:addLocation')}
+                                    </Button>
+                                    {/* Generate Label button for variant */}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const variantLabelProduct = {
+                                          id: variant.id,
+                                          name: `${selectedProductData.name} - ${variant.name}`,
+                                          vietnameseName: selectedProductData.vietnameseName ? `${selectedProductData.vietnameseName} - ${variant.name}` : null,
+                                          sku: variant.barcode || selectedProductData.sku,
+                                          barcode: variant.barcode,
+                                          priceEur: variant.priceEur ?? selectedProductData.priceEur,
+                                          priceCzk: variant.priceCzk ?? selectedProductData.priceCzk,
+                                        };
+                                        setSelectedVariantForLabel(variantLabelProduct as any);
+                                        setVariantLabelDialogOpen(true);
+                                      }}
+                                    >
+                                      <Printer className="h-3 w-3 mr-1" />
+                                      {t('generateLabel')}
                                     </Button>
                                   </div>
                                   
@@ -1656,6 +1704,13 @@ export default function StockLookup() {
             open={labelDialogOpen}
             onOpenChange={setLabelDialogOpen}
             product={selectedProductData}
+          />
+          
+          {/* Variant Label Preview Dialog */}
+          <WarehouseLabelPreview
+            open={variantLabelDialogOpen}
+            onOpenChange={setVariantLabelDialogOpen}
+            product={selectedVariantForLabel}
           />
           
           {/* Product Information Dialog */}
