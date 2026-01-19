@@ -15,8 +15,8 @@ FACEBOOK_NUMERIC_ID_COL = 11  # Column L (0-indexed) - New column for numeric ID
 BATCH_SIZE = 10  # Process this many URLs per API call (Bright Data handles batches)
 SAVE_EVERY = 50  # Save progress every N rows
 
-# Bright Data Facebook Profiles dataset ID
-BRIGHT_DATA_DATASET_ID = 'gd_l1vikznt1wgvvqz95w'
+# Bright Data Facebook Profiles - Collect by URL API
+BRIGHT_DATA_DATASET_ID = 'gd_mf0urb782734ik94dz'
 
 def extract_username_from_url(url):
     """Extract Facebook username/ID from URL"""

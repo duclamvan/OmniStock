@@ -23420,7 +23420,7 @@ Important rules:
         : `https://www.facebook.com/${username}`;
 
       // Call Bright Data Profiles API
-      const brightDataResponse = await fetch('https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_l1vikznt1wgvvqz95w&include_errors=true&format=json', {
+      const brightDataResponse = await fetch('https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_mf0urb782734ik94dz&include_errors=true&format=json', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -23513,6 +23513,206 @@ Important rules:
       console.error('[Facebook Profile] Error:', error);
       res.status(500).json({ 
         message: 'Failed to fetch Facebook profile',
+        error: error.message 
+      });
+    }
+  });
+
+  // Batch fetch Facebook profiles for all customers using Bright Data API
+  app.post('/api/facebook/batch-update', isAuthenticated, async (req, res) => {
+    try {
+      const apiKey = process.env.BRIGHT_DATA_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: 'Bright Data API key not configured' });
+      }
+
+      // Get all customers with Facebook URLs that need updating
+      const allCustomers = await db.select({
+        id: customers.id,
+        name: customers.name,
+        facebookUrl: customers.facebookUrl,
+        facebookName: customers.facebookName,
+        facebookNumericId: customers.facebookNumericId,
+        profilePictureUrl: customers.profilePictureUrl
+      }).from(customers).where(
+        sql`${customers.facebookUrl} IS NOT NULL AND ${customers.facebookUrl} != ''`
+      );
+
+      // Filter to only those missing data
+      const customersNeedingUpdate = allCustomers.filter(c => 
+        !c.facebookName || !c.facebookNumericId || !c.profilePictureUrl
+      );
+
+      if (customersNeedingUpdate.length === 0) {
+        return res.json({ 
+          message: 'All customers already have Facebook data',
+          processed: 0,
+          success: 0,
+          failed: 0
+        });
+      }
+
+      console.log(`[Facebook Batch] Processing ${customersNeedingUpdate.length} customers...`);
+
+      // Process in batches of 10
+      const BATCH_SIZE = 10;
+      let successCount = 0;
+      let failedCount = 0;
+      const results: any[] = [];
+
+      for (let i = 0; i < customersNeedingUpdate.length; i += BATCH_SIZE) {
+        const batch = customersNeedingUpdate.slice(i, i + BATCH_SIZE);
+        console.log(`[Facebook Batch] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(customersNeedingUpdate.length/BATCH_SIZE)}...`);
+
+        // Build URLs for Bright Data
+        const urlsPayload = batch.map(customer => {
+          const cleanUrl = customer.facebookUrl?.trim() || '';
+          let username = '';
+          
+          // Extract username/ID from URL
+          const profilePhpMatch = cleanUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/i);
+          if (profilePhpMatch) username = profilePhpMatch[1];
+          
+          if (!username) {
+            const peopleMatch = cleanUrl.match(/facebook\.com\/people\/[^\/]+\/(\d+)/i);
+            if (peopleMatch) username = peopleMatch[1];
+          }
+          
+          if (!username) {
+            const numericIdMatch = cleanUrl.match(/facebook\.com\/.*?(\d{10,})/i);
+            if (numericIdMatch) username = numericIdMatch[1];
+          }
+          
+          if (!username) {
+            const usernameMatch = cleanUrl.match(/facebook\.com\/([a-zA-Z0-9._-]+)\/?(?:\?|$|#)?/i);
+            if (usernameMatch) {
+              const potentialUsername = usernameMatch[1].toLowerCase();
+              const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace'];
+              if (!skipPaths.includes(potentialUsername)) {
+                username = usernameMatch[1];
+              }
+            }
+          }
+
+          const profileUrl = /^\d+$/.test(username) 
+            ? `https://www.facebook.com/profile.php?id=${username}` 
+            : `https://www.facebook.com/${username}`;
+          
+          return { url: profileUrl, customerId: customer.id, username };
+        }).filter(item => item.username);
+
+        if (urlsPayload.length === 0) continue;
+
+        try {
+          // Trigger Bright Data collection
+          const triggerResponse = await fetch(
+            'https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_mf0urb782734ik94dz&include_errors=true&format=json',
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(urlsPayload.map(p => ({ url: p.url })))
+            }
+          );
+
+          if (!triggerResponse.ok) {
+            console.error(`[Facebook Batch] Trigger failed:`, await triggerResponse.text());
+            failedCount += batch.length;
+            continue;
+          }
+
+          const snapshotInfo = await triggerResponse.json();
+          const snapshotId = snapshotInfo.snapshot_id;
+
+          // Poll for results (max 90 seconds for batch)
+          let profiles: any[] = [];
+          for (let attempt = 0; attempt < 90; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const statusResponse = await fetch(
+              `https://api.brightdata.com/datasets/v3/snapshot/${snapshotId}?format=json`,
+              { headers: { 'Authorization': `Bearer ${apiKey}` } }
+            );
+
+            if (statusResponse.status === 200) {
+              profiles = await statusResponse.json();
+              if (profiles && profiles.length > 0) break;
+            } else if (statusResponse.status !== 202) {
+              break;
+            }
+          }
+
+          // Match profiles to customers and update
+          for (const payload of urlsPayload) {
+            const profile = profiles.find((p: any) => {
+              const profileUrl = p.url || '';
+              return profileUrl.toLowerCase().includes(payload.username.toLowerCase());
+            });
+
+            if (profile) {
+              const numericId = profile.fbid || profile.id || profile.user_id;
+              const fbName = profile.name || profile.account || profile.handle;
+              
+              // Construct profile picture URL using numeric ID
+              let pictureUrl = null;
+              if (numericId && /^\d+$/.test(String(numericId))) {
+                pictureUrl = `https://graph.facebook.com/${numericId}/picture?type=large`;
+              }
+
+              // Update customer in database
+              await db.update(customers)
+                .set({
+                  facebookName: fbName || undefined,
+                  facebookNumericId: numericId ? String(numericId) : undefined,
+                  profilePictureUrl: pictureUrl || undefined
+                })
+                .where(eq(customers.id, payload.customerId));
+
+              successCount++;
+              results.push({
+                customerId: payload.customerId,
+                facebookName: fbName,
+                facebookNumericId: numericId,
+                profilePictureUrl: pictureUrl,
+                success: true
+              });
+
+              console.log(`[Facebook Batch] Updated: ${fbName} (ID: ${numericId})`);
+            } else {
+              failedCount++;
+              results.push({
+                customerId: payload.customerId,
+                success: false,
+                error: 'No profile data found'
+              });
+            }
+          }
+
+          // Small delay between batches
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+        } catch (batchError: any) {
+          console.error(`[Facebook Batch] Batch error:`, batchError);
+          failedCount += batch.length;
+        }
+      }
+
+      console.log(`[Facebook Batch] Complete: ${successCount} success, ${failedCount} failed`);
+
+      res.json({
+        message: 'Facebook batch update complete',
+        processed: customersNeedingUpdate.length,
+        success: successCount,
+        failed: failedCount,
+        results
+      });
+
+    } catch (error: any) {
+      console.error('[Facebook Batch] Error:', error);
+      res.status(500).json({ 
+        message: 'Failed to batch update Facebook profiles',
         error: error.message 
       });
     }
