@@ -178,7 +178,7 @@ async function runBatchMigration(): Promise<void> {
   }).from(customers);
 
   // Skip customers already updated today
-  const cutoffTime = new Date('2026-01-19T20:40:00Z');
+  const cutoffTime = new Date('2026-01-19T20:55:00Z');
   const customersToProcess = allCustomers.filter(c => 
     c.address && 
     c.address.trim() !== '' && 
