@@ -168,24 +168,32 @@ export default function StockLookup() {
     }
   }, []);
 
-  // Fetch all products
+  // Fetch all products - always refresh on mount
   const { data: rawProducts = [], isLoading: productsLoading } = useQuery<any[]>({
     queryKey: ['/api/products'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch warehouses for location display
   const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch categories for filtering
   const { data: categories = [] } = useQuery<any[]>({
     queryKey: ['/api/categories'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
-  // Fetch all product locations for display in collapsed view
+  // Fetch all product locations for display in collapsed view - always refresh on mount
   const { data: productLocationsMap = {} } = useQuery<Record<string, { locationCode: string; quantity: number }[]>>({
     queryKey: ['/api/products/primary-locations'],
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch stock inconsistencies (unified: over-allocated + under-allocated)
