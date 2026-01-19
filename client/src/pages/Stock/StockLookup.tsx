@@ -886,67 +886,67 @@ export default function StockLookup() {
                 }}
                 data-testid={`card-product-${product.id}`}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   {/* Product Header */}
                   <div className="flex gap-4">
-                    {/* Product Image - Larger for touch */}
+                    {/* Product Image - Large for touch */}
                     <div className="flex-shrink-0">
                       {product.imageUrl ? (
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="h-24 w-24 rounded-lg object-cover bg-gray-100 dark:bg-gray-800"
+                          className="h-20 w-20 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 shadow-sm"
                         />
                       ) : (
-                        <div className="h-24 w-24 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
-                          <Package className="h-10 w-10 text-gray-400" />
+                        <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center shadow-sm">
+                          <Package className="h-8 w-8 text-gray-400" />
                         </div>
                       )}
                     </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0 flex flex-col">
-                      {/* Product Name - Full text, no truncation */}
-                      <h3 className="font-semibold text-base leading-snug text-gray-900 dark:text-white mb-1" data-testid={`text-product-name-${product.id}`}>
+                      {/* Product Name - Large, readable text */}
+                      <h3 className="font-bold text-lg leading-tight text-gray-900 dark:text-white mb-2" data-testid={`text-product-name-${product.id}`}>
                         {product.name}
                       </h3>
                       
                       {/* Product Type Badges */}
                       {(product.productType === 'physical_no_quantity' || product.productType === 'virtual') && (
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 mb-2">
                           {product.productType === 'physical_no_quantity' && (
-                            <Badge variant="outline" className="h-5 text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 flex items-center gap-0.5">
-                              <MapPin className="h-2.5 w-2.5" />
+                            <Badge variant="outline" className="h-6 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 flex items-center gap-1 px-2">
+                              <MapPin className="h-3 w-3" />
                               {t('noQty')}
                             </Badge>
                           )}
                           {product.productType === 'virtual' && (
-                            <Badge variant="outline" className="h-5 text-[10px] bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 flex items-center gap-0.5">
-                              <Cloud className="h-2.5 w-2.5" />
+                            <Badge variant="outline" className="h-6 text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 flex items-center gap-1 px-2">
+                              <Cloud className="h-3 w-3" />
                               {t('virtual')}
                             </Badge>
                           )}
                         </div>
                       )}
                       
-                      {/* SKU and Category */}
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                      {/* SKU and Category - Larger text */}
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mb-2">
                         {product.sku && (
-                          <span className="flex items-center gap-1 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                            <Barcode className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5 font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-900 dark:text-gray-100">
+                            <Barcode className="h-4 w-4" />
                             {product.sku}
                           </span>
                         )}
                         {product.categoryName && (
-                          <span className="text-gray-600 dark:text-gray-400">{product.categoryName}</span>
+                          <span className="text-gray-700 dark:text-gray-300">{product.categoryName}</span>
                         )}
                       </div>
 
-                      {/* Prices - EUR first (highlighted), CZK second */}
+                      {/* Prices - EUR first (highlighted), CZK second - Larger */}
                       {(product.priceCzk || product.priceEur) && (
-                        <div className="flex items-center gap-3 text-sm font-semibold mb-2">
+                        <div className="flex items-center gap-3 font-bold">
                           {product.priceEur && (
-                            <span className="text-green-600 dark:text-green-400 text-base">
+                            <span className="text-green-600 dark:text-green-400 text-lg">
                               €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
@@ -954,55 +954,59 @@ export default function StockLookup() {
                             <span className="text-gray-300 dark:text-gray-600">|</span>
                           )}
                           {product.priceCzk && (
-                            <span className="text-gray-900 dark:text-gray-100">
+                            <span className="text-gray-900 dark:text-gray-100 text-base">
                               {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
                             </span>
                           )}
                         </div>
                       )}
+                    </div>
+                  </div>
 
-                      {/* Bottom Row: Location + Stock + Arrow */}
-                      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                        {/* Location */}
-                        {product.productType === 'virtual' ? (
-                          <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
-                            <Cloud className="h-4 w-4" />
-                            <span className="text-xs">{t('virtualProductNoTracking')}</span>
-                          </div>
-                        ) : displayProduct.locations && displayProduct.locations.length > 0 ? (
-                          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                            <MapPin className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
-                            <span className="text-xs font-semibold font-mono text-slate-700 dark:text-slate-200">
-                              {displayProduct.locations[0].locationCode}
-                              {displayProduct.locations.length > 1 && (
-                                <span className="text-blue-600 dark:text-blue-400 ml-1">+{displayProduct.locations.length - 1}</span>
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
-                            <MapPin className="h-4 w-4" />
-                            <span className="text-xs">{t('noLocation')}</span>
-                          </div>
-                        )}
-                        
-                        {/* Stock Badge + Arrow */}
-                        <div className="flex items-center gap-2">
-                          {/* Stock Badge */}
-                          {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
-                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 h-8 px-3">
-                              <span className="font-bold text-lg">∞</span>
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1.5 h-8 px-3`}>
-                              <StatusIcon className="h-4 w-4" />
-                              <span className="font-bold text-lg">{displayProduct.totalStock}</span>
-                            </Badge>
-                          )}
-                          
-                          {/* Expand Arrow */}
-                          <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  {/* Footer Row: Location + Stock + Arrow - Full width */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t-2 border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 -mx-5 -mb-5 px-5 py-3 rounded-b-xl">
+                    {/* Location - Takes more space */}
+                    <div className="flex-1">
+                      {product.productType === 'virtual' ? (
+                        <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400">
+                          <Cloud className="h-5 w-5" />
+                          <span className="text-sm font-medium">{t('virtualProductNoTracking')}</span>
                         </div>
+                      ) : displayProduct.locations && displayProduct.locations.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <span className="text-base font-bold font-mono text-gray-900 dark:text-gray-100">
+                            {displayProduct.locations[0].locationCode}
+                            {displayProduct.locations.length > 1 && (
+                              <span className="text-blue-600 dark:text-blue-400 ml-2">+{displayProduct.locations.length - 1}</span>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                          <MapPin className="h-5 w-5" />
+                          <span className="text-sm">{t('noLocation')}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Stock Badge + Arrow */}
+                    <div className="flex items-center gap-3">
+                      {/* Stock Badge - Large and prominent */}
+                      {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
+                        <Badge variant="outline" className="border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 flex items-center gap-1.5 h-11 px-5 rounded-lg">
+                          <span className="font-bold text-2xl">∞</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className={`${status.borderColor} bg-white dark:bg-gray-900 ${status.textColor} flex items-center gap-2 h-11 px-5 rounded-lg`}>
+                          <StatusIcon className="h-5 w-5" />
+                          <span className="font-bold text-2xl">{displayProduct.totalStock}</span>
+                        </Badge>
+                      )}
+                      
+                      {/* Expand Arrow - Large touch target */}
+                      <div className="p-2 -mr-2">
+                        <ChevronRight className={`h-7 w-7 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                       </div>
                     </div>
                   </div>
