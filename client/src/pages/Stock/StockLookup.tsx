@@ -957,13 +957,13 @@ export default function StockLookup() {
                             <span className="text-xs">{t('virtualProductNoTracking')}</span>
                           </div>
                         ) : displayProduct.locations && displayProduct.locations.length > 0 ? (
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-1 rounded">
-                            <MapPin className="h-4 w-4 text-cyan-600" />
+                          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-1 rounded">
+                            <MapPin className="h-4 w-4 text-cyan-600 flex-shrink-0" />
                             <span className="text-xs font-semibold font-mono">
                               {displayProduct.locations[0].locationCode}
                             </span>
                             {displayProduct.locations.length > 1 && (
-                              <Badge variant="secondary" className="text-[10px] h-4 px-1">+{displayProduct.locations.length - 1}</Badge>
+                              <span className="text-[10px] text-cyan-600 dark:text-cyan-400">+{displayProduct.locations.length - 1}</span>
                             )}
                           </div>
                         ) : (
