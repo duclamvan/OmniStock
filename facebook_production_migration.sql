@@ -1,5 +1,5 @@
 -- Facebook Production Migration
--- Generated: 2026-01-19T11:02:51.513Z
+-- Generated: 2026-01-19T11:27:39.190Z
 -- Records: 902
 
 -- Add facebook_numeric_id column if not exists

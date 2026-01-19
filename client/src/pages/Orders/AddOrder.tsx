@@ -580,6 +580,7 @@ export default function AddOrder() {
     name: "",
     facebookName: "",
     facebookUrl: "",
+    facebookNumericId: "",
     profilePictureUrl: "",
     email: "",
     phone: "",
@@ -1503,19 +1504,25 @@ export default function AddOrder() {
       const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl });
       return res.json();
     },
-    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; username: string }) => {
-      // Update customer name if returned and not already set
-      if (data.name && !newCustomer.name) {
+    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; facebookNumericId: string | null; username: string }) => {
+      // Update customer name and Facebook data
+      if (data.name) {
         setNewCustomer(prev => ({
           ...prev,
           name: data.name!,
-          facebookName: facebookNameManuallyEdited ? prev.facebookName : data.name!
+          facebookName: data.name!,
+          facebookNumericId: data.facebookNumericId || prev.facebookNumericId
         }));
       }
       
       // Update profile picture if returned
       if (data.profilePictureUrl) {
         setNewCustomer(prev => ({ ...prev, profilePictureUrl: data.profilePictureUrl! }));
+      }
+      
+      // Update facebookNumericId if available
+      if (data.facebookNumericId) {
+        setNewCustomer(prev => ({ ...prev, facebookNumericId: data.facebookNumericId! }));
       }
       
       toast({
@@ -2096,6 +2103,7 @@ export default function AddOrder() {
               name: selectedCustomer.name,
               facebookName: selectedCustomer.facebookName || undefined,
               facebookUrl: selectedCustomer.facebookUrl || undefined,
+              facebookNumericId: selectedCustomer.facebookNumericId || undefined,
               profilePictureUrl: selectedCustomer.profilePictureUrl || undefined,
               email: selectedCustomer.email || undefined,
               phone: selectedCustomer.phone || undefined,

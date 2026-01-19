@@ -37,6 +37,7 @@ const createCustomerFormSchema = (t: (key: string) => string) => z.object({
   preferredCurrency: z.enum(['CZK', 'EUR']).default('EUR'),
   facebookName: z.string().optional(),
   facebookUrl: z.string().optional(),
+  facebookNumericId: z.string().optional(),
   profilePictureUrl: z.string().optional(),
   billingCompany: z.string().optional(),
   billingFirstName: z.string().optional(),
@@ -248,6 +249,7 @@ export default function AddCustomer() {
       preferredCurrency: "EUR",
       facebookName: "",
       facebookUrl: "",
+      facebookNumericId: "",
       profilePictureUrl: "",
       billingFirstName: "",
       billingLastName: "",
@@ -1694,16 +1696,17 @@ export default function AddCustomer() {
       const res = await apiRequest('POST', '/api/facebook/profile', { facebookUrl });
       return res.json();
     },
-    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; username: string }) => {
+    onSuccess: (data: { name: string | null; profilePictureUrl: string | null; facebookId: string | null; facebookNumericId: string | null; username: string }) => {
       if (data.name) {
         form.setValue('facebookName', data.name);
-        // Also set the customer name if it's empty
-        if (!form.getValues('name')) {
-          form.setValue('name', data.name);
-        }
+        // Also set the customer name to match Facebook name
+        form.setValue('name', data.name);
       }
       if (data.profilePictureUrl) {
         form.setValue('profilePictureUrl', data.profilePictureUrl);
+      }
+      if (data.facebookNumericId) {
+        form.setValue('facebookNumericId', data.facebookNumericId);
       }
       setIsFetchingFacebookProfile(false);
       toast({
