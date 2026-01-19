@@ -663,6 +663,8 @@ const inventory = {
   generateLabel: 'Generate Label',
   generateAllLabels: 'Generate All Labels',
   showInfo: 'Show Info',
+  label: 'Label',
+  info: 'Info',
   productInformation: 'Product Information',
   totalStock: 'Total Stock',
   warehouseLabel: 'Warehouse Label',

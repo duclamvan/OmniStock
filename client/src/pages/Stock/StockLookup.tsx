@@ -1440,43 +1440,40 @@ export default function StockLookup() {
                                 className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4"
                                 data-testid={`location-card-${loc.id}`}
                               >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="text-lg font-bold text-gray-900 dark:text-white font-mono">
-                                        {loc.locationCode}
-                                      </p>
-                                      {/* Show variant badge - check both variantName from JOIN and cross-reference with variant locationCode */}
-                                      {(() => {
-                                        // First check if we have variantName from the JOIN
-                                        if (loc.variantName) {
-                                          return (
-                                            <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                              {loc.variantName}
-                                            </Badge>
-                                          );
-                                        }
-                                        // Otherwise, cross-reference with variant's locationCode
-                                        const matchingVariant = selectedProductData?.variants?.find(
-                                          v => v.locationCode === loc.locationCode
-                                        );
-                                        if (matchingVariant) {
-                                          return (
-                                            <Badge variant="outline" className="h-5 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
-                                              {matchingVariant.name}
-                                            </Badge>
-                                          );
-                                        }
-                                        return null;
-                                      })()}
-                                    </div>
+                                {/* Row 1: Location code, badges, and quick actions */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-lg font-bold text-gray-900 dark:text-white font-mono whitespace-nowrap">
+                                      {loc.locationCode}
+                                    </p>
                                     {loc.isPrimary && (
-                                      <Badge variant="default" className="mt-1 h-5 text-xs">
+                                      <Badge variant="default" className="h-6 text-xs shrink-0">
                                         {t('primary')}
                                       </Badge>
                                     )}
+                                    {/* Show variant badge */}
+                                    {(() => {
+                                      if (loc.variantName) {
+                                        return (
+                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 shrink-0">
+                                            {loc.variantName}
+                                          </Badge>
+                                        );
+                                      }
+                                      const matchingVariant = selectedProductData?.variants?.find(
+                                        v => v.locationCode === loc.locationCode
+                                      );
+                                      if (matchingVariant) {
+                                        return (
+                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 shrink-0">
+                                            {matchingVariant.name}
+                                          </Badge>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
-                                  <div className="flex items-center gap-1.5 ml-2">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <Button
