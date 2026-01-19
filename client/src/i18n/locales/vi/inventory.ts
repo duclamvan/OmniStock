@@ -1564,6 +1564,14 @@ const inventory = {
   manufactureThis: 'Sản xuất sản phẩm này',
   qtyNeeded: 'SL',
   
+  // Product Types
+  filterByProductType: 'Lọc theo loại',
+  allProductTypes: 'Tất cả loại',
+  productTypeStandard: 'Tiêu chuẩn',
+  productTypeNoQty: 'Không theo dõi SL',
+  productTypeVirtual: 'Ảo',
+  alwaysAvailable: 'Luôn có sẵn',
+  
 } as const;
 
 export default inventory;

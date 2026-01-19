@@ -1491,6 +1491,18 @@ const inventory = {
   manufactureThis: 'Manufacture This Product',
   qtyNeeded: 'Qty',
   
+  // Product Types
+  filterByProductType: 'Filter by Type',
+  allProductTypes: 'All Types',
+  productTypeStandard: 'Standard',
+  productTypeNoQty: 'No Qty Tracking',
+  productTypeVirtual: 'Virtual',
+  alwaysAvailable: 'Always Available',
+  virtualProductNoTracking: 'Virtual product - no inventory tracking',
+  noQuantityTracking: 'No quantity tracking',
+  noQty: 'No Qty',
+  virtual: 'Virtual',
+  
 } as const;
 
 export default inventory;

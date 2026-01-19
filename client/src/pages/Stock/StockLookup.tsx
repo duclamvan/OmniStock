@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck, MoreVertical, Star, Trash2 } from "lucide-react";
+import { Search, Package, MapPin, MapPinPlus, Barcode, TrendingUp, TrendingDown, AlertCircle, ChevronRight, ChevronDown, ChevronUp, Layers, MoveRight, ArrowUpDown, FileText, AlertTriangle, X, Plus, Minus, Filter, ArrowUpDown as SortIcon, Printer, Tag, Info, ClipboardCheck, MoreVertical, Star, Trash2, Cloud } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +78,7 @@ interface EnrichedProduct {
   images?: any;
   priceCzk?: number;
   priceEur?: number;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 export default function StockLookup() {
@@ -254,7 +255,8 @@ export default function StockLookup() {
         imageUrl: primaryImage,
         images: p.images,
         priceCzk: p.priceCzk,
-        priceEur: p.priceEur
+        priceEur: p.priceEur,
+        productType: p.productType || 'standard'
       };
     });
   }, [rawProducts, productLocationsMap]);
@@ -894,13 +896,35 @@ export default function StockLookup() {
                       {/* Top Row: Name + Stock */}
                       <div>
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-semibold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
-                            {product.name}
-                          </h3>
-                          <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
-                            <StatusIcon className="h-3 w-3" />
-                            <span className="font-bold">{displayProduct.totalStock}</span>
-                          </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-semibold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
+                              {product.name}
+                            </h3>
+                            {/* Product Type Badges */}
+                            {product.productType === 'physical_no_quantity' && (
+                              <Badge variant="outline" className="h-5 text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 flex items-center gap-0.5">
+                                <MapPin className="h-2.5 w-2.5" />
+                                {t('noQty')}
+                              </Badge>
+                            )}
+                            {product.productType === 'virtual' && (
+                              <Badge variant="outline" className="h-5 text-[10px] bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 flex items-center gap-0.5">
+                                <Cloud className="h-2.5 w-2.5" />
+                                {t('virtual')}
+                              </Badge>
+                            )}
+                          </div>
+                          {/* Stock Badge - show ∞ for virtual/no-qty products */}
+                          {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
+                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 flex-shrink-0 h-6 px-2">
+                              <span className="font-bold text-lg">∞</span>
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
+                              <StatusIcon className="h-3 w-3" />
+                              <span className="font-bold">{displayProduct.totalStock}</span>
+                            </Badge>
+                          )}
                         </div>
                         
                         {/* SKU and Category - More compact */}
@@ -939,9 +963,14 @@ export default function StockLookup() {
                         )}
                       </div>
 
-                      {/* Bottom Row: Location info */}
+                      {/* Bottom Row: Location info - or message for virtual products */}
                       <div className="flex items-center justify-between mt-1">
-                        {displayProduct.locations && displayProduct.locations.length > 0 ? (
+                        {product.productType === 'virtual' ? (
+                          <div className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                            <Cloud className="h-3.5 w-3.5" />
+                            <span className="text-[11px]">{t('virtualProductNoTracking')}</span>
+                          </div>
+                        ) : displayProduct.locations && displayProduct.locations.length > 0 ? (
                           <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
                             <MapPin className="h-3.5 w-3.5 text-cyan-500" />
                             <span className="text-[11px] font-medium font-mono">
@@ -967,21 +996,45 @@ export default function StockLookup() {
                   {/* Expanded Details */}
                   {isExpanded && selectedProductData && (
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                      {/* Stock Breakdown */}
-                      <div className={`grid gap-3 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('baseStock')}</p>
-                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
-                        </div>
-                        {selectedProductData.variants.length > 0 && (
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('variantStock')}</p>
-                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                              {selectedProductData.variants.reduce((sum, v) => sum + (v.quantity || 0), 0)}
-                            </p>
+                      {/* Virtual Product Message */}
+                      {product.productType === 'virtual' && (
+                        <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-4 flex items-center gap-3">
+                          <Cloud className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                          <div>
+                            <p className="text-sm font-medium text-violet-700 dark:text-violet-300">{t('virtualProductNoTracking')}</p>
+                            <p className="text-xs text-violet-600/70 dark:text-violet-400/70">{t('alwaysAvailable')}</p>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+                      
+                      {/* Physical No-Quantity Product Message */}
+                      {product.productType === 'physical_no_quantity' && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex items-center gap-3">
+                          <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('noQuantityTracking')}</p>
+                            <p className="text-xs text-blue-600/70 dark:text-blue-400/70">{t('alwaysAvailable')}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Stock Breakdown - only for standard products */}
+                      {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
+                        <div className={`grid gap-3 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('baseStock')}</p>
+                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
+                          </div>
+                          {selectedProductData.variants.length > 0 && (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('variantStock')}</p>
+                              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                {selectedProductData.variants.reduce((sum, v) => sum + (v.quantity || 0), 0)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Unified Variant Locations - shows variant with its location in one row */}
                       {selectedProductData.variants.length > 0 && (
@@ -1161,28 +1214,30 @@ export default function StockLookup() {
                                         </p>
                                       )}
                                     </div>
-                                    {/* Add Location button for variant */}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-8 sm:h-7 text-xs px-2 sm:px-3"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setAddLocationProductId(selectedProductData.id);
-                                        setAddLocationProductName(selectedProductData.name);
-                                        setAddLocationVariantId(variant.id);
-                                        setAddLocationVariantName(variant.name);
-                                        setNewLocationType("warehouse");
-                                        setNewLocationCode("");
-                                        setNewLocationQuantity(0);
-                                        setNewLocationIsPrimary(false);
-                                        setNewLocationNotes("");
-                                        setAddLocationDialogOpen(true);
-                                      }}
-                                    >
-                                      <MapPinPlus className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
-                                      <span className="hidden sm:inline">{t('common:addLocation')}</span>
-                                    </Button>
+                                    {/* Add Location button for variant - hide for virtual products */}
+                                    {product.productType !== 'virtual' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 sm:h-7 text-xs px-2 sm:px-3"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAddLocationProductId(selectedProductData.id);
+                                          setAddLocationProductName(selectedProductData.name);
+                                          setAddLocationVariantId(variant.id);
+                                          setAddLocationVariantName(variant.name);
+                                          setNewLocationType("warehouse");
+                                          setNewLocationCode("");
+                                          setNewLocationQuantity(0);
+                                          setNewLocationIsPrimary(false);
+                                          setNewLocationNotes("");
+                                          setAddLocationDialogOpen(true);
+                                        }}
+                                      >
+                                        <MapPinPlus className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
+                                        <span className="hidden sm:inline">{t('common:addLocation')}</span>
+                                      </Button>
+                                    )}
                                     {/* Generate Label button for variant */}
                                     <Button
                                       variant="outline"
@@ -1225,78 +1280,89 @@ export default function StockLookup() {
                                               )}
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                              <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (location.quantity <= 0) {
-                                                    toast({
-                                                      title: t('cannotReduce'),
-                                                      description: t('stockAlreadyZero'),
-                                                      variant: "destructive"
-                                                    });
-                                                    return;
-                                                  }
-                                                  setSelectedLocation(location);
-                                                  setQuickButtonType('remove');
-                                                  setAdjustDialogOpen(true);
-                                                }}
-                                                disabled={location.quantity <= 0}
-                                                title={t('quickRemoveStock')}
-                                              >
-                                                <Minus className="h-3.5 w-3.5" />
-                                              </Button>
+                                              {/* Hide +/- buttons for virtual and physical_no_quantity products */}
+                                              {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (location.quantity <= 0) {
+                                                      toast({
+                                                        title: t('cannotReduce'),
+                                                        description: t('stockAlreadyZero'),
+                                                        variant: "destructive"
+                                                      });
+                                                      return;
+                                                    }
+                                                    setSelectedLocation(location);
+                                                    setQuickButtonType('remove');
+                                                    setAdjustDialogOpen(true);
+                                                  }}
+                                                  disabled={location.quantity <= 0}
+                                                  title={t('quickRemoveStock')}
+                                                >
+                                                  <Minus className="h-3.5 w-3.5" />
+                                                </Button>
+                                              )}
                                               <Badge variant="secondary" className="px-2.5">
-                                                {location.quantity} {t('units')}
+                                                {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
+                                                  ? '∞' 
+                                                  : `${location.quantity} ${t('units')}`}
                                               </Badge>
-                                              <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setSelectedLocation(location);
-                                                  setQuickButtonType('add');
-                                                  setAdjustDialogOpen(true);
-                                                }}
-                                                title={t('quickAddStock')}
-                                              >
-                                                <Plus className="h-3.5 w-3.5" />
-                                              </Button>
+                                              {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedLocation(location);
+                                                    setQuickButtonType('add');
+                                                    setAdjustDialogOpen(true);
+                                                  }}
+                                                  title={t('quickAddStock')}
+                                                >
+                                                  <Plus className="h-3.5 w-3.5" />
+                                                </Button>
+                                              )}
                                             </div>
                                           </div>
-                                          {/* Action buttons for this location */}
-                                          <div className="flex gap-2 mt-2">
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="flex-1 h-8 text-xs"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedLocation(location);
-                                                setMoveDialogOpen(true);
-                                              }}
-                                            >
-                                              <MoveRight className="h-3 w-3 mr-1" />
-                                              {t('move')}
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              className="flex-1 h-8 text-xs"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedLocation(location);
-                                                setQuickButtonType(null);
-                                                setAdjustDialogOpen(true);
-                                              }}
-                                            >
-                                              <ArrowUpDown className="h-3 w-3 mr-1" />
-                                              {t('adjust')}
-                                            </Button>
-                                          </div>
+                                          {/* Action buttons for this location - hide for virtual, hide adjust for physical_no_quantity */}
+                                          {product.productType !== 'virtual' && (
+                                            <div className="flex gap-2 mt-2">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="flex-1 h-8 text-xs"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedLocation(location);
+                                                  setMoveDialogOpen(true);
+                                                }}
+                                              >
+                                                <MoveRight className="h-3 w-3 mr-1" />
+                                                {t('move')}
+                                              </Button>
+                                              {product.productType !== 'physical_no_quantity' && (
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="flex-1 h-8 text-xs"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedLocation(location);
+                                                    setQuickButtonType(null);
+                                                    setAdjustDialogOpen(true);
+                                                  }}
+                                                >
+                                                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                                                  {t('adjust')}
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -1324,19 +1390,22 @@ export default function StockLookup() {
                               <MapPin className="h-4 w-4" />
                               {t('warehouseLocations')} ({selectedProductData.locations.length})
                             </h4>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-7 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenAddLocationDialog(product.id, product.name);
-                              }}
-                              data-testid={`button-add-location-${product.id}`}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              {t('addLocation')}
-                            </Button>
+                            {/* Hide Add Location button for virtual products */}
+                            {product.productType !== 'virtual' && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenAddLocationDialog(product.id, product.name);
+                                }}
+                                data-testid={`button-add-location-${product.id}`}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {t('addLocation')}
+                              </Button>
+                            )}
                           </div>
                           <div className="space-y-2">
                             {selectedProductData.locations.map((loc) => (
@@ -1417,81 +1486,93 @@ export default function StockLookup() {
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (loc.quantity <= 0) {
-                                          toast({
-                                            title: t('cannotReduce'),
-                                            description: t('stockAlreadyZero'),
-                                            variant: "destructive"
-                                          });
-                                          return;
-                                        }
-                                        setSelectedLocation(loc);
-                                        setQuickButtonType('remove');
-                                        setAdjustDialogOpen(true);
-                                      }}
-                                      disabled={loc.quantity <= 0}
-                                      data-testid={`button-quick-minus-${loc.id}`}
-                                      title={t('quickRemoveStock')}
-                                    >
-                                      <Minus className="h-3.5 w-3.5" />
-                                    </Button>
+                                    {/* Hide +/- buttons for virtual and physical_no_quantity products */}
+                                    {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (loc.quantity <= 0) {
+                                            toast({
+                                              title: t('cannotReduce'),
+                                              description: t('stockAlreadyZero'),
+                                              variant: "destructive"
+                                            });
+                                            return;
+                                          }
+                                          setSelectedLocation(loc);
+                                          setQuickButtonType('remove');
+                                          setAdjustDialogOpen(true);
+                                        }}
+                                        disabled={loc.quantity <= 0}
+                                        data-testid={`button-quick-minus-${loc.id}`}
+                                        title={t('quickRemoveStock')}
+                                      >
+                                        <Minus className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
                                     <Badge variant="secondary" className="px-2.5">
-                                      {loc.quantity} {t('units')}
+                                      {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
+                                        ? '∞' 
+                                        : `${loc.quantity} ${t('units')}`}
                                     </Badge>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedLocation(loc);
-                                        setQuickButtonType('add');
-                                        setAdjustDialogOpen(true);
-                                      }}
-                                      data-testid={`button-quick-plus-${loc.id}`}
-                                      title={t('quickAddStock')}
-                                    >
-                                      <Plus className="h-3.5 w-3.5" />
-                                    </Button>
+                                    {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedLocation(loc);
+                                          setQuickButtonType('add');
+                                          setAdjustDialogOpen(true);
+                                        }}
+                                        data-testid={`button-quick-plus-${loc.id}`}
+                                        title={t('quickAddStock')}
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex gap-2 mt-3">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 h-8 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedLocation(loc);
-                                      setMoveDialogOpen(true);
-                                    }}
-                                    data-testid={`button-move-${loc.id}`}
-                                  >
-                                    <MoveRight className="h-3 w-3 mr-1" />
-                                    {t('move')}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 h-8 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedLocation(loc);
-                                      setQuickButtonType(null); // Clear quick button type for manual adjust
-                                      setAdjustDialogOpen(true);
-                                    }}
-                                    data-testid={`button-adjust-${loc.id}`}
-                                  >
-                                    <ArrowUpDown className="h-3 w-3 mr-1" />
-                                    {t('adjust')}
-                                  </Button>
-                                </div>
+                                {/* Move and Adjust buttons - hide/disable for virtual and physical_no_quantity */}
+                                {product.productType !== 'virtual' && (
+                                  <div className="flex gap-2 mt-3">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="flex-1 h-8 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedLocation(loc);
+                                        setMoveDialogOpen(true);
+                                      }}
+                                      data-testid={`button-move-${loc.id}`}
+                                    >
+                                      <MoveRight className="h-3 w-3 mr-1" />
+                                      {t('move')}
+                                    </Button>
+                                    {product.productType !== 'physical_no_quantity' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedLocation(loc);
+                                          setQuickButtonType(null); // Clear quick button type for manual adjust
+                                          setAdjustDialogOpen(true);
+                                        }}
+                                        data-testid={`button-adjust-${loc.id}`}
+                                      >
+                                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                                        {t('adjust')}
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1506,21 +1587,26 @@ export default function StockLookup() {
                           </div>
                           <div className="text-center py-2">
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                              {t('noWarehouseLocations')}
+                              {product.productType === 'virtual' 
+                                ? t('virtualProductNoTracking')
+                                : t('noWarehouseLocations')}
                             </p>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenAddLocationDialog(product.id, product.name);
-                              }}
-                              data-testid={`button-add-location-${product.id}`}
-                            >
-                              <Plus className="h-3.5 w-3.5 mr-1" />
-                              {t('addLocation')}
-                            </Button>
+                            {/* Hide Add Location button for virtual products */}
+                            {product.productType !== 'virtual' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenAddLocationDialog(product.id, product.name);
+                                }}
+                                data-testid={`button-add-location-${product.id}`}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                {t('addLocation')}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}

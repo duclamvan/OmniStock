@@ -17,7 +17,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { formatCurrency, formatCompactNumber, convertCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Factory, CornerDownRight } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft, Sparkles, TrendingUp, Filter, PackageX, DollarSign, Settings, Check, FileText, Download, Upload, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Copy, LayoutGrid, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Factory, CornerDownRight, MapPin, Cloud } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -86,6 +86,7 @@ export default function AllInventory() {
     setPage(1);
   }, [categoryFilter]);
   const [bomFilter, setBomFilter] = useState<string>("all"); // 'all', 'parents', 'children'
+  const [productTypeFilter, setProductTypeFilter] = useState<string>("all"); // 'all', 'standard', 'physical_no_quantity', 'virtual'
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
@@ -933,6 +934,20 @@ export default function AllInventory() {
       }
     }
 
+    // Product type filter
+    if (productTypeFilter !== "all") {
+      const productType = product.productType || 'standard';
+      if (productTypeFilter === "standard" && productType !== 'standard') {
+        return false;
+      }
+      if (productTypeFilter === "physical_no_quantity" && productType !== 'physical_no_quantity') {
+        return false;
+      }
+      if (productTypeFilter === "virtual" && productType !== 'virtual') {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -984,6 +999,32 @@ export default function AllInventory() {
     return null;
   };
 
+  // Helper function to get product type badge
+  const getProductTypeBadge = (product: any) => {
+    const productType = product.productType || 'standard';
+    
+    if (productType === 'physical_no_quantity') {
+      return (
+        <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30">
+          <MapPin className="h-2.5 w-2.5 mr-0.5" />
+          {t('inventory:productTypeNoQty')}
+        </Badge>
+      );
+    }
+    
+    if (productType === 'virtual') {
+      return (
+        <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-violet-400 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30">
+          <Cloud className="h-2.5 w-2.5 mr-0.5" />
+          {t('inventory:productTypeVirtual')}
+        </Badge>
+      );
+    }
+    
+    // Standard products don't need a badge
+    return null;
+  };
+
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
@@ -1029,11 +1070,7 @@ export default function AllInventory() {
                   <CornerDownRight className="inline h-3 w-3 mr-1 text-gray-400" />
                 )}
                 {product.name}
-                {product.isVirtual && (
-                  <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
-                    Virtual
-                  </Badge>
-                )}
+                {getProductTypeBadge(product)}
                 {isParent && (
                   <TooltipProvider>
                     <Tooltip>
@@ -1094,7 +1131,37 @@ export default function AllInventory() {
       sortable: true,
       className: "text-right w-[100px]",
       cell: (product) => {
-        // Virtual SKU: Show calculated available stock from master product
+        const productType = product.productType || 'standard';
+        
+        // Virtual products: Show ∞ with violet styling
+        if (productType === 'virtual') {
+          return (
+            <div className="flex flex-col items-end">
+              <span className="font-bold text-violet-600 dark:text-violet-400 text-lg">
+                ∞
+              </span>
+              <span className="text-xs text-gray-400">
+                {t('inventory:productTypeVirtual')}
+              </span>
+            </div>
+          );
+        }
+        
+        // Physical no-quantity products: Show ∞ with blue styling
+        if (productType === 'physical_no_quantity') {
+          return (
+            <div className="flex flex-col items-end">
+              <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">
+                ∞
+              </span>
+              <span className="text-xs text-gray-400">
+                {t('inventory:alwaysAvailable')}
+              </span>
+            </div>
+          );
+        }
+        
+        // Virtual SKU (legacy): Show calculated available stock from master product
         if (product.isVirtual && product.masterProductId) {
           const availableStock = product.availableVirtualStock ?? 0;
           const masterQty = product.masterProductQuantity ?? 0;
@@ -1110,7 +1177,8 @@ export default function AllInventory() {
             </div>
           );
         }
-        // Regular product: Show available quantity with allocation info
+        
+        // Standard product: Show available quantity with allocation info
         const available = product.availableQuantity ?? product.quantity ?? 0;
         const allocated = product.allocatedQuantity ?? 0;
         const total = product.quantity ?? 0;
@@ -1212,6 +1280,10 @@ export default function AllInventory() {
       header: t('inventory:warehouse'),
       sortable: true,
       cell: (product) => {
+        const productType = product.productType || 'standard';
+        if (productType === 'virtual') {
+          return <span className="text-gray-400">N/A</span>;
+        }
         const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
         return warehouse?.name || '-';
       },
@@ -1866,6 +1938,47 @@ export default function AllInventory() {
                 </Button>
               )}
             </div>
+
+            {/* Product Type Filter */}
+            <div className="flex gap-2">
+              <Select value={productTypeFilter} onValueChange={setProductTypeFilter}>
+                <SelectTrigger className="h-10 border-slate-300 dark:border-slate-700" data-testid="select-product-type-filter">
+                  <SelectValue placeholder={t('inventory:filterByProductType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('inventory:allProductTypes')}</SelectItem>
+                  <SelectItem value="standard">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-3 w-3" />
+                      {t('inventory:productTypeStandard')}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="physical_no_quantity">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3 w-3 text-blue-500" />
+                      {t('inventory:productTypeNoQty')}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="virtual">
+                    <div className="flex items-center gap-2">
+                      <Cloud className="h-3 w-3 text-violet-500" />
+                      {t('inventory:productTypeVirtual')}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {productTypeFilter !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setProductTypeFilter("all")}
+                  className="h-10 w-10"
+                  data-testid="button-clear-product-type-filter"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             
             {/* Column Visibility Settings - Desktop Only */}
             <div className="hidden md:block">
@@ -2058,11 +2171,7 @@ export default function AllInventory() {
                             <span className={`font-semibold cursor-pointer block ${product.isActive ? 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400' : 'text-gray-400 dark:text-gray-500 line-through'}`}>
                               {isChildMobile && <CornerDownRight className="inline h-3 w-3 mr-1 text-gray-400" />}
                               {product.name}
-                              {product.isVirtual && (
-                                <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-purple-400 text-purple-600 dark:text-purple-400">
-                                  Virtual
-                                </Badge>
-                              )}
+                              {getProductTypeBadge(product)}
                               {isParentMobile && (
                                 <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400">
                                   <Factory className="h-2.5 w-2.5 mr-0.5" />
@@ -2101,23 +2210,43 @@ export default function AllInventory() {
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">{t('inventory:quantity')}</p>
-                        {product.isVirtual && product.masterProductId ? (
-                          <div>
-                            <span className="font-bold text-purple-600 dark:text-purple-400">
-                              {product.availableVirtualStock ?? 0} {t('common:units')}
-                            </span>
-                            <span className="text-xs text-gray-400 ml-1">
-                              ({product.masterProductQuantity ?? 0}/{parseFloat(product.inventoryDeductionRatio || '1')})
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} {t('common:units')}</p>
-                        )}
+                        {(() => {
+                          const productType = product.productType || 'standard';
+                          if (productType === 'virtual') {
+                            return (
+                              <div>
+                                <span className="font-bold text-violet-600 dark:text-violet-400 text-lg">∞</span>
+                                <span className="text-xs text-gray-400 ml-1">{t('inventory:productTypeVirtual')}</span>
+                              </div>
+                            );
+                          }
+                          if (productType === 'physical_no_quantity') {
+                            return (
+                              <div>
+                                <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">∞</span>
+                                <span className="text-xs text-gray-400 ml-1">{t('inventory:alwaysAvailable')}</span>
+                              </div>
+                            );
+                          }
+                          if (product.isVirtual && product.masterProductId) {
+                            return (
+                              <div>
+                                <span className="font-bold text-purple-600 dark:text-purple-400">
+                                  {product.availableVirtualStock ?? 0} {t('common:units')}
+                                </span>
+                                <span className="text-xs text-gray-400 ml-1">
+                                  ({product.masterProductQuantity ?? 0}/{parseFloat(product.inventoryDeductionRatio || '1')})
+                                </span>
+                              </div>
+                            );
+                          }
+                          return <p className="font-medium text-gray-900 dark:text-gray-100">{product.quantity} {t('common:units')}</p>;
+                        })()}
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">{t('inventory:location')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {warehouse?.name || 'N/A'}
+                          {(product.productType === 'virtual') ? <span className="text-gray-400">N/A</span> : (warehouse?.name || 'N/A')}
                         </p>
                       </div>
                       <div>
