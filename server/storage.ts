@@ -424,6 +424,7 @@ export interface IStorage {
   getProductLocation(id: string): Promise<ProductLocation | undefined>;
   createProductLocation(location: InsertProductLocation): Promise<ProductLocation>;
   updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
+  updateProductLocationQuantity(id: string, quantity: number): Promise<ProductLocation | undefined>;
   deleteProductLocation(id: string): Promise<boolean>;
   moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean>;
 
@@ -2886,6 +2887,20 @@ export class DatabaseStorage implements IStorage {
       return updated || undefined;
     } catch (error) {
       console.error('Error updating product location:', error);
+      return undefined;
+    }
+  }
+
+  async updateProductLocationQuantity(id: string, quantity: number): Promise<ProductLocation | undefined> {
+    try {
+      const [updated] = await db
+        .update(productLocations)
+        .set({ quantity, updatedAt: new Date() })
+        .where(eq(productLocations.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating product location quantity:', error);
       return undefined;
     }
   }
