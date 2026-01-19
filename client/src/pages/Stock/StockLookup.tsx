@@ -954,7 +954,7 @@ export default function StockLookup() {
                             <span className="text-gray-300 dark:text-gray-600">|</span>
                           )}
                           {product.priceCzk && (
-                            <span className="text-gray-500 dark:text-gray-400">
+                            <span className="text-gray-900 dark:text-gray-100">
                               {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
                             </span>
                           )}
