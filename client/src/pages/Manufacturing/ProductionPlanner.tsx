@@ -27,7 +27,9 @@ import {
   Box,
   CornerDownRight,
   Layers,
-  Wrench
+  Wrench,
+  Cloud,
+  MapPin
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +42,7 @@ interface ManufacturableProduct {
   imageUrl?: string;
   replenishmentMethod: string;
   parentProductId?: string | null;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 interface IngredientRequirement {
@@ -51,6 +54,7 @@ interface IngredientRequirement {
   availableStock: number;
   missingQty: number;
   canFulfill: boolean;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
   supplier?: {
     id: string;
     name: string;
@@ -68,7 +72,7 @@ interface ProductionRequirements {
 
 export default function ProductionPlanner() {
   usePageTitle('products:productionPlanner', 'Production Planner');
-  const { t } = useTranslation(['products', 'common', 'inventory']);
+  const { t } = useTranslation(['products', 'common', 'inventory', 'manufacturing']);
   const { toast } = useToast();
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [quantityToBuild, setQuantityToBuild] = useState<string>("1");
@@ -115,6 +119,31 @@ export default function ProductionPlanner() {
   const ingredientIsManufactured = (ingredientProductId: string): boolean => {
     const product = allProducts.find(p => p.id === ingredientProductId);
     return product?.replenishmentMethod === 'make';
+  };
+
+  const getIngredientProductType = (ingredientProductId: string): string | undefined => {
+    const product = allProducts.find(p => p.id === ingredientProductId);
+    return product?.productType;
+  };
+
+  const renderProductTypeBadge = (productType?: string) => {
+    if (productType === 'virtual') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-violet-400 text-violet-600 dark:text-violet-400">
+          <Cloud className="h-2.5 w-2.5 mr-0.5" />
+          {t('manufacturing:virtual')}
+        </Badge>
+      );
+    }
+    if (productType === 'physical_no_quantity') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400">
+          <MapPin className="h-2.5 w-2.5 mr-0.5" />
+          {t('manufacturing:noQty')}
+        </Badge>
+      );
+    }
+    return null;
   };
 
   const calculateRequirements = useMutation({
@@ -200,6 +229,7 @@ export default function ProductionPlanner() {
                               <div className="flex items-center gap-2">
                                 <span>{product.name}</span>
                                 <span className="text-xs text-muted-foreground">({product.sku})</span>
+                                {renderProductTypeBadge(product.productType)}
                                 {productChildCount > 0 && (
                                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-cyan-400 text-cyan-600 dark:text-cyan-400">
                                     <Factory className="h-2.5 w-2.5 mr-0.5" />
@@ -245,6 +275,17 @@ export default function ProductionPlanner() {
               </div>
             </div>
 
+            {selectedProduct?.productType === 'virtual' && (
+              <div className="mt-4 p-3 bg-violet-50 dark:bg-violet-950 rounded-lg border border-violet-200 dark:border-violet-800" data-testid="virtual-product-warning">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  <span className="text-sm font-medium text-violet-800 dark:text-violet-200">
+                    {t('manufacturing:virtualCannotManufacture')}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {selectedProduct && selectedProductChildCount > 0 && (
               <div className="mt-4 p-3 bg-cyan-50 dark:bg-cyan-950 rounded-lg border border-cyan-200 dark:border-cyan-800" data-testid="parent-product-indicator">
                 <div className="flex items-center gap-2">
@@ -283,9 +324,22 @@ export default function ProductionPlanner() {
                   >
                     <CornerDownRight className="h-4 w-4 text-gray-400" />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium">{child.name}</span>
                         <span className="text-xs text-muted-foreground">({child.sku})</span>
+                        {renderProductTypeBadge(child.productType)}
+                        {child.productType === 'virtual' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <AlertTriangle className="h-3.5 w-3.5 text-violet-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('manufacturing:virtualComponentWarning')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                         {child.replenishmentMethod === 'make' && (
                           <TooltipProvider>
                             <Tooltip>
@@ -387,12 +441,27 @@ export default function ProductionPlanner() {
                       const hasChildren = ingredientHasChildren(ingredient.ingredientProductId);
                       const isManufactured = ingredientIsManufactured(ingredient.ingredientProductId);
                       const ingredientChildCount = childCountMap[ingredient.ingredientProductId] || 0;
+                      const ingredientProductType = ingredient.productType || getIngredientProductType(ingredient.ingredientProductId);
+                      const isVirtualIngredient = ingredientProductType === 'virtual';
                       
                       return (
                         <TableRow key={idx} data-testid={`requirement-row-${idx}`}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span>{ingredient.ingredientName}</span>
+                              {renderProductTypeBadge(ingredientProductType)}
+                              {isVirtualIngredient && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <AlertTriangle className="h-3.5 w-3.5 text-violet-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{t('manufacturing:virtualMaterialWarning')}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                               {hasChildren && (
                                 <TooltipProvider>
                                   <Tooltip>

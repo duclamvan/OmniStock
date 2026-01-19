@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, MoreHorizontal, Upload, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, MoreHorizontal, Upload, ChevronDown, ChevronRight, Cloud, MapPin, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -47,9 +49,17 @@ interface ProductVariantsProps {
   productId: string;
 }
 
+type ProductType = 'standard' | 'virtual' | 'physical_no_quantity';
+
+interface ParentProduct {
+  id: string;
+  name: string;
+  productType?: ProductType;
+}
+
 export default function ProductVariants({ productId }: ProductVariantsProps) {
   const { toast } = useToast();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'variants']);
   const [isOpen, setIsOpen] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
@@ -71,6 +81,33 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  // Fetch parent product to get its product type (inherited by variants)
+  const { data: parentProduct } = useQuery<ParentProduct>({
+    queryKey: ['/api/products', productId],
+    enabled: !!productId,
+  });
+
+  // Helper to render product type badge
+  const renderProductTypeBadge = (productType?: ProductType) => {
+    if (productType === 'virtual') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-violet-400 text-violet-600 dark:text-violet-400">
+          <Cloud className="h-2.5 w-2.5 mr-0.5" />
+          {t('variants:virtual')}
+        </Badge>
+      );
+    }
+    if (productType === 'physical_no_quantity') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400">
+          <MapPin className="h-2.5 w-2.5 mr-0.5" />
+          {t('variants:physicalNoQuantity')}
+        </Badge>
+      );
+    }
+    return null;
+  };
 
   // Fetch product locations to show all locations per variant
   const { data: productLocations = [] } = useQuery<Array<{
@@ -307,6 +344,17 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                 </DialogDescription>
               </DialogHeader>
               
+              {/* Product Type Inheritance Info */}
+              {parentProduct?.productType && parentProduct.productType !== 'standard' && (
+                <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                    <span>{t('variants:inheritedProductType')}</span>
+                    {renderProductTypeBadge(parentProduct.productType)}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {/* Series Creation Section */}
               <div className="space-y-4 border-b pb-4">
                 <div className="space-y-2">
@@ -476,7 +524,10 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                         </div>
                       )}
                       <div className="flex flex-col">
-                        <span>{variant.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{variant.name}</span>
+                          {renderProductTypeBadge(parentProduct?.productType)}
+                        </div>
                         {variant.sku && (
                           <span className="text-xs text-muted-foreground">SKU: {variant.sku}</span>
                         )}

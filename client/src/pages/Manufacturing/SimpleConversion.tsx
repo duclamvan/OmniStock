@@ -29,13 +29,22 @@ import {
   ChevronRight,
   Layers,
   Box,
+  Cloud,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
 
 interface ProductWithBom {
   id: string;
   name: string;
   sku: string;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 interface ComponentRequirement {
@@ -45,6 +54,7 @@ interface ComponentRequirement {
   requiredQty: number;
   availableStock: number;
   canFulfill: boolean;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 interface RequirementsResponse {
@@ -103,6 +113,7 @@ interface LowStockComponent {
   canFulfill: boolean;
   locations: ComponentLocation[];
   yieldQuantity: number;
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 interface LowStockAlert {
@@ -115,6 +126,7 @@ interface LowStockAlert {
   allComponentsAvailable: boolean;
   components: LowStockComponent[];
   locations: ComponentLocation[];
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
 }
 
 interface ParentChildLocation {
@@ -149,8 +161,28 @@ interface ParentChildStock {
 }
 
 export default function SimpleConversion() {
-  const { t } = useTranslation("inventory");
+  const { t } = useTranslation(["inventory", "manufacturing"]);
   const { toast } = useToast();
+
+  const renderProductTypeBadge = (productType?: string) => {
+    if (productType === 'virtual') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-violet-400 text-violet-600 dark:text-violet-400">
+          <Cloud className="h-2.5 w-2.5 mr-0.5" />
+          {t('manufacturing:virtual')}
+        </Badge>
+      );
+    }
+    if (productType === 'physical_no_quantity') {
+      return (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400">
+          <MapPin className="h-2.5 w-2.5 mr-0.5" />
+          {t('manufacturing:noQty')}
+        </Badge>
+      );
+    }
+    return null;
+  };
 
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
@@ -289,8 +321,17 @@ export default function SimpleConversion() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{alert.productName}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-semibold">{alert.productName}</h3>
+                        {renderProductTypeBadge(alert.productType)}
+                      </div>
                       <p className="text-sm text-muted-foreground">SKU: {alert.sku}</p>
+                      {alert.productType === 'virtual' && (
+                        <p className="text-sm text-violet-600 dark:text-violet-400 mt-1 flex items-center gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          {t('manufacturing:virtualCannotManufacture')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="text-center">
@@ -358,10 +399,23 @@ export default function SimpleConversion() {
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium">{comp.productName}</span>
-                              {comp.variantName && <span className="text-muted-foreground ml-1">({comp.variantName})</span>}
-                              {comp.sku && <span className="text-muted-foreground text-xs ml-2">SKU: {comp.sku}</span>}
+                              {comp.variantName && <span className="text-muted-foreground">({comp.variantName})</span>}
+                              {comp.sku && <span className="text-muted-foreground text-xs">SKU: {comp.sku}</span>}
+                              {renderProductTypeBadge(comp.productType)}
+                              {comp.productType === 'virtual' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <AlertTriangle className="h-3.5 w-3.5 text-violet-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{t('manufacturing:virtualMaterialWarning')}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
                             <div className="flex items-center gap-3 text-xs">
                               <span className="text-muted-foreground">
@@ -612,7 +666,10 @@ export default function SimpleConversion() {
                       value={product.id}
                       className="text-xl py-4"
                     >
-                      {product.name} ({product.sku})
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{product.name} ({product.sku})</span>
+                        {renderProductTypeBadge(product.productType)}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -620,6 +677,24 @@ export default function SimpleConversion() {
             )}
           </CardContent>
         </Card>
+
+        {selectedProductId && productsWithBom.find(p => p.id === selectedProductId)?.productType === 'virtual' && (
+          <div className="p-4 bg-violet-50 dark:bg-violet-950/30 rounded-lg border border-violet-200 dark:border-violet-800">
+            <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">{t('manufacturing:virtualCannotManufacture')}</span>
+            </div>
+          </div>
+        )}
+
+        {selectedProductId && productsWithBom.find(p => p.id === selectedProductId)?.productType === 'physical_no_quantity' && (
+          <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <MapPin className="h-5 w-5" />
+              <span className="font-medium">{t('manufacturing:physicalNoQtyNote')}</span>
+            </div>
+          </div>
+        )}
 
         {selectedProductId && (
           <Card className="shadow-md">
@@ -698,8 +773,23 @@ export default function SimpleConversion() {
                           : "bg-red-50 dark:bg-red-950/30"
                       }`}
                     >
-                      <div className="font-medium text-base truncate">
-                        {component.ingredientName}
+                      <div className="font-medium text-base">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="truncate">{component.ingredientName}</span>
+                          {renderProductTypeBadge(component.productType)}
+                          {component.productType === 'virtual' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <AlertTriangle className="h-3.5 w-3.5 text-violet-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t('manufacturing:virtualMaterialWarning')}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                       </div>
                       <div className="text-center text-lg font-semibold">
                         {component.requiredQty}

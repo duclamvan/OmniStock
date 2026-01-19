@@ -16,6 +16,8 @@ import systemEN from './locales/en/system';
 import discountsEN from './locales/en/discounts';
 import importsEN from './locales/en/imports';
 import dashboardEN from './locales/en/dashboard';
+import manufacturingEN from './locales/en/manufacturing';
+import variantsEN from './locales/en/variants';
 
 import commonVI from './locales/vi/common';
 import ordersVI from './locales/vi/orders';
@@ -31,6 +33,8 @@ import systemVI from './locales/vi/system';
 import discountsVI from './locales/vi/discounts';
 import importsVI from './locales/vi/imports';
 import dashboardVI from './locales/vi/dashboard';
+import manufacturingVI from './locales/vi/manufacturing';
+import variantsVI from './locales/vi/variants';
 
 export const defaultNS = 'common';
 
@@ -50,6 +54,8 @@ export const resources = {
     discounts: discountsEN,
     imports: importsEN,
     dashboard: dashboardEN,
+    manufacturing: manufacturingEN,
+    variants: variantsEN,
   },
   vi: {
     common: commonVI,
@@ -66,6 +72,8 @@ export const resources = {
     discounts: discountsVI,
     imports: importsVI,
     dashboard: dashboardVI,
+    manufacturing: manufacturingVI,
+    variants: variantsVI,
   },
 } as const;
 
