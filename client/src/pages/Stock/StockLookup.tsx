@@ -942,20 +942,20 @@ export default function StockLookup() {
                         )}
                       </div>
 
-                      {/* Prices */}
+                      {/* Prices - EUR first (highlighted), CZK second */}
                       {(product.priceCzk || product.priceEur) && (
                         <div className="flex items-center gap-3 text-sm font-semibold mb-2">
-                          {product.priceCzk && (
-                            <span className="text-blue-600 dark:text-blue-400">
-                              {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
+                          {product.priceEur && (
+                            <span className="text-green-600 dark:text-green-400 text-base">
+                              €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
                           {product.priceCzk && product.priceEur && (
                             <span className="text-gray-300 dark:text-gray-600">|</span>
                           )}
-                          {product.priceEur && (
-                            <span className="text-green-600 dark:text-green-400">
-                              €{Number(product.priceEur).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {product.priceCzk && (
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
                             </span>
                           )}
                         </div>
