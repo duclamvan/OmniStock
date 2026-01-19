@@ -86,7 +86,8 @@ import {
   Layers,
   Loader2,
   Copy,
-  Factory
+  Factory,
+  Cloud
 } from "lucide-react";
 import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
@@ -175,6 +176,8 @@ const productSchema = z.object({
   bulkPriceCzk: z.coerce.number().min(0).optional(),
   bulkPriceEur: z.coerce.number().min(0).optional(),
   allowBulkSales: z.boolean().optional().default(false),
+  // Product type field
+  productType: z.enum(['standard', 'physical_no_quantity', 'virtual']).default('standard'),
 });
 
 const tieredPricingSchema = z.object({
@@ -457,6 +460,7 @@ export default function ProductForm() {
       categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
       warehouseId: isEditMode ? undefined : (defaultWarehouse || undefined),
       name: isEditMode ? undefined : (nameFromUrl || undefined),
+      productType: 'standard' as const,
     };
     
     // Pre-fill from URL params (from purchase order creation flow)
@@ -2435,6 +2439,102 @@ export default function ProductForm() {
               </AccordionTrigger>
               <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
                 <div className="space-y-4 pt-2">
+                  {/* Product Type Selector */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t('products:productType')}</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Standard Product */}
+                      <button
+                        type="button"
+                        onClick={() => form.setValue('productType', 'standard')}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                          form.watch('productType') === 'standard'
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 ring-2 ring-emerald-200 dark:ring-emerald-800'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            form.watch('productType') === 'standard'
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                          }`}>
+                            <Package className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t('products:productTypeStandard')}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('products:productTypeStandardDesc')}</p>
+                          </div>
+                        </div>
+                        {form.watch('productType') === 'standard' && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle className="h-5 w-5 text-emerald-500" />
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Physical No-Quantity Product */}
+                      <button
+                        type="button"
+                        onClick={() => form.setValue('productType', 'physical_no_quantity')}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                          form.watch('productType') === 'physical_no_quantity'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-200 dark:ring-blue-800'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            form.watch('productType') === 'physical_no_quantity'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                          }`}>
+                            <MapPin className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t('products:productTypePhysicalNoQuantity')}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('products:productTypePhysicalNoQuantityDesc')}</p>
+                          </div>
+                        </div>
+                        {form.watch('productType') === 'physical_no_quantity' && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle className="h-5 w-5 text-blue-500" />
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Virtual Product */}
+                      <button
+                        type="button"
+                        onClick={() => form.setValue('productType', 'virtual')}
+                        className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                          form.watch('productType') === 'virtual'
+                            ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 ring-2 ring-violet-200 dark:ring-violet-800'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            form.watch('productType') === 'virtual'
+                              ? 'bg-violet-500 text-white'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                          }`}>
+                            <Cloud className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{t('products:productTypeVirtual')}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('products:productTypeVirtualDesc')}</p>
+                          </div>
+                        </div>
+                        {form.watch('productType') === 'virtual' && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle className="h-5 w-5 text-violet-500" />
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Product Name & English Name */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

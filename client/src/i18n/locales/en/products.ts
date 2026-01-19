@@ -49,6 +49,15 @@ const products = {
   service: 'Service',
   variant: 'Variant',
   
+  // Product Type Selector
+  productType: 'Product Type',
+  productTypeStandard: 'Standard',
+  productTypePhysicalNoQuantity: 'Physical (No Quantity)',
+  productTypeVirtual: 'Virtual',
+  productTypeStandardDesc: 'Normal product with location + quantity tracking',
+  productTypePhysicalNoQuantityDesc: 'Physical with location, always available',
+  productTypeVirtualDesc: 'Services, digital - no location, auto-picked',
+  
   // Stock
   stockQty: 'Stock Quantity',
   currentStock: 'Current Stock',

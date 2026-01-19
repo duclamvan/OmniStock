@@ -49,6 +49,15 @@ const products = {
   service: 'Dịch vụ',
   variant: 'Biến thể',
   
+  // Product Type Selector
+  productType: 'Loại sản phẩm',
+  productTypeStandard: 'Tiêu chuẩn',
+  productTypePhysicalNoQuantity: 'Vật lý (Không số lượng)',
+  productTypeVirtual: 'Ảo',
+  productTypeStandardDesc: 'Sản phẩm thường với vị trí + theo dõi số lượng',
+  productTypePhysicalNoQuantityDesc: 'Vật lý có vị trí, luôn sẵn có',
+  productTypeVirtualDesc: 'Dịch vụ, số hóa - không vị trí, tự động chọn',
+  
   // Stock
   stockQty: 'Số lượng tồn kho',
   currentStock: 'Tồn kho hiện tại',
