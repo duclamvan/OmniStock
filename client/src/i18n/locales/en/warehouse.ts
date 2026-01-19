@@ -983,6 +983,10 @@ const warehouse = {
   // Product Type Stock Adjustments
   virtualNoAdjustment: "Virtual products don't have inventory to adjust",
   noQuantityNoAdjustment: "This product doesn't track quantities",
+  
+  // Product Type Locations
+  virtualNoLocation: "Virtual products don't have physical locations",
+  virtualProductDescription: "Digital products are delivered electronically",
 } as const;
 
 export default warehouse;

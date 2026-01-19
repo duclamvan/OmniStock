@@ -90,7 +90,8 @@ import {
   TicketCheck,
   Link2,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  Cloud
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import MarginPill from "@/components/orders/MarginPill";
@@ -241,6 +242,8 @@ interface OrderItem {
   masterProductId?: string | null;
   masterProductName?: string | null;
   inventoryDeductionRatio?: number | null;
+  // Product type for UI indicators
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
   // Deprecated packaging unit fields (kept for backward compatibility)
   bulkUnitName?: string;
   bulkUnitQty?: number;
@@ -2837,6 +2840,8 @@ export default function AddOrder() {
           masterProductId: product.masterProductId || null,
           masterProductName: product.masterProductName || null,
           inventoryDeductionRatio: product.inventoryDeductionRatio ? parseFloat(String(product.inventoryDeductionRatio)) : null,
+          // Product type for UI indicators
+          productType: product.productType || 'standard',
           // Deprecated packaging unit fields
           bulkUnitQty: product.bulkUnitQty || null,
           bulkUnitName: product.bulkUnitName || null,
@@ -6426,6 +6431,18 @@ export default function AddOrder() {
                                   <Box className="h-2.5 w-2.5 sm:hidden" />
                                 </Badge>
                               )}
+                              {product.productType === 'virtual' && (
+                                <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 py-0 border-violet-500 text-violet-600 flex-shrink-0">
+                                  <Cloud className="h-2.5 w-2.5 mr-0.5" />
+                                  <span className="hidden sm:inline">{t('orders:virtualProduct')}</span>
+                                </Badge>
+                              )}
+                              {product.productType === 'physical_no_quantity' && (
+                                <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 py-0 border-blue-500 text-blue-600 flex-shrink-0">
+                                  <MapPin className="h-2.5 w-2.5 mr-0.5" />
+                                  <span className="hidden sm:inline">{t('orders:noQtyProduct')}</span>
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 truncate">
                               {hasBulkUnits && `${product.bulkUnitQty}/${product.bulkUnitName}`}
@@ -6456,6 +6473,17 @@ export default function AddOrder() {
                             </div>
                             {!isService && (
                               (() => {
+                                // Check for virtual or physical_no_quantity product types - always show "Always Available"
+                                const isNoQtyType = product.productType === 'virtual' || product.productType === 'physical_no_quantity';
+                                if (isNoQtyType) {
+                                  return (
+                                    <div className="text-[10px] md:text-xs text-green-600 dark:text-green-400">
+                                      <span className="hidden sm:inline">{t('orders:alwaysAvailable')}</span>
+                                      <span className="sm:hidden">∞</span>
+                                    </div>
+                                  );
+                                }
+                                
                                 // Calculate stock - use availableQuantity which accounts for allocations to other orders
                                 const isVirtual = product.masterProductId && product.inventoryDeductionRatio;
                                 let baseStock = 0;
@@ -6889,6 +6917,18 @@ export default function AddOrder() {
                                         {t('orders:virtualSku.badge', 'Virtual')}
                                       </span>
                                     )}
+                                    {item.productType === 'virtual' && !item.isVirtual && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-violet-400 text-violet-600 dark:text-violet-400">
+                                        <Cloud className="h-2.5 w-2.5 mr-0.5" />
+                                        {t('orders:virtualProduct')}
+                                      </Badge>
+                                    )}
+                                    {item.productType === 'physical_no_quantity' && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-400 text-blue-600 dark:text-blue-400">
+                                        <MapPin className="h-2.5 w-2.5 mr-0.5" />
+                                        {t('orders:noQtyProduct')}
+                                      </Badge>
+                                    )}
                                     {item.priceTier === 'bulk' && (
                                       <Badge className="text-xs px-1.5 py-0 bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-600">
                                         <TrendingUp className="h-3 w-3 mr-0.5" />
@@ -6924,6 +6964,16 @@ export default function AddOrder() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {item.serviceId ? t('orders:service') + ' ' + t('orders:item') : (item.sku ? `SKU: ${item.sku}` : '')}
                                 </span>
+                                {item.productType === 'virtual' && (
+                                  <span className="text-[10px] text-violet-500 dark:text-violet-400 italic">
+                                    {t('orders:virtualAutoComplete')}
+                                  </span>
+                                )}
+                                {item.productType === 'physical_no_quantity' && (
+                                  <span className="text-[10px] text-blue-500 dark:text-blue-400 italic">
+                                    {t('orders:noQtyNotTracked')}
+                                  </span>
+                                )}
                                 {item.serviceId && (
                                   <Input
                                     placeholder={t('orders:addOptionalNote')}
@@ -7316,6 +7366,18 @@ export default function AddOrder() {
                                 {t('orders:virtualSku.badge', 'Virtual')}
                               </span>
                             )}
+                            {item.productType === 'virtual' && !item.isVirtual && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-violet-400 text-violet-600 dark:text-violet-400">
+                                <Cloud className="h-2.5 w-2.5 mr-0.5" />
+                                {t('orders:virtualProduct')}
+                              </Badge>
+                            )}
+                            {item.productType === 'physical_no_quantity' && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-400 text-blue-600 dark:text-blue-400">
+                                <MapPin className="h-2.5 w-2.5 mr-0.5" />
+                                {t('orders:noQtyProduct')}
+                              </Badge>
+                            )}
                             {item.variantName && (
                               <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300">
                                 {item.variantName}
@@ -7325,6 +7387,16 @@ export default function AddOrder() {
                           {(item.serviceId || item.sku) && (
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                               {item.serviceId ? t('orders:service') : item.sku}
+                            </p>
+                          )}
+                          {item.productType === 'virtual' && (
+                            <p className="text-[9px] text-violet-500 dark:text-violet-400 italic">
+                              {t('orders:virtualAutoComplete')}
+                            </p>
+                          )}
+                          {item.productType === 'physical_no_quantity' && (
+                            <p className="text-[9px] text-blue-500 dark:text-blue-400 italic">
+                              {t('orders:noQtyNotTracked')}
                             </p>
                           )}
                         </div>

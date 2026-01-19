@@ -2091,6 +2091,13 @@ const orders = {
   bankImportComplete: 'Import Complete',
   bankImportResults: 'Found {{matched}} auto-matched, {{review}} need review, {{unmatched}} unmatched',
   
+  // Product Type Indicators
+  virtualProduct: 'Virtual',
+  noQtyProduct: 'No Qty',
+  alwaysAvailable: 'Always Available',
+  virtualAutoComplete: 'Auto-completed during picking',
+  noQtyNotTracked: 'Quantity not tracked',
+  
 } as const;
 
 export default orders;

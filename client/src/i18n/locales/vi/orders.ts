@@ -2075,6 +2075,13 @@ const orders = {
   noMatchesSelected: 'Chưa chọn kết quả khớp nào',
   daysAgo: '{{days}} ngày trước',
   
+  // Product Type Indicators
+  virtualProduct: 'Ảo',
+  noQtyProduct: 'Không SL',
+  alwaysAvailable: 'Luôn có sẵn',
+  virtualAutoComplete: 'Tự động hoàn thành khi lấy hàng',
+  noQtyNotTracked: 'Số lượng không được theo dõi',
+  
 } as const;
 
 export default orders;

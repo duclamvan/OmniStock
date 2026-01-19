@@ -922,6 +922,10 @@ const warehouse = {
   // Product Type Stock Adjustments
   virtualNoAdjustment: 'Sản phẩm ảo không có tồn kho để điều chỉnh',
   noQuantityNoAdjustment: 'Sản phẩm này không theo dõi số lượng',
+  
+  // Product Type Locations
+  virtualNoLocation: 'Sản phẩm ảo không có vị trí vật lý',
+  virtualProductDescription: 'Sản phẩm kỹ thuật số được giao hàng điện tử',
 } as const;
 
 export default warehouse;

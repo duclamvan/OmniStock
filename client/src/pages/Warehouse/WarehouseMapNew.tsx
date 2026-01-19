@@ -10,18 +10,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Search, Map, Grid3x3, ArrowLeft, Plus } from "lucide-react";
+import { Search, Map, Grid3x3, ArrowLeft, Plus, Cloud } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BinGrid } from "@/components/warehouse/BinGrid";
 import { BinDetailsPanel } from "@/components/warehouse/BinDetailsPanel";
 import { LayoutGeneratorDialog } from "@/components/warehouse/LayoutGeneratorDialog";
 
 export default function WarehouseMapNew() {
-  const { t } = useTranslation(['warehouse', 'common']);
+  const { t } = useTranslation(['warehouse', 'common', 'products', 'inventory']);
   const { id } = useParams();
   const [selectedBin, setSelectedBin] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLayoutGenerator, setShowLayoutGenerator] = useState(false);
   const [selectedZone, setSelectedZone] = useState<string>("all");
+  const [selectedProductType, setSelectedProductType] = useState<string>("all");
 
   const { data: warehouse, isLoading: warehouseLoading } = useQuery({
     queryKey: ['/api/warehouses', id],
@@ -46,11 +48,46 @@ export default function WarehouseMapNew() {
   // Extract unique zones from bin codes (A for shelves, B for pallets, etc.)
   const zones = bins ? Array.from(new Set(bins.map((bin: any) => bin.code.charAt(0)))).sort() : [];
   
+  // Filter bins based on search, zone, and product type
   const filteredBins = bins?.filter((bin: any) => {
     const matchesSearch = bin.code.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesZone = selectedZone === "all" || bin.code.charAt(0) === selectedZone;
+    
+    // Product type filter - filter bins that have products matching the selected type
+    if (selectedProductType !== "all" && bin.products && bin.products.length > 0) {
+      const hasMatchingProductType = bin.products.some((product: any) => {
+        const productType = product.productType || 'standard';
+        return productType === selectedProductType;
+      });
+      if (!hasMatchingProductType) return false;
+    }
+    
     return matchesSearch && matchesZone;
   }) || [];
+  
+  // Helper function to get inventory count display for a bin
+  const getInventoryCountDisplay = (bin: any) => {
+    if (!bin.products || bin.products.length === 0) return 0;
+    
+    let totalCount = 0;
+    let hasInfinite = false;
+    let hasVirtual = false;
+    
+    bin.products.forEach((product: any) => {
+      const productType = product.productType || 'standard';
+      if (productType === 'virtual') {
+        hasVirtual = true;
+      } else if (productType === 'physical_no_quantity') {
+        hasInfinite = true;
+      } else {
+        totalCount += product.quantity || 0;
+      }
+    });
+    
+    if (hasInfinite && totalCount === 0 && !hasVirtual) return '∞';
+    if (hasInfinite) return `${totalCount}+∞`;
+    return totalCount;
+  };
 
   const handleBinClick = (bin: any) => {
     setSelectedBin(bin);
@@ -247,6 +284,42 @@ export default function WarehouseMapNew() {
                 })}
               </div>
             )}
+            
+            {/* Product Type Filter */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{t('products:productType')}:</span>
+              <Select value={selectedProductType} onValueChange={setSelectedProductType}>
+                <SelectTrigger className="w-[180px]" data-testid="select-product-type">
+                  <SelectValue placeholder={t('common:all')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common:all')}</SelectItem>
+                  <SelectItem value="standard">{t('products:productTypeStandard')}</SelectItem>
+                  <SelectItem value="physical_no_quantity">
+                    <span className="flex items-center gap-2">
+                      <span className="text-blue-600">∞</span> {t('products:productTypePhysicalNoQuantity')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="virtual">
+                    <span className="flex items-center gap-2">
+                      <Cloud className="h-3 w-3 text-violet-600" /> {t('products:productTypeVirtual')}
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Product type legend */}
+              <div className="flex items-center gap-2 ml-auto">
+                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 text-xs">
+                  <span className="font-bold mr-1">∞</span>
+                  {t('inventory:noQty')}
+                </Badge>
+                <Badge variant="outline" className="bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 text-xs">
+                  <Cloud className="w-3 h-3 mr-1" />
+                  {t('inventory:virtual')}
+                </Badge>
+              </div>
+            </div>
           </div>
 
           <Card data-testid="card-bin-grid">

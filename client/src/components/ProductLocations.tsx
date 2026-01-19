@@ -72,6 +72,7 @@ import {
   CheckSquare,
   Square,
   X,
+  Cloud,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -98,11 +99,14 @@ interface ProductLocation {
   updatedAt: string;
 }
 
+type ProductType = 'standard' | 'virtual' | 'physical_no_quantity';
+
 interface ProductLocationsProps {
   productId: string;
   productName?: string;
   readOnly?: boolean;
   embedded?: boolean;
+  productType?: ProductType;
 }
 
 // Visual location code display component
@@ -145,9 +149,13 @@ export default function ProductLocations({
   productName = "Product",
   readOnly = false,
   embedded = false,
+  productType = 'standard',
 }: ProductLocationsProps) {
   const { toast } = useToast();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'warehouse', 'inventory']);
+  
+  const isVirtual = productType === 'virtual';
+  const isPhysicalNoQty = productType === 'physical_no_quantity';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editLocation, setEditLocation] = useState<ProductLocation | null>(null);
   const [deleteLocation, setDeleteLocation] = useState<ProductLocation | null>(null);
@@ -569,12 +577,25 @@ export default function ProductLocations({
   // Render header section (title + add button)
   const headerSection = (
     <div className="flex items-center justify-between mb-4">
-      <div>
-        {!embedded && <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('common:warehouseLocations')}</h4>}
-        {embedded && <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('common:warehouseLocations')}</h4>}
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{locationSummary}</p>
+      <div className="flex items-center gap-2">
+        <div>
+          {!embedded && <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('common:warehouseLocations')}</h4>}
+          {embedded && <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('common:warehouseLocations')}</h4>}
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{locationSummary}</p>
+        </div>
+        {isVirtual && (
+          <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-300 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-700">
+            <Cloud className="h-3 w-3 mr-1" />
+            {t('inventory:virtual', 'Virtual')}
+          </Badge>
+        )}
+        {isPhysicalNoQty && (
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700">
+            {t('inventory:noQty', 'No Qty')}
+          </Badge>
+        )}
       </div>
-      {!readOnly && (
+      {!readOnly && !isVirtual && (
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" data-testid="button-add-location">
@@ -1102,6 +1123,14 @@ export default function ProductLocations({
             </div>
             </CollapsibleContent>
           </Collapsible>
+        ) : isVirtual ? (
+          <div className="text-center py-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/30 mb-3">
+              <Cloud className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <p className="text-violet-700 dark:text-violet-300 font-medium">{t('warehouse:virtualNoLocation')}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('warehouse:virtualProductDescription', 'Digital products are delivered electronically')}</p>
+          </div>
         ) : (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Package, MapPin, BarChart3, X } from "lucide-react";
+import { Package, MapPin, BarChart3, X, Cloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 
@@ -28,6 +28,36 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
     if (occupancy === 0) return 'text-green-600';
     if (occupancy < 80) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const getProductTypeBadge = (productType: string) => {
+    if (productType === 'virtual') {
+      return (
+        <Badge className="bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 text-xs">
+          <Cloud className="h-3 w-3 mr-1" />
+          {t('inventory:virtual', 'Virtual')}
+        </Badge>
+      );
+    }
+    if (productType === 'physical_no_quantity') {
+      return (
+        <Badge className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700 text-xs">
+          {t('inventory:noQty', 'No Qty')}
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  const getProductQuantityDisplay = (product: any) => {
+    const productType = product.productType || 'standard';
+    if (productType === 'virtual') {
+      return t('common:na', 'N/A');
+    }
+    if (productType === 'physical_no_quantity') {
+      return '∞';
+    }
+    return product.quantity || 0;
   };
 
   return (
@@ -96,27 +126,46 @@ export function BinDetailsPanel({ bin, onClose, onUpdate }: BinDetailsPanelProps
         ) : (
           <ScrollArea className="h-64">
             <div className="space-y-2">
-              {bin.products.map((product: any, index: number) => (
-                <div
-                  key={product.id || index}
-                  className="p-3 border rounded-lg hover:bg-accent transition-colors"
-                  data-testid={`product-${index}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm" data-testid={`text-product-name-${index}`}>
-                        {product.productId || t('unknownProduct')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t('locationLabel')}: {product.locationCode}
-                      </p>
+              {bin.products.map((product: any, index: number) => {
+                const productType = product.productType || 'standard';
+                const isVirtual = productType === 'virtual';
+                const isNoQty = productType === 'physical_no_quantity';
+                
+                return (
+                  <div
+                    key={product.id || index}
+                    className={`p-3 border rounded-lg hover:bg-accent transition-colors ${
+                      isVirtual ? 'border-violet-200 dark:border-violet-700 bg-violet-50/50 dark:bg-violet-900/20' :
+                      isNoQty ? 'border-blue-200 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/20' : ''
+                    }`}
+                    data-testid={`product-${index}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate" data-testid={`text-product-name-${index}`}>
+                            {product.productId || t('unknownProduct')}
+                          </p>
+                          {getProductTypeBadge(productType)}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {t('locationLabel')}: {product.locationCode}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        data-testid={`badge-product-quantity-${index}`}
+                        className={
+                          isVirtual ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300' :
+                          isNoQty ? 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300' : ''
+                        }
+                      >
+                        {getProductQuantityDisplay(product)}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" data-testid={`badge-product-quantity-${index}`}>
-                      {product.quantity || 0}
-                    </Badge>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
