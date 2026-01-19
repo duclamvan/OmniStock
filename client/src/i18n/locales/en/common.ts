@@ -1215,6 +1215,8 @@ const common = {
   quantityToMove: 'Quantity to Move',
   deleteLocation: 'Delete Location',
   deleteLocations: 'Delete Locations',
+  setPrimaryLocation: 'Set as Primary',
+  deleteLocationConfirmation: 'Are you sure you want to delete location {{location}}? This action cannot be undone.',
   selectedCount: '{{count}} selected',
   locationsDeletedSuccessfully: '{{count}} locations deleted successfully',
   failedToDeleteLocations: 'Failed to delete locations',

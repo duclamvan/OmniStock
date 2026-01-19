@@ -1175,6 +1175,8 @@ const common = {
   quantityToMove: 'Số lượng cần Di chuyển',
   deleteLocation: 'Xóa Vị trí',
   deleteLocations: 'Xóa Vị trí',
+  setPrimaryLocation: 'Đặt làm Vị trí Chính',
+  deleteLocationConfirmation: 'Bạn có chắc chắn muốn xóa vị trí {{location}}? Hành động này không thể hoàn tác.',
   selectedCount: 'Đã chọn {{count}}',
   locationsDeletedSuccessfully: 'Đã xóa {{count}} vị trí thành công',
   failedToDeleteLocations: 'Không thể xóa các vị trí',
