@@ -545,28 +545,28 @@ export default function StockLookup() {
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="px-3 py-3">
           <div className="flex items-center justify-between mb-2.5">
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('stockLookup')}</h1>
-            <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('stockLookup')}</h1>
+            <div className="flex items-center gap-1.5">
               <Link href="/stock/approvals">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8"
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-3"
                   data-testid="button-adjustment-approvals"
                 >
-                  <ClipboardCheck className="h-4 w-4 mr-1.5" />
-                  {t('adjustmentApprovals')}
+                  <ClipboardCheck className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{t('adjustmentApprovals')}</span>
                 </Button>
               </Link>
               <Link href="/stock/labels">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8"
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-3"
                   data-testid="button-manage-labels"
                 >
-                  <Tag className="h-4 w-4 mr-1.5" />
-                  {t('manageLabels')}
+                  <Tag className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{t('manageLabels')}</span>
                 </Button>
               </Link>
               {enableBarcodeScanning && (
@@ -574,11 +574,11 @@ export default function StockLookup() {
                   variant={barcodeMode ? "default" : "outline"}
                   size="sm"
                   onClick={() => setBarcodeMode(!barcodeMode)}
-                  className="h-8"
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-3"
                   data-testid="button-toggle-barcode-mode"
                 >
-                  <Barcode className="h-4 w-4 mr-1.5" />
-                  {barcodeMode ? t('scanning') : t('scanLabel')}
+                  <Barcode className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">{barcodeMode ? t('scanning') : t('scanLabel')}</span>
                 </Button>
               )}
             </div>
@@ -635,10 +635,10 @@ export default function StockLookup() {
               </div>
 
               {/* Quick Stats */}
-              <div className="mt-3 flex gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <span>{products.length} {t('productsCount')}</span>
-                <span>•</span>
-                <span>{filteredProducts.length} {t('resultsCount')}</span>
+              <div className="mt-2 flex gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">{products.length}</span> {t('productsCount')}
+                <span className="text-gray-400">•</span>
+                <span className="font-medium">{filteredProducts.length}</span> {t('resultsCount')}
               </div>
             </>
           )}
@@ -873,20 +873,20 @@ export default function StockLookup() {
                 }}
                 data-testid={`card-product-${product.id}`}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   {/* Product Header */}
-                  <div className="flex gap-3">
-                    {/* Product Image */}
+                  <div className="flex gap-4">
+                    {/* Product Image - Larger for touch */}
                     <div className="flex-shrink-0">
                       {product.imageUrl ? (
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="h-20 w-20 rounded-md object-cover bg-gray-100 dark:bg-gray-800"
+                          className="h-24 w-24 rounded-lg object-cover bg-gray-100 dark:bg-gray-800"
                         />
                       ) : (
-                        <div className="h-20 w-20 rounded-md bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
-                          <Package className="h-8 w-8 text-gray-400" />
+                        <div className="h-24 w-24 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                          <Package className="h-10 w-10 text-gray-400" />
                         </div>
                       )}
                     </div>
@@ -895,9 +895,9 @@ export default function StockLookup() {
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                       {/* Top Row: Name + Stock */}
                       <div>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h3 className="font-semibold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base leading-tight text-gray-900 dark:text-white line-clamp-2" data-testid={`text-product-name-${product.id}`}>
                               {product.name}
                             </h3>
                             {/* Product Type Badges */}
@@ -916,43 +916,40 @@ export default function StockLookup() {
                           </div>
                           {/* Stock Badge - show ∞ for virtual/no-qty products */}
                           {product.productType === 'virtual' || product.productType === 'physical_no_quantity' ? (
-                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 flex-shrink-0 h-6 px-2">
-                              <span className="font-bold text-lg">∞</span>
+                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400 flex items-center gap-1 flex-shrink-0 h-8 px-3">
+                              <span className="font-bold text-xl">∞</span>
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1 flex-shrink-0 h-6 px-2`}>
-                              <StatusIcon className="h-3 w-3" />
-                              <span className="font-bold">{displayProduct.totalStock}</span>
+                            <Badge variant="outline" className={`${status.borderColor} ${status.textColor} flex items-center gap-1.5 flex-shrink-0 h-8 px-3`}>
+                              <StatusIcon className="h-4 w-4" />
+                              <span className="font-bold text-lg">{displayProduct.totalStock}</span>
                             </Badge>
                           )}
                         </div>
                         
-                        {/* SKU and Category - More compact */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
+                        {/* SKU and Category */}
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
                           {product.sku && (
-                            <span className="flex items-center gap-0.5 font-mono">
-                              <Barcode className="h-3 w-3" />
+                            <span className="flex items-center gap-1 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                              <Barcode className="h-3.5 w-3.5" />
                               {product.sku}
                             </span>
                           )}
                           {product.categoryName && (
-                            <>
-                              {product.sku && <span>•</span>}
-                              <span className="truncate">{product.categoryName}</span>
-                            </>
+                            <span className="truncate text-gray-600 dark:text-gray-400">{product.categoryName}</span>
                           )}
                         </div>
 
-                        {/* Prices */}
+                        {/* Prices - Larger for mobile */}
                         {(product.priceCzk || product.priceEur) && (
-                          <div className="flex items-center gap-2 text-xs font-medium">
+                          <div className="flex items-center gap-3 text-sm font-semibold">
                             {product.priceCzk && (
                               <span className="text-blue-600 dark:text-blue-400">
                                 {Number(product.priceCzk).toLocaleString('cs-CZ')} Kč
                               </span>
                             )}
                             {product.priceCzk && product.priceEur && (
-                              <span className="text-gray-400 dark:text-gray-600">•</span>
+                              <span className="text-gray-300 dark:text-gray-600">|</span>
                             )}
                             {product.priceEur && (
                               <span className="text-green-600 dark:text-green-400">
@@ -964,33 +961,35 @@ export default function StockLookup() {
                       </div>
 
                       {/* Bottom Row: Location info - or message for virtual products */}
-                      <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center justify-between mt-2">
                         {product.productType === 'virtual' ? (
-                          <div className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
-                            <Cloud className="h-3.5 w-3.5" />
-                            <span className="text-[11px]">{t('virtualProductNoTracking')}</span>
+                          <div className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
+                            <Cloud className="h-4 w-4" />
+                            <span className="text-xs">{t('virtualProductNoTracking')}</span>
                           </div>
                         ) : displayProduct.locations && displayProduct.locations.length > 0 ? (
-                          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                            <MapPin className="h-3.5 w-3.5 text-cyan-500" />
-                            <span className="text-[11px] font-medium font-mono">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-1 rounded">
+                            <MapPin className="h-4 w-4 text-cyan-600" />
+                            <span className="text-xs font-semibold font-mono">
                               {displayProduct.locations[0].locationCode}
                             </span>
                             {displayProduct.locations.length > 1 && (
-                              <span className="text-[10px] text-gray-400">+{displayProduct.locations.length - 1}</span>
+                              <Badge variant="secondary" className="text-[10px] h-4 px-1">+{displayProduct.locations.length - 1}</Badge>
                             )}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="text-[11px]">{t('noLocation')}</span>
+                          <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
+                            <MapPin className="h-4 w-4" />
+                            <span className="text-xs">{t('noLocation')}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Expand Indicator */}
-                    <ChevronRight className={`h-4 w-4 text-gray-400 flex-shrink-0 self-center transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    {/* Expand Indicator - Larger touch target */}
+                    <div className="flex-shrink-0 self-center p-2 -mr-2">
+                      <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    </div>
                   </div>
 
                   {/* Expanded Details */}
