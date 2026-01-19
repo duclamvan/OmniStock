@@ -2448,6 +2448,12 @@ const imports = {
   validationErrorsDetails: 'Validation Errors',
   importResultsSummary: '{{imported}} shipment(s) imported successfully. {{errors}} row(s) had validation errors.',
   
+  // Product Types for Receiving
+  'receiving:virtualNoReceiving': 'Virtual items don\'t require receiving',
+  'receiving:noQtyOptional': 'Quantity tracking is optional',
+  'receiving:virtual': 'Virtual',
+  'receiving:noQtyTracking': 'No Qty Tracking',
+  
 } as const;
 
 export default imports;

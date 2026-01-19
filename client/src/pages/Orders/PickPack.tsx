@@ -143,7 +143,8 @@ import {
   Layers,
   Camera,
   MapPinCheck,
-  Receipt
+  Receipt,
+  Cloud
 } from "lucide-react";
 
 interface BundleItem {
@@ -248,6 +249,8 @@ interface OrderItem {
   packingInstructionsText?: string | null;
   packingInstructionsImage?: string | null;
   colorNumber?: string | null;
+  // Product type for handling different picking/packing behaviors
+  productType?: 'standard' | 'virtual' | 'physical_no_quantity';
   // Virtual SKU fields - product deducts from master product's inventory
   isVirtual?: boolean;
   masterProductId?: string | null;
@@ -1891,6 +1894,12 @@ function PickingListView({
                   </div>
                   {/* Warehouse Location - Under Product Title */}
                   <div className="mt-1.5 flex items-center gap-1.5">
+                    {firstItem.productType === 'virtual' ? (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border border-violet-300 dark:border-violet-600">
+                        <Cloud className="h-4 w-4 sm:h-5 sm:w-5" />
+                        {t('virtualItemAutoCompleted') || 'Virtual item - auto-completed'}
+                      </div>
+                    ) : (
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm sm:text-base font-mono font-bold ${
                       hasCurrent 
                         ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-2 border-orange-400 dark:border-orange-600' 
@@ -1901,6 +1910,7 @@ function PickingListView({
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                       <ItemPrimaryLocation productId={firstItem.productId} variantId={firstItem.variantId} variantLocationCode={firstItem.variantLocationCode} fallbackLocation={firstItem.warehouseLocation || t('noLocation') || 'No location'} />
                     </div>
+                    )}
                     {/* Same aisle indicator - shows when next group is in same aisle */}
                     {isSameAisleAsNext && !allPicked && (
                       <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
@@ -1911,7 +1921,7 @@ function PickingListView({
                   </div>
                 </div>
                 
-                {/* Quantity Badge - shows merged quantity */}
+                {/* Quantity Badge - shows merged quantity, or ∞ for physical_no_quantity */}
                 <div className="flex-shrink-0 flex items-center gap-2">
                   <Badge 
                     className={`text-base sm:text-lg font-bold px-2.5 sm:px-3 py-1 ${
@@ -1922,7 +1932,9 @@ function PickingListView({
                           : 'bg-gray-700 dark:bg-gray-600 text-white'
                     }`}
                   >
-                    {isPartial ? `${pickedQuantity}/` : '×'}{totalQuantity}
+                    {firstItem.productType === 'physical_no_quantity' 
+                      ? '∞' 
+                      : isPartial ? `${pickedQuantity}/` : '×'}{firstItem.productType !== 'physical_no_quantity' && totalQuantity}
                   </Badge>
                   {/* Expand/Collapse Arrow for multi-variant groups */}
                   {isMultiVariant && (
@@ -1937,10 +1949,24 @@ function PickingListView({
                 </div>
               </div>
               
-              {/* Row 2: SKU info + Pick All button for multi-variant groups */}
+              {/* Row 2: SKU info + Product type badges + Pick All button for multi-variant groups */}
               <div className="mt-1.5 ml-[76px] sm:ml-[92px] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                   <span className="font-mono">{firstItem.sku}</span>
+                  {/* Virtual product badge */}
+                  {firstItem.productType === 'virtual' && (
+                    <Badge className="text-[10px] px-1.5 py-0 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-600 font-medium">
+                      <Cloud className="h-2.5 w-2.5 mr-0.5" />
+                      {t('virtualAutoCompleted') || 'Virtual - Auto-picked'}
+                    </Badge>
+                  )}
+                  {/* Physical no quantity badge */}
+                  {firstItem.productType === 'physical_no_quantity' && (
+                    <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-600 font-medium">
+                      <MapPin className="h-2.5 w-2.5 mr-0.5" />
+                      {t('noQtyTracking') || 'No Qty Tracking'}
+                    </Badge>
+                  )}
                   {/* Carton/Bulk Unit Badge */}
                   {firstItem.bulkUnitQty && totalQuantity >= firstItem.bulkUnitQty && (
                     <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-600 font-medium">
@@ -8279,6 +8305,14 @@ export default function PickPack() {
         }));
       }
       
+      // Auto-pick virtual items - they don't require any physical action
+      items = items.map(item => {
+        if (item.productType === 'virtual') {
+          return { ...item, pickedQuantity: item.quantity };
+        }
+        return item;
+      });
+      
       // Initialize pickedFromLocations state from:
       // 1. localStorage (savedProgress.locations) - for session continuity
       // 2. Order item's pickedFromLocations field from database - for existing picks
@@ -8459,6 +8493,18 @@ export default function PickPack() {
 
   // Toggle full pick for list view - handles bundles, partials, and offline queue
   const toggleFullPick = (item: OrderItem) => {
+    // Virtual items are auto-picked, skip any manual interaction
+    if (item.productType === 'virtual') {
+      return; // Already auto-picked
+    }
+    
+    // Physical no-quantity items: just confirm pick (single tap)
+    if (item.productType === 'physical_no_quantity') {
+      const isPicked = item.pickedQuantity >= item.quantity;
+      updatePickedItem(item.id, isPicked ? 0 : item.quantity);
+      return;
+    }
+    
     // For bundles with actual bundle items, check if all components are picked
     if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
       const allPicked = bundlePickedItems[item.id]?.size === item.bundleItems.length;
@@ -10119,12 +10165,23 @@ export default function PickPack() {
                                               {item.variantName || item.productName}
                                             </p>
                                             <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
-                                              <span>📍 <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} /></span>
+                                              <span>📍 {item.productType === 'virtual' ? (t('naLocation') || 'N/A') : <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />}</span>
                                               {item.sku && <span className="font-mono">• {item.sku}</span>}
+                                              {item.productType === 'virtual' && (
+                                                <Badge className="text-[8px] px-1 py-0 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-600">
+                                                  <Cloud className="h-2 w-2 mr-0.5" />
+                                                  {t('virtualAutoCompleted') || 'Virtual'}
+                                                </Badge>
+                                              )}
+                                              {item.productType === 'physical_no_quantity' && (
+                                                <Badge className="text-[8px] px-1 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-600">
+                                                  {t('noQtyTracking') || 'No Qty'}
+                                                </Badge>
+                                              )}
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.quantity}×</span>
+                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.productType === 'physical_no_quantity' ? '∞' : `${item.quantity}×`}</span>
                                             <div className="w-8 flex justify-center">
                                               {isVerified ? (
                                                 <CheckCircle className="h-5 w-5 text-green-500" />

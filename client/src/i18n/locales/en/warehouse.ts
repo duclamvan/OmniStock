@@ -979,6 +979,10 @@ const warehouse = {
   // Zone Management
   maximumZonesReached: 'Maximum zones reached',
   cannotDeleteZoneA: 'Cannot delete Zone A',
+  
+  // Product Type Stock Adjustments
+  virtualNoAdjustment: "Virtual products don't have inventory to adjust",
+  noQuantityNoAdjustment: "This product doesn't track quantities",
 } as const;
 
 export default warehouse;

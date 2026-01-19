@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSettings } from "@/contexts/SettingsContext";
-import { Plus, Minus, Package, AlertCircle, Barcode, ScanLine } from "lucide-react";
+import { Plus, Minus, Package, AlertCircle, Barcode, ScanLine, Cloud, MapPin } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -49,6 +49,7 @@ interface StockAdjustmentDialogProps {
   onOpenChange: (open: boolean) => void;
   productId: string;
   productName: string;
+  productType?: string;
   location: ProductLocation | null;
   onSuccess?: () => void;
   initialValues?: {
@@ -64,6 +65,7 @@ export default function StockAdjustmentDialog({
   onOpenChange,
   productId,
   productName,
+  productType,
   location,
   onSuccess,
   initialValues,
@@ -347,9 +349,45 @@ export default function StockAdjustmentDialog({
   const finalQuantity = calculateFinalQuantity();
   const isValid = finalQuantity >= 0;
 
+  const isVirtualProduct = productType === 'virtual';
+  const isNoQuantityProduct = productType === 'physical_no_quantity';
+  const isStockAdjustmentDisabled = isVirtualProduct || isNoQuantityProduct;
+
   const content = (
     <div className="space-y-4 py-4">
-      {location && (
+      {isVirtualProduct && (
+        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            <Cloud className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {productName}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t('warehouse:virtualNoAdjustment')}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {isNoQuantityProduct && (
+        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <MapPin className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {productName}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t('warehouse:noQuantityNoAdjustment')}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {!isStockAdjustmentDisabled && location && (
         <>
           <div className="space-y-2">
             <Label className="text-xs text-gray-600 dark:text-gray-400">
@@ -559,15 +597,17 @@ export default function StockAdjustmentDialog({
         disabled={createRequestMutation.isPending}
         data-testid="button-cancel-adjust"
       >
-        {t('common:cancel')}
+        {isStockAdjustmentDisabled ? t('common:close') : t('common:cancel')}
       </Button>
-      <Button
-        onClick={handleAdjustStock}
-        disabled={!isValid || createRequestMutation.isPending || !notes.trim()}
-        data-testid="button-confirm-adjust"
-      >
-        {createRequestMutation.isPending ? t('warehouse:submitting') : t('warehouse:submitRequest')}
-      </Button>
+      {!isStockAdjustmentDisabled && (
+        <Button
+          onClick={handleAdjustStock}
+          disabled={!isValid || createRequestMutation.isPending || !notes.trim()}
+          data-testid="button-confirm-adjust"
+        >
+          {createRequestMutation.isPending ? t('warehouse:submitting') : t('warehouse:submitRequest')}
+        </Button>
+      )}
     </>
   );
 

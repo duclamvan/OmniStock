@@ -918,6 +918,10 @@ const warehouse = {
   // Zone Management
   maximumZonesReached: 'Đã đạt số khu vực tối đa',
   cannotDeleteZoneA: 'Không thể xóa Khu vực A',
+  
+  // Product Type Stock Adjustments
+  virtualNoAdjustment: 'Sản phẩm ảo không có tồn kho để điều chỉnh',
+  noQuantityNoAdjustment: 'Sản phẩm này không theo dõi số lượng',
 } as const;
 
 export default warehouse;

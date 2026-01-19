@@ -65,7 +65,8 @@ import {
   Warehouse,
   ChevronDown,
   ChevronUp,
-  MapPin
+  MapPin,
+  Cloud
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -106,6 +107,7 @@ interface ReceivingItem {
   orderItems?: any[]; // Original order items data from purchase order
   productVariants?: ProductVariant[]; // All variants of the product for location display
   hasVariants?: boolean; // Flag to indicate if product has variants
+  productType?: 'standard' | 'physical_no_quantity' | 'virtual'; // Product type for receiving behavior
 }
 
 // Helper function to generate warehouse location with proper formatting
@@ -217,7 +219,7 @@ export default function StartReceiving() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['imports', 'inventory']);
+  const { t } = useTranslation(['imports', 'inventory', 'receiving']);
   const { user } = useAuth(); // Get current user for auto-populating "Received By"
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
@@ -522,6 +524,11 @@ export default function StartReceiving() {
             }
           }
           
+          // For virtual items, auto-mark as received
+          const isVirtual = item.productType === 'virtual';
+          const finalStatus = isVirtual ? 'complete' : calculatedStatus;
+          const finalReceivedQty = isVirtual ? expectedQty : receivedQty;
+          
           return {
             id: itemId,
             itemId: item.itemId || item.id,
@@ -529,15 +536,16 @@ export default function StartReceiving() {
             name: item.name || item.productName || `Item ${index + 1}`,
             sku: item.sku || '',
             expectedQty,
-            receivedQty,
-            status: calculatedStatus,
+            receivedQty: finalReceivedQty,
+            status: finalStatus,
             notes: item.notes || '',
-            checked: receivedQty > 0,
+            checked: finalReceivedQty > 0 || isVirtual,
             imageUrl: item.imageUrl || '',
             warehouseLocations: [] as string[],
             isNewProduct: false,
             variantAllocations,
-            orderItems
+            orderItems,
+            productType: item.productType || 'standard'
           };
         });
         setReceivingItems(items);
@@ -625,6 +633,9 @@ export default function StartReceiving() {
           const totalVariantQty = variantAllocations?.reduce((sum, v) => sum + (v.quantity || 0), 0) || 0;
           const expectedQty = totalVariantQty > 0 ? totalVariantQty : (item.quantity || 1);
           
+          // For virtual items, auto-mark as received
+          const isVirtual = item.productType === 'virtual';
+          
           return {
             id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
             itemId: item.id, // Add itemId field for API calls
@@ -632,15 +643,16 @@ export default function StartReceiving() {
             name: item.name || item.productName || `Item ${index + 1}`,
             sku: item.sku || '',
             expectedQty,
-            receivedQty: 0,
-            status: 'pending' as const,
+            receivedQty: isVirtual ? expectedQty : 0,
+            status: isVirtual ? 'complete' as const : 'pending' as const,
             notes: '',
-            checked: false,
+            checked: isVirtual,
             imageUrl: item.imageUrl || '',
             warehouseLocations: [] as string[], // Will be populated after initialization
             isNewProduct: false, // Will be determined when fetching locations
             variantAllocations,
-            orderItems
+            orderItems,
+            productType: item.productType || 'standard'
           };
         });
         setReceivingItems(items);
@@ -2609,15 +2621,42 @@ export default function StartReceiving() {
                             
                             {/* Right Column - All Item Details and Controls */}
                             <div className="flex flex-col gap-2 sm:gap-3 min-w-0">
-                              {/* Header Section: Name, SKU, and Status Badge */}
+                              {/* Header Section: Name, SKU, Product Type Badge and Status Badge */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className={`font-semibold text-sm sm:text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
-                                    {item.name}
-                                  </h4>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className={`font-semibold text-sm sm:text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                      {item.name}
+                                    </h4>
+                                    {/* Product Type Badges */}
+                                    {item.productType === 'virtual' && (
+                                      <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300 text-xs px-2 py-0.5 flex items-center gap-1">
+                                        <Cloud className="h-3 w-3" />
+                                        {t('receiving:virtual')}
+                                      </Badge>
+                                    )}
+                                    {item.productType === 'physical_no_quantity' && (
+                                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 text-xs px-2 py-0.5 flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        {t('receiving:noQtyTracking')}
+                                      </Badge>
+                                    )}
+                                  </div>
                                   {item.sku && (
                                     <p className="text-xs text-muted-foreground font-mono mt-1">
                                       SKU: {item.sku}
+                                    </p>
+                                  )}
+                                  {/* Virtual Item Message */}
+                                  {item.productType === 'virtual' && (
+                                    <p className="text-xs text-violet-600 dark:text-violet-400 mt-1 italic">
+                                      {t('receiving:virtualNoReceiving')}
+                                    </p>
+                                  )}
+                                  {/* Physical No-Qty Message */}
+                                  {item.productType === 'physical_no_quantity' && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 italic">
+                                      {t('receiving:noQtyOptional')}
                                     </p>
                                   )}
                                   
@@ -2944,92 +2983,106 @@ export default function StartReceiving() {
                               </div>
                               
                               {/* Controls Section - Redesigned */}
-                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                {/* Quantity Controls */}
-                                <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-300 dark:border-gray-600 shadow-sm">
-                                  <Button
-                                    variant="ghost"
-                                    size="default"
-                                    onClick={() => updateItemQuantity(item.id, -1)}
-                                    disabled={item.receivedQty === 0}
-                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                  >
-                                    <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
-                                  </Button>
-                                  <span className="text-sm sm:text-base font-bold font-mono min-w-[90px] sm:min-w-[120px] text-center px-1.5 sm:px-2 whitespace-nowrap">
-                                    {item.receivedQty.toLocaleString()}/{item.expectedQty.toLocaleString()}
+                              {/* Virtual items don't need controls - they're auto-received */}
+                              {item.productType === 'virtual' ? (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
+                                  <CheckCircle2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                                  <span className="text-sm text-violet-700 dark:text-violet-300 font-medium">
+                                    Auto-received (Virtual)
                                   </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="default"
-                                    onClick={() => updateItemQuantity(item.id, 1)}
-                                    className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                  >
-                                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                                  </Button>
                                 </div>
+                              ) : (
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                  {/* Quantity Controls - Hidden for physical_no_quantity, shown for standard */}
+                                  {item.productType !== 'physical_no_quantity' ? (
+                                    <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-300 dark:border-gray-600 shadow-sm">
+                                      <Button
+                                        variant="ghost"
+                                        size="default"
+                                        onClick={() => updateItemQuantity(item.id, -1)}
+                                        disabled={item.receivedQty === 0}
+                                        className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      >
+                                        <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
+                                      </Button>
+                                      <span className="text-sm sm:text-base font-bold font-mono min-w-[90px] sm:min-w-[120px] text-center px-1.5 sm:px-2 whitespace-nowrap">
+                                        {item.receivedQty.toLocaleString()}/{item.expectedQty.toLocaleString()}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="default"
+                                        onClick={() => updateItemQuantity(item.id, 1)}
+                                        className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      >
+                                        <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                                      </Button>
+                                    </div>
+                                  ) : null}
 
-                                {/* Action Buttons Group */}
-                                <div className="flex gap-1.5 sm:gap-2 flex-wrap">
-                                  <Button
-                                    variant={item.status === 'complete' ? "default" : "outline"}
-                                    size="default"
-                                    onClick={() => {
-                                      const updatedItems = receivingItems.map(i => 
-                                        i.id === item.id 
-                                          ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                          : i
-                                      );
-                                      setReceivingItems(updatedItems);
-                                      // Update the item on server
-                                      const itemToUpdate = updatedItems.find(i => i.id === item.id);
-                                      if (itemToUpdate) {
-                                        // Update quantity to expected
-                                        const delta = itemToUpdate.expectedQty - item.receivedQty;
-                                        if (delta !== 0) {
-                                          updateItemQuantityMutation.mutate({ itemId: item.id, delta });
+                                  {/* Action Buttons Group */}
+                                  <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+                                    <Button
+                                      variant={item.status === 'complete' ? "default" : "outline"}
+                                      size="default"
+                                      onClick={() => {
+                                        // For physical_no_quantity, use quantity 1 by default
+                                        const targetQty = item.productType === 'physical_no_quantity' ? 1 : item.expectedQty;
+                                        const updatedItems = receivingItems.map(i => 
+                                          i.id === item.id 
+                                            ? { ...i, receivedQty: targetQty, status: 'complete' as const, checked: true }
+                                            : i
+                                        );
+                                        setReceivingItems(updatedItems);
+                                        // Update the item on server
+                                        const itemToUpdate = updatedItems.find(i => i.id === item.id);
+                                        if (itemToUpdate) {
+                                          // Update quantity to expected
+                                          const delta = targetQty - item.receivedQty;
+                                          if (delta !== 0) {
+                                            updateItemQuantityMutation.mutate({ itemId: item.id, delta });
+                                          }
+                                          // Update status to complete
+                                          updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                         }
-                                        // Update status to complete
-                                        updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
-                                      }
-                                    }}
-                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                                      item.status === 'complete'
-                                        ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                        : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
-                                    }`}
-                                  >
-                                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                                    OK
-                                  </Button>
-                                  <Button
-                                    variant={isDamaged ? "destructive" : "outline"}
-                                    size="default"
-                                    onClick={() => toggleItemStatus(item.id, 'damaged')}
-                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                                      isDamaged
-                                        ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                        : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
-                                    }`}
-                                  >
-                                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                                    DMG
-                                  </Button>
-                                  <Button
-                                    variant={isMissing ? "secondary" : "outline"}
-                                    size="default"
-                                    onClick={() => toggleItemStatus(item.id, 'missing')}
-                                    className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                                      isMissing
-                                        ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
-                                        : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
-                                    }`}
-                                  >
-                                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                                    MISS
-                                  </Button>
+                                      }}
+                                      className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                        item.status === 'complete'
+                                          ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                          : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
+                                      }`}
+                                    >
+                                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                      {item.productType === 'physical_no_quantity' ? 'Received' : 'OK'}
+                                    </Button>
+                                    <Button
+                                      variant={isDamaged ? "destructive" : "outline"}
+                                      size="default"
+                                      onClick={() => toggleItemStatus(item.id, 'damaged')}
+                                      className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                        isDamaged
+                                          ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                          : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
+                                      }`}
+                                    >
+                                      <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                      DMG
+                                    </Button>
+                                    <Button
+                                      variant={isMissing ? "secondary" : "outline"}
+                                      size="default"
+                                      onClick={() => toggleItemStatus(item.id, 'missing')}
+                                      className={`h-9 sm:h-10 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm font-medium transition-colors shadow-sm ${
+                                        isMissing
+                                          ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                          : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
+                                      }`}
+                                    >
+                                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                      MISS
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
 
                               {/* Notes Field - Show when needed */}
                               {(isDamaged || isMissing || item.notes) && (

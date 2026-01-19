@@ -2041,6 +2041,12 @@ const orders = {
   lines: 'lines',
   groupedByProduct: 'Grouped by Product',
   
+  // Pick & Pack - Product Types
+  virtualAutoCompleted: 'Virtual - Auto-picked',
+  noQtyTracking: 'No Qty Tracking',
+  virtualItemAutoCompleted: 'Virtual item - auto-completed',
+  naLocation: 'N/A',
+  
   // Bank Import
   bankImport: 'Bank Import',
   bankImportDescription: 'Import bank transactions to automatically match and mark orders as paid',
