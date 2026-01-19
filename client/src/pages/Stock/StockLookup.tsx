@@ -1047,15 +1047,15 @@ export default function StockLookup() {
                       
                       {/* Stock Breakdown - only for standard products */}
                       {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
-                        <div className={`grid gap-3 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('baseStock')}</p>
-                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
+                        <div className={`grid gap-4 ${selectedProductData.variants.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('baseStock')}</p>
+                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{selectedProductData.quantity}</p>
                           </div>
                           {selectedProductData.variants.length > 0 && (
-                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('variantStock')}</p>
-                              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('variantStock')}</p>
+                              <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                                 {selectedProductData.variants.reduce((sum, v) => sum + (v.quantity || 0), 0)}
                               </p>
                             </div>
@@ -1412,39 +1412,38 @@ export default function StockLookup() {
                         </div>
                       ) : selectedProductData.locations && selectedProductData.locations.length > 0 ? (
                         <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                              <MapPin className="h-5 w-5 text-blue-600" />
                               {t('warehouseLocations')} ({selectedProductData.locations.length})
                             </h4>
                             {/* Hide Add Location button for virtual products */}
                             {product.productType !== 'virtual' && (
                               <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-7 text-xs"
+                                variant="outline" 
+                                className="h-10 px-4 text-sm font-medium"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenAddLocationDialog(product.id, product.name);
                                 }}
                                 data-testid={`button-add-location-${product.id}`}
                               >
-                                <Plus className="h-3 w-3 mr-1" />
+                                <Plus className="h-4 w-4 mr-2" />
                                 {t('addLocation')}
                               </Button>
                             )}
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {selectedProductData.locations.map((loc) => (
                               <div
                                 key={loc.id}
-                                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4"
                                 data-testid={`location-card-${loc.id}`}
                               >
-                                <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-start justify-between mb-3">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                                      <p className="text-lg font-bold text-gray-900 dark:text-white font-mono">
                                         {loc.locationCode}
                                       </p>
                                       {/* Show variant badge - check both variantName from JOIN and cross-reference with variant locationCode */}
@@ -1518,7 +1517,7 @@ export default function StockLookup() {
                                       <Button
                                         variant="outline"
                                         size="icon"
-                                        className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                        className="h-10 w-10 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (loc.quantity <= 0) {
@@ -1537,10 +1536,10 @@ export default function StockLookup() {
                                         data-testid={`button-quick-minus-${loc.id}`}
                                         title={t('quickRemoveStock')}
                                       >
-                                        <Minus className="h-3.5 w-3.5" />
+                                        <Minus className="h-5 w-5" />
                                       </Button>
                                     )}
-                                    <Badge variant="secondary" className="px-2.5">
+                                    <Badge variant="secondary" className="h-10 px-4 text-lg font-bold">
                                       {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
                                         ? '∞' 
                                         : `${loc.quantity} ${t('units')}`}
@@ -1549,7 +1548,7 @@ export default function StockLookup() {
                                       <Button
                                         variant="outline"
                                         size="icon"
-                                        className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                        className="h-10 w-10 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedLocation(loc);
@@ -1559,18 +1558,17 @@ export default function StockLookup() {
                                         data-testid={`button-quick-plus-${loc.id}`}
                                         title={t('quickAddStock')}
                                       >
-                                        <Plus className="h-3.5 w-3.5" />
+                                        <Plus className="h-5 w-5" />
                                       </Button>
                                     )}
                                   </div>
                                 </div>
                                 {/* Move and Adjust buttons - hide/disable for virtual and physical_no_quantity */}
                                 {product.productType !== 'virtual' && (
-                                  <div className="flex gap-2 mt-3">
+                                  <div className="grid grid-cols-2 gap-3 mt-4">
                                     <Button
                                       variant="outline"
-                                      size="sm"
-                                      className="flex-1 h-8 text-xs"
+                                      className="h-12 text-sm font-medium"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedLocation(loc);
@@ -1578,25 +1576,26 @@ export default function StockLookup() {
                                       }}
                                       data-testid={`button-move-${loc.id}`}
                                     >
-                                      <MoveRight className="h-3 w-3 mr-1" />
+                                      <MoveRight className="h-4 w-4 mr-2" />
                                       {t('move')}
                                     </Button>
-                                    {product.productType !== 'physical_no_quantity' && (
+                                    {product.productType !== 'physical_no_quantity' ? (
                                       <Button
                                         variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-8 text-xs"
+                                        className="h-12 text-sm font-medium"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedLocation(loc);
-                                          setQuickButtonType(null); // Clear quick button type for manual adjust
+                                          setQuickButtonType(null);
                                           setAdjustDialogOpen(true);
                                         }}
                                         data-testid={`button-adjust-${loc.id}`}
                                       >
-                                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                                        <ArrowUpDown className="h-4 w-4 mr-2" />
                                         {t('adjust')}
                                       </Button>
+                                    ) : (
+                                      <div />
                                     )}
                                   </div>
                                 )}
@@ -1638,45 +1637,47 @@ export default function StockLookup() {
                         </div>
                       ))}
 
-                      {/* Action Buttons - Icon only on mobile */}
-                      <div className="flex gap-2">
-                        {selectedProductData.description && (
+                      {/* Action Buttons - Full width with text */}
+                      <div className="grid grid-cols-3 gap-3 mt-4">
+                        {selectedProductData.description ? (
                           <Button
                             variant="outline"
-                            className="h-12 px-3 sm:px-4 sm:flex-1"
+                            className="h-14 flex flex-col items-center justify-center gap-1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDescriptionDialogOpen(true);
                             }}
                             data-testid={`button-view-description-${product.id}`}
                           >
-                            <FileText className="h-5 w-5 sm:mr-2" />
-                            <span className="hidden sm:inline">{t('viewItemDescription')}</span>
+                            <FileText className="h-5 w-5" />
+                            <span className="text-xs font-medium">{t('description')}</span>
                           </Button>
+                        ) : (
+                          <div />
                         )}
                         <Button
                           variant="outline"
-                          className="h-12 px-3 sm:px-4 sm:flex-1"
+                          className="h-14 flex flex-col items-center justify-center gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setLabelDialogOpen(true);
                           }}
                           data-testid={`button-generate-label-${product.id}`}
                         >
-                          <Printer className="h-5 w-5 sm:mr-2" />
-                          <span className="hidden sm:inline">{t('generateLabel')}</span>
+                          <Printer className="h-5 w-5" />
+                          <span className="text-xs font-medium">{t('label')}</span>
                         </Button>
                         <Button
                           variant="outline"
-                          className="h-12 px-3 sm:px-4 sm:flex-1"
+                          className="h-14 flex flex-col items-center justify-center gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setInfoDialogOpen(true);
                           }}
                           data-testid={`button-show-info-${product.id}`}
                         >
-                          <Info className="h-5 w-5 sm:mr-2" />
-                          <span className="hidden sm:inline">{t('showInfo')}</span>
+                          <Info className="h-5 w-5" />
+                          <span className="text-xs font-medium">{t('info')}</span>
                         </Button>
                       </div>
                         </>
