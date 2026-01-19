@@ -781,29 +781,29 @@ export default function StockLookup() {
       {inconsistenciesCount > 0 && !isFromUnderAllocated && (
         <div className="px-3 pt-3">
           <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-300 dark:border-orange-700">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 p-3 bg-orange-100 dark:bg-orange-900/50 rounded-xl">
+                  <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                  <h3 className="font-bold text-lg text-orange-900 dark:text-orange-100 mb-1">
                     {t('stockInconsistencies')}
                   </h3>
-                  <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
+                  <p className="text-base text-orange-800 dark:text-orange-200 mb-4">
                     <span className="font-bold">{inconsistenciesCount}</span> {inconsistenciesCount === 1 ? t('itemHas') : t('itemsHave')} {t('stockDiscrepancies').toLowerCase()}
                   </p>
                   <Link href="/stock/inconsistencies">
                     <Button 
-                      size="sm" 
-                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
+                      size="lg" 
+                      className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white h-12 px-6 text-base font-semibold"
                       data-testid="button-view-inconsistencies"
                     >
                       {t('viewAndResolveIssues')}
                     </Button>
                   </Link>
                 </div>
-                <Badge className="bg-orange-600 text-white text-sm font-bold flex-shrink-0">
+                <Badge className="bg-orange-600 text-white text-lg font-bold flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full">
                   {inconsistenciesCount}
                 </Badge>
               </div>
@@ -816,20 +816,20 @@ export default function StockLookup() {
       {isFromUnderAllocated && filteredProducts.length > 0 && (
         <div className="px-3 pt-3">
           <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-300 dark:border-orange-700">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
-                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 p-3 bg-orange-100 dark:bg-orange-900/50 rounded-xl">
+                  <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base text-orange-900 dark:text-orange-100 mb-0.5">
+                  <h3 className="font-bold text-lg text-orange-900 dark:text-orange-100 mb-1">
                     {t('showingInconsistentItems')}
                   </h3>
-                  <p className="text-xs sm:text-sm text-orange-800 dark:text-orange-200">
+                  <p className="text-base text-orange-800 dark:text-orange-200">
                     {t('discrepanciesBetweenRecorded')}
                   </p>
                 </div>
-                <Badge className="bg-orange-600 text-white text-xs sm:text-sm font-bold flex-shrink-0">
+                <Badge className="bg-orange-600 text-white text-lg font-bold flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full">
                   {filteredProducts.length}
                 </Badge>
               </div>
