@@ -441,6 +441,7 @@ export const customers = pgTable("customers", {
   facebookName: varchar("facebook_name"),
   facebookUrl: varchar("facebook_url"),
   facebookId: varchar("facebook_id"),
+  facebookNumericId: varchar("facebook_numeric_id"), // Numeric ID for profile picture URL
   email: varchar("email"),
   phone: varchar("phone"),
   address: text("address"),
