@@ -736,23 +736,44 @@ export default function AddOrder() {
     }
   }, [selectedCustomer?.id, selectedCustomer?.storeCredit]);
 
-  // Fetch real addresses from geocoding API
+  // Fetch real addresses from Google Maps API (with Nominatim fallback)
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
     try {
+      // Try Google Maps API first for better accuracy
+      const googleResponse = await fetch(`/api/addresses/autocomplete-google?q=${encodeURIComponent(query)}`);
+      if (googleResponse.ok) {
+        const googleData = await googleResponse.json();
+        // Check if Google API returned results (not fallback object)
+        if (!googleData.fallback && Array.isArray(googleData) && googleData.length > 0) {
+          console.log('Using Google Maps API for address autocomplete');
+          return googleData.map((item: any) => ({
+            formatted: item.displayName || item.name || '', // Google returns displayName
+            street: item.street || '',
+            streetNumber: item.streetNumber || '',
+            city: item.city || '',
+            state: '', // Google doesn't return state in our implementation
+            zipCode: item.zipCode || '',
+            country: item.country || '',
+            businessName: item.businessName || null, // Include business name if available
+          }));
+        }
+      }
+      
+      // Fallback to Nominatim
       const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch addresses');
       }
       const data = await response.json();
 
-      // Transform the response to match our format
       return data.map((item: any) => ({
         formatted: item.formatted,
-        street: `${item.street} ${item.houseNumber}`.trim() || item.street,
-        city: item.city,
-        state: item.state,
-        zipCode: item.zipCode,
-        country: item.country,
+        street: item.street || '',
+        streetNumber: item.houseNumber || '',
+        city: item.city || '',
+        state: item.state || '',
+        zipCode: item.zipCode || '',
+        country: item.country || '',
       }));
     } catch (error) {
       console.error('Error fetching addresses:', error);
@@ -885,24 +906,32 @@ export default function AddOrder() {
     }
   };
 
-  // Function to select an address from suggestions
+  // Function to select an address from suggestions (Google Maps validated)
   const selectAddress = (suggestion: any) => {
-    // Split street into street name and number
-    const streetParts = suggestion.street.trim().split(/\s+/);
-    const lastPart = streetParts[streetParts.length - 1];
-    const hasNumber = /\d/.test(lastPart);
+    let streetName = suggestion.street || '';
+    let streetNumber = suggestion.streetNumber || '';
     
-    const streetName = hasNumber ? streetParts.slice(0, -1).join(' ') : suggestion.street;
-    const streetNumber = hasNumber ? lastPart : '';
+    // If streetNumber not provided separately, try to extract from street
+    if (!streetNumber && streetName) {
+      const streetParts = streetName.trim().split(/\s+/);
+      const lastPart = streetParts[streetParts.length - 1];
+      const hasNumber = /\d/.test(lastPart);
+      
+      if (hasNumber) {
+        streetName = streetParts.slice(0, -1).join(' ');
+        streetNumber = lastPart;
+      }
+    }
     
+    // Update all address fields from Google Maps validated data
     setNewCustomer(prev => ({
       ...prev,
       street: streetName,
       streetNumber: streetNumber,
-      city: suggestion.city,
-      state: suggestion.state,
-      zipCode: suggestion.zipCode,
-      country: suggestion.country,
+      city: suggestion.city || '',
+      state: suggestion.state || '',
+      zipCode: suggestion.zipCode || '',
+      country: suggestion.country || '',
     }));
     setAddressAutocomplete(suggestion.formatted);
     setShowAddressDropdown(false);
@@ -6240,6 +6269,9 @@ export default function AddOrder() {
                         id: undefined // Explicitly set to undefined to trigger creation
                       });
                       setShowNewCustomerForm(false);
+                      // Set placeholder customerId to pass form validation - will be replaced with real ID in mutation
+                      form.setValue('customerId', '__new__');
+                      setCustomerSearch(newCustomer.name);
                       console.log('New customer selected (no ID yet):', newCustomer);
                     }
                   }}
