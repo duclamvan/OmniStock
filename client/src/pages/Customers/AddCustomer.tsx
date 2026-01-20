@@ -24,7 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import { normalizeFirstName, normalizeLastName, normalizeFullName, normalizeStreetName, normalizeCityName } from '@shared/utils/nameNormalizer';
+import { normalizeFirstName, normalizeLastName, normalizeFullName } from '@shared/utils/nameNormalizer';
 import { parseAddressLine, shouldFetchAddressDetails, mergeAddressData } from '@shared/utils/addressParser';
 
 const availableCountries = [
@@ -775,9 +775,9 @@ export default function AddCustomer() {
   );
 
   const selectBillingAddress = (suggestion: AddressAutocompleteResult) => {
-    form.setValue('billingStreet', normalizeStreetName(suggestion.street));
+    form.setValue('billingStreet', suggestion.street);
     form.setValue('billingStreetNumber', suggestion.streetNumber?.toUpperCase() || '');
-    form.setValue('billingCity', normalizeCityName(suggestion.city));
+    form.setValue('billingCity', suggestion.city);
     form.setValue('billingZipCode', suggestion.zipCode);
     form.setValue('billingCountry', suggestion.country);
     setBillingAddressQuery(suggestion.displayName);
@@ -788,9 +788,9 @@ export default function AddCustomer() {
     // Reset manual edit flag so label auto-generates from autocomplete data
     setIsLabelManuallyEdited(false);
     
-    shippingForm.setValue('street', normalizeStreetName(suggestion.street));
+    shippingForm.setValue('street', suggestion.street);
     shippingForm.setValue('streetNumber', suggestion.streetNumber?.toUpperCase() || '');
-    shippingForm.setValue('city', normalizeCityName(suggestion.city));
+    shippingForm.setValue('city', suggestion.city);
     shippingForm.setValue('zipCode', suggestion.zipCode);
     shippingForm.setValue('country', suggestion.country);
     setShippingAddressQuery(suggestion.displayName);
@@ -816,9 +816,9 @@ export default function AddCustomer() {
   const selectBillingAddressForm = (suggestion: AddressAutocompleteResult) => {
     setIsBillingLabelManuallyEdited(false);
     
-    billingAddressForm.setValue('street', normalizeStreetName(suggestion.street));
+    billingAddressForm.setValue('street', suggestion.street);
     billingAddressForm.setValue('streetNumber', suggestion.streetNumber?.toUpperCase() || '');
-    billingAddressForm.setValue('city', normalizeCityName(suggestion.city));
+    billingAddressForm.setValue('city', suggestion.city);
     billingAddressForm.setValue('zipCode', suggestion.zipCode);
     billingAddressForm.setValue('country', suggestion.country);
     setBillingAddressQueryAutocomplete(suggestion.displayName);
@@ -1379,9 +1379,9 @@ export default function AddCustomer() {
         filledFields.email = data.confidence;
       }
       
-      // Use Nominatim-validated address values with normalization
+      // Use Nominatim-validated address values
       if (fields.street) {
-        shippingForm.setValue('street', normalizeStreetName(fields.street));
+        shippingForm.setValue('street', fields.street);
         filledFields.street = data.confidence;
       }
       if (fields.streetNumber) {
@@ -1389,7 +1389,7 @@ export default function AddCustomer() {
         filledFields.streetNumber = data.confidence;
       }
       if (fields.city) {
-        shippingForm.setValue('city', normalizeCityName(fields.city));
+        shippingForm.setValue('city', fields.city);
         filledFields.city = data.confidence;
       }
       if (fields.zipCode) {
@@ -1670,7 +1670,7 @@ export default function AddCustomer() {
       }
       
       if (fields.street) {
-        billingAddressForm.setValue('street', normalizeStreetName(fields.street));
+        billingAddressForm.setValue('street', fields.street);
         filledFields.street = data.confidence;
       }
       if (fields.streetNumber) {
@@ -1678,7 +1678,7 @@ export default function AddCustomer() {
         filledFields.streetNumber = data.confidence;
       }
       if (fields.city) {
-        billingAddressForm.setValue('city', normalizeCityName(fields.city));
+        billingAddressForm.setValue('city', fields.city);
         filledFields.city = data.confidence;
       }
       if (fields.zipCode) {
@@ -2646,9 +2646,8 @@ export default function AddCustomer() {
                                 if (parsed.city && !shippingForm.getValues('city')) {
                                   shippingForm.setValue('city', parsed.city);
                                 }
-                                const normalizedStreet = normalizeStreetName(parsed.street || value);
-                                if (normalizedStreet !== value) {
-                                  shippingForm.setValue('street', normalizedStreet);
+                                if (parsed.street && parsed.street !== value) {
+                                  shippingForm.setValue('street', parsed.street);
                                 }
                                 
                                 const currentZip = shippingForm.getValues('zipCode');
@@ -2666,17 +2665,12 @@ export default function AddCustomer() {
                                         shippingForm.setValue('country', firstResult.country);
                                       }
                                       if (!shippingForm.getValues('city') && firstResult.city) {
-                                        shippingForm.setValue('city', normalizeCityName(firstResult.city));
+                                        shippingForm.setValue('city', firstResult.city);
                                       }
                                     }
                                   } catch (err) {
                                     console.error('Error fetching address details:', err);
                                   }
-                                }
-                              } else {
-                                const normalized = normalizeStreetName(value);
-                                if (normalized !== value) {
-                                  shippingForm.setValue('street', normalized);
                                 }
                               }
                             }
@@ -2714,14 +2708,7 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingCity">{t('customers:city')}</Label>
                       <Input
                         id="shippingCity"
-                        {...shippingForm.register('city', {
-                          onBlur: (e) => {
-                            const normalized = normalizeCityName(e.target.value);
-                            if (normalized !== e.target.value) {
-                              shippingForm.setValue('city', normalized);
-                            }
-                          }
-                        })}
+                        {...shippingForm.register('city')}
                         placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', shippingFieldConfidence))}
                         data-testid="input-shippingCity"
@@ -3140,9 +3127,8 @@ export default function AddCustomer() {
                                 if (parsed.city && !billingAddressForm.getValues('city')) {
                                   billingAddressForm.setValue('city', parsed.city);
                                 }
-                                const normalizedStreet = normalizeStreetName(parsed.street || value);
-                                if (normalizedStreet !== value) {
-                                  billingAddressForm.setValue('street', normalizedStreet);
+                                if (parsed.street && parsed.street !== value) {
+                                  billingAddressForm.setValue('street', parsed.street);
                                 }
                                 
                                 const currentZip = billingAddressForm.getValues('zipCode');
@@ -3160,17 +3146,12 @@ export default function AddCustomer() {
                                         billingAddressForm.setValue('country', firstResult.country);
                                       }
                                       if (!billingAddressForm.getValues('city') && firstResult.city) {
-                                        billingAddressForm.setValue('city', normalizeCityName(firstResult.city));
+                                        billingAddressForm.setValue('city', firstResult.city);
                                       }
                                     }
                                   } catch (err) {
                                     console.error('Error fetching address details:', err);
                                   }
-                                }
-                              } else {
-                                const normalized = normalizeStreetName(value);
-                                if (normalized !== value) {
-                                  billingAddressForm.setValue('street', normalized);
                                 }
                               }
                             }
@@ -3208,14 +3189,7 @@ export default function AddCustomer() {
                       <Label htmlFor="billingCity">{t('customers:city')}</Label>
                       <Input
                         id="billingCity"
-                        {...billingAddressForm.register('city', {
-                          onBlur: (e) => {
-                            const normalized = normalizeCityName(e.target.value);
-                            if (normalized !== e.target.value) {
-                              billingAddressForm.setValue('city', normalized);
-                            }
-                          }
-                        })}
+                        {...billingAddressForm.register('city')}
                         placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
                         data-testid="input-billingCity"

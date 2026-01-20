@@ -107,7 +107,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PPLSmartPopup } from "@/components/PPLSmartPopup";
 import { useRealTimeOrder } from "@/hooks/useSocket";
 import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
-import { normalizeFirstName, normalizeLastName, normalizeFullName, normalizeStreetName, normalizeCityName } from '@shared/utils/nameNormalizer';
+import { normalizeFirstName, normalizeLastName, normalizeFullName } from '@shared/utils/nameNormalizer';
 import { parseAddressLine, shouldFetchAddressDetails, mergeAddressData } from '@shared/utils/addressParser';
 
 // Helper function to normalize carrier names for backward compatibility
@@ -925,12 +925,12 @@ export default function AddOrder() {
       }
     }
     
-    // Update all address fields from Google Maps validated data with normalization
+    // Update all address fields from Google Maps validated data
     setNewCustomer(prev => ({
       ...prev,
-      street: normalizeStreetName(streetName),
+      street: streetName,
       streetNumber: streetNumber.toUpperCase().trim(),
-      city: normalizeCityName(suggestion.city || ''),
+      city: suggestion.city || '',
       state: suggestion.state || '',
       zipCode: (suggestion.zipCode || '').trim(),
       country: suggestion.country || '',
@@ -6194,7 +6194,7 @@ export default function AddOrder() {
                           
                           // Update street and streetNumber
                           const updates: Partial<typeof newCustomer> = {
-                            street: parsed.street || normalizeStreetName(value),
+                            street: parsed.street || value,
                             streetNumber: parsed.streetNumber || newCustomer.streetNumber,
                           };
                           
@@ -6218,10 +6218,9 @@ export default function AddOrder() {
                             searchAddresses(`${parsed.street} ${parsed.streetNumber || ''} ${parsed.city || ''}`);
                           }
                         } else {
-                          // Just normalize the street name
-                          const normalized = normalizeStreetName(value);
-                          if (normalized !== value) {
-                            setNewCustomer(prev => ({ ...prev, street: normalized }));
+                          // Keep the street value as-is
+                          if (value !== newCustomer.street) {
+                            setNewCustomer(prev => ({ ...prev, street: value }));
                           }
                         }
                       }}
@@ -6260,9 +6259,9 @@ export default function AddOrder() {
                       value={newCustomer.city}
                       onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
                       onBlur={(e) => {
-                        const normalized = normalizeCityName(e.target.value);
-                        if (normalized !== e.target.value) {
-                          setNewCustomer(prev => ({ ...prev, city: normalized }));
+                        // Keep city value as-is
+                        if (e.target.value !== newCustomer.city) {
+                          setNewCustomer(prev => ({ ...prev, city: e.target.value }));
                         }
                       }}
                       placeholder={t('orders:city')}

@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { normalizeFirstName, normalizeLastName, normalizeStreetName, normalizeCityName } from '@shared/utils/nameNormalizer';
+import { normalizeFirstName, normalizeLastName } from '@shared/utils/nameNormalizer';
 import {
   Dialog,
   DialogContent,
@@ -270,14 +270,9 @@ export function ShippingAddressModal({
       delete addressData.id;
     }
     
-    // Normalize all name and address fields before saving
+    // Normalize name fields before saving (keep address fields as-is)
     addressData.firstName = normalizeFirstName(addressData.firstName);
     addressData.lastName = normalizeLastName(addressData.lastName);
-    addressData.street = normalizeStreetName(addressData.street);
-    addressData.city = normalizeCityName(addressData.city);
-    if (addressData.streetNumber) {
-      addressData.streetNumber = addressData.streetNumber.toUpperCase().trim();
-    }
     
     onSave(addressData);
     onOpenChange(false);
