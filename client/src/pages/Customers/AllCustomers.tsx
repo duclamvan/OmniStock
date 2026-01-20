@@ -1289,12 +1289,12 @@ export default function AllCustomers() {
       if (lines.length < 3) continue;
       
       const address: any = {
-        company: '',
-        contact: '',
+        name: '',
+        storeName: '',
         street: '',
         city: '',
         zipCode: '',
-        country: 'Germany',
+        countryCode: '',
         email: '',
       };
       
@@ -1308,18 +1308,14 @@ export default function AllCustomers() {
         }
       }
       
-      // Find postal code + city line (e.g., "12345 City, DE")
+      // Find postal code + city line (e.g., "12345 City, DE" or "5020 Salzburg, AT")
       let postalIdx = -1;
       for (let i = 0; i < lines.length; i++) {
         const match = lines[i].match(/^(\d{4,5})\s+(.+?),\s*(\w{2})$/);
         if (match) {
           address.zipCode = match[1];
           address.city = match[2];
-          const countryMap: Record<string, string> = {
-            'DE': 'Germany', 'AT': 'Austria', 'NL': 'Netherlands',
-            'DK': 'Denmark', 'CH': 'Switzerland', 'BE': 'Belgium', 'FR': 'France',
-          };
-          address.country = countryMap[match[3].toUpperCase()] || match[3];
+          address.countryCode = match[3].toUpperCase();
           postalIdx = i;
           break;
         }
@@ -1327,29 +1323,29 @@ export default function AllCustomers() {
       
       if (postalIdx < 1) continue;
       
-      // Street is line before postal code
-      const streetLine = lines[postalIdx - 1];
-      const streetMatch = streetLine.match(/^(.+?)\s+(\d+[a-zA-Z]?(?:[-/]\d+[a-zA-Z]?)?)$/);
-      if (streetMatch) {
-        address.street = streetMatch[1] + ' ' + streetMatch[2];
-      } else {
-        address.street = streetLine;
+      // Street is line before postal code (unless it's a parenthetical note)
+      let streetIdx = postalIdx - 1;
+      // Check if it's a parenthetical note like "(im Kaufland)"
+      if (lines[streetIdx].startsWith('(') && streetIdx > 0) {
+        address.storeName = lines[streetIdx];
+        streetIdx--;
       }
       
-      // Company/contact from remaining lines
-      const remaining = lines.slice(0, postalIdx - 1);
+      const streetLine = lines[streetIdx];
+      address.street = streetLine;
+      
+      // Name and optional store name from remaining lines
+      const remaining = lines.slice(0, streetIdx);
       if (remaining.length > 0) {
-        const first = remaining[0];
-        const companyKeywords = ['nails', 'beauty', 'studio', 'salon', 'center', 'shop', 'lounge', 'spa'];
-        if (companyKeywords.some(kw => first.toLowerCase().includes(kw))) {
-          address.company = first;
-          if (remaining.length > 1 && !remaining[1].startsWith('(')) {
-            address.contact = remaining[1];
-          }
-        } else {
-          address.contact = first;
-          if (remaining.length > 1) {
-            address.company = remaining[1];
+        address.name = remaining[0];
+        // If there are more lines, check if it's a store/company name
+        if (remaining.length > 1) {
+          // Check if second line is a parenthetical note
+          if (remaining[1].startsWith('(')) {
+            address.storeName = remaining[1] + (address.storeName ? ' ' + address.storeName : '');
+          } else {
+            // Second line is likely a store/company name
+            address.storeName = remaining[1] + (address.storeName ? ' ' + address.storeName : '');
           }
         }
       }
@@ -1366,7 +1362,6 @@ export default function AllCustomers() {
   const handleImportAddressbook = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const isCsv = file.name.endsWith('.csv');
     const isTxt = file.name.endsWith('.txt');
     
@@ -1381,17 +1376,17 @@ export default function AllCustomers() {
 
     setIsImporting(true);
     toast({
-      title: 'Importing Address Book',
+      title: 'Syncing Address Book',
       description: t('common:pleaseWait'),
     });
 
     try {
       const text = await file.text();
-      let addresses: any[] = [];
+      let entries: any[] = [];
       
       if (isTxt) {
-        // Parse German TXT format
-        addresses = parseGermanAddressbook(text);
+        // Parse German TXT format with fuzzy matching structure
+        entries = parseGermanAddressbook(text);
       } else {
         // Parse CSV format
         const lines = text.split('\n');
@@ -1407,44 +1402,59 @@ export default function AllCustomers() {
             row[header] = values[idx]?.trim() || '';
           });
           
-          addresses.push({
-            company: row['NAZEV'] || '',
+          entries.push({
+            name: row['NAZEV'] || row['KONTAKTNI_OS'] || '',
+            storeName: row['NAZEV'] || '',
             street: row['ULICE_CP'] || '',
             city: row['MESTO'] || '',
             zipCode: row['PSC'] || '',
-            country: row['ZEME'] || 'CZ',
+            countryCode: row['ZEME'] || 'CZ',
             email: row['EMAIL'] || '',
-            contact: row['KONTAKTNI_OS'] || '',
-            phone: row['TELEFON'] || '',
           });
         }
       }
       
       toast({
-        title: 'Importing',
-        description: `Found ${addresses.length} addresses to match...`,
+        title: 'Matching Addresses',
+        description: `Processing ${entries.length} address entries with fuzzy matching...`,
       });
 
-      const response = await apiRequest('POST', '/api/customers/import-addressbook', { addresses });
+      // Use sync-addressbook endpoint with fuzzy matching
+      const response = await apiRequest('POST', '/api/customers/sync-addressbook', { 
+        entries,
+        threshold: 60  // Minimum matching score (0-100)
+      });
       const result = await response.json();
 
       queryClient.invalidateQueries({ predicate: (query) => 
         Array.isArray(query.queryKey) && query.queryKey[0] === '/api/customers' 
       });
 
+      // Show detailed results
+      const avgScore = result.updatedCustomers?.length > 0 
+        ? Math.round(result.updatedCustomers.reduce((sum: number, c: any) => sum + c.score, 0) / result.updatedCustomers.length)
+        : 0;
+
       toast({
-        title: 'Address Book Import Complete',
-        description: `Matched ${result.matched} addresses to customers. Skipped ${result.skipped}.`,
+        title: 'Address Sync Complete',
+        description: `Updated ${result.updated} customers (avg score: ${avgScore}%). ${result.skipped} below threshold.`,
       });
 
+      // Log detailed results for debugging
+      if (result.updatedCustomers?.length > 0) {
+        console.log('Updated customers with scores:', result.updatedCustomers);
+      }
+      if (result.belowThreshold?.length > 0) {
+        console.log('Customers below threshold:', result.belowThreshold);
+      }
       if (result.errors?.length > 0) {
-        console.error('Import errors:', result.errors);
+        console.error('Sync errors:', result.errors);
       }
     } catch (error: any) {
-      console.error('Addressbook import error:', error);
+      console.error('Addressbook sync error:', error);
       toast({
         title: t('common:error'),
-        description: error.message || 'Failed to import address book',
+        description: error.message || 'Failed to sync address book',
         variant: "destructive",
       });
     } finally {

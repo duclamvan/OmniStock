@@ -11093,11 +11093,265 @@ Important:
     return result;
   }
 
+  // Sync address book entries with customer billing/shipping addresses
+  // Sync address book entries with customer billing/shipping addresses using fuzzy matching
+  app.post('/api/customers/sync-addressbook', isAuthenticated, async (req: any, res) => {
+    try {
+      const { entries, threshold = 60 } = req.body;
+      
+      if (!entries || !Array.isArray(entries)) {
+        return res.status(400).json({ message: "No entries provided" });
+      }
+      
+      const results = {
+        total: entries.length,
+        customersProcessed: 0,
+        updated: 0,
+        skipped: 0,
+        belowThreshold: [] as any[],
+        updatedCustomers: [] as any[],
+        errors: [] as string[],
+      };
+      
+      // Get all customers for matching
+      const allCustomers = await storage.getCustomers();
+      
+      // Country code mapping
+      const countryCodeMap: Record<string, string> = {
+        'CZ': 'Czech Republic',
+        'DE': 'Germany',
+        'AT': 'Austria',
+        'SK': 'Slovakia',
+        'PL': 'Poland',
+        'HU': 'Hungary',
+        'DK': 'Denmark',
+        'BE': 'Belgium',
+        'NL': 'Netherlands',
+        'FR': 'France',
+        'IT': 'Italy',
+        'ES': 'Spain',
+        'VN': 'Vietnam',
+        'CH': 'Switzerland',
+        'GB': 'United Kingdom',
+        'US': 'United States',
+      };
+      
+      // Normalize string for comparison (lowercase, remove diacritics, trim)
+      const normalize = (str: string | null | undefined): string => {
+        if (!str) return '';
+        return str.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+      
+      // Levenshtein distance function
+      const levenshtein = (a: string, b: string): number => {
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+        const matrix: number[][] = [];
+        for (let i = 0; i <= b.length; i++) {
+          matrix[i] = [i];
+        }
+        for (let j = 0; j <= a.length; j++) {
+          matrix[0][j] = j;
+        }
+        for (let i = 1; i <= b.length; i++) {
+          for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+              matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+              matrix[i][j] = Math.min(
+                matrix[i - 1][j - 1] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j] + 1
+              );
+            }
+          }
+        }
+        return matrix[b.length][a.length];
+      };
+      
+      // Calculate string similarity (0-100)
+      const stringSimilarity = (a: string, b: string): number => {
+        const normA = normalize(a);
+        const normB = normalize(b);
+        if (!normA || !normB) return 0;
+        if (normA === normB) return 100;
+        const maxLen = Math.max(normA.length, normB.length);
+        const distance = levenshtein(normA, normB);
+        return Math.round((1 - distance / maxLen) * 100);
+      };
+      
+      // Parse street and number from address string
+      const parseStreet = (street: string | null | undefined): { name: string; number: string } => {
+        if (!street) return { name: '', number: '' };
+        const match = street.match(/^(.+?)\s+(\d+[a-zA-Z]?(?:[-\/]\d+[a-zA-Z]?)?)$/);
+        if (match) {
+          return { name: match[1].trim(), number: match[2] };
+        }
+        return { name: street, number: '' };
+      };
+      
+      // Calculate matching score between entry and customer
+      const calculateScore = (entry: any, customer: any): { score: number; breakdown: any } => {
+        const entryStreet = parseStreet(entry.street);
+        const customerShippingStreet = parseStreet(customer.shippingStreet);
+        const customerBillingStreet = parseStreet(customer.billingStreet);
+        
+        // Use whichever customer address has better data
+        const customerStreet = customerShippingStreet.name ? customerShippingStreet : customerBillingStreet;
+        const customerCity = customer.shippingCity || customer.billingCity || '';
+        const customerZip = customer.shippingZipCode || customer.billingZipCode || '';
+        const customerNumber = customer.shippingStreetNumber || customer.billingStreetNumber || customerStreet.number || '';
+        
+        // Calculate individual scores
+        const streetNameScore = stringSimilarity(entryStreet.name, customerStreet.name);
+        const streetNumberMatch = normalize(entryStreet.number) === normalize(customerNumber) ? 100 : 0;
+        const cityScore = stringSimilarity(entry.city || '', customerCity);
+        const zipScore = normalize(entry.zipCode) === normalize(customerZip) ? 100 : 0;
+        
+        // Weighted score: street name 40%, street number 30%, city 15%, zip 15%
+        const weightedScore = Math.round(
+          streetNameScore * 0.40 +
+          streetNumberMatch * 0.30 +
+          cityScore * 0.15 +
+          zipScore * 0.15
+        );
+        
+        return {
+          score: weightedScore,
+          breakdown: {
+            streetName: streetNameScore,
+            streetNumber: streetNumberMatch,
+            city: cityScore,
+            zip: zipScore,
+          }
+        };
+      };
+      
+      // Pre-parse all entries
+      const parsedEntries = entries.map((entry: any) => {
+        const streetParsed = parseStreet(entry.street);
+        const nameParts = (entry.name || '').trim().split(/\s+/);
+        const companyKeywords = ['nails', 'studio', 'beauty', 'salon', 'spa', 'nagelstudio', 'more', 'lounge', 'deluxe', 'luxury', 'royal', 'magic', 'top', 'vip'];
+        const isCompanyName = companyKeywords.some(k => normalize(entry.name).includes(k));
+        
+        let firstName = '';
+        let lastName = '';
+        let company = entry.storeName || '';
+        
+        if (isCompanyName) {
+          company = entry.name;
+          if (entry.storeName && !companyKeywords.some(k => normalize(entry.storeName).includes(k))) {
+            const storeNameParts = entry.storeName.split(/\s+/);
+            firstName = storeNameParts[0] || '';
+            lastName = storeNameParts.slice(1).join(' ') || '';
+          }
+        } else {
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
+          if (!company && entry.storeName) {
+            company = entry.storeName;
+          }
+        }
+        
+        return {
+          ...entry,
+          streetName: streetParsed.name,
+          streetNumber: streetParsed.number,
+          firstName,
+          lastName,
+          company,
+          country: countryCodeMap[entry.countryCode] || entry.countryCode || '',
+        };
+      });
+      
+      // For each customer, find the best matching entry
+      for (const customer of allCustomers) {
+        try {
+          results.customersProcessed++;
+          
+          let bestMatch: { entry: any; score: number; breakdown: any } | null = null;
+          
+          // Find best matching entry for this customer
+          for (const entry of parsedEntries) {
+            const { score, breakdown } = calculateScore(entry, customer);
+            
+            if (!bestMatch || score > bestMatch.score) {
+              bestMatch = { entry, score, breakdown };
+            }
+          }
+          
+          if (!bestMatch || bestMatch.score < threshold) {
+            if (bestMatch) {
+              results.belowThreshold.push({
+                customer: customer.name,
+                customerId: customer.id,
+                bestEntry: bestMatch.entry.name,
+                score: bestMatch.score,
+                breakdown: bestMatch.breakdown,
+              });
+            }
+            results.skipped++;
+            continue;
+          }
+          
+          const entry = bestMatch.entry;
+          
+          // Build update payload - sync both shipping and billing
+          const addressUpdate: any = {
+            // Shipping fields
+            shippingFirstName: entry.firstName || customer.shippingFirstName || customer.billingFirstName || '',
+            shippingLastName: entry.lastName || customer.shippingLastName || customer.billingLastName || '',
+            shippingCompany: entry.company || customer.shippingCompany || customer.billingCompany || '',
+            shippingStreet: entry.street || customer.shippingStreet || customer.billingStreet || '',
+            shippingStreetNumber: entry.streetNumber || customer.shippingStreetNumber || customer.billingStreetNumber || '',
+            shippingCity: entry.city || customer.shippingCity || customer.billingCity || '',
+            shippingZipCode: entry.zipCode || customer.shippingZipCode || customer.billingZipCode || '',
+            shippingCountry: entry.country || customer.shippingCountry || customer.billingCountry || '',
+            shippingEmail: entry.email || customer.shippingEmail || customer.billingEmail || customer.email || '',
+            // Billing fields - mirror shipping
+            billingFirstName: entry.firstName || customer.billingFirstName || customer.shippingFirstName || '',
+            billingLastName: entry.lastName || customer.billingLastName || customer.shippingLastName || '',
+            billingCompany: entry.company || customer.billingCompany || customer.shippingCompany || '',
+            billingStreet: entry.street || customer.billingStreet || customer.shippingStreet || '',
+            billingStreetNumber: entry.streetNumber || customer.billingStreetNumber || customer.shippingStreetNumber || '',
+            billingCity: entry.city || customer.billingCity || customer.shippingCity || '',
+            billingZipCode: entry.zipCode || customer.billingZipCode || customer.shippingZipCode || '',
+            billingCountry: entry.country || customer.billingCountry || customer.shippingCountry || '',
+            billingEmail: entry.email || customer.billingEmail || customer.shippingEmail || customer.email || '',
+          };
+          
+          // Update customer
+          await storage.updateCustomer(customer.id, addressUpdate);
+          
+          results.updated++;
+          results.updatedCustomers.push({
+            id: customer.id,
+            name: customer.name,
+            matchedEntry: entry.name + (entry.storeName ? ' (' + entry.storeName + ')' : ''),
+            score: bestMatch.score,
+            breakdown: bestMatch.breakdown,
+          });
+          
+        } catch (error: any) {
+          results.errors.push(customer.name + ': ' + error.message);
+        }
+      }
+      
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error syncing addressbook:", error);
+      res.status(500).json({ message: error.message || "Failed to sync addressbook" });
+    }
+  });
+
   app.patch('/api/customers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const updates = req.body;
       const customer = await storage.updateCustomer(req.params.id, updates);
-
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
