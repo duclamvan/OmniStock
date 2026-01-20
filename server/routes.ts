@@ -11269,28 +11269,34 @@ Important:
         };
       });
       
-      // For each customer, find the best matching entry
-      for (const customer of allCustomers) {
+      // For each entry, find the best matching customer by street address
+      const updatedCustomerIds = new Set<string>();
+      
+      for (const entry of parsedEntries) {
         try {
           results.customersProcessed++;
           
-          let bestMatch: { entry: any; score: number; breakdown: any } | null = null;
+          let bestMatch: { customer: any; score: number; breakdown: any } | null = null;
           
-          // Find best matching entry for this customer
-          for (const entry of parsedEntries) {
+          // Find best matching customer for this entry based on street address
+          for (const customer of allCustomers) {
+            // Skip already updated customers
+            if (updatedCustomerIds.has(customer.id)) continue;
+            
             const { score, breakdown } = calculateScore(entry, customer);
             
             if (!bestMatch || score > bestMatch.score) {
-              bestMatch = { entry, score, breakdown };
+              bestMatch = { customer, score, breakdown };
             }
           }
           
           if (!bestMatch || bestMatch.score < threshold) {
             if (bestMatch) {
               results.belowThreshold.push({
-                customer: customer.name,
-                customerId: customer.id,
-                bestEntry: bestMatch.entry.name,
+                entryName: entry.name,
+                entryStreet: entry.street,
+                bestCustomer: bestMatch.customer.name,
+                customerStreet: bestMatch.customer.shippingStreet || bestMatch.customer.billingStreet,
                 score: bestMatch.score,
                 breakdown: bestMatch.breakdown,
               });
@@ -11299,7 +11305,8 @@ Important:
             continue;
           }
           
-          const entry = bestMatch.entry;
+          const customer = bestMatch.customer;
+          updatedCustomerIds.add(customer.id);
           
           // Build update payload - sync both shipping and billing
           const addressUpdate: any = {
@@ -11333,8 +11340,10 @@ Important:
           results.updated++;
           results.updatedCustomers.push({
             id: customer.id,
-            name: customer.name,
+            customerName: customer.name,
             matchedEntry: entry.name + (entry.storeName ? ' (' + entry.storeName + ')' : ''),
+            entryStreet: entry.street,
+            customerStreet: customer.shippingStreet || customer.billingStreet,
             score: bestMatch.score,
             breakdown: bestMatch.breakdown,
           });
