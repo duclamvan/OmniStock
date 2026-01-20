@@ -1194,24 +1194,24 @@ export default function AllCustomers() {
           } else if (lowerKey === 'billing country') {
             customer.billingCountry = strValue;
           }
-          // Shipping address fields
-          else if (lowerKey === 'shipping first name') {
+          // Shipping address fields (English and Vietnamese)
+          else if (lowerKey === 'shipping first name' || lowerKey === 'tên (giao hàng)' || lowerKey === 'ten (giao hang)') {
             customer.shippingFirstName = strValue;
-          } else if (lowerKey === 'shipping last name') {
+          } else if (lowerKey === 'shipping last name' || lowerKey === 'họ (giao hàng)' || lowerKey === 'ho (giao hang)') {
             customer.shippingLastName = strValue;
-          } else if (lowerKey === 'shipping company') {
+          } else if (lowerKey === 'shipping company' || lowerKey === 'công ty (giao hàng)' || lowerKey === 'cong ty (giao hang)') {
             customer.shippingCompany = strValue;
           } else if (lowerKey === 'shipping email') {
             customer.shippingEmail = strValue;
           } else if (lowerKey === 'shipping phone' || lowerKey === 'shipping tel') {
             customer.shippingPhone = strValue;
-          } else if (lowerKey === 'shipping street') {
+          } else if (lowerKey === 'shipping street' || lowerKey === 'đường (giao hàng)' || lowerKey === 'duong (giao hang)') {
             customer.shippingStreet = strValue;
-          } else if (lowerKey === 'shipping street number') {
+          } else if (lowerKey === 'shipping street number' || lowerKey === 'số nhà (giao hàng)' || lowerKey === 'so nha (giao hang)') {
             customer.shippingStreetNumber = strValue;
-          } else if (lowerKey === 'shipping city') {
+          } else if (lowerKey === 'shipping city' || lowerKey === 'thành phố (giao hàng)' || lowerKey === 'thanh pho (giao hang)') {
             customer.shippingCity = strValue;
-          } else if (lowerKey === 'shipping zip code' || lowerKey === 'shipping zipcode') {
+          } else if (lowerKey === 'shipping zip code' || lowerKey === 'shipping zipcode' || lowerKey === 'mã bưu điện (giao hàng)' || lowerKey === 'ma buu dien (giao hang)') {
             customer.shippingZipCode = strValue;
           } else if (lowerKey === 'shipping country') {
             customer.shippingCountry = strValue;
