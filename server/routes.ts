@@ -11014,6 +11014,7 @@ Important:
     city?: string;
     zipCode?: string;
     country?: string;
+    company?: string;
     confidence: 'high' | 'medium' | 'low';
   } {
     const result: any = {};
@@ -22915,6 +22916,247 @@ Important:
     }
   }
 
+
+  // Comprehensive geocoding function to fill missing address fields (city, zipCode, country)
+  // Called when street is present but other fields are missing
+  interface AddressFields {
+    street?: string;
+    streetNumber?: string;
+    city?: string;
+    zipCode?: string;
+    country?: string;
+    company?: string;
+  }
+
+  async function geocodeFillMissingFields(fields: AddressFields): Promise<AddressFields> {
+    try {
+      // Check what we have and what's missing
+      const hasStreet = fields.street && fields.street.trim();
+      const hasStreetNumber = fields.streetNumber && fields.streetNumber.trim();
+      const missingCity = !fields.city || !fields.city.trim();
+      const missingZipCode = !fields.zipCode || !fields.zipCode.trim();
+      const missingCountry = !fields.country || !fields.country.trim();
+      const missingCompany = !fields.company || !fields.company.trim();
+
+      // If we don't have enough info, return as-is
+      if (!hasStreet && !hasStreetNumber) {
+        return fields;
+      }
+      
+      // Always proceed with geocoding to:
+      // 1. Autocorrect street/streetNumber (e.g., "4" -> "23/4")
+      // 2. Fill company/business name from Google Places
+      // 3. Fill any missing city/zip/country
+      // We only skip if we have absolutely no input to query
+
+      // Try Google Places API first for better business names and address autocorrection
+      const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      
+      if (googleApiKey) {
+        try {
+          // Build search query
+          let queryParts: string[] = [];
+          
+          if (hasStreet) {
+            let streetQuery = fields.street!.trim();
+            if (hasStreetNumber) {
+              streetQuery += ' ' + fields.streetNumber!.trim();
+            }
+            queryParts.push(streetQuery);
+          } else if (hasStreetNumber) {
+            // Only have street number (e.g., "4" for Czech address "23/4")
+            queryParts.push(fields.streetNumber!.trim());
+          }
+          
+          if (fields.city && fields.city.trim()) {
+            queryParts.push(fields.city.trim());
+          }
+          if (fields.country && fields.country.trim()) {
+            queryParts.push(fields.country.trim());
+          }
+
+          const query = queryParts.join(', ');
+          console.log('[Geocode Fill] Using Google Places API for:', query);
+          
+          // Use Google Places Autocomplete to find the best match
+          const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address|establishment&key=${googleApiKey}`;
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const autocompleteResponse = await fetch(autocompleteUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          
+          if (autocompleteResponse.ok) {
+            const autocompleteData = await autocompleteResponse.json();
+            
+            if (autocompleteData.status === 'OK' && autocompleteData.predictions && autocompleteData.predictions.length > 0) {
+              const prediction = autocompleteData.predictions[0];
+              
+              // Get place details for full address components
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=formatted_address,name,address_components,types&key=${googleApiKey}`;
+              
+              const detailsController = new AbortController();
+              const detailsTimeoutId = setTimeout(() => detailsController.abort(), 5000);
+              
+              const detailsResponse = await fetch(detailsUrl, { signal: detailsController.signal });
+              clearTimeout(detailsTimeoutId);
+              
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                
+                if (detailsData.status === 'OK' && detailsData.result) {
+                  const place = detailsData.result;
+                  const addressComponents = place.address_components || [];
+                  const result = { ...fields };
+                  
+                  // Helper to extract component by type
+                  const getComponent = (types: string[]): string | null => {
+                    for (const type of types) {
+                      const comp = addressComponents.find((c: any) => c.types.includes(type));
+                      if (comp) return comp.long_name;
+                    }
+                    return null;
+                  };
+                  
+                  // Extract and autocorrect street name
+                  const googleStreet = getComponent(['route']);
+                  if (googleStreet) {
+                    result.street = googleStreet;
+                  }
+                  
+                  // Extract and autocorrect street number (handles Czech 23/4 format)
+                  const googleStreetNumber = getComponent(['street_number']);
+                  if (googleStreetNumber) {
+                    result.streetNumber = googleStreetNumber;
+                  }
+                  
+                  // Fill city if missing
+                  if (missingCity) {
+                    const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
+                    if (geocodedCity) {
+                      result.city = geocodedCity;
+                    }
+                  }
+                  
+                  // Fill zipCode if missing
+                  if (missingZipCode) {
+                    const zipCode = getComponent(['postal_code']);
+                    if (zipCode) {
+                      result.zipCode = zipCode;
+                    }
+                  }
+                  
+                  // Fill country if missing
+                  if (missingCountry) {
+                    const country = getComponent(['country']);
+                    if (country) {
+                      result.country = normalizeCountryName(country);
+                    }
+                  }
+                  
+                  // Fill company/business name if missing and this is an establishment
+                  if (missingCompany && place.name && place.types) {
+                    const isEstablishment = place.types.some((t: string) => 
+                      t === 'establishment' || t === 'point_of_interest' || t === 'store' || 
+                      t === 'business' || t === 'company' || t.includes('store') || t.includes('shop')
+                    );
+                    if (isEstablishment && place.name !== googleStreet) {
+                      result.company = place.name;
+                      console.log('[Geocode Fill] Found business name:', place.name);
+                    }
+                  }
+                  
+                  console.log('[Geocode Fill] Google Places result:', JSON.stringify(result));
+                  return result;
+                }
+              }
+            }
+          }
+        } catch (googleError: any) {
+          console.warn('[Geocode Fill] Google Places API error, falling back to Nominatim:', googleError.message);
+        }
+      }
+      
+      // Fallback to Nominatim if Google fails or not configured
+      let queryParts: string[] = [];
+      let streetQuery = (fields.street || '').trim();
+      if (fields.streetNumber && fields.streetNumber.trim()) {
+        streetQuery += ' ' + fields.streetNumber.trim();
+      }
+      if (streetQuery) queryParts.push(streetQuery);
+      if (fields.city && fields.city.trim()) queryParts.push(fields.city.trim());
+      if (fields.country && fields.country.trim()) queryParts.push(fields.country.trim());
+
+      const query = queryParts.join(', ');
+      if (!query) return fields;
+      
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(nominatimUrl, {
+        headers: {
+          'User-Agent': 'DavieSupply/1.0 (Warehouse Management System)'
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn('Nominatim rate limit reached, skipping geocode fill');
+          return fields;
+        }
+        console.error('Nominatim API error:', response.statusText);
+        return fields;
+      }
+
+      const data = await response.json();
+      if (!data || data.length === 0 || !data[0].address) {
+        return fields;
+      }
+
+      const address = data[0].address;
+      const result = { ...fields };
+
+      // Autocorrect street from Nominatim
+      if (address.road) {
+        result.street = address.road;
+      }
+      
+      // Autocorrect street number from Nominatim
+      if (address.house_number) {
+        result.streetNumber = address.house_number;
+      }
+
+      if (missingCity) {
+        const geocodedCity = address.city || address.town || address.village || address.municipality;
+        if (geocodedCity) {
+          result.city = geocodedCity;
+        }
+      }
+
+      if (missingZipCode && address.postcode) {
+        result.zipCode = address.postcode;
+      }
+
+      if (missingCountry && address.country) {
+        result.country = normalizeCountryName(address.country);
+      }
+
+      return result;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn('Geocode fill timed out, continuing without it');
+        return fields;
+      }
+      console.error('Error in geocode fill:', error);
+      return fields;
+    }
+  }
   // AI-powered Address Parsing Endpoint
   app.post('/api/addresses/parse', isAuthenticated, async (req: any, res) => {
     try {
@@ -22933,17 +23175,22 @@ Important:
         // Fallback to basic regex parsing when AI is not configured
         const basicParsed = parseAddressBasic(rawAddress);
         
-        // Auto-fill postal code if missing but city is present
-        if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
-          const lookedUpZipCode = await lookupPostalCode(
-            basicParsed.fields.city, 
-            basicParsed.fields.street, 
-            basicParsed.fields.country
-          );
-          if (lookedUpZipCode) {
-            basicParsed.fields.zipCode = lookedUpZipCode;
-          }
-        }
+        // Auto-fill and autocorrect address fields using geocoding (Google Places + Nominatim)
+        const filledFields = await geocodeFillMissingFields({
+          street: basicParsed.fields.street,
+          streetNumber: basicParsed.fields.streetNumber,
+          city: basicParsed.fields.city,
+          zipCode: basicParsed.fields.zipCode,
+          country: basicParsed.fields.country,
+          company: basicParsed.fields.company
+        });
+        // Apply autocorrected/filled values
+        basicParsed.fields.street = filledFields.street || basicParsed.fields.street;
+        basicParsed.fields.streetNumber = filledFields.streetNumber || basicParsed.fields.streetNumber;
+        basicParsed.fields.city = filledFields.city || basicParsed.fields.city;
+        basicParsed.fields.zipCode = filledFields.zipCode || basicParsed.fields.zipCode;
+        basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
+        basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
         
         return res.json(basicParsed);
       }
@@ -23009,17 +23256,22 @@ Important rules:
         // Fallback to basic parsing
         const basicParsed = parseAddressBasic(rawAddress);
         
-        // Auto-fill postal code if missing but city is present
-        if (!basicParsed.fields.zipCode && basicParsed.fields.city) {
-          const lookedUpZipCode = await lookupPostalCode(
-            basicParsed.fields.city, 
-            basicParsed.fields.street, 
-            basicParsed.fields.country
-          );
-          if (lookedUpZipCode) {
-            basicParsed.fields.zipCode = lookedUpZipCode;
-          }
-        }
+        // Auto-fill and autocorrect address fields using geocoding (Google Places + Nominatim)
+        const filledFields = await geocodeFillMissingFields({
+          street: basicParsed.fields.street,
+          streetNumber: basicParsed.fields.streetNumber,
+          city: basicParsed.fields.city,
+          zipCode: basicParsed.fields.zipCode,
+          country: basicParsed.fields.country,
+          company: basicParsed.fields.company
+        });
+        // Apply autocorrected/filled values
+        basicParsed.fields.street = filledFields.street || basicParsed.fields.street;
+        basicParsed.fields.streetNumber = filledFields.streetNumber || basicParsed.fields.streetNumber;
+        basicParsed.fields.city = filledFields.city || basicParsed.fields.city;
+        basicParsed.fields.zipCode = filledFields.zipCode || basicParsed.fields.zipCode;
+        basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
+        basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
         
         return res.json(basicParsed);
       }
@@ -23032,27 +23284,38 @@ Important rules:
 
       // Extract initial values
       let zipCode = parsed.zipCode || parsed.postalCode || '';
-      const city = parsed.city || '';
+      let city = parsed.city || '';
       const street = parsed.street || '';
-      const country = normalizeCountryName(parsed.country || '');
+      const streetNumber = parsed.streetNumber || '';
+      let country = normalizeCountryName(parsed.country || '');
 
-      // Auto-fill postal code if missing but city is present
-      if (!zipCode && city) {
-        const lookedUpZipCode = await lookupPostalCode(city, street, country);
-        if (lookedUpZipCode) {
-          zipCode = lookedUpZipCode;
-        }
-      }
+      // Auto-fill and autocorrect address fields using geocoding (Google Places + Nominatim)
+      let company = parsed.company || '';
+      const filledFields = await geocodeFillMissingFields({
+        street: street,
+        streetNumber: streetNumber,
+        city: city,
+        zipCode: zipCode,
+        country: country,
+        company: company
+      });
+      // Apply autocorrected/filled values
+      const finalStreet = filledFields.street || street;
+      const finalStreetNumber = filledFields.streetNumber || streetNumber;
+      city = filledFields.city || city;
+      zipCode = filledFields.zipCode || zipCode;
+      country = filledFields.country || country;
+      company = filledFields.company || company;
 
       res.json({
         fields: {
           firstName: parsed.firstName || '',
           lastName: parsed.lastName || '',
-          company: parsed.company || '',
+          company: company,
           email: parsed.email || '',
           tel: parsed.phone || parsed.tel || '',
-          street: street,
-          streetNumber: parsed.streetNumber || '',
+          street: finalStreet,
+          streetNumber: finalStreetNumber,
           city: city,
           zipCode: zipCode,
           country: country
@@ -23597,10 +23860,85 @@ Important rules:
     }
   });
 
-  // Fetch Facebook profile data using Bright Data API
+  // Facebook Profile Cache - 1 hour TTL for faster repeated requests
+  const facebookProfileCache = new Map<string, { data: any; timestamp: number }>();
+  const FACEBOOK_CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+
+  // Helper to extract Facebook username from URL
+  function extractFacebookUsername(facebookUrl: string): string | null {
+    let username = '';
+    const cleanUrl = facebookUrl.trim();
+    
+    // Pattern 1: profile.php?id=NUMERIC_ID (highest priority)
+    const profilePhpMatch = cleanUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/i);
+    if (profilePhpMatch) {
+      username = profilePhpMatch[1];
+    }
+    
+    // Pattern 2: /people/Name/NUMERIC_ID format (common for personal profiles)
+    if (!username) {
+      const peopleMatch = cleanUrl.match(/facebook\.com\/people\/[^\/]+\/(\d+)/i);
+      if (peopleMatch) {
+        username = peopleMatch[1];
+      }
+    }
+    
+    // Pattern 3: /pages/category/BusinessName/ID or /pages/BusinessName/ID format
+    if (!username) {
+      const pagesMatch = cleanUrl.match(/facebook\.com\/pages\/(?:[^\/]+\/)*([^\/]+)\/(\d+)/i);
+      if (pagesMatch) {
+        username = pagesMatch[2] || pagesMatch[1];
+      }
+    }
+    
+    // Pattern 4: Any numeric ID (10+ digits) anywhere in the path
+    if (!username) {
+      const numericIdMatch = cleanUrl.match(/facebook\.com\/.*?(\d{10,})/i);
+      if (numericIdMatch) {
+        username = numericIdMatch[1];
+      }
+    }
+    
+    // Pattern 5: Standard username format - facebook.com/username (but not reserved paths)
+    if (!username) {
+      const usernameMatch = cleanUrl.match(/facebook\.com\/([a-zA-Z0-9._-]+)\/?(?:\?|$|#)?/i);
+      if (usernameMatch) {
+        const potentialUsername = usernameMatch[1].toLowerCase();
+        const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg'];
+        if (!skipPaths.includes(potentialUsername)) {
+          username = usernameMatch[1];
+        }
+      }
+    }
+    
+    // Pattern 6: Fallback - extract last meaningful path segment
+    if (!username) {
+      try {
+        const url = new URL(cleanUrl);
+        const pathParts = url.pathname.split('/').filter(p => p && p.length > 0);
+        for (let i = pathParts.length - 1; i >= 0; i--) {
+          const part = pathParts[i];
+          if (/^\d{10,}$/.test(part) || /^[a-zA-Z0-9._-]{3,}$/.test(part)) {
+            const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg', 'category'];
+            if (!skipPaths.includes(part.toLowerCase())) {
+              username = part;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.log('[Facebook Profile] URL parsing fallback failed:', e);
+      }
+    }
+
+    return username || null;
+  }
+
+  // Fetch Facebook profile data using Bright Data API - OPTIMIZED
+  // Uses sync API first for instant results, falls back to async with faster polling
   app.post('/api/facebook/profile', isAuthenticated, async (req, res) => {
     try {
-      const { facebookUrl } = req.body;
+      const { facebookUrl, forceRefresh } = req.body;
 
       if (!facebookUrl) {
         return res.status(400).json({ message: 'Facebook URL is required' });
@@ -23611,74 +23949,17 @@ Important rules:
         return res.status(500).json({ message: 'Bright Data API key not configured' });
       }
 
-      // Extract Facebook username/ID from URL - handles many formats
-      let username = '';
-      const cleanUrl = facebookUrl.trim();
-      
-      // Pattern 1: profile.php?id=NUMERIC_ID (highest priority)
-      const profilePhpMatch = cleanUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/i);
-      if (profilePhpMatch) {
-        username = profilePhpMatch[1];
-      }
-      
-      // Pattern 2: /people/Name/NUMERIC_ID format (common for personal profiles)
-      if (!username) {
-        const peopleMatch = cleanUrl.match(/facebook\.com\/people\/[^\/]+\/(\d+)/i);
-        if (peopleMatch) {
-          username = peopleMatch[1];
-        }
-      }
-      
-      // Pattern 3: /pages/category/BusinessName/ID or /pages/BusinessName/ID format
-      if (!username) {
-        const pagesMatch = cleanUrl.match(/facebook\.com\/pages\/(?:[^\/]+\/)*([^\/]+)\/(\d+)/i);
-        if (pagesMatch) {
-          username = pagesMatch[2] || pagesMatch[1];
-        }
-      }
-      
-      // Pattern 4: Any numeric ID (10+ digits) anywhere in the path
-      if (!username) {
-        const numericIdMatch = cleanUrl.match(/facebook\.com\/.*?(\d{10,})/i);
-        if (numericIdMatch) {
-          username = numericIdMatch[1];
-        }
-      }
-      
-      // Pattern 5: Standard username format - facebook.com/username (but not reserved paths)
-      if (!username) {
-        const usernameMatch = cleanUrl.match(/facebook\.com\/([a-zA-Z0-9._-]+)\/?(?:\?|$|#)?/i);
-        if (usernameMatch) {
-          const potentialUsername = usernameMatch[1].toLowerCase();
-          const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg'];
-          if (!skipPaths.includes(potentialUsername)) {
-            username = usernameMatch[1];
-          }
-        }
-      }
-      
-      // Pattern 6: Fallback - extract last meaningful path segment
-      if (!username) {
-        try {
-          const url = new URL(cleanUrl);
-          const pathParts = url.pathname.split('/').filter(p => p && p.length > 0);
-          for (let i = pathParts.length - 1; i >= 0; i--) {
-            const part = pathParts[i];
-            if (/^\d{10,}$/.test(part) || /^[a-zA-Z0-9._-]{3,}$/.test(part)) {
-              const skipPaths = ['people', 'pages', 'groups', 'events', 'watch', 'marketplace', 'gaming', 'live', 'stories', 'reels', 'photo', 'photos', 'video', 'videos', 'share', 'sharer', 'pg', 'category'];
-              if (!skipPaths.includes(part.toLowerCase())) {
-                username = part;
-                break;
-              }
-            }
-          }
-        } catch (e) {
-          console.log('[Facebook Profile] URL parsing fallback failed:', e);
-        }
-      }
-
+      const username = extractFacebookUsername(facebookUrl);
       if (!username) {
         return res.status(400).json({ message: 'Unable to extract Facebook username from URL' });
+      }
+
+      // Check cache first (unless forceRefresh is true)
+      const cacheKey = username.toLowerCase();
+      const cachedEntry = facebookProfileCache.get(cacheKey);
+      if (!forceRefresh && cachedEntry && (Date.now() - cachedEntry.timestamp < FACEBOOK_CACHE_TTL)) {
+        console.log(`[Facebook Profile] Cache HIT for: ${username} (${Math.round((Date.now() - cachedEntry.timestamp) / 1000)}s old)`);
+        return res.json({ ...cachedEntry.data, cached: true, success: true });
       }
 
       console.log(`[Facebook Profile] Fetching profile for: ${username} using Bright Data`);
@@ -23687,50 +23968,78 @@ Important rules:
         ? `https://www.facebook.com/profile.php?id=${username}` 
         : `https://www.facebook.com/${username}`;
 
-      // Call Bright Data Profiles API
-      const brightDataResponse = await fetch('https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_mf0urb782734ik94dz&include_errors=true&format=json', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify([{ url: profileUrl }])
-      });
-
-      if (!brightDataResponse.ok) {
-        const errorText = await brightDataResponse.text();
-        console.error('[Facebook Profile] Bright Data API error:', errorText);
-        return res.status(500).json({ message: 'Failed to fetch Facebook profile from Bright Data' });
-      }
-
-      const snapshotInfo = await brightDataResponse.json();
-      console.log('[Facebook Profile] Bright Data snapshot info:', JSON.stringify(snapshotInfo));
-
-      // Wait for snapshot to complete (poll for results)
-      const snapshotId = snapshotInfo.snapshot_id;
       let profile: any = null;
-      let attempts = 0;
-      const maxAttempts = 30; // 30 seconds max wait
 
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-
-        const statusResponse = await fetch(`https://api.brightdata.com/datasets/v3/snapshot/${snapshotId}?format=json`, {
-          headers: { 'Authorization': `Bearer ${apiKey}` }
+      // OPTIMIZATION 1: Try synchronous /scrape endpoint first (instant results)
+      try {
+        console.log('[Facebook Profile] Trying sync API...');
+        const syncResponse = await fetch('https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_mf0urb782734ik94dz&format=json', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify([{ url: profileUrl }])
         });
 
-        if (statusResponse.status === 200) {
-          const results = await statusResponse.json();
-          if (results && results.length > 0) {
+        if (syncResponse.ok) {
+          const results = await syncResponse.json();
+          if (results && results.length > 0 && !results[0]?.error) {
             profile = results[0];
-            break;
+            console.log('[Facebook Profile] Sync API success!');
           }
-        } else if (statusResponse.status === 202) {
-          // Still processing
-          continue;
+        } else if (syncResponse.status === 202) {
+          console.log('[Facebook Profile] Sync API returned 202 (async needed)');
         } else {
-          console.log('[Facebook Profile] Status check returned:', statusResponse.status);
+          console.log('[Facebook Profile] Sync API returned:', syncResponse.status);
+        }
+      } catch (syncError) {
+        console.log('[Facebook Profile] Sync API failed, falling back to async:', syncError);
+      }
+
+      // OPTIMIZATION 2: Fall back to async with faster polling (500ms instead of 1000ms)
+      if (!profile) {
+        console.log('[Facebook Profile] Using async API with fast polling...');
+        
+        const asyncResponse = await fetch('https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_mf0urb782734ik94dz&include_errors=true&format=json', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify([{ url: profileUrl }])
+        });
+
+        if (!asyncResponse.ok) {
+          const errorText = await asyncResponse.text();
+          console.error('[Facebook Profile] Bright Data API error:', errorText);
+          return res.status(500).json({ message: 'Failed to fetch Facebook profile from Bright Data' });
+        }
+
+        const snapshotInfo = await asyncResponse.json();
+        const snapshotId = snapshotInfo.snapshot_id;
+        
+        // OPTIMIZATION: Faster polling - 500ms interval, max 40 attempts (20 seconds)
+        const maxAttempts = 40;
+        const pollInterval = 500;
+
+        for (let attempts = 0; attempts < maxAttempts; attempts++) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+          const statusResponse = await fetch(`https://api.brightdata.com/datasets/v3/snapshot/${snapshotId}?format=json`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+
+          if (statusResponse.status === 200) {
+            const results = await statusResponse.json();
+            if (results && results.length > 0) {
+              profile = results[0];
+              console.log(`[Facebook Profile] Async completed in ${(attempts + 1) * pollInterval}ms`);
+              break;
+            }
+          } else if (statusResponse.status !== 202) {
+            console.log('[Facebook Profile] Status check returned:', statusResponse.status);
+          }
         }
       }
 
@@ -23739,7 +24048,6 @@ Important rules:
       }
       
       console.log(`[Facebook Profile] Found: ${profile.name || profile.account || 'Unknown'}`);
-      console.log('[Facebook Profile] All profile data:', JSON.stringify(profile));
       
       // Extract numeric ID (FBID) from Bright Data response
       const numericId = profile.fbid || profile.id || profile.user_id || null;
@@ -23749,7 +24057,6 @@ Important rules:
       let profilePictureUrl = null;
       if (numericId && /^\d+$/.test(String(numericId))) {
         profilePictureUrl = `https://graph.facebook.com/${numericId}/picture?type=large`;
-        console.log('[Facebook Profile] Constructed profile picture URL:', profilePictureUrl);
       } else if (profile.profile_image) {
         profilePictureUrl = profile.profile_image;
       }
@@ -23757,26 +24064,25 @@ Important rules:
       // Download and store the profile picture locally if available
       let localProfilePictureUrl: string | null = null;
       if (profilePictureUrl) {
-        console.log('[Facebook Profile] Attempting to download profile picture...');
         const avatarResult = await downloadAndStoreProfilePicture(profilePictureUrl);
         if (avatarResult) {
           localProfilePictureUrl = avatarResult.localPath;
-          console.log('[Facebook Profile] Profile picture saved to:', localProfilePictureUrl);
-        } else {
-          console.log('[Facebook Profile] Failed to download profile picture');
         }
-      } else {
-        console.log('[Facebook Profile] No profile picture URL found in response');
       }
 
-      res.json({
+      const responseData = {
         name: profileName,
         profilePictureUrl: localProfilePictureUrl || profilePictureUrl || null,
         facebookId: profile.handle || username,
         facebookNumericId: numericId ? String(numericId) : null,
-        username: profile.handle || username,
-        success: true
-      });
+        username: profile.handle || username
+      };
+
+      // OPTIMIZATION 3: Cache the result for future requests
+      facebookProfileCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+      console.log(`[Facebook Profile] Cached result for: ${username}`);
+
+      res.json({ ...responseData, success: true });
     } catch (error: any) {
       console.error('[Facebook Profile] Error:', error);
       res.status(500).json({ 
