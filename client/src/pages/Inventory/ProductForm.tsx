@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
-import { normalizeForSKU, generateVariantSku } from "@/lib/vietnameseSearch";
+import { normalizeForSKU, generateVariantSku, generateProductSku } from "@/lib/vietnameseSearch";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
 import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
 import { useSettings, DEFAULT_BULK_UNITS } from "@/contexts/SettingsContext";
@@ -1628,57 +1628,27 @@ export default function ProductForm() {
   };
 
   const generateSKU = () => {
-    // Get form values
     const name = form.watch('name') || '';
     const vietnameseName = form.watch('vietnameseName') || '';
-    const priceCzk = form.watch('priceCzk') || 0;
-    const priceEur = form.watch('priceEur') || 0;
-    const quantity = form.watch('quantity') || 0;
     
-    // 1. Category Part - use initials of each word (e.g., "Gel Polish" -> "GP")
-    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || t('products:defaults.categoryFallback');
-    const categoryWords = categoryName.split(/\s+/).filter((w: string) => w.length > 0);
-    const categoryPart = categoryWords.length > 1
-      ? categoryWords.map((w: string) => normalizeForSKU(w).charAt(0)).join('').toUpperCase()
-      : normalizeForSKU(categoryName).slice(0, 3).toUpperCase() || t('products:defaults.categoryFallback');
-    
-    // 2. Product Name Part (4-6 chars) - prefer English name (used for SKU readability)
     const productText = name || vietnameseName || 'ITEM';
-    const words = productText.split(/\s+/).filter(w => w.length > 0);
-    let productPart = '';
+    let baseSKU = generateProductSku(productText);
     
-    if (words.length === 1) {
-      // Single word: take first 6 characters
-      productPart = normalizeForSKU(words[0]).slice(0, 6);
-    } else if (words.length === 2) {
-      // Two words: take first 3 chars of each
-      productPart = normalizeForSKU(words[0]).slice(0, 3) + normalizeForSKU(words[1]).slice(0, 3);
-    } else {
-      // Multiple words: take first 2 chars of first 3 words
-      productPart = words.slice(0, 3).map(w => normalizeForSKU(w).slice(0, 2)).join('');
+    if (!baseSKU) {
+      baseSKU = 'ITEM-000';
     }
     
-    // Ensure product part is not empty
-    if (!productPart) {
-      productPart = t('products:defaults.productPartFallback');
-    }
-    
-    // Construct base SKU: Category + Product Name
-    let baseSKU = `${categoryPart}-${productPart}`;
-    
-    // Check if this SKU already exists in the product list
     const existingSkus = allProducts
-      .filter((p: any) => p.id !== id) // Exclude current product in edit mode
+      .filter((p: any) => p.id !== id)
       .map((p: any) => p.sku?.toUpperCase())
       .filter(Boolean);
     
-    // If base SKU exists, find the next available number
     if (existingSkus.includes(baseSKU.toUpperCase())) {
       let counter = 1;
-      let candidateSKU = `${baseSKU}-${counter}`;
+      let candidateSKU = `${baseSKU}${counter}`;
       while (existingSkus.includes(candidateSKU.toUpperCase())) {
         counter++;
-        candidateSKU = `${baseSKU}-${counter}`;
+        candidateSKU = `${baseSKU}${counter}`;
       }
       baseSKU = candidateSKU;
     }

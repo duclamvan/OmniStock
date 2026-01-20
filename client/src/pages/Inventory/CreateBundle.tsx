@@ -52,7 +52,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { handleDecimalKeyDown, parseDecimal } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, ProductBundle } from '@shared/schema';
-import { normalizeForSKU } from '@/lib/vietnameseSearch';
+import { normalizeForSKU, generateProductSku } from '@/lib/vietnameseSearch';
 
 interface ProductVariant {
   id: string;
@@ -529,19 +529,9 @@ export default function CreateBundle() {
     items: []
   });
 
-  // Auto-generate SKU for bundles
   const generateSKU = () => {
     const bundleName = formData.nameVi.trim() || 'BUNDLE';
-    
-    // Extract meaningful part from bundle name (first 8 alphanumeric characters)
-    // Uses normalizeForSKU to handle Vietnamese diacritics (e.g., Thùng → THUNG)
-    const namePart = normalizeForSKU(bundleName).slice(0, 8);
-    
-    // Generate a 3-digit random number for uniqueness
-    const randomNum = Math.floor(100 + Math.random() * 900);
-    
-    // Format: BDL-{NAME}-{NUMBER}
-    const sku = `BDL-${namePart || 'BUNDLE'}-${randomNum}`;
+    const sku = generateProductSku(bundleName) || 'BDL-BUNDLE';
     
     setFormData(prev => ({ ...prev, sku }));
     

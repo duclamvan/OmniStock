@@ -38,6 +38,30 @@ export function normalizeForSKU(text: string): string {
     .replace(/[^A-Z0-9]/g, '');
 }
 
+export function generateProductSku(productName: string): string {
+  if (!productName || !productName.trim()) return '';
+  
+  const normalized = normalizeForSKU(productName);
+  if (!normalized) return '';
+  
+  const words = productName.trim().split(/[\s\-–—]+/).filter(w => w.length > 0);
+  
+  let prefix = '';
+  for (const word of words) {
+    const normalizedWord = normalizeForSKU(word);
+    if (normalizedWord.length >= 2 && /^[A-Z]/.test(normalizedWord)) {
+      prefix = normalizedWord.slice(0, 3).toUpperCase();
+      break;
+    }
+  }
+  
+  if (!prefix) {
+    prefix = normalized.slice(0, 3);
+  }
+  
+  return `${prefix}-${normalized}`;
+}
+
 export function generateVariantSku(parentSku: string, variantName: string): string {
   if (!parentSku) return '';
   if (!variantName) return parentSku;

@@ -52,7 +52,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { handleDecimalKeyDown, parseDecimal } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, ProductBundle } from '@shared/schema';
-import { normalizeForSKU } from '@/lib/vietnameseSearch';
+import { normalizeForSKU, generateProductSku } from '@/lib/vietnameseSearch';
 
 interface ProductVariant {
   id: string;
@@ -528,13 +528,7 @@ export default function EditBundle() {
 
   const generateSKU = () => {
     const bundleName = formData.nameVi.trim() || 'BUNDLE';
-    
-    // Uses normalizeForSKU to handle Vietnamese diacritics (e.g., Thùng → THUNG)
-    const namePart = normalizeForSKU(bundleName).slice(0, 8);
-    
-    const randomNum = Math.floor(100 + Math.random() * 900);
-    
-    const sku = `BDL-${namePart || 'BUNDLE'}-${randomNum}`;
+    const sku = generateProductSku(bundleName) || 'BDL-BUNDLE';
     
     setFormData(prev => ({ ...prev, sku }));
     
