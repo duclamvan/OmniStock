@@ -24,6 +24,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { normalizeFirstName, normalizeLastName, normalizeFullName, normalizeStreetName, normalizeCityName } from '@shared/utils/nameNormalizer';
+import { parseAddressLine, shouldFetchAddressDetails, mergeAddressData } from '@shared/utils/addressParser';
 
 const availableCountries = [
   ...europeanCountries,
@@ -773,9 +775,9 @@ export default function AddCustomer() {
   );
 
   const selectBillingAddress = (suggestion: AddressAutocompleteResult) => {
-    form.setValue('billingStreet', suggestion.street);
-    form.setValue('billingStreetNumber', suggestion.streetNumber);
-    form.setValue('billingCity', suggestion.city);
+    form.setValue('billingStreet', normalizeStreetName(suggestion.street));
+    form.setValue('billingStreetNumber', suggestion.streetNumber?.toUpperCase() || '');
+    form.setValue('billingCity', normalizeCityName(suggestion.city));
     form.setValue('billingZipCode', suggestion.zipCode);
     form.setValue('billingCountry', suggestion.country);
     setBillingAddressQuery(suggestion.displayName);
@@ -786,9 +788,9 @@ export default function AddCustomer() {
     // Reset manual edit flag so label auto-generates from autocomplete data
     setIsLabelManuallyEdited(false);
     
-    shippingForm.setValue('street', suggestion.street);
-    shippingForm.setValue('streetNumber', suggestion.streetNumber);
-    shippingForm.setValue('city', suggestion.city);
+    shippingForm.setValue('street', normalizeStreetName(suggestion.street));
+    shippingForm.setValue('streetNumber', suggestion.streetNumber?.toUpperCase() || '');
+    shippingForm.setValue('city', normalizeCityName(suggestion.city));
     shippingForm.setValue('zipCode', suggestion.zipCode);
     shippingForm.setValue('country', suggestion.country);
     setShippingAddressQuery(suggestion.displayName);
@@ -814,9 +816,9 @@ export default function AddCustomer() {
   const selectBillingAddressForm = (suggestion: AddressAutocompleteResult) => {
     setIsBillingLabelManuallyEdited(false);
     
-    billingAddressForm.setValue('street', suggestion.street);
-    billingAddressForm.setValue('streetNumber', suggestion.streetNumber);
-    billingAddressForm.setValue('city', suggestion.city);
+    billingAddressForm.setValue('street', normalizeStreetName(suggestion.street));
+    billingAddressForm.setValue('streetNumber', suggestion.streetNumber?.toUpperCase() || '');
+    billingAddressForm.setValue('city', normalizeCityName(suggestion.city));
     billingAddressForm.setValue('zipCode', suggestion.zipCode);
     billingAddressForm.setValue('country', suggestion.country);
     setBillingAddressQueryAutocomplete(suggestion.displayName);
@@ -1358,15 +1360,13 @@ export default function AddCustomer() {
         lastName = corrected.lastName;
       }
       
-      // Remove Vietnamese diacritics, capitalize, and track filled fields
+      // Normalize names (removes diacritics and converts to uppercase)
       if (firstName) {
-        const cleanFirstName = removeVietnameseDiacritics(firstName);
-        shippingForm.setValue('firstName', capitalizeWords(cleanFirstName));
+        shippingForm.setValue('firstName', normalizeFirstName(firstName));
         filledFields.firstName = data.confidence;
       }
       if (lastName) {
-        const cleanLastName = removeVietnameseDiacritics(lastName);
-        shippingForm.setValue('lastName', capitalizeWords(cleanLastName));
+        shippingForm.setValue('lastName', normalizeLastName(lastName));
         filledFields.lastName = data.confidence;
       }
       if (company) {
@@ -1379,9 +1379,9 @@ export default function AddCustomer() {
         filledFields.email = data.confidence;
       }
       
-      // Use Nominatim-validated address values, capitalize and format properly
+      // Use Nominatim-validated address values with normalization
       if (fields.street) {
-        shippingForm.setValue('street', capitalizeWords(fields.street));
+        shippingForm.setValue('street', normalizeStreetName(fields.street));
         filledFields.street = data.confidence;
       }
       if (fields.streetNumber) {
@@ -1389,7 +1389,7 @@ export default function AddCustomer() {
         filledFields.streetNumber = data.confidence;
       }
       if (fields.city) {
-        shippingForm.setValue('city', capitalizeWords(fields.city));
+        shippingForm.setValue('city', normalizeCityName(fields.city));
         filledFields.city = data.confidence;
       }
       if (fields.zipCode) {
@@ -1652,13 +1652,11 @@ export default function AddCustomer() {
       }
       
       if (firstName) {
-        const cleanFirstName = removeVietnameseDiacritics(firstName);
-        billingAddressForm.setValue('firstName', capitalizeWords(cleanFirstName));
+        billingAddressForm.setValue('firstName', normalizeFirstName(firstName));
         filledFields.firstName = data.confidence;
       }
       if (lastName) {
-        const cleanLastName = removeVietnameseDiacritics(lastName);
-        billingAddressForm.setValue('lastName', capitalizeWords(cleanLastName));
+        billingAddressForm.setValue('lastName', normalizeLastName(lastName));
         filledFields.lastName = data.confidence;
       }
       if (company) {
@@ -1672,7 +1670,7 @@ export default function AddCustomer() {
       }
       
       if (fields.street) {
-        billingAddressForm.setValue('street', capitalizeWords(fields.street));
+        billingAddressForm.setValue('street', normalizeStreetName(fields.street));
         filledFields.street = data.confidence;
       }
       if (fields.streetNumber) {
@@ -1680,7 +1678,7 @@ export default function AddCustomer() {
         filledFields.streetNumber = data.confidence;
       }
       if (fields.city) {
-        billingAddressForm.setValue('city', capitalizeWords(fields.city));
+        billingAddressForm.setValue('city', normalizeCityName(fields.city));
         filledFields.city = data.confidence;
       }
       if (fields.zipCode) {
@@ -2213,7 +2211,13 @@ export default function AddCustomer() {
                   <Input
                     id="name"
                     {...form.register('name', {
-                      onChange: () => setIsNameManuallyEdited(true)
+                      onChange: () => setIsNameManuallyEdited(true),
+                      onBlur: (e) => {
+                        const normalized = normalizeFullName(e.target.value);
+                        if (normalized !== e.target.value) {
+                          form.setValue('name', normalized);
+                        }
+                      }
                     })}
                     placeholder={t('customers:customerDisplayNamePlaceholder')}
                     className="text-base"
@@ -2520,7 +2524,14 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingFirstName">{t('customers:firstNameRequiredLabel')}</Label>
                       <Input
                         id="shippingFirstName"
-                        {...shippingForm.register('firstName')}
+                        {...shippingForm.register('firstName', {
+                          onBlur: (e) => {
+                            const normalized = normalizeFirstName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              shippingForm.setValue('firstName', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:firstNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('firstName', shippingFieldConfidence),
@@ -2538,7 +2549,14 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingLastName">{t('customers:lastNameRequiredLabel')}</Label>
                       <Input
                         id="shippingLastName"
-                        {...shippingForm.register('lastName')}
+                        {...shippingForm.register('lastName', {
+                          onBlur: (e) => {
+                            const normalized = normalizeLastName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              shippingForm.setValue('lastName', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:lastNamePlaceholder')}
                         className={cn(
                           getConfidenceClass('lastName', shippingFieldConfidence),
@@ -2615,7 +2633,55 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingStreet">{t('customers:street')}</Label>
                       <Input
                         id="shippingStreet"
-                        {...shippingForm.register('street')}
+                        {...shippingForm.register('street', {
+                          onBlur: async (e) => {
+                            const value = e.target.value;
+                            if (value) {
+                              const hasNumber = /\d/.test(value);
+                              if (hasNumber) {
+                                const parsed = parseAddressLine(value);
+                                if (parsed.streetNumber && !shippingForm.getValues('streetNumber')) {
+                                  shippingForm.setValue('streetNumber', parsed.streetNumber);
+                                }
+                                if (parsed.city && !shippingForm.getValues('city')) {
+                                  shippingForm.setValue('city', parsed.city);
+                                }
+                                const normalizedStreet = normalizeStreetName(parsed.street || value);
+                                if (normalizedStreet !== value) {
+                                  shippingForm.setValue('street', normalizedStreet);
+                                }
+                                
+                                const currentZip = shippingForm.getValues('zipCode');
+                                const currentCountry = shippingForm.getValues('country');
+                                if (!currentZip || !currentCountry) {
+                                  try {
+                                    const searchQuery = parsed.city ? `${parsed.street} ${parsed.streetNumber}, ${parsed.city}` : `${parsed.street} ${parsed.streetNumber}`;
+                                    const results = await fetchAddressAutocomplete(searchQuery);
+                                    if (results && results.length > 0) {
+                                      const firstResult = results[0];
+                                      if (!currentZip && firstResult.zipCode) {
+                                        shippingForm.setValue('zipCode', firstResult.zipCode);
+                                      }
+                                      if (!currentCountry && firstResult.country) {
+                                        shippingForm.setValue('country', firstResult.country);
+                                      }
+                                      if (!shippingForm.getValues('city') && firstResult.city) {
+                                        shippingForm.setValue('city', normalizeCityName(firstResult.city));
+                                      }
+                                    }
+                                  } catch (err) {
+                                    console.error('Error fetching address details:', err);
+                                  }
+                                }
+                              } else {
+                                const normalized = normalizeStreetName(value);
+                                if (normalized !== value) {
+                                  shippingForm.setValue('street', normalized);
+                                }
+                              }
+                            }
+                          }
+                        })}
                         placeholder={t('customers:streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', shippingFieldConfidence))}
                         data-testid="input-shippingStreet"
@@ -2648,7 +2714,14 @@ export default function AddCustomer() {
                       <Label htmlFor="shippingCity">{t('customers:city')}</Label>
                       <Input
                         id="shippingCity"
-                        {...shippingForm.register('city')}
+                        {...shippingForm.register('city', {
+                          onBlur: (e) => {
+                            const normalized = normalizeCityName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              shippingForm.setValue('city', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', shippingFieldConfidence))}
                         data-testid="input-shippingCity"
@@ -2957,7 +3030,14 @@ export default function AddCustomer() {
                       <Label htmlFor="billingFirstName">{t('customers:firstName')}</Label>
                       <Input
                         id="billingFirstName"
-                        {...billingAddressForm.register('firstName')}
+                        {...billingAddressForm.register('firstName', {
+                          onBlur: (e) => {
+                            const normalized = normalizeFirstName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              billingAddressForm.setValue('firstName', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:firstNamePlaceholder')}
                         className={cn(getConfidenceClass('firstName', billingAddressFieldConfidence))}
                         data-testid="input-billingFirstName"
@@ -2967,7 +3047,14 @@ export default function AddCustomer() {
                       <Label htmlFor="billingLastName">{t('customers:lastName')}</Label>
                       <Input
                         id="billingLastName"
-                        {...billingAddressForm.register('lastName')}
+                        {...billingAddressForm.register('lastName', {
+                          onBlur: (e) => {
+                            const normalized = normalizeLastName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              billingAddressForm.setValue('lastName', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:lastNamePlaceholder')}
                         className={cn(getConfidenceClass('lastName', billingAddressFieldConfidence))}
                         data-testid="input-billingLastName"
@@ -3040,7 +3127,55 @@ export default function AddCustomer() {
                       <Label htmlFor="billingStreet">{t('customers:street')}</Label>
                       <Input
                         id="billingStreet"
-                        {...billingAddressForm.register('street')}
+                        {...billingAddressForm.register('street', {
+                          onBlur: async (e) => {
+                            const value = e.target.value;
+                            if (value) {
+                              const hasNumber = /\d/.test(value);
+                              if (hasNumber) {
+                                const parsed = parseAddressLine(value);
+                                if (parsed.streetNumber && !billingAddressForm.getValues('streetNumber')) {
+                                  billingAddressForm.setValue('streetNumber', parsed.streetNumber);
+                                }
+                                if (parsed.city && !billingAddressForm.getValues('city')) {
+                                  billingAddressForm.setValue('city', parsed.city);
+                                }
+                                const normalizedStreet = normalizeStreetName(parsed.street || value);
+                                if (normalizedStreet !== value) {
+                                  billingAddressForm.setValue('street', normalizedStreet);
+                                }
+                                
+                                const currentZip = billingAddressForm.getValues('zipCode');
+                                const currentCountry = billingAddressForm.getValues('country');
+                                if (!currentZip || !currentCountry) {
+                                  try {
+                                    const searchQuery = parsed.city ? `${parsed.street} ${parsed.streetNumber}, ${parsed.city}` : `${parsed.street} ${parsed.streetNumber}`;
+                                    const results = await fetchAddressAutocomplete(searchQuery);
+                                    if (results && results.length > 0) {
+                                      const firstResult = results[0];
+                                      if (!currentZip && firstResult.zipCode) {
+                                        billingAddressForm.setValue('zipCode', firstResult.zipCode);
+                                      }
+                                      if (!currentCountry && firstResult.country) {
+                                        billingAddressForm.setValue('country', firstResult.country);
+                                      }
+                                      if (!billingAddressForm.getValues('city') && firstResult.city) {
+                                        billingAddressForm.setValue('city', normalizeCityName(firstResult.city));
+                                      }
+                                    }
+                                  } catch (err) {
+                                    console.error('Error fetching address details:', err);
+                                  }
+                                }
+                              } else {
+                                const normalized = normalizeStreetName(value);
+                                if (normalized !== value) {
+                                  billingAddressForm.setValue('street', normalized);
+                                }
+                              }
+                            }
+                          }
+                        })}
                         placeholder={t('customers:streetNamePlaceholder')}
                         className={cn(getConfidenceClass('street', billingAddressFieldConfidence))}
                         data-testid="input-billingStreet"
@@ -3073,7 +3208,14 @@ export default function AddCustomer() {
                       <Label htmlFor="billingCity">{t('customers:city')}</Label>
                       <Input
                         id="billingCity"
-                        {...billingAddressForm.register('city')}
+                        {...billingAddressForm.register('city', {
+                          onBlur: (e) => {
+                            const normalized = normalizeCityName(e.target.value);
+                            if (normalized !== e.target.value) {
+                              billingAddressForm.setValue('city', normalized);
+                            }
+                          }
+                        })}
                         placeholder={t('customers:cityPlaceholder')}
                         className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
                         data-testid="input-billingCity"
