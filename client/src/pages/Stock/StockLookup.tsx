@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import WarehouseLocationSelector from "@/components/WarehouseLocationSelector";
 import { LocationType } from "@/lib/warehouseHelpers";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -34,6 +35,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import MoveInventoryDialog from "@/components/warehouse/MoveInventoryDialog";
 import StockAdjustmentDialog from "@/components/warehouse/StockAdjustmentDialog";
 import WarehouseLabelPreview from "@/components/warehouse/WarehouseLabelPreview";
+import BatchVariantLabelDialog from "@/components/warehouse/BatchVariantLabelDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useInventoryDefaults } from "@/hooks/useAppSettings";
@@ -91,6 +93,8 @@ export default function StockLookup() {
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [variantLabelDialogOpen, setVariantLabelDialogOpen] = useState(false);
   const [selectedVariantForLabel, setSelectedVariantForLabel] = useState<Variant | null>(null);
+  const [selectedVariantsForLabel, setSelectedVariantsForLabel] = useState<Set<string>>(new Set());
+  const [batchLabelDialogOpen, setBatchLabelDialogOpen] = useState(false);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<ProductLocation | null>(null);
   const [barcodeMode, setBarcodeMode] = useState(false);
@@ -882,6 +886,7 @@ export default function StockLookup() {
                   if (!isExpanded) {
                     setVariantSearch("");
                     setExpandedVariants(new Set());
+                    setSelectedVariantsForLabel(new Set());
                   }
                 }}
                 data-testid={`card-product-${product.id}`}
@@ -1120,23 +1125,35 @@ export default function StockLookup() {
                               size="sm"
                               className="text-xs h-8 sm:h-7 px-2 sm:px-3"
                               onClick={() => {
-                                selectedProductData.variants.forEach(variant => {
-                                  const variantLabelProduct = {
-                                    id: variant.id,
-                                    name: `${selectedProductData.name} - ${variant.name}`,
-                                    vietnameseName: selectedProductData.vietnameseName ? `${selectedProductData.vietnameseName} - ${variant.name}` : null,
-                                    sku: variant.barcode || selectedProductData.sku,
-                                    barcode: variant.barcode,
-                                    priceEur: variant.priceEur ?? selectedProductData.priceEur,
-                                    priceCzk: variant.priceCzk ?? selectedProductData.priceCzk,
-                                  };
-                                  setSelectedVariantForLabel(variantLabelProduct as any);
-                                });
-                                setVariantLabelDialogOpen(true);
+                                const allVariantIds = selectedProductData.variants.map(v => v.id);
+                                const allSelected = allVariantIds.every(id => selectedVariantsForLabel.has(id));
+                                if (allSelected) {
+                                  setSelectedVariantsForLabel(new Set());
+                                } else {
+                                  setSelectedVariantsForLabel(new Set(allVariantIds));
+                                }
                               }}
                             >
+                              <Checkbox 
+                                checked={selectedProductData.variants.length > 0 && selectedProductData.variants.every(v => selectedVariantsForLabel.has(v.id))}
+                                className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1 pointer-events-none"
+                              />
+                              <span className="hidden sm:inline">
+                                {selectedProductData.variants.length > 0 && selectedProductData.variants.every(v => selectedVariantsForLabel.has(v.id)) 
+                                  ? t('common:deselectAll') 
+                                  : t('common:selectAll')}
+                              </span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-8 sm:h-7 px-2 sm:px-3"
+                              disabled={selectedProductData.variants.filter(v => selectedVariantsForLabel.has(v.id)).length === 0}
+                              onClick={() => setBatchLabelDialogOpen(true)}
+                            >
                               <Printer className="h-4 w-4 sm:h-3 sm:w-3 sm:mr-1" />
-                              <span className="hidden sm:inline">{t('generateAllLabels')}</span>
+                              <span className="hidden sm:inline">{t('printSelected')} ({selectedProductData.variants.filter(v => selectedVariantsForLabel.has(v.id)).length})</span>
+                              <span className="sm:hidden">({selectedProductData.variants.filter(v => selectedVariantsForLabel.has(v.id)).length})</span>
                             </Button>
                           </div>
                           
@@ -1199,6 +1216,23 @@ export default function StockLookup() {
                                       toggleExpand();
                                     }}
                                   >
+                                    {/* Batch selection checkbox */}
+                                    <Checkbox
+                                      checked={selectedVariantsForLabel.has(variant.id)}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedVariantsForLabel(prev => {
+                                          const next = new Set(prev);
+                                          if (checked) {
+                                            next.add(variant.id);
+                                          } else {
+                                            next.delete(variant.id);
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="h-6 w-6 flex-shrink-0"
+                                    />
                                     {/* Expand/Collapse toggle */}
                                     <Button
                                       variant="ghost"
@@ -1854,6 +1888,30 @@ export default function StockLookup() {
             open={variantLabelDialogOpen}
             onOpenChange={setVariantLabelDialogOpen}
             product={selectedVariantForLabel}
+          />
+          
+          {/* Batch Variant Label Dialog */}
+          <BatchVariantLabelDialog
+            open={batchLabelDialogOpen}
+            onOpenChange={setBatchLabelDialogOpen}
+            productName={selectedProductData.name}
+            productVietnameseName={selectedProductData.vietnameseName}
+            variants={
+              (selectedProductData.variants || [])
+                .filter(v => selectedVariantsForLabel.has(v.id))
+                .map(variant => ({
+                  id: variant.id,
+                  name: `${selectedProductData.name} - ${variant.name}`,
+                  vietnameseName: selectedProductData.vietnameseName 
+                    ? `${selectedProductData.vietnameseName} - ${variant.name}` 
+                    : `${selectedProductData.name} - ${variant.name}`,
+                  sku: variant.barcode || selectedProductData.sku,
+                  barcode: variant.barcode,
+                  priceEur: variant.priceEur ?? selectedProductData.priceEur,
+                  priceCzk: variant.priceCzk ?? selectedProductData.priceCzk,
+                  imageUrl: variant.imageUrl,
+                }))
+            }
           />
           
           {/* Product Information Dialog */}

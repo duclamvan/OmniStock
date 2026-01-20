@@ -808,6 +808,10 @@ const inventory = {
   printLabels: 'In nhãn',
   labelSizeSmall: 'Nhỏ (100×30mm)',
   labelSizeLarge: 'Lớn (148×105mm)',
+  batchPrintVariantLabels: 'In hàng loạt nhãn biến thể',
+  printedVariantLabels: 'Đã in {{count}} nhãn biến thể',
+  smallLabel: 'Nhỏ',
+  largeLabel: 'Lớn',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Xem xét và duyệt yêu cầu điều chỉnh tồn kho từ nhân viên kho',

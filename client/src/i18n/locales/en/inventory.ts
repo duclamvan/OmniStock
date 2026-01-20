@@ -716,6 +716,10 @@ const inventory = {
   printLabels: 'Print Labels',
   labelSizeSmall: 'Small (100×30mm)',
   labelSizeLarge: 'Large (148×105mm)',
+  batchPrintVariantLabels: 'Batch Print Variant Labels',
+  printedVariantLabels: '{{count}} variant labels printed',
+  smallLabel: 'Small',
+  largeLabel: 'Large',
   
   // Stock Adjustment Approvals
   reviewApproveRequests: 'Review and approve inventory adjustment requests from warehouse staff',
