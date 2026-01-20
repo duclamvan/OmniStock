@@ -1,8 +1,8 @@
 /**
  * Name Normalizer Utility
  * Handles Vietnamese and Czech name normalization:
- * - Removes diacritics (Vietnamese: Nguyễn → NGUYEN, Czech: Potůčky → POTUCKY)
- * - Converts to uppercase
+ * - Removes diacritics (Vietnamese: Nguyễn → Nguyen, Czech: Potůčky → Potucky)
+ * - Converts to Title Case (initial capital letter)
  * - Properly formats names (trims, collapses spaces)
  */
 
@@ -68,15 +68,22 @@ export function removeDiacritics(text: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+export function toTitleCase(text: string): string {
+  if (!text) return '';
+  
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export function normalizePersonName(name: string): string {
   if (!name) return '';
   
   const withoutDiacritics = removeDiacritics(name);
   
-  return withoutDiacritics
-    .toUpperCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+  return toTitleCase(withoutDiacritics.trim().replace(/\s+/g, ' '));
 }
 
 export function normalizeFirstName(firstName: string): string {
@@ -96,10 +103,7 @@ export function normalizeStreetName(street: string): string {
   
   const withoutDiacritics = removeDiacritics(street);
   
-  return withoutDiacritics
-    .toUpperCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+  return toTitleCase(withoutDiacritics.trim().replace(/\s+/g, ' '));
 }
 
 export function normalizeCityName(city: string): string {
@@ -107,10 +111,7 @@ export function normalizeCityName(city: string): string {
   
   const withoutDiacritics = removeDiacritics(city);
   
-  return withoutDiacritics
-    .toUpperCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+  return toTitleCase(withoutDiacritics.trim().replace(/\s+/g, ' '));
 }
 
 export function normalizeAddress(address: {
@@ -125,8 +126,8 @@ export function normalizeAddress(address: {
     street: address.street ? normalizeStreetName(address.street) : address.street,
     streetNumber: address.streetNumber?.toUpperCase().trim(),
     city: address.city ? normalizeCityName(address.city) : address.city,
-    state: address.state ? removeDiacritics(address.state).toUpperCase().trim() : address.state,
+    state: address.state ? toTitleCase(removeDiacritics(address.state).trim()) : address.state,
     zipCode: address.zipCode?.replace(/\s+/g, ' ').trim(),
-    country: address.country ? removeDiacritics(address.country).toUpperCase().trim() : address.country,
+    country: address.country ? toTitleCase(removeDiacritics(address.country).trim()) : address.country,
   };
 }

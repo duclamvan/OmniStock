@@ -6,7 +6,7 @@
  * - Detects and extracts city from street for small villages
  */
 
-import { removeDiacritics, normalizeCityName, normalizeStreetName } from './nameNormalizer';
+import { removeDiacritics, normalizeCityName, normalizeStreetName, toTitleCase } from './nameNormalizer';
 
 export interface ParsedAddress {
   street: string;
@@ -127,9 +127,9 @@ export function parseAddressLine(input: string): ParsedAddress {
     street: normalizeStreetName(street),
     streetNumber: streetNumber.toUpperCase().trim(),
     city: normalizeCityName(city),
-    state: state ? removeDiacritics(state).toUpperCase().trim() : '',
+    state: state ? toTitleCase(removeDiacritics(state).trim()) : '',
     zipCode: zipCode.trim(),
-    country: country ? removeDiacritics(country).toUpperCase().trim() : '',
+    country: country ? toTitleCase(removeDiacritics(country).trim()) : '',
     originalInput,
   };
 }
@@ -191,9 +191,9 @@ export function mergeAddressData(
     street: parsed.street || normalizeStreetName(geocoded.street || ''),
     streetNumber: parsed.streetNumber || (geocoded.streetNumber || '').toUpperCase().trim(),
     city: parsed.city || normalizeCityName(geocoded.city || ''),
-    state: parsed.state || (geocoded.state ? removeDiacritics(geocoded.state).toUpperCase().trim() : ''),
+    state: parsed.state || (geocoded.state ? toTitleCase(removeDiacritics(geocoded.state).trim()) : ''),
     zipCode: parsed.zipCode || (geocoded.zipCode || '').trim(),
-    country: parsed.country || (geocoded.country ? removeDiacritics(geocoded.country).toUpperCase().trim() : ''),
+    country: parsed.country || (geocoded.country ? toTitleCase(removeDiacritics(geocoded.country).trim()) : ''),
     originalInput: parsed.originalInput,
   };
 }
