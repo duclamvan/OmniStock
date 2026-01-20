@@ -121,6 +121,13 @@ const customers = {
   // Shipping & Billing Addresses
   shippingAddresses: 'Shipping Addresses',
   billingAddresses: 'Billing Addresses',
+  shippingFirstName: 'Shipping First Name',
+  shippingLastName: 'Shipping Last Name',
+  shippingCompany: 'Shipping Company',
+  shippingStreet: 'Shipping Street',
+  shippingStreetNumber: 'Shipping Street Number',
+  shippingCity: 'Shipping City',
+  shippingZipCode: 'Shipping Zip Code',
   noShippingAddresses: 'No shipping addresses added yet',
   shippingAddressesWillAppear: 'Shipping addresses will appear here when added',
   noBillingAddresses: 'No billing addresses added yet',

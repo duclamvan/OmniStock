@@ -290,6 +290,13 @@ const customers = {
   // Shipping & Billing Addresses
   shippingAddresses: 'Địa chỉ giao hàng',
   billingAddresses: 'Địa chỉ thanh toán',
+  shippingFirstName: 'Tên (giao hàng)',
+  shippingLastName: 'Họ (giao hàng)',
+  shippingCompany: 'Công ty (giao hàng)',
+  shippingStreet: 'Đường (giao hàng)',
+  shippingStreetNumber: 'Số nhà (giao hàng)',
+  shippingCity: 'Thành phố (giao hàng)',
+  shippingZipCode: 'Mã bưu điện (giao hàng)',
   noShippingAddresses: 'Chưa có địa chỉ giao hàng',
   shippingAddressesWillAppear: 'Địa chỉ giao hàng sẽ xuất hiện khi được thêm',
   noBillingAddresses: 'Chưa có địa chỉ thanh toán',
