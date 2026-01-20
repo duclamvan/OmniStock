@@ -327,6 +327,17 @@ export const FINANCIAL_FIELDS = [
   'costHistory', 'insuranceValue', 'exchangeRate', 'totalImportPrice'
 ];
 
+// Valid order statuses for sales/revenue calculations
+// Excludes 'pending' orders as they haven't been confirmed yet
+export const VALID_SALES_STATUSES = [
+  'to_fulfill',
+  'fulfilled', 
+  'shipped',
+  'delivered',
+  'completed',
+  'ready_to_ship'
+];
+
 // Deeply recursive middleware to filter financial data from responses for warehouse operators
 function filterFinancialData(data: any, userRole: string): any {
   if (userRole === 'administrator') {
@@ -1668,7 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Total Orders Today: Orders with status "shipped" that were marked as shipped TODAY
       const todayShippedOrders = allOrders.filter(order => {
-        if (order.orderStatus !== 'shipped') return false;
+        if (!VALID_SALES_STATUSES.includes(order.orderStatus)) return false;
         // Check if the order was updated today (marked as shipped today)
         const updatedDate = new Date(order.updatedAt || order.createdAt);
         return updatedDate >= today;
@@ -1676,12 +1687,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const thisMonthOrders = allOrders.filter(order => {
         const orderDate = new Date(order.createdAt);
-        return orderDate >= thisMonthStart && order.orderStatus === 'shipped';
+        return orderDate >= thisMonthStart && VALID_SALES_STATUSES.includes(order.orderStatus);
       });
 
       const lastMonthOrders = allOrders.filter(order => {
         const orderDate = new Date(order.createdAt);
-        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && order.orderStatus === 'shipped';
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && VALID_SALES_STATUSES.includes(order.orderStatus);
       });
 
       // Calculate revenue in EUR (Revenue = Grand Total - Tax - Shipping Cost)
@@ -1700,7 +1711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const calculateProfitInEur = (orders: any[]) => {
         return orders.reduce((sum, order) => {
           // Only count shipped and paid orders for profit
-          if (order.orderStatus !== 'shipped' || order.paymentStatus !== 'paid') {
+          if (!VALID_SALES_STATUSES.includes(order.orderStatus) || order.paymentStatus !== 'paid') {
             return sum;
           }
           const grandTotal = parseFloat(order.grandTotal || '0');
@@ -1769,7 +1780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const monthOrders = allOrders.filter(order => {
           const orderDate = new Date(order.createdAt);
-          return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
+          return orderDate >= monthStart && orderDate <= monthEnd && VALID_SALES_STATUSES.includes(order.orderStatus) && order.paymentStatus === 'paid';
         });
 
         // Filter expenses for this month (only paid expenses count)
@@ -2002,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all orders
       const allOrders = await storage.getOrders();
-      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid' && VALID_SALES_STATUSES.includes(o.orderStatus));
 
       // Total revenue (converted to EUR)
       let totalRevenueEur = 0;
@@ -2046,7 +2057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Cash conversion by currency (this month vs last month)
       const thisMonthOrders = allOrders.filter(o => {
         const orderDate = new Date(o.createdAt);
-        return orderDate >= thisMonthStart && o.paymentStatus === 'paid';
+        return orderDate >= thisMonthStart && o.paymentStatus === 'paid' && VALID_SALES_STATUSES.includes(o.orderStatus);
       });
 
       const lastMonthOrders = allOrders.filter(o => {
@@ -2772,7 +2783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allOrders = await storage.getOrders();
       const thisMonthOrders = allOrders.filter(o => {
         const orderDate = new Date(o.createdAt);
-        return orderDate >= thisMonthStart && o.paymentStatus === 'paid';
+        return orderDate >= thisMonthStart && o.paymentStatus === 'paid' && VALID_SALES_STATUSES.includes(o.orderStatus);
       });
 
       const customerRevenue = new Map<string, { name: string; revenue: number }>();
@@ -3190,7 +3201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       const allOrders = await storage.getOrders();
-      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid' && VALID_SALES_STATUSES.includes(o.orderStatus));
 
       // Daily sales (last 7 days)
       const dailySales: { date: string; revenue: number; orders: number; profit: number }[] = [];
@@ -3385,7 +3396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allProducts = await storage.getProducts();
       const activeProducts = allProducts.filter(p => p.isActive !== false);
       const allOrders = await storage.getOrders();
-      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid');
+      const paidOrders = allOrders.filter(o => o.paymentStatus === 'paid' && VALID_SALES_STATUSES.includes(o.orderStatus));
 
       // Calculate total inventory value
       let totalInventoryValue = 0;

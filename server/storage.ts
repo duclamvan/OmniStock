@@ -205,6 +205,17 @@ import * as badgeService from './services/badgeService';
 // Re-export db for backward compatibility with methods still using global db
 const db = database;
 
+// Valid order statuses for sales/revenue calculations
+// Excludes 'pending' orders as they haven't been confirmed yet
+export const VALID_SALES_STATUSES = [
+  'to_fulfill',
+  'fulfilled', 
+  'shipped',
+  'delivered',
+  'completed',
+  'ready_to_ship'
+];
+
 // SQL normalization helper - creates REPLACE chain for Vietnamese and Czech diacritics
 // This allows database-level filtering instead of loading entire tables
 // IMPORTANT: Apply LOWER() first, then REPLACE operations on the lowercased value
@@ -3697,7 +3708,7 @@ export class DatabaseStorage implements IStorage {
         .select({
           customer: customers,
           orderCount: sql<number>`COALESCE(COUNT(DISTINCT ${orders.id}), 0)::int`,
-          totalSpent: sql<string>`COALESCE(SUM(${orders.grandTotal}), 0)::text`,
+          totalSpent: sql<string>`COALESCE(SUM(CASE WHEN ${orders.orderStatus} IN ('to_fulfill', 'fulfilled', 'shipped', 'delivered', 'completed', 'ready_to_ship') THEN ${orders.grandTotal} ELSE 0 END), 0)::text`,
           lastOrderDate: sql<Date | null>`MAX(${orders.createdAt})`,
         })
         .from(customers)

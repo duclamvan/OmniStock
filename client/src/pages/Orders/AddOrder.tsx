@@ -6341,10 +6341,17 @@ export default function AddOrder() {
                   onClick={() => {
                     if (newCustomer.name) {
                       // Set the new customer without an ID - it will be created on save
+                      // Map field names to what the mutation expects (shippingTel, shippingStreet, etc.)
                       setSelectedCustomer({
                         ...newCustomer,
+                        // Map newCustomer fields to expected field names for the mutation
+                        shippingTel: newCustomer.phone,
+                        shippingStreet: newCustomer.street,
+                        shippingCity: newCustomer.city,
+                        shippingZipCode: newCustomer.zipCode,
+                        shippingCountry: newCustomer.country,
                         id: undefined, // Explicitly set to undefined to trigger creation
-                        needsSaving: true // Mark as needing to be saved
+                        // Don't set needsSaving - this allows the full customer creation path to be used
                       });
                       
                       // Set shipping address from the Customer Details form
