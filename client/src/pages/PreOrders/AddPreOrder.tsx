@@ -537,7 +537,7 @@ export default function AddPreOrder() {
                             data-testid={`option-customer-${customer.id}`}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-xl">{getCountryFlag(customer.country || '')}</span>
+                              <span className="text-xl">{getCountryFlag(customer.shippingCountry || '')}</span>
                               <div className="flex flex-col">
                                 <span className="font-medium">{customer.name}</span>
                                 {customer.billingEmail && (

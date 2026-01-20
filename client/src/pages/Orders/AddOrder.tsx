@@ -1846,7 +1846,7 @@ export default function AddOrder() {
     // Calculate shipping cost (for weight-based rates or country-specific rates)
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
-      selectedCustomer.country,
+      selectedCustomer.shippingCountry,
       watchedCurrency,
       { weight: orderWeight, pplRates, paymentMethod }
     );
@@ -1938,7 +1938,7 @@ export default function AddOrder() {
     if (isEditMode) return;
     
     // Get the customer's country (from customer record or shipping address)
-    const customerCountry = selectedShippingAddress?.country || selectedCustomer.country;
+    const customerCountry = selectedShippingAddress?.country || selectedCustomer.shippingCountry;
     if (!customerCountry) return;
     
     // Convert country name to ISO code
@@ -2029,7 +2029,7 @@ export default function AddOrder() {
           console.log('Creating new customer from quick form:', selectedCustomer);
           const customerData: any = {
             name: selectedCustomer.name,
-            phone: selectedCustomer.phone || undefined,
+            phone: selectedCustomer.shippingTel || undefined,
             email: selectedCustomer.email || undefined,
             type: selectedCustomer.type || 'regular',
           };
@@ -2098,7 +2098,7 @@ export default function AddOrder() {
           
           const creationPromise = (async (): Promise<string | null> => {
             // Combine street and streetNumber for legacy address field
-            const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
+            const fullAddress = [selectedCustomer.shippingStreet, selectedCustomer.streetNumber]
               .filter(Boolean)
               .join(' ');
             
@@ -2109,12 +2109,12 @@ export default function AddOrder() {
               facebookNumericId: selectedCustomer.facebookNumericId || undefined,
               profilePictureUrl: selectedCustomer.profilePictureUrl || undefined,
               email: selectedCustomer.email || undefined,
-              phone: selectedCustomer.phone || undefined,
+              phone: selectedCustomer.shippingTel || undefined,
               address: fullAddress || undefined,
-              city: selectedCustomer.city || undefined,
+              city: selectedCustomer.shippingCity || undefined,
               state: selectedCustomer.state || undefined,
-              zipCode: selectedCustomer.zipCode || undefined,
-              country: selectedCustomer.country || undefined,
+              zipCode: selectedCustomer.shippingZipCode || undefined,
+              country: selectedCustomer.shippingCountry || undefined,
               company: selectedCustomer.company || undefined,
               type: selectedCustomer.type || 'regular',
             };
@@ -2128,19 +2128,19 @@ export default function AddOrder() {
             createdCustomerIdRef.current = customerResponse?.id;
             
             // Auto-create shipping address from customer data if address fields are provided
-            if (selectedCustomer.street || selectedCustomer.city || selectedCustomer.zipCode) {
+            if (selectedCustomer.shippingStreet || selectedCustomer.shippingCity || selectedCustomer.shippingZipCode) {
               console.log('Auto-creating shipping address for new customer...');
               const addressData = {
                 customerId: customerResponse?.id,
                 firstName: selectedCustomer.firstName || undefined,
                 lastName: selectedCustomer.lastName || undefined,
                 company: selectedCustomer.company || undefined,
-                street: selectedCustomer.street || '',
+                street: selectedCustomer.shippingStreet || '',
                 streetNumber: selectedCustomer.streetNumber || undefined,
-                city: selectedCustomer.city || '',
-                zipCode: selectedCustomer.zipCode || '',
-                country: selectedCustomer.country || '',
-                tel: selectedCustomer.phone || undefined,
+                city: selectedCustomer.shippingCity || '',
+                zipCode: selectedCustomer.shippingZipCode || '',
+                country: selectedCustomer.shippingCountry || '',
+                tel: selectedCustomer.shippingTel || undefined,
                 email: selectedCustomer.email || undefined,
                 pickupPoint: selectedCustomer.pickupPoint || undefined,
                 label: 'Default Address',
@@ -2264,7 +2264,7 @@ export default function AddOrder() {
         console.log('Creating new customer from quick form:', selectedCustomer);
         const customerData: any = {
           name: selectedCustomer.name,
-          phone: selectedCustomer.phone || undefined,
+          phone: selectedCustomer.shippingTel || undefined,
           email: selectedCustomer.email || undefined,
           type: selectedCustomer.type || 'regular',
         };
@@ -2299,7 +2299,7 @@ export default function AddOrder() {
         }
       } else if (selectedCustomer && !selectedCustomer.id) {
         // Handle regular new customer creation
-        const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
+        const fullAddress = [selectedCustomer.shippingStreet, selectedCustomer.streetNumber]
           .filter(Boolean)
           .join(' ');
         
@@ -2309,12 +2309,12 @@ export default function AddOrder() {
           facebookUrl: selectedCustomer.facebookUrl || undefined,
           profilePictureUrl: selectedCustomer.profilePictureUrl || undefined,
           email: selectedCustomer.email || undefined,
-          phone: selectedCustomer.phone || undefined,
+          phone: selectedCustomer.shippingTel || undefined,
           address: fullAddress || undefined,
-          city: selectedCustomer.city || undefined,
+          city: selectedCustomer.shippingCity || undefined,
           state: selectedCustomer.state || undefined,
-          zipCode: selectedCustomer.zipCode || undefined,
-          country: selectedCustomer.country || undefined,
+          zipCode: selectedCustomer.shippingZipCode || undefined,
+          country: selectedCustomer.shippingCountry || undefined,
           company: selectedCustomer.company || undefined,
           type: selectedCustomer.type || 'regular',
         };
@@ -2413,7 +2413,7 @@ export default function AddOrder() {
     // Get shipping country code from customer with comprehensive mapping
     let shippingCountry = 'CZ'; // Fallback if no customer country provided
     if (selectedCustomer?.country) {
-      const countryInput = selectedCustomer.country.trim();
+      const countryInput = selectedCustomer.shippingCountry.trim();
       const country = countryInput.toLowerCase();
       
       // Comprehensive country name to ISO code mapping
@@ -2499,7 +2499,7 @@ export default function AddOrder() {
         }
       }
       
-      console.log(`Packing optimization: Mapped customer country "${selectedCustomer.country}" to ISO code "${shippingCountry}"`);
+      console.log(`Packing optimization: Mapped customer country "${selectedCustomer.shippingCountry}" to ISO code "${shippingCountry}"`);
     } else {
       console.log(`Packing optimization: No customer country set, using default "${shippingCountry}"`);
     }
@@ -5023,7 +5023,7 @@ export default function AddOrder() {
                           form.setValue('paymentStatus', 'pay_later');
                         }
                         const customerCurrency = customer.preferredCurrency || 
-                          (customer.country ? getCurrencyByCountry(customer.country) : null);
+                          (customer.shippingCountry ? getCurrencyByCountry(customer.shippingCountry) : null);
                         if (customerCurrency) {
                           form.setValue('currency', customerCurrency);
                         }
@@ -5046,9 +5046,9 @@ export default function AddOrder() {
                               customer.name?.charAt(0)?.toUpperCase() || '?'
                             )}
                           </div>
-                          {customer.country && (
+                          {customer.shippingCountry && (
                             <span className="absolute -bottom-0.5 -right-0.5 text-sm bg-white dark:bg-slate-800 rounded-full p-0.5 shadow-sm">
-                              {getCountryFlag(customer.country)}
+                              {getCountryFlag(customer.shippingCountry)}
                             </span>
                           )}
                         </div>
@@ -5060,9 +5060,9 @@ export default function AddOrder() {
                             <span className="font-semibold text-sm text-slate-900 dark:text-white truncate max-w-[180px]">
                               {customer.name}
                             </span>
-                            {(customer.facebookId || customer.facebookName || customer.phone) && (
+                            {(customer.facebookId || customer.facebookName || customer.shippingTel) && (
                               <span className="text-xs text-slate-400 font-normal">
-                                ({customer.facebookId || customer.facebookName || (customer.phone?.startsWith('+') ? customer.phone : '+' + customer.phone)})
+                                ({customer.facebookId || customer.facebookName || (customer.shippingTel?.startsWith('+') ? customer.shippingTel : '+' + customer.shippingTel)})
                               </span>
                             )}
                             {customer.hasPayLaterBadge && (
@@ -5100,11 +5100,11 @@ export default function AddOrder() {
                                 <span className="truncate max-w-[120px]">{customer.company}</span>
                               </span>
                             )}
-                            {(customer.city || customer.country) && (
+                            {(customer.shippingCity || customer.shippingCountry) && (
                               <span className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3 text-slate-400" />
                                 <span className="truncate max-w-[150px]">
-                                  {[customer.city, customer.country].filter(Boolean).join(', ')}
+                                  {[customer.shippingCity, customer.shippingCountry].filter(Boolean).join(', ')}
                                 </span>
                               </span>
                             )}
@@ -5112,10 +5112,10 @@ export default function AddOrder() {
                           
                           {/* Row 3: Contact info */}
                           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                            {customer.phone && (
+                            {customer.shippingTel && (
                               <span className="flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
-                                {customer.phone}
+                                {customer.shippingTel}
                               </span>
                             )}
                             {customer.email && (
@@ -5257,9 +5257,9 @@ export default function AddOrder() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-0.5 sm:mb-1">
                             {/* Country Flag */}
-                            {selectedCustomer.country && (
+                            {selectedCustomer.shippingCountry && (
                               <span className="text-base sm:text-xl">
-                                {getCountryFlag(selectedCustomer.country)}
+                                {getCountryFlag(selectedCustomer.shippingCountry)}
                               </span>
                             )}
                             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
@@ -5276,7 +5276,7 @@ export default function AddOrder() {
                                 type: selectedCustomer.type,
                                 totalSpent: selectedCustomer.totalSpent,
                                 customerRank: selectedCustomer.customerRank,
-                                country: selectedCustomer.country,
+                                country: selectedCustomer.shippingCountry,
                                 totalOrders: selectedCustomer.totalOrders,
                                 firstOrderDate: selectedCustomer.firstOrderDate,
                                 lastOrderDate: selectedCustomer.lastOrderDate,
@@ -5319,10 +5319,10 @@ export default function AddOrder() {
                       {/* Contact & Location Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 sm:gap-y-2 mt-2 sm:mt-3">
                         {/* Contact Info */}
-                        {selectedCustomer.phone && (
+                        {selectedCustomer.shippingTel && (
                           <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                             <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                            <span className="truncate">{selectedCustomer.phone}</span>
+                            <span className="truncate">{selectedCustomer.shippingTel}</span>
                             {selectedCustomer.socialMediaApp && (
                               <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                                 {selectedCustomer.socialMediaApp}
@@ -5332,11 +5332,11 @@ export default function AddOrder() {
                         )}
                         
                         {/* Location */}
-                        {(selectedCustomer.city || selectedCustomer.country) && (
+                        {(selectedCustomer.shippingCity || selectedCustomer.shippingCountry) && (
                           <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                             <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400 shrink-0" />
                             <span className="truncate">
-                              {[selectedCustomer.city, selectedCustomer.country].filter(Boolean).join(', ')}
+                              {[selectedCustomer.shippingCity, selectedCustomer.shippingCountry].filter(Boolean).join(', ')}
                             </span>
                           </div>
                         )}

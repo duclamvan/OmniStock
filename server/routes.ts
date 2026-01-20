@@ -3974,7 +3974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           score: Math.max(
             calculateFuzzyScore(customer.name || '', normalizedQuery),
             calculateFuzzyScore(customer.email || '', normalizedQuery),
-            calculateFuzzyScore(customer.phone || '', normalizedQuery)
+            calculateFuzzyScore(customer.shippingTel || '', normalizedQuery)
           )
         }))
         .filter(({ score }) => score > 0)
@@ -4174,8 +4174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: customer.name || 'Unknown',
         email: customer.email,
         company: customer.company,
-        city: customer.city,
-        country: customer.country,
+        city: customer.shippingCity,
+        country: customer.shippingCountry,
         preferredCurrency: customer.preferredCurrency,
         totalOrders: customer.totalOrders || 0,
         lastOrderText: '',
@@ -5537,9 +5537,9 @@ Important:
             name: name,
             contactPerson: item.contactPerson || null,
             email: item.email || null,
-            phone: item.phone || null,
-            address: item.address || null,
-            country: item.country || null,
+            shippingTel: item.phone || null,
+            shippingStreet: item.address || null,
+            shippingCountry: item.country || null,
             website: item.website || null,
             supplierLink: item.supplierLink || null,
             notes: item.notes || null,
@@ -10435,10 +10435,10 @@ Important:
       const customer = await storage.createCustomer(data);
 
       // Create shipping address from contact info if we have enough data
-      const shippingStreet = req.body.shippingStreet || data.address;
-      const shippingCity = req.body.shippingCity || data.city;
-      const shippingZipCode = req.body.shippingZipCode || data.zipCode;
-      const shippingCountry = req.body.shippingCountry || data.country;
+      const shippingStreet = req.body.shippingStreet || data.shippingStreet;
+      const shippingCity = req.body.shippingCity || data.shippingCity;
+      const shippingZipCode = req.body.shippingZipCode || data.shippingZipCode;
+      const shippingCountry = req.body.shippingCountry || data.shippingCountry;
       
       if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
         try {
@@ -10452,7 +10452,7 @@ Important:
             lastName: lastName || firstName,
             company: req.body.shippingCompany || null,
             email: req.body.shippingEmail || data.email || null,
-            tel: req.body.shippingPhone || data.phone || null,
+            tel: req.body.shippingPhone || data.shippingTel || null,
             street: shippingStreet,
             streetNumber: req.body.shippingStreetNumber || null,
             city: shippingCity,
@@ -10564,10 +10564,10 @@ Important:
           importedCustomers.push(customer);
           
           // Create shipping address from contact info if we have enough data
-          const shippingStreet = row['Shipping Street'] || customerData.address;
-          const shippingCity = row['Shipping City'] || customerData.city;
-          const shippingZipCode = row['Shipping Zip Code'] || customerData.zipCode;
-          const shippingCountry = row['Shipping Country'] || customerData.country;
+          const shippingStreet = row['Shipping Street'] || customerData.shippingStreet;
+          const shippingCity = row['Shipping City'] || customerData.shippingCity;
+          const shippingZipCode = row['Shipping Zip Code'] || customerData.shippingZipCode;
+          const shippingCountry = row['Shipping Country'] || customerData.shippingCountry;
           
           if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
             try {
@@ -10582,7 +10582,7 @@ Important:
                 lastName: lastName || firstName,
                 company: row['Shipping Company'] || null,
                 email: row['Shipping Email'] || customerData.email || null,
-                tel: row['Shipping Phone'] || customerData.phone || null,
+                tel: row['Shipping Phone'] || customerData.shippingTel || null,
                 street: shippingStreet,
                 streetNumber: row['Shipping Street Number'] || null,
                 city: shippingCity,
@@ -10646,12 +10646,12 @@ Important:
           const customerData: any = {
             name: name,
             email: item.email || null,
-            phone: item.phone || null,
+            shippingTel: item.phone || null,
             type: item.type || 'regular',
-            address: item.address || item.street || null,
-            city: item.city || null,
-            zipCode: item.zipCode || item.postalCode || null,
-            country: item.country || null,
+            shippingStreet: item.address || item.street || null,
+            shippingCity: item.city || null,
+            shippingZipCode: item.zipCode || item.postalCode || null,
+            shippingCountry: item.country || null,
             facebookId: item.facebookId || null,
             facebookName: item.facebookName || null,
             facebookUrl: item.facebookUrl || null,
@@ -10686,10 +10686,10 @@ Important:
             customer = created;
             
             // Create shipping address from contact info if we have enough data (only for new customers)
-            const shippingStreet = item.shippingStreet || customerData.address;
-            const shippingCity = item.shippingCity || customerData.city;
-            const shippingZipCode = item.shippingZipCode || customerData.zipCode;
-            const shippingCountry = item.shippingCountry || customerData.country;
+            const shippingStreet = item.shippingStreet || customerData.shippingStreet;
+            const shippingCity = item.shippingCity || customerData.shippingCity;
+            const shippingZipCode = item.shippingZipCode || customerData.shippingZipCode;
+            const shippingCountry = item.shippingCountry || customerData.shippingCountry;
             
             if (shippingStreet && shippingCity && shippingZipCode && shippingCountry) {
               try {
@@ -10703,7 +10703,7 @@ Important:
                   lastName: lastName || firstName,
                   company: item.shippingCompany || null,
                   email: item.shippingEmail || customerData.email || null,
-                  tel: item.shippingPhone || customerData.phone || null,
+                  tel: item.shippingPhone || customerData.shippingTel || null,
                   street: shippingStreet,
                   streetNumber: item.shippingStreetNumber || null,
                   city: shippingCity,

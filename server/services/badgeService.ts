@@ -94,7 +94,7 @@ export async function calculateCustomerBadges(
         scope: 'customer',
         metadata: {
           rank: 10,
-          country: customer.country || 'Unknown',
+          country: customer.shippingCountry || 'Unknown',
         },
       });
     } else if (customer.customerRank === 'TOP50') {
@@ -103,7 +103,7 @@ export async function calculateCustomerBadges(
         scope: 'customer',
         metadata: {
           rank: 50,
-          country: customer.country || 'Unknown',
+          country: customer.shippingCountry || 'Unknown',
         },
       });
     } else if (customer.customerRank === 'TOP100') {
@@ -112,7 +112,7 @@ export async function calculateCustomerBadges(
         scope: 'customer',
         metadata: {
           rank: 100,
-          country: customer.country || 'Unknown',
+          country: customer.shippingCountry || 'Unknown',
         },
       });
     }

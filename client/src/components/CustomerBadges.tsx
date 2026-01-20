@@ -9,7 +9,7 @@ interface CustomerData {
   type?: string;
   totalSpent?: string | number;
   customerRank?: string;
-  country?: string;
+  shippingCountry?: string;
   totalOrders?: number;
   firstOrderDate?: string | Date | null;
   lastOrderDate?: string | Date | null;
@@ -113,11 +113,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer" data-testid="badge-top10">
               <Trophy className="h-3 w-3 mr-1" />
-              TOP 10{customer.country ? ` in ${customer.country}` : ''}
+              TOP 10{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 10 customer by revenue{customer.country ? ` in ${customer.country}` : ''}</p>
+            <p className="text-xs">Top 10 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -127,11 +127,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 text-xs cursor-pointer" data-testid="badge-top50">
               <Award className="h-3 w-3 mr-1" />
-              TOP 50{customer.country ? ` in ${customer.country}` : ''}
+              TOP 50{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 50 customer by revenue{customer.country ? ` in ${customer.country}` : ''}</p>
+            <p className="text-xs">Top 50 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -141,11 +141,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs cursor-pointer" data-testid="badge-top100">
               <Star className="h-3 w-3 mr-1" />
-              TOP 100{customer.country ? ` in ${customer.country}` : ''}
+              TOP 100{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 100 customer by revenue{customer.country ? ` in ${customer.country}` : ''}</p>
+            <p className="text-xs">Top 100 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}

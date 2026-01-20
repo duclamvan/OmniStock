@@ -443,11 +443,6 @@ export const customers = pgTable("customers", {
   facebookId: varchar("facebook_id"),
   facebookNumericId: varchar("facebook_numeric_id"), // Numeric ID for profile picture URL
   email: varchar("email"),
-  phone: varchar("phone"),
-  address: text("address"),
-  city: varchar("city"),
-  zipCode: varchar("zip_code"),
-  country: varchar("country"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -463,6 +458,18 @@ export const customers = pgTable("customers", {
   lastContactDate: timestamp("last_contact_date"),
   preferredLanguage: varchar("preferred_language").default("cs"),
   preferredCurrency: varchar("preferred_currency").default("EUR"), // CZK or EUR for B2B
+
+  // Shipping address fields (matching billing structure)
+  shippingFirstName: varchar("shipping_first_name"),
+  shippingLastName: varchar("shipping_last_name"),
+  shippingCompany: varchar("shipping_company"),
+  shippingEmail: varchar("shipping_email"),
+  shippingTel: varchar("shipping_tel"),
+  shippingStreet: text("shipping_street"),
+  shippingStreetNumber: varchar("shipping_street_number"),
+  shippingCity: varchar("shipping_city"),
+  shippingZipCode: varchar("shipping_zip_code"),
+  shippingCountry: varchar("shipping_country"),
 
   // Billing address fields
   billingFirstName: varchar("billing_first_name"),
@@ -498,7 +505,7 @@ export const customers = pgTable("customers", {
 }, (table) => [
   index("customers_name_idx").on(table.name),
   index("customers_email_idx").on(table.email),
-  index("customers_phone_idx").on(table.phone),
+  index("customers_shipping_tel_idx").on(table.shippingTel),
   index("customers_facebook_name_idx").on(table.facebookName),
 ]);
 

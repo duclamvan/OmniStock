@@ -1739,12 +1739,12 @@ export default function POS() {
                       
                       {/* Contact & Location Info */}
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                        {customer.phone && (
-                          <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                        {customer.shippingTel && (
+                          <span className="text-xs text-muted-foreground">{customer.shippingTel}</span>
                         )}
-                        {(customer.city || customer.country) && (
+                        {(customer.shippingCity || customer.shippingCountry) && (
                           <span className="text-xs text-muted-foreground">
-                            {[customer.city, customer.country].filter(Boolean).join(', ')}
+                            {[customer.shippingCity, customer.shippingCountry].filter(Boolean).join(', ')}
                           </span>
                         )}
                       </div>
@@ -1819,12 +1819,12 @@ export default function POS() {
                           </p>
                         )}
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {customer.phone && (
-                            <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                          {customer.shippingTel && (
+                            <span className="text-xs text-muted-foreground">{customer.shippingTel}</span>
                           )}
-                          {(customer.city || customer.country) && (
+                          {(customer.shippingCity || customer.shippingCountry) && (
                             <span className="text-xs text-muted-foreground">
-                              {[customer.city, customer.country].filter(Boolean).join(', ')}
+                              {[customer.shippingCity, customer.shippingCountry].filter(Boolean).join(', ')}
                             </span>
                           )}
                         </div>

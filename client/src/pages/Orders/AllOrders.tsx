@@ -238,8 +238,8 @@ function MobileOrderCard({
       {/* Row 2: Customer + Date */}
       <div className="flex items-center justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {order.customer?.country && (
-            <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+          {order.customer?.shippingCountry && (
+            <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.shippingCountry)}</span>
           )}
           {order.customer?.profilePictureUrl ? (
             <img 
@@ -902,14 +902,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           // Customer fields
           if (order.customer?.name) scores.push(calculateSearchScore(order.customer.name, query));
           if (order.customer?.email) scores.push(calculateSearchScore(order.customer.email, query));
-          if (order.customer?.phone) scores.push(calculateSearchScore(order.customer.phone, query));
+          if (order.customer?.shippingTel) scores.push(calculateSearchScore(order.customer.shippingTel, query));
           if (order.customer?.facebookName) scores.push(calculateSearchScore(order.customer.facebookName, query));
           
           // Address fields
           if (order.customer?.street) scores.push(calculateSearchScore(order.customer.street, query));
-          if (order.customer?.city) scores.push(calculateSearchScore(order.customer.city, query));
+          if (order.customer?.shippingCity) scores.push(calculateSearchScore(order.customer.shippingCity, query));
           if (order.customer?.postalCode) scores.push(calculateSearchScore(order.customer.postalCode, query));
-          if (order.customer?.country) scores.push(calculateSearchScore(order.customer.country, query));
+          if (order.customer?.shippingCountry) scores.push(calculateSearchScore(order.customer.shippingCountry, query));
           
           // Tracking number
           if (order.trackingNumber) scores.push(calculateSearchScore(order.trackingNumber, query));
@@ -1120,7 +1120,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortable: false,
       cell: (order) => {
         const customerName = order.customer?.name || 'N/A';
-        const country = order.customer?.country;
+        const country = order.customer?.shippingCountry;
         const countryFlagMap: Record<string, string> = {
           'CZ': '🇨🇿',
           'DE': '🇩🇪',
@@ -1448,7 +1448,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           'Priority': order.priority || '',
           'Customer Name': order.customer?.name || '',
           'Customer Email': order.customer?.email || '',
-          'Customer Phone': order.customer?.phone || '',
+          'Customer Phone': order.customer?.shippingTel || '',
           'Customer Type': order.customer?.type || '',
           'Shipping Address': order.shippingAddress?.fullAddress || '',
           'Shipping City': order.shippingAddress?.city || '',
@@ -2336,8 +2336,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          {order.customer?.country && (
-                            <span className="text-base flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+                          {order.customer?.shippingCountry && (
+                            <span className="text-base flex-shrink-0">{getCountryFlag(order.customer.shippingCountry)}</span>
                           )}
                           {order.customer?.profilePictureUrl ? (
                             <img 
@@ -2451,11 +2451,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 <PopoverTrigger asChild>
                                   <Badge className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer">
                                     <Trophy className="h-3 w-3 mr-1" />
-                                    TOP 10{order.customer?.country ? ` in ${order.customer.country}` : ''}
+                                    TOP 10{order.customer?.shippingCountry ? ` in ${order.customer.shippingCountry}` : ''}
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">{order.customer?.country ? t('orders:top10CustomerInCountry', { country: order.customer.country }) : t('orders:top10CustomerByRevenue')}</p>
+                                  <p className="text-xs">{order.customer?.shippingCountry ? t('orders:top10CustomerInCountry', { country: order.customer.shippingCountry }) : t('orders:top10CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -2464,11 +2464,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 <PopoverTrigger asChild>
                                   <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700 text-xs cursor-pointer">
                                     <Award className="h-3 w-3 mr-1" />
-                                    TOP 50{order.customer?.country ? ` in ${order.customer.country}` : ''}
+                                    TOP 50{order.customer?.shippingCountry ? ` in ${order.customer.shippingCountry}` : ''}
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">{order.customer?.country ? t('orders:top50CustomerInCountry', { country: order.customer.country }) : t('orders:top50CustomerByRevenue')}</p>
+                                  <p className="text-xs">{order.customer?.shippingCountry ? t('orders:top50CustomerInCountry', { country: order.customer.shippingCountry }) : t('orders:top50CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -2477,11 +2477,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                                 <PopoverTrigger asChild>
                                   <Badge className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs cursor-pointer">
                                     <Star className="h-3 w-3 mr-1" />
-                                    TOP 100{order.customer?.country ? ` in ${order.customer.country}` : ''}
+                                    TOP 100{order.customer?.shippingCountry ? ` in ${order.customer.shippingCountry}` : ''}
                                   </Badge>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-2" side="top">
-                                  <p className="text-xs">{order.customer?.country ? t('orders:top100CustomerInCountry', { country: order.customer.country }) : t('orders:top100CustomerByRevenue')}</p>
+                                  <p className="text-xs">{order.customer?.shippingCountry ? t('orders:top100CustomerInCountry', { country: order.customer.shippingCountry }) : t('orders:top100CustomerByRevenue')}</p>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -2805,8 +2805,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                             </Badge>
                           </div>
                           <div className="text-xs mt-0.5 flex items-center gap-1.5">
-                            {order.customer?.country && (
-                              <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.country)}</span>
+                            {order.customer?.shippingCountry && (
+                              <span className="text-sm flex-shrink-0">{getCountryFlag(order.customer.shippingCountry)}</span>
                             )}
                             {order.customer?.profilePictureUrl ? (
                               <img 

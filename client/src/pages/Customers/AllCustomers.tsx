@@ -159,11 +159,11 @@ export default function AllCustomers() {
     return customers.filter((c: any) => 
       normalizeForSearch(c.name || '').includes(query) ||
       normalizeForSearch(c.email || '').includes(query) ||
-      (c.phone || '').includes(searchInput) ||
+      (c.shippingTel || '').includes(searchInput) ||
       normalizeForSearch(c.facebookName || '').includes(query) ||
       normalizeForSearch(c.company || '').includes(query) ||
-      normalizeForSearch(c.city || '').includes(query) ||
-      normalizeForSearch(c.country || '').includes(query)
+      normalizeForSearch(c.shippingCity || '').includes(query) ||
+      normalizeForSearch(c.shippingCountry || '').includes(query)
     );
   }, [customers, searchInput, debouncedSearch]);
 
@@ -281,8 +281,8 @@ export default function AllCustomers() {
       const exportData = customers.map(customer => ({
         [t('common:name')]: customer.name || '',
         [t('common:email')]: customer.email || '',
-        [t('common:phone')]: customer.phone || '',
-        [t('common:country')]: customer.country || '',
+        [t('common:phone')]: customer.shippingTel || '',
+        [t('common:country')]: customer.shippingCountry || '',
         [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         [t('customers:totalOrders')]: customer.orderCount || 0,
         [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -316,10 +316,10 @@ export default function AllCustomers() {
       sortable: true,
       className: "min-w-[180px]",
       cell: (customer) => {
-        const userId = customer.facebookId || customer.facebookName || customer.phone;
+        const userId = customer.facebookId || customer.facebookName || customer.shippingTel;
         const formattedUserId = userId ? (
-          customer.phone && !customer.facebookId && !customer.facebookName
-            ? `(${customer.phone.startsWith('+') ? customer.phone : '+' + customer.phone})`
+          customer.shippingTel && !customer.facebookId && !customer.facebookName
+            ? `(${customer.shippingTel.startsWith('+') ? customer.shippingTel : '+' + customer.shippingTel})`
             : `(${userId})`
         ) : null;
         
@@ -381,12 +381,12 @@ export default function AllCustomers() {
           'Magyarország': '🇭🇺', 'România': '🇷🇴', 'Türkiye': '🇹🇷',
           'Srbija': '🇷🇸', 'Indonesia': '🇮🇩', 'Portugal': '🇵🇹',
         };
-        const flag = customer.country ? countryFlags[customer.country] || '🌍' : null;
+        const flag = customer.shippingCountry ? countryFlags[customer.shippingCountry] || '🌍' : null;
         
-        return customer.country ? (
+        return customer.shippingCountry ? (
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-base">{flag}</span>
-            <span className="text-gray-600">{customer.country}</span>
+            <span className="text-gray-600">{customer.shippingCountry}</span>
           </div>
         ) : <span className="text-gray-400">-</span>;
       },
@@ -579,8 +579,8 @@ export default function AllCustomers() {
       const exportData = filteredCustomers.map(customer => ({
         [t('common:name')]: customer.name || '',
         [t('common:email')]: customer.email || '',
-        [t('common:phone')]: customer.phone || '',
-        [t('common:country')]: customer.country || '',
+        [t('common:phone')]: customer.shippingTel || '',
+        [t('common:country')]: customer.shippingCountry || '',
         [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         [t('customers:totalOrders')]: customer.orderCount || 0,
         [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -626,8 +626,8 @@ export default function AllCustomers() {
       const exportData = filteredCustomers.map(customer => ({
         name: customer.name || '',
         email: customer.email || '',
-        phone: customer.phone || '',
-        country: customer.country || '',
+        phone: customer.shippingTel || '',
+        country: customer.shippingCountry || '',
         lastPurchase: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         orderCount: customer.orderCount || 0,
         totalSpent: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -663,12 +663,12 @@ export default function AllCustomers() {
       const exportData = filteredCustomers.map(customer => ({
         'Name': customer.name || '',
         'Email': customer.email || '',
-        'Phone': customer.phone || '',
+        'Phone': customer.shippingTel || '',
         'Customer Type': customer.type || 'regular',
-        'Address': customer.address || '',
-        'City': customer.city || '',
-        'Zip Code': customer.zipCode || '',
-        'Country': customer.country || '',
+        'Address': customer.shippingStreet || '',
+        'City': customer.shippingCity || '',
+        'Zip Code': customer.shippingZipCode || '',
+        'Country': customer.shippingCountry || '',
         'Facebook ID': customer.facebookId || '',
         'Facebook Name': customer.facebookName || '',
         'Facebook URL': customer.facebookUrl || '',
@@ -848,15 +848,15 @@ export default function AllCustomers() {
           } else if (lowerKey === 'email') {
             customer.email = strValue;
           } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
-            customer.phone = strValue;
+            customer.shippingTel = strValue;
           } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
-            customer.country = strValue;
+            customer.shippingCountry = strValue;
           } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi' || lowerKey === 'street') {
-            customer.address = strValue;
+            customer.shippingStreet = strValue;
           } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
-            customer.city = strValue;
+            customer.shippingCity = strValue;
           } else if (lowerKey === 'zip code' || lowerKey === 'zipcode' || lowerKey === 'postal code') {
-            customer.zipCode = strValue;
+            customer.shippingZipCode = strValue;
           } else if (lowerKey === 'company' || lowerKey === 'công ty' || lowerKey === 'cong ty') {
             customer.company = strValue;
           } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
@@ -1120,15 +1120,15 @@ export default function AllCustomers() {
           } else if (lowerKey === 'email') {
             customer.email = strValue;
           } else if (lowerKey === 'phone' || lowerKey === 'điện thoại' || lowerKey === 'dien thoai' || lowerKey === 'tel') {
-            customer.phone = strValue;
+            customer.shippingTel = strValue;
           } else if (lowerKey === 'country' || lowerKey === 'quốc gia' || lowerKey === 'quoc gia') {
-            customer.country = strValue;
+            customer.shippingCountry = strValue;
           } else if (lowerKey === 'address' || lowerKey === 'địa chỉ' || lowerKey === 'dia chi' || lowerKey === 'street') {
-            customer.address = strValue;
+            customer.shippingStreet = strValue;
           } else if (lowerKey === 'city' || lowerKey === 'thành phố' || lowerKey === 'thanh pho') {
-            customer.city = strValue;
+            customer.shippingCity = strValue;
           } else if (lowerKey === 'zip code' || lowerKey === 'zipcode' || lowerKey === 'postal code' || lowerKey === 'postalcode') {
-            customer.zipCode = strValue;
+            customer.shippingZipCode = strValue;
           } else if (lowerKey === 'notes' || lowerKey === 'ghi chú' || lowerKey === 'ghi chu') {
             customer.notes = strValue;
           } else if (lowerKey === 'type' || lowerKey === 'customer type') {
@@ -1748,21 +1748,21 @@ export default function AllCustomers() {
                             </span>
                           </div>
                         )}
-                        {customer.phone && (
+                        {customer.shippingTel && (
                           <div className="flex items-center gap-2">
                             <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-600 dark:text-gray-400 truncate text-xs" data-testid={`text-phone-${customer.id}`}>
-                              {customer.phone}
+                              {customer.shippingTel}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="space-y-2">
-                        {customer.country && (
+                        {customer.shippingCountry && (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-600 dark:text-gray-400 truncate text-xs" data-testid={`text-country-${customer.id}`}>
-                              {customer.country}
+                              {customer.shippingCountry}
                             </span>
                           </div>
                         )}

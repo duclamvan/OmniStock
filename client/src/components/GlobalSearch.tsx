@@ -90,8 +90,8 @@ interface SearchResult {
     name: string;
     email?: string;
     company?: string;
-    city?: string;
-    country?: string;
+    shippingCity?: string;
+    shippingCountry?: string;
     preferredCurrency?: string;
     totalOrders: number;
     lastOrderText: string;
@@ -741,7 +741,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                   {results.customers.slice(0, MAX_ITEMS_PER_SECTION).map((customer) => {
                     currentFlatIndex++;
                     const isSelected = selectedIndex === currentFlatIndex;
-                    const countryCode = customer.country ? getCountryCodeByName(customer.country) : '';
+                    const countryCode = customer.shippingCountry ? getCountryCodeByName(customer.shippingCountry) : '';
                     const countryFlag = countryCode ? getCountryFlag(countryCode) : '';
                     
                     return (
@@ -767,11 +767,11 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
                               dangerouslySetInnerHTML={{ __html: highlightMatch(customer.name, searchQuery) }}
                             />
                             
-                            {(customer.city || customer.country) && (
+                            {(customer.shippingCity || customer.shippingCountry) && (
                               <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
-                                {customer.city && customer.country 
-                                  ? `${customer.city}, ${customer.country}`
-                                  : customer.city || customer.country
+                                {customer.shippingCity && customer.shippingCountry 
+                                  ? `${customer.shippingCity}, ${customer.shippingCountry}`
+                                  : customer.shippingCity || customer.shippingCountry
                                 }
                               </div>
                             )}

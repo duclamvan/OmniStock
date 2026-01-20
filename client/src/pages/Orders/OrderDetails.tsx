@@ -823,7 +823,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               <div className="flex items-center gap-2 flex-wrap">
                 <Link href={`/customers/${order.customer.id}`}>
                   <span className="font-semibold text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1.5">
-                    {order.customer.country && <span className="text-base">{getCountryFlag(order.customer.country)}</span>}
+                    {order.customer.shippingCountry && <span className="text-base">{getCountryFlag(order.customer.shippingCountry)}</span>}
                     {order.customer.profilePictureUrl ? (
                       <img 
                         src={order.customer.profilePictureUrl} 
@@ -2405,11 +2405,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </a>
                     </div>
                   )}
-                  {order.customer.phone && (
+                  {order.customer.shippingTel && (
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                      <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
-                        {order.customer.phone}
+                      <a href={`tel:${order.customer.shippingTel}`} className="text-blue-600 hover:underline">
+                        {order.customer.shippingTel}
                       </a>
                     </div>
                   )}
@@ -2426,17 +2426,17 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </a>
                     </div>
                   )}
-                  {(order.customer.address || order.customer.city) && (
+                  {(order.customer.shippingStreet || order.customer.shippingCity) && (
                     <div className="flex items-start gap-2 mt-3">
                       <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 mt-0.5" />
                       <div className="text-slate-600 dark:text-slate-400">
-                        {order.customer.address && <p>{order.customer.address}</p>}
-                        {(order.customer.city || order.customer.state || order.customer.zipCode) && (
+                        {order.customer.shippingStreet && <p>{order.customer.shippingStreet}</p>}
+                        {(order.customer.shippingCity || order.customer.state || order.customer.shippingZipCode) && (
                           <p>
-                            {[order.customer.city, order.customer.state, order.customer.zipCode].filter(Boolean).join(', ')}
+                            {[order.customer.shippingCity, order.customer.state, order.customer.shippingZipCode].filter(Boolean).join(', ')}
                           </p>
                         )}
-                        {order.customer.country && <p>{order.customer.country}</p>}
+                        {order.customer.shippingCountry && <p>{order.customer.shippingCountry}</p>}
                       </div>
                     </div>
                   )}

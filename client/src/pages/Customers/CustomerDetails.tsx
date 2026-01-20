@@ -570,13 +570,13 @@ export default function CustomerDetails() {
                   </div>
 
                   {/* Country */}
-                  {customer.country && (
+                  {customer.shippingCountry && (
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="text-slate-600 dark:text-slate-300">{t('customers:country')}:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5" data-testid="text-country">
-                        <span className="text-xl leading-none">{getCountryFlag(getCountryCodeByName(customer.country))}</span>
-                        {customer.country}
+                        <span className="text-xl leading-none">{getCountryFlag(getCountryCodeByName(customer.shippingCountry))}</span>
+                        {customer.shippingCountry}
                       </span>
                     </div>
                   )}
@@ -606,7 +606,7 @@ export default function CustomerDetails() {
                   {(customer.ico || customer.dic || customer.vatNumber) ? (
                     <>
                       {/* Czech Company Information */}
-                      {customer.country === 'Czech Republic' && (customer.ico || customer.dic) && (
+                      {customer.shippingCountry === 'Czech Republic' && (customer.ico || customer.dic) && (
                         <div className="space-y-2 pb-3 border-b dark:border-gray-700">
                           <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">{t('customers:czechCompanyInformation')}</h4>
                           {customer.ico && (
@@ -745,7 +745,7 @@ export default function CustomerDetails() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {(customer.email || customer.phone || customer.address || customer.notes || customer.profilePictureUrl) ? (
+                  {(customer.email || customer.shippingTel || customer.shippingStreet || customer.notes || customer.profilePictureUrl) ? (
                     <>
                       {/* Profile Picture */}
                       {customer.profilePictureUrl && (
@@ -775,32 +775,32 @@ export default function CustomerDetails() {
                       )}
 
                       {/* Phone */}
-                      {customer.phone && (
+                      {customer.shippingTel && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                           <span className="text-slate-600">{t('customers:phone')}:</span>
                           <a 
-                            href={`tel:${customer.phone}`}
+                            href={`tel:${customer.shippingTel}`}
                             className="font-medium text-blue-600 hover:underline"
                             data-testid="link-phone"
                           >
-                            {customer.phone}
+                            {customer.shippingTel}
                           </a>
                         </div>
                       )}
 
                       {/* Address */}
-                      {(customer.address || customer.city || customer.zipCode) && (
+                      {(customer.shippingStreet || customer.shippingCity || customer.shippingZipCode) && (
                         <div className="flex items-start gap-2 text-sm">
                           <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <span className="text-slate-600">{t('customers:address')}:</span>
                             <div className="font-medium mt-1 space-y-0.5" data-testid="text-address">
-                              {customer.address && <p>{customer.address}</p>}
-                              {(customer.city || customer.zipCode) && (
+                              {customer.shippingStreet && <p>{customer.shippingStreet}</p>}
+                              {(customer.shippingCity || customer.shippingZipCode) && (
                                 <p>
-                                  {customer.zipCode && <span>{customer.zipCode} </span>}
-                                  {customer.city}
+                                  {customer.shippingZipCode && <span>{customer.shippingZipCode} </span>}
+                                  {customer.shippingCity}
                                 </p>
                               )}
                             </div>

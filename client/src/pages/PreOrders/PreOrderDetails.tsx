@@ -301,10 +301,10 @@ export default function PreOrderDetails() {
                     <span>{customer.billingTel}</span>
                   </div>
                 )}
-                {customer?.country && (
+                {customer?.shippingCountry && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4 flex-shrink-0" />
-                    <span>{customer.country}</span>
+                    <span>{customer.shippingCountry}</span>
                   </div>
                 )}
               </div>

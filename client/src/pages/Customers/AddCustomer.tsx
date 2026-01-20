@@ -39,6 +39,18 @@ const createCustomerFormSchema = (t: (key: string) => string) => z.object({
   facebookUrl: z.string().optional(),
   facebookNumericId: z.string().optional(),
   profilePictureUrl: z.string().optional(),
+  // Shipping address fields
+  shippingFirstName: z.string().optional(),
+  shippingLastName: z.string().optional(),
+  shippingCompany: z.string().optional(),
+  shippingEmail: z.string().email(t('customers:invalidEmail')).optional().or(z.literal("")),
+  shippingTel: z.string().optional(),
+  shippingStreet: z.string().optional(),
+  shippingStreetNumber: z.string().optional(),
+  shippingCity: z.string().optional(),
+  shippingZipCode: z.string().optional(),
+  shippingCountry: z.string().optional(),
+  // Billing address fields
   billingCompany: z.string().optional(),
   billingFirstName: z.string().optional(),
   billingLastName: z.string().optional(),
@@ -251,6 +263,18 @@ export default function AddCustomer() {
       facebookUrl: "",
       facebookNumericId: "",
       profilePictureUrl: "",
+      // Shipping address defaults
+      shippingFirstName: "",
+      shippingLastName: "",
+      shippingCompany: "",
+      shippingEmail: "",
+      shippingTel: "",
+      shippingStreet: "",
+      shippingStreetNumber: "",
+      shippingCity: "",
+      shippingZipCode: "",
+      shippingCountry: "",
+      // Billing address defaults
       billingFirstName: "",
       billingLastName: "",
       billingCompany: "",
@@ -328,11 +352,23 @@ export default function AddCustomer() {
     if (existingCustomer && isEditMode) {
       form.reset({
         name: existingCustomer.name || "",
-        country: getCountryCode(existingCustomer.country || ""),
+        country: getCountryCode(existingCustomer.shippingCountry || ""),
         preferredCurrency: (existingCustomer as any).preferredCurrency || "EUR",
         facebookName: existingCustomer.facebookName || "",
         facebookUrl: existingCustomer.facebookUrl || "",
         profilePictureUrl: existingCustomer.profilePictureUrl || "",
+        // Shipping address fields
+        shippingFirstName: existingCustomer.shippingFirstName || "",
+        shippingLastName: existingCustomer.shippingLastName || "",
+        shippingCompany: existingCustomer.shippingCompany || "",
+        shippingEmail: existingCustomer.shippingEmail || "",
+        shippingTel: existingCustomer.shippingTel || "",
+        shippingStreet: existingCustomer.shippingStreet || "",
+        shippingStreetNumber: existingCustomer.shippingStreetNumber || "",
+        shippingCity: existingCustomer.shippingCity || "",
+        shippingZipCode: existingCustomer.shippingZipCode || "",
+        shippingCountry: existingCustomer.shippingCountry || "",
+        // Billing address fields
         billingFirstName: existingCustomer.billingFirstName || "",
         billingLastName: existingCustomer.billingLastName || "",
         billingCompany: existingCustomer.billingCompany || "",
@@ -2067,11 +2103,11 @@ export default function AddCustomer() {
                                   <span className="font-medium text-slate-900 dark:text-slate-100">{duplicateCustomer.billingTel}</span>
                                 </div>
                               )}
-                              {duplicateCustomer.country && (
+                              {duplicateCustomer.shippingCountry && (
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-slate-500 dark:text-slate-400">{t('customers:countryLabel')}</span>
                                   <span className="font-medium text-slate-900">
-                                    {getCountryFlag(duplicateCustomer.country)} {europeanCountries.find(c => c.code === duplicateCustomer.country)?.name || duplicateCustomer.country}
+                                    {getCountryFlag(duplicateCustomer.shippingCountry)} {europeanCountries.find(c => c.code === duplicateCustomer.shippingCountry)?.name || duplicateCustomer.shippingCountry}
                                   </span>
                                 </div>
                               )}

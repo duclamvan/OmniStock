@@ -406,7 +406,7 @@ export default function AllTickets() {
         'Category': ticket.category || '-',
         'Customer Name': ticket.customer?.name || '-',
         'Customer Email': ticket.customer?.email || '-',
-        'Customer Phone': ticket.customer?.phone || '-',
+        'Customer Phone': ticket.customer?.shippingTel || '-',
         'Assigned To': ticket.assignedTo || '-',
         'Related Order': ticket.orderId || '-',
         'Due Date': ticket.dueDate ? format(new Date(ticket.dueDate), 'yyyy-MM-dd') : '-',

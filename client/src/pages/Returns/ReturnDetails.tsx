@@ -259,10 +259,10 @@ export default function ReturnDetails() {
                     <p className="mt-1">{returnData.customer.email}</p>
                   </div>
                 )}
-                {returnData.customer.phone && (
+                {returnData.customer.shippingTel && (
                   <div>
                     <p className="text-sm font-medium text-gray-600">{t('inventory:phone')}</p>
-                    <p className="mt-1">{returnData.customer.phone}</p>
+                    <p className="mt-1">{returnData.customer.shippingTel}</p>
                   </div>
                 )}
               </>
