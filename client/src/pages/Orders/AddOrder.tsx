@@ -6343,8 +6343,29 @@ export default function AddOrder() {
                       // Set the new customer without an ID - it will be created on save
                       setSelectedCustomer({
                         ...newCustomer,
-                        id: undefined // Explicitly set to undefined to trigger creation
+                        id: undefined, // Explicitly set to undefined to trigger creation
+                        needsSaving: true // Mark as needing to be saved
                       });
+                      
+                      // Set shipping address from the Customer Details form
+                      // All address fields from AddOrder page are for shipping, not customer's default address
+                      if (newCustomer.street || newCustomer.city || newCustomer.zipCode) {
+                        setSelectedShippingAddress({
+                          isNew: true,
+                          firstName: newCustomer.firstName || '',
+                          lastName: newCustomer.lastName || '',
+                          company: newCustomer.company || '',
+                          street: newCustomer.street || '',
+                          streetNumber: newCustomer.streetNumber || '',
+                          city: newCustomer.city || '',
+                          zipCode: newCustomer.zipCode || '',
+                          country: newCustomer.country || '',
+                          tel: newCustomer.phone || '',
+                          email: newCustomer.email || '',
+                          label: 'Shipping Address'
+                        });
+                      }
+                      
                       setShowNewCustomerForm(false);
                       // Set placeholder customerId to pass form validation - will be replaced with real ID in mutation
                       form.setValue('customerId', '__new__');
