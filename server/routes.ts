@@ -11145,6 +11145,7 @@ Important:
           .replace(/\s+/g, ' ')
           .trim();
       };
+
       
       // Levenshtein distance function
       const levenshtein = (a: string, b: string): number => {
@@ -11312,6 +11313,7 @@ Important:
             shippingZipCode: entry.zipCode || customer.shippingZipCode || customer.billingZipCode || '',
             shippingCountry: entry.country || customer.shippingCountry || customer.billingCountry || '',
             shippingEmail: entry.email || customer.shippingEmail || customer.billingEmail || customer.email || '',
+            shippingTel: normalizePhone(entry.phone || customer.shippingTel || customer.billingTel || '', entry.countryCode || 'CZ') || customer.shippingTel || '',
             // Billing fields - mirror shipping
             billingFirstName: entry.firstName || customer.billingFirstName || customer.shippingFirstName || '',
             billingLastName: entry.lastName || customer.billingLastName || customer.shippingLastName || '',
@@ -11322,6 +11324,7 @@ Important:
             billingZipCode: entry.zipCode || customer.billingZipCode || customer.shippingZipCode || '',
             billingCountry: entry.country || customer.billingCountry || customer.shippingCountry || '',
             billingEmail: entry.email || customer.billingEmail || customer.shippingEmail || customer.email || '',
+            billingTel: normalizePhone(entry.phone || customer.billingTel || customer.shippingTel || '', entry.countryCode || 'CZ') || customer.billingTel || '',
           };
           
           // Update customer

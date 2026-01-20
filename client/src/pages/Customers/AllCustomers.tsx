@@ -1390,7 +1390,7 @@ export default function AllCustomers() {
       } else {
         // Parse CSV format
         const lines = text.split('\n');
-        const headers = lines[0].split(';').map(h => h.trim());
+        const headers = lines[0].split(';').map(h => h.trim().replace(/^\uFEFF/, ''));
         
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i];
@@ -1402,14 +1402,22 @@ export default function AllCustomers() {
             row[header] = values[idx]?.trim() || '';
           });
           
+          // Extract contact person name (first/last)
+          const contactParts = (row['KONTAKTNI_OS'] || '').split(/\s+/);
+          const contactFirstName = contactParts[0] || '';
+          const contactLastName = contactParts.slice(1).join(' ') || '';
+          
           entries.push({
             name: row['NAZEV'] || row['KONTAKTNI_OS'] || '',
             storeName: row['NAZEV'] || '',
+            contactFirstName,
+            contactLastName,
             street: row['ULICE_CP'] || '',
             city: row['MESTO'] || '',
             zipCode: row['PSC'] || '',
             countryCode: row['ZEME'] || 'CZ',
             email: row['EMAIL'] || '',
+            phone: row['TELEFON'] || '',
           });
         }
       }
