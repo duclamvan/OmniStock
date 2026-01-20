@@ -1293,26 +1293,34 @@ export default function StockLookup() {
                                   {/* Location rows for this variant - only shown when expanded */}
                                   {isExpanded && hasLocations && (
                                     <div className="space-y-2 mt-2 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
-                                      {allLocations.map((location) => (
-                                        <div key={location.id} className="bg-white dark:bg-gray-900 rounded p-2">
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-sm font-medium text-gray-900 dark:text-white font-mono">
-                                                {location.locationCode}
-                                              </span>
-                                              {location.isPrimary && (
-                                                <Badge variant="outline" className="h-4 text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
-                                                  {t('common:primary')}
-                                                </Badge>
-                                              )}
+                                      {allLocations.map((location) => {
+                                        const locParts = location.locationCode.match(/^([A-Z]+\d+)(.*)$/i);
+                                        const locZone = locParts ? locParts[1] : location.locationCode;
+                                        const locRest = locParts ? locParts[2] : '';
+                                        
+                                        return (
+                                          <div key={location.id} className="bg-white dark:bg-gray-900 rounded-lg p-3">
+                                            {/* Location code row */}
+                                            <div className="flex items-center justify-between mb-2">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-base font-bold text-gray-900 dark:text-white font-mono">
+                                                  <span className="text-blue-600 dark:text-blue-400">{locZone}</span>
+                                                  {locRest && <span className="text-gray-600 dark:text-gray-400">{locRest}</span>}
+                                                </span>
+                                                {location.isPrimary && (
+                                                  <Badge variant="outline" className="h-5 text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700">
+                                                    {t('common:primary')}
+                                                  </Badge>
+                                                )}
+                                              </div>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                              {/* Hide +/- buttons for virtual and physical_no_quantity products */}
+                                            {/* Quantity with +/- buttons */}
+                                            <div className="flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded mb-2">
                                               {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
                                                 <Button
                                                   variant="outline"
                                                   size="icon"
-                                                  className="h-7 w-7 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                                  className="h-10 w-10 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (location.quantity <= 0) {
@@ -1330,19 +1338,22 @@ export default function StockLookup() {
                                                   disabled={location.quantity <= 0}
                                                   title={t('quickRemoveStock')}
                                                 >
-                                                  <Minus className="h-3.5 w-3.5" />
+                                                  <Minus className="h-5 w-5" />
                                                 </Button>
                                               )}
-                                              <Badge variant="secondary" className="px-2.5">
-                                                {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
-                                                  ? '∞' 
-                                                  : `${location.quantity} ${t('units')}`}
-                                              </Badge>
+                                              <div className="text-center px-3">
+                                                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                                  {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
+                                                    ? '∞' 
+                                                    : location.quantity}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('units')}</p>
+                                              </div>
                                               {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
                                                 <Button
                                                   variant="outline"
                                                   size="icon"
-                                                  className="h-7 w-7 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                                  className="h-10 w-10 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     setSelectedLocation(location);
@@ -1351,11 +1362,10 @@ export default function StockLookup() {
                                                   }}
                                                   title={t('quickAddStock')}
                                                 >
-                                                  <Plus className="h-3.5 w-3.5" />
+                                                  <Plus className="h-5 w-5" />
                                                 </Button>
                                               )}
                                             </div>
-                                          </div>
                                           {/* Action buttons for this location - hide for virtual, hide adjust for physical_no_quantity */}
                                           {product.productType !== 'virtual' && (
                                             <div className="flex gap-2 mt-2">
@@ -1391,7 +1401,8 @@ export default function StockLookup() {
                                             </div>
                                           )}
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                   {isExpanded && !hasLocations && (
@@ -1434,52 +1445,33 @@ export default function StockLookup() {
                             )}
                           </div>
                           <div className="space-y-3">
-                            {selectedProductData.locations.map((loc) => (
-                              <div
-                                key={loc.id}
-                                className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4"
-                                data-testid={`location-card-${loc.id}`}
-                              >
-                                {/* Row 1: Location code, badges, and quick actions */}
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="text-lg font-bold text-gray-900 dark:text-white font-mono whitespace-nowrap">
-                                      {loc.locationCode}
-                                    </p>
-                                    {loc.isPrimary && (
-                                      <Badge variant="default" className="h-6 text-xs shrink-0">
-                                        {t('primary')}
-                                      </Badge>
-                                    )}
-                                    {/* Show variant badge */}
-                                    {(() => {
-                                      if (loc.variantName) {
-                                        return (
-                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 shrink-0">
-                                            {loc.variantName}
-                                          </Badge>
-                                        );
-                                      }
-                                      const matchingVariant = selectedProductData?.variants?.find(
-                                        v => v.locationCode === loc.locationCode
-                                      );
-                                      if (matchingVariant) {
-                                        return (
-                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700 shrink-0">
-                                            {matchingVariant.name}
-                                          </Badge>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                            {selectedProductData.locations.map((loc) => {
+                              const locationParts = loc.locationCode.match(/^([A-Z]+\d+)(.*)$/i);
+                              const zoneCode = locationParts ? locationParts[1] : loc.locationCode;
+                              const restCode = locationParts ? locationParts[2] : '';
+                              
+                              return (
+                                <div
+                                  key={loc.id}
+                                  className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4"
+                                  data-testid={`location-card-${loc.id}`}
+                                >
+                                  {/* Row 1: Location code and menu */}
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xl font-bold text-gray-900 dark:text-white font-mono leading-tight">
+                                        <span className="text-blue-600 dark:text-blue-400">{zoneCode}</span>
+                                        {restCode && (
+                                          <span className="block sm:inline text-gray-700 dark:text-gray-300">{restCode}</span>
+                                        )}
+                                      </p>
+                                    </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-7 w-7"
+                                          className="h-8 w-8 shrink-0"
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           <MoreVertical className="h-4 w-4" />
@@ -1509,12 +1501,44 @@ export default function StockLookup() {
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                    {/* Hide +/- buttons for virtual and physical_no_quantity products */}
+                                  </div>
+                                  
+                                  {/* Row 2: Badges */}
+                                  <div className="flex flex-wrap gap-2 mb-3">
+                                    {loc.isPrimary && (
+                                      <Badge variant="default" className="h-6 text-xs">
+                                        {t('primary')}
+                                      </Badge>
+                                    )}
+                                    {(() => {
+                                      if (loc.variantName) {
+                                        return (
+                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                            {loc.variantName}
+                                          </Badge>
+                                        );
+                                      }
+                                      const matchingVariant = selectedProductData?.variants?.find(
+                                        v => v.locationCode === loc.locationCode
+                                      );
+                                      if (matchingVariant) {
+                                        return (
+                                          <Badge variant="outline" className="h-6 text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                                            {matchingVariant.name}
+                                          </Badge>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                  </div>
+                                  
+                                  {/* Row 3: Quantity with +/- buttons */}
+                                  <div className="flex items-center justify-center gap-3 py-3 bg-white dark:bg-gray-900 rounded-lg mb-3">
                                     {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
                                       <Button
                                         variant="outline"
                                         size="icon"
-                                        className="h-10 w-10 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+                                        className="h-12 w-12 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (loc.quantity <= 0) {
@@ -1533,19 +1557,24 @@ export default function StockLookup() {
                                         data-testid={`button-quick-minus-${loc.id}`}
                                         title={t('quickRemoveStock')}
                                       >
-                                        <Minus className="h-5 w-5" />
+                                        <Minus className="h-6 w-6" />
                                       </Button>
                                     )}
-                                    <Badge variant="secondary" className="h-10 px-4 text-lg font-bold">
-                                      {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
-                                        ? '∞' 
-                                        : `${loc.quantity} ${t('units')}`}
-                                    </Badge>
+                                    <div className="text-center px-4">
+                                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {product.productType === 'virtual' || product.productType === 'physical_no_quantity' 
+                                          ? '∞' 
+                                          : loc.quantity}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                        {t('units')}
+                                      </p>
+                                    </div>
                                     {product.productType !== 'virtual' && product.productType !== 'physical_no_quantity' && (
                                       <Button
                                         variant="outline"
                                         size="icon"
-                                        className="h-10 w-10 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
+                                        className="h-12 w-12 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-900/20"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedLocation(loc);
@@ -1555,49 +1584,50 @@ export default function StockLookup() {
                                         data-testid={`button-quick-plus-${loc.id}`}
                                         title={t('quickAddStock')}
                                       >
-                                        <Plus className="h-5 w-5" />
+                                        <Plus className="h-6 w-6" />
                                       </Button>
                                     )}
                                   </div>
-                                </div>
-                                {/* Move and Adjust buttons - hide/disable for virtual and physical_no_quantity */}
-                                {product.productType !== 'virtual' && (
-                                  <div className="grid grid-cols-2 gap-3 mt-4">
-                                    <Button
-                                      variant="outline"
-                                      className="h-12 text-sm font-medium"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedLocation(loc);
-                                        setMoveDialogOpen(true);
-                                      }}
-                                      data-testid={`button-move-${loc.id}`}
-                                    >
-                                      <MoveRight className="h-4 w-4 mr-2" />
-                                      {t('move')}
-                                    </Button>
-                                    {product.productType !== 'physical_no_quantity' ? (
+                                  
+                                  {/* Row 4: Move and Adjust buttons */}
+                                  {product.productType !== 'virtual' && (
+                                    <div className="grid grid-cols-2 gap-3">
                                       <Button
                                         variant="outline"
                                         className="h-12 text-sm font-medium"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedLocation(loc);
-                                          setQuickButtonType(null);
-                                          setAdjustDialogOpen(true);
+                                          setMoveDialogOpen(true);
                                         }}
-                                        data-testid={`button-adjust-${loc.id}`}
+                                        data-testid={`button-move-${loc.id}`}
                                       >
-                                        <ArrowUpDown className="h-4 w-4 mr-2" />
-                                        {t('adjust')}
+                                        <MoveRight className="h-4 w-4 mr-2" />
+                                        {t('move')}
                                       </Button>
-                                    ) : (
-                                      <div />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                      {product.productType !== 'physical_no_quantity' ? (
+                                        <Button
+                                          variant="outline"
+                                          className="h-12 text-sm font-medium"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedLocation(loc);
+                                            setQuickButtonType(null);
+                                            setAdjustDialogOpen(true);
+                                          }}
+                                          data-testid={`button-adjust-${loc.id}`}
+                                        >
+                                          <ArrowUpDown className="h-4 w-4 mr-2" />
+                                          {t('adjust')}
+                                        </Button>
+                                      ) : (
+                                        <div />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : (
