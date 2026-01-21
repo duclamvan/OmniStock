@@ -1227,7 +1227,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 </p>
                               </div>
                               <div className="text-xs text-black dark:text-slate-400 mt-1 leading-relaxed font-medium">
-                                {group.variants.map((v: any) => v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop()).join(', ')}
+                                {group.variants.map((v: any) => {
+                                  const variantName = v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop();
+                                  const qty = parseInt(v.quantity) || 1;
+                                  return qty > 1 ? `${qty}×${variantName}` : variantName;
+                                }).join(', ')}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap mt-1">
                                 <span className="text-[10px] text-blue-500 dark:text-blue-400">
@@ -3241,7 +3245,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         image: item.image,
                         isService: !!item.serviceId,
                         variantCount: 0,
-                        variantNames: [] as string[],
+                        variantDetails: [] as { name: string; qty: number }[],
                         discountLabel: null
                       };
                     }
@@ -3249,8 +3253,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                     acc[parentName].totalDiscount += (item.discount || 0);
                     acc[parentName].variantCount += 1;
-                    if (variant && !acc[parentName].variantNames.includes(variant)) {
-                      acc[parentName].variantNames.push(variant);
+                    if (variant) {
+                      acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
                     }
                     if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
                     // Capture discount label (e.g., "BỘT MUA 5 TẶNG 1")
@@ -3270,14 +3274,14 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         image: item.image,
                         isService: !!item.serviceId,
                         variantCount: 0,
-                        variantNames: [] as string[],
+                        variantDetails: [] as { name: string; qty: number }[],
                         discountLabel: item.appliedDiscountLabel || null
                       };
                     }
                     acc[parentName].totalQty += item.quantity || 0;
                     acc[parentName].variantCount += 1;
-                    if (variant && !acc[parentName].variantNames.includes(variant)) {
-                      acc[parentName].variantNames.push(variant);
+                    if (variant) {
+                      acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
                     }
                     if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
                     return acc;
@@ -3308,9 +3312,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               <span className="text-slate-500"> × {formatCurrency(group.totalPrice / group.totalQty, order?.currency || 'EUR')}</span>
                             )}
                           </div>
-                          {group.variantNames && group.variantNames.length > 0 && (
+                          {group.variantDetails && group.variantDetails.length > 0 && (
                             <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
-                              {group.variantNames.join(', ')}
+                              {group.variantDetails.map((v: { name: string; qty: number }) => 
+                                v.qty > 1 ? `${v.qty}×${v.name}` : v.name
+                              ).join(', ')}
                             </div>
                           )}
                           {group.discountLabel && (
@@ -3357,9 +3363,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         <div className="text-xs text-green-600 mt-0.5">
                           <span className="font-extrabold">{group.totalQty}</span>
                         </div>
-                        {group.variantNames && group.variantNames.length > 0 && (
+                        {group.variantDetails && group.variantDetails.length > 0 && (
                           <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
-                            {group.variantNames.join(', ')}
+                            {group.variantDetails.map((v: { name: string; qty: number }) => 
+                              v.qty > 1 ? `${v.qty}×${v.name}` : v.name
+                            ).join(', ')}
                           </div>
                         )}
                         {group.discountLabel && (
