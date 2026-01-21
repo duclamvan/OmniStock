@@ -1227,11 +1227,19 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                 </p>
                               </div>
                               <div className="text-xs text-black dark:text-slate-400 mt-1 leading-relaxed font-medium">
-                                {group.variants.map((v: any) => {
-                                  const variantName = v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop();
-                                  const qty = parseInt(v.quantity) || 1;
-                                  return qty > 1 ? `${qty}×${variantName}` : variantName;
-                                }).join(', ')}
+                                {[...group.variants]
+                                  .sort((a: any, b: any) => {
+                                    const nameA = a.variantName || a.extractedVariantName || a.productName?.split(' - ').pop() || '';
+                                    const nameB = b.variantName || b.extractedVariantName || b.productName?.split(' - ').pop() || '';
+                                    const numA = parseInt(nameA) || 999999;
+                                    const numB = parseInt(nameB) || 999999;
+                                    return numA - numB;
+                                  })
+                                  .map((v: any) => {
+                                    const variantName = v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop();
+                                    const qty = parseInt(v.quantity) || 1;
+                                    return qty > 1 ? `${qty}×${variantName}` : variantName;
+                                  }).join(', ')}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap mt-1">
                                 <span className="text-[10px] text-blue-500 dark:text-blue-400">
@@ -1249,13 +1257,14 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         </div>
                         {/* Expanded Variants */}
                         {isExpanded && [...group.variants].sort((a: any, b: any) => {
-                          // Extract color number from variant name (e.g., "Color 1", "Color 200")
-                          const getColorNum = (item: any) => {
-                            const name = item.variantName || item.productName || '';
-                            const match = name.match(/(?:Color|Colour)\s*(\d+)/i);
+                          // Extract number from variant name for sorting
+                          const getVariantNum = (item: any) => {
+                            const name = item.variantName || item.extractedVariantName || item.productName?.split(' - ').pop() || '';
+                            // Try to extract number from variant name (handles "5", "Color 1", "Màu 200", etc.)
+                            const match = name.match(/(\d+)/);
                             return match ? parseInt(match[1], 10) : 999999;
                           };
-                          return getColorNum(a) - getColorNum(b);
+                          return getVariantNum(a) - getVariantNum(b);
                         }).map((variantItem: any, variantIndex: number) => {
                           const variantUnitPrice = parseFloat(variantItem.unitPrice) || parseFloat(variantItem.price) || 0;
                           const variantTotal = variantUnitPrice * (variantItem.quantity || 1) - (parseFloat(variantItem.discount) || 0);
@@ -3314,9 +3323,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           </div>
                           {group.variantDetails && group.variantDetails.length > 0 && (
                             <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
-                              {group.variantDetails.map((v: { name: string; qty: number }) => 
-                                v.qty > 1 ? `${v.qty}×${v.name}` : v.name
-                              ).join(', ')}
+                              {[...group.variantDetails]
+                                .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
+                                .map((v: { name: string; qty: number }) => 
+                                  v.qty > 1 ? `${v.qty}×${v.name}` : v.name
+                                ).join(', ')}
                             </div>
                           )}
                           {group.discountLabel && (
@@ -3365,9 +3376,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         </div>
                         {group.variantDetails && group.variantDetails.length > 0 && (
                           <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
-                            {group.variantDetails.map((v: { name: string; qty: number }) => 
-                              v.qty > 1 ? `${v.qty}×${v.name}` : v.name
-                            ).join(', ')}
+                            {[...group.variantDetails]
+                              .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
+                              .map((v: { name: string; qty: number }) => 
+                                v.qty > 1 ? `${v.qty}×${v.name}` : v.name
+                              ).join(', ')}
                           </div>
                         )}
                         {group.discountLabel && (
