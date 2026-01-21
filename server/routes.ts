@@ -23204,6 +23204,7 @@ Important:
         basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
         basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
         
+        basicParsed.fields.tel = normalizePhone(basicParsed.fields.tel, basicParsed.fields.country) || basicParsed.fields.tel;
         return res.json(basicParsed);
       }
 
@@ -23285,6 +23286,7 @@ Important rules:
         basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
         basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
         
+        basicParsed.fields.tel = normalizePhone(basicParsed.fields.tel, basicParsed.fields.country) || basicParsed.fields.tel;
         return res.json(basicParsed);
       }
 
@@ -23325,7 +23327,7 @@ Important rules:
           lastName: parsed.lastName || '',
           company: company,
           email: parsed.email || '',
-          tel: parsed.phone || parsed.tel || '',
+          tel: normalizePhone(parsed.phone || parsed.tel || '', country) || '',
           street: finalStreet,
           streetNumber: finalStreetNumber,
           city: city,
@@ -23634,7 +23636,7 @@ Important rules:
 
     // Extract phone - look for various formats
     const phoneMatch = allText.match(/(?:\+\d{1,3}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}/);
-    if (phoneMatch) fields.tel = phoneMatch[0].trim();
+    if (phoneMatch) fields.tel = phoneMatch[0].replace(/[\s-.()]/g, '');
 
     // Extract postal code (European format: 4-5 digits, sometimes with space)
     const zipMatch = allText.match(/\b(\d{3}\s?\d{2}|\d{4,5})\b/);
