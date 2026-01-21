@@ -14334,6 +14334,17 @@ Important:
         }
       }
 
+
+      // Update customer's preferred currency based on this order
+      if (order.customerId && order.currency) {
+        try {
+          await storage.updateCustomer(order.customerId, { 
+            preferredCurrency: order.currency 
+          });
+        } catch (prefCurrError) {
+          console.error('[PreferredCurrency] Failed to update customer preferred currency:', prefCurrError);
+        }
+      }
       // Invalidate allocated quantities cache after order creation
       storage.invalidateAllocatedQuantitiesCache();
 
@@ -14412,6 +14423,17 @@ Important:
       // Check if order exists
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Update customer's preferred currency based on this order
+      if (order.customerId && order.currency) {
+        try {
+          await storage.updateCustomer(order.customerId, { 
+            preferredCurrency: order.currency 
+          });
+        } catch (prefCurrError) {
+          console.error('[PreferredCurrency] Failed to update customer preferred currency:', prefCurrError);
+        }
       }
 
       // Invalidate allocated quantities cache when order status changes (affects allocation)
