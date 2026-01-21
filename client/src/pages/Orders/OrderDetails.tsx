@@ -463,22 +463,42 @@ export default function OrderDetails() {
   const { groupedItems, variantGroups } = useMemo(() => {
     const items = order?.items || [];
     const variantsByParent = new Map<string, any[]>();
-    const nonVariantItems: any[] = [];
+    const nameBasedGroups = new Map<string, any[]>();
+    const singleItems: any[] = [];
+    
+    // Helper to extract parent name from product name (e.g., "Sơn màu SORAH 15ml" from "Sơn màu SORAH 15ml - 5")
+    const getParentName = (name: string): { parent: string; variant: string | null } => {
+      const match = name?.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+      if (match) {
+        return { parent: match[1].trim(), variant: match[2].trim() };
+      }
+      return { parent: name || '', variant: null };
+    };
     
     items.forEach((item: any) => {
       if (item.variantId && item.productId) {
+        // Items with explicit variant relationship
         const existing = variantsByParent.get(item.productId) || [];
         variantsByParent.set(item.productId, [...existing, item]);
       } else {
-        nonVariantItems.push(item);
+        // Try to group by product name pattern (e.g., "Product - Variant")
+        const { parent, variant } = getParentName(item.productName || '');
+        if (variant) {
+          const existing = nameBasedGroups.get(parent) || [];
+          nameBasedGroups.set(parent, [...existing, { ...item, extractedVariantName: variant }]);
+        } else {
+          singleItems.push(item);
+        }
       }
     });
     
     const result: (any | { isGroupHeader: true; group: VariantGroup })[] = [];
     const groups: VariantGroup[] = [];
     
-    nonVariantItems.forEach(item => result.push(item));
+    // Add single items (not grouped)
+    singleItems.forEach(item => result.push(item));
     
+    // Group by explicit productId/variantId
     variantsByParent.forEach((variants, parentProductId) => {
       if (variants.length > VARIANT_GROUP_THRESHOLD) {
         const totalQuantity = variants.reduce((sum: number, v: any) => sum + (parseInt(v.quantity) || 0), 0);
@@ -497,6 +517,35 @@ export default function OrderDetails() {
           parentProductName: baseProductName,
           parentImage: firstVariant.image || null,
           variants,
+          totalQuantity,
+          totalPrice,
+        };
+        
+        groups.push(group);
+        result.push({ isGroupHeader: true, group });
+      } else {
+        variants.forEach(item => result.push(item));
+      }
+    });
+    
+    // Group by name pattern (for items without explicit variant relationship)
+    nameBasedGroups.forEach((variants, parentName) => {
+      if (variants.length > VARIANT_GROUP_THRESHOLD) {
+        const totalQuantity = variants.reduce((sum: number, v: any) => sum + (parseInt(v.quantity) || 0), 0);
+        const totalPrice = variants.reduce((sum: number, v: any) => {
+          const unitPrice = parseFloat(v.unitPrice) || parseFloat(v.price) || 0;
+          const qty = parseInt(v.quantity) || 0;
+          const discount = parseFloat(v.discount) || 0;
+          return sum + (unitPrice * qty) - discount;
+        }, 0);
+        
+        const firstVariant = variants[0];
+        
+        const group: VariantGroup = {
+          parentProductId: `name-${parentName}`,
+          parentProductName: parentName,
+          parentImage: firstVariant.image || null,
+          variants: variants.map(v => ({ ...v, variantName: v.extractedVariantName })),
           totalQuantity,
           totalPrice,
         };
@@ -1177,11 +1226,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   {group.parentProductName}
                                 </p>
                               </div>
+                              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 leading-relaxed">
+                                {group.variants.map((v: any) => v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop()).join(', ')}
+                              </div>
                               <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                                <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-600">
-                                  {group.variants.length} {t('orders:variants', 'variants')}
-                                </Badge>
-                                <span className="text-xs text-blue-600 dark:text-blue-400">
+                                <span className="text-[10px] text-blue-500 dark:text-blue-400">
                                   {isExpanded ? t('orders:clickToCollapse', 'Click to collapse') : t('orders:clickToExpand', 'Click to expand')}
                                 </span>
                               </div>
