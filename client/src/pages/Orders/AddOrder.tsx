@@ -1799,15 +1799,18 @@ export default function AddOrder() {
     return countryMap[normalized] || normalized.toUpperCase().slice(0, 2);
   };
 
-  // Auto-fill currency from customer preference
+  // Auto-fill currency from customer preference (only for new orders, not when editing)
   useEffect(() => {
     if (!selectedCustomer) return;
     
-    // Auto-fill currency from customer preference
+    // Skip auto-fill when editing an existing order - preserve the saved order currency
+    if (isEditMode) return;
+    
+    // Auto-fill currency from customer preference only for new orders
     if (selectedCustomer.preferredCurrency) {
       form.setValue('currency', selectedCustomer.preferredCurrency);
     }
-  }, [selectedCustomer]);
+  }, [selectedCustomer, isEditMode]);
 
   // Auto-select carrier based on customer's country (only for new orders, not when editing)
   useEffect(() => {
@@ -2118,6 +2121,20 @@ export default function AddOrder() {
         });
       }
       
+      // Update customer's preferred currency based on order currency
+      const orderCurrency = form.getValues('currency');
+      const customerId = createdOrder.customerId || selectedCustomer?.id;
+      if (customerId && orderCurrency) {
+        try {
+          await apiRequest('PATCH', `/api/customers/${customerId}`, { 
+            preferredCurrency: orderCurrency 
+          });
+          queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+        } catch (err) {
+          console.error('Failed to update customer preferred currency:', err);
+        }
+      }
+      
       toast({
         title: t('common:success'),
         description: packingPlan 
@@ -2239,6 +2256,20 @@ export default function AddOrder() {
       return updatedOrder;
     },
     onSuccess: async () => {
+      // Update customer's preferred currency based on order currency
+      const orderCurrency = form.getValues('currency');
+      const customerId = selectedCustomer?.id;
+      if (customerId && orderCurrency) {
+        try {
+          await apiRequest('PATCH', `/api/customers/${customerId}`, { 
+            preferredCurrency: orderCurrency 
+          });
+          queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+        } catch (err) {
+          console.error('Failed to update customer preferred currency:', err);
+        }
+      }
+      
       toast({
         title: t('common:success'),
         description: t('orders:orderUpdatedSuccess'),

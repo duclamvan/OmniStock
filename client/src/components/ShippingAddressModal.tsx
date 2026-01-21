@@ -294,7 +294,7 @@ export function ShippingAddressModal({
           <DialogDescription>{defaultDescription}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={(e) => { e.stopPropagation(); form.handleSubmit(handleSubmit)(e); }} className="space-y-6">
           {/* Label Field */}
           <div>
             <Label htmlFor="label">{t('common:labelName')}</Label>
