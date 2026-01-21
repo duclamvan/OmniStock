@@ -3546,21 +3546,23 @@ export class DatabaseStorage implements IStorage {
 
   async getOverAllocatedItems(): Promise<any[]> {
     try {
-      // Use SQL aggregation to calculate ordered quantities per product/variant
-      // Only count orders that are active (pending, to_fulfill, ready_to_ship)
-      // Exclude shipped and cancelled orders as stock is already allocated or order is void
+      // Use SQL aggregation to calculate PICKED quantities per product/variant
+      // Only count items that have been physically picked (pickedQuantity > 0)
+      // Stock inconsistencies should only show items that have been picked but not yet shipped
+      // because picking is when stock is physically removed from warehouse locations
       const orderedQuantities = await db
         .select({
           productId: orderItems.productId,
           variantId: orderItems.variantId,
-          totalOrdered: sql<number>`SUM(${orderItems.quantity})::integer`,
+          totalOrdered: sql<number>`COALESCE(SUM(${orderItems.pickedQuantity}), 0)::integer`,
         })
         .from(orderItems)
         .innerJoin(orders, eq(orders.id, orderItems.orderId))
         .where(
           and(
             inArray(orders.orderStatus, ['pending', 'to_fulfill', 'ready_to_ship']),
-            sql`${orderItems.productId} IS NOT NULL`
+            sql`${orderItems.productId} IS NOT NULL`,
+            sql`COALESCE(${orderItems.pickedQuantity}, 0) > 0`
           )
         )
         .groupBy(orderItems.productId, orderItems.variantId);
