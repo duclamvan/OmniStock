@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MoveRight, Package, AlertCircle, Scan, Keyboard, MapPin, Copy, ChevronsRight, ExternalLink } from "lucide-react";
+import { MoveRight, Package, AlertCircle, Scan, Keyboard, MapPin, Copy, ChevronsRight, ExternalLink, ChevronLeft, ChevronsLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -102,6 +102,48 @@ export default function MoveInventoryDialog({
     const pattern = /^[A-Z0-9]+(-[A-Z0-9]+)*$/;
     return pattern.test(code);
   };
+
+  // Directional navigation for quick location adjustment
+  // Format: WH1-A01-R02-L03-B2 -> Bin is last, Rack is R component
+  const navigateLocation = (direction: 'bin-left' | 'bin-right' | 'rack-left' | 'rack-right') => {
+    const baseCode = locationCodeInput || fromLocation?.locationCode || '';
+    if (!baseCode) return;
+    
+    const parts = baseCode.split('-');
+    if (parts.length < 3) return;
+    
+    // Find Bin component (B1-B9) and Rack component (R01-R99)
+    let binIndex = parts.findIndex(p => /^B\d+$/i.test(p));
+    let rackIndex = parts.findIndex(p => /^R\d+$/i.test(p));
+    
+    if (direction === 'bin-left' || direction === 'bin-right') {
+      if (binIndex === -1) return;
+      const binNum = parseInt(parts[binIndex].replace(/^B/i, ''));
+      const delta = direction === 'bin-right' ? 1 : -1;
+      const newBinNum = Math.max(1, Math.min(9, binNum + delta));
+      parts[binIndex] = `B${newBinNum}`;
+    } else {
+      if (rackIndex === -1) return;
+      const rackNum = parseInt(parts[rackIndex].replace(/^R/i, ''));
+      const delta = direction === 'rack-right' ? 1 : -1;
+      const newRackNum = Math.max(1, Math.min(99, rackNum + delta));
+      parts[rackIndex] = `R${String(newRackNum).padStart(2, '0')}`;
+    }
+    
+    const newCode = parts.join('-');
+    handleLocationCodeChange(newCode);
+  };
+
+  // Check if current code has navigable components
+  const hasNavigableComponents = () => {
+    const code = locationCodeInput || fromLocation?.locationCode || '';
+    const parts = code.split('-');
+    const hasBin = parts.some(p => /^B\d+$/i.test(p));
+    const hasRack = parts.some(p => /^R\d+$/i.test(p));
+    return { hasBin, hasRack };
+  };
+
+  const { hasBin, hasRack } = hasNavigableComponents();
 
   const handleLocationCodeChange = (value: string) => {
     const upperValue = value.toUpperCase();
@@ -288,6 +330,60 @@ export default function MoveInventoryDialog({
                     </Button>
                   )}
                 </div>
+                
+                {/* Directional Navigation Arrows */}
+                {(hasBin || hasRack) && (
+                  <div className="flex items-center justify-center gap-1 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateLocation('rack-left')}
+                      disabled={!hasRack || moveInventoryMutation.isPending}
+                      className="h-9 w-9 p-0"
+                      title={t('warehouse:previousRow')}
+                    >
+                      <ChevronsLeft className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateLocation('bin-left')}
+                      disabled={!hasBin || moveInventoryMutation.isPending}
+                      className="h-9 w-9 p-0"
+                      title={t('warehouse:previousBin')}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <div className="px-2 text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                      {t('warehouse:row')} / {t('warehouse:bin')}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateLocation('bin-right')}
+                      disabled={!hasBin || moveInventoryMutation.isPending}
+                      className="h-9 w-9 p-0"
+                      title={t('warehouse:nextBin')}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateLocation('rack-right')}
+                      disabled={!hasRack || moveInventoryMutation.isPending}
+                      className="h-9 w-9 p-0"
+                      title={t('warehouse:nextRow')}
+                    >
+                      <ChevronsRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+                
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t('warehouse:locationCodeFormatExtended')}
                 </p>
