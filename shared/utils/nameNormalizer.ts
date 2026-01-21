@@ -109,10 +109,9 @@ export function normalizeStreetName(street: string): string {
 export function normalizeCityName(city: string): string {
   if (!city) return '';
   
-  const withoutDiacritics = removeDiacritics(city);
-  
-  // Cities should be Title Case (e.g., "Praha", "Ceska Lipa")
-  return toTitleCase(withoutDiacritics.trim().replace(/\s+/g, ' '));
+  // Keep diacritics for proper city names (e.g., "Česká Lípa", "Praha")
+  // Only apply Title Case formatting
+  return toTitleCase(city.trim().replace(/\s+/g, ' '));
 }
 
 export function normalizeAddress(address: {
