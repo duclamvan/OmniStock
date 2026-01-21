@@ -199,10 +199,17 @@ export default function StockInconsistencies() {
           {t('setCorrectQuantity')}
         </label>
         <Input
-          type="number"
-          min="0"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={newQuantity}
-          onChange={(e) => setNewQuantity(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || /^\d+$/.test(val)) {
+              setNewQuantity(val);
+            }
+          }}
+          onFocus={(e) => e.target.select()}
           placeholder={String(getSuggestedQuantity(quickFixItem))}
           className="text-lg font-bold text-center"
           data-testid="input-new-quantity"
