@@ -125,6 +125,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { normalizePhone } from '@shared/utils/phoneNormalizer';
+import { normalizeCityName } from '@shared/utils/nameNormalizer';
 import { eq, desc, and, sql, inArray, or, ilike, isNull, isNotNull, lt, gt } from "drizzle-orm";
 import {
   ObjectStorageService,
@@ -23046,7 +23047,7 @@ Important:
                   if (missingCity) {
                     const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
                     if (geocodedCity) {
-                      result.city = geocodedCity;
+                      result.city = normalizeCityName(geocodedCity);
                     }
                   }
                   
@@ -23146,7 +23147,7 @@ Important:
       if (missingCity) {
         const geocodedCity = address.city || address.town || address.village || address.municipality;
         if (geocodedCity) {
-          result.city = geocodedCity;
+          result.city = normalizeCityName(geocodedCity);
         }
       }
 
@@ -23198,7 +23199,7 @@ Important:
         // Apply autocorrected/filled values
         basicParsed.fields.street = filledFields.street || basicParsed.fields.street;
         basicParsed.fields.streetNumber = filledFields.streetNumber || basicParsed.fields.streetNumber;
-        basicParsed.fields.city = filledFields.city || basicParsed.fields.city;
+        basicParsed.fields.city = filledFields.city ? normalizeCityName(filledFields.city) : basicParsed.fields.city;
         basicParsed.fields.zipCode = filledFields.zipCode || basicParsed.fields.zipCode;
         basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
         basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
@@ -23279,7 +23280,7 @@ Important rules:
         // Apply autocorrected/filled values
         basicParsed.fields.street = filledFields.street || basicParsed.fields.street;
         basicParsed.fields.streetNumber = filledFields.streetNumber || basicParsed.fields.streetNumber;
-        basicParsed.fields.city = filledFields.city || basicParsed.fields.city;
+        basicParsed.fields.city = filledFields.city ? normalizeCityName(filledFields.city) : basicParsed.fields.city;
         basicParsed.fields.zipCode = filledFields.zipCode || basicParsed.fields.zipCode;
         basicParsed.fields.country = filledFields.country || basicParsed.fields.country;
         basicParsed.fields.company = filledFields.company || basicParsed.fields.company;
@@ -23313,7 +23314,7 @@ Important rules:
       // Apply autocorrected/filled values
       const finalStreet = filledFields.street || street;
       const finalStreetNumber = filledFields.streetNumber || streetNumber;
-      city = filledFields.city || city;
+      city = filledFields.city ? normalizeCityName(filledFields.city) : city;
       zipCode = filledFields.zipCode || zipCode;
       country = filledFields.country || country;
       company = filledFields.company || company;

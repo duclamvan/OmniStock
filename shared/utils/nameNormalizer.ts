@@ -111,7 +111,8 @@ export function normalizeCityName(city: string): string {
   
   const withoutDiacritics = removeDiacritics(city);
   
-  return toTitleCase(withoutDiacritics.trim().replace(/\s+/g, ' '));
+  // Cities should be all UPPERCASE for legal/official formatting
+  return withoutDiacritics.trim().replace(/\s+/g, ' ').toUpperCase();
 }
 
 export function normalizeAddress(address: {
