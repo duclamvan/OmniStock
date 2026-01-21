@@ -1281,10 +1281,14 @@ export default function AddOrder() {
       const response = await apiRequest('POST', `/api/customers/${selectedCustomer.id}/shipping-addresses`, addressData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (createdAddress) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
       setShowShippingModal(false);
       setEditingAddress(null);
+      // Auto-select the newly created address
+      if (createdAddress) {
+        setSelectedShippingAddress(createdAddress);
+      }
       toast({
         title: t('common:success'),
         description: t('orders:shippingAddressCreatedSuccess'),
