@@ -138,6 +138,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   }
   
   const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
+  const totalCost = allOrders.reduce((sum, o) => sum + Number(o.totalCost || 0), 0);
   const totalItemsSold = allOrderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const averageOrderValue = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
   
@@ -269,7 +270,7 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
     topCustomers,
     financials: {
       totalExpenses,
-      grossProfit: totalRevenue - totalExpenses,
+      grossProfit: totalRevenue - totalCost,
       expensesByCategory,
     },
   };
