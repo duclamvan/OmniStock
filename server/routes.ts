@@ -24039,6 +24039,7 @@ Important rules:
       }
 
       const apiKey = process.env.BRIGHT_DATA_API_KEY;
+      console.log(`[Facebook Profile] API Key available: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
       if (!apiKey) {
         return res.status(500).json({ message: 'Bright Data API key not configured' });
       }
@@ -24190,6 +24191,7 @@ Important rules:
   app.post('/api/facebook/batch-update', isAuthenticated, async (req, res) => {
     try {
       const apiKey = process.env.BRIGHT_DATA_API_KEY;
+      console.log(`[Facebook Profile] API Key available: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
       if (!apiKey) {
         return res.status(500).json({ message: 'Bright Data API key not configured' });
       }
