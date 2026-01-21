@@ -21314,6 +21314,23 @@ Important:
         }
       }
 
+      // Include uploadedFiles from includedDocuments (files uploaded during order creation)
+      if (includedDocs?.uploadedFiles && Array.isArray(includedDocs.uploadedFiles)) {
+        includedDocs.uploadedFiles.forEach((file: any, index: number) => {
+          if (file.url) {
+            allFiles.push({
+              id: `order-doc-${index}`,
+              fileName: file.name || `Document ${index + 1}`,
+              fileUrl: file.url,
+              fileType: 'order-document',
+              fileSize: file.size,
+              mimeType: 'application/octet-stream',
+              source: 'order-upload'
+            });
+          }
+        });
+      }
+
       res.json(allFiles);
     } catch (error) {
       console.error('Error fetching order files:', error);
@@ -22125,6 +22142,47 @@ Important:
     } catch (error) {
       console.error('Error creating product file:', error);
       res.status(500).json({ message: 'Failed to create product file' });
+    }
+  });
+
+
+  // Upload documents for orders (before order creation or for editing)
+  const orderDocUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  });
+  
+  app.post('/api/orders/documents/upload', isAuthenticated, orderDocUpload.array('files', 10), async (req: any, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded' });
+      }
+
+      const uploadDir = 'uploads/order-documents';
+      await fs.promises.mkdir(uploadDir, { recursive: true });
+
+      const uploadedFiles: { name: string; url: string; size: number }[] = [];
+
+      for (const file of files) {
+        const timestamp = Date.now();
+        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}-${sanitizedName}`;
+        const filepath = path.join(uploadDir, filename);
+        
+        await fs.promises.writeFile(filepath, file.buffer);
+        
+        uploadedFiles.push({
+          name: file.originalname,
+          url: `/uploads/order-documents/${filename}`,
+          size: file.size
+        });
+      }
+
+      res.json({ success: true, uploadedFiles });
+    } catch (error) {
+      console.error('Error uploading order documents:', error);
+      res.status(500).json({ message: 'Failed to upload documents' });
     }
   });
 

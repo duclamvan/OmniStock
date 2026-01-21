@@ -3765,7 +3765,38 @@ export default function AddOrder() {
     });
   }, []);
 
-  const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
+  const onSubmit = async (data: z.infer<typeof addOrderSchema>) => {
+    // Upload files first if there are any
+    let uploadedFileUrls: { name: string; url: string; size: number }[] = [];
+    if (uploadedFiles.length > 0) {
+      try {
+        const formData = new FormData();
+        uploadedFiles.forEach(file => {
+          formData.append('files', file);
+        });
+        
+        const response = await fetch('/api/orders/documents/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          uploadedFileUrls = result.uploadedFiles || [];
+        } else {
+          console.error('Failed to upload documents');
+          toast({
+            title: t('common:error'),
+            description: t('orders:failedToUploadDocuments'),
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error uploading documents:', error);
+      }
+    }
+
     const orderData = {
       ...data,
       // Don't override customerId - it's set in createOrderMutation if a new customer is created
@@ -3812,7 +3843,7 @@ export default function AddOrder() {
         isFreeItem: item.isFreeItem || undefined,
       })),
       includedDocuments: {
-        uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
+        uploadedFiles: uploadedFileUrls,
         includeServiceBill: includeServiceBill,
         includePackingList: includePackingList,
       },
