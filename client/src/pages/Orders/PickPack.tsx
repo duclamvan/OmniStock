@@ -52,8 +52,7 @@ import { CameraScannerDialog } from "@/components/scanning/CameraScannerDialog";
 import { isWarehouseLocationQR, parseWarehouseLocationQR, isProductBarcode } from "@shared/qrUtils";
 import { GLSAutofillButton } from "@/components/shipping/GLSAutofillButton";
 import { DHLAutofillButton } from "@/components/shipping/DHLAutofillButton";
-import { GLS_COUNTRY_MAP } from "@/lib/gls";
-import { COUNTRY_TO_GERMAN } from "@/lib/dhlBookmarklet";
+import { getCountryForCarrier, countryToIso, getLocalizedCountryName, getCountryFlag, type ShippingCarrier } from '@shared/utils/countryNormalizer';
 import { useTranslation } from 'react-i18next';
 import { usePPLLabelPrinter, usePackingListPrinter } from "@/hooks/usePrinter";
 import { 
@@ -7599,17 +7598,16 @@ export default function PickPack() {
     if (typeof order.shippingAddress === 'string') {
       address = order.shippingAddress.toLowerCase();
     } else if (order.shippingAddress && typeof order.shippingAddress === 'object') {
-      // If it's an object with a country field, use that directly
+      // If it's an object with a country field, use the country normalizer
       const countryField = (order.shippingAddress as any).country;
       if (countryField) {
-        // Try to match the country name to a code
-        const countryLower = countryField.toLowerCase();
-        // Check if it's already a 2-letter code
-        if (countryLower.length === 2) {
-          return countryLower.toUpperCase();
+        // Use countryToIso for robust country code extraction
+        const isoCode = countryToIso(countryField);
+        if (isoCode) {
+          return isoCode;
         }
         // Otherwise, build the address string for parsing below
-        address = countryLower;
+        address = countryField.toLowerCase();
       }
     }
     
@@ -11182,50 +11180,7 @@ export default function PickPack() {
                 const nameParts = (recipientData.name || '').trim().split(' ');
                 const firstName = nameParts[0] || '';
                 const lastName = nameParts.slice(1).join(' ') || '';
-                const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
-                
-                // Get country flag emoji
-                const getCountryFlag = (countryName: string) => {
-                  const countryCodeMap: { [key: string]: string } = {
-                    'Deutschland': 'DE',
-                    'Germany': 'DE',
-                    'Frankreich': 'FR',
-                    'France': 'FR',
-                    'Österreich': 'AT',
-                    'Austria': 'AT',
-                    'Schweiz': 'CH',
-                    'Switzerland': 'CH',
-                    'Polen': 'PL',
-                    'Poland': 'PL',
-                    'Tschechien': 'CZ',
-                    'Czech Republic': 'CZ',
-                    'Niederlande': 'NL',
-                    'Netherlands': 'NL',
-                    'Belgien': 'BE',
-                    'Belgium': 'BE',
-                    'Italien': 'IT',
-                    'Italy': 'IT',
-                    'Spanien': 'ES',
-                    'Spain': 'ES',
-                    'Dänemark': 'DK',
-                    'Denmark': 'DK',
-                    'Schweden': 'SE',
-                    'Sweden': 'SE',
-                    'Slowakei': 'SK',
-                    'Slovakia': 'SK',
-                  };
-                  
-                  const code = countryCodeMap[countryName] || countryCodeMap[recipientData.country];
-                  // Only return flag if we have a valid country code mapping
-                  if (!code) return '';
-                  
-                  // Convert country code to flag emoji
-                  return code
-                    .toUpperCase()
-                    .split('')
-                    .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
-                    .join('');
-                };
+                const germanCountry = getCountryForCarrier(recipientData.country, 'gls');
                 
                 const copyField = async (value: string, fieldName: string) => {
                   try {
@@ -11874,7 +11829,7 @@ export default function PickPack() {
                 const nameParts = (recipientData.name || '').trim().split(' ');
                 const firstName = nameParts[0] || '';
                 const lastName = nameParts.slice(1).join(' ') || '';
-                const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
+                const germanCountry = getCountryForCarrier(recipientData.country, 'gls');
 
                 const copyField = async (value: string, fieldName: string) => {
                   try {
@@ -12352,7 +12307,7 @@ export default function PickPack() {
                       houseNumber: recipientData.houseNumber,
                       postalCode: recipientData.postalCode,
                       city: recipientData.city,
-                      country: COUNTRY_TO_GERMAN[recipientData.country] || recipientData.country,
+                      country: getCountryForCarrier(recipientData.country, 'dhl'),
                       email: recipientData.email,
                       phone: recipientData.phone,
                     }}
@@ -12720,48 +12675,7 @@ export default function PickPack() {
             const nameParts = (recipientData.name || '').trim().split(' ');
             const firstName = nameParts[0] || '';
             const lastName = nameParts.slice(1).join(' ') || '';
-            const germanCountry = GLS_COUNTRY_MAP[recipientData.country] || recipientData.country;
-
-            // Get country flag emoji
-            const getCountryFlag = (countryName: string) => {
-              const countryCodeMap: { [key: string]: string } = {
-                'Deutschland': 'DE',
-                'Germany': 'DE',
-                'Frankreich': 'FR',
-                'France': 'FR',
-                'Österreich': 'AT',
-                'Austria': 'AT',
-                'Schweiz': 'CH',
-                'Switzerland': 'CH',
-                'Polen': 'PL',
-                'Poland': 'PL',
-                'Tschechien': 'CZ',
-                'Czech Republic': 'CZ',
-                'Niederlande': 'NL',
-                'Netherlands': 'NL',
-                'Belgien': 'BE',
-                'Belgium': 'BE',
-                'Italien': 'IT',
-                'Italy': 'IT',
-                'Spanien': 'ES',
-                'Spain': 'ES',
-                'Dänemark': 'DK',
-                'Denmark': 'DK',
-                'Schweden': 'SE',
-                'Sweden': 'SE',
-                'Slowakei': 'SK',
-                'Slovakia': 'SK',
-              };
-              
-              const code = countryCodeMap[countryName] || countryCodeMap[recipientData.country];
-              if (!code) return '';
-              
-              return code
-                .toUpperCase()
-                .split('')
-                .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
-                .join('');
-            };
+            const germanCountry = getCountryForCarrier(recipientData.country, 'gls');
 
             const copyField = async (value: string, fieldName: string) => {
               try {
@@ -18692,13 +18606,16 @@ export default function PickPack() {
                       const getCountryCode = (order: any): string => {
                         if (!order.shippingAddress) return '';
                         if (typeof order.shippingAddress === 'object' && order.shippingAddress.country) {
+                          // Use countryToIso for robust country code extraction
+                          const isoCode = countryToIso(order.shippingAddress.country);
+                          if (isoCode) return isoCode;
                           return order.shippingAddress.country.toUpperCase();
                         }
                         // Fallback: try to extract from address string
                         const address = getAddressString(order);
-                        if (address.includes('czech') || address.includes('česk') || address.includes('prague') || address.includes('praha')) return 'CZ';
-                        if (address.includes('slovakia') || address.includes('slovensk') || address.includes('bratislava')) return 'SK';
-                        if (address.includes('germany') || address.includes('deutschland') || address.includes('berlin')) return 'DE';
+                        // Try to extract country from address using countryToIso
+                        const addressIso = countryToIso(address);
+                        if (addressIso) return addressIso;
                         return '';
                       };
                       

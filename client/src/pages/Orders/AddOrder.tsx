@@ -109,6 +109,7 @@ import { useRealTimeOrder } from "@/hooks/useSocket";
 import { RealTimeViewers, LockOverlay } from "@/components/RealTimeViewers";
 import { normalizeFirstName, normalizeLastName, normalizeFullName } from '@shared/utils/nameNormalizer';
 import { parseAddressLine, shouldFetchAddressDetails, mergeAddressData } from '@shared/utils/addressParser';
+import { normalizeCountryForStorage, getLocalizedCountryName, countryToIso, getCountryFlag } from '@shared/utils/countryNormalizer';
 
 // Helper function to normalize carrier names for backward compatibility
 const normalizeCarrier = (value: string): string => {
@@ -270,163 +271,6 @@ interface BuyXGetYAllocation {
   freeItemsAssigned: number;
   remainingFreeSlots: number;
 }
-
-// Helper function to get country flag emoji
-const getCountryFlag = (country: string | null | undefined): string => {
-  if (!country) return '';
-  
-  const normalizedCountry = country.toLowerCase();
-  
-  const countryFlagMap: Record<string, string> = {
-    // ISO codes
-    'cz': '🇨🇿',
-    'de': '🇩🇪',
-    'at': '🇦🇹',
-    'vn': '🇻🇳',
-    'pl': '🇵🇱',
-    'sk': '🇸🇰',
-    'hu': '🇭🇺',
-    'gb': '🇬🇧',
-    'fr': '🇫🇷',
-    'it': '🇮🇹',
-    'es': '🇪🇸',
-    'nl': '🇳🇱',
-    'be': '🇧🇪',
-    'ch': '🇨🇭',
-    'cn': '🇨🇳',
-    'ru': '🇷🇺',
-    'dk': '🇩🇰',
-    'se': '🇸🇪',
-    'no': '🇳🇴',
-    'fi': '🇫🇮',
-    'pt': '🇵🇹',
-    'gr': '🇬🇷',
-    'hr': '🇭🇷',
-    'ro': '🇷🇴',
-    'bg': '🇧🇬',
-    // Czech Republic
-    'czechia': '🇨🇿',
-    'czech republic': '🇨🇿',
-    'česko': '🇨🇿',
-    'česká republika': '🇨🇿',
-    'cesko': '🇨🇿',
-    'ceska republika': '🇨🇿',
-    // Germany
-    'germany': '🇩🇪',
-    'deutschland': '🇩🇪',
-    'německo': '🇩🇪',
-    'nemecko': '🇩🇪',
-    // Austria
-    'austria': '🇦🇹',
-    'österreich': '🇦🇹',
-    'osterreich': '🇦🇹',
-    'rakousko': '🇦🇹',
-    // Vietnam
-    'vietnam': '🇻🇳',
-    'viet nam': '🇻🇳',
-    // Poland
-    'poland': '🇵🇱',
-    'polska': '🇵🇱',
-    'polsko': '🇵🇱',
-    // Slovakia
-    'slovakia': '🇸🇰',
-    'slovensko': '🇸🇰',
-    // Hungary
-    'hungary': '🇭🇺',
-    'magyarország': '🇭🇺',
-    'magyarorszag': '🇭🇺',
-    'maďarsko': '🇭🇺',
-    'madarsko': '🇭🇺',
-    // USA/UK
-    'united states': '🇺🇸',
-    'usa': '🇺🇸',
-    'us': '🇺🇸',
-    'united kingdom': '🇬🇧',
-    'uk': '🇬🇧',
-    'britain': '🇬🇧',
-    'great britain': '🇬🇧',
-    // France
-    'france': '🇫🇷',
-    'francie': '🇫🇷',
-    'frankreich': '🇫🇷',
-    // Italy
-    'italy': '🇮🇹',
-    'italia': '🇮🇹',
-    'itálie': '🇮🇹',
-    'italie': '🇮🇹',
-    // Spain
-    'spain': '🇪🇸',
-    'españa': '🇪🇸',
-    'espana': '🇪🇸',
-    'španělsko': '🇪🇸',
-    'spanelsko': '🇪🇸',
-    // Netherlands
-    'netherlands': '🇳🇱',
-    'holland': '🇳🇱',
-    'niederlande': '🇳🇱',
-    'nizozemsko': '🇳🇱',
-    // Belgium
-    'belgium': '🇧🇪',
-    'belgië': '🇧🇪',
-    'belgie': '🇧🇪',
-    'belgien': '🇧🇪',
-    // Switzerland
-    'switzerland': '🇨🇭',
-    'schweiz': '🇨🇭',
-    'suisse': '🇨🇭',
-    'svizzera': '🇨🇭',
-    'švýcarsko': '🇨🇭',
-    'svycarsko': '🇨🇭',
-    // China
-    'china': '🇨🇳',
-    'čína': '🇨🇳',
-    'cina': '🇨🇳',
-    // Russia
-    'russia': '🇷🇺',
-    'rusko': '🇷🇺',
-    'russland': '🇷🇺',
-    // Denmark
-    'denmark': '🇩🇰',
-    'dánsko': '🇩🇰',
-    'dansko': '🇩🇰',
-    'dänemark': '🇩🇰',
-    // Sweden
-    'sweden': '🇸🇪',
-    'švédsko': '🇸🇪',
-    'svedsko': '🇸🇪',
-    'schweden': '🇸🇪',
-    // Norway
-    'norway': '🇳🇴',
-    'norsko': '🇳🇴',
-    'norwegen': '🇳🇴',
-    // Finland
-    'finland': '🇫🇮',
-    'finsko': '🇫🇮',
-    'finnland': '🇫🇮',
-    // Portugal
-    'portugal': '🇵🇹',
-    'portugalsko': '🇵🇹',
-    // Greece
-    'greece': '🇬🇷',
-    'řecko': '🇬🇷',
-    'recko': '🇬🇷',
-    'griechenland': '🇬🇷',
-    // Croatia
-    'croatia': '🇭🇷',
-    'chorvatsko': '🇭🇷',
-    'kroatien': '🇭🇷',
-    // Romania
-    'romania': '🇷🇴',
-    'rumunsko': '🇷🇴',
-    'rumänien': '🇷🇴',
-    // Bulgaria
-    'bulgaria': '🇧🇬',
-    'bulharsko': '🇧🇬',
-    'bulgarien': '🇧🇬',
-  };
-  
-  return countryFlagMap[normalizedCountry] || '🌍';
-};
 
 export default function AddOrder() {
   const [, setLocation] = useLocation();
@@ -787,76 +631,76 @@ export default function AddOrder() {
   const mockAddressDatabase = [
     // Czech Republic addresses
     { 
-      formatted: "Dragounská 2545/9A, 350 02 Cheb, Czechia",
+      formatted: "Dragounská 2545/9A, 350 02 Cheb, Czech Republic",
       street: "Dragounská 2545/9A",
       city: "Cheb",
       state: "Karlovarský kraj",
       zipCode: "350 02",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     { 
-      formatted: "Dragounská 150, 350 02 Cheb, Czechia",
+      formatted: "Dragounská 150, 350 02 Cheb, Czech Republic",
       street: "Dragounská 150",
       city: "Cheb",
       state: "Karlovarský kraj",
       zipCode: "350 02",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Palackého náměstí 2, 301 00 Plzeň, Czechia",
+      formatted: "Palackého náměstí 2, 301 00 Plzeň, Czech Republic",
       street: "Palackého náměstí 2",
       city: "Plzeň",
       state: "Plzeňský kraj",
       zipCode: "301 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Wenceslas Square 785/36, 110 00 Praha 1, Czechia",
+      formatted: "Wenceslas Square 785/36, 110 00 Praha 1, Czech Republic",
       street: "Wenceslas Square 785/36",
       city: "Praha 1",
       state: "Praha",
       zipCode: "110 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Václavské náměstí 785/36, 110 00 Praha 1, Czechia",
+      formatted: "Václavské náměstí 785/36, 110 00 Praha 1, Czech Republic",
       street: "Václavské náměstí 785/36",
       city: "Praha 1",
       state: "Praha",
       zipCode: "110 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Karlova 1, 110 00 Praha 1, Czechia",
+      formatted: "Karlova 1, 110 00 Praha 1, Czech Republic",
       street: "Karlova 1",
       city: "Praha 1",
       state: "Praha",
       zipCode: "110 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Nerudova 19, 118 00 Praha 1, Czechia",
+      formatted: "Nerudova 19, 118 00 Praha 1, Czech Republic",
       street: "Nerudova 19",
       city: "Praha 1",
       state: "Praha",
       zipCode: "118 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Masarykova 28, 602 00 Brno, Czechia",
+      formatted: "Masarykova 28, 602 00 Brno, Czech Republic",
       street: "Masarykova 28",
       city: "Brno",
       state: "Jihomoravský kraj",
       zipCode: "602 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     {
-      formatted: "Náměstí Svobody 1, 602 00 Brno, Czechia",
+      formatted: "Náměstí Svobody 1, 602 00 Brno, Czech Republic",
       street: "Náměstí Svobody 1",
       city: "Brno",
       state: "Jihomoravský kraj",
       zipCode: "602 00",
-      country: "Czechia"
+      country: "Czech Republic"
     },
     // Germany addresses
     {
@@ -933,7 +777,7 @@ export default function AddOrder() {
       city: suggestion.city || '',
       state: suggestion.state || '',
       zipCode: (suggestion.zipCode || '').trim(),
-      country: suggestion.country || '',
+      country: normalizeCountryForStorage(suggestion.country) || '',
     }));
     setAddressAutocomplete(suggestion.formatted);
     setShowAddressDropdown(false);
@@ -1669,7 +1513,7 @@ export default function AddOrder() {
       if (fields.streetNumber) setNewCustomer(prev => ({ ...prev, streetNumber: fields.streetNumber }));
       if (fields.city) setNewCustomer(prev => ({ ...prev, city: fields.city }));
       if (fields.zipCode) setNewCustomer(prev => ({ ...prev, zipCode: fields.zipCode }));
-      if (fields.country) setNewCustomer(prev => ({ ...prev, country: fields.country }));
+      if (fields.country) setNewCustomer(prev => ({ ...prev, country: normalizeCountryForStorage(fields.country) }));
       if (fields.state) setNewCustomer(prev => ({ ...prev, state: fields.state }));
       
       // Format phone number with country code after country is set

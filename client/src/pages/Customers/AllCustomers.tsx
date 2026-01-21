@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useTranslation } from 'react-i18next';
+import { getLocalizedCountryName, getCountryFlag, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,7 @@ import {
 
 export default function AllCustomers() {
   usePageTitle('nav.customers', 'Customers');
-  const { t } = useTranslation(['customers', 'common']);
+  const { t, i18n } = useTranslation(['customers', 'common']);
   const { toast } = useToast();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -289,7 +290,7 @@ export default function AllCustomers() {
         [t('customers:shippingStreetNumber')]: customer.shippingStreetNumber || '',
         [t('customers:shippingCity')]: customer.shippingCity || '',
         [t('customers:shippingZipCode')]: customer.shippingZipCode || '',
-        [t('common:country')]: customer.shippingCountry || '',
+        [t('common:country')]: normalizeCountryForStorage(customer.shippingCountry) || '',
         [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         [t('customers:totalOrders')]: customer.orderCount || 0,
         [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -377,23 +378,13 @@ export default function AllCustomers() {
       sortable: true,
       className: "hidden lg:table-cell",
       cell: (customer) => {
-        const countryFlags: Record<string, string> = {
-          'Deutschland': '🇩🇪', 'Österreich': '🇦🇹', 'Česko': '🇨🇿',
-          'Slovensko': '🇸🇰', 'Polska': '🇵🇱', 'Nederland': '🇳🇱',
-          'België': '🇧🇪', 'France': '🇫🇷', 'España': '🇪🇸',
-          'Italia': '🇮🇹', 'Schweiz': '🇨🇭', 'United Kingdom': '🇬🇧',
-          'United States': '🇺🇸', 'Việt Nam': '🇻🇳', 'Eesti': '🇪🇪',
-          'Sverige': '🇸🇪', 'Suomi': '🇫🇮', 'Danmark': '🇩🇰',
-          'Norge': '🇳🇴', 'Hrvatska': '🇭🇷', 'Slovenija': '🇸🇮',
-          'Magyarország': '🇭🇺', 'România': '🇷🇴', 'Türkiye': '🇹🇷',
-          'Srbija': '🇷🇸', 'Indonesia': '🇮🇩', 'Portugal': '🇵🇹',
-        };
-        const flag = customer.shippingCountry ? countryFlags[customer.shippingCountry] || '🌍' : null;
+        const flag = getCountryFlag(customer.shippingCountry);
+        const localizedName = getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage);
         
         return customer.shippingCountry ? (
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-base">{flag}</span>
-            <span className="text-gray-600">{customer.shippingCountry}</span>
+            <span className="text-gray-600">{localizedName}</span>
           </div>
         ) : <span className="text-gray-400">-</span>;
       },
@@ -594,7 +585,7 @@ export default function AllCustomers() {
         [t('customers:shippingStreetNumber')]: customer.shippingStreetNumber || '',
         [t('customers:shippingCity')]: customer.shippingCity || '',
         [t('customers:shippingZipCode')]: customer.shippingZipCode || '',
-        [t('common:country')]: customer.shippingCountry || '',
+        [t('common:country')]: normalizeCountryForStorage(customer.shippingCountry) || '',
         [t('customers:lastPurchase')]: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         [t('customers:totalOrders')]: customer.orderCount || 0,
         [t('customers:totalSpent')]: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -641,7 +632,7 @@ export default function AllCustomers() {
         name: customer.name || '',
         email: customer.email || '',
         phone: customer.shippingTel || '',
-        country: customer.shippingCountry || '',
+        country: normalizeCountryForStorage(customer.shippingCountry) || '',
         lastPurchase: customer.lastOrderDate ? formatDate(customer.lastOrderDate) : '',
         orderCount: customer.orderCount || 0,
         totalSpent: formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
@@ -682,7 +673,7 @@ export default function AllCustomers() {
         'Address': customer.shippingStreet || '',
         'City': customer.shippingCity || '',
         'Zip Code': customer.shippingZipCode || '',
-        'Country': customer.shippingCountry || '',
+        'Country': normalizeCountryForStorage(customer.shippingCountry) || '',
         'Facebook ID': customer.facebookId || '',
         'Facebook Name': customer.facebookName || '',
         'Facebook URL': customer.facebookUrl || '',
@@ -709,7 +700,7 @@ export default function AllCustomers() {
         'Billing Street Number': customer.billingStreetNumber || '',
         'Billing City': customer.billingCity || '',
         'Billing Zip Code': customer.billingZipCode || '',
-        'Billing Country': customer.billingCountry || '',
+        'Billing Country': normalizeCountryForStorage(customer.billingCountry) || '',
       }));
 
       exportToXLSX(exportData, 'customers_comprehensive', t('customers:customers'));
