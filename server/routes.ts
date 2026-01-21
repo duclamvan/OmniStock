@@ -24079,6 +24079,7 @@ Important rules:
 
         if (syncResponse.ok) {
           const results = await syncResponse.json();
+          console.log("[Facebook Profile] Sync API raw response:", JSON.stringify(results).substring(0, 500));
           if (results && results.length > 0 && !results[0]?.error) {
             profile = results[0];
             console.log('[Facebook Profile] Sync API success!');
