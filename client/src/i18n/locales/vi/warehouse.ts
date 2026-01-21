@@ -915,6 +915,14 @@ const warehouse = {
   taskCompleted: 'Hoàn thành công việc thành công',
   taskCompletionFailed: 'Không thể hoàn thành công việc',
   
+  // Directional navigation for location selector
+  previousRow: 'Hàng trước',
+  nextRow: 'Hàng sau',
+  previousBin: 'Ngăn trước',
+  nextBin: 'Ngăn sau',
+  previousPallet: 'Pallet trước',
+  nextPallet: 'Pallet sau',
+  
   // Zone Management
   maximumZonesReached: 'Đã đạt số khu vực tối đa',
   cannotDeleteZoneA: 'Không thể xóa Khu vực A',

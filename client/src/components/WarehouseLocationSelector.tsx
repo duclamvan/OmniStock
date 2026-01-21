@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, CheckCircle2, MapPin, Package, Layers } from "lucide-react";
+import { AlertCircle, CheckCircle2, MapPin, Package, Layers, ChevronLeft, ChevronsLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import { useDefaultWarehouseSelection } from "@/hooks/useDefaultWarehouseSelection";
 import {
   generateShelfLocationCode,
@@ -306,6 +306,31 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
   const handlePalletChange = useCallback((value: string) => {
     setPallet(value);
   }, []);
+
+  // Directional navigation handlers for quick location adjustments
+  const navigateBin = useCallback((direction: number) => {
+    if (areaType === "shelves") {
+      const currentBinNum = parseInt(bin.replace('B', ''));
+      const newBinNum = Math.max(1, Math.min(9, currentBinNum + direction));
+      setBin(`B${newBinNum}`);
+    } else if (areaType === "pallet") {
+      const currentPalletNum = parseInt(pallet.replace('PAL', ''));
+      const newPalletNum = Math.max(1, Math.min(99, currentPalletNum + direction));
+      setPallet(`PAL${newPalletNum}`);
+    }
+  }, [areaType, bin, pallet]);
+
+  const navigateRack = useCallback((direction: number) => {
+    if (areaType === "shelves") {
+      const currentRackNum = parseInt(rack.replace('R', ''));
+      const newRackNum = Math.max(1, Math.min(99, currentRackNum + direction));
+      setRack(`R${String(newRackNum).padStart(2, '0')}`);
+    } else if (areaType === "pallet") {
+      const currentRackNum = parseInt(palletRack.replace('R', ''));
+      const newRackNum = Math.max(1, Math.min(99, currentRackNum + direction));
+      setPalletRack(`R${String(newRackNum).padStart(2, '0')}`);
+    }
+  }, [areaType, rack, palletRack]);
 
   // Get warehouse code - prefer the code field, fallback to extracting from ID for legacy data
   const getWarehouseCode = useCallback((warehouse: { id: string; code?: string | null }): string => {
@@ -769,7 +794,7 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
           )}
 
           {/* Location Code Preview */}
-          <div className="border rounded-md p-2 bg-slate-50">
+          <div className="border rounded-md p-2 bg-slate-50 dark:bg-slate-800">
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -790,6 +815,62 @@ const WarehouseLocationSelector = memo(function WarehouseLocationSelector({
               <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
             </div>
           </div>
+
+          {/* Directional Navigation Arrows - Quick move controls */}
+          {!manualEntry && (
+            <div className="flex items-center justify-center gap-1 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigateRack(-1)}
+                disabled={disabled}
+                className="h-10 w-10 p-0"
+                title={t('warehouse:previousRow')}
+              >
+                <ChevronsLeft className="h-5 w-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigateBin(-1)}
+                disabled={disabled}
+                className="h-10 w-10 p-0"
+                title={areaType === "pallet" ? t('warehouse:previousPallet') : t('warehouse:previousBin')}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div className="px-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {areaType === "pallet" 
+                  ? `${t('warehouse:row')} / ${t('warehouse:pallet')}`
+                  : `${t('warehouse:row')} / ${t('warehouse:bin')}`
+                }
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigateBin(1)}
+                disabled={disabled}
+                className="h-10 w-10 p-0"
+                title={areaType === "pallet" ? t('warehouse:nextPallet') : t('warehouse:nextBin')}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigateRack(1)}
+                disabled={disabled}
+                className="h-10 w-10 p-0"
+                title={t('warehouse:nextRow')}
+              >
+                <ChevronsRight className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
     </div>

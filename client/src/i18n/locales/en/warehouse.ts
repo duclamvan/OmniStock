@@ -879,6 +879,14 @@ const warehouse = {
   warehouseNumber: 'Warehouse {{number}}',
   pallet: 'Pallet',
   
+  // Directional navigation for location selector
+  previousRow: 'Previous row',
+  nextRow: 'Next row',
+  previousBin: 'Previous bin',
+  nextBin: 'Next bin',
+  previousPallet: 'Previous pallet',
+  nextPallet: 'Next pallet',
+  
   // Mockup Warehouse Layout
   receivingArea: 'Receiving Area',
   coldStorage: 'Cold Storage',
