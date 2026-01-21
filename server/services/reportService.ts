@@ -138,7 +138,15 @@ export async function generateReport(period: 'daily' | 'weekly' | 'monthly' | 'y
   }
   
   const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
-  const totalCost = allOrders.reduce((sum, o) => sum + Number(o.totalCost || 0), 0);
+  // Calculate total cost from orders' totalCost field, falling back to sum of item costs if not available
+  let totalCost = allOrders.reduce((sum, o) => sum + Number(o.totalCost || 0), 0);
+  // If totalCost is 0, calculate from order items' cost (landingCost * quantity)
+  if (totalCost === 0 && allOrderItems.length > 0) {
+    totalCost = allOrderItems.reduce((sum, item) => {
+      const itemCost = Number(item.landingCost || item.costAtOrder || 0);
+      return sum + (itemCost * (item.quantity || 0));
+    }, 0);
+  }
   const totalItemsSold = allOrderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const averageOrderValue = allOrders.length > 0 ? totalRevenue / allOrders.length : 0;
   
