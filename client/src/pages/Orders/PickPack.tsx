@@ -1564,12 +1564,14 @@ function PickingListView({
   const { t } = useTranslation('orders');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
-  // STEP 1: First merge items by SKU (items with notes kept separate)
-  // Use variantSku first (for variants), then sku, normalized to uppercase for consistent matching
+  // STEP 1: First merge items by SKU+VariantId (each variant shown separately)
+  // Only merge if same SKU AND same variantId (duplicate order items for same variant)
   const mergedItems = useMemo(() => {
-    const normalizeSku = (item: OrderItem): string => {
-      const raw = item.variantSku || item.sku || '';
-      return raw.trim().toUpperCase() || item.id;
+    const getMergeKey = (item: OrderItem): string => {
+      // Include variantId in merge key so different variants are NEVER merged
+      const sku = (item.variantSku || item.sku || '').trim().toUpperCase();
+      const variantId = item.variantId || 'base';
+      return `${sku}::${variantId}` || item.id;
     };
     
     const skuMergeMap = new Map<string, { 
@@ -1588,7 +1590,7 @@ function PickingListView({
         // Items with notes kept separate
         itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as OrderItem);
       } else {
-        const mergeKey = normalizeSku(item);
+        const mergeKey = getMergeKey(item);
         if (skuMergeMap.has(mergeKey)) {
           const existing = skuMergeMap.get(mergeKey)!;
           existing.originalIds.push(item.id);
@@ -2315,14 +2317,15 @@ function GroupedPickingListView({
   onToggleFullPick
 }: GroupedPickingListViewProps) {
   const { t } = useTranslation('orders');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
-  // STEP 1: First merge items by SKU (items with notes kept separate)
-  // Use variantSku first (for variants), then sku, normalized to uppercase for consistent matching
+  // STEP 1: First merge items by SKU+VariantId (each variant shown separately)
+  // Only merge if same SKU AND same variantId (duplicate order items for same variant)
   const mergedItems = useMemo(() => {
-    const normalizeSku = (item: OrderItem): string => {
-      const raw = item.variantSku || item.sku || '';
-      return raw.trim().toUpperCase() || item.id;
+    const getMergeKey = (item: OrderItem): string => {
+      // Include variantId in merge key so different variants are NEVER merged
+      const sku = (item.variantSku || item.sku || '').trim().toUpperCase();
+      const variantId = item.variantId || 'base';
+      return `${sku}::${variantId}` || item.id;
     };
     
     const skuMergeMap = new Map<string, { 
@@ -2339,7 +2342,7 @@ function GroupedPickingListView({
       } else if (item.notes && item.notes.trim()) {
         itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as OrderItem);
       } else {
-        const mergeKey = normalizeSku(item);
+        const mergeKey = getMergeKey(item);
         if (skuMergeMap.has(mergeKey)) {
           const existing = skuMergeMap.get(mergeKey)!;
           existing.originalIds.push(item.id);
@@ -2367,6 +2370,9 @@ function GroupedPickingListView({
       ...itemsWithNotes
     ];
   }, [order.items]);
+  
+  // Auto-expand all groups with multiple variants so picking items are immediately visible
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // STEP 2: Group merged items by productId for parent product display with variants
   const productGroups = useMemo(() => {
@@ -2438,6 +2444,20 @@ function GroupedPickingListView({
     
     return Array.from(groups.values());
   }, [mergedItems, currentItem?.id, recentlyScannedItemId]);
+  
+  // Auto-expand groups with multiple variants on mount for better visibility
+  useEffect(() => {
+    const multiVariantGroups = productGroups
+      .filter(g => g.variantCount > 1)
+      .map(g => g.productId);
+    if (multiVariantGroups.length > 0) {
+      setExpandedGroups(prev => {
+        const newSet = new Set(prev);
+        multiVariantGroups.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  }, [productGroups.length]); // Only run when number of groups changes
   
   const toggleGroup = (productId: string) => {
     setExpandedGroups(prev => {
