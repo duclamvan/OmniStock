@@ -973,6 +973,12 @@ export default function AddOrder() {
     });
 
     setOrderItems(items);
+    // Initialize the saved items ref so we can detect future changes
+    savedOrderItemsRef.current = JSON.stringify(items);
+    // Also initialize address ref
+    if (savedShippingAddressRef.current === '') {
+      savedShippingAddressRef.current = '__initial__';
+    }
   }, [existingOrder?.id, existingOrder?.items?.length, isEditMode]);
 
   // Pre-fill customer when editing existing order
@@ -1003,9 +1009,12 @@ export default function AddOrder() {
       const address = shippingAddresses.find((addr: any) => addr.id === order.shippingAddressId);
       if (address) {
         setSelectedShippingAddress(address);
+        // Initialize the saved address ref so we can detect future changes
+        savedShippingAddressRef.current = JSON.stringify(address);
       }
     } else if (shippingAddresses.length === 1) {
       setSelectedShippingAddress(shippingAddresses[0]);
+      savedShippingAddressRef.current = JSON.stringify(shippingAddresses[0]);
     }
   }, [existingOrder?.shippingAddressId, shippingAddresses, isEditMode]);
 
@@ -1125,6 +1134,29 @@ export default function AddOrder() {
       setHasChangesAfterSave(true);
     }
   }, [orderId, orderItems]);
+
+  // Track shipping address changes after order creation
+  const savedShippingAddressRef = useRef<string>('');
+  useEffect(() => {
+    if (!orderId) return;
+    
+    const currentAddress = JSON.stringify(selectedShippingAddress);
+    if (savedShippingAddressRef.current && currentAddress !== savedShippingAddressRef.current) {
+      setHasChangesAfterSave(true);
+    }
+    // Also set initial value when order is loaded
+    if (!savedShippingAddressRef.current && selectedShippingAddress) {
+      savedShippingAddressRef.current = currentAddress;
+    }
+  }, [orderId, selectedShippingAddress]);
+
+  // Track uploaded files changes after order creation
+  useEffect(() => {
+    if (!orderId) return;
+    if (uploadedFiles.length > 0) {
+      setHasChangesAfterSave(true);
+    }
+  }, [orderId, uploadedFiles.length]);
 
   // Apply customer-specific pricing when customer is selected
   useEffect(() => {
