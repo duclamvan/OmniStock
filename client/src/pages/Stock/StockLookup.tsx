@@ -453,14 +453,14 @@ export default function StockLookup() {
       queryClient.invalidateQueries({ queryKey: [`/api/products/${selectedProduct}/locations`] });
       queryClient.invalidateQueries({ queryKey: ['/api/products/primary-locations'] });
       toast({
-        title: t('primaryLocationSet'),
-        description: t('primaryLocationSetSuccessfully'),
+        title: t('common:primaryLocationSet'),
+        description: t('common:primaryLocationSetSuccessfully'),
       });
     },
     onError: (error: any) => {
       toast({
         title: t('common:error'),
-        description: error.message || t('failedToSetPrimaryLocation'),
+        description: error.message || t('common:failedToSetPrimaryLocation'),
         variant: "destructive",
       });
     },
@@ -1530,7 +1530,7 @@ export default function StockLookup() {
                                             }}
                                           >
                                             <Star className="h-4 w-4 mr-2" />
-                                            {t('setPrimaryLocation')}
+                                            {t('common:setPrimaryLocation')}
                                           </DropdownMenuItem>
                                         )}
                                         <DropdownMenuItem
@@ -1541,7 +1541,7 @@ export default function StockLookup() {
                                           }}
                                         >
                                           <Trash2 className="h-4 w-4 mr-2" />
-                                          {t('deleteLocation')}
+                                          {t('common:deleteLocation')}
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
@@ -2241,9 +2241,9 @@ export default function StockLookup() {
       <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('deleteLocation')}</DialogTitle>
+            <DialogTitle>{t('common:deleteLocation')}</DialogTitle>
             <DialogDescription>
-              {t('deleteLocationConfirmation', { location: locationToDelete?.locationCode })}
+              {t('common:deleteLocationConfirmation', { location: locationToDelete?.locationCode })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
