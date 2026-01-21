@@ -23236,7 +23236,7 @@ Important rules:
 - For Vietnamese names: the first word is typically the family name (lastName), the rest are given names (firstName)
 - For European addresses: format is typically "Street Number, Postal City, Country"
 - For Czech addresses: format is typically "Street Number, PostalCode City"
-- Leave fields as empty string if not found
+- Leave fields as empty string if not found (do NOT use 'N/A' or 'n/a' - use '' empty string instead)
 - Phone numbers should include country code if present
 - Return ONLY the JSON, no additional text or explanation`;
 
@@ -23326,8 +23326,8 @@ Important rules:
           firstName: parsed.firstName || '',
           lastName: parsed.lastName || '',
           company: company,
-          email: parsed.email || '',
-          tel: normalizePhone(parsed.phone || parsed.tel || '', country) || '',
+          email: (parsed.email && parsed.email.toLowerCase() !== 'n/a') ? parsed.email : '',
+          tel: normalizePhone((parsed.phone && parsed.phone.toLowerCase() !== 'n/a') ? parsed.phone : ((parsed.tel && parsed.tel.toLowerCase() !== 'n/a') ? parsed.tel : ''), country) || '',
           street: finalStreet,
           streetNumber: finalStreetNumber,
           city: city,
