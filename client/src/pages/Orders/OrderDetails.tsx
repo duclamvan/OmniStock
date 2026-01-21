@@ -1226,7 +1226,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   {group.parentProductName}
                                 </p>
                               </div>
-                              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 leading-relaxed">
+                              <div className="text-xs text-black dark:text-slate-400 mt-1 leading-relaxed font-medium">
                                 {group.variants.map((v: any) => v.variantName || v.extractedVariantName || v.productName?.split(' - ').pop()).join(', ')}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap mt-1">
@@ -3309,7 +3309,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             )}
                           </div>
                           {group.variantNames && group.variantNames.length > 0 && (
-                            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                            <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
                               {group.variantNames.join(', ')}
                             </div>
                           )}
@@ -3358,7 +3358,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           <span className="font-extrabold">{group.totalQty}</span>
                         </div>
                         {group.variantNames && group.variantNames.length > 0 && (
-                          <div className="text-[10px] text-green-500 mt-0.5 leading-tight">
+                          <div className="text-[10px] text-black mt-0.5 leading-tight font-medium">
                             {group.variantNames.join(', ')}
                           </div>
                         )}
