@@ -6623,7 +6623,7 @@ export default function AddOrder() {
                           <div className="text-right flex-shrink-0 ml-1 md:ml-2">
                             <div className="font-semibold text-xs md:text-sm text-slate-900 dark:text-slate-100">
                               {isService ? (
-                                formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
+                                formatCurrency(parseFloat(product.totalCost || '0'), product.currency || form.watch('currency') || 'EUR')
                               ) : (
                                 (() => {
                                   const selectedCurrency = form.watch('currency') || 'EUR';
