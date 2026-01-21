@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from 'react-i18next';
+import { getCountryFlag, getLocalizedCountryName, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 export default function SupplierDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t, i18n } = useTranslation(['inventory', 'common']);
   const [productSearch, setProductSearch] = useState("");
   const [purchaseSearch, setPurchaseSearch] = useState("");
 
@@ -217,7 +218,12 @@ export default function SupplierDetails() {
                   <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 mt-0.5" />
                   <div className="text-slate-600 dark:text-slate-300">
                     {supplier.address && <p>{supplier.address}</p>}
-                    {supplier.country && <p className="font-medium text-slate-900 dark:text-slate-100">{supplier.country}</p>}
+                    {supplier.country && (
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        <span className="mr-2">{getCountryFlag(supplier.country)}</span>
+                        {getLocalizedCountryName(supplier.country, i18n.language as SupportedLanguage)}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

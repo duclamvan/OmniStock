@@ -42,6 +42,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 // Convert weight from any unit to kg for storage
 const convertWeightToKg = (weight: number, unit: 'mg' | 'g' | 'kg' | 'oz' | 'lb'): number => {
@@ -138,7 +139,7 @@ interface Product {
 }
 
 export default function CreatePurchase() {
-  const { t } = useTranslation('imports');
+  const { t, i18n } = useTranslation('imports');
   const [, navigate] = useLocation();
   const params = useParams();
   const purchaseId = params.id || null;
@@ -212,137 +213,6 @@ export default function CreatePurchase() {
       DKK: "kr"
     };
     return symbols[currency] || currency + " ";
-  };
-  
-  // Country flag helper - case-insensitive with multiple language support
-  const getCountryFlag = (country?: string) => {
-    if (!country) return "🌐";
-    
-    const normalizedCountry = country.toLowerCase().trim();
-    
-    const flags: {[key: string]: string} = {
-      "china": "🇨🇳",
-      "trung quốc": "🇨🇳",
-      "中国": "🇨🇳",
-      "cn": "🇨🇳",
-      "hong kong": "🇭🇰",
-      "hồng kông": "🇭🇰",
-      "hk": "🇭🇰",
-      "vietnam": "🇻🇳",
-      "việt nam": "🇻🇳",
-      "vn": "🇻🇳",
-      "usa": "🇺🇸",
-      "united states": "🇺🇸",
-      "mỹ": "🇺🇸",
-      "us": "🇺🇸",
-      "america": "🇺🇸",
-      "germany": "🇩🇪",
-      "đức": "🇩🇪",
-      "deutschland": "🇩🇪",
-      "de": "🇩🇪",
-      "czech republic": "🇨🇿",
-      "czechia": "🇨🇿",
-      "séc": "🇨🇿",
-      "cz": "🇨🇿",
-      "japan": "🇯🇵",
-      "nhật bản": "🇯🇵",
-      "jp": "🇯🇵",
-      "south korea": "🇰🇷",
-      "korea": "🇰🇷",
-      "hàn quốc": "🇰🇷",
-      "kr": "🇰🇷",
-      "taiwan": "🇹🇼",
-      "đài loan": "🇹🇼",
-      "tw": "🇹🇼",
-      "singapore": "🇸🇬",
-      "sg": "🇸🇬",
-      "thailand": "🇹🇭",
-      "thái lan": "🇹🇭",
-      "th": "🇹🇭",
-      "malaysia": "🇲🇾",
-      "mã lai": "🇲🇾",
-      "my": "🇲🇾",
-      "indonesia": "🇮🇩",
-      "id": "🇮🇩",
-      "philippines": "🇵🇭",
-      "ph": "🇵🇭",
-      "india": "🇮🇳",
-      "ấn độ": "🇮🇳",
-      "in": "🇮🇳",
-      "united kingdom": "🇬🇧",
-      "uk": "🇬🇧",
-      "england": "🇬🇧",
-      "anh": "🇬🇧",
-      "gb": "🇬🇧",
-      "france": "🇫🇷",
-      "pháp": "🇫🇷",
-      "fr": "🇫🇷",
-      "italy": "🇮🇹",
-      "ý": "🇮🇹",
-      "it": "🇮🇹",
-      "spain": "🇪🇸",
-      "tây ban nha": "🇪🇸",
-      "es": "🇪🇸",
-      "netherlands": "🇳🇱",
-      "hà lan": "🇳🇱",
-      "nl": "🇳🇱",
-      "belgium": "🇧🇪",
-      "bỉ": "🇧🇪",
-      "be": "🇧🇪",
-      "poland": "🇵🇱",
-      "ba lan": "🇵🇱",
-      "pl": "🇵🇱",
-      "turkey": "🇹🇷",
-      "thổ nhĩ kỳ": "🇹🇷",
-      "tr": "🇹🇷",
-      "australia": "🇦🇺",
-      "úc": "🇦🇺",
-      "au": "🇦🇺",
-      "canada": "🇨🇦",
-      "ca": "🇨🇦",
-      "mexico": "🇲🇽",
-      "mx": "🇲🇽",
-      "brazil": "🇧🇷",
-      "brasil": "🇧🇷",
-      "br": "🇧🇷",
-      "russia": "🇷🇺",
-      "nga": "🇷🇺",
-      "ru": "🇷🇺",
-      "sweden": "🇸🇪",
-      "thụy điển": "🇸🇪",
-      "se": "🇸🇪",
-      "norway": "🇳🇴",
-      "na uy": "🇳🇴",
-      "no": "🇳🇴",
-      "denmark": "🇩🇰",
-      "đan mạch": "🇩🇰",
-      "dk": "🇩🇰",
-      "switzerland": "🇨🇭",
-      "thụy sĩ": "🇨🇭",
-      "ch": "🇨🇭",
-      "austria": "🇦🇹",
-      "áo": "🇦🇹",
-      "at": "🇦🇹",
-      "portugal": "🇵🇹",
-      "bồ đào nha": "🇵🇹",
-      "pt": "🇵🇹",
-      "greece": "🇬🇷",
-      "hy lạp": "🇬🇷",
-      "gr": "🇬🇷",
-      "ireland": "🇮🇪",
-      "ai-len": "🇮🇪",
-      "ie": "🇮🇪",
-      "new zealand": "🇳🇿",
-      "nz": "🇳🇿",
-      "uae": "🇦🇪",
-      "united arab emirates": "🇦🇪",
-      "ae": "🇦🇪",
-      "saudi arabia": "🇸🇦",
-      "ả rập xê út": "🇸🇦",
-      "sa": "🇸🇦"
-    };
-    
-    return flags[normalizedCountry] || "🌐";
   };
   
   
@@ -510,26 +380,24 @@ export default function CreatePurchase() {
   
   // Common countries for quick selection (ordered by usage frequency)
   const COMMON_COUNTRIES = [
-    { name: "China", flag: "🇨🇳" },
-    { name: "Vietnam", flag: "🇻🇳" },
-    { name: "USA", flag: "🇺🇸" },
-    { name: "Germany", flag: "🇩🇪" },
-    { name: "Czech Republic", flag: "🇨🇿" },
-    { name: "Hong Kong", flag: "🇭🇰" },
-    { name: "Taiwan", flag: "🇹🇼" },
-    { name: "Thailand", flag: "🇹🇭" },
-    { name: "India", flag: "🇮🇳" },
-    { name: "United Kingdom", flag: "🇬🇧" },
-    { name: "France", flag: "🇫🇷" },
-    { name: "Italy", flag: "🇮🇹" },
-    { name: "Poland", flag: "🇵🇱" },
-    { name: "Netherlands", flag: "🇳🇱" },
-    { name: "Japan", flag: "🇯🇵" },
-    { name: "South Korea", flag: "🇰🇷" },
-    { name: "Singapore", flag: "🇸🇬" },
-    { name: "Malaysia", flag: "🇲🇾" },
-    { name: "Indonesia", flag: "🇮🇩" },
-  ];
+    "China",
+    "Vietnam", 
+    "United States",
+    "Germany",
+    "Czech Republic",
+    "Thailand",
+    "India",
+    "United Kingdom",
+    "France",
+    "Italy",
+    "Poland",
+    "Netherlands",
+    "Japan",
+    "South Korea",
+    "Singapore",
+    "Malaysia",
+    "Indonesia",
+  ].map(name => ({ name, flag: getCountryFlag(name) }));
 
   // Set default purchase date to now
   useEffect(() => {
@@ -2647,7 +2515,7 @@ export default function CreatePurchase() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-sm truncate">{s.name}</div>
                                   {s.country && (
-                                    <div className="text-xs text-muted-foreground">{s.country}</div>
+                                    <div className="text-xs text-muted-foreground">{getLocalizedCountryName(s.country, i18n.language as SupportedLanguage)}</div>
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
@@ -2685,7 +2553,7 @@ export default function CreatePurchase() {
                                   <div className="flex-1 min-w-0">
                                     <div className="font-medium text-sm truncate">{s.name}</div>
                                     {s.country && (
-                                      <div className="text-xs text-muted-foreground">{s.country}</div>
+                                      <div className="text-xs text-muted-foreground">{getLocalizedCountryName(s.country, i18n.language as SupportedLanguage)}</div>
                                     )}
                                   </div>
                                 </button>

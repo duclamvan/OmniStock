@@ -393,7 +393,7 @@ export function normalizeCountryForStorage(country: string | null | undefined): 
 }
 
 export function getCountryFlag(country: string | null | undefined): string {
-  if (!country) return '';
+  if (!country) return '🌍';
   
   const iso = countryToIso(country);
   if (!iso) return '🌍';

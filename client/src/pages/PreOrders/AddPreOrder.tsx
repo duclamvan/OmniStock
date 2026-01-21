@@ -62,7 +62,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
-import { getCountryFlag } from "@/lib/countries";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 // Note: We'll use t() for error messages in the component, not in the schema
 // The schema uses English by default and we translate in the form errors display
@@ -210,7 +210,7 @@ export default function AddPreOrder() {
         billingLastName: data.name.split(' ').slice(1).join(' ') || data.name,
         billingEmail: data.email || '',
         billingTel: data.tel || '',
-        country: data.country || '',
+        country: normalizeCountryForStorage(data.country),
       }) as any;
     },
     onSuccess: (newCustomer: any) => {

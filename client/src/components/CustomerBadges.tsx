@@ -3,6 +3,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { useTranslation } from 'react-i18next';
 import { Star, Gem, Award, Medal, Trophy, Clock, Sparkles, Heart, RefreshCw, AlertTriangle, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/currencyUtils';
+import { getLocalizedCountryName, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import type { CustomerBadge } from '@shared/schema';
 
 interface CustomerData {
@@ -28,7 +29,7 @@ interface CustomerBadgesProps {
 }
 
 export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: CustomerBadgesProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   if (!badges && !customer) return null;
   
@@ -113,11 +114,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 text-xs cursor-pointer" data-testid="badge-top10">
               <Trophy className="h-3 w-3 mr-1" />
-              TOP 10{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
+              TOP 10{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 10 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
+            <p className="text-xs">Top 10 customer by revenue{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -127,11 +128,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700 text-xs cursor-pointer" data-testid="badge-top50">
               <Award className="h-3 w-3 mr-1" />
-              TOP 50{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
+              TOP 50{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 50 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
+            <p className="text-xs">Top 50 customer by revenue{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -141,11 +142,11 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
           <PopoverTrigger asChild>
             <Badge className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 text-xs cursor-pointer" data-testid="badge-top100">
               <Star className="h-3 w-3 mr-1" />
-              TOP 100{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}
+              TOP 100{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}
             </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" side="top">
-            <p className="text-xs">Top 100 customer by revenue{customer.shippingCountry ? ` in ${customer.shippingCountry}` : ''}</p>
+            <p className="text-xs">Top 100 customer by revenue{customer.shippingCountry ? ` in ${getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}` : ''}</p>
           </PopoverContent>
         </Popover>
       )}
@@ -259,7 +260,7 @@ export function CustomerBadges({ badges, customer, order, currency = 'EUR' }: Cu
 }
 
 function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: CustomerBadge[], currency?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   const badgeConfig: Record<string, {
     icon: typeof Star;
@@ -295,19 +296,19 @@ function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: Cust
       icon: Trophy,
       label: 'TOP 10',
       className: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
-      getTooltip: (metadata) => `Top 10 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
+      getTooltip: (metadata) => `Top 10 customer by revenue${metadata?.country ? ` in ${getLocalizedCountryName(metadata.country, i18n.language as SupportedLanguage)}` : ''}`,
     },
     'TOP50': {
       icon: Award,
       label: 'TOP 50',
       className: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700',
-      getTooltip: (metadata) => `Top 50 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
+      getTooltip: (metadata) => `Top 50 customer by revenue${metadata?.country ? ` in ${getLocalizedCountryName(metadata.country, i18n.language as SupportedLanguage)}` : ''}`,
     },
     'TOP100': {
       icon: Star,
       label: 'TOP 100',
       className: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600',
-      getTooltip: (metadata) => `Top 100 customer by revenue${metadata?.country ? ` in ${metadata.country}` : ''}`,
+      getTooltip: (metadata) => `Top 100 customer by revenue${metadata?.country ? ` in ${getLocalizedCountryName(metadata.country, i18n.language as SupportedLanguage)}` : ''}`,
     },
     'PayLater': {
       icon: Clock,
@@ -362,7 +363,7 @@ function CustomerBadgesFromDatabase({ badges, currency = 'EUR' }: { badges: Cust
         const Icon = config.icon;
         const metadata = badge.metadata as any;
         const label = metadata?.country && ['TOP10', 'TOP50', 'TOP100'].includes(badge.badgeType)
-          ? `${config.label} in ${metadata.country}`
+          ? `${config.label} in ${getLocalizedCountryName(metadata.country, i18n.language as SupportedLanguage)}`
           : config.label;
 
         return (

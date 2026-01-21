@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Search, Package, Truck, User, ShoppingCart, Calendar, Loader2, Command } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { getCountryFlag, getCountryCodeByName } from '@/lib/countries';
+import { getCountryFlag, getCountryCodeByName, countryToIso } from '@/lib/countries';
 import { formatCurrency } from '@/lib/currencyUtils';
 
 // Track if we've already preloaded search data (singleton across component remounts)

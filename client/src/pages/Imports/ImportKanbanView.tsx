@@ -59,6 +59,7 @@ import {
   BoxSelect,
   Copy
 } from "lucide-react";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 interface OrderItem {
   id: string;
@@ -571,14 +572,6 @@ export default function ImportKanbanView() {
     }
   };
 
-  const getCountryFlag = (country: string) => {
-    switch (country) {
-      case 'China': return '🇨🇳';
-      case 'Vietnam': return '🇻🇳';
-      case 'USA': return '🇺🇸';
-      default: return '🌍';
-    }
-  };
 
   const getDaysUntilArrival = (arrivalDate: string) => {
     const days = differenceInDays(new Date(arrivalDate), new Date());

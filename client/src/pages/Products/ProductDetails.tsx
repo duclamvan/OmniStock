@@ -65,6 +65,7 @@ import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { getCountryFlag, getLocalizedCountryName, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 const IMAGE_PURPOSE_ICONS = {
   main: { icon: ImageIcon, color: 'text-blue-600', labelKey: 'mainWmsImage' },
@@ -85,7 +86,7 @@ export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { canViewImportCost: canAccessFinancialData } = useAuth();
-  const { t } = useTranslation(['products', 'common']);
+  const { t, i18n } = useTranslation(['products', 'common']);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeSection, setActiveSection] = useState('overview');
   const { toast } = useToast();
@@ -1062,7 +1063,7 @@ export default function ProductDetails() {
                     {supplier.country && (
                       <div>
                         <p className="text-[10px] sm:text-xs text-muted-foreground">{t('common:country')}</p>
-                        <p className="text-xs sm:text-base font-medium">{supplier.country}</p>
+                        <p className="text-xs sm:text-base font-medium">{getCountryFlag(supplier.country)} {getLocalizedCountryName(supplier.country, i18n.language as SupportedLanguage)}</p>
                       </div>
                     )}
                     {supplier.contactPerson && (

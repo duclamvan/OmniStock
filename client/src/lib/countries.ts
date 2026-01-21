@@ -1,3 +1,5 @@
+import { getCountryFlag as getCountryFlagShared, getLocalizedCountryName, normalizeCountryForStorage, countryToIso, type SupportedLanguage } from '@shared/utils/countryNormalizer';
+
 export const countries = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
   "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
@@ -70,21 +72,10 @@ export const europeanCountries = [
 export const euCountryCodes = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"];
 
 export function getCountryFlag(countryCode: string): string {
-  const flags: Record<string, string> = {
-    'AT': '🇦🇹', 'BE': '🇧🇪', 'BG': '🇧🇬', 'HR': '🇭🇷', 'CY': '🇨🇾', 'CZ': '🇨🇿', 'DK': '🇩🇰',
-    'EE': '🇪🇪', 'FI': '🇫🇮', 'FR': '🇫🇷', 'DE': '🇩🇪', 'GR': '🇬🇷', 'HU': '🇭🇺', 'IE': '🇮🇪',
-    'IT': '🇮🇹', 'LV': '🇱🇻', 'LT': '🇱🇹', 'LU': '🇱🇺', 'MT': '🇲🇹', 'NL': '🇳🇱', 'PL': '🇵🇱',
-    'PT': '🇵🇹', 'RO': '🇷🇴', 'SK': '🇸🇰', 'SI': '🇸🇮', 'ES': '🇪🇸', 'SE': '🇸🇪', 'GB': '🇬🇧',
-    'US': '🇺🇸', 'CN': '🇨🇳', 'VN': '🇻🇳', 'JP': '🇯🇵', 'KR': '🇰🇷', 'IN': '🇮🇳', 'AU': '🇦🇺',
-    'CA': '🇨🇦', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷', 'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪',
-    'ZA': '🇿🇦', 'EG': '🇪🇬', 'NG': '🇳🇬', 'KE': '🇰🇪', 'TH': '🇹🇭', 'ID': '🇮🇩', 'MY': '🇲🇾',
-    'PH': '🇵🇭', 'SG': '🇸🇬', 'NZ': '🇳🇿', 'RU': '🇷🇺', 'TR': '🇹🇷', 'SA': '🇸🇦', 'AE': '🇦🇪',
-    'CH': '🇨🇭', 'NO': '🇳🇴', 'IS': '🇮🇸', 'UA': '🇺🇦', 'BY': '🇧🇾', 'AL': '🇦🇱', 'AD': '🇦🇩',
-    'BA': '🇧🇦', 'LI': '🇱🇮', 'MC': '🇲🇨', 'ME': '🇲🇪', 'MK': '🇲🇰', 'RS': '🇷🇸', 'VA': '🇻🇦'
-  };
-  
-  return flags[countryCode.toUpperCase()] || '🌍';
+  return getCountryFlagShared(countryCode);
 }
+
+export { getLocalizedCountryName, normalizeCountryForStorage, countryToIso, type SupportedLanguage };
 
 export function getCountryNameByCode(code: string): string {
   const country = europeanCountries.find(c => c.code === code);
@@ -92,6 +83,9 @@ export function getCountryNameByCode(code: string): string {
 }
 
 export function getCountryCodeByName(name: string): string {
+  const iso = countryToIso(name);
+  if (iso) return iso;
+  
   const countryMap: Record<string, string> = {
     'Austria': 'AT', 'Belgium': 'BE', 'Bulgaria': 'BG', 'Croatia': 'HR', 'Cyprus': 'CY',
     'Czech Republic': 'CZ', 'Denmark': 'DK', 'Estonia': 'EE', 'Finland': 'FI', 'France': 'FR',

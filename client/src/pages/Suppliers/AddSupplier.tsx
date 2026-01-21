@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from 'react-i18next';
+import { getCountryFlag, normalizeCountryForStorage } from '@shared/utils/countryNormalizer';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
@@ -18,65 +19,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { countries } from "@/lib/countries";
 import { z } from "zod";
-
-const getCountryFlag = (country: string): string => {
-  const countryFlags: Record<string, string> = {
-    'China': '🇨🇳',
-    'Vietnam': '🇻🇳',
-    'Czech Republic': '🇨🇿',
-    'Germany': '🇩🇪',
-    'USA': '🇺🇸',
-    'UK': '🇬🇧',
-    'Poland': '🇵🇱',
-    'Slovakia': '🇸🇰',
-    'Austria': '🇦🇹',
-    'Hungary': '🇭🇺',
-    'Thailand': '🇹🇭',
-    'South Korea': '🇰🇷',
-    'Japan': '🇯🇵',
-    'Taiwan': '🇹🇼',
-    'Hong Kong': '🇭🇰',
-    'India': '🇮🇳',
-    'Indonesia': '🇮🇩',
-    'Malaysia': '🇲🇾',
-    'Singapore': '🇸🇬',
-    'Philippines': '🇵🇭',
-    'Australia': '🇦🇺',
-    'New Zealand': '🇳🇿',
-    'Canada': '🇨🇦',
-    'Mexico': '🇲🇽',
-    'Brazil': '🇧🇷',
-    'France': '🇫🇷',
-    'Italy': '🇮🇹',
-    'Spain': '🇪🇸',
-    'Netherlands': '🇳🇱',
-    'Belgium': '🇧🇪',
-    'Switzerland': '🇨🇭',
-    'Sweden': '🇸🇪',
-    'Norway': '🇳🇴',
-    'Denmark': '🇩🇰',
-    'Finland': '🇫🇮',
-    'Portugal': '🇵🇹',
-    'Greece': '🇬🇷',
-    'Turkey': '🇹🇷',
-    'Russia': '🇷🇺',
-    'Ukraine': '🇺🇦',
-    'Romania': '🇷🇴',
-    'Bulgaria': '🇧🇬',
-    'Croatia': '🇭🇷',
-    'Serbia': '🇷🇸',
-    'Slovenia': '🇸🇮',
-    'Lithuania': '🇱🇹',
-    'Latvia': '🇱🇻',
-    'Estonia': '🇪🇪',
-    'South Africa': '🇿🇦',
-    'Egypt': '🇪🇬',
-    'UAE': '🇦🇪',
-    'Saudi Arabia': '🇸🇦',
-    'Israel': '🇮🇱',
-  };
-  return countryFlags[country] || '🌍';
-};
 
 const createSupplierSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('inventory:supplierNameRequired')),

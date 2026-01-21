@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useTranslation } from 'react-i18next';
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -97,73 +98,11 @@ interface SupplierImportPreview {
   notes?: string;
 }
 
-const getCountryFlag = (country: string): string => {
-  const countryFlags: Record<string, string> = {
-    'China': '🇨🇳',
-    'Vietnam': '🇻🇳',
-    'Czech Republic': '🇨🇿',
-    'Czechia': '🇨🇿',
-    'Germany': '🇩🇪',
-    'USA': '🇺🇸',
-    'United States': '🇺🇸',
-    'UK': '🇬🇧',
-    'United Kingdom': '🇬🇧',
-    'Poland': '🇵🇱',
-    'Slovakia': '🇸🇰',
-    'Austria': '🇦🇹',
-    'Hungary': '🇭🇺',
-    'Netherlands': '🇳🇱',
-    'Belgium': '🇧🇪',
-    'France': '🇫🇷',
-    'Italy': '🇮🇹',
-    'Spain': '🇪🇸',
-    'Portugal': '🇵🇹',
-    'Switzerland': '🇨🇭',
-    'Sweden': '🇸🇪',
-    'Norway': '🇳🇴',
-    'Denmark': '🇩🇰',
-    'Finland': '🇫🇮',
-    'Ireland': '🇮🇪',
-    'Japan': '🇯🇵',
-    'South Korea': '🇰🇷',
-    'Korea': '🇰🇷',
-    'Taiwan': '🇹🇼',
-    'Thailand': '🇹🇭',
-    'Indonesia': '🇮🇩',
-    'Malaysia': '🇲🇾',
-    'Singapore': '🇸🇬',
-    'Philippines': '🇵🇭',
-    'India': '🇮🇳',
-    'Australia': '🇦🇺',
-    'New Zealand': '🇳🇿',
-    'Canada': '🇨🇦',
-    'Mexico': '🇲🇽',
-    'Brazil': '🇧🇷',
-    'Argentina': '🇦🇷',
-    'Turkey': '🇹🇷',
-    'Greece': '🇬🇷',
-    'Romania': '🇷🇴',
-    'Bulgaria': '🇧🇬',
-    'Croatia': '🇭🇷',
-    'Slovenia': '🇸🇮',
-    'Serbia': '🇷🇸',
-    'Ukraine': '🇺🇦',
-    'Russia': '🇷🇺',
-    'UAE': '🇦🇪',
-    'United Arab Emirates': '🇦🇪',
-    'Saudi Arabia': '🇸🇦',
-    'Israel': '🇮🇱',
-    'Egypt': '🇪🇬',
-    'South Africa': '🇿🇦',
-  };
-  return countryFlags[country] || '🏳️';
-};
-
 export default function AllSuppliers() {
   usePageTitle('nav.suppliers', 'Suppliers');
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation(['inventory', 'common']);
+  const { t, i18n } = useTranslation(['inventory', 'common']);
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
@@ -791,7 +730,7 @@ export default function AllSuppliers() {
         return (
           <div className="flex items-center gap-2">
             <span className="text-xl">{getCountryFlag(supplier.country)}</span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">{supplier.country}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{getLocalizedCountryName(supplier.country, i18n.language as SupportedLanguage)}</span>
           </div>
         );
       },
@@ -1208,7 +1147,7 @@ export default function AllSuppliers() {
                         <div className="flex items-center gap-1.5">
                           <span className="text-lg">{getCountryFlag(supplier.country)}</span>
                           <p className="font-medium text-slate-700 dark:text-slate-300 text-xs truncate">
-                            {supplier.country}
+                            {getLocalizedCountryName(supplier.country, i18n.language as SupportedLanguage)}
                           </p>
                         </div>
                       ) : (

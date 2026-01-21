@@ -23,7 +23,7 @@ import { calculateSearchScore } from "@/lib/fuzzySearch";
 import { formatCompactNumber } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { getCountryFlag } from "@/lib/countries";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import { cn } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, User, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays, Copy, Link2 } from "lucide-react";
@@ -1121,23 +1121,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       cell: (order) => {
         const customerName = order.customer?.name || 'N/A';
         const country = order.customer?.shippingCountry;
-        const countryFlagMap: Record<string, string> = {
-          'CZ': '🇨🇿',
-          'DE': '🇩🇪',
-          'AT': '🇦🇹',
-          'SK': '🇸🇰',
-          'PL': '🇵🇱',
-          'HU': '🇭🇺',
-          'US': '🇺🇸',
-          'GB': '🇬🇧',
-          'FR': '🇫🇷',
-          'IT': '🇮🇹',
-          'ES': '🇪🇸',
-          'NL': '🇳🇱',
-          'BE': '🇧🇪',
-          'CH': '🇨🇭',
-        };
-        const flag = country ? countryFlagMap[country] : null;
+        const flag = country ? getCountryFlag(country) : null;
 
         return (
           <div className="flex items-center gap-2">

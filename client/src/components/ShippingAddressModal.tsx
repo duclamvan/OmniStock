@@ -31,7 +31,7 @@ import {
   Loader2,
   Truck,
 } from 'lucide-react';
-import { europeanCountries, getCountryFlag } from '@/lib/countries';
+import { europeanCountries, getCountryFlag, normalizeCountryForStorage } from '@/lib/countries';
 
 // Note: Validation messages will be handled via form errors display
 const shippingAddressSchema = z.object({
@@ -273,6 +273,11 @@ export function ShippingAddressModal({
     // Normalize name fields before saving (keep address fields as-is)
     addressData.firstName = normalizeFirstName(addressData.firstName);
     addressData.lastName = normalizeLastName(addressData.lastName);
+    
+    // Normalize country for consistent storage
+    if (addressData.country) {
+      addressData.country = normalizeCountryForStorage(addressData.country);
+    }
     
     onSave(addressData);
     onOpenChange(false);

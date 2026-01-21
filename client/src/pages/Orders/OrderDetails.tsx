@@ -97,7 +97,7 @@ import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
-import { getCountryFlag } from "@/lib/countries";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import {
   Tooltip,
   TooltipContent,
@@ -168,7 +168,7 @@ export default function OrderDetails() {
   const { toast } = useToast();
   const { canViewProfit, canViewMargin, canViewImportCost, user } = useAuth();
   const canAccessFinancialData = canViewProfit || canViewMargin;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   // Real-time collaboration - track viewers and locks
   const { viewers, lockInfo, isLocked, isCurrentUserLockOwner, requestLock, releaseLock } = useRealTimeOrder(id);
@@ -1789,7 +1789,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     {/* Country */}
                     {order.shippingAddress.country && (
                       <div className="text-slate-700 dark:text-slate-300 font-medium" data-testid="text-shipping-country">
-                        {order.shippingAddress.country}
+                        {getLocalizedCountryName(order.shippingAddress.country, i18n.language as SupportedLanguage)}
                       </div>
                     )}
                     
@@ -2008,7 +2008,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       </p>
                     )}
                     {order.customer.billingCountry && (
-                      <p>{order.customer.billingCountry}</p>
+                      <p>{getLocalizedCountryName(order.customer.billingCountry, i18n.language as SupportedLanguage)}</p>
                     )}
                   </div>
                 </div>
@@ -2436,7 +2436,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             {[order.customer.shippingCity, order.customer.state, order.customer.shippingZipCode].filter(Boolean).join(', ')}
                           </p>
                         )}
-                        {order.customer.shippingCountry && <p>{order.customer.shippingCountry}</p>}
+                        {order.customer.shippingCountry && <p>{getLocalizedCountryName(order.customer.shippingCountry, i18n.language as SupportedLanguage)}</p>}
                       </div>
                     </div>
                   )}

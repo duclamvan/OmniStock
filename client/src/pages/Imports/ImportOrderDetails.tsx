@@ -33,6 +33,7 @@ import {
   Building2,
   ChevronRight
 } from "lucide-react";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 interface OrderItem {
   id: string;
@@ -134,14 +135,6 @@ export default function ImportOrderDetails() {
     }
   };
 
-  const getCountryFlag = (country: string) => {
-    switch (country) {
-      case 'China': return '🇨🇳';
-      case 'Vietnam': return '🇻🇳';
-      case 'USA': return '🇺🇸';
-      default: return '🌍';
-    }
-  };
 
   if (isLoading) {
     return (

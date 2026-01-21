@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
+import { getCountryFlag, getLocalizedCountryName, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -247,7 +248,7 @@ const getImagePurposeConfig = (t: any) => ({
 });
 
 export default function ProductForm() {
-  const { t } = useTranslation(['products', 'inventory', 'common']);
+  const { t, i18n } = useTranslation(['products', 'inventory', 'common']);
   const IMAGE_PURPOSE_CONFIG = getImagePurposeConfig(t);
   const params = useParams();
   const id = params.id;
@@ -3399,7 +3400,7 @@ export default function ProductForm() {
                                 <div className="min-w-0">
                                   <p className="text-xs text-slate-600 dark:text-slate-400">{t('products:supplierDetails.country')}</p>
                                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-supplier-country">
-                                    {selectedSupplier.country}
+                                    {getCountryFlag(selectedSupplier.country)} {getLocalizedCountryName(selectedSupplier.country, i18n.language as SupportedLanguage)}
                                   </p>
                                 </div>
                               </div>

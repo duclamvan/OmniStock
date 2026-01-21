@@ -68,13 +68,13 @@ import { Facebook } from "lucide-react";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { CustomerPrices } from "./CustomerPrices";
 import { fuzzySearch } from "@/lib/fuzzySearch";
-import { getCountryFlag, getCountryCodeByName } from "@/lib/countries";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, countryToIso, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
 export default function CustomerDetails() {
   usePageTitle('customers:customerDetails', 'Customer Details');
-  const { t } = useTranslation(['customers', 'common']);
+  const { t, i18n } = useTranslation(['customers', 'common']);
   const { formatCurrency, formatDate } = useLocalization();
   const { id } = useParams();
   const [, navigate] = useLocation();
@@ -575,8 +575,8 @@ export default function CustomerDetails() {
                       <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="text-slate-600 dark:text-slate-300">{t('customers:country')}:</span>
                       <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5" data-testid="text-country">
-                        <span className="text-xl leading-none">{getCountryFlag(getCountryCodeByName(customer.shippingCountry))}</span>
-                        {customer.shippingCountry}
+                        <span className="text-xl leading-none">{getCountryFlag(customer.shippingCountry)}</span>
+                        {getLocalizedCountryName(customer.shippingCountry, i18n.language as SupportedLanguage)}
                       </span>
                     </div>
                   )}
@@ -883,8 +883,8 @@ export default function CustomerDetails() {
                           <p>{address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}</p>
                           <p>{address.zipCode} {address.city}</p>
                           <p className="flex items-center gap-1.5">
-                            <span className="text-base">{getCountryFlag(getCountryCodeByName(address.country))}</span>
-                            {address.country}
+                            <span className="text-base">{getCountryFlag(address.country)}</span>
+                            {getLocalizedCountryName(address.country, i18n.language as SupportedLanguage)}
                           </p>
                           {address.tel && (
                             <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
@@ -969,8 +969,8 @@ export default function CustomerDetails() {
                           )}
                           {address.country && (
                             <p className="flex items-center gap-1.5">
-                              <span className="text-base">{getCountryFlag(getCountryCodeByName(address.country))}</span>
-                              {address.country}
+                              <span className="text-base">{getCountryFlag(address.country)}</span>
+                              {getLocalizedCountryName(address.country, i18n.language as SupportedLanguage)}
                             </p>
                           )}
                           {(address.vatId || address.ico) && (

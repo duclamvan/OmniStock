@@ -20,6 +20,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { camelToSnake, deepCamelToSnake } from "@/utils/caseConverters";
 import { useSettingsAutosave } from "@/hooks/useSettingsAutosave";
 import { handleDecimalKeyDown, parseDecimal } from "@/lib/utils";
+import { getCountryFlag } from "@/lib/countries";
 
 const normalizeCarrier = (value: string): string => {
   const map: Record<string, string> = {
@@ -567,9 +568,6 @@ export default function ShippingSettings() {
                       markPendingChange('ppl_shipping_rates');
                     };
                     
-                    const countryFlags: Record<string, string> = {
-                      CZ: '🇨🇿', SK: '🇸🇰', PL: '🇵🇱', AT: '🇦🇹', DE: '🇩🇪', HU: '🇭🇺'
-                    };
                     const countryNames: Record<string, string> = {
                       CZ: t('settings:countryCzechRepublic', 'Czech Republic'), SK: t('settings:countrySlovakia', 'Slovakia'), PL: t('settings:countryPoland', 'Poland'), AT: t('settings:countryAustria', 'Austria'), DE: t('settings:countryGermany', 'Germany'), HU: t('settings:countryHungary', 'Hungary')
                     };
@@ -1569,24 +1567,24 @@ export default function ShippingSettings() {
                     };
                     
                     const countries = [
-                      { code: 'CZ', name: t('settings:countryCzechRepublic', 'Czech Republic'), flag: '🇨🇿' },
-                      { code: 'DE', name: t('settings:countryGermany', 'Germany'), flag: '🇩🇪' },
-                      { code: 'AT', name: t('settings:countryAustria', 'Austria'), flag: '🇦🇹' },
-                      { code: 'SK', name: t('settings:countrySlovakia', 'Slovakia'), flag: '🇸🇰' },
-                      { code: 'PL', name: t('settings:countryPoland', 'Poland'), flag: '🇵🇱' },
-                      { code: 'HU', name: t('settings:countryHungary', 'Hungary'), flag: '🇭🇺' },
-                      { code: 'NL', name: t('settings:countryNetherlands', 'Netherlands'), flag: '🇳🇱' },
-                      { code: 'BE', name: t('settings:countryBelgium', 'Belgium'), flag: '🇧🇪' },
-                      { code: 'FR', name: t('settings:countryFrance', 'France'), flag: '🇫🇷' },
-                      { code: 'IT', name: t('settings:countryItaly', 'Italy'), flag: '🇮🇹' },
-                      { code: 'ES', name: t('settings:countrySpain', 'Spain'), flag: '🇪🇸' },
-                      { code: 'PT', name: t('settings:countryPortugal', 'Portugal'), flag: '🇵🇹' },
-                      { code: 'GB', name: t('settings:countryUnitedKingdom', 'United Kingdom'), flag: '🇬🇧' },
-                      { code: 'CH', name: t('settings:countrySwitzerland', 'Switzerland'), flag: '🇨🇭' },
-                      { code: 'SI', name: t('settings:countrySlovenia', 'Slovenia'), flag: '🇸🇮' },
-                      { code: 'HR', name: t('settings:countryCroatia', 'Croatia'), flag: '🇭🇷' },
-                      { code: 'RO', name: t('settings:countryRomania', 'Romania'), flag: '🇷🇴' },
-                      { code: 'BG', name: t('settings:countryBulgaria', 'Bulgaria'), flag: '🇧🇬' },
+                      { code: 'CZ', name: t('settings:countryCzechRepublic', 'Czech Republic') },
+                      { code: 'DE', name: t('settings:countryGermany', 'Germany') },
+                      { code: 'AT', name: t('settings:countryAustria', 'Austria') },
+                      { code: 'SK', name: t('settings:countrySlovakia', 'Slovakia') },
+                      { code: 'PL', name: t('settings:countryPoland', 'Poland') },
+                      { code: 'HU', name: t('settings:countryHungary', 'Hungary') },
+                      { code: 'NL', name: t('settings:countryNetherlands', 'Netherlands') },
+                      { code: 'BE', name: t('settings:countryBelgium', 'Belgium') },
+                      { code: 'FR', name: t('settings:countryFrance', 'France') },
+                      { code: 'IT', name: t('settings:countryItaly', 'Italy') },
+                      { code: 'ES', name: t('settings:countrySpain', 'Spain') },
+                      { code: 'PT', name: t('settings:countryPortugal', 'Portugal') },
+                      { code: 'GB', name: t('settings:countryUnitedKingdom', 'United Kingdom') },
+                      { code: 'CH', name: t('settings:countrySwitzerland', 'Switzerland') },
+                      { code: 'SI', name: t('settings:countrySlovenia', 'Slovenia') },
+                      { code: 'HR', name: t('settings:countryCroatia', 'Croatia') },
+                      { code: 'RO', name: t('settings:countryRomania', 'Romania') },
+                      { code: 'BG', name: t('settings:countryBulgaria', 'Bulgaria') },
                     ];
                     
                     const carriers = ['PPL CZ', 'GLS DE', 'DHL DE'];
@@ -1600,7 +1598,7 @@ export default function ShippingSettings() {
                             const country = countries.find(c => c.code.toUpperCase() === countryCode.toUpperCase());
                             return (
                               <div key={countryCode} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                                <span className="text-xl">{country?.flag || '🌍'}</span>
+                                <span className="text-xl">{getCountryFlag(countryCode)}</span>
                                 <span className="font-medium min-w-[120px]">{country?.name || countryCode}</span>
                                 <span className="text-muted-foreground">→</span>
                                 <Select 
@@ -1647,7 +1645,7 @@ export default function ShippingSettings() {
                                 <SelectContent>
                                   {availableCountries.map(c => (
                                     <SelectItem key={c.code} value={c.code}>
-                                      {c.flag} {c.name}
+                                      {getCountryFlag(c.code)} {c.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

@@ -21,7 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt, ChevronDown, RefreshCw, Upload, User, MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
+import { europeanCountries, euCountryCodes } from "@/lib/countries";
+import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, countryToIso, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { normalizeFirstName, normalizeLastName, normalizeFullName } from '@shared/utils/nameNormalizer';
@@ -146,7 +147,7 @@ interface VatValidationResult {
 const DEFAULT_PINNED_COUNTRIES = ['CZ', 'DE', 'SK', 'PL', 'AT', 'VN'];
 
 export default function AddCustomer() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const params = useParams();
   const customerId = params.id; // UUID string, not an integer
@@ -1028,6 +1029,7 @@ export default function AddCustomer() {
         const shippingData = {
           customerId: customerId,
           ...data,
+          country: normalizeCountryForStorage(data.country),
         };
         
         if (editingShippingIndex !== null && shippingAddresses[editingShippingIndex]?.id) {
@@ -1159,6 +1161,7 @@ export default function AddCustomer() {
         const billingData = {
           customerId: customerId,
           ...data,
+          country: normalizeCountryForStorage(data.country),
         };
         
         if (editingBillingIndex !== null && billingAddresses[editingBillingIndex]?.id) {
@@ -1821,6 +1824,7 @@ export default function AddCustomer() {
         const shippingData = {
           customerId: customer.id,
           ...shippingAddr,
+          country: normalizeCountryForStorage(shippingAddr.country),
         };
         if (shippingAddr.id && isEditMode) {
           await apiRequest('PATCH', `/api/shipping-addresses/${shippingAddr.id}`, shippingData);
@@ -1833,6 +1837,7 @@ export default function AddCustomer() {
         const billingData = {
           customerId: customer.id,
           ...billingAddr,
+          country: normalizeCountryForStorage(billingAddr.country),
         };
         if (billingAddr.id && isEditMode) {
           await apiRequest('PATCH', `/api/billing-addresses/${billingAddr.id}`, billingData);
@@ -2105,7 +2110,7 @@ export default function AddCustomer() {
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-slate-500 dark:text-slate-400">{t('customers:countryLabel')}</span>
                                   <span className="font-medium text-slate-900">
-                                    {getCountryFlag(duplicateCustomer.shippingCountry)} {europeanCountries.find(c => c.code === duplicateCustomer.shippingCountry)?.name || duplicateCustomer.shippingCountry}
+                                    {getCountryFlag(duplicateCustomer.shippingCountry)} {getLocalizedCountryName(duplicateCustomer.shippingCountry, i18n.language as SupportedLanguage)}
                                   </span>
                                 </div>
                               )}
@@ -2466,7 +2471,7 @@ export default function AddCustomer() {
                   <p>{addr.firstName} {addr.lastName}</p>
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
                   {addr.city && <p>{addr.zipCode} {addr.city}</p>}
-                  {addr.country && <p>{addr.country}</p>}
+                  {addr.country && <p>{getCountryFlag(addr.country)} {getLocalizedCountryName(addr.country, i18n.language as SupportedLanguage)}</p>}
                   {addr.tel && <p>{t('customers:telLabel')} {addr.tel}</p>}
                   {addr.email && <p>{t('customers:emailLabel')} {addr.email}</p>}
                 </div>
@@ -2908,7 +2913,7 @@ export default function AddCustomer() {
                   <p>{addr.firstName} {addr.lastName}</p>
                   {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
                   {addr.city && <p>{addr.zipCode} {addr.city}</p>}
-                  {addr.country && <p>{addr.country}</p>}
+                  {addr.country && <p>{getCountryFlag(addr.country)} {getLocalizedCountryName(addr.country, i18n.language as SupportedLanguage)}</p>}
                   {addr.tel && <p>{t('customers:telLabel')} {addr.tel}</p>}
                   {addr.email && <p>{t('customers:emailLabel')} {addr.email}</p>}
                   {addr.ico && <p>{t('customers:icoLabel')} {addr.ico}</p>}
