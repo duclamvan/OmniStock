@@ -349,6 +349,16 @@ export default function AddOrder() {
   const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
   const [quickVariantInput, setQuickVariantInput] = useState("");
   
+  // Edit customer dialog state
+  const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
+  const [editCustomerForm, setEditCustomerForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    company: "",
+    preferredCurrency: "EUR" as "CZK" | "EUR"
+  });
+  
   // Expanded variant groups state - tracks which parent products are expanded in the order items table
   const [expandedVariantGroups, setExpandedVariantGroups] = useState<Set<string>>(new Set());
   
@@ -2315,6 +2325,47 @@ export default function AddOrder() {
       toast({
         title: t('common:error'),
         description: t('orders:failedToUpdateOrder'),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update customer mutation (for inline editing from order page)
+  const updateCustomerMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string; phone: string; email: string; company: string; preferredCurrency: string }) => {
+      const response = await apiRequest('PATCH', `/api/customers/${data.id}`, {
+        name: data.name,
+        phone: data.phone || undefined,
+        email: data.email || undefined,
+        shippingCompany: data.company || undefined,
+        preferredCurrency: data.preferredCurrency,
+      });
+      return response.json();
+    },
+    onSuccess: (updatedCustomer) => {
+      setSelectedCustomer((prev: any) => ({
+        ...prev,
+        name: updatedCustomer.name,
+        phone: updatedCustomer.phone,
+        email: updatedCustomer.email,
+        shippingTel: updatedCustomer.phone,
+        shippingEmail: updatedCustomer.email,
+        shippingCompany: updatedCustomer.shippingCompany,
+        company: updatedCustomer.shippingCompany,
+        preferredCurrency: updatedCustomer.preferredCurrency,
+      }));
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      setShowEditCustomerDialog(false);
+      toast({
+        title: t('common:success'),
+        description: t('common:updateSuccess'),
+      });
+    },
+    onError: (error) => {
+      console.error("Customer update error:", error);
+      toast({
+        title: t('common:error'),
+        description: t('common:updateFailed'),
         variant: "destructive",
       });
     },
@@ -5270,23 +5321,46 @@ export default function AddOrder() {
                           )}
                         </div>
                         
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCustomer(null);
-                            setCustomerSearch("");
-                            setQuickCustomerType(null);
-                            setQuickCustomerName("");
-                            setQuickCustomerPhone("");
-                            form.setValue('customerId', undefined);
-                          }}
-                          className="flex-shrink-0 h-8 px-2 sm:px-3"
-                        >
-                          <X className="h-4 w-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Change</span>
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          {selectedCustomer.id && !selectedCustomer.id.startsWith('temp-') && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditCustomerForm({
+                                  name: selectedCustomer.name || "",
+                                  phone: selectedCustomer.shippingTel || selectedCustomer.phone || "",
+                                  email: selectedCustomer.shippingEmail || selectedCustomer.email || "",
+                                  company: selectedCustomer.shippingCompany || "",
+                                  preferredCurrency: selectedCustomer.preferredCurrency || "EUR"
+                                });
+                                setShowEditCustomerDialog(true);
+                              }}
+                              className="flex-shrink-0 h-8 w-8 p-0"
+                              title={t('customers:editCustomer')}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCustomer(null);
+                              setCustomerSearch("");
+                              setQuickCustomerType(null);
+                              setQuickCustomerName("");
+                              setQuickCustomerPhone("");
+                              form.setValue('customerId', undefined);
+                            }}
+                            className="flex-shrink-0 h-8 px-2 sm:px-3"
+                          >
+                            <X className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Change</span>
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Contact & Location Grid */}
@@ -9717,6 +9791,102 @@ export default function AddOrder() {
             />
           </div>
         )}
+
+        {/* Edit Customer Dialog */}
+        <Dialog open={showEditCustomerDialog} onOpenChange={setShowEditCustomerDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('customers:editCustomer')}</DialogTitle>
+              <DialogDescription>
+                {t('orders:editCustomerDescription', 'Update customer details')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-customer-name">{t('common:name')}</Label>
+                <Input
+                  id="edit-customer-name"
+                  value={editCustomerForm.name}
+                  onChange={(e) => setEditCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={t('common:name')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-customer-phone">{t('common:phone')}</Label>
+                <Input
+                  id="edit-customer-phone"
+                  value={editCustomerForm.phone}
+                  onChange={(e) => setEditCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder={t('common:phone')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-customer-email">{t('common:email')}</Label>
+                <Input
+                  id="edit-customer-email"
+                  type="email"
+                  value={editCustomerForm.email}
+                  onChange={(e) => setEditCustomerForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder={t('common:email')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-customer-company">{t('customers:company')}</Label>
+                <Input
+                  id="edit-customer-company"
+                  value={editCustomerForm.company}
+                  onChange={(e) => setEditCustomerForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder={t('customers:company')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-customer-currency">{t('customers:preferredCurrency')}</Label>
+                <Select
+                  value={editCustomerForm.preferredCurrency}
+                  onValueChange={(value: "CZK" | "EUR") => setEditCustomerForm(prev => ({ ...prev, preferredCurrency: value }))}
+                >
+                  <SelectTrigger id="edit-customer-currency">
+                    <SelectValue placeholder={t('customers:preferredCurrency')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CZK">CZK</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditCustomerDialog(false)}
+              >
+                {t('common:cancel')}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (selectedCustomer?.id) {
+                    updateCustomerMutation.mutate({
+                      id: selectedCustomer.id,
+                      ...editCustomerForm
+                    });
+                  }
+                }}
+                disabled={updateCustomerMutation.isPending}
+              >
+                {updateCustomerMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('common:updating')}
+                  </>
+                ) : (
+                  t('common:save')
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
