@@ -4833,21 +4833,24 @@ export default function PickPack() {
     }
   }, [isTimerRunning]); // Remove pickingTimer from deps to avoid re-runs
 
-  // Show completion modal when all items are picked
+  // Show completion modal when all items are picked (100% progress)
   useEffect(() => {
     if (!activePickingOrder) {
       setShowPickingCompletionModal(false);
       return;
     }
 
-    const allItemsPicked = activePickingOrder.items.every(
+    // Check if all items are picked using pickedItems count for more reliable tracking
+    const progress = (activePickingOrder.pickedItems / activePickingOrder.totalItems) * 100;
+    const allItemsPicked = progress >= 100 || activePickingOrder.items.every(
       item => item.pickedQuantity >= item.quantity
     );
 
-    if (allItemsPicked && activePickingOrder.pickStatus !== 'completed') {
+    // Auto-show completion modal when 100% is reached and not already completed
+    if (allItemsPicked && activePickingOrder.pickStatus !== 'completed' && !showPickingCompletionModal) {
       setShowPickingCompletionModal(true);
     }
-  }, [activePickingOrder?.id, activePickingOrder?.pickStatus, JSON.stringify(activePickingOrder?.items?.map(i => ({ id: i.id, pickedQuantity: i.pickedQuantity })))]);
+  }, [activePickingOrder?.id, activePickingOrder?.pickStatus, activePickingOrder?.pickedItems, activePickingOrder?.totalItems, showPickingCompletionModal]);
 
   // Preload all product images when picking order is activated
   // This ensures instant image loading when navigating between items
@@ -15507,6 +15510,18 @@ export default function PickPack() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
+                {/* Finish Picking Button - appears when 100% */}
+                {progress >= 100 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPickingCompletionModal(true)}
+                    className="mt-2 w-full h-10 bg-green-500 hover:bg-green-600 text-white font-bold text-sm shadow-lg animate-pulse"
+                    data-testid="button-finish-picking-mobile"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {t('finishPicking') || 'FINISH PICKING'}
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -15646,6 +15661,18 @@ export default function PickPack() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
+                {/* Finish Picking Button - appears when 100% on desktop */}
+                {progress >= 100 && (
+                  <Button
+                    size="lg"
+                    onClick={() => setShowPickingCompletionModal(true)}
+                    className="mt-3 w-full h-12 bg-green-500 hover:bg-green-600 text-white font-bold text-lg shadow-lg animate-pulse"
+                    data-testid="button-finish-picking-desktop"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    {t('finishPicking') || 'FINISH PICKING'}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
