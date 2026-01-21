@@ -3161,9 +3161,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               {/* Items - Grouped by parent product name, with free items separate */}
               <div className="divide-y divide-slate-100">
                 {(() => {
-                  const getParentName = (name: string) => {
-                    const match = name.match(/^(.+?)\s*[-–—]\s*(?:Color|Màu|Size|Kích thước|Variant|Biến thể)\s*.+$/i);
-                    return match ? match[1].trim() : name;
+                  const getParentAndVariant = (name: string): { parent: string; variant: string | null } => {
+                    const match = name.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+                    if (match) {
+                      return { parent: match[1].trim(), variant: match[2].trim() };
+                    }
+                    return { parent: name, variant: null };
                   };
                   
                   // Separate paid items and free items
@@ -3179,7 +3182,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   
                   // Group paid items by parent name
                   const grouped = paidItems.reduce((acc: any, item: any) => {
-                    const parentName = getParentName(item.productName || '');
+                    const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
                     if (!acc[parentName]) {
                       acc[parentName] = { 
                         name: parentName, 
@@ -3189,6 +3192,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         image: item.image,
                         isService: !!item.serviceId,
                         variantCount: 0,
+                        variantNames: [] as string[],
                         discountLabel: null
                       };
                     }
@@ -3196,6 +3200,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                     acc[parentName].totalDiscount += (item.discount || 0);
                     acc[parentName].variantCount += 1;
+                    if (variant && !acc[parentName].variantNames.includes(variant)) {
+                      acc[parentName].variantNames.push(variant);
+                    }
                     if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
                     // Capture discount label (e.g., "BỘT MUA 5 TẶNG 1")
                     if (item.appliedDiscountLabel && !acc[parentName].discountLabel) {
@@ -3206,7 +3213,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   
                   // Group free items by parent name
                   const freeGrouped = freeItems.reduce((acc: any, item: any) => {
-                    const parentName = getParentName(item.productName || '');
+                    const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
                     if (!acc[parentName]) {
                       acc[parentName] = { 
                         name: parentName, 
@@ -3214,11 +3221,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         image: item.image,
                         isService: !!item.serviceId,
                         variantCount: 0,
+                        variantNames: [] as string[],
                         discountLabel: item.appliedDiscountLabel || null
                       };
                     }
                     acc[parentName].totalQty += item.quantity || 0;
                     acc[parentName].variantCount += 1;
+                    if (variant && !acc[parentName].variantNames.includes(variant)) {
+                      acc[parentName].variantNames.push(variant);
+                    }
                     if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
                     return acc;
                   }, {});
@@ -3247,8 +3258,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             {group.totalQty > 0 && group.totalPrice > 0 && (
                               <span className="text-slate-500"> × {formatCurrency(group.totalPrice / group.totalQty, order?.currency || 'EUR')}</span>
                             )}
-                            <span> {group.variantCount > 1 ? `(${group.variantCount} ${t('orders:variants')})` : ''}</span>
                           </div>
+                          {group.variantNames && group.variantNames.length > 0 && (
+                            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                              {group.variantNames.join(', ')}
+                            </div>
+                          )}
                           {group.discountLabel && (
                             <div className="mt-1">
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
@@ -3292,8 +3307,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         <div className="font-semibold text-green-800 text-sm leading-tight line-clamp-2">{group.name}</div>
                         <div className="text-xs text-green-600 mt-0.5">
                           <span className="font-extrabold">{group.totalQty}</span>
-                          <span> {group.variantCount > 1 ? `(${group.variantCount} ${t('orders:variants')})` : ''}</span>
                         </div>
+                        {group.variantNames && group.variantNames.length > 0 && (
+                          <div className="text-[10px] text-green-500 mt-0.5 leading-tight">
+                            {group.variantNames.join(', ')}
+                          </div>
+                        )}
                         {group.discountLabel && (
                           <div className="text-[10px] text-green-600 mt-0.5">{group.discountLabel}</div>
                         )}
