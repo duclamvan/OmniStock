@@ -146,106 +146,102 @@ export default function StockInconsistencies() {
     return item.locationQuantity || 0;
   };
 
-  const QuickFixContent = () => (
+  const quickFixContent = quickFixItem ? (
     <div className="space-y-4">
-      {quickFixItem && (
-        <>
-          <div className="flex items-center gap-3 pb-4 border-b">
-            {quickFixItem.imageUrl ? (
-              <img
-                src={quickFixItem.imageUrl}
-                alt={quickFixItem.productName}
-                className="h-12 w-12 rounded-md object-cover"
-              />
-            ) : (
-              <div className="h-12 w-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Package className="h-6 w-6 text-gray-400" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 dark:text-white truncate">
-                {quickFixItem.productName}
-              </p>
-              {quickFixItem.variantName && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{quickFixItem.variantName}</p>
-              )}
-            </div>
+      <div className="flex items-center gap-3 pb-4 border-b">
+        {quickFixItem.imageUrl ? (
+          <img
+            src={quickFixItem.imageUrl}
+            alt={quickFixItem.productName}
+            className="h-12 w-12 rounded-md object-cover"
+          />
+        ) : (
+          <div className="h-12 w-12 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <Package className="h-6 w-6 text-gray-400" />
           </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-gray-900 dark:text-white truncate">
+            {quickFixItem.productName}
+          </p>
+          {quickFixItem.variantName && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">{quickFixItem.variantName}</p>
+          )}
+        </div>
+      </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {quickFixItem.inconsistencyType === 'over_allocated' ? t('currentStock') : t('recordedQuantity')}
-              </span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {quickFixItem.inconsistencyType === 'over_allocated' 
-                  ? quickFixItem.availableStock 
-                  : quickFixItem.recordedQuantity}
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <ArrowRight className="h-5 w-5 text-gray-400" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t('suggestedQuantity')}
-              </span>
-              <span className="font-bold text-green-600 dark:text-green-400">
-                {getSuggestedQuantity(quickFixItem)}
-              </span>
-            </div>
-          </div>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {quickFixItem.inconsistencyType === 'over_allocated' ? t('currentStock') : t('recordedQuantity')}
+          </span>
+          <span className="font-bold text-gray-900 dark:text-white">
+            {quickFixItem.inconsistencyType === 'over_allocated' 
+              ? quickFixItem.availableStock 
+              : quickFixItem.recordedQuantity}
+          </span>
+        </div>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <ArrowRight className="h-5 w-5 text-gray-400" />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {t('suggestedQuantity')}
+          </span>
+          <span className="font-bold text-green-600 dark:text-green-400">
+            {getSuggestedQuantity(quickFixItem)}
+          </span>
+        </div>
+      </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              {t('setCorrectQuantity')}
-            </label>
-            <Input
-              type="number"
-              min="0"
-              value={newQuantity}
-              onChange={(e) => setNewQuantity(e.target.value)}
-              placeholder={String(getSuggestedQuantity(quickFixItem))}
-              className="text-lg font-bold text-center"
-              data-testid="input-new-quantity"
-            />
-          </div>
+      <div>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+          {t('setCorrectQuantity')}
+        </label>
+        <Input
+          type="number"
+          min="0"
+          value={newQuantity}
+          onChange={(e) => setNewQuantity(e.target.value)}
+          placeholder={String(getSuggestedQuantity(quickFixItem))}
+          className="text-lg font-bold text-center"
+          data-testid="input-new-quantity"
+        />
+      </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                setQuickFixItem(null);
-                setNewQuantity("");
-              }}
-              data-testid="button-cancel-fix"
-            >
-              {t('common:cancel')}
-            </Button>
-            <Button
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApplyFix}
-              disabled={adjustStockMutation.isPending}
-              data-testid="button-apply-fix"
-            >
-              {adjustStockMutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  {t('common:saving')}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Check className="h-4 w-4" />
-                  {t('applyFix')}
-                </span>
-              )}
-            </Button>
-          </div>
-        </>
-      )}
+      <div className="flex gap-2 pt-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => {
+            setQuickFixItem(null);
+            setNewQuantity("");
+          }}
+          data-testid="button-cancel-fix"
+        >
+          {t('common:cancel')}
+        </Button>
+        <Button
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+          onClick={handleApplyFix}
+          disabled={adjustStockMutation.isPending}
+          data-testid="button-apply-fix"
+        >
+          {adjustStockMutation.isPending ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin">⏳</span>
+              {t('common:saving')}
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              {t('applyFix')}
+            </span>
+          )}
+        </Button>
+      </div>
     </div>
-  );
+  ) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-6 overflow-x-hidden">
@@ -476,7 +472,7 @@ export default function StockInconsistencies() {
               <DrawerTitle>{t('quickFixStock')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-6">
-              <QuickFixContent />
+              {quickFixContent}
             </div>
           </DrawerContent>
         </Drawer>
@@ -489,7 +485,7 @@ export default function StockInconsistencies() {
                 {t('setCorrectQuantityDescription')}
               </DialogDescription>
             </DialogHeader>
-            <QuickFixContent />
+            {quickFixContent}
           </DialogContent>
         </Dialog>
       )}
