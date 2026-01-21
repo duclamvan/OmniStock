@@ -500,10 +500,18 @@ export default function StockLookup() {
     setAddLocationVariantName("");
   };
 
-  const handleOpenAddLocationDialog = (productId: string, productName: string) => {
+  const handleOpenAddLocationDialog = (productId: string, productName: string, existingLocations?: any[]) => {
     setAddLocationProductId(productId);
     setAddLocationProductName(productName);
-    resetAddLocationForm();
+    setNewLocationType("warehouse");
+    setNewLocationCode("");
+    setNewLocationQuantity(0);
+    setNewLocationNotes("");
+    setAddLocationVariantId(null);
+    setAddLocationVariantName("");
+    // Only auto-check "set as primary" if there are NO existing locations for the base product
+    const baseProductLocations = existingLocations?.filter(loc => !loc.variantId) || [];
+    setNewLocationIsPrimary(baseProductLocations.length === 0);
     setAddLocationDialogOpen(true);
   };
 
@@ -1290,7 +1298,9 @@ export default function StockLookup() {
                                           setNewLocationType("warehouse");
                                           setNewLocationCode("");
                                           setNewLocationQuantity(0);
-                                          setNewLocationIsPrimary(false);
+                                          // Only auto-check "set as primary" if variant has NO existing locations
+                                          const variantLocations = selectedProductData.locations?.filter((loc: any) => loc.variantId === variant.id) || [];
+                                          setNewLocationIsPrimary(variantLocations.length === 0);
                                           setNewLocationNotes("");
                                           setAddLocationDialogOpen(true);
                                         }}
@@ -1469,7 +1479,7 @@ export default function StockLookup() {
                                 className="h-10 px-4 text-sm font-medium"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenAddLocationDialog(product.id, product.name);
+                                  handleOpenAddLocationDialog(product.id, product.name, selectedProductData.locations);
                                 }}
                                 data-testid={`button-add-location-${product.id}`}
                               >
@@ -1686,7 +1696,7 @@ export default function StockLookup() {
                                 className="h-8"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenAddLocationDialog(product.id, product.name);
+                                  handleOpenAddLocationDialog(product.id, product.name, selectedProductData.locations);
                                 }}
                                 data-testid={`button-add-location-${product.id}`}
                               >
