@@ -24080,9 +24080,11 @@ Important rules:
         if (syncResponse.ok) {
           const results = await syncResponse.json();
           console.log("[Facebook Profile] Sync API raw response:", JSON.stringify(results).substring(0, 500));
-          if (results && results.length > 0 && !results[0]?.error) {
+          if (results && results.length > 0 && !results[0]?.error && (results[0]?.name || results[0]?.account || results[0]?.handle || results[0]?.fbid)) {
             profile = results[0];
-            console.log('[Facebook Profile] Sync API success!');
+            console.log('[Facebook Profile] Sync API success - found profile data!');
+          } else if (results && results.length > 0) {
+            console.log('[Facebook Profile] Sync API returned data but no profile fields found');
           }
         } else if (syncResponse.status === 202) {
           console.log('[Facebook Profile] Sync API returned 202 (async needed)');
