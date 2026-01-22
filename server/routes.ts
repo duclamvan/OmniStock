@@ -23360,6 +23360,14 @@ WESTERN NAME PARSING (no Vietnamese family names detected):
 - LAST word = family name (lastName)
 - FIRST word(s) = given name (firstName)
 
+PHONE NUMBER DETECTION:
+- Look for numbers after markers: Sd, Sdt, SDT, Tel, Tel., Phone, Mob, Mobile, T:, P:, M:, Telefon, Číslo
+- Any sequence of 9-15 digits is likely a phone number
+- European phone formats: +XX XXX XXX XXX, 00XX XXX XXX XXX, or just digits
+- Common country codes: +420 (CZ), +421 (SK), +49 (DE), +43 (AT), +48 (PL), +33 (FR), +39 (IT), +34 (ES), +31 (NL), +32 (BE), +44 (UK), +84 (VN)
+- Extract the full phone number including country code if present
+- Examples: "Sd 607638440" → phone:"607638440", "Tel +420 607 638 440" → phone:"+420607638440"
+
 Other rules:
 - Capitalize each word properly (first letter uppercase)
 - For addresses: "Street Number, Postal City, Country"
