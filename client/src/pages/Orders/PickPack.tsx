@@ -11276,7 +11276,9 @@ export default function PickPack() {
                 let totalWeight = 0;
                 cartons.forEach(carton => {
                   if (carton.weight) {
-                    totalWeight += parseFloat(carton.weight);
+                    // Handle European format (comma as decimal separator)
+                    const weightStr = String(carton.weight).replace(',', '.');
+                    totalWeight += parseFloat(weightStr);
                   }
                 });
 
@@ -11517,7 +11519,9 @@ export default function PickPack() {
                 let totalWeight = 0;
                 cartons.forEach(carton => {
                   if (carton.weight) {
-                    totalWeight += parseFloat(carton.weight);
+                    // Handle European format (comma as decimal separator)
+                    const weightStr = String(carton.weight).replace(',', '.');
+                    totalWeight += parseFloat(weightStr);
                   }
                 });
 
@@ -12348,7 +12352,9 @@ export default function PickPack() {
 
             const totalWeight = cartons.reduce((sum, carton) => {
               if (carton.weight) {
-                return sum + parseFloat(carton.weight);
+                // Handle European format (comma as decimal separator)
+                const weightStr = String(carton.weight).replace(',', '.');
+                return sum + parseFloat(weightStr);
               }
               return sum;
             }, 0);

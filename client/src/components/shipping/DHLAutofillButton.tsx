@@ -344,7 +344,8 @@ function fillAllCOD(){
 var iban=data.bank?data.bank.iban:'';
 var bic=data.bank?data.bank.bic:'';
 var holder=data.bank?data.bank.accountHolder:'';
-var amt=data.codAmount?data.codAmount.toFixed(2):'';
+/* German locale: comma as decimal separator */
+var amt=data.codAmount?data.codAmount.toFixed(2).replace('.',','):'';
 var ref=data.orderId||'';
 var fieldDefs=[
 {label:'iban',val:iban,name:'IBAN'},
