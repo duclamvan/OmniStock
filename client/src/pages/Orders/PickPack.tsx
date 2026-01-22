@@ -15172,75 +15172,25 @@ export default function PickPack() {
     }> = [];
     
     // STEP 1: First merge ALL items with same SKU across entire order (before grouping by productId)
-    // This ensures items like 5x + 1x of same SKU get combined regardless of their productId
-    // EXCEPTION: Items with notes are kept separate (they may have special instructions)
-    const globalSkuMergeMap = new Map<string, { 
-      mergedItem: typeof activePickingOrder.items[0]; 
-      originalIds: string[];
-      totalQty: number;
-      pickedQty: number;
-    }>();
+    // NO SKU merging - group items directly by parent product (productId)
+    // Each variant stays as a separate item in the group
     const serviceItems: typeof activePickingOrder.items = [];
-    // Items with notes are kept separate, not merged
-    const itemsWithNotes: typeof activePickingOrder.items = [];
-    
-    // Helper to normalize SKU for consistent matching
-    const normalizeSku = (item: typeof activePickingOrder.items[0]): string => {
-      const raw = item.variantSku || item.sku || '';
-      return raw.trim().toUpperCase() || item.id;
-    };
+    const productGroupMap = new Map<string, typeof activePickingOrder.items>();
     
     activePickingOrder.items.forEach(item => {
       // An item is a "pure service" only if it has serviceId AND no productId
-      // Free items from discounts may incorrectly have serviceId but should still merge
       const isPureService = item.serviceId && !item.productId;
       
       if (isPureService) {
         serviceItems.push(item);
-      } else if (item.notes && item.notes.trim()) {
-        // Items with notes are kept separate - don't merge them
-        itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as typeof item);
       } else {
-        // Use normalized SKU as the global merge key for items without notes
-        const mergeKey = normalizeSku(item);
-        if (globalSkuMergeMap.has(mergeKey)) {
-          const existing = globalSkuMergeMap.get(mergeKey)!;
-          existing.originalIds.push(item.id);
-          existing.totalQty += item.quantity;
-          existing.pickedQty += item.pickedQuantity;
-          // Update merged item with combined quantities
-          existing.mergedItem = {
-            ...existing.mergedItem,
-            quantity: existing.totalQty,
-            pickedQuantity: existing.pickedQty,
-            _mergedFromIds: existing.originalIds
-          } as typeof item;
-        } else {
-          globalSkuMergeMap.set(mergeKey, {
-            mergedItem: { ...item, _mergedFromIds: [item.id] } as typeof item,
-            originalIds: [item.id],
-            totalQty: item.quantity,
-            pickedQty: item.pickedQuantity
-          });
+        // Group by productId (parent product) - never merge by SKU
+        const groupKey = item.productId || getParentProductName(item.productName);
+        if (!productGroupMap.has(groupKey)) {
+          productGroupMap.set(groupKey, []);
         }
+        productGroupMap.get(groupKey)!.push(item);
       }
-    });
-    
-    // Get all merged product items + items with notes (kept separate)
-    const allMergedItems = [
-      ...Array.from(globalSkuMergeMap.values()).map(v => v.mergedItem),
-      ...itemsWithNotes
-    ];
-    
-    // STEP 2: Now group merged items by productId for display
-    const productGroupMap = new Map<string, typeof allMergedItems>();
-    
-    allMergedItems.forEach(item => {
-      const groupKey = item.productId || getParentProductName(item.productName);
-      if (!productGroupMap.has(groupKey)) {
-        productGroupMap.set(groupKey, []);
-      }
-      productGroupMap.get(groupKey)!.push(item);
     });
     
     // Convert product groups to parentGroups array
@@ -16765,57 +16715,10 @@ export default function PickPack() {
                 const allServicesPicked = serviceItems.every(item => item.pickedQuantity >= item.quantity);
                 const anyServiceCurrent = serviceItems.some(item => currentItem?.id === item.id);
                 
-                // Helper to normalize SKU for consistent matching
-                const normalizeSku = (item: typeof activePickingOrder.items[0]): string => {
-                  const raw = item.variantSku || item.sku || '';
-                  return raw.trim().toUpperCase() || item.id;
-                };
-                
-                // STEP 1: Merge items by SKU (across entire order)
-                const skuMergeMap = new Map<string, { 
-                  mergedItem: typeof activePickingOrder.items[0]; 
-                  originalIds: string[];
-                  totalQty: number;
-                  pickedQty: number;
-                }>();
-                const itemsWithNotes: typeof activePickingOrder.items = [];
-                
-                // Filter to product items (has productId, even if it wrongly has serviceId)
+                // NO SKU merging - group items directly by parent product (productId)
+                // Each variant stays as a separate item in the group
+                const productGroups = new Map<string, typeof activePickingOrder.items>();
                 activePickingOrder.items.filter(item => !isPureService(item)).forEach(item => {
-                  if (item.notes && item.notes.trim()) {
-                    itemsWithNotes.push({ ...item, _mergedFromIds: [item.id] } as typeof item);
-                  } else {
-                    const mergeKey = normalizeSku(item);
-                    if (skuMergeMap.has(mergeKey)) {
-                      const existing = skuMergeMap.get(mergeKey)!;
-                      existing.originalIds.push(item.id);
-                      existing.totalQty += item.quantity;
-                      existing.pickedQty += item.pickedQuantity;
-                      existing.mergedItem = {
-                        ...existing.mergedItem,
-                        quantity: existing.totalQty,
-                        pickedQuantity: existing.pickedQty,
-                        _mergedFromIds: existing.originalIds
-                      } as typeof item;
-                    } else {
-                      skuMergeMap.set(mergeKey, {
-                        mergedItem: { ...item, _mergedFromIds: [item.id] } as typeof item,
-                        originalIds: [item.id],
-                        totalQty: item.quantity,
-                        pickedQty: item.pickedQuantity
-                      });
-                    }
-                  }
-                });
-                
-                const mergedProductItems = [
-                  ...Array.from(skuMergeMap.values()).map(v => v.mergedItem),
-                  ...itemsWithNotes
-                ];
-                
-                // STEP 2: Group merged items by productId (parent product)
-                const productGroups = new Map<string, typeof mergedProductItems>();
-                mergedProductItems.forEach(item => {
                   const groupKey = item.productId || getParentProductName(item.productName);
                   if (!productGroups.has(groupKey)) {
                     productGroups.set(groupKey, []);
