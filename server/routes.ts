@@ -23321,8 +23321,8 @@ Important:
       const prompt = `Parse the following raw address/contact text into structured fields.
 Return ONLY a valid JSON object with this exact structure:
 {
-  "firstName": "First/given name",
-  "lastName": "Last/family name",
+  "firstName": "Given/middle name(s)",
+  "lastName": "Family/surname",
   "company": "Company name if present",
   "email": "Email address if present",
   "phone": "Phone number if present",
@@ -23336,14 +23336,25 @@ Return ONLY a valid JSON object with this exact structure:
 Raw text to parse:
 ${rawAddress}
 
-Important rules:
-- Extract any available fields from the text
-- For Vietnamese names: the first word is typically the family name (lastName), the rest are given names (firstName)
-- For European addresses: format is typically "Street Number, Postal City, Country"
-- For Czech addresses: format is typically "Street Number, PostalCode City"
-- Leave fields as empty string if not found (do NOT use 'N/A' or 'n/a' - use '' empty string instead)
-- Phone numbers should include country code if present
-- Return ONLY the JSON, no additional text or explanation`;
+CRITICAL - VIETNAMESE NAME PARSING:
+Vietnamese names follow: FAMILY_NAME (1 word) + GIVEN_NAMES (2-3 words)
+- FIRST word = family name (lastName): Nguyen, Tran, Le, Pham, Hoang, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Dinh, Huynh, etc.
+- ALL REMAINING words = given names (firstName)
+Examples:
+  "Nguyen anh van" → lastName:"Nguyen", firstName:"Anh Van"
+  "tran thi minh" → lastName:"Tran", firstName:"Thi Minh"
+  "le van duc" → lastName:"Le", firstName:"Van Duc"
+
+WESTERN NAME PARSING:
+- LAST word = family name (lastName)
+- FIRST word(s) = given name (firstName)
+
+Other rules:
+- Capitalize names properly (first letter uppercase)
+- For European addresses: "Street Number, Postal City, Country"
+- For Czech addresses: "Street Number, PostalCode City"
+- Leave fields as empty string if not found
+- Return ONLY valid JSON`;
 
       const completion = await deepseek.chat.completions.create({
         model: 'deepseek-chat',
