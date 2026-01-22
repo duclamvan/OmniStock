@@ -16218,19 +16218,21 @@ export default function PickPack() {
                             </div>
                           )}
                           
-                          {/* Variant List - Sorted by color number 1-200, then oldest to newest */}
+                          {/* Variant List - Sorted by color number numerically (3, 4, 5, 19, 20...) */}
                           <div className="max-h-64 overflow-y-auto">
                             {[...currentGroup.items]
-                              .map((item, originalIdx) => ({ item, originalIdx }))
                               .sort((a, b) => {
-                                // Primary: sort by color number 1-200
-                                const aNum = parseInt((a.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
-                                const bNum = parseInt((b.item.colorNumber || '').replace(/\D/g, '') || '999999', 10);
-                                if (aNum !== bNum) return aNum - bNum;
-                                // Secondary: oldest (lowest index) to newest (highest index)
-                                return a.originalIdx - b.originalIdx;
+                                // Sort by colorNumber numerically, fallback to extracting from product name
+                                const getNum = (item: any) => {
+                                  if (item.colorNumber) {
+                                    return parseInt(String(item.colorNumber).replace(/\D/g, ''), 10) || 999999;
+                                  }
+                                  const match = item.productName?.match(/[-–—]\s*(\d+)(?:\s|$)/);
+                                  return match ? parseInt(match[1], 10) : 999999;
+                                };
+                                return getNum(a) - getNum(b);
                               })
-                              .map(({ item }, idx) => {
+                              .map((item, idx) => {
                                 const isPicked = item.pickedQuantity >= item.quantity;
                                 const isPartial = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
                                 
