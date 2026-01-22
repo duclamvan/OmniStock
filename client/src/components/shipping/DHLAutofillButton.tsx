@@ -50,7 +50,7 @@ interface DHLAutofillButtonProps {
   disabled?: boolean;
 }
 
-const BOOKMARKLET_VERSION = "2.0.0"; // Reusable localStorage-based bookmark
+const BOOKMARKLET_VERSION = "3.0.0"; // Version 3: Uses URL hash for cross-domain data transfer
 const DHL_STORAGE_KEY = 'dhl_autofill_data';
 
 export function DHLAutofillButton({ 
@@ -85,8 +85,9 @@ export function DHLAutofillButton({
     }
   };
 
-  const saveDataToLocalStorage = () => {
-    const autofillData = {
+  // Build autofill data object
+  const buildAutofillData = () => {
+    return {
       orderId: orderId || '',
       recipient: {
         firstName: recipientData.firstName || '',
@@ -121,7 +122,10 @@ export function DHLAutofillButton({
       cartonCount: 1, // DHL DE always handles 1 carton (COD), rest goes via GLS
       timestamp: Date.now(),
     };
+  };
 
+  const saveDataToLocalStorage = () => {
+    const autofillData = buildAutofillData();
     try {
       localStorage.setItem(DHL_STORAGE_KEY, JSON.stringify(autofillData));
       console.log('🟡 DHL Autofill - Data saved to localStorage:', autofillData);
@@ -134,12 +138,18 @@ export function DHLAutofillButton({
 
   const generateBookmarkletCode = () => {
     const bookmarkletLogic = `(function(){
-var storedData=localStorage.getItem('${DHL_STORAGE_KEY}');
-if(!storedData){alert('No DHL shipping data found!\\n\\nPlease click "Ship DHL DE" button in Davie Supply first.');return;}
+// Read data from URL hash (set by Davie Supply when opening this page)
+var hash=window.location.hash;
+var match=hash.match(/dhldata=([^&]+)/);
+if(!match){alert('No DHL data found in URL!\\n\\nPlease go back to Davie Supply and click "Ship DHL DE" button to open this page with the shipping data.');return;}
 var data;
-try{data=JSON.parse(storedData);}catch(e){alert('Invalid DHL data in storage');return;}
+try{
+var urlDecoded=decodeURIComponent(match[1]);
+var jsonStr=decodeURIComponent(escape(atob(urlDecoded)));
+data=JSON.parse(jsonStr);
+}catch(e){alert('Failed to read DHL data. Please try clicking "Ship DHL DE" again.');console.error('DHL decode error:',e);return;}
 var age=Date.now()-(data.timestamp||0);
-console.log('DHL Autofill v2.0 - Data age:',Math.round(age/1000)+'s');
+console.log('DHL Autofill v3.0 - Data age:',Math.round(age/1000)+'s (from URL hash)');
 console.log('DHL data:',data);
 var log=[];
 var okCount=0;
@@ -586,11 +596,23 @@ detectPageAndFill();
   }, [bookmarkletCode]);
 
   const openDHLPage = () => {
-    window.open('https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html?type=ShipmentEditorProductSelection', '_blank');
+    // Build data and encode it for URL hash (cross-domain compatible)
+    const data = buildAutofillData();
+    
+    // URL-safe encoding: JSON -> UTF-8 encode -> base64 -> URL encode
+    const jsonStr = JSON.stringify(data);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const urlSafeBase64 = encodeURIComponent(base64);
+    
+    // Open DHL with data in URL hash
+    const dhlUrl = `https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html?type=ShipmentEditorProductSelection#dhldata=${urlSafeBase64}`;
+    
+    console.log('📦 Opening DHL with data in URL hash');
+    window.open(dhlUrl, '_blank');
   };
 
   const handleButtonClick = () => {
-    saveDataToLocalStorage();
+    saveDataToLocalStorage(); // Keep localStorage as backup
     setDataPrepared(true);
     openDHLPage();
     
