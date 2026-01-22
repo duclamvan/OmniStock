@@ -32,6 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -198,6 +199,7 @@ export default function OrderDetails() {
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
   const [showCapturePreview, setShowCapturePreview] = useState(false);
+  const [compactCaptureMode, setCompactCaptureMode] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const capturePreviewRef = useRef<HTMLDivElement>(null);
@@ -587,6 +589,9 @@ export default function OrderDetails() {
 
   const handleDownloadInvoice = () => {
     if (!order) return;
+    // Auto-enable compact mode for large orders (10+ items)
+    const itemCount = order.items?.length || 0;
+    setCompactCaptureMode(itemCount >= 10);
     setShowCapturePreview(true);
   };
 
@@ -1141,21 +1146,22 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
           {/* Invoice - Order Items & Pricing */}
           <Card ref={invoiceCardRef} className="overflow-hidden">
             <CardHeader className="border-b border-slate-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
                   <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                   {t('orders:invoice')}
                 </CardTitle>
-                <div className="flex items-center gap-2" data-hide-in-screenshot>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap" data-hide-in-screenshot>
                   {order.orderStatus === 'to_fulfill' && (
                     <Button
                       variant={showPickingMode ? "default" : "outline"}
                       size="sm"
                       onClick={() => setShowPickingMode(!showPickingMode)}
-                      className="h-8 text-xs"
+                      className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3"
                     >
-                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                      {showPickingMode ? t('orders:exitPickingMode') : t('orders:startPickingMode')}
+                      <CheckCircle2 className="h-3 w-3 sm:mr-1.5" />
+                      <span className="hidden sm:inline">{showPickingMode ? t('orders:exitPickingMode') : t('orders:startPickingMode')}</span>
+                      <span className="sm:hidden">{showPickingMode ? 'Exit' : 'Pick'}</span>
                     </Button>
                   )}
                   <Button
@@ -1163,20 +1169,22 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     size="sm"
                     onClick={handleDownloadInvoice}
                     data-testid="button-capture-order"
-                    className="h-8 text-xs"
+                    className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3"
                   >
-                    <Download className="mr-1.5 h-3.5 w-3.5" />
-                    {t('orders:captureOrder')}
+                    <Download className="h-3 w-3 sm:mr-1.5" />
+                    <span className="hidden sm:inline">{t('orders:captureOrder')}</span>
+                    <span className="sm:hidden">Capture</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowReceiptDialog(true)}
                     data-testid="button-print-receipt"
-                    className="h-8 text-xs"
+                    className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3"
                   >
-                    <Receipt className="mr-1.5 h-3.5 w-3.5" />
-                    {t('financial:printReceipt', 'Print Receipt')}
+                    <Receipt className="h-3 w-3 sm:mr-1.5" />
+                    <span className="hidden sm:inline">{t('financial:printReceipt', 'Print Receipt')}</span>
+                    <span className="sm:hidden">Receipt</span>
                   </Button>
                 </div>
               </div>
@@ -3191,6 +3199,24 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
             </DialogDescription>
           </DialogHeader>
           
+          {/* Quick Controls - Toggle and Download */}
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-y border-slate-200" data-hide-in-screenshot>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="compact-mode" 
+                checked={compactCaptureMode} 
+                onCheckedChange={setCompactCaptureMode}
+              />
+              <Label htmlFor="compact-mode" className="text-sm font-medium cursor-pointer">
+                Compact {(order?.items?.length || 0) >= 10 && <span className="text-xs text-slate-500">(auto for {order?.items?.length}+ items)</span>}
+              </Label>
+            </div>
+            <Button onClick={handleCaptureDownload} size="sm" className="gap-1.5">
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+          
           {/* Invoice Preview - This is what gets captured */}
           <div className="flex justify-center pb-4 px-2 sm:px-4">
             <div 
@@ -3215,12 +3241,99 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               </div>
               
               {/* Table Header */}
-              <div className="grid grid-cols-[1fr_auto] px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-50 border-b border-slate-200">
+              <div className={`grid px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-50 border-b border-slate-200 ${compactCaptureMode ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[1fr_auto]'}`}>
+                {compactCaptureMode && <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">SL</span>}
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">SẢN PHẨM</span>
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">THÀNH TIỀN</span>
               </div>
               
-              {/* Items - Grouped by parent product name, with free items separate */}
+              {/* Items - Compact or Normal mode */}
+              {compactCaptureMode ? (
+                /* Compact Mode - No images, dense table layout */
+                <div className="divide-y divide-slate-100">
+                  {(() => {
+                    const getParentAndVariant = (name: string): { parent: string; variant: string | null } => {
+                      const match = name.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+                      if (match) {
+                        return { parent: match[1].trim(), variant: match[2].trim() };
+                      }
+                      return { parent: name, variant: null };
+                    };
+                    
+                    const allItems = order?.items || [];
+                    const paidItems = allItems.filter((item: any) => {
+                      const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.price) || 0;
+                      return unitPrice > 0;
+                    });
+                    const freeItems = allItems.filter((item: any) => {
+                      const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.price) || 0;
+                      return unitPrice === 0 && item.quantity > 0;
+                    });
+                    
+                    // Group paid items
+                    const grouped = paidItems.reduce((acc: any, item: any) => {
+                      const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
+                      if (!acc[parentName]) {
+                        acc[parentName] = { name: parentName, totalQty: 0, totalPrice: 0, totalDiscount: 0, variantDetails: [] as { name: string; qty: number }[] };
+                      }
+                      acc[parentName].totalQty += item.quantity || 0;
+                      acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
+                      acc[parentName].totalDiscount += (item.discount || 0);
+                      if (variant) acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                      return acc;
+                    }, {});
+                    
+                    // Group free items
+                    const freeGrouped = freeItems.reduce((acc: any, item: any) => {
+                      const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
+                      if (!acc[parentName]) {
+                        acc[parentName] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
+                      }
+                      acc[parentName].totalQty += item.quantity || 0;
+                      if (variant) acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                      return acc;
+                    }, {});
+                    
+                    const paidRows = Object.values(grouped).map((group: any, idx: number) => {
+                      const finalPrice = group.totalPrice - group.totalDiscount;
+                      return (
+                        <div key={`paid-${idx}`} className="grid grid-cols-[auto_1fr_auto] gap-2 px-2 py-1.5 items-start">
+                          <span className="text-sm font-bold text-slate-900 w-6 text-center">{group.totalQty}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium text-slate-900 leading-tight">{group.name}</span>
+                            {group.variantDetails.length > 0 && (
+                              <div className="text-[9px] text-slate-600 leading-tight mt-0.5">
+                                {[...group.variantDetails]
+                                  .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
+                                  .map((v: { name: string; qty: number }) => v.qty > 1 ? `${v.qty}×${v.name}` : v.name)
+                                  .join(', ')}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right whitespace-nowrap">
+                            {group.totalDiscount > 0 ? (
+                              <span className="text-sm font-bold text-green-700">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
+                            ) : (
+                              <span className="text-sm font-bold text-slate-900">{formatCurrency(group.totalPrice, order?.currency || 'EUR')}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                    
+                    const freeRows = Object.values(freeGrouped).map((group: any, idx: number) => (
+                      <div key={`free-${idx}`} className="grid grid-cols-[auto_1fr_auto] gap-2 px-2 py-1.5 items-center bg-green-50">
+                        <span className="text-sm font-bold text-green-700 w-6 text-center">{group.totalQty}</span>
+                        <span className="text-sm font-medium text-green-800 leading-tight">{group.name}</span>
+                        <span className="text-xs font-bold text-green-700 bg-green-200 px-1.5 py-0.5 rounded">FREE</span>
+                      </div>
+                    ));
+                    
+                    return [...paidRows, ...freeRows];
+                  })()}
+                </div>
+              ) : (
+              /* Normal Mode - With images */
               <div className="divide-y divide-slate-100">
                 {(() => {
                   const getParentAndVariant = (name: string): { parent: string; variant: string | null } => {
@@ -3400,6 +3513,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   return [...paidRows, ...freeRows];
                 })()}
               </div>
+              )}
               
               {/* Pricing Summary */}
               <div className="bg-slate-50 border-t-2 border-slate-200 px-3 sm:px-5 py-3 sm:py-4">
