@@ -3264,18 +3264,20 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     });
                     
                     // Group paid items by productId (parent product)
-                    // ONLY use variantAllocations to detect true variants - no regex fallback
+                    // Use variantName field OR variantAllocations for variant detection
                     const grouped = paidItems.reduce((acc: any, item: any) => {
                       // Check for variantAllocations array with actual variant names
                       const validVariantAllocations = item.variantAllocations && 
                         Array.isArray(item.variantAllocations) && 
                         item.variantAllocations.some((va: any) => va.variantName);
-                      // Only treat as variant if we have explicit variant data AND productId
-                      const isVariant = validVariantAllocations && item.productId;
-                      // Each non-variant item gets unique key to prevent false grouping
+                      // Check for direct variantName field on order item
+                      const hasVariantName = item.variantName && item.productId;
+                      // Treat as variant if we have explicit variant data AND productId
+                      const isVariant = (validVariantAllocations || hasVariantName) && item.productId;
+                      // Group variants by productId, non-variants get unique key
                       const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                      // For variants with variantAllocations, use parent product name; otherwise use full name
-                      const parentName = isVariant ? (item.parentProductName || extractParent(item.productName || '')) : (item.productName || '');
+                      // For variants, use parentProductName or extract from productName; otherwise use full name
+                      const parentName = isVariant ? (item.parentProductName || item.productName?.split(' - ')[0] || item.productName || '') : (item.productName || '');
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { 
@@ -3290,25 +3292,28 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                       acc[groupKey].totalDiscount += (item.discount || 0);
                       
-                      // Add variant details ONLY from variantAllocations - no regex fallback
+                      // Add variant details from variantAllocations OR direct variantName
                       if (validVariantAllocations) {
                         item.variantAllocations.forEach((va: any) => {
                           if (va.variantName) {
                             acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                           }
                         });
+                      } else if (hasVariantName) {
+                        acc[groupKey].variantDetails.push({ name: item.variantName, qty: item.quantity || 1 });
                       }
                       return acc;
                     }, {});
                     
-                    // Group free items by productId - only for true variants with variantAllocations
+                    // Group free items by productId - use variantName OR variantAllocations
                     const freeGrouped = freeItems.reduce((acc: any, item: any) => {
                       const validVariantAllocations = item.variantAllocations && 
                         Array.isArray(item.variantAllocations) && 
                         item.variantAllocations.some((va: any) => va.variantName);
-                      const isVariant = validVariantAllocations && item.productId;
+                      const hasVariantName = item.variantName && item.productId;
+                      const isVariant = (validVariantAllocations || hasVariantName) && item.productId;
                       const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                      const parentName = isVariant ? (item.parentProductName || extractParent(item.productName || '')) : (item.productName || '');
+                      const parentName = isVariant ? (item.parentProductName || item.productName?.split(' - ')[0] || item.productName || '') : (item.productName || '');
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
@@ -3321,6 +3326,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                             acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                           }
                         });
+                      } else if (hasVariantName) {
+                        acc[groupKey].variantDetails.push({ name: item.variantName, qty: item.quantity || 1 });
                       }
                       return acc;
                     }, {});
@@ -3378,16 +3385,17 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     return unitPrice === 0 && item.quantity > 0;
                   });
                   
-                  // Group paid items - ONLY use variantAllocations for variant detection
+                  // Group paid items - use variantName OR variantAllocations for variant detection
                   const grouped = paidItems.reduce((acc: any, item: any) => {
                     const validVariantAllocations = item.variantAllocations && 
                       Array.isArray(item.variantAllocations) && 
                       item.variantAllocations.some((va: any) => va.variantName);
-                    const isVariant = validVariantAllocations && item.productId;
+                    const hasVariantName = item.variantName && item.productId;
+                    const isVariant = (validVariantAllocations || hasVariantName) && item.productId;
                     // Use unique key for non-variants to prevent false grouping
                     const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                    // Use full product name for non-variants
-                    const displayName = isVariant ? (item.parentProductName || item.productName || '') : (item.productName || '');
+                    // Use parent product name for variants, full name for non-variants
+                    const displayName = isVariant ? (item.parentProductName || item.productName?.split(' - ')[0] || item.productName || '') : (item.productName || '');
                     
                     if (!acc[groupKey]) {
                       acc[groupKey] = { 
@@ -3406,13 +3414,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                     acc[groupKey].totalDiscount += (item.discount || 0);
                     acc[groupKey].variantCount += 1;
-                    // Only add variant details from variantAllocations
+                    // Add variant details from variantAllocations OR direct variantName
                     if (validVariantAllocations) {
                       item.variantAllocations.forEach((va: any) => {
                         if (va.variantName) {
                           acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                         }
                       });
+                    } else if (hasVariantName) {
+                      acc[groupKey].variantDetails.push({ name: item.variantName, qty: item.quantity || 1 });
                     }
                     if (!acc[groupKey].image && item.image) acc[groupKey].image = item.image;
                     // Capture discount label (e.g., "BỘT MUA 5 TẶNG 1")
@@ -3422,14 +3432,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     return acc;
                   }, {});
                   
-                  // Group free items - ONLY use variantAllocations for variant detection
+                  // Group free items - use variantName OR variantAllocations for variant detection
                   const freeGrouped = freeItems.reduce((acc: any, item: any) => {
                     const validVariantAllocations = item.variantAllocations && 
                       Array.isArray(item.variantAllocations) && 
                       item.variantAllocations.some((va: any) => va.variantName);
-                    const isVariant = validVariantAllocations && item.productId;
+                    const hasVariantName = item.variantName && item.productId;
+                    const isVariant = (validVariantAllocations || hasVariantName) && item.productId;
                     const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                    const displayName = isVariant ? (item.parentProductName || item.productName || '') : (item.productName || '');
+                    const displayName = isVariant ? (item.parentProductName || item.productName?.split(' - ')[0] || item.productName || '') : (item.productName || '');
                     
                     if (!acc[groupKey]) {
                       acc[groupKey] = { 
@@ -3450,6 +3461,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                         }
                       });
+                    } else if (hasVariantName) {
+                      acc[groupKey].variantDetails.push({ name: item.variantName, qty: item.quantity || 1 });
                     }
                     if (!acc[groupKey].image && item.image) acc[groupKey].image = item.image;
                     return acc;
