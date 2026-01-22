@@ -1854,7 +1854,13 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('orders:shippingAddress')}</h3>
                   </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-500">{t('orders:noShippingAddress')}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                    {order.shippingMethod?.toUpperCase() === 'PICKUP' 
+                      ? t('orders:pickupFromStore')
+                      : order.shippingMethod?.toUpperCase() === 'HAND-DELIVERY'
+                      ? t('orders:handDeliveryInfo')
+                      : t('orders:noShippingAddress')}
+                  </p>
                 </div>
               )}
 
@@ -1885,8 +1891,25 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     <div data-testid="text-shipping-method">
                       <span className="text-slate-500 dark:text-slate-400">{t('orders:method')}</span>
                       <div className="mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {order.shippingMethod}
+                        <Badge 
+                          variant="secondary" 
+                          className={`text-xs ${
+                            order.shippingMethod.toUpperCase() === 'PICKUP' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                              : order.shippingMethod.toUpperCase() === 'HAND-DELIVERY'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              : order.shippingMethod.toUpperCase().includes('GLS')
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : order.shippingMethod.toUpperCase().includes('PPL')
+                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                              : order.shippingMethod.toUpperCase().includes('DHL')
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : ''
+                          }`}
+                        >
+                          {order.shippingMethod.toUpperCase() === 'PICKUP' ? t('orders:pickup') :
+                           order.shippingMethod.toUpperCase() === 'HAND-DELIVERY' ? t('orders:handDelivery') :
+                           order.shippingMethod}
                         </Badge>
                       </div>
                     </div>
