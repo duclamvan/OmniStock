@@ -23063,9 +23063,8 @@ Important:
           if (fields.city && fields.city.trim()) {
             queryParts.push(fields.city.trim());
           }
-          if (fields.country && fields.country.trim()) {
-            queryParts.push(fields.country.trim());
-          }
+          // IMPORTANT: Do NOT include parsed country in query - it's often wrong
+          // Let Google Places determine the correct country from the address
 
           const query = queryParts.join(', ');
           console.log('[Geocode Fill] Using Google Places API for:', query);
@@ -23144,6 +23143,8 @@ Important:
                   if (googleCountry) {
                     result.country = normalizeCountryName(googleCountry);
                     console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
+                  } else {
+                    console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
                   }
                   
                   // Fill company/business name if missing and this is an establishment
