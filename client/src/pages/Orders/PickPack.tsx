@@ -10034,7 +10034,17 @@ export default function PickPack() {
                                 {/* Expanded Variant List */}
                                 {isGroupExpanded && (
                                   <div className="border-t border-purple-200 dark:border-purple-700 max-h-64 overflow-y-auto">
-                                    {groupItems.map((item, idx) => {
+                                    {[...groupItems].sort((a, b) => {
+                                      // Sort by colorNumber numerically, fallback to extracting from product name
+                                      const getNum = (item: any) => {
+                                        if (item.colorNumber) {
+                                          return parseInt(String(item.colorNumber).replace(/\D/g, ''), 10) || 999999;
+                                        }
+                                        const match = item.productName?.match(/[-–—]\s*(\d+)(?:\s|$)/);
+                                        return match ? parseInt(match[1], 10) : 999999;
+                                      };
+                                      return getNum(a) - getNum(b);
+                                    }).map((item, idx) => {
                                       const isVerified = (verifiedItems[item.id] || 0) >= item.quantity;
                                       const isBundle = item.isBundle && item.bundleItems && item.bundleItems.length > 0;
                                       const isRecentlyScanned = recentlyScannedItemId === item.id;
