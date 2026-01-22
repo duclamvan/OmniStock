@@ -50,7 +50,7 @@ interface DHLAutofillButtonProps {
   disabled?: boolean;
 }
 
-const BOOKMARKLET_VERSION = "1.0.0";
+const BOOKMARKLET_VERSION = "2.0.0"; // Reusable localStorage-based bookmark
 const DHL_STORAGE_KEY = 'dhl_autofill_data';
 
 export function DHLAutofillButton({ 
@@ -133,45 +133,13 @@ export function DHLAutofillButton({
   };
 
   const generateBookmarkletCode = () => {
-    const data = {
-      orderId: orderId || '',
-      recipient: {
-        firstName: recipientData.firstName || '',
-        lastName: recipientData.lastName || '',
-        company: recipientData.company || '',
-        street: recipientData.street || '',
-        houseNumber: recipientData.houseNumber || '',
-        postalCode: recipientData.postalCode || '',
-        city: recipientData.city || '',
-        country: recipientData.country || 'Deutschland',
-        email: recipientData.email || '',
-        phone: recipientData.phone || '',
-      },
-      sender: senderData ? {
-        firstName: senderData.firstName || '',
-        lastName: senderData.lastName || '',
-        company: senderData.company || senderData.addressSupplement || '',
-        street: senderData.street || '',
-        houseNumber: senderData.houseNumber || '',
-        postalCode: senderData.postalCode || '',
-        city: senderData.city || '',
-        email: senderData.email || '',
-        phone: senderData.phone || '',
-      } : null,
-      codAmount: codAmount || 0,
-      bank: bankData ? {
-        iban: bankData.iban || '',
-        bic: bankData.bic || '',
-        accountHolder: bankData.accountHolder || '',
-      } : null,
-      weight: weight || 0,
-    };
-
-    const jsonStr = JSON.stringify(data);
-    const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
-
     const bookmarkletLogic = `(function(){
-var data=JSON.parse(decodeURIComponent(escape(atob('${base64Data}'))));
+var storedData=localStorage.getItem('${DHL_STORAGE_KEY}');
+if(!storedData){alert('No DHL shipping data found!\\n\\nPlease click "Ship DHL DE" button in Davie Supply first.');return;}
+var data;
+try{data=JSON.parse(storedData);}catch(e){alert('Invalid DHL data in storage');return;}
+var age=Date.now()-(data.timestamp||0);
+console.log('DHL Autofill v2.0 - Data age:',Math.round(age/1000)+'s');
 console.log('DHL data:',data);
 var log=[];
 var okCount=0;
@@ -683,22 +651,25 @@ detectPageAndFill();
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <BookmarkIcon className="h-5 w-5 text-yellow-600" />
-              DHL Autofill - Order {orderId}
+              DHL Autofill Setup
             </DialogTitle>
             <DialogDescription className="text-sm">
-              This bookmarklet contains data for current order. Use it on DHL page.
+              Set up once, then use it anytime to auto-fill the DHL form
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-lg border p-3 sm:p-4 bg-muted">
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">📋 How to use:</h3>
+            <div className="rounded-lg border p-3 sm:p-4 bg-green-50 dark:bg-green-950/20">
+              <h3 className="font-semibold mb-2 text-sm sm:text-base text-green-800 dark:text-green-200">✨ Reusable bookmark - set up once, use forever!</h3>
               <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
-                <li>DHL page should be open now</li>
-                <li>Drag the button below to your bookmarks bar OR copy the code</li>
-                <li>Click the bookmarklet on the DHL page to auto-fill</li>
+                <li><strong>One-time setup:</strong> Save the bookmarklet below to your bookmarks bar</li>
+                <li><strong>For each order:</strong> Click "Ship DHL DE" button (prepares the data)</li>
+                <li><strong>On DHL page:</strong> Click your saved bookmark to auto-fill</li>
                 <li>Verify details and complete shipment</li>
               </ol>
+              <p className="mt-2 text-xs text-green-700 dark:text-green-300">
+                💡 The bookmark always uses the latest order data - no need to create a new one each time!
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -757,9 +728,8 @@ detectPageAndFill();
               <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm sm:text-base">⚠️ Important:</h3>
               <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
                 <li>Works directly on DHL website</li>
-                <li><strong>Each order has unique bookmarklet with embedded data</strong></li>
-                <li>Always verify auto-filled details</li>
-                <li>Copy or drag the bookmarklet code to use</li>
+                <li>Click "Ship DHL DE" button before using bookmark on new order</li>
+                <li>Always verify auto-filled details before confirming</li>
               </ul>
             </div>
 
