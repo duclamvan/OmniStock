@@ -1631,13 +1631,26 @@ export default function ProductForm() {
   const generateSKU = () => {
     const name = form.watch('name') || '';
     const vietnameseName = form.watch('vietnameseName') || '';
+    const selectedCategoryId = form.watch('categoryId');
     
-    const productText = name || vietnameseName || 'ITEM';
-    let baseSKU = generateProductSku(productText);
-    
-    if (!baseSKU) {
-      baseSKU = 'ITEM-000';
+    // Get category prefix (first 3 letters of first word)
+    let categoryPrefix = '';
+    if (selectedCategoryId && categories) {
+      const selectedCategory = categories.find((c: any) => String(c.id) === selectedCategoryId);
+      if (selectedCategory?.name) {
+        const firstWord = selectedCategory.name.trim().split(/[\s\-–—]+/)[0] || '';
+        categoryPrefix = normalizeForSKU(firstWord).substring(0, 3).toUpperCase();
+      }
     }
+    
+    // Generate product name part (remove spaces, use normalized name)
+    const productText = name || vietnameseName || 'ITEM';
+    const normalizedProduct = normalizeForSKU(productText).toUpperCase().replace(/[\s\-–—]+/g, '');
+    
+    // Combine: CATEGORY-PRODUCTNAME
+    let baseSKU = categoryPrefix 
+      ? `${categoryPrefix}-${normalizedProduct || 'ITEM'}` 
+      : normalizedProduct || 'ITEM-000';
     
     const existingSkus = allProducts
       .filter((p: any) => p.id !== id)
