@@ -5920,11 +5920,8 @@ export default function PickPack() {
           const pendingOrders = transformedOrders.filter(o => o.status === 'to_fulfill');
           if (pendingOrders.length > 0) {
             const order = pendingOrders[0];
-            setActivePickingOrder(order);
-            setSelectedTab('picking');
-            const firstUnpickedIndex = order.items.findIndex((item: any) => item.pickedQuantity < item.quantity);
-            setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
-            setIsTimerRunning(true);
+            // Use startPicking to apply location-based sorting
+            startPicking(order);
           }
         }
       }
@@ -5976,6 +5973,119 @@ export default function PickPack() {
   // No mock location - show real data or "No Location"
   const getLocationDisplay = (location?: string | null) => {
     return location || null;
+  };
+
+  /**
+   * Parse warehouse location code into sortable components
+   * Handles formats like: WH1-A04-R05-L02-B3, A1-R1-L1-B1, PAL1, etc.
+   * Returns numerical values for each component to enable proper sorting
+   */
+  const parseWarehouseLocation = (location: string | null | undefined): {
+    warehouse: number;
+    aisle: number;
+    row: number;
+    level: number;
+    bin: number;
+    raw: string;
+  } => {
+    if (!location) {
+      return { warehouse: 999, aisle: 999, row: 999, level: 999, bin: 999, raw: '' };
+    }
+
+    const loc = location.toUpperCase().trim();
+    
+    // Extract numeric value from a segment like "WH1", "A04", "R05", "L02", "B3", "PAL1"
+    const extractNumber = (segment: string): number => {
+      const match = segment.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+
+    // Split by common delimiters
+    const parts = loc.split(/[-_\s]/);
+    
+    let warehouse = 1;
+    let aisle = 0;
+    let row = 0;
+    let level = 0;
+    let bin = 0;
+
+    for (const part of parts) {
+      if (part.startsWith('WH')) {
+        warehouse = extractNumber(part);
+      } else if (part.startsWith('A') && !part.startsWith('AL')) {
+        aisle = extractNumber(part);
+      } else if (part.startsWith('R') && !part.startsWith('RO')) {
+        row = extractNumber(part);
+      } else if (part.startsWith('L') && !part.startsWith('LE')) {
+        level = extractNumber(part);
+      } else if (part.startsWith('B') && !part.startsWith('BI')) {
+        bin = extractNumber(part);
+      } else if (part.startsWith('PAL')) {
+        // Pallet locations: treat as level 0, bin as the pallet number
+        level = 0;
+        bin = extractNumber(part);
+      }
+    }
+
+    return { warehouse, aisle, row, level, bin, raw: loc };
+  };
+
+  /**
+   * Sort items by warehouse location for efficient picking route
+   * Uses serpentine (S-pattern) sorting: 
+   * - Odd aisles: ascending by row
+   * - Even aisles: descending by row
+   * This minimizes backtracking in the warehouse
+   */
+  const sortItemsByWarehouseLocation = <T extends { warehouseLocation?: string | null; variantLocationCode?: string | null }>(
+    items: T[]
+  ): T[] => {
+    return [...items].sort((a, b) => {
+      // Get effective location (prefer warehouseLocation, fallback to variantLocationCode)
+      const locA = a.warehouseLocation || a.variantLocationCode || '';
+      const locB = b.warehouseLocation || b.variantLocationCode || '';
+      
+      // Items without location go to the end
+      if (!locA && !locB) return 0;
+      if (!locA) return 1;
+      if (!locB) return -1;
+
+      const parsedA = parseWarehouseLocation(locA);
+      const parsedB = parseWarehouseLocation(locB);
+
+      // Sort by warehouse first
+      if (parsedA.warehouse !== parsedB.warehouse) {
+        return parsedA.warehouse - parsedB.warehouse;
+      }
+
+      // Sort by aisle
+      if (parsedA.aisle !== parsedB.aisle) {
+        return parsedA.aisle - parsedB.aisle;
+      }
+
+      // Serpentine pattern: odd aisles ascending, even aisles descending
+      const isOddAisle = parsedA.aisle % 2 === 1;
+      
+      // Sort by row (with serpentine)
+      if (parsedA.row !== parsedB.row) {
+        return isOddAisle 
+          ? parsedA.row - parsedB.row  // Odd aisle: ascending
+          : parsedB.row - parsedA.row; // Even aisle: descending
+      }
+
+      // Sort by level (bottom to top for efficiency)
+      if (parsedA.level !== parsedB.level) {
+        return parsedA.level - parsedB.level;
+      }
+
+      // Finally sort by bin
+      if (parsedA.bin !== parsedB.bin) {
+        return parsedA.bin - parsedB.bin;
+      }
+
+      // Fallback to alphabetical comparison of raw strings
+      return parsedA.raw.localeCompare(parsedB.raw);
+    });
   };
 
   // No mock images in production - items without images show default icons
@@ -8209,6 +8319,11 @@ export default function PickPack() {
         }
         return item;
       });
+      
+      // Sort items by warehouse location for efficient picking route
+      // This uses serpentine (S-pattern) sorting to minimize walking distance
+      items = sortItemsByWarehouseLocation(items);
+      console.log('📍 Items sorted by warehouse location for efficient route');
       
       // Initialize pickedFromLocations state from:
       // 1. localStorage (savedProgress.locations) - for session continuity
