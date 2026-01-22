@@ -3248,16 +3248,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               </div>
               
               {/* Table Header */}
-              <div className={`grid px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-50 border-b border-slate-200 ${compactCaptureMode ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[1fr_auto]'}`}>
-                {compactCaptureMode && <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">SL</span>}
+              <div className={`grid px-3 sm:px-4 py-2 bg-slate-50 border-b border-slate-200 ${compactCaptureMode ? 'grid-cols-[48px_1fr_auto]' : 'grid-cols-[1fr_auto]'}`}>
+                {compactCaptureMode && <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-center">SL</span>}
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">SẢN PHẨM</span>
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">THÀNH TIỀN</span>
               </div>
               
               {/* Items - Compact or Normal mode */}
               {compactCaptureMode ? (
-                /* Compact Mode - No images, dense table layout */
-                <div className="divide-y divide-slate-100">
+                /* Compact Mode - No images, clean table layout */
+                <div>
                   {(() => {
                     // Extract variant name from full product name (e.g., "Product - Variant" -> "Variant")
                     const extractVariant = (name: string): string | null => {
@@ -3324,12 +3324,12 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     const paidRows = Object.values(grouped).map((group: any, idx: number) => {
                       const finalPrice = group.totalPrice - group.totalDiscount;
                       return (
-                        <div key={`paid-${idx}`} className="grid grid-cols-[auto_1fr_auto] gap-2 px-2 py-1.5 items-start">
-                          <span className="text-sm font-bold text-slate-900 w-6 text-center">{group.totalQty}</span>
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium text-slate-900 leading-tight">{group.name}</span>
+                        <div key={`paid-${idx}`} className="grid grid-cols-[48px_1fr_auto] px-3 py-2 items-start border-b border-slate-100 last:border-b-0">
+                          <span className="text-base font-bold text-slate-900 text-center">{group.totalQty}</span>
+                          <div className="min-w-0 pl-1">
+                            <span className="text-sm font-medium text-slate-900 leading-snug">{group.name}</span>
                             {group.variantDetails.length > 0 && (
-                              <div className="text-[9px] text-slate-600 leading-tight mt-0.5">
+                              <div className="text-[10px] text-slate-500 leading-snug mt-0.5">
                                 {[...group.variantDetails]
                                   .sort((a, b) => (parseInt(a.name) || 999999) - (parseInt(b.name) || 999999))
                                   .map((v: { name: string; qty: number }) => v.qty > 1 ? `${v.qty}×${v.name}` : v.name)
@@ -3337,7 +3337,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                               </div>
                             )}
                           </div>
-                          <div className="text-right whitespace-nowrap">
+                          <div className="text-right whitespace-nowrap pl-2">
                             {group.totalDiscount > 0 ? (
                               <span className="text-sm font-bold text-green-700">{formatCurrency(finalPrice, order?.currency || 'EUR')}</span>
                             ) : (
@@ -3349,10 +3349,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     });
                     
                     const freeRows = Object.values(freeGrouped).map((group: any, idx: number) => (
-                      <div key={`free-${idx}`} className="grid grid-cols-[auto_1fr_auto] gap-2 px-2 py-1.5 items-center bg-green-50">
-                        <span className="text-sm font-bold text-green-700 w-6 text-center">{group.totalQty}</span>
-                        <span className="text-sm font-medium text-green-800 leading-tight">{group.name}</span>
-                        <span className="text-xs font-bold text-green-700 bg-green-200 px-1.5 py-0.5 rounded">FREE</span>
+                      <div key={`free-${idx}`} className="grid grid-cols-[48px_1fr_auto] px-3 py-2 items-center bg-green-50 border-b border-green-100 last:border-b-0">
+                        <span className="text-base font-bold text-green-700 text-center">{group.totalQty}</span>
+                        <span className="text-sm font-medium text-green-800 leading-snug pl-1">{group.name}</span>
+                        <span className="text-xs font-bold text-green-700 bg-green-200 px-1.5 py-0.5 rounded ml-2">FREE</span>
                       </div>
                     ));
                     
