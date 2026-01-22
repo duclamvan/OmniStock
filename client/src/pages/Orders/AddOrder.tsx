@@ -6928,12 +6928,28 @@ export default function AddOrder() {
                                             {group.parentProductName}
                                           </span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <Badge className="text-xs px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-600">
+                                        {/* Compact variant list: S1, S2x3, S5, ... */}
+                                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                          {(() => {
+                                            // Sort variants by name numerically
+                                            const sortedVariants = [...group.variants].sort((a, b) => {
+                                              const aNum = parseInt(a.variantName || '') || 999999;
+                                              const bNum = parseInt(b.variantName || '') || 999999;
+                                              return aNum - bNum;
+                                            });
+                                            // Format as "S1, S2x3, S5" (show quantity if > 1), skip empty names
+                                            return sortedVariants
+                                              .filter(v => v.variantName)
+                                              .map(v => v.quantity > 1 ? `${v.variantName}×${v.quantity}` : v.variantName)
+                                              .join(', ') || `${group.variants.length} items`;
+                                          })()}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                          <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-600">
                                             {group.variants.length} {t('orders:variants', 'variants')}
                                           </Badge>
-                                          <span className="text-xs text-blue-600 dark:text-blue-400">
-                                            {isExpanded ? t('orders:clickToCollapse', 'Click to collapse') : t('orders:clickToExpand', 'Click to expand')}
+                                          <span className="text-[10px] text-blue-500/70 dark:text-blue-400/70">
+                                            {isExpanded ? '▼' : '▶'} {isExpanded ? t('orders:clickToCollapse', 'collapse') : t('orders:clickToExpand', 'expand')}
                                           </span>
                                         </div>
                                       </div>
@@ -7562,9 +7578,130 @@ export default function AddOrder() {
                 </div>
               </div>
               
-              {/* Mobile Card View - Visible only on Mobile */}
+              {/* Mobile Card View - Visible only on Mobile - Uses groupedItems for variant grouping */}
               <div className="md:hidden space-y-3">
-                {orderItems.map((item, index) => (
+                {groupedItems.map((entry, index) => {
+                  // Variant Group Card
+                  if ('isGroupHeader' in entry) {
+                    const group = entry.group;
+                    const isExpanded = expandedVariantGroups.has(group.parentProductId);
+                    return (
+                      <Card 
+                        key={`mobile-group-${group.parentProductId}`}
+                        className="overflow-hidden shadow-sm border-blue-200 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/30"
+                        data-testid={`mobile-variant-group-${group.parentProductId}`}
+                      >
+                        <CardContent className="p-2.5">
+                          {/* Group Header - Clickable */}
+                          <div 
+                            className="flex items-start gap-2 cursor-pointer"
+                            onClick={() => toggleVariantGroup(group.parentProductId)}
+                          >
+                            <div className="flex-shrink-0 relative">
+                              {group.parentImage ? (
+                                <img 
+                                  src={group.parentImage} 
+                                  alt={group.parentProductName}
+                                  className="w-14 h-14 object-contain rounded border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900"
+                                />
+                              ) : (
+                                <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900 rounded border border-blue-200 dark:border-blue-700 flex items-center justify-center">
+                                  <Package className="h-7 w-7 text-blue-500 dark:text-blue-400" />
+                                </div>
+                              )}
+                              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
+                                {group.variants.length}
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                {isExpanded ? <ChevronDown className="h-4 w-4 text-blue-600" /> : <ChevronRight className="h-4 w-4 text-blue-600" />}
+                                <h4 className="font-semibold text-sm leading-tight text-blue-900 dark:text-blue-100">
+                                  {group.parentProductName}
+                                </h4>
+                              </div>
+                              {/* Compact variant list: S1, S2x3, S5, ... */}
+                              <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1 leading-snug">
+                                {(() => {
+                                  const sortedVariants = [...group.variants].sort((a, b) => {
+                                    const aNum = parseInt(a.variantName || '') || 999999;
+                                    const bNum = parseInt(b.variantName || '') || 999999;
+                                    return aNum - bNum;
+                                  });
+                                  // Skip empty names, show fallback if all empty
+                                  return sortedVariants
+                                    .filter(v => v.variantName)
+                                    .map(v => v.quantity > 1 ? `${v.variantName}×${v.quantity}` : v.variantName)
+                                    .join(', ') || `${group.variants.length} items`;
+                                })()}
+                              </div>
+                              <div className="flex items-center justify-between mt-1.5">
+                                <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-300">
+                                  {group.totalQuantity} {t('orders:items')}
+                                </Badge>
+                                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                                  {formatCurrency(group.totalPrice, form.watch('currency'))}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeVariantGroup(group.parentProductId);
+                              }}
+                              className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Expanded Variants */}
+                          {isExpanded && (
+                            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700 space-y-2">
+                              {group.variants.map((variantItem) => (
+                                <div key={variantItem.id} className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-lg p-2">
+                                  <Badge className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 border-blue-300 font-semibold min-w-[40px] text-center">
+                                    {variantItem.variantName || '#'}
+                                  </Badge>
+                                  <MathInput
+                                    min={1}
+                                    value={variantItem.quantity}
+                                    onChange={(val) => updateOrderItem(variantItem.id, 'quantity', val)}
+                                    isInteger={true}
+                                    className="h-8 w-16 text-sm text-center"
+                                  />
+                                  <span className="text-xs text-slate-500 flex-1">
+                                    × {formatCurrency(variantItem.price, form.watch('currency'))}
+                                  </span>
+                                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {formatCurrency(variantItem.total, form.watch('currency'))}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeOrderItem(variantItem.id)}
+                                    className="h-7 w-7 text-red-500 hover:bg-red-50"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  
+                  // Regular item (non-grouped)
+                  const item = entry as OrderItem;
+                  return (
                   <Card key={item.id} className={`overflow-hidden shadow-sm ${item.isFreeItem 
                     ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30' 
                     : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-slate-800'}`} 
@@ -7785,7 +7922,8 @@ export default function AddOrder() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
                 {/* Mobile Placeholder cards for available free slots - Compact */}
                 {buyXGetYAllocations.filter(alloc => alloc.remainingFreeSlots > 0).map((alloc) => (
                   <Card key={`mobile-free-slot-${alloc.discountId}`} className="overflow-hidden shadow-sm border-2 border-dashed border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/20">
