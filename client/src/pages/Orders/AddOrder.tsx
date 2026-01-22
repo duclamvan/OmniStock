@@ -2642,11 +2642,34 @@ export default function AddOrder() {
       console.error('Error fetching variants:', error);
     }
 
-    // Add the product with specified quantity
-    for (let i = 0; i < quantity; i++) {
-      await addProductToOrder(product, skipStockCheck || i > 0);
+    // Check if product already exists in order (by productId, not bundleId/variant)
+    const existingItemIndex = orderItems.findIndex(item => 
+      item.productId === product.id && !item.bundleId && !item.variantId
+    );
+
+    if (existingItemIndex >= 0) {
+      // Product exists - increment quantity
+      setOrderItems(items => 
+        items.map((item, idx) => {
+          if (idx === existingItemIndex) {
+            const newQty = item.quantity + quantity;
+            const newTotal = (item.price * newQty) - item.discount + item.tax;
+            return { ...item, quantity: newQty, total: newTotal };
+          }
+          return item;
+        })
+      );
+    } else {
+      // Product doesn't exist - use addProductToOrder and pass quantity via a ref
+      // Store the desired quantity so we can apply it after the item is added
+      pendingQuantityRef.current = quantity;
+      await addProductToOrder(product, skipStockCheck);
+      pendingQuantityRef.current = 1; // Reset
     }
   };
+  
+  // Ref to track pending quantity for addProductToOrderWithQuantity
+  const pendingQuantityRef = useRef<number>(1);
 
   const addProductToOrder = async (product: any, skipStockCheck: boolean = false) => {
     // Check if this is a service
@@ -2802,13 +2825,14 @@ export default function AddOrder() {
       
       // If there are available free slots for this category, add as free item
       if (availableFreeSlot && availableFreeSlot.remainingFreeSlots > 0) {
+        const itemQuantity = pendingQuantityRef.current;
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
           productId: product.isBundle ? undefined : product.id,
           bundleId: product.isBundle ? product.id : undefined,
           productName: product.name,
           sku: product.sku,
-          quantity: 1,
+          quantity: itemQuantity,
           price: 0,
           originalPrice: productPrice,
           discount: 0,
@@ -2882,6 +2906,10 @@ export default function AddOrder() {
         
         // Determine initial price tier based on current sale type
         const initialPriceTier = currentSaleType === 'wholesale' && bulkPriceValue > 0 ? 'bulk' : 'retail';
+        
+        // Use pending quantity from quick quantity modal, or default to 1
+        const itemQuantity = pendingQuantityRef.current;
+        const itemTotal = (productPrice * itemQuantity) - discountAmount;
 
         const newItem: OrderItem = {
           id: Math.random().toString(36).substr(2, 9),
@@ -2889,12 +2917,12 @@ export default function AddOrder() {
           bundleId: product.isBundle ? product.id : undefined,
           productName: product.name,
           sku: product.sku,
-          quantity: 1,
+          quantity: itemQuantity,
           price: productPrice,
           discount: discountAmount,
           discountPercentage: discountPct,
           tax: 0,
-          total: productPrice - discountAmount,
+          total: itemTotal,
           landingCost: null, // Cost is captured server-side with correct currency
           image: product.image || product.imageUrl || null,
           appliedDiscountId: discountId,
