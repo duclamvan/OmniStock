@@ -3367,14 +3367,6 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               /* Normal Mode - With images */
               <div className="divide-y divide-slate-100">
                 {(() => {
-                  const getParentAndVariant = (name: string): { parent: string; variant: string | null } => {
-                    const match = name.match(/^(.+?)\s*[-–—]\s*(.+)$/);
-                    if (match) {
-                      return { parent: match[1].trim(), variant: match[2].trim() };
-                    }
-                    return { parent: name, variant: null };
-                  };
-                  
                   // Separate paid items and free items
                   const allItems = order?.items || [];
                   const paidItems = allItems.filter((item: any) => {
@@ -3386,12 +3378,20 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     return unitPrice === 0 && item.quantity > 0;
                   });
                   
-                  // Group paid items by parent name
+                  // Group paid items - ONLY use variantAllocations for variant detection
                   const grouped = paidItems.reduce((acc: any, item: any) => {
-                    const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
-                    if (!acc[parentName]) {
-                      acc[parentName] = { 
-                        name: parentName, 
+                    const validVariantAllocations = item.variantAllocations && 
+                      Array.isArray(item.variantAllocations) && 
+                      item.variantAllocations.some((va: any) => va.variantName);
+                    const isVariant = validVariantAllocations && item.productId;
+                    // Use unique key for non-variants to prevent false grouping
+                    const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
+                    // Use full product name for non-variants
+                    const displayName = isVariant ? (item.parentProductName || item.productName || '') : (item.productName || '');
+                    
+                    if (!acc[groupKey]) {
+                      acc[groupKey] = { 
+                        name: displayName, 
                         totalQty: 0, 
                         totalPrice: 0, 
                         totalDiscount: 0,
@@ -3402,27 +3402,38 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         discountLabel: null
                       };
                     }
-                    acc[parentName].totalQty += item.quantity || 0;
-                    acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
-                    acc[parentName].totalDiscount += (item.discount || 0);
-                    acc[parentName].variantCount += 1;
-                    if (variant) {
-                      acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                    acc[groupKey].totalQty += item.quantity || 0;
+                    acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
+                    acc[groupKey].totalDiscount += (item.discount || 0);
+                    acc[groupKey].variantCount += 1;
+                    // Only add variant details from variantAllocations
+                    if (validVariantAllocations) {
+                      item.variantAllocations.forEach((va: any) => {
+                        if (va.variantName) {
+                          acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
+                        }
+                      });
                     }
-                    if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
+                    if (!acc[groupKey].image && item.image) acc[groupKey].image = item.image;
                     // Capture discount label (e.g., "BỘT MUA 5 TẶNG 1")
-                    if (item.appliedDiscountLabel && !acc[parentName].discountLabel) {
-                      acc[parentName].discountLabel = item.appliedDiscountLabel;
+                    if (item.appliedDiscountLabel && !acc[groupKey].discountLabel) {
+                      acc[groupKey].discountLabel = item.appliedDiscountLabel;
                     }
                     return acc;
                   }, {});
                   
-                  // Group free items by parent name
+                  // Group free items - ONLY use variantAllocations for variant detection
                   const freeGrouped = freeItems.reduce((acc: any, item: any) => {
-                    const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
-                    if (!acc[parentName]) {
-                      acc[parentName] = { 
-                        name: parentName, 
+                    const validVariantAllocations = item.variantAllocations && 
+                      Array.isArray(item.variantAllocations) && 
+                      item.variantAllocations.some((va: any) => va.variantName);
+                    const isVariant = validVariantAllocations && item.productId;
+                    const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
+                    const displayName = isVariant ? (item.parentProductName || item.productName || '') : (item.productName || '');
+                    
+                    if (!acc[groupKey]) {
+                      acc[groupKey] = { 
+                        name: displayName, 
                         totalQty: 0, 
                         image: item.image,
                         isService: !!item.serviceId,
@@ -3431,12 +3442,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         discountLabel: item.appliedDiscountLabel || null
                       };
                     }
-                    acc[parentName].totalQty += item.quantity || 0;
-                    acc[parentName].variantCount += 1;
-                    if (variant) {
-                      acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                    acc[groupKey].totalQty += item.quantity || 0;
+                    acc[groupKey].variantCount += 1;
+                    if (validVariantAllocations) {
+                      item.variantAllocations.forEach((va: any) => {
+                        if (va.variantName) {
+                          acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
+                        }
+                      });
                     }
-                    if (!acc[parentName].image && item.image) acc[parentName].image = item.image;
+                    if (!acc[groupKey].image && item.image) acc[groupKey].image = item.image;
                     return acc;
                   }, {});
                   
