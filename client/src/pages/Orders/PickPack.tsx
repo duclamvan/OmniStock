@@ -16268,7 +16268,7 @@ export default function PickPack() {
                                     
                                     {/* Variant Info + Location */}
                                     <div className="flex-1 min-w-0">
-                                      <p className={`text-sm font-medium truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                      <p className={`text-sm font-bold truncate ${isPicked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
                                         {item.productName}
                                       </p>
                                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -16282,7 +16282,7 @@ export default function PickPack() {
                                     
                                     {/* Status */}
                                     <div className="flex-shrink-0 flex items-center gap-2">
-                                      <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{item.quantity}x</span>
+                                      <span className="text-base font-black text-gray-900 dark:text-gray-100">{item.quantity}x</span>
                                       {isPicked ? (
                                         <CheckCircle className="h-5 w-5 text-green-500" />
                                       ) : (
