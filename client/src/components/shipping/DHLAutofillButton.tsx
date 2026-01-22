@@ -138,16 +138,16 @@ export function DHLAutofillButton({
 
   const generateBookmarkletCode = () => {
     const bookmarkletLogic = `(function(){
-// Read data from clipboard (copied by Davie Supply when clicking "Ship DHL DE")
+/* Read data from clipboard (copied by Davie Supply when clicking "Ship DHL DE") */
 navigator.clipboard.readText().then(function(clipText){
 var data;
 try{
-// Try to parse as base64-encoded JSON first
+/* Try to parse as base64-encoded JSON first */
 try{
 var jsonStr=decodeURIComponent(escape(atob(clipText)));
 data=JSON.parse(jsonStr);
 }catch(e1){
-// Try plain JSON
+/* Try plain JSON */
 data=JSON.parse(clipText);
 }
 }catch(e){
