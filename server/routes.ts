@@ -23067,7 +23067,7 @@ Important:
           console.log('[Geocode Fill] Using Google Places Autocomplete for:', query);
           
           // Step 1: Use Places Autocomplete to get the best address prediction
-          const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${googleApiKey}`;
+          const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${googleApiKey}`;
           
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -23088,7 +23088,7 @@ Important:
               console.log('[Geocode Fill] Best prediction:', prediction.description);
               
               // Step 2: Get Place Details to extract full address components
-              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=address_components,formatted_address&key=${googleApiKey}`;
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=address_components,formatted_address,name,types&key=${googleApiKey}`;
               
               const detailsController = new AbortController();
               const detailsTimeoutId = setTimeout(() => detailsController.abort(), 5000);
@@ -23155,6 +23155,31 @@ Important:
                     console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
                   } else {
                     console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
+                  }
+                  
+                  // Auto-fill company name if this is a business/establishment
+                  if (!result.company && place.name && place.types) {
+                    const businessTypes = [
+                      'establishment', 'point_of_interest', 'store', 'beauty_salon', 
+                      'hair_care', 'spa', 'health', 'shopping_mall', 'restaurant',
+                      'cafe', 'bar', 'lodging', 'gym', 'hospital', 'pharmacy',
+                      'doctor', 'dentist', 'veterinary_care', 'accounting', 'lawyer',
+                      'real_estate_agency', 'insurance_agency', 'travel_agency',
+                      'car_dealer', 'car_rental', 'car_repair', 'car_wash',
+                      'florist', 'furniture_store', 'home_goods_store', 'jewelry_store',
+                      'pet_store', 'shoe_store', 'clothing_store', 'electronics_store',
+                      'hardware_store', 'book_store', 'department_store', 'supermarket',
+                      'convenience_store', 'bakery', 'meal_delivery', 'meal_takeaway'
+                    ];
+                    const isBusiness = place.types.some((t: string) => 
+                      businessTypes.includes(t) || t.includes('store') || t.includes('shop')
+                    );
+                    const googleStreet = getComponent(['route']);
+                    // Only use business name if it's different from the street name
+                    if (isBusiness && place.name !== googleStreet) {
+                      result.company = place.name;
+                      console.log('[Geocode Fill] Business name detected:', place.name, '(types:', place.types.join(', '), ')');
+                    }
                   }
                   
                   console.log('[Geocode Fill] Google Places result:', JSON.stringify(result));
