@@ -3265,6 +3265,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     
                     // Group paid items by productId (parent product)
                     // Use variantName field OR variantAllocations for variant detection
+                    let groupIndex = 0;
                     const grouped = paidItems.reduce((acc: any, item: any) => {
                       // Check for variantAllocations array with actual variant names
                       const validVariantAllocations = item.variantAllocations && 
@@ -3285,8 +3286,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                           totalQty: 0, 
                           totalPrice: 0, 
                           totalDiscount: 0, 
-                          variantDetails: [] as { name: string; qty: number }[] 
+                          variantDetails: [] as { name: string; qty: number }[],
+                          sortOrder: item.sortOrder ?? groupIndex // Use first item's sortOrder to maintain position
                         };
+                        groupIndex++;
                       }
                       acc[groupKey].totalQty += item.quantity || 0;
                       acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
@@ -3306,6 +3309,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     }, {});
                     
                     // Group free items by productId - use variantName OR variantAllocations
+                    let freeGroupIndex = 0;
                     const freeGrouped = freeItems.reduce((acc: any, item: any) => {
                       const validVariantAllocations = item.variantAllocations && 
                         Array.isArray(item.variantAllocations) && 
@@ -3316,7 +3320,8 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       const parentName = isVariant ? (item.parentProductName || item.productName?.split(' - ')[0] || item.productName || '') : (item.productName || '');
                       
                       if (!acc[groupKey]) {
-                        acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
+                        acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[], sortOrder: item.sortOrder ?? freeGroupIndex };
+                        freeGroupIndex++;
                       }
                       acc[groupKey].totalQty += item.quantity || 0;
                       
@@ -3332,7 +3337,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       return acc;
                     }, {});
                     
-                    const paidRows = Object.values(grouped).map((group: any, idx: number) => {
+                    // Sort groups by their first item's sortOrder to maintain original position
+                    const sortedGroups = Object.values(grouped).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                    
+                    const paidRows = sortedGroups.map((group: any, idx: number) => {
                       const finalPrice = group.totalPrice - group.totalDiscount;
                       return (
                         <div key={`paid-${idx}`} className="grid grid-cols-[48px_1fr_auto] px-3 py-2 items-start border-b border-slate-100 last:border-b-0">
@@ -3359,7 +3367,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       );
                     });
                     
-                    const freeRows = Object.values(freeGrouped).map((group: any, idx: number) => (
+                    const sortedFreeGroups = Object.values(freeGrouped).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                    
+                    const freeRows = sortedFreeGroups.map((group: any, idx: number) => (
                       <div key={`free-${idx}`} className="grid grid-cols-[48px_1fr_auto] px-3 py-2 items-center bg-green-50 border-b border-green-100 last:border-b-0">
                         <span className="text-base font-bold text-green-700 text-center">{group.totalQty}</span>
                         <span className="text-sm font-medium text-green-800 leading-snug pl-1">{group.name}</span>
@@ -3386,6 +3396,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   });
                   
                   // Group paid items - use variantName OR variantAllocations for variant detection
+                  let normalGroupIndex = 0;
                   const grouped = paidItems.reduce((acc: any, item: any) => {
                     const validVariantAllocations = item.variantAllocations && 
                       Array.isArray(item.variantAllocations) && 
@@ -3407,8 +3418,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         isService: !!item.serviceId,
                         variantCount: 0,
                         variantDetails: [] as { name: string; qty: number }[],
-                        discountLabel: null
+                        discountLabel: null,
+                        sortOrder: item.sortOrder ?? normalGroupIndex
                       };
+                      normalGroupIndex++;
                     }
                     acc[groupKey].totalQty += item.quantity || 0;
                     acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
@@ -3433,6 +3446,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   }, {});
                   
                   // Group free items - use variantName OR variantAllocations for variant detection
+                  let normalFreeGroupIndex = 0;
                   const freeGrouped = freeItems.reduce((acc: any, item: any) => {
                     const validVariantAllocations = item.variantAllocations && 
                       Array.isArray(item.variantAllocations) && 
@@ -3450,8 +3464,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                         isService: !!item.serviceId,
                         variantCount: 0,
                         variantDetails: [] as { name: string; qty: number }[],
-                        discountLabel: item.appliedDiscountLabel || null
+                        discountLabel: item.appliedDiscountLabel || null,
+                        sortOrder: item.sortOrder ?? normalFreeGroupIndex
                       };
+                      normalFreeGroupIndex++;
                     }
                     acc[groupKey].totalQty += item.quantity || 0;
                     acc[groupKey].variantCount += 1;
@@ -3468,7 +3484,10 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     return acc;
                   }, {});
                   
-                  const paidRows = Object.values(grouped).map((group: any, idx: number) => {
+                  // Sort groups by first item's sortOrder to maintain original position
+                  const sortedPaidGroups = Object.values(grouped).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                  
+                  const paidRows = sortedPaidGroups.map((group: any, idx: number) => {
                     const finalPrice = group.totalPrice - group.totalDiscount;
                     const rawDiscountPercent = group.totalPrice > 0 ? (group.totalDiscount / group.totalPrice * 100) : 0;
                     const discountPercent = rawDiscountPercent % 1 === 0 ? rawDiscountPercent.toFixed(0) : rawDiscountPercent.toFixed(2).replace(/\.?0+$/, '');
@@ -3531,7 +3550,9 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                   });
                   
                   // Render free items with special styling
-                  const freeRows = Object.values(freeGrouped).map((group: any, idx: number) => (
+                  const sortedFreeGroups = Object.values(freeGrouped).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                  
+                  const freeRows = sortedFreeGroups.map((group: any, idx: number) => (
                     <div key={`free-${idx}`} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-green-50">
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg border-2 border-green-300 bg-green-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {group.image ? (
