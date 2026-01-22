@@ -3264,14 +3264,15 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     });
                     
                     // Group paid items by productId (parent product)
-                    // Only group items that have explicit variantId - these are true variants
+                    // Use variantAllocations array to detect true variants
                     const grouped = paidItems.reduce((acc: any, item: any) => {
-                      // Only use productId as group key if item has variantId (true variant)
-                      // Otherwise each item is its own group to avoid false grouping
-                      const isVariant = item.variantId && item.productId;
-                      const groupKey = isVariant ? item.productId : (item.id || item.productName || `single-${Math.random()}`);
+                      // Check for variantAllocations array (primary) or variantId (fallback)
+                      const hasVariantAllocations = item.variantAllocations && Array.isArray(item.variantAllocations) && item.variantAllocations.length > 0;
+                      const isVariant = (hasVariantAllocations || item.variantId) && item.productId;
+                      // Each non-variant item gets unique key to prevent false grouping
+                      const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
+                      // For variants, extract parent name; for non-variants use full product name
                       const parentName = isVariant ? extractParent(item.productName || '') : (item.productName || '');
-                      const variantName = isVariant ? extractVariant(item.productName || '') : null;
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { 
@@ -3285,26 +3286,47 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       acc[groupKey].totalQty += item.quantity || 0;
                       acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                       acc[groupKey].totalDiscount += (item.discount || 0);
-                      // Only add variant details for items with explicit variantId
-                      if (variantName && isVariant) {
-                        acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                      
+                      // Add variant details from variantAllocations if available
+                      if (hasVariantAllocations) {
+                        item.variantAllocations.forEach((va: any) => {
+                          if (va.variantName) {
+                            acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
+                          }
+                        });
+                      } else if (isVariant && item.variantId) {
+                        // Fallback: extract variant name from product name
+                        const variantName = extractVariant(item.productName || '');
+                        if (variantName) {
+                          acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                        }
                       }
                       return acc;
                     }, {});
                     
                     // Group free items by productId - only for true variants
                     const freeGrouped = freeItems.reduce((acc: any, item: any) => {
-                      const isVariant = item.variantId && item.productId;
-                      const groupKey = isVariant ? item.productId : (item.id || item.productName || `single-${Math.random()}`);
+                      const hasVariantAllocations = item.variantAllocations && Array.isArray(item.variantAllocations) && item.variantAllocations.length > 0;
+                      const isVariant = (hasVariantAllocations || item.variantId) && item.productId;
+                      const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
                       const parentName = isVariant ? extractParent(item.productName || '') : (item.productName || '');
-                      const variantName = isVariant ? extractVariant(item.productName || '') : null;
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
                       }
                       acc[groupKey].totalQty += item.quantity || 0;
-                      if (variantName && isVariant) {
-                        acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                      
+                      if (hasVariantAllocations) {
+                        item.variantAllocations.forEach((va: any) => {
+                          if (va.variantName) {
+                            acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
+                          }
+                        });
+                      } else if (isVariant && item.variantId) {
+                        const variantName = extractVariant(item.productName || '');
+                        if (variantName) {
+                          acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                        }
                       }
                       return acc;
                     }, {});
