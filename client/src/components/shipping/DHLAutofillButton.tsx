@@ -50,7 +50,7 @@ interface DHLAutofillButtonProps {
   disabled?: boolean;
 }
 
-const BOOKMARKLET_VERSION = "3.0.0"; // Version 3: Uses URL hash for cross-domain data transfer
+const BOOKMARKLET_VERSION = "4.0.0"; // Version 4: Uses clipboard for cross-domain data transfer (DHL strips URL hash)
 const DHL_STORAGE_KEY = 'dhl_autofill_data';
 
 export function DHLAutofillButton({ 
