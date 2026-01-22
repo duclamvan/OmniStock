@@ -8327,8 +8327,68 @@ export default function PickPack() {
         return item;
       });
       
+      // PRE-FETCH LOCATIONS: Fetch product locations for all items to enable proper sorting
+      // This is necessary because locations come from product_locations table, not the order items
+      const uniqueProductIds = [...new Set(items.map(item => item.productId).filter(Boolean))];
+      console.log('📍 Pre-fetching locations for', uniqueProductIds.length, 'products');
+      
+      const locationsByProduct: Record<string, { locationCode: string; variantId?: string | null; isPrimary?: boolean; quantity?: number }[]> = {};
+      
+      // Fetch all product locations in parallel
+      await Promise.all(
+        uniqueProductIds.map(async (productId) => {
+          try {
+            const response = await fetch(`/api/products/${productId}/locations`, {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const locations = await response.json();
+              locationsByProduct[productId as string] = locations;
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch locations for product ${productId}:`, err);
+          }
+        })
+      );
+      
+      // Enrich items with their primary location for sorting
+      items = items.map(item => {
+        // Already has location from variant? Keep it
+        if (item.variantLocationCode || item.warehouseLocation) {
+          return item;
+        }
+        
+        // Look up location from product locations
+        const productLocations = locationsByProduct[item.productId || ''] || [];
+        
+        if (productLocations.length > 0) {
+          // For variants: find variant-specific location
+          if (item.variantId) {
+            const variantLocations = productLocations.filter(loc => loc.variantId === item.variantId);
+            if (variantLocations.length > 0) {
+              // Sort by primary first, then by stock quantity
+              const sorted = [...variantLocations].sort((a, b) => {
+                if (a.isPrimary && !b.isPrimary) return -1;
+                if (!a.isPrimary && b.isPrimary) return 1;
+                return (b.quantity || 0) - (a.quantity || 0);
+              });
+              return { ...item, warehouseLocation: sorted[0].locationCode };
+            }
+          }
+          
+          // For non-variants or fallback: use primary or first location
+          const sorted = [...productLocations].sort((a, b) => {
+            if (a.isPrimary && !b.isPrimary) return -1;
+            if (!a.isPrimary && b.isPrimary) return 1;
+            return (b.quantity || 0) - (a.quantity || 0);
+          });
+          return { ...item, warehouseLocation: sorted[0].locationCode };
+        }
+        
+        return item;
+      });
+      
       // Sort items by warehouse location for efficient picking route
-      // This uses serpentine (S-pattern) sorting to minimize walking distance
       items = sortItemsByWarehouseLocation(items);
       console.log('📍 Items sorted by warehouse location for efficient route');
       
