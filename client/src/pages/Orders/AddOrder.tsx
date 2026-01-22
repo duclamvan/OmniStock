@@ -2709,11 +2709,14 @@ export default function AddOrder() {
         total: servicePrice,
       };
       setOrderItems(items => [...items, newItem]);
-      // Auto-focus quantity input for the newly added item
-      setTimeout(() => {
-        const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-        quantityInput?.focus();
-      }, 100);
+      // Auto-focus quantity input for the newly added item (skip on mobile to prevent keyboard popup)
+      const isMobileDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      if (!isMobileDevice) {
+        setTimeout(() => {
+          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+          quantityInput?.focus();
+        }, 100);
+      }
     } else {
       // Check stock availability before adding (unless always allowed or explicitly skipped)
       if (!skipStockCheck && !alwaysAllowOutOfStock) {
@@ -2855,11 +2858,14 @@ export default function AddOrder() {
         });
         
         setOrderItems(items => [...items, newItem]);
-        // Auto-focus quantity input for the newly added free item
-        setTimeout(() => {
-          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-          quantityInput?.focus();
-        }, 100);
+        // Auto-focus quantity input for the newly added free item (skip on mobile to prevent keyboard popup)
+        const isMobileDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+        if (!isMobileDevice) {
+          setTimeout(() => {
+            const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+            quantityInput?.focus();
+          }, 100);
+        }
       } else {
         // Check for applicable discount (non Buy X Get Y)
         const applicableDiscount = findApplicableDiscount(product.id, product.categoryId);
@@ -2956,11 +2962,14 @@ export default function AddOrder() {
         }
         
         setOrderItems(items => [...items, newItem]);
-        // Auto-focus quantity input for the newly added item
-        setTimeout(() => {
-          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-          quantityInput?.focus();
-        }, 100);
+        // Auto-focus quantity input for the newly added item (skip on mobile to prevent keyboard popup)
+        const isMobileDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+        if (!isMobileDevice) {
+          setTimeout(() => {
+            const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+            quantityInput?.focus();
+          }, 100);
+        }
       }
     }
     setProductSearch("");
