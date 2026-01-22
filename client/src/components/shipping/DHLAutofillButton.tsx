@@ -256,10 +256,15 @@ var btns=document.querySelectorAll('button');
 for(var i=0;i<btns.length;i++){
 var b=btns[i];
 var c=b.parentElement&&b.parentElement.parentElement;
-if(c&&c.textContent&&c.textContent.includes(kg)&&c.textContent.toLowerCase().includes('paket')&&!c.textContent.toLowerCase().includes('päckchen')){
+if(c&&c.textContent){
+var txt=c.textContent;
+/* Use regex to match exact package size at word boundary, exclude 31,5 kg */
+var pattern=new RegExp('(^|[^0-9,])'+kg.replace(' ','\\\\s*')+'\\\\s*-?\\\\s*Paket','i');
+if(pattern.test(txt)&&!txt.includes('31,5')&&!txt.toLowerCase().includes('päckchen')){
 b.click();
 L('Package: '+kg);
 return;
+}
 }
 }
 }
@@ -319,7 +324,10 @@ inp.dispatchEvent(new InputEvent('input',{data:val,inputType:'insertText',bubble
 inp.dispatchEvent(new Event('change',{bubbles:true}));
 inp.dispatchEvent(new Event('blur',{bubbles:true}));
 setTimeout(function(){
-if(inp.value===val){
+/* Accept if value matches OR field contains the numeric part (DHL adds € symbol) */
+var numPart=val.replace(',','.').replace(/[^0-9.]/g,'');
+var fieldNum=inp.value.replace(',','.').replace(/[^0-9.]/g,'');
+if(inp.value===val||fieldNum===numPart||inp.value.includes(val.split(',')[0])){
 cb(true);
 }else if(retries>0){
 L('Retry left: '+retries);
