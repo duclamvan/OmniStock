@@ -23046,7 +23046,7 @@ Important:
       
       if (googleApiKey) {
         try {
-          // Build search query
+          // Build search query - DO NOT include parsed country as it's often wrong
           let queryParts: string[] = [];
           
           if (hasStreet) {
@@ -23056,117 +23056,93 @@ Important:
             }
             queryParts.push(streetQuery);
           } else if (hasStreetNumber) {
-            // Only have street number (e.g., "4" for Czech address "23/4")
             queryParts.push(fields.streetNumber!.trim());
           }
           
           if (fields.city && fields.city.trim()) {
             queryParts.push(fields.city.trim());
           }
-          // IMPORTANT: Do NOT include parsed country in query - it's often wrong
-          // Let Google Places determine the correct country from the address
 
           const query = queryParts.join(', ');
-          console.log('[Geocode Fill] Using Google Places API for:', query);
+          console.log('[Geocode Fill] Using Google Geocoding API for:', query);
           
-          // Use Google Places Autocomplete to find the best match
-          const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address|establishment&key=${googleApiKey}`;
+          // Use Google Geocoding API for reliable address validation
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${googleApiKey}`;
           
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
           
-          const autocompleteResponse = await fetch(autocompleteUrl, { signal: controller.signal });
+          const geocodeResponse = await fetch(geocodeUrl, { signal: controller.signal });
           clearTimeout(timeoutId);
           
-          if (autocompleteResponse.ok) {
-            const autocompleteData = await autocompleteResponse.json();
+          if (geocodeResponse.ok) {
+            const geocodeData = await geocodeResponse.json();
+            console.log('[Geocode Fill] Google Geocoding status:', geocodeData.status);
             
-            if (autocompleteData.status === 'OK' && autocompleteData.predictions && autocompleteData.predictions.length > 0) {
-              const prediction = autocompleteData.predictions[0];
+            if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
+              const place = geocodeData.results[0];
+              const addressComponents = place.address_components || [];
+              const result = { ...fields };
               
-              // Get place details for full address components
-              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=formatted_address,name,address_components,types&key=${googleApiKey}`;
+              console.log('[Geocode Fill] Google formatted address:', place.formatted_address);
               
-              const detailsController = new AbortController();
-              const detailsTimeoutId = setTimeout(() => detailsController.abort(), 5000);
+              // Helper to extract component by type
+              const getComponent = (types: string[]): string | null => {
+                for (const type of types) {
+                  const comp = addressComponents.find((c: any) => c.types.includes(type));
+                  if (comp) return comp.long_name;
+                }
+                return null;
+              };
               
-              const detailsResponse = await fetch(detailsUrl, { signal: detailsController.signal });
-              clearTimeout(detailsTimeoutId);
+              // Extract and autocorrect street name
+              const googleStreet = getComponent(['route']);
+              if (googleStreet) {
+                result.street = googleStreet;
+                console.log('[Geocode Fill] Street corrected to:', googleStreet);
+              }
               
-              if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                
-                if (detailsData.status === 'OK' && detailsData.result) {
-                  const place = detailsData.result;
-                  const addressComponents = place.address_components || [];
-                  const result = { ...fields };
-                  
-                  // Helper to extract component by type
-                  const getComponent = (types: string[]): string | null => {
-                    for (const type of types) {
-                      const comp = addressComponents.find((c: any) => c.types.includes(type));
-                      if (comp) return comp.long_name;
-                    }
-                    return null;
-                  };
-                  
-                  // Extract and autocorrect street name
-                  const googleStreet = getComponent(['route']);
-                  if (googleStreet) {
-                    result.street = googleStreet;
-                  }
-                  
-                  // Extract and autocorrect street number (handles Czech 23/4 format)
-                  const googleStreetNumber = getComponent(['street_number']);
-                  if (googleStreetNumber) {
-                    result.streetNumber = googleStreetNumber;
-                  }
-                  
-                  // Fill city if missing
-                  if (missingCity) {
-                    const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
-                    if (geocodedCity) {
-                      result.city = normalizeCityName(geocodedCity);
-                    }
-                  }
-                  
-                  // Fill zipCode if missing
-                  if (missingZipCode) {
-                    const zipCode = getComponent(['postal_code']);
-                    if (zipCode) {
-                      result.zipCode = zipCode;
-                    }
-                  }
-                  
-                  // ALWAYS validate and correct country using Google (not just when missing)
-                  const googleCountry = getComponent(['country']);
-                  if (googleCountry) {
-                    result.country = normalizeCountryName(googleCountry);
-                    console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
-                  } else {
-                    console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
-                  }
-                  
-                  // Fill company/business name if missing and this is an establishment
-                  if (missingCompany && place.name && place.types) {
-                    const isEstablishment = place.types.some((t: string) => 
-                      t === 'establishment' || t === 'point_of_interest' || t === 'store' || 
-                      t === 'business' || t === 'company' || t.includes('store') || t.includes('shop')
-                    );
-                    if (isEstablishment && place.name !== googleStreet) {
-                      result.company = place.name;
-                      console.log('[Geocode Fill] Found business name:', place.name);
-                    }
-                  }
-                  
-                  console.log('[Geocode Fill] Google Places result:', JSON.stringify(result));
-                  return result;
+              // Extract and autocorrect street number
+              const googleStreetNumber = getComponent(['street_number']);
+              if (googleStreetNumber) {
+                result.streetNumber = googleStreetNumber;
+              }
+              
+              // Fill city if missing
+              if (missingCity) {
+                const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
+                if (geocodedCity) {
+                  result.city = normalizeCityName(geocodedCity);
+                  console.log('[Geocode Fill] City filled:', result.city);
                 }
               }
+              
+              // Fill zipCode if missing
+              if (missingZipCode) {
+                const zipCode = getComponent(['postal_code']);
+                if (zipCode) {
+                  result.zipCode = zipCode;
+                  console.log('[Geocode Fill] Zip filled:', zipCode);
+                }
+              }
+              
+              // ALWAYS validate and correct country using Google
+              const googleCountry = getComponent(['country']);
+              if (googleCountry) {
+                result.country = normalizeCountryName(googleCountry);
+                console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
+              } else {
+                console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
+              }
+              
+              console.log('[Geocode Fill] Google Geocoding result:', JSON.stringify(result));
+              return result;
+            } else {
+              console.log('[Geocode Fill] Google Geocoding returned no results for:', query);
             }
           }
         } catch (googleError: any) {
-          console.warn('[Geocode Fill] Google Places API error, falling back to Nominatim:', googleError.message);
+          console.warn('[Geocode Fill] Google Geocoding API error, falling back to Nominatim:', googleError.message);
         }
       }
       
