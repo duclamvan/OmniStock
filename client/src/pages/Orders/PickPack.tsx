@@ -19083,7 +19083,7 @@ export default function PickPack() {
                   {t('items')}
                 </div>
                 <div className="space-y-2">
-                  {previewOrder?.items.map((item, index) => {
+                  {(() => {
                     // Check if this is a Personal Delivery or Pickup order
                     const orderId = previewOrder?.orderId?.toLowerCase() || '';
                     const notes = previewOrder?.notes?.toLowerCase() || '';
@@ -19098,34 +19098,113 @@ export default function PickPack() {
                                    method.includes('pickup') || method.includes('collect');
                     
                     const showPricing = isPersonalDelivery || isPickup;
-                    const unitPrice = Number((item as any).price) || 0;
-                    const lineTotal = unitPrice * item.quantity;
-
-                    return (
-                      <div key={item.id || index} className="flex justify-between gap-4 text-xs sm:text-sm">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                    
+                    // Group items by parent product
+                    const items = previewOrder?.items || [];
+                    const nameBasedGroups = new Map<string, any[]>();
+                    const singleItems: any[] = [];
+                    
+                    const getParentName = (name: string): { parent: string; variant: string | null } => {
+                      const match = name?.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+                      if (match) {
+                        return { parent: match[1].trim(), variant: match[2].trim() };
+                      }
+                      return { parent: name || '', variant: null };
+                    };
+                    
+                    items.forEach((item: any) => {
+                      const { parent, variant } = getParentName(item.productName || '');
+                      if (variant) {
+                        const existing = nameBasedGroups.get(parent) || [];
+                        nameBasedGroups.set(parent, [...existing, { ...item, extractedVariantName: variant }]);
+                      } else {
+                        singleItems.push(item);
+                      }
+                    });
+                    
+                    const result: JSX.Element[] = [];
+                    
+                    // Render single items first
+                    singleItems.forEach((item, index) => {
+                      const unitPrice = Number((item as any).price) || 0;
+                      const lineTotal = unitPrice * item.quantity;
+                      result.push(
+                        <div key={item.id || `single-${index}`} className="flex justify-between gap-4 text-xs sm:text-sm">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              {t('sku')}: {item.sku} • <ItemPrimaryLocation productId={item.productId} variantId={item.variantId} variantLocationCode={item.variantLocationCode} fallbackLocation={item.warehouseLocation} />
+                            </div>
+                          </div>
+                          {showPricing ? (
+                            <div className="text-right text-nowrap flex-shrink-0">
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {item.quantity} × {previewOrder?.currency || 'CZK'}{unitPrice.toFixed(2)}
+                              </div>
+                              <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                {previewOrder?.currency || 'CZK'}{lineTotal.toFixed(2)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-gray-900 dark:text-gray-100 font-medium text-nowrap">
+                              {item.quantity}×
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                    
+                    // Render grouped items
+                    nameBasedGroups.forEach((variants, parentName) => {
+                      const totalQty = variants.reduce((sum, v) => sum + (parseInt(v.quantity) || 0), 0);
+                      const totalPrice = variants.reduce((sum, v) => {
+                        const unitPrice = Number(v.price) || 0;
+                        return sum + (unitPrice * (parseInt(v.quantity) || 0));
+                      }, 0);
+                      
+                      // Sort variants numerically
+                      const sortedVariants = [...variants].sort((a, b) => {
+                        const numA = parseInt(a.extractedVariantName) || 999999;
+                        const numB = parseInt(b.extractedVariantName) || 999999;
+                        return numA - numB;
+                      });
+                      
+                      // Create variant summary (e.g., "2×3, 5, 2×7, 19")
+                      const variantSummary = sortedVariants.map(v => {
+                        const qty = parseInt(v.quantity) || 1;
+                        return qty > 1 ? `${qty}×${v.extractedVariantName}` : v.extractedVariantName;
+                      }).join(', ');
+                      
+                      result.push(
+                        <div key={`group-${parentName}`} className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
+                          <div className="flex justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-blue-900 dark:text-blue-100 text-sm">{parentName}</div>
+                              <div className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                                {variantSummary}
+                              </div>
+                            </div>
+                            {showPricing ? (
+                              <div className="text-right text-nowrap flex-shrink-0">
+                                <div className="text-xs text-blue-600 dark:text-blue-400">
+                                  {totalQty} items
+                                </div>
+                                <div className="font-semibold text-blue-900 dark:text-blue-100">
+                                  {previewOrder?.currency || 'CZK'}{totalPrice.toFixed(2)}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-blue-900 dark:text-blue-100 font-bold text-nowrap">
+                                {totalQty}×
+                              </div>
+                            )}
                           </div>
                         </div>
-                        {showPricing ? (
-                          <div className="text-right text-nowrap flex-shrink-0">
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {item.quantity} × {previewOrder?.currency || 'CZK'}{unitPrice.toFixed(2)}
-                            </div>
-                            <div className="font-semibold text-gray-900 dark:text-gray-100">
-                              {previewOrder?.currency || 'CZK'}{lineTotal.toFixed(2)}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-gray-900 dark:text-gray-100 font-medium text-nowrap">
-                            {t('qty')}: {item.quantity}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                    
+                    return result;
+                  })()}
                 </div>
               </div>
 
