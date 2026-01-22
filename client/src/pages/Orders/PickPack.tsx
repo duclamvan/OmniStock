@@ -11349,6 +11349,7 @@ export default function PickPack() {
                       weight={totalWeight > 0 ? totalWeight : undefined}
                       orderId={activePackingOrder.orderId}
                       cartonCount={cartons.length}
+                      defaultEmail={shippingSettings?.glsDefaultEmail}
                     />
 
                     {/* Paketgröße Section - GLS Web Style */}
@@ -12061,6 +12062,7 @@ export default function PickPack() {
                               recipientData={recipientData}
                               senderData={senderData}
                               cartonCount={glsCartons.length}
+                              defaultEmail={shippingSettings?.glsDefaultEmail}
                             />
 
                             {/* Recipient Address */}
@@ -12857,6 +12859,7 @@ export default function PickPack() {
                     weight={totalGLSWeight > 0 ? totalGLSWeight : undefined}
                     orderId={activePackingOrder.orderId}
                     cartonCount={glsCartons.length}
+                    defaultEmail={shippingSettings?.glsDefaultEmail}
                   />
 
                   {/* Shipping Details - Collapsible */}

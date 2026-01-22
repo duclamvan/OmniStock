@@ -53,6 +53,7 @@ const formSchema = z.object({
   ppl_shipping_rates: z.string().default(JSON.stringify(DEFAULT_PPL_RATES)),
   country_carrier_mapping: z.string().default('{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}'),
   gls_default_sender_address: z.string().default(''),
+  gls_default_email: z.string().email().or(z.literal('')).default('davienails999@gmail.com'),
   gls_enable_manual_labels: z.boolean().default(false),
   gls_max_package_weight_kg: z.coerce.number().min(0).default(40),
   gls_max_girth_cm: z.coerce.number().min(0).default(300),
@@ -116,6 +117,7 @@ export default function ShippingSettings() {
       ppl_shipping_rates: JSON.stringify(DEFAULT_PPL_RATES),
       country_carrier_mapping: '{"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}',
       gls_default_sender_address: '',
+      gls_default_email: 'davienails999@gmail.com',
       gls_enable_manual_labels: false,
       gls_max_package_weight_kg: 40,
       gls_max_girth_cm: 300,
@@ -195,6 +197,7 @@ export default function ShippingSettings() {
         ppl_shipping_rates: toJsonString(shippingSettings.pplShippingRates || DEFAULT_PPL_RATES),
         country_carrier_mapping: toJsonString(shippingSettings.countryCarrierMapping || {"CZ":"PPL CZ","DE":"GLS DE","AT":"DHL DE"}),
         gls_default_sender_address: toJsonString(shippingSettings.glsDefaultSenderAddress),
+        gls_default_email: shippingSettings.glsDefaultEmail ?? 'davienails999@gmail.com',
         gls_enable_manual_labels: shippingSettings.glsEnableManualLabels,
         gls_max_package_weight_kg: shippingSettings.glsMaxPackageWeightKg ?? 40,
         gls_max_girth_cm: shippingSettings.glsMaxGirthCm ?? 300,
@@ -1219,6 +1222,45 @@ export default function ShippingSettings() {
                       </FormControl>
                       <FormDescription>
                         {t('settings:senderAddressJsonDescriptionGls', 'Enter sender address in JSON format for GLS shipments')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* GLS Default Email */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:glsDefaultEmail', 'GLS Default Email')}
+                </CardTitle>
+                <CardDescription className="text-sm">{t('settings:glsDefaultEmailDescription', 'Default email used when customer email is empty')}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <FormField
+                  control={form.control}
+                  name="gls_default_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('settings:defaultEmailLabel', 'Default Email')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            markPendingChange('gls_default_email');
+                          }}
+                          onBlur={handleTextBlur('gls_default_email')}
+                          placeholder="davienails999@gmail.com"
+                          data-testid="input-gls_default_email"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('settings:glsDefaultEmailHint', 'This email will be used in GLS autofill when the customer has no email')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

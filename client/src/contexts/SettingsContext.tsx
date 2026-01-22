@@ -198,6 +198,7 @@ export interface ShippingSettings {
   };
   countryCarrierMapping?: Record<string, string>;
   glsDefaultSenderAddress?: string | object;
+  glsDefaultEmail?: string;
   glsEnableManualLabels?: boolean;
   glsMaxPackageWeightKg?: number;
   glsMaxGirthCm?: number;

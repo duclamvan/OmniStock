@@ -36,11 +36,13 @@ interface GLSAutofillButtonProps {
   weight?: number;
   orderId?: string;
   cartonCount?: number;
+  defaultEmail?: string;
 }
 
 const BOOKMARKLET_VERSION = "3.0.0"; // Version 3: Uses URL hash for cross-domain data transfer
+const DEFAULT_EMAIL_FALLBACK = 'davienails999@gmail.com';
 
-export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId, cartonCount }: GLSAutofillButtonProps) {
+export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId, cartonCount, defaultEmail }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
   const [showDebugData, setShowDebugData] = useState(false);
   const bookmarkletRef = useRef<HTMLAnchorElement>(null);
@@ -429,6 +431,8 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[id*="ort" i]'
     ], data.recipient.city, 'City');
     
+    // Use recipient email or fall back to default email from settings
+    const emailToUse = data.recipient.email || data.defaultEmail || '';
     trySetValue([
       'input[name="email"]',
       'input[type="email"]',
@@ -436,15 +440,9 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
       'input[name*="mail" i]',
       'input[placeholder*="email" i]',
       'input[id*="email" i]'
-    ], data.recipient.email, 'Email');
+    ], emailToUse, 'Email');
     
-    trySetValue([
-      'input[name*="telefon" i]',
-      'input[name*="phone" i]',
-      'input[type="tel"]',
-      'input[placeholder*="telefon" i]',
-      'input[id*="telefon" i]'
-    ], data.recipient.phone, 'Phone');
+    // Phone field intentionally skipped - not required for GLS shipping
     
     if (data.recipient.country) {
       setTimeout(() => {
@@ -604,6 +602,7 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
       packageSize,
       weight,
       orderId,
+      defaultEmail: defaultEmail || DEFAULT_EMAIL_FALLBACK,
       timestamp: Date.now()
     };
     
