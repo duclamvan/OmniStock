@@ -138,18 +138,29 @@ export function DHLAutofillButton({
 
   const generateBookmarkletCode = () => {
     const bookmarkletLogic = `(function(){
-// Read data from URL hash (set by Davie Supply when opening this page)
-var hash=window.location.hash;
-var match=hash.match(/dhldata=([^&]+)/);
-if(!match){alert('No DHL data found in URL!\\n\\nPlease go back to Davie Supply and click "Ship DHL DE" button to open this page with the shipping data.');return;}
+// Read data from clipboard (copied by Davie Supply when clicking "Ship DHL DE")
+navigator.clipboard.readText().then(function(clipText){
 var data;
 try{
-var urlDecoded=decodeURIComponent(match[1]);
-var jsonStr=decodeURIComponent(escape(atob(urlDecoded)));
+// Try to parse as base64-encoded JSON first
+try{
+var jsonStr=decodeURIComponent(escape(atob(clipText)));
 data=JSON.parse(jsonStr);
-}catch(e){alert('Failed to read DHL data. Please try clicking "Ship DHL DE" again.');console.error('DHL decode error:',e);return;}
+}catch(e1){
+// Try plain JSON
+data=JSON.parse(clipText);
+}
+}catch(e){
+alert('No DHL data found in clipboard!\\n\\nPlease go back to Davie Supply and click "Ship DHL DE" button first to copy the shipping data.');
+console.error('DHL decode error:',e);
+return;
+}
+if(!data.recipient){
+alert('Invalid DHL data in clipboard!\\n\\nPlease go back to Davie Supply and click "Ship DHL DE" button first.');
+return;
+}
 var age=Date.now()-(data.timestamp||0);
-console.log('DHL Autofill v3.0 - Data age:',Math.round(age/1000)+'s (from URL hash)');
+console.log('DHL Autofill v4.0 - Data age:',Math.round(age/1000)+'s (from clipboard)');
 console.log('DHL data:',data);
 var log=[];
 var okCount=0;
@@ -582,6 +593,10 @@ showError('Page Not Recognized','Navigate to Product Selection or Address Input 
 }
 }
 detectPageAndFill();
+}).catch(function(err){
+alert('Clipboard access denied!\\n\\nPlease allow clipboard access when prompted, or:\\n1. Go back to Davie Supply\\n2. Click "Ship DHL DE" button\\n3. Come back here and try the bookmarklet again');
+console.error('Clipboard read error:',err);
+});
 })();`;
 
     return `javascript:${encodeURIComponent(bookmarkletLogic.replace(/[\r\n]+/g, ''))}`;
@@ -595,26 +610,37 @@ detectPageAndFill();
     }
   }, [bookmarkletCode]);
 
-  const openDHLPage = () => {
-    // Build data and encode it for URL hash (cross-domain compatible)
+  const openDHLPage = async () => {
+    // Build data and encode as base64 for clipboard
     const data = buildAutofillData();
-    
-    // URL-safe encoding: JSON -> UTF-8 encode -> base64 -> URL encode
     const jsonStr = JSON.stringify(data);
     const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    const urlSafeBase64 = encodeURIComponent(base64);
     
-    // Open DHL with data in URL hash
-    const dhlUrl = `https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html?type=ShipmentEditorProductSelection#dhldata=${urlSafeBase64}`;
+    // Copy data to clipboard (will be read by bookmarklet on DHL page)
+    try {
+      await navigator.clipboard.writeText(base64);
+      console.log('📦 DHL data copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      toast({
+        title: 'Clipboard Error',
+        description: 'Failed to copy shipping data. Please try again.',
+        variant: 'destructive'
+      });
+      return;
+    }
     
-    console.log('📦 Opening DHL with data in URL hash');
+    // Open DHL without hash (data is in clipboard)
+    const dhlUrl = 'https://www.dhl.de/de/privatkunden/pakete-versenden/online-frankieren.html?type=ShipmentEditorProductSelection';
+    
+    console.log('📦 Opening DHL (data in clipboard)');
     window.open(dhlUrl, '_blank');
   };
 
-  const handleButtonClick = () => {
+  const handleButtonClick = async () => {
     saveDataToLocalStorage(); // Keep localStorage as backup
     setDataPrepared(true);
-    openDHLPage();
+    await openDHLPage();
     
     if (!isMobile && shouldShowBookmarkletDialog()) {
       setShowBookmarkletDialog(true);
@@ -685,12 +711,12 @@ detectPageAndFill();
               <h3 className="font-semibold mb-2 text-sm sm:text-base text-green-800 dark:text-green-200">✨ Reusable bookmark - set up once, use forever!</h3>
               <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
                 <li><strong>One-time setup:</strong> Save the bookmarklet below to your bookmarks bar</li>
-                <li><strong>For each order:</strong> Click "Ship DHL DE" button (prepares the data)</li>
-                <li><strong>On DHL page:</strong> Click your saved bookmark to auto-fill</li>
+                <li><strong>For each order:</strong> Click "Ship DHL DE" button (copies data to clipboard)</li>
+                <li><strong>On DHL page:</strong> Click your saved bookmark to auto-fill from clipboard</li>
                 <li>Verify details and complete shipment</li>
               </ol>
               <p className="mt-2 text-xs text-green-700 dark:text-green-300">
-                💡 The bookmark always uses the latest order data - no need to create a new one each time!
+                💡 Data is copied to your clipboard - the bookmarklet reads it to fill the form!
               </p>
             </div>
 
