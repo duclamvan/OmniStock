@@ -23336,23 +23336,33 @@ Return ONLY a valid JSON object with this exact structure:
 Raw text to parse:
 ${rawAddress}
 
-CRITICAL - VIETNAMESE NAME PARSING:
-Vietnamese names follow: FAMILY_NAME (1 word) + GIVEN_NAMES (2-3 words)
-- FIRST word = family name (lastName): Nguyen, Tran, Le, Pham, Hoang, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Dinh, Huynh, etc.
-- ALL REMAINING words = given names (firstName)
-Examples:
-  "Nguyen anh van" → lastName:"Nguyen", firstName:"Anh Van"
-  "tran thi minh" → lastName:"Tran", firstName:"Thi Minh"
-  "le van duc" → lastName:"Le", firstName:"Van Duc"
+CRITICAL - VIETNAMESE NAME DETECTION:
+Common Vietnamese family names (họ): Nguyen, Tran, Le, Pham, Hoang, Huynh, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Dinh, Truong, Lam, Luong, Mai, Trinh, Cao, Phan, Ta, Dao, Doan, Chu, Vuong, Quach, La, Bach, Nghiem, Giang, Thai, Tong, Tang, Ton, Luu, Chau, Kieu
 
-WESTERN NAME PARSING:
+Vietnamese names can be written in TWO formats - detect which by finding the family name position:
+
+FORMAT 1 - Vietnamese style (family name FIRST):
+  "Nguyen Van Anh" → lastName:"Nguyen", firstName:"Van Anh"
+  "Lam Van Diet" → lastName:"Lam", firstName:"Van Diet"
+  "Tran Thi Minh" → lastName:"Tran", firstName:"Thi Minh"
+  
+FORMAT 2 - European style (family name LAST):
+  "Van Diet Lam" → lastName:"Lam", firstName:"Van Diet"
+  "Anh Van Nguyen" → lastName:"Nguyen", firstName:"Anh Van"
+  "Minh Chau Tran" → lastName:"Tran", firstName:"Minh Chau"
+
+DETECTION LOGIC:
+1. Check if FIRST word is a Vietnamese family name → use Format 1
+2. Check if LAST word is a Vietnamese family name → use Format 2
+3. If unclear, assume Format 1 (Vietnamese style)
+
+WESTERN NAME PARSING (no Vietnamese family names detected):
 - LAST word = family name (lastName)
 - FIRST word(s) = given name (firstName)
 
 Other rules:
-- Capitalize names properly (first letter uppercase)
-- For European addresses: "Street Number, Postal City, Country"
-- For Czech addresses: "Street Number, PostalCode City"
+- Capitalize each word properly (first letter uppercase)
+- For addresses: "Street Number, Postal City, Country"
 - Leave fields as empty string if not found
 - Return ONLY valid JSON`;
 
