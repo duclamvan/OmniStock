@@ -200,13 +200,6 @@ export default function OrderDetails() {
   const [showPickingMode, setShowPickingMode] = useState(false);
   const [showCapturePreview, setShowCapturePreview] = useState(false);
   const [compactCaptureMode, setCompactCaptureMode] = useState(false);
-  
-  // Auto-enable compact mode for large orders
-  useEffect(() => {
-    if (order?.items && order.items.length >= 10) {
-      setCompactCaptureMode(true);
-    }
-  }, [order?.items?.length]);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const capturePreviewRef = useRef<HTMLDivElement>(null);
@@ -352,6 +345,13 @@ export default function OrderDetails() {
     staleTime: 3000, // Consider data stale after 3 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });
+
+  // Auto-enable compact mode for large orders (10+ items)
+  useEffect(() => {
+    if (order?.items && order.items.length >= 10) {
+      setCompactCaptureMode(true);
+    }
+  }, [order?.items?.length]);
 
   // LAZY LOADING: Secondary queries only run when section is visible and order is loaded
   // This reduces initial load from 8 parallel queries to just 1 (order data)
