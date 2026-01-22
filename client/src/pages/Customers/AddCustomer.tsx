@@ -1373,7 +1373,7 @@ export default function AddCustomer() {
         filledFields.lastName = data.confidence;
       }
       if (company) {
-        const cleanCompany = removeVietnameseDiacritics(company);
+        const cleanCompany = formatCompanyName(removeVietnameseDiacritics(company));
         shippingForm.setValue('company', cleanCompany);
         filledFields.company = data.confidence;
       }
@@ -1448,6 +1448,7 @@ export default function AddCustomer() {
   });
 
   // Vietnamese name detection - runs locally on device
+  // Vietnamese names: 1 family name (first word) + 2-3 given names (rest)
   const detectAndCorrectVietnameseName = (firstName: string, lastName: string): { firstName: string; lastName: string } => {
     // Common Vietnamese family names (always first word in Vietnamese convention)
     const vietnameseFamilyNames = [
@@ -1464,42 +1465,63 @@ export default function AddCustomer() {
 
     const firstNameTrimmed = firstName.trim();
     const lastNameTrimmed = lastName.trim();
+    
+    // Combine all name parts to analyze
+    const allNameParts = `${firstNameTrimmed} ${lastNameTrimmed}`.trim();
+    const allWords = allNameParts.split(/\s+/).filter(w => w);
 
     // Check if this appears to be Vietnamese naming
-    const hasVietnameseDiacritics = 
-      vietnameseDiacriticsPattern.test(firstNameTrimmed) || 
-      vietnameseDiacriticsPattern.test(lastNameTrimmed);
-
-    // Check if the "first name" (in Western order) matches a Vietnamese family name
-    const firstNameIsVietnameseFamilyName = vietnameseFamilyNames.some(
-      familyName => firstNameTrimmed.toLowerCase().startsWith(familyName.toLowerCase())
+    const hasVietnameseDiacritics = vietnameseDiacriticsPattern.test(allNameParts);
+    
+    // Find Vietnamese family name in any position
+    const familyNameIndex = allWords.findIndex(word => 
+      vietnameseFamilyNames.some(fn => word.toLowerCase() === fn.toLowerCase())
     );
+    
+    const hasVietnameseFamilyName = familyNameIndex >= 0;
 
-    // If we detect Vietnamese naming pattern: swap to correct order
-    // In Vietnamese: Family name comes FIRST, so if AI put it in "firstName", we need to swap
-    if (hasVietnameseDiacritics && firstNameIsVietnameseFamilyName) {
-      // AI incorrectly put Vietnamese family name in firstName
-      // Correct: lastName = first word (family name), firstName = rest (given name)
-      const words = firstNameTrimmed.split(/\s+/);
-      return {
-        lastName: words[0], // Family name (first word)
-        firstName: words.slice(1).join(' ') || lastNameTrimmed // Given name (rest)
-      };
+    // If we detect Vietnamese naming pattern
+    if ((hasVietnameseDiacritics || hasVietnameseFamilyName) && allWords.length >= 2) {
+      // Vietnamese name format: 1 family name (first) + 2-3 given names (rest)
+      // Family name is typically the FIRST word
+      if (familyNameIndex === 0 || (familyNameIndex < 0 && hasVietnameseDiacritics)) {
+        // First word is family name, rest are given names (2-3 words typically)
+        return {
+          lastName: allWords[0],
+          firstName: allWords.slice(1).join(' ')
+        };
+      } else if (familyNameIndex > 0) {
+        // Family name found but not at first position - reorder
+        const familyName = allWords[familyNameIndex];
+        const givenNames = allWords.filter((_, i) => i !== familyNameIndex);
+        return {
+          lastName: familyName,
+          firstName: givenNames.join(' ')
+        };
+      }
     }
 
     // Check if lastName contains Vietnamese family name at the beginning
     const lastNameIsVietnameseFamilyName = vietnameseFamilyNames.some(
-      familyName => lastNameTrimmed.toLowerCase().startsWith(familyName.toLowerCase())
+      familyName => lastNameTrimmed.toLowerCase() === familyName.toLowerCase()
     );
 
-    // If family name is already in lastName and we have Vietnamese diacritics
-    if (hasVietnameseDiacritics && lastNameIsVietnameseFamilyName) {
-      // Already in correct Vietnamese format
+    // If family name is already in lastName correctly
+    if (lastNameIsVietnameseFamilyName) {
       return { firstName: firstNameTrimmed, lastName: lastNameTrimmed };
     }
 
     // No Vietnamese pattern detected - return as is
     return { firstName: firstNameTrimmed, lastName: lastNameTrimmed };
+  };
+  
+  // Format company name with Initial Capital Letters
+  const formatCompanyName = (company: string): string => {
+    if (!company) return '';
+    return company
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const parseBillingAddressMutation = useMutation({
@@ -1550,7 +1572,7 @@ export default function AddCustomer() {
         filledFields.billingLastName = data.confidence;
       }
       if (company) {
-        const cleanCompany = removeVietnameseDiacritics(company);
+        const cleanCompany = formatCompanyName(removeVietnameseDiacritics(company));
         form.setValue('billingCompany', cleanCompany);
         filledFields.billingCompany = data.confidence;
       }
@@ -1663,7 +1685,7 @@ export default function AddCustomer() {
         filledFields.lastName = data.confidence;
       }
       if (company) {
-        const cleanCompany = removeVietnameseDiacritics(company);
+        const cleanCompany = formatCompanyName(removeVietnameseDiacritics(company));
         billingAddressForm.setValue('company', cleanCompany);
         filledFields.company = data.confidence;
       }

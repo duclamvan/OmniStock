@@ -23139,12 +23139,11 @@ Important:
                     }
                   }
                   
-                  // Fill country if missing
-                  if (missingCountry) {
-                    const country = getComponent(['country']);
-                    if (country) {
-                      result.country = normalizeCountryName(country);
-                    }
+                  // ALWAYS validate and correct country using Google (not just when missing)
+                  const googleCountry = getComponent(['country']);
+                  if (googleCountry) {
+                    result.country = normalizeCountryName(googleCountry);
+                    console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
                   }
                   
                   // Fill company/business name if missing and this is an establishment

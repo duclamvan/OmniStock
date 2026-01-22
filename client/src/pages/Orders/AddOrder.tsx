@@ -1542,19 +1542,56 @@ export default function AddOrder() {
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
       
-      // Capitalize names
+      // Capitalize names (Initial Capital Letters)
       const capitalizeWords = (str: string) => str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+      
+      // Vietnamese name detection and correction
+      const vietnameseFamilyNames = [
+        'Nguyen', 'Tran', 'Le', 'Pham', 'Hoang', 'Phan', 'Vu', 'Dang', 'Bui', 'Do', 'Ho',
+        'Ngo', 'Duong', 'Ly', 'Mai', 'Vo', 'Dinh', 'To', 'Truong', 'Doan', 'Huynh', 'Chu', 'Cao',
+        'Thai', 'Ta', 'Thach', 'Luu', 'Kieu', 'Phung', 'Tu', 'Quach', 'Trinh', 'Van'
+      ];
+      
+      const detectAndCorrectVietnameseName = (firstName: string, lastName: string) => {
+        const allNameParts = `${firstName || ''} ${lastName || ''}`.trim();
+        const allWords = allNameParts.split(/\s+/).filter(w => w);
+        if (allWords.length < 2) return { firstName, lastName };
+        
+        const familyNameIndex = allWords.findIndex(word => 
+          vietnameseFamilyNames.some(fn => word.toLowerCase() === fn.toLowerCase())
+        );
+        
+        if (familyNameIndex >= 0) {
+          if (familyNameIndex === 0) {
+            return { lastName: allWords[0], firstName: allWords.slice(1).join(' ') };
+          } else {
+            const familyName = allWords[familyNameIndex];
+            const givenNames = allWords.filter((_, i) => i !== familyNameIndex);
+            return { lastName: familyName, firstName: givenNames.join(' ') };
+          }
+        }
+        return { firstName, lastName };
+      };
+      
+      // Apply Vietnamese name detection
+      let firstName = fields.firstName || '';
+      let lastName = fields.lastName || '';
+      if (firstName || lastName) {
+        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
+        firstName = corrected.firstName;
+        lastName = corrected.lastName;
+      }
       
       // Only update firstName and lastName (fields below Address Search)
       // DO NOT update 'name' field as it appears above Address Search
-      if (fields.firstName || fields.lastName) {
+      if (firstName || lastName) {
         setNewCustomer(prev => ({ 
           ...prev, 
-          firstName: fields.firstName ? capitalizeWords(fields.firstName) : prev.firstName,
-          lastName: fields.lastName ? capitalizeWords(fields.lastName) : prev.lastName
+          firstName: firstName ? capitalizeWords(firstName) : prev.firstName,
+          lastName: lastName ? capitalizeWords(lastName) : prev.lastName
         }));
       }
-      if (fields.company) setNewCustomer(prev => ({ ...prev, company: fields.company }));
+      if (fields.company) setNewCustomer(prev => ({ ...prev, company: capitalizeWords(fields.company) }));
       
       // Set email - use parsed email or default to davienails999@gmail.com if not found
       if (fields.email) {

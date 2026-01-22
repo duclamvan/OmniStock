@@ -213,6 +213,10 @@ export function ShippingAddressModal({
           }
         }
         
+        // Helper for Initial Capital formatting
+        const formatInitialCapital = (str: string) => 
+          str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+        
         Object.entries(data.fields).forEach(([key, value]) => {
           // Skip id and label fields, don't set empty values
           if (value && key !== 'label' && key !== 'id' && value !== null && value !== '') {
@@ -223,6 +227,9 @@ export function ShippingAddressModal({
               processedValue = processedFirstName;
             } else if (key === 'lastName') {
               processedValue = processedLastName;
+            } else if (key === 'company') {
+              // Format company name with Initial Capital Letters
+              processedValue = formatInitialCapital(String(value));
             }
             
             // Map the field name if needed
