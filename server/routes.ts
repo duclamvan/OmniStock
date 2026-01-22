@@ -23064,85 +23064,103 @@ Important:
           }
 
           const query = queryParts.join(', ');
-          console.log('[Geocode Fill] Using Google Geocoding API for:', query);
+          console.log('[Geocode Fill] Using Google Autocomplete for:', query);
           
-          // Use Google Geocoding API for reliable address validation
-          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${googleApiKey}`;
+          // Step 1: Use Places Autocomplete to get the best prediction
+          const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${googleApiKey}`;
           
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
           
-          const geocodeResponse = await fetch(geocodeUrl, { signal: controller.signal });
+          const autocompleteResponse = await fetch(autocompleteUrl, { signal: controller.signal });
           clearTimeout(timeoutId);
           
-          if (geocodeResponse.ok) {
-            const geocodeData = await geocodeResponse.json();
-            console.log('[Geocode Fill] Google Geocoding status:', geocodeData.status);
+          if (autocompleteResponse.ok) {
+            const autocompleteData = await autocompleteResponse.json();
+            console.log('[Geocode Fill] Autocomplete status:', autocompleteData.status, 'predictions:', autocompleteData.predictions?.length || 0);
             
-            if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
-              const place = geocodeData.results[0];
-              const addressComponents = place.address_components || [];
-              const result = { ...fields };
+            if (autocompleteData.status === 'OK' && autocompleteData.predictions && autocompleteData.predictions.length > 0) {
+              const prediction = autocompleteData.predictions[0];
+              console.log('[Geocode Fill] Selected prediction:', prediction.description);
               
-              console.log('[Geocode Fill] Google formatted address:', place.formatted_address);
+              // Step 2: Use Geocoding API with the predicted address for full components
+              const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(prediction.description)}&key=${googleApiKey}`;
               
-              // Helper to extract component by type
-              const getComponent = (types: string[]): string | null => {
-                for (const type of types) {
-                  const comp = addressComponents.find((c: any) => c.types.includes(type));
-                  if (comp) return comp.long_name;
+              const geocodeController = new AbortController();
+              const geocodeTimeoutId = setTimeout(() => geocodeController.abort(), 5000);
+              
+              const geocodeResponse = await fetch(geocodeUrl, { signal: geocodeController.signal });
+              clearTimeout(geocodeTimeoutId);
+              
+              if (geocodeResponse.ok) {
+                const geocodeData = await geocodeResponse.json();
+                
+                if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
+                  const place = geocodeData.results[0];
+                  const addressComponents = place.address_components || [];
+                  const result = { ...fields };
+                  
+                  console.log('[Geocode Fill] Google formatted address:', place.formatted_address);
+                  
+                  // Helper to extract component by type
+                  const getComponent = (types: string[]): string | null => {
+                    for (const type of types) {
+                      const comp = addressComponents.find((c: any) => c.types.includes(type));
+                      if (comp) return comp.long_name;
+                    }
+                    return null;
+                  };
+                  
+                  // Extract and autocorrect street name
+                  const googleStreet = getComponent(['route']);
+                  if (googleStreet) {
+                    result.street = googleStreet;
+                    console.log('[Geocode Fill] Street corrected to:', googleStreet);
+                  }
+                  
+                  // Extract and autocorrect street number
+                  const googleStreetNumber = getComponent(['street_number']);
+                  if (googleStreetNumber) {
+                    result.streetNumber = googleStreetNumber;
+                  }
+                  
+                  // Fill city if missing
+                  if (missingCity) {
+                    const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
+                    if (geocodedCity) {
+                      result.city = normalizeCityName(geocodedCity);
+                      console.log('[Geocode Fill] City filled:', result.city);
+                    }
+                  }
+                  
+                  // Fill zipCode if missing
+                  if (missingZipCode) {
+                    const zipCode = getComponent(['postal_code']);
+                    if (zipCode) {
+                      result.zipCode = zipCode;
+                      console.log('[Geocode Fill] Zip filled:', zipCode);
+                    }
+                  }
+                  
+                  // ALWAYS validate and correct country using Google
+                  const googleCountry = getComponent(['country']);
+                  if (googleCountry) {
+                    result.country = normalizeCountryName(googleCountry);
+                    console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
+                  } else {
+                    console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
+                  }
+                  
+                  console.log('[Geocode Fill] Google Autocomplete result:', JSON.stringify(result));
+                  return result;
                 }
-                return null;
-              };
-              
-              // Extract and autocorrect street name
-              const googleStreet = getComponent(['route']);
-              if (googleStreet) {
-                result.street = googleStreet;
-                console.log('[Geocode Fill] Street corrected to:', googleStreet);
               }
-              
-              // Extract and autocorrect street number
-              const googleStreetNumber = getComponent(['street_number']);
-              if (googleStreetNumber) {
-                result.streetNumber = googleStreetNumber;
-              }
-              
-              // Fill city if missing
-              if (missingCity) {
-                const geocodedCity = getComponent(['locality', 'sublocality', 'administrative_area_level_2', 'administrative_area_level_3']);
-                if (geocodedCity) {
-                  result.city = normalizeCityName(geocodedCity);
-                  console.log('[Geocode Fill] City filled:', result.city);
-                }
-              }
-              
-              // Fill zipCode if missing
-              if (missingZipCode) {
-                const zipCode = getComponent(['postal_code']);
-                if (zipCode) {
-                  result.zipCode = zipCode;
-                  console.log('[Geocode Fill] Zip filled:', zipCode);
-                }
-              }
-              
-              // ALWAYS validate and correct country using Google
-              const googleCountry = getComponent(['country']);
-              if (googleCountry) {
-                result.country = normalizeCountryName(googleCountry);
-                console.log('[Geocode Fill] Google validated country:', googleCountry, '->', result.country);
-              } else {
-                console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
-              }
-              
-              console.log('[Geocode Fill] Google Geocoding result:', JSON.stringify(result));
-              return result;
             } else {
-              console.log('[Geocode Fill] Google Geocoding returned no results for:', query);
+              console.log('[Geocode Fill] Google Autocomplete returned no predictions for:', query);
             }
           }
         } catch (googleError: any) {
-          console.warn('[Geocode Fill] Google Geocoding API error, falling back to Nominatim:', googleError.message);
+          console.warn('[Geocode Fill] Google Autocomplete API error, falling back to Nominatim:', googleError.message);
         }
       }
       
