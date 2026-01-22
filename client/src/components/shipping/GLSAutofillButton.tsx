@@ -38,7 +38,7 @@ interface GLSAutofillButtonProps {
   cartonCount?: number;
 }
 
-const BOOKMARKLET_VERSION = "1.0.0";
+const BOOKMARKLET_VERSION = "2.0.0"; // Version 2: Uses localStorage for reusable bookmark
 
 export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId, cartonCount }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
@@ -46,6 +46,24 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
   const bookmarkletRef = useRef<HTMLAnchorElement>(null);
   const { toast } = useToast();
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  // Store current order data in localStorage for the bookmarklet to read
+  const storeDataForBookmarklet = () => {
+    try {
+      const data = {
+        recipient: recipientData,
+        sender: senderData,
+        packageSize,
+        weight,
+        orderId,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('gls_autofill_data', JSON.stringify(data));
+      console.log('📦 GLS data stored for bookmarklet:', data);
+    } catch (error) {
+      console.error('Failed to store GLS data:', error);
+    }
+  };
 
   // Check if user should see the bookmarklet dialog
   const shouldShowBookmarkletDialog = (): boolean => {
@@ -67,21 +85,20 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     }
   };
 
-  // Generate the complete bookmarklet
+  // Generate the complete bookmarklet - reads from localStorage for reusability
   const generateBookmarklet = () => {
-    const data = {
-      recipient: recipientData,
-      sender: senderData,
-      packageSize,
-      weight,
-    };
-
-    const encodedData = encodeURIComponent(JSON.stringify(data));
-
     const bookmarkletLogic = `
 (function(){
-  const data = JSON.parse(decodeURIComponent('${encodedData}'));
-  console.log('🔵 GLS Autofill - Starting with data:', data);
+  // Read data from localStorage (set by Davie Supply app)
+  const storedData = localStorage.getItem('gls_autofill_data');
+  if (!storedData) {
+    alert('No GLS data found!\\n\\nPlease go back to Davie Supply and click the GLS button first to prepare the shipping data.');
+    return;
+  }
+  
+  const data = JSON.parse(storedData);
+  const ageMinutes = Math.round((Date.now() - (data.timestamp || 0)) / 60000);
+  console.log('🔵 GLS Autofill - Starting with data (stored ' + ageMinutes + ' min ago):', data);
   
   let filledCount = 0;
   const log = [];
@@ -567,6 +584,9 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
 
   // Open GLS page (with order ID for mobile Tampermonkey autofill)
   const openGLSPage = () => {
+    // Always store data in localStorage before opening GLS page
+    storeDataForBookmarklet();
+    
     let url = 'https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration';
     if (orderId && isMobile) {
       url += `?davie_order_id=${orderId}`;
@@ -630,14 +650,17 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-lg border p-3 sm:p-4 bg-muted">
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">📋 How to use:</h3>
+            <div className="rounded-lg border p-3 sm:p-4 bg-green-50 dark:bg-green-950/20">
+              <h3 className="font-semibold mb-2 text-sm sm:text-base text-green-800 dark:text-green-200">✨ Reusable bookmark - set up once, use forever!</h3>
               <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
-                <li>Save the bookmarklet below to your bookmarks bar</li>
-                <li>Open the GLS page (should be open now)</li>
-                <li>Click the saved bookmarklet to auto-fill</li>
+                <li><strong>One-time setup:</strong> Save the bookmarklet below to your bookmarks bar</li>
+                <li><strong>For each order:</strong> Click "Ship GLS DE" button (prepares the data)</li>
+                <li><strong>On GLS page:</strong> Click your saved bookmark to auto-fill</li>
                 <li>Verify details and complete shipment</li>
               </ol>
+              <p className="mt-2 text-xs text-green-700 dark:text-green-300">
+                💡 The bookmark always uses the latest order data - no need to create a new one each time!
+              </p>
             </div>
 
             <div className="space-y-2">
