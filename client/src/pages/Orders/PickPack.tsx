@@ -5994,7 +5994,7 @@ export default function PickPack() {
 
     const loc = location.toUpperCase().trim();
     
-    // Extract numeric value from a segment like "WH1", "A04", "R05", "L02", "B3", "PAL1"
+    // Extract numeric value from a segment
     const extractNumber = (segment: string): number => {
       const match = segment.match(/(\d+)/);
       return match ? parseInt(match[1], 10) : 0;
@@ -6004,26 +6004,31 @@ export default function PickPack() {
     const parts = loc.split(/[-_\s]/);
     
     let warehouse = 1;
-    let aisle = 0;
-    let row = 0;
-    let level = 0;
-    let bin = 0;
+    let aisle = 999; // Default high for items without aisle
+    let row = 999;
+    let level = 999;
+    let bin = 999;
 
     for (const part of parts) {
-      if (part.startsWith('WH')) {
+      const upperPart = part.toUpperCase();
+      if (upperPart.startsWith('WH')) {
         warehouse = extractNumber(part);
-      } else if (part.startsWith('A') && !part.startsWith('AL')) {
+      } else if (upperPart.match(/^A\d/)) {
+        // Match A followed by number (A01, A1, A04, etc.)
         aisle = extractNumber(part);
-      } else if (part.startsWith('R') && !part.startsWith('RO')) {
+      } else if (upperPart.match(/^R\d/)) {
+        // Match R followed by number (R01, R1, R05, etc.)
         row = extractNumber(part);
-      } else if (part.startsWith('L') && !part.startsWith('LE')) {
+      } else if (upperPart.match(/^L\d/)) {
+        // Match L followed by number (L01, L1, L02, etc.)
         level = extractNumber(part);
-      } else if (part.startsWith('B') && !part.startsWith('BI')) {
+      } else if (upperPart.match(/^B\d/)) {
+        // Match B followed by number (B1, B3, etc.)
         bin = extractNumber(part);
-      } else if (part.startsWith('PAL')) {
-        // Pallet locations: treat as level 0, bin as the pallet number
-        level = 0;
+      } else if (upperPart.startsWith('PAL')) {
+        // Pallet locations: use pallet number as bin, keep level as-is
         bin = extractNumber(part);
+        if (level === 999) level = 0; // Ground level for pallets
       }
     }
 
@@ -6032,18 +6037,16 @@ export default function PickPack() {
 
   /**
    * Sort items by warehouse location for efficient picking route
-   * Uses serpentine (S-pattern) sorting: 
-   * - Odd aisles: ascending by row
-   * - Even aisles: descending by row
-   * This minimizes backtracking in the warehouse
+   * Simple ascending sort: Aisle → Row → Level → Bin
+   * This groups items in the same aisle together for efficient picking
    */
   const sortItemsByWarehouseLocation = <T extends { warehouseLocation?: string | null; variantLocationCode?: string | null }>(
     items: T[]
   ): T[] => {
-    return [...items].sort((a, b) => {
+    const sorted = [...items].sort((a, b) => {
       // Get effective location (prefer warehouseLocation, fallback to variantLocationCode)
-      const locA = a.warehouseLocation || a.variantLocationCode || '';
-      const locB = b.warehouseLocation || b.variantLocationCode || '';
+      const locA = a.warehouseLocation || (a as any).variantLocationCode || '';
+      const locB = b.warehouseLocation || (b as any).variantLocationCode || '';
       
       // Items without location go to the end
       if (!locA && !locB) return 0;
@@ -6053,39 +6056,43 @@ export default function PickPack() {
       const parsedA = parseWarehouseLocation(locA);
       const parsedB = parseWarehouseLocation(locB);
 
-      // Sort by warehouse first
+      // Sort by warehouse
       if (parsedA.warehouse !== parsedB.warehouse) {
         return parsedA.warehouse - parsedB.warehouse;
       }
 
-      // Sort by aisle
+      // Sort by aisle (ascending)
       if (parsedA.aisle !== parsedB.aisle) {
         return parsedA.aisle - parsedB.aisle;
       }
 
-      // Serpentine pattern: odd aisles ascending, even aisles descending
-      const isOddAisle = parsedA.aisle % 2 === 1;
-      
-      // Sort by row (with serpentine)
+      // Sort by row (ascending within aisle)
       if (parsedA.row !== parsedB.row) {
-        return isOddAisle 
-          ? parsedA.row - parsedB.row  // Odd aisle: ascending
-          : parsedB.row - parsedA.row; // Even aisle: descending
+        return parsedA.row - parsedB.row;
       }
 
-      // Sort by level (bottom to top for efficiency)
+      // Sort by level (ascending)
       if (parsedA.level !== parsedB.level) {
         return parsedA.level - parsedB.level;
       }
 
-      // Finally sort by bin
+      // Sort by bin (ascending)
       if (parsedA.bin !== parsedB.bin) {
         return parsedA.bin - parsedB.bin;
       }
 
-      // Fallback to alphabetical comparison of raw strings
+      // Fallback to alphabetical
       return parsedA.raw.localeCompare(parsedB.raw);
     });
+    
+    // Debug: Log sorted order
+    console.log('🗺️ Sorted items by location:', sorted.map(item => ({
+      name: (item as any).productName?.substring(0, 20),
+      loc: (item as any).warehouseLocation || (item as any).variantLocationCode || 'NO_LOC',
+      parsed: parseWarehouseLocation((item as any).warehouseLocation || (item as any).variantLocationCode)
+    })));
+    
+    return sorted;
   };
 
   // No mock images in production - items without images show default icons
