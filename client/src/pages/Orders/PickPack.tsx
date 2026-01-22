@@ -15642,6 +15642,193 @@ export default function PickPack() {
               
               <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="space-y-3">
+                  {(() => {
+                    // Group items by parent product name
+                    const getParentName = (name: string): { parent: string; variant: string | null } => {
+                      const match = name?.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+                      if (match) {
+                        return { parent: match[1].trim(), variant: match[2].trim() };
+                      }
+                      return { parent: name || '', variant: null };
+                    };
+                    
+                    const nameBasedGroups = new Map<string, typeof activePickingOrder.items>();
+                    const singleItems: typeof activePickingOrder.items = [];
+                    
+                    activePickingOrder.items.forEach((item) => {
+                      const { parent, variant } = getParentName(item.productName || '');
+                      if (variant) {
+                        const existing = nameBasedGroups.get(parent) || [];
+                        nameBasedGroups.set(parent, [...existing, { ...item, extractedVariantName: variant }] as typeof activePickingOrder.items);
+                      } else {
+                        singleItems.push(item);
+                      }
+                    });
+                    
+                    const result: JSX.Element[] = [];
+                    let groupIndex = 0;
+                    
+                    // Render single items first
+                    singleItems.forEach((item) => {
+                      groupIndex++;
+                      const isPicked = item.pickedQuantity >= item.quantity;
+                      const isPartiallyPicked = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
+                      const isCurrent = currentItem?.id === item.id;
+                      
+                      result.push(
+                        <Card 
+                          key={item.id} 
+                          className={`transition-all ${
+                            isPicked ? 'bg-gradient-to-r from-green-50 dark:from-green-900/30 to-emerald-50 dark:to-emerald-900/30 border-2 border-green-400 dark:border-green-700 shadow-md' : 
+                            isPartiallyPicked ? 'bg-gradient-to-r from-yellow-50 dark:from-yellow-900/30 to-amber-50 dark:to-amber-900/30 border-2 border-yellow-400 dark:border-yellow-700 shadow-md' :
+                            isCurrent ? 'bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-indigo-50 dark:to-indigo-900/30 border-2 border-blue-500 shadow-lg' : 
+                            'bg-white hover:shadow-md border-2 border-gray-200'
+                          }`}
+                          data-testid={`item-overview-${item.id}`}
+                        >
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isPicked) {
+                                    updatePickedItem(item.id, 0);
+                                  } else {
+                                    updatePickedItem(item.id, item.quantity);
+                                    playSound('success');
+                                  }
+                                }}
+                              >
+                                {isPicked ? (
+                                  <div className="bg-green-500 rounded-full p-2 shadow-lg">
+                                    <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-gray-400 flex items-center justify-center text-lg sm:text-xl font-black text-gray-700 hover:bg-blue-600 hover:text-white transition-all shadow-md">
+                                    {groupIndex}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.productName} className="w-full h-full object-contain p-1" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="h-8 w-8 text-gray-300" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-bold text-sm leading-tight ${isPicked ? 'text-green-700' : 'text-gray-900'}`}>
+                                  {item.productName}
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className={`text-xl font-black ${isPicked ? 'text-green-600' : 'text-gray-600'}`}>
+                                    {item.pickedQuantity}/{item.quantity}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    });
+                    
+                    // Render grouped items
+                    nameBasedGroups.forEach((variants, parentName) => {
+                      groupIndex++;
+                      const totalQty = variants.reduce((sum, v) => sum + v.quantity, 0);
+                      const pickedQty = variants.reduce((sum, v) => sum + v.pickedQuantity, 0);
+                      const allPicked = pickedQty >= totalQty;
+                      const anyPartial = pickedQty > 0 && pickedQty < totalQty;
+                      const firstItem = variants[0];
+                      
+                      // Sort variants numerically
+                      const sortedVariants = [...variants].sort((a: any, b: any) => {
+                        const numA = parseInt(a.extractedVariantName) || 999999;
+                        const numB = parseInt(b.extractedVariantName) || 999999;
+                        return numA - numB;
+                      });
+                      
+                      // Create variant summary
+                      const variantSummary = sortedVariants.map((v: any) => {
+                        const qty = v.quantity || 1;
+                        return qty > 1 ? `${qty}×${v.extractedVariantName}` : v.extractedVariantName;
+                      }).join(', ');
+                      
+                      result.push(
+                        <Card 
+                          key={`group-${parentName}`} 
+                          className={`transition-all ${
+                            allPicked ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-md' : 
+                            anyPartial ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400 shadow-md' :
+                            'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 shadow-md'
+                          }`}
+                        >
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (allPicked) {
+                                    variants.forEach(v => updatePickedItem(v.id, 0));
+                                  } else {
+                                    variants.forEach(v => updatePickedItem(v.id, v.quantity));
+                                    playSound('success');
+                                  }
+                                }}
+                              >
+                                {allPicked ? (
+                                  <div className="bg-green-500 rounded-full p-2 shadow-lg">
+                                    <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-3 border-blue-400 bg-blue-100 flex items-center justify-center text-lg sm:text-xl font-black text-blue-700 hover:bg-blue-600 hover:text-white transition-all shadow-md">
+                                    {groupIndex}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                                {firstItem.image ? (
+                                  <img src={firstItem.image} alt={parentName} className="w-full h-full object-contain p-1" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="h-8 w-8 text-gray-300" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-bold text-sm leading-tight ${allPicked ? 'text-green-700' : 'text-blue-900'}`}>
+                                  {parentName}
+                                </p>
+                                <div className="text-xs text-blue-700 mt-1 leading-relaxed line-clamp-2">
+                                  {variantSummary}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className={`text-xl font-black ${allPicked ? 'text-green-600' : 'text-blue-600'}`}>
+                                    {pickedQty}/{totalQty}
+                                  </div>
+                                  <Badge className={`text-xs ${allPicked ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    {variants.length} {t('variants') || 'variants'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    });
+                    
+                    return result;
+                  })()}
+                </div>
+              </div>
+              
+              {/* Legacy single item view - hidden, replaced by grouped view above */}
+              <div className="hidden p-3 sm:p-4 overflow-y-auto flex-1">
+                <div className="space-y-3">
                   {activePickingOrder.items.map((item, index) => {
                     const isPicked = item.pickedQuantity >= item.quantity;
                     const isPartiallyPicked = item.pickedQuantity > 0 && item.pickedQuantity < item.quantity;
