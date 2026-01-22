@@ -2101,6 +2101,15 @@ const orders = {
   // Quick Quantity Modal
   addItems: 'Add {{count}} Items',
   
+  // Pickup & Hand-Delivery Shipping Methods
+  pickup: 'Pickup',
+  handDelivery: 'Hand-Delivery',
+  pickupFromStore: 'Customer will pickup from store',
+  noShippingRequired: 'No shipping address required',
+  handDeliveryInfo: 'Personal delivery to customer location',
+  deliveryLocationLabel: 'Delivery Location / Salon Name',
+  deliveryLocationPlaceholder: 'Enter salon name or address...',
+  
 } as const;
 
 export default orders;

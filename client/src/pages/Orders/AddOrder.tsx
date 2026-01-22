@@ -182,7 +182,7 @@ const addOrderSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
-  shippingMethod: z.enum(['PPL', 'PPL CZ', 'PPL CZ SMART', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD']).transform(normalizeCarrier).optional(),
+  shippingMethod: z.enum(['PPL', 'PPL CZ', 'PPL CZ SMART', 'GLS', 'GLS DE', 'DHL', 'DHL DE', 'DPD', 'Pickup', 'Hand-Delivery']).transform(normalizeCarrier).optional(),
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash', 'Transfer'], {
     errorMap: () => ({ message: 'Please select a valid payment method: Bank Transfer, PayPal, COD, or Cash' })
   }).transform(val => val === 'Transfer' ? 'Bank Transfer' : val).optional(),
@@ -337,6 +337,9 @@ export default function AddOrder() {
   const [isLoadingPickupLocations, setIsLoadingPickupLocations] = useState(false);
   const [pickupLocationSuggestions, setPickupLocationSuggestions] = useState<any[]>([]);
   const [showPPLSmartPopup, setShowPPLSmartPopup] = useState(false);
+  
+  // Hand-Delivery location state
+  const [handDeliveryLocation, setHandDeliveryLocation] = useState("");
   
   // Mobile compact view state
   const [expandedMobileNotes, setExpandedMobileNotes] = useState<string | null>(null);
@@ -1681,6 +1684,14 @@ export default function AddOrder() {
     
     // If manually edited and neither carrier nor payment changed, skip auto-calculation
     if (shippingCostManuallyEditedRef.current && !carrierChanged && !paymentMethodChanged) {
+      return;
+    }
+
+    // Pickup and Hand-Delivery methods have no shipping cost
+    if (watchedShippingMethod === 'Pickup' || watchedShippingMethod === 'Hand-Delivery') {
+      form.setValue('shippingCost', 0);
+      form.setValue('actualShippingCost', 0);
+      previousCarrierRef.current = watchedShippingMethod;
       return;
     }
 
@@ -5498,12 +5509,48 @@ export default function AddOrder() {
                 <CardHeader className="p-3 border-b">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4" />
-                    {t('shippingAddress')}
+                    {watchedShippingMethod === 'Pickup' ? t('orders:pickup', 'Pickup') : 
+                     watchedShippingMethod === 'Hand-Delivery' ? t('orders:handDelivery', 'Hand-Delivery') : 
+                     t('shippingAddress')}
                   </CardTitle>
-                  <CardDescription>{t('selectOrAddShippingAddress')}</CardDescription>
+                  <CardDescription>
+                    {watchedShippingMethod === 'Pickup' ? t('orders:pickupFromStore', 'Customer will pickup from store') :
+                     watchedShippingMethod === 'Hand-Delivery' ? t('orders:deliveryLocationLabel', 'Delivery Location / Salon Name') :
+                     t('selectOrAddShippingAddress')}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-3 space-y-3">
-                  {isLoadingShippingAddresses ? (
+                  {/* Special handling for Pickup */}
+                  {watchedShippingMethod === 'Pickup' ? (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                        <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-200">{t('orders:pickupFromStore', 'Customer will pickup from store')}</p>
+                        <p className="text-sm text-green-600 dark:text-green-400">{t('orders:noShippingRequired', 'No shipping address required')}</p>
+                      </div>
+                    </div>
+                  ) : watchedShippingMethod === 'Hand-Delivery' ? (
+                    /* Special handling for Hand-Delivery */
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
+                          <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">{t('orders:handDeliveryInfo', 'Personal delivery to customer location')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm">{t('orders:deliveryLocationLabel', 'Delivery Location / Salon Name')}</Label>
+                        <Input
+                          value={handDeliveryLocation}
+                          onChange={(e) => setHandDeliveryLocation(e.target.value)}
+                          placeholder={t('orders:deliveryLocationPlaceholder', 'Enter salon name or address...')}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  ) : isLoadingShippingAddresses ? (
                     <div className="text-center py-4 text-slate-500">Loading addresses...</div>
                   ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
                     <RadioGroup
@@ -8067,6 +8114,8 @@ export default function AddOrder() {
                     <SelectItem value="PPL CZ SMART">PPL CZ SMART (Výdejní místo)</SelectItem>
                     <SelectItem value="DHL DE">DHL DE</SelectItem>
                     <SelectItem value="DPD">DPD</SelectItem>
+                    <SelectItem value="Pickup">{t('orders:pickup', 'Pickup')}</SelectItem>
+                    <SelectItem value="Hand-Delivery">{t('orders:handDelivery', 'Hand-Delivery')}</SelectItem>
                   </SelectContent>
                 </Select>
                 

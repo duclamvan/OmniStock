@@ -2085,6 +2085,15 @@ const orders = {
   // Quick Quantity Modal
   addItems: 'Thêm {{count}} sản phẩm',
   
+  // Pickup & Hand-Delivery Shipping Methods
+  pickup: 'Tự lấy hàng',
+  handDelivery: 'Giao tay',
+  pickupFromStore: 'Khách hàng sẽ tự lấy hàng tại cửa hàng',
+  noShippingRequired: 'Không cần địa chỉ giao hàng',
+  handDeliveryInfo: 'Giao hàng trực tiếp đến địa điểm khách hàng',
+  deliveryLocationLabel: 'Địa điểm giao hàng / Tên Salon',
+  deliveryLocationPlaceholder: 'Nhập tên salon hoặc địa chỉ...',
+  
 } as const;
 
 export default orders;

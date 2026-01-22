@@ -8710,6 +8710,8 @@ export default function PickPack() {
     const isGLS = shippingMethod === 'GLS' || shippingMethod === 'GLS DE' || shippingMethod === 'GLS GERMANY' || shippingMethod.includes('GLS');
     const isDHL = shippingMethod === 'DHL' || shippingMethod === 'DHL DE' || shippingMethod === 'DHL GERMANY' || shippingMethod.includes('DHL');
     const isPPL = shippingMethod.includes('PPL');
+    const isPickup = shippingMethod === 'PICKUP';
+    const isHandDelivery = shippingMethod === 'HAND-DELIVERY';
     
     if ((isGLS || isDHL) && cartons.length > 0) {
       console.log('💾 Saving unsaved GLS/DHL tracking numbers before completion...');
@@ -8788,8 +8790,12 @@ export default function PickPack() {
     
     // Label validation depends on shipping method
     // GLS uses tracking numbers (validated separately), PPL uses shipment labels from DB, other methods use labelPrinted
-    console.log('🔍 Label validation - isGLS:', isGLS, 'isPPL:', isPPL, 'shippingMethod:', shippingMethod, 'cartons:', cartons.length);
-    if (isPPL) {
+    // Pickup and Hand-Delivery don't require any shipping labels
+    console.log('🔍 Label validation - isGLS:', isGLS, 'isPPL:', isPPL, 'isPickup:', isPickup, 'isHandDelivery:', isHandDelivery, 'shippingMethod:', shippingMethod, 'cartons:', cartons.length);
+    if (isPickup || isHandDelivery) {
+      // Pickup and Hand-Delivery: No shipping labels required
+      console.log('✅ Pickup/Hand-Delivery order - no shipping labels required');
+    } else if (isPPL) {
       // PPL: Must have created shipment and at least one label exists
       // PPL generates all labels in one batch PDF, so we don't need one label per carton
       if (activePackingOrder.pplStatus !== 'created') {
@@ -9553,11 +9559,17 @@ export default function PickPack() {
                           ? 'bg-orange-500 dark:bg-orange-600 text-white'
                           : activePackingOrder.shippingMethod.toUpperCase().includes('DHL')
                           ? 'bg-yellow-400 dark:bg-yellow-600 text-gray-900 dark:text-white'
+                          : activePackingOrder.shippingMethod.toUpperCase() === 'PICKUP'
+                          ? 'bg-green-500 dark:bg-green-600 text-white'
+                          : activePackingOrder.shippingMethod.toUpperCase() === 'HAND-DELIVERY'
+                          ? 'bg-blue-500 dark:bg-blue-600 text-white'
                           : 'bg-white/30 dark:bg-white/20 text-white'
                       }`}>
                         {activePackingOrder.shippingMethod.toUpperCase().includes('GLS') ? 'GLS' :
                          activePackingOrder.shippingMethod.toUpperCase().includes('PPL') ? 'PPL' :
                          activePackingOrder.shippingMethod.toUpperCase().includes('DHL') ? 'DHL' :
+                         activePackingOrder.shippingMethod.toUpperCase() === 'PICKUP' ? t('orders:pickup', 'Pickup') :
+                         activePackingOrder.shippingMethod.toUpperCase() === 'HAND-DELIVERY' ? t('orders:handDelivery', 'Hand-Delivery') :
                          activePackingOrder.shippingMethod}
                       </div>
                     </>
