@@ -230,6 +230,9 @@ export function ShippingAddressModal({
             } else if (key === 'company') {
               // Format company name with Initial Capital Letters
               processedValue = formatInitialCapital(String(value));
+            } else if (key === 'country') {
+              // Normalize country name for consistent storage
+              processedValue = normalizeCountryForStorage(String(value));
             }
             
             // Map the field name if needed

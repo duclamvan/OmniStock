@@ -1400,7 +1400,8 @@ export default function AddCustomer() {
         filledFields.zipCode = data.confidence;
       }
       if (fields.country) {
-        shippingForm.setValue('country', capitalizeWords(fields.country));
+        const normalizedCountry = normalizeCountryForStorage(fields.country);
+        shippingForm.setValue('country', normalizedCountry);
         filledFields.country = data.confidence;
         
         // Auto-select main country dropdown if not already set
@@ -1415,7 +1416,7 @@ export default function AddCustomer() {
       
       // Format phone number with country code after country is set
       if (fields.phone && fields.country) {
-        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        const countryCode = getPhoneCountryCode(normalizeCountryForStorage(fields.country));
         if (countryCode) {
           const formatted = formatPhoneNumber(fields.phone, countryCode);
           shippingForm.setValue('tel', formatted);
@@ -1599,7 +1600,8 @@ export default function AddCustomer() {
         filledFields.billingZipCode = data.confidence;
       }
       if (fields.country) {
-        form.setValue('billingCountry', capitalizeWords(fields.country));
+        const normalizedCountry = normalizeCountryForStorage(fields.country);
+        form.setValue('billingCountry', normalizedCountry);
         filledFields.billingCountry = data.confidence;
         
         // Auto-select main country dropdown if not already set
@@ -1614,7 +1616,7 @@ export default function AddCustomer() {
       
       // Format phone number with country code after country is set
       if (fields.phone && fields.country) {
-        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        const countryCode = getPhoneCountryCode(normalizeCountryForStorage(fields.country));
         if (countryCode) {
           const formatted = formatPhoneNumber(fields.phone, countryCode);
           form.setValue('billingTel', formatted);
@@ -1711,13 +1713,14 @@ export default function AddCustomer() {
         filledFields.zipCode = data.confidence;
       }
       if (fields.country) {
-        billingAddressForm.setValue('country', capitalizeWords(fields.country));
+        const normalizedCountry = normalizeCountryForStorage(fields.country);
+        billingAddressForm.setValue('country', normalizedCountry);
         filledFields.country = data.confidence;
       }
       
       // Format phone number with country code after country is set
       if (fields.phone && fields.country) {
-        const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
+        const countryCode = getPhoneCountryCode(normalizeCountryForStorage(fields.country));
         if (countryCode) {
           const formatted = formatPhoneNumber(fields.phone, countryCode);
           billingAddressForm.setValue('tel', formatted);
