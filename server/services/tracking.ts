@@ -68,32 +68,56 @@ class PPLTrackingAdapter implements TrackingAdapter {
       
       const token = await getPPLAccessToken();
       
-      // Use the /shipment endpoint with ShipmentNumbers query param (per PPL API docs)
-      const response = await fetch(
-        `https://api.dhl.com/ecs/ppl/myapi2/shipment?ShipmentNumbers=${encodeURIComponent(trackingNumber)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Language': 'cs-CZ'
-          }
+      // PPL CPL API: Use /shipment endpoint with ShipmentNumbers query param
+      // The tracking number should be the parcel/shipment number (e.g., 80392335276)
+      const apiUrl = `https://api.dhl.com/ecs/ppl/myapi2/shipment?ShipmentNumbers=${encodeURIComponent(trackingNumber)}`;
+      console.log(`[PPL Tracking] Fetching tracking for: ${trackingNumber}`);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept-Language': 'cs-CZ'
         }
-      );
+      });
       
       if (!response.ok) {
-        if (response.status === 404) {
+        const errorText = await response.text();
+        console.error(`[PPL Tracking] API error: ${response.status} - ${errorText}`);
+        
+        // Handle specific error codes
+        if (response.status === 404 || response.status === 400) {
+          // Shipment not found or invalid - may not be registered yet
           return {
             statusCode: 'created',
             statusLabel: 'Label created, awaiting pickup',
             checkpoints: [],
           };
         }
-        const errorText = await response.text();
-        console.error(`PPL tracking API error: ${response.status} - ${errorText}`);
-        throw new Error(`PPL tracking failed: ${response.statusText}`);
+        
+        if (response.status === 401 || response.status === 403) {
+          return {
+            statusCode: 'unknown',
+            statusLabel: 'Authentication error with PPL API',
+            checkpoints: [],
+          };
+        }
+        
+        if (response.status >= 500) {
+          // PPL API server error - return graceful status instead of throwing
+          return {
+            statusCode: 'unknown',
+            statusLabel: 'PPL service temporarily unavailable',
+            checkpoints: [],
+          };
+        }
+        
+        throw new Error(`PPL tracking failed: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log(`[PPL Tracking] Response for ${trackingNumber}:`, JSON.stringify(data).substring(0, 500));
+      
       // PPL /shipment endpoint returns an array - take the first matching shipment
       const shipmentData = Array.isArray(data) ? data[0] : data;
       if (!shipmentData) {
@@ -105,6 +129,8 @@ class PPLTrackingAdapter implements TrackingAdapter {
       }
       return this.normalizePPLResponse(shipmentData);
     } catch (error: any) {
+      console.error(`[PPL Tracking] Error for ${trackingNumber}:`, error.message);
+      
       if (error.message.includes('PPL API credentials not configured')) {
         return {
           statusCode: 'unknown',
@@ -112,6 +138,16 @@ class PPLTrackingAdapter implements TrackingAdapter {
           checkpoints: [],
         };
       }
+      
+      // Return graceful error state instead of throwing for network errors
+      if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('ECONNREFUSED')) {
+        return {
+          statusCode: 'unknown',
+          statusLabel: 'Unable to connect to PPL service',
+          checkpoints: [],
+        };
+      }
+      
       throw error;
     }
   }
