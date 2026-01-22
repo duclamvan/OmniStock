@@ -1356,12 +1356,8 @@ export default function AddCustomer() {
           lastName = companyWords[0];
           firstName = companyWords.slice(1).join(' ');
         }
-      } else if (firstName || lastName) {
-        // Apply Vietnamese name detection for actual names
-        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
-        firstName = corrected.firstName;
-        lastName = corrected.lastName;
       }
+      // Trust AI's name parsing - it correctly handles Vietnamese names in both formats
       
       // Normalize names (removes diacritics and converts to uppercase)
       if (firstName) {
@@ -1554,12 +1550,8 @@ export default function AddCustomer() {
           lastName = companyWords[0];
           firstName = companyWords.slice(1).join(' ');
         }
-      } else if (firstName || lastName) {
-        // Apply Vietnamese name detection for actual names
-        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
-        firstName = corrected.firstName;
-        lastName = corrected.lastName;
       }
+      // Trust AI's name parsing - it correctly handles Vietnamese names in both formats
       
       // Remove Vietnamese diacritics, capitalize, and track filled fields
       if (firstName) {
@@ -1672,11 +1664,8 @@ export default function AddCustomer() {
           lastName = companyWords[0];
           firstName = companyWords.slice(1).join(' ');
         }
-      } else if (firstName || lastName) {
-        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
-        firstName = corrected.firstName;
-        lastName = corrected.lastName;
       }
+      // Trust AI's name parsing - it correctly handles Vietnamese names in both formats
       
       if (firstName) {
         billingAddressForm.setValue('firstName', normalizeFirstName(firstName));
