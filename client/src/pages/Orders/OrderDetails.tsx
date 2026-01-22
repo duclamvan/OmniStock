@@ -472,32 +472,17 @@ export default function OrderDetails() {
   const { groupedItems, variantGroups } = useMemo(() => {
     const items = order?.items || [];
     const variantsByParent = new Map<string, any[]>();
-    const nameBasedGroups = new Map<string, any[]>();
     const singleItems: any[] = [];
-    
-    // Helper to extract parent name from product name (e.g., "Sơn màu SORAH 15ml" from "Sơn màu SORAH 15ml - 5")
-    const getParentName = (name: string): { parent: string; variant: string | null } => {
-      const match = name?.match(/^(.+?)\s*[-–—]\s*(.+)$/);
-      if (match) {
-        return { parent: match[1].trim(), variant: match[2].trim() };
-      }
-      return { parent: name || '', variant: null };
-    };
     
     items.forEach((item: any) => {
       if (item.variantId && item.productId) {
-        // Items with explicit variant relationship
+        // Items with explicit variant relationship - only group these
         const existing = variantsByParent.get(item.productId) || [];
         variantsByParent.set(item.productId, [...existing, item]);
       } else {
-        // Try to group by product name pattern (e.g., "Product - Variant")
-        const { parent, variant } = getParentName(item.productName || '');
-        if (variant) {
-          const existing = nameBasedGroups.get(parent) || [];
-          nameBasedGroups.set(parent, [...existing, { ...item, extractedVariantName: variant }]);
-        } else {
-          singleItems.push(item);
-        }
+        // Items without explicit variantId are treated as single items
+        // Don't use name-based grouping as it incorrectly groups unrelated products
+        singleItems.push(item);
       }
     });
     
@@ -526,35 +511,6 @@ export default function OrderDetails() {
           parentProductName: baseProductName,
           parentImage: firstVariant.image || null,
           variants,
-          totalQuantity,
-          totalPrice,
-        };
-        
-        groups.push(group);
-        result.push({ isGroupHeader: true, group });
-      } else {
-        variants.forEach(item => result.push(item));
-      }
-    });
-    
-    // Group by name pattern (for items without explicit variant relationship)
-    nameBasedGroups.forEach((variants, parentName) => {
-      if (variants.length > VARIANT_GROUP_THRESHOLD) {
-        const totalQuantity = variants.reduce((sum: number, v: any) => sum + (parseInt(v.quantity) || 0), 0);
-        const totalPrice = variants.reduce((sum: number, v: any) => {
-          const unitPrice = parseFloat(v.unitPrice) || parseFloat(v.price) || 0;
-          const qty = parseInt(v.quantity) || 0;
-          const discount = parseFloat(v.discount) || 0;
-          return sum + (unitPrice * qty) - discount;
-        }, 0);
-        
-        const firstVariant = variants[0];
-        
-        const group: VariantGroup = {
-          parentProductId: `name-${parentName}`,
-          parentProductName: parentName,
-          parentImage: firstVariant.image || null,
-          variants: variants.map(v => ({ ...v, variantName: v.extractedVariantName })),
           totalQuantity,
           totalPrice,
         };
@@ -1246,8 +1202,11 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                                   .sort((a: any, b: any) => {
                                     const nameA = a.variantName || a.extractedVariantName || a.productName?.split(' - ').pop() || '';
                                     const nameB = b.variantName || b.extractedVariantName || b.productName?.split(' - ').pop() || '';
-                                    const numA = parseInt(nameA) || 999999;
-                                    const numB = parseInt(nameB) || 999999;
+                                    // Extract number from name (handles "S 4", "S 22", "5", "Color 1", etc.)
+                                    const matchA = nameA.match(/(\d+)/);
+                                    const matchB = nameB.match(/(\d+)/);
+                                    const numA = matchA ? parseInt(matchA[1], 10) : 999999;
+                                    const numB = matchB ? parseInt(matchB[1], 10) : 999999;
                                     return numA - numB;
                                   })
                                   .map((v: any) => {
