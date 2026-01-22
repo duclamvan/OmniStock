@@ -23064,9 +23064,9 @@ Important:
           }
 
           const query = queryParts.join(', ');
-          console.log('[Geocode Fill] Using Google Autocomplete for:', query);
+          console.log('[Geocode Fill] Using Google Places Autocomplete for:', query);
           
-          // Step 1: Use Places Autocomplete to get the best prediction
+          // Step 1: Use Places Autocomplete to get the best address prediction
           const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=address&key=${googleApiKey}`;
           
           const controller = new AbortController();
@@ -23079,25 +23079,31 @@ Important:
             const autocompleteData = await autocompleteResponse.json();
             console.log('[Geocode Fill] Autocomplete status:', autocompleteData.status, 'predictions:', autocompleteData.predictions?.length || 0);
             
+            if (autocompleteData.status === 'REQUEST_DENIED') {
+              console.error('[Geocode Fill] REQUEST_DENIED - Error:', autocompleteData.error_message || 'Unknown error');
+            }
+            
             if (autocompleteData.status === 'OK' && autocompleteData.predictions && autocompleteData.predictions.length > 0) {
               const prediction = autocompleteData.predictions[0];
-              console.log('[Geocode Fill] Selected prediction:', prediction.description);
+              console.log('[Geocode Fill] Best prediction:', prediction.description);
               
-              // Step 2: Use Geocoding API with the predicted address for full components
-              const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(prediction.description)}&key=${googleApiKey}`;
+              // Step 2: Get Place Details to extract full address components
+              const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=address_components,formatted_address&key=${googleApiKey}`;
               
-              const geocodeController = new AbortController();
-              const geocodeTimeoutId = setTimeout(() => geocodeController.abort(), 5000);
+              const detailsController = new AbortController();
+              const detailsTimeoutId = setTimeout(() => detailsController.abort(), 5000);
               
-              const geocodeResponse = await fetch(geocodeUrl, { signal: geocodeController.signal });
-              clearTimeout(geocodeTimeoutId);
+              const detailsResponse = await fetch(detailsUrl, { signal: detailsController.signal });
+              clearTimeout(detailsTimeoutId);
               
-              if (geocodeResponse.ok) {
-                const geocodeData = await geocodeResponse.json();
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                console.log('[Geocode Fill] Place Details status:', detailsData.status);
                 
-                if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
-                  const place = geocodeData.results[0];
+                if (detailsData.status === 'OK' && detailsData.result) {
+                  const place = detailsData.result;
                   const addressComponents = place.address_components || [];
+                  console.log('[Geocode Fill] Formatted address:', place.formatted_address);
                   const result = { ...fields };
                   
                   console.log('[Geocode Fill] Google formatted address:', place.formatted_address);
@@ -23151,16 +23157,16 @@ Important:
                     console.log('[Geocode Fill] WARNING: Google did not return country, keeping original:', result.country);
                   }
                   
-                  console.log('[Geocode Fill] Google Autocomplete result:', JSON.stringify(result));
+                  console.log('[Geocode Fill] Google Places result:', JSON.stringify(result));
                   return result;
                 }
               }
             } else {
-              console.log('[Geocode Fill] Google Autocomplete returned no predictions for:', query);
+              console.log('[Geocode Fill] No predictions returned for:', query);
             }
           }
         } catch (googleError: any) {
-          console.warn('[Geocode Fill] Google Autocomplete API error, falling back to Nominatim:', googleError.message);
+          console.warn('[Geocode Fill] Google Places API error, falling back to Nominatim:', googleError.message);
         }
       }
       
