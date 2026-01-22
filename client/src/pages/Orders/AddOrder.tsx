@@ -349,6 +349,12 @@ export default function AddOrder() {
   const [variantQuantities, setVariantQuantities] = useState<{[key: string]: number}>({});
   const [quickVariantInput, setQuickVariantInput] = useState("");
   
+  // Quick quantity modal state - for fast product addition
+  const [showQuickQuantityModal, setShowQuickQuantityModal] = useState(false);
+  const [quickQuantityProduct, setQuickQuantityProduct] = useState<any>(null);
+  const [quickQuantityValue, setQuickQuantityValue] = useState("1");
+  const quickQuantityInputRef = useRef<HTMLInputElement>(null);
+  
   // Edit customer dialog state
   const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
   const [editCustomerForm, setEditCustomerForm] = useState({
@@ -2572,6 +2578,64 @@ export default function AddOrder() {
       form.setValue('actualShippingCost', finalCost); // Both fields use order currency for consistency
     }
   }, [packingPlan, form, aiCartonPackingEnabled]);
+
+  // Open quick quantity modal for fast product addition
+  const openQuickQuantityModal = (product: any) => {
+    setQuickQuantityProduct(product);
+    setQuickQuantityValue("1");
+    setShowQuickQuantityModal(true);
+    setProductSearch("");
+    setShowProductDropdown(false);
+    // Auto-focus the quantity input after modal opens
+    setTimeout(() => {
+      quickQuantityInputRef.current?.focus();
+      quickQuantityInputRef.current?.select();
+    }, 50);
+  };
+
+  // Handle confirming the quick quantity and adding product
+  const handleQuickQuantityConfirm = async () => {
+    if (!quickQuantityProduct) return;
+    
+    const qty = parseInt(quickQuantityValue) || 1;
+    if (qty <= 0) return;
+    
+    // Add the product with the specified quantity
+    await addProductToOrderWithQuantity(quickQuantityProduct, qty);
+    
+    // Close modal and reset
+    setShowQuickQuantityModal(false);
+    setQuickQuantityProduct(null);
+    setQuickQuantityValue("1");
+  };
+
+  // Add product with specific quantity (used by quick quantity modal)
+  const addProductToOrderWithQuantity = async (product: any, quantity: number, skipStockCheck: boolean = false) => {
+    // For products with variants, always use the variant dialog
+    try {
+      const variantsResponse = await fetch(`/api/products/${product.id}/variants?_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (variantsResponse.ok) {
+        const variants = await variantsResponse.json();
+        if (variants && variants.length > 0) {
+          setSelectedProductForVariant(product);
+          setProductVariants(variants);
+          setVariantQuantities({});
+          setShowVariantDialog(true);
+          setShowQuickQuantityModal(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching variants:', error);
+    }
+
+    // Add the product with specified quantity
+    for (let i = 0; i < quantity; i++) {
+      await addProductToOrder(product, skipStockCheck || i > 0);
+    }
+  };
 
   const addProductToOrder = async (product: any, skipStockCheck: boolean = false) => {
     // Check if this is a service
@@ -6475,10 +6539,16 @@ export default function AddOrder() {
                       if (totalProducts > 0) {
                         const selectedProduct = filteredProducts[selectedProductIndex];
                         if (selectedProduct) {
-                          addProductToOrder(selectedProduct);
-                          if (!barcodeScanMode) {
-                            setProductSearch('');
-                            setShowProductDropdown(false);
+                          // Services and bundles add directly, products show quick quantity modal
+                          if (selectedProduct.isService || selectedProduct.isBundle) {
+                            addProductToOrder(selectedProduct);
+                            if (!barcodeScanMode) {
+                              setProductSearch('');
+                              setShowProductDropdown(false);
+                              setSelectedProductIndex(0);
+                            }
+                          } else {
+                            openQuickQuantityModal(selectedProduct);
                             setSelectedProductIndex(0);
                           }
                         }
@@ -6532,10 +6602,16 @@ export default function AddOrder() {
                           isBestMatch ? 'bg-blue-100 dark:bg-blue-950 border-l-2 border-l-blue-500' : ''
                         }`}
                         onClick={() => {
-                          addProductToOrder(product);
-                          setSelectedProductIndex(0);
-                          setProductSearch('');
-                          setShowProductDropdown(false);
+                          // Services and bundles add directly, products show quick quantity modal
+                          if (product.isService || product.isBundle) {
+                            addProductToOrder(product);
+                            setSelectedProductIndex(0);
+                            setProductSearch('');
+                            setShowProductDropdown(false);
+                          } else {
+                            openQuickQuantityModal(product);
+                            setSelectedProductIndex(0);
+                          }
                         }}
                         data-testid={`${isService ? 'service' : isBundle ? 'bundle' : 'product'}-item-${product.id}`}
                       >
@@ -9321,6 +9397,143 @@ export default function AddOrder() {
           </Card>
         </div>
         </form>
+        
+        {/* Quick Quantity Modal - Beautiful fast entry */}
+        <Dialog open={showQuickQuantityModal} onOpenChange={setShowQuickQuantityModal}>
+          <DialogContent className="max-w-sm w-[90vw] p-0 overflow-hidden rounded-2xl">
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 pb-6">
+              <DialogHeader>
+                <DialogTitle className="text-white text-lg font-bold text-center">
+                  {t('orders:addToOrder')}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+            
+            <div className="px-5 pb-5 -mt-4">
+              {/* Product Card */}
+              <div className="bg-white rounded-xl shadow-lg p-4 border border-slate-100">
+                <div className="flex items-center gap-3">
+                  {quickQuantityProduct?.image ? (
+                    <img 
+                      src={quickQuantityProduct.image} 
+                      alt={quickQuantityProduct?.name}
+                      className="w-16 h-16 object-contain rounded-lg border border-slate-200 bg-slate-50 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-center flex-shrink-0">
+                      <Package className="h-8 w-8 text-slate-300" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2">
+                      {quickQuantityProduct?.name}
+                    </h3>
+                    {quickQuantityProduct?.sku && (
+                      <p className="text-xs text-slate-500 mt-0.5">{quickQuantityProduct.sku}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-sm font-bold text-emerald-600">
+                        {formatCurrency(
+                          parseFloat(
+                            form.watch('currency') === 'CZK' 
+                              ? (quickQuantityProduct?.priceCzk || quickQuantityProduct?.priceEur || '0')
+                              : (quickQuantityProduct?.priceEur || quickQuantityProduct?.priceCzk || '0')
+                          ),
+                          form.watch('currency') || 'EUR'
+                        )}
+                      </span>
+                      {(quickQuantityProduct?.quantity ?? 0) > 0 && (
+                        <span className="text-xs text-slate-400">
+                          • {quickQuantityProduct?.quantity} {t('common:inStock')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Quantity Input */}
+              <div className="mt-5">
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                  {t('orders:quantity')}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 rounded-xl text-lg font-bold border-2 hover:bg-slate-100"
+                    onClick={() => setQuickQuantityValue(v => String(Math.max(1, parseInt(v) - 1 || 1)))}
+                  >
+                    −
+                  </Button>
+                  <Input
+                    ref={quickQuantityInputRef}
+                    type="number"
+                    min="1"
+                    value={quickQuantityValue}
+                    onChange={(e) => setQuickQuantityValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleQuickQuantityConfirm();
+                      }
+                    }}
+                    className="h-12 text-center text-2xl font-bold rounded-xl border-2 focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 rounded-xl text-lg font-bold border-2 hover:bg-slate-100"
+                    onClick={() => setQuickQuantityValue(v => String((parseInt(v) || 0) + 1))}
+                  >
+                    +
+                  </Button>
+                </div>
+                
+                {/* Quick quantity buttons */}
+                <div className="flex gap-2 mt-3">
+                  {[5, 10, 20, 50].map(qty => (
+                    <Button
+                      key={qty}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-lg text-xs font-semibold hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                      onClick={() => setQuickQuantityValue(String(qty))}
+                    >
+                      {qty}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-12 rounded-xl font-semibold"
+                  onClick={() => {
+                    setShowQuickQuantityModal(false);
+                    setQuickQuantityProduct(null);
+                  }}
+                >
+                  {t('common:cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 h-12 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg"
+                  onClick={handleQuickQuantityConfirm}
+                >
+                  <Plus className="h-5 w-5 mr-1.5" />
+                  {t('orders:addItems', { count: parseInt(quickQuantityValue) || 1 })}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
         
         {/* Variant Selector Dialog - Mobile Optimized */}
         <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
