@@ -4545,7 +4545,7 @@ export default function AddOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 overflow-x-hidden">
-      <div className="p-3 sm:p-4 lg:p-6 w-full">
+      <div className="p-3 sm:p-4 lg:p-6 pb-24 sm:pb-16 lg:pb-8 w-full">
         {/* Header - Mobile Optimized */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
