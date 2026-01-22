@@ -38,7 +38,7 @@ interface GLSAutofillButtonProps {
   cartonCount?: number;
 }
 
-const BOOKMARKLET_VERSION = "2.0.0"; // Version 2: Uses localStorage for reusable bookmark
+const BOOKMARKLET_VERSION = "3.0.0"; // Version 3: Uses URL hash for cross-domain data transfer
 
 export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M', weight, orderId, cartonCount }: GLSAutofillButtonProps) {
   const [showBookmarkletDialog, setShowBookmarkletDialog] = useState(false);
@@ -85,20 +85,33 @@ export function GLSAutofillButton({ recipientData, senderData, packageSize = 'M'
     }
   };
 
-  // Generate the complete bookmarklet - reads from localStorage for reusability
+  // Generate the complete bookmarklet - reads from URL hash for cross-domain support
   const generateBookmarklet = () => {
     const bookmarkletLogic = `
 (function(){
-  // Read data from localStorage (set by Davie Supply app)
-  const storedData = localStorage.getItem('gls_autofill_data');
-  if (!storedData) {
-    alert('No GLS data found!\\n\\nPlease go back to Davie Supply and click the GLS button first to prepare the shipping data.');
+  // Read data from URL hash (set by Davie Supply when opening this page)
+  const hash = window.location.hash;
+  const match = hash.match(/glsdata=([^&]+)/);
+  
+  if (!match) {
+    alert('No GLS data found in URL!\\n\\nPlease go back to Davie Supply and click "Ship GLS DE" button to open this page with the shipping data.');
     return;
   }
   
-  const data = JSON.parse(storedData);
+  let data;
+  try {
+    // URL-safe decode: URL decode -> base64 decode -> UTF-8 decode
+    const urlDecoded = decodeURIComponent(match[1]);
+    const jsonStr = decodeURIComponent(escape(atob(urlDecoded)));
+    data = JSON.parse(jsonStr);
+  } catch (e) {
+    alert('Failed to read GLS data. Please try clicking "Ship GLS DE" again.');
+    console.error('GLS decode error:', e);
+    return;
+  }
+  
   const ageMinutes = Math.round((Date.now() - (data.timestamp || 0)) / 60000);
-  console.log('🔵 GLS Autofill - Starting with data (stored ' + ageMinutes + ' min ago):', data);
+  console.log('🔵 GLS Autofill - Starting with data (from URL, ' + ageMinutes + ' min ago):', data);
   
   let filledCount = 0;
   const log = [];
@@ -582,15 +595,27 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
     });
   };
 
-  // Open GLS page (with order ID for mobile Tampermonkey autofill)
+  // Open GLS page with data encoded in URL hash for cross-domain transfer
   const openGLSPage = () => {
-    // Always store data in localStorage before opening GLS page
-    storeDataForBookmarklet();
+    // Encode shipping data in URL hash - this works cross-domain!
+    const data = {
+      recipient: recipientData,
+      sender: senderData,
+      packageSize,
+      weight,
+      orderId,
+      timestamp: Date.now()
+    };
+    
+    // URL-safe Base64 encoding: encode JSON -> base64 -> URL encode (handles + and / in base64)
+    const jsonStr = JSON.stringify(data);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const urlSafeBase64 = encodeURIComponent(base64);
     
     let url = 'https://www.gls-pakete.de/privatkunden/paketversand/paketkonfiguration';
-    if (orderId && isMobile) {
-      url += `?davie_order_id=${orderId}`;
-    }
+    url += `#glsdata=${urlSafeBase64}`;
+    
+    console.log('📦 Opening GLS with data in URL hash');
     window.open(url, '_blank');
   };
 
@@ -654,12 +679,12 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
               <h3 className="font-semibold mb-2 text-sm sm:text-base text-green-800 dark:text-green-200">✨ Reusable bookmark - set up once, use forever!</h3>
               <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
                 <li><strong>One-time setup:</strong> Save the bookmarklet below to your bookmarks bar</li>
-                <li><strong>For each order:</strong> Click "Ship GLS DE" button (prepares the data)</li>
-                <li><strong>On GLS page:</strong> Click your saved bookmark to auto-fill</li>
+                <li><strong>For each order:</strong> Click "Ship GLS DE" button (opens GLS with data in URL)</li>
+                <li><strong>On GLS page:</strong> Click your saved bookmark to auto-fill the form</li>
                 <li>Verify details and complete shipment</li>
               </ol>
               <p className="mt-2 text-xs text-green-700 dark:text-green-300">
-                💡 The bookmark always uses the latest order data - no need to create a new one each time!
+                💡 The data is passed directly via the URL - works reliably across domains!
               </p>
             </div>
 
@@ -719,10 +744,10 @@ ${weight ? `Gewicht: ${weight} kg` : ''}
             <div className="rounded-lg border p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-950/20">
               <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm sm:text-base">⚠️ Important:</h3>
               <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
-                <li>Works directly on GLS website</li>
+                <li>Click "Ship GLS DE" first to open GLS with data</li>
+                <li>Then click your bookmark on the GLS page</li>
                 <li>Save once, use for all future orders</li>
                 <li>Always verify auto-filled details</li>
-                <li>Update if form fields change</li>
               </ul>
             </div>
 
