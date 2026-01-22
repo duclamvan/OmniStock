@@ -344,8 +344,8 @@ function fillAllCOD(){
 var iban=data.bank?data.bank.iban:'';
 var bic=data.bank?data.bank.bic:'';
 var holder=data.bank?data.bank.accountHolder:'';
-/* DHL doesn't accept cents - round up to whole euros */
-var amt=data.codAmount?String(Math.ceil(data.codAmount)):'';
+/* Round up to whole euros, format with German comma (e.g., 104,00) */
+var amt=data.codAmount?Math.ceil(data.codAmount).toFixed(2).replace('.',','):'';
 var ref=data.orderId||'';
 var fieldDefs=[
 {label:'iban',val:iban,name:'IBAN'},
