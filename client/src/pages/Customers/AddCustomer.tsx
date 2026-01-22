@@ -1411,18 +1411,20 @@ export default function AddCustomer() {
       }
       
       // Format phone number with country code after country is set
-      if (fields.phone && fields.country) {
+      // Note: Backend returns 'tel', not 'phone'
+      const phoneValue = fields.tel || fields.phone || '';
+      if (phoneValue && fields.country) {
         const countryCode = getPhoneCountryCode(normalizeCountryForStorage(fields.country));
         if (countryCode) {
-          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          const formatted = formatPhoneNumber(phoneValue, countryCode);
           shippingForm.setValue('tel', formatted);
           filledFields.tel = data.confidence;
         } else {
-          shippingForm.setValue('tel', fields.phone);
+          shippingForm.setValue('tel', phoneValue);
           filledFields.tel = data.confidence;
         }
-      } else if (fields.phone) {
-        shippingForm.setValue('tel', fields.phone);
+      } else if (phoneValue) {
+        shippingForm.setValue('tel', phoneValue);
         filledFields.tel = data.confidence;
       }
       
@@ -1607,18 +1609,20 @@ export default function AddCustomer() {
       }
       
       // Format phone number with country code after country is set
-      if (fields.phone && fields.country) {
+      // Note: Backend returns 'tel', not 'phone'
+      const billingPhoneValue = fields.tel || fields.phone || '';
+      if (billingPhoneValue && fields.country) {
         const countryCode = getPhoneCountryCode(normalizeCountryForStorage(fields.country));
         if (countryCode) {
-          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          const formatted = formatPhoneNumber(billingPhoneValue, countryCode);
           form.setValue('billingTel', formatted);
           filledFields.billingTel = data.confidence;
         } else {
-          form.setValue('billingTel', fields.phone);
+          form.setValue('billingTel', billingPhoneValue);
           filledFields.billingTel = data.confidence;
         }
-      } else if (fields.phone) {
-        form.setValue('billingTel', fields.phone);
+      } else if (billingPhoneValue) {
+        form.setValue('billingTel', billingPhoneValue);
         filledFields.billingTel = data.confidence;
       }
       

@@ -1578,16 +1578,18 @@ export default function AddOrder() {
       if (fields.state) setNewCustomer(prev => ({ ...prev, state: fields.state }));
       
       // Format phone number with country code after country is set
-      if (fields.phone && fields.country) {
+      // Note: Backend returns 'tel', not 'phone'
+      const phoneValue = fields.tel || fields.phone || '';
+      if (phoneValue && fields.country) {
         const countryCode = getPhoneCountryCode(capitalizeWords(fields.country));
         if (countryCode) {
-          const formatted = formatPhoneNumber(fields.phone, countryCode);
+          const formatted = formatPhoneNumber(phoneValue, countryCode);
           setNewCustomer(prev => ({ ...prev, phone: formatted }));
         } else {
-          setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
+          setNewCustomer(prev => ({ ...prev, phone: phoneValue }));
         }
-      } else if (fields.phone) {
-        setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
+      } else if (phoneValue) {
+        setNewCustomer(prev => ({ ...prev, phone: phoneValue }));
       }
       
       toast({
