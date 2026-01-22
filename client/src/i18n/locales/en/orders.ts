@@ -2098,6 +2098,9 @@ const orders = {
   virtualAutoComplete: 'Auto-completed during picking',
   noQtyNotTracked: 'Quantity not tracked',
   
+  // Quick Quantity Modal
+  addItems: 'Add {{count}} Items',
+  
 } as const;
 
 export default orders;

@@ -2082,6 +2082,9 @@ const orders = {
   virtualAutoComplete: 'Tự động hoàn thành khi lấy hàng',
   noQtyNotTracked: 'Số lượng không được theo dõi',
   
+  // Quick Quantity Modal
+  addItems: 'Thêm {{count}} sản phẩm',
+  
 } as const;
 
 export default orders;
