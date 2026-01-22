@@ -3264,15 +3264,18 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                     });
                     
                     // Group paid items by productId (parent product)
-                    // Use variantAllocations array to detect true variants
+                    // ONLY use variantAllocations to detect true variants - no regex fallback
                     const grouped = paidItems.reduce((acc: any, item: any) => {
-                      // Check for variantAllocations array (primary) or variantId (fallback)
-                      const hasVariantAllocations = item.variantAllocations && Array.isArray(item.variantAllocations) && item.variantAllocations.length > 0;
-                      const isVariant = (hasVariantAllocations || item.variantId) && item.productId;
+                      // Check for variantAllocations array with actual variant names
+                      const validVariantAllocations = item.variantAllocations && 
+                        Array.isArray(item.variantAllocations) && 
+                        item.variantAllocations.some((va: any) => va.variantName);
+                      // Only treat as variant if we have explicit variant data AND productId
+                      const isVariant = validVariantAllocations && item.productId;
                       // Each non-variant item gets unique key to prevent false grouping
                       const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                      // For variants, extract parent name; for non-variants use full product name
-                      const parentName = isVariant ? extractParent(item.productName || '') : (item.productName || '');
+                      // For variants with variantAllocations, use parent product name; otherwise use full name
+                      const parentName = isVariant ? (item.parentProductName || extractParent(item.productName || '')) : (item.productName || '');
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { 
@@ -3287,46 +3290,37 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
                       acc[groupKey].totalDiscount += (item.discount || 0);
                       
-                      // Add variant details from variantAllocations if available
-                      if (hasVariantAllocations) {
+                      // Add variant details ONLY from variantAllocations - no regex fallback
+                      if (validVariantAllocations) {
                         item.variantAllocations.forEach((va: any) => {
                           if (va.variantName) {
                             acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                           }
                         });
-                      } else if (isVariant && item.variantId) {
-                        // Fallback: extract variant name from product name
-                        const variantName = extractVariant(item.productName || '');
-                        if (variantName) {
-                          acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
-                        }
                       }
                       return acc;
                     }, {});
                     
-                    // Group free items by productId - only for true variants
+                    // Group free items by productId - only for true variants with variantAllocations
                     const freeGrouped = freeItems.reduce((acc: any, item: any) => {
-                      const hasVariantAllocations = item.variantAllocations && Array.isArray(item.variantAllocations) && item.variantAllocations.length > 0;
-                      const isVariant = (hasVariantAllocations || item.variantId) && item.productId;
+                      const validVariantAllocations = item.variantAllocations && 
+                        Array.isArray(item.variantAllocations) && 
+                        item.variantAllocations.some((va: any) => va.variantName);
+                      const isVariant = validVariantAllocations && item.productId;
                       const groupKey = isVariant ? item.productId : `item-${item.id || Math.random()}`;
-                      const parentName = isVariant ? extractParent(item.productName || '') : (item.productName || '');
+                      const parentName = isVariant ? (item.parentProductName || extractParent(item.productName || '')) : (item.productName || '');
                       
                       if (!acc[groupKey]) {
                         acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
                       }
                       acc[groupKey].totalQty += item.quantity || 0;
                       
-                      if (hasVariantAllocations) {
+                      if (validVariantAllocations) {
                         item.variantAllocations.forEach((va: any) => {
                           if (va.variantName) {
                             acc[groupKey].variantDetails.push({ name: va.variantName, qty: va.quantity || 1 });
                           }
                         });
-                      } else if (isVariant && item.variantId) {
-                        const variantName = extractVariant(item.productName || '');
-                        if (variantName) {
-                          acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
-                        }
                       }
                       return acc;
                     }, {});
