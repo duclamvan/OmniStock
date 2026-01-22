@@ -200,6 +200,13 @@ export default function OrderDetails() {
   const [showPickingMode, setShowPickingMode] = useState(false);
   const [showCapturePreview, setShowCapturePreview] = useState(false);
   const [compactCaptureMode, setCompactCaptureMode] = useState(false);
+  
+  // Auto-enable compact mode for large orders
+  useEffect(() => {
+    if (order?.items && order.items.length >= 10) {
+      setCompactCaptureMode(true);
+    }
+  }, [order?.items?.length]);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const capturePreviewRef = useRef<HTMLDivElement>(null);
@@ -3252,12 +3259,16 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                 /* Compact Mode - No images, dense table layout */
                 <div className="divide-y divide-slate-100">
                   {(() => {
-                    const getParentAndVariant = (name: string): { parent: string; variant: string | null } => {
-                      const match = name.match(/^(.+?)\s*[-–—]\s*(.+)$/);
-                      if (match) {
-                        return { parent: match[1].trim(), variant: match[2].trim() };
-                      }
-                      return { parent: name, variant: null };
+                    // Extract variant name from full product name (e.g., "Product - Variant" -> "Variant")
+                    const extractVariant = (name: string): string | null => {
+                      const match = name.match(/[-–—]\s*([^-–—]+)$/);
+                      return match ? match[1].trim() : null;
+                    };
+                    
+                    // Extract parent name (e.g., "Product - Variant" -> "Product")
+                    const extractParent = (name: string): string => {
+                      const match = name.match(/^(.+?)\s*[-–—]/);
+                      return match ? match[1].trim() : name;
                     };
                     
                     const allItems = order?.items || [];
@@ -3270,27 +3281,43 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
                       return unitPrice === 0 && item.quantity > 0;
                     });
                     
-                    // Group paid items
+                    // Group paid items by productId (parent product)
                     const grouped = paidItems.reduce((acc: any, item: any) => {
-                      const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
-                      if (!acc[parentName]) {
-                        acc[parentName] = { name: parentName, totalQty: 0, totalPrice: 0, totalDiscount: 0, variantDetails: [] as { name: string; qty: number }[] };
+                      const groupKey = item.productId || item.productName || 'unknown';
+                      const parentName = extractParent(item.productName || '');
+                      const variantName = extractVariant(item.productName || '');
+                      
+                      if (!acc[groupKey]) {
+                        acc[groupKey] = { 
+                          name: parentName, 
+                          totalQty: 0, 
+                          totalPrice: 0, 
+                          totalDiscount: 0, 
+                          variantDetails: [] as { name: string; qty: number }[] 
+                        };
                       }
-                      acc[parentName].totalQty += item.quantity || 0;
-                      acc[parentName].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
-                      acc[parentName].totalDiscount += (item.discount || 0);
-                      if (variant) acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                      acc[groupKey].totalQty += item.quantity || 0;
+                      acc[groupKey].totalPrice += ((item.unitPrice || item.price || 0) * (item.quantity || 0));
+                      acc[groupKey].totalDiscount += (item.discount || 0);
+                      if (variantName) {
+                        acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                      }
                       return acc;
                     }, {});
                     
-                    // Group free items
+                    // Group free items by productId
                     const freeGrouped = freeItems.reduce((acc: any, item: any) => {
-                      const { parent: parentName, variant } = getParentAndVariant(item.productName || '');
-                      if (!acc[parentName]) {
-                        acc[parentName] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
+                      const groupKey = item.productId || item.productName || 'unknown';
+                      const parentName = extractParent(item.productName || '');
+                      const variantName = extractVariant(item.productName || '');
+                      
+                      if (!acc[groupKey]) {
+                        acc[groupKey] = { name: parentName, totalQty: 0, variantDetails: [] as { name: string; qty: number }[] };
                       }
-                      acc[parentName].totalQty += item.quantity || 0;
-                      if (variant) acc[parentName].variantDetails.push({ name: variant, qty: item.quantity || 1 });
+                      acc[groupKey].totalQty += item.quantity || 0;
+                      if (variantName) {
+                        acc[groupKey].variantDetails.push({ name: variantName, qty: item.quantity || 1 });
+                      }
                       return acc;
                     }, {});
                     
