@@ -98,7 +98,7 @@ export function DHLAutofillButton({
         postalCode: recipientData.postalCode || '',
         city: recipientData.city || '',
         country: recipientData.country || 'DE',
-        email: recipientData.email || '',
+        email: recipientData.email || 'davienails999@gmail.com',
         phone: recipientData.phone || '',
       },
       sender: senderData ? {
