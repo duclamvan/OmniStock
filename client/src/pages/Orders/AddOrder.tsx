@@ -2599,7 +2599,31 @@ export default function AddOrder() {
   }, [packingPlan, form, aiCartonPackingEnabled]);
 
   // Open quick quantity modal for fast product addition
-  const openQuickQuantityModal = (product: any) => {
+  // For products with variants, show variant selector instead
+  const openQuickQuantityModal = async (product: any) => {
+    // First check if product has variants
+    try {
+      const variantsResponse = await fetch(`/api/products/${product.id}/variants?_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (variantsResponse.ok) {
+        const variants = await variantsResponse.json();
+        if (variants && variants.length > 0) {
+          // Product has variants - show variant selector instead
+          setSelectedProductForVariant(product);
+          setProductVariants(variants);
+          setVariantQuantities({});
+          setShowVariantDialog(true);
+          setProductSearch("");
+          setShowProductDropdown(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching variants:', error);
+    }
+    
+    // No variants - show quick quantity modal
     setQuickQuantityProduct(product);
     setQuickQuantityValue("1");
     setShowQuickQuantityModal(true);
