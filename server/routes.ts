@@ -28846,9 +28846,10 @@ Other rules:
   // Get products with BOM recipes (products that can be manufactured)
   app.get('/api/manufacturing/products-with-bom', isAuthenticated, async (req, res) => {
     try {
-      // Get parent product IDs from two sources:
+      // Get parent product IDs from three sources:
       // 1. billOfMaterials table (explicit BOM)
       // 2. Products that have children via parentProductId field
+      // 3. Products that have variants
       
       // Source 1: BOM table
       const bomParents = await db.selectDistinct({ parentProductId: billOfMaterials.parentProductId })
@@ -28861,8 +28862,13 @@ Other rules:
         .where(isNotNull(products.parentProductId));
       const parentChildIds = childProducts.map(c => c.parentProductId).filter(Boolean) as string[];
       
-      // Combine both sources
-      const allParentIds = [...new Set([...bomParentIds, ...parentChildIds])];
+      // Source 3: Products that have variants
+      const productVariantParents = await db.selectDistinct({ productId: productVariants.productId })
+        .from(productVariants);
+      const variantParentIds = productVariantParents.map(v => v.productId);
+      
+      // Combine all sources
+      const allParentIds = [...new Set([...bomParentIds, ...parentChildIds, ...variantParentIds])];
       
       if (allParentIds.length === 0) {
         return res.json([]);
@@ -28873,7 +28879,7 @@ Other rules:
         .from(products)
         .where(inArray(products.id, allParentIds));
       
-      // Get BOM ingredients for each product (from both sources)
+      // Get BOM ingredients for each product (from all sources)
       const result = await Promise.all(productsWithBom.map(async (product) => {
         // Get from billOfMaterials table
         const bomItems = await storage.getBomIngredients(product.id);
@@ -28883,7 +28889,12 @@ Other rules:
           .from(products)
           .where(eq(products.parentProductId, product.id));
         
-        // Merge both sources with deduplication (prefer BOM entries over parentProductId)
+        // Get variants for this product
+        const productVariantsList = await db.select()
+          .from(productVariants)
+          .where(eq(productVariants.productId, product.id));
+        
+        // Merge all sources with deduplication (prefer BOM entries over parentProductId)
         const bomChildIds = new Set(bomItems.map(bom => bom.childProductId));
         const uniqueParentIdChildren = childrenViaParentId.filter(child => !bomChildIds.has(child.id));
         
@@ -28902,10 +28913,20 @@ Other rules:
             id: `child-${child.id}`,
             childProductId: child.id,
             childVariantId: null,
-            quantity: '1', // Default quantity for parent-child relationship
+            quantity: '1',
             yieldQuantity: '1',
-            childProduct: child, // Full product object
+            childProduct: child,
             childVariant: null,
+          })),
+          // Add variants as children (for products with variants)
+          ...productVariantsList.map(variant => ({
+            id: `variant-${variant.id}`,
+            childProductId: product.id,
+            childVariantId: variant.id,
+            quantity: '1',
+            yieldQuantity: '1',
+            childProduct: product,
+            childVariant: variant,
           })),
         ];
         
@@ -29300,21 +29321,27 @@ Other rules:
   // Get parent-child stock with locations
   app.get('/api/manufacturing/parent-child-stock', isAuthenticated, async (req, res) => {
     try {
-      // Get all products that are parents (have BOM entries or have children via parentProductId)
+      // Get all products that are parents (have BOM entries, children via parentProductId, or have variants)
       const allProducts = await storage.getProducts();
       const allBomEntries = await db.select().from(billOfMaterials);
+      
+      // Get all product variants for variant-based parent-child relationships
+      const allVariants = await db.select().from(productVariants);
       
       // Create a map of parent product IDs from BOM entries
       const bomParentIds = new Set(allBomEntries.map(b => b.parentProductId));
       
-      // Also find products that have children via parentProductId field
+      // Find products that have children via parentProductId field
       const productsWithChildren = allProducts.filter(p => 
         allProducts.some(child => child.parentProductId === p.id)
       );
       const parentViaFieldIds = new Set(productsWithChildren.map(p => p.id));
       
-      // Combine both sets
-      const allParentIds = new Set([...bomParentIds, ...parentViaFieldIds]);
+      // Find products that have variants (variant source)
+      const productIdsWithVariants = new Set(allVariants.map(v => v.productId));
+      
+      // Combine all sources
+      const allParentIds = new Set([...bomParentIds, ...parentViaFieldIds, ...productIdsWithVariants]);
       
       // Get all product locations for stock data
       const allLocations = await db.select().from(productLocations);
@@ -29325,6 +29352,14 @@ Other rules:
       for (const parentId of allParentIds) {
         const parent = allProducts.find(p => p.id === parentId);
         if (!parent) continue;
+        
+        // Determine the source type for this parent
+        let sourceType: 'bom' | 'parentField' | 'variant' = 'variant';
+        if (bomParentIds.has(parentId)) {
+          sourceType = 'bom';
+        } else if (parentViaFieldIds.has(parentId)) {
+          sourceType = 'parentField';
+        }
         
         // Get children from BOM
         const bomChildren = allBomEntries
@@ -29358,21 +29393,47 @@ Other rules:
             lowStockThreshold: p.lowStockThreshold || 5,
           }));
         
-        // Combine children
+        // Get children from product variants
+        const variantChildren = allVariants
+          .filter(v => v.productId === parentId)
+          .map(v => {
+            // Get variant-specific locations
+            const variantLocs = allLocations
+              .filter(l => l.productId === parentId && l.variantId === v.id)
+              .map(l => ({
+                locationCode: l.locationCode,
+                quantity: l.quantity || 0,
+              }));
+            const variantTotalStock = variantLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: v.id,
+              name: v.name || `Variant ${v.id.slice(0, 6)}`,
+              sku: v.sku,
+              quantity: 1,
+              yieldQuantity: 1,
+              source: 'variant' as const,
+              totalStock: variantTotalStock,
+              lowStockThreshold: 5,
+              locations: variantLocs,
+              isLowStock: variantTotalStock <= 5,
+            };
+          });
+        
+        // Combine children (BOM + parentField + variants)
         const children = [...bomChildren, ...fieldChildren];
         
-        // Get parent's locations
+        // Get parent's locations (non-variant)
         const parentLocations = allLocations
-          .filter(l => l.productId === parentId)
+          .filter(l => l.productId === parentId && !l.variantId)
           .map(l => ({
             locationCode: l.locationCode,
             quantity: l.quantity || 0,
           }));
         
-        // Get each child's locations
+        // Get each child's locations (for BOM and parentField children)
         const childrenWithLocations = children.map(child => {
           const childLocs = allLocations
-            .filter(l => l.productId === child.id)
+            .filter(l => l.productId === child.id && !l.variantId)
             .map(l => ({
               locationCode: l.locationCode,
               quantity: l.quantity || 0,
@@ -29383,6 +29444,9 @@ Other rules:
             isLowStock: child.totalStock <= child.lowStockThreshold,
           };
         });
+        
+        // Add variant children (already have locations)
+        const allChildrenWithLocations = [...childrenWithLocations, ...variantChildren];
         
         // Calculate if parent is low stock
         const parentTotalStock = parent.quantity || 0;
@@ -29397,8 +29461,8 @@ Other rules:
           lowStockThreshold: parentThreshold,
           isLowStock: parentTotalStock <= parentThreshold,
           locations: parentLocations,
-          children: childrenWithLocations,
-          source: bomParentIds.has(parentId) ? 'bom' : 'parentField',
+          children: allChildrenWithLocations,
+          source: sourceType,
         });
       }
       
