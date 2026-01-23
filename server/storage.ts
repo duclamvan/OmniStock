@@ -2870,7 +2870,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined> {
     try {
-      // If updating to primary, unset other primary locations
+      // If updating to primary, unset other primary locations for the SAME variant (or base product)
       if (location.isPrimary) {
         const [currentLocation] = await db
           .select()
@@ -2878,15 +2878,33 @@ export class DatabaseStorage implements IStorage {
           .where(eq(productLocations.id, id));
 
         if (currentLocation) {
-          await db
-            .update(productLocations)
-            .set({ isPrimary: false })
-            .where(
-              and(
-                eq(productLocations.productId, currentLocation.productId),
-                ne(productLocations.id, id)
-              )
-            );
+          // Only unset primary on locations with the SAME variantId (or both null for base product)
+          // This ensures each variant can have its own primary location independently
+          if (currentLocation.variantId) {
+            // Variant location - only unset primaries for the same variant
+            await db
+              .update(productLocations)
+              .set({ isPrimary: false })
+              .where(
+                and(
+                  eq(productLocations.productId, currentLocation.productId),
+                  eq(productLocations.variantId, currentLocation.variantId),
+                  ne(productLocations.id, id)
+                )
+              );
+          } else {
+            // Base product location - only unset primaries for base product (variantId is null)
+            await db
+              .update(productLocations)
+              .set({ isPrimary: false })
+              .where(
+                and(
+                  eq(productLocations.productId, currentLocation.productId),
+                  isNull(productLocations.variantId),
+                  ne(productLocations.id, id)
+                )
+              );
+          }
         }
       }
 

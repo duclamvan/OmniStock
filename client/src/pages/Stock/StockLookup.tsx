@@ -1357,6 +1357,42 @@ export default function StockLookup() {
                                                   </Badge>
                                                 )}
                                               </div>
+                                              {/* Dropdown menu for variant location actions */}
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                  >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                  {!location.isPrimary && (
+                                                    <DropdownMenuItem
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSetPrimaryLocation(location);
+                                                      }}
+                                                    >
+                                                      <Star className="h-4 w-4 mr-2" />
+                                                      {t('common:setPrimaryLocation')}
+                                                    </DropdownMenuItem>
+                                                  )}
+                                                  <DropdownMenuItem
+                                                    className="text-red-600 focus:text-red-600"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDeleteLocation(location);
+                                                    }}
+                                                  >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    {t('common:deleteLocation')}
+                                                  </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
                                             </div>
                                             {/* Quantity with +/- buttons */}
                                             <div className="flex items-center justify-center gap-2 py-2 bg-gray-50 dark:bg-gray-800 rounded mb-2">
