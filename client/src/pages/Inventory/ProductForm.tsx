@@ -351,7 +351,6 @@ export default function ProductForm() {
   const [bulkPriceManuallyEdited, setBulkPriceManuallyEdited] = useState(false);
   const [isBomChildMode, setIsBomChildMode] = useState(false);
   const [parentProductPopoverOpen, setParentProductPopoverOpen] = useState(false);
-  const [parentProductSearch, setParentProductSearch] = useState('');
   const [newSupplierData, setNewSupplierData] = useState({
     name: "",
     email: "",
@@ -4612,58 +4611,41 @@ export default function ProductForm() {
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-full p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-                                <Command shouldFilter={false}>
-                                  <CommandInput 
-                                    placeholder={t('common:searchProducts', 'Search products...')} 
-                                    value={parentProductSearch}
-                                    onValueChange={setParentProductSearch}
-                                  />
-                                  <CommandList>
-                                    <CommandEmpty>{t('common:noProductsFound', 'No products found.')}</CommandEmpty>
-                                    <CommandGroup>
-                                      <CommandItem
-                                        value="none"
-                                        onSelect={() => {
-                                          form.setValue('parentProductId', undefined);
-                                          setParentProductPopoverOpen(false);
-                                          setParentProductSearch('');
-                                        }}
-                                      >
-                                        <Check
-                                          className={`mr-2 h-4 w-4 ${!form.watch('parentProductId') ? 'opacity-100' : 'opacity-0'}`}
-                                        />
-                                        {t('products:bom.noParent', 'No parent product')}
-                                      </CommandItem>
-                                      {allProducts
-                                        ?.filter((p: any) => p.id !== params.id)
-                                        .filter((p: any) => {
-                                          if (!parentProductSearch) return true;
-                                          const search = parentProductSearch.toLowerCase();
-                                          return (
-                                            (p.sku && p.sku.toLowerCase().includes(search)) ||
-                                            (p.name && p.name.toLowerCase().includes(search))
-                                          );
-                                        })
-                                        .slice(0, 50)
-                                        .map((p: any) => (
-                                          <CommandItem
-                                            key={p.id}
-                                            value={p.id}
-                                            onSelect={() => {
-                                              form.setValue('parentProductId', p.id);
-                                              setParentProductPopoverOpen(false);
-                                              setParentProductSearch('');
-                                            }}
-                                          >
-                                            <Check
-                                              className={`mr-2 h-4 w-4 ${form.watch('parentProductId') === p.id ? 'opacity-100' : 'opacity-0'}`}
-                                            />
-                                            {p.sku} - {p.name}
-                                          </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                  </CommandList>
+                              <PopoverContent className="w-full p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder={t('common:searchProducts', 'Search products...')} />
+                                  <CommandEmpty>{t('common:noProductsFound', 'No products found.')}</CommandEmpty>
+                                  <CommandGroup className="max-h-64 overflow-auto">
+                                    <CommandItem
+                                      value="no-parent-product"
+                                      onSelect={() => {
+                                        form.setValue('parentProductId', undefined);
+                                        setParentProductPopoverOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={`mr-2 h-4 w-4 ${!form.watch('parentProductId') ? 'opacity-100' : 'opacity-0'}`}
+                                      />
+                                      {t('products:bom.noParent', 'No parent product')}
+                                    </CommandItem>
+                                    {allProducts
+                                      ?.filter((p: any) => p.id !== params.id)
+                                      .map((p: any) => (
+                                        <CommandItem
+                                          key={p.id}
+                                          value={`${p.sku} - ${p.name}`}
+                                          onSelect={() => {
+                                            form.setValue('parentProductId', p.id);
+                                            setParentProductPopoverOpen(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={`mr-2 h-4 w-4 ${form.watch('parentProductId') === p.id ? 'opacity-100' : 'opacity-0'}`}
+                                          />
+                                          {p.sku} - {p.name}
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
                                 </Command>
                               </PopoverContent>
                             </Popover>
