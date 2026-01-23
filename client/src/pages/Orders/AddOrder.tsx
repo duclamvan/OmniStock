@@ -1177,8 +1177,11 @@ export default function AddOrder() {
     }
   }, [orderId, uploadedFiles.length]);
 
-  // Apply customer-specific pricing when customer is selected
+  // Apply customer-specific pricing when customer is selected (skip in edit mode - preserve saved prices)
   useEffect(() => {
+    // Skip applying customer pricing in edit mode - preserve the saved order prices
+    if (isEditMode) return;
+    
     const applyCustomerPricing = async () => {
       if (!selectedCustomer?.id || orderItems.length === 0) return;
       
@@ -1235,7 +1238,7 @@ export default function AddOrder() {
     };
     
     applyCustomerPricing();
-  }, [selectedCustomer?.id]);
+  }, [selectedCustomer?.id, isEditMode]);
 
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
@@ -5132,11 +5135,13 @@ export default function AddOrder() {
                         if (firstCustomer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
-                        // Auto-set currency based on customer preference or country
-                        const customerCurrency = firstCustomer.preferredCurrency || 
-                          (firstCustomer.country ? getCurrencyByCountry(firstCustomer.country) : null);
-                        if (customerCurrency) {
-                          form.setValue('currency', customerCurrency);
+                        // Auto-set currency based on customer preference or country (only for new orders)
+                        if (!isEditMode) {
+                          const customerCurrency = firstCustomer.preferredCurrency || 
+                            (firstCustomer.country ? getCurrencyByCountry(firstCustomer.country) : null);
+                          if (customerCurrency) {
+                            form.setValue('currency', customerCurrency);
+                          }
                         }
                         // Auto-focus product search for fast keyboard navigation
                         setTimeout(() => {
@@ -5190,10 +5195,13 @@ export default function AddOrder() {
                         if (customer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
-                        const customerCurrency = customer.preferredCurrency || 
-                          (customer.shippingCountry ? getCurrencyByCountry(customer.shippingCountry) : null);
-                        if (customerCurrency) {
-                          form.setValue('currency', customerCurrency);
+                        // Auto-set currency based on customer preference or country (only for new orders)
+                        if (!isEditMode) {
+                          const customerCurrency = customer.preferredCurrency || 
+                            (customer.shippingCountry ? getCurrencyByCountry(customer.shippingCountry) : null);
+                          if (customerCurrency) {
+                            form.setValue('currency', customerCurrency);
+                          }
                         }
                         setTimeout(() => {
                           productSearchRef.current?.focus();
