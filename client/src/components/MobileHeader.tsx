@@ -279,8 +279,8 @@ export function MobileHeader({
 
         {/* Center: Search (expandable) */}
         <div className={cn(
-          "mx-1 flex items-center justify-center transition-all duration-300",
-          isCollapsed && !isSearchExpanded ? "flex-1" : "flex-1 min-w-0"
+          "mx-1 flex items-center justify-center transition-all duration-500 ease-in-out",
+          isCollapsed && !isSearchExpanded ? "flex-1 scale-95 opacity-90" : "flex-1 min-w-0 scale-100 opacity-100"
         )}>
           {isCollapsed && !isSearchExpanded ? (
             // Collapsed: Show search button
@@ -288,15 +288,15 @@ export function MobileHeader({
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(true)}
-              className="h-8 px-3 gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex-1 max-w-[120px]"
+              className="h-9 px-3 gap-2 bg-gray-50/50 dark:bg-gray-800/30 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex-1 max-w-[140px] transition-all duration-300"
               data-testid="button-expand-search"
             >
-              <Search className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-              <span className="hidden sm:inline text-xs text-gray-700 dark:text-gray-300">{t('common:search')}</span>
+              <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('common:search')}</span>
             </Button>
           ) : (
             // Expanded: Show full search input - constrained to not overflow
-            <div className="w-full max-w-[200px] sm:max-w-xs transition-all duration-300">
+            <div className="w-full max-w-[200px] sm:max-w-xs transition-all duration-500 ease-in-out">
               <GlobalSearch 
                 onFocus={() => setIsSearchExpanded(true)}
                 onBlur={() => setIsSearchExpanded(false)}
