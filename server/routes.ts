@@ -865,6 +865,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to delete user' });
     }
   });
+  // POST /api/admin/users - Create a new user (admin-only)
+  app.post('/api/admin/users', requireRole(['administrator']), async (req, res) => {
+    try {
+      const { username, email, password, firstName, lastName, role } = req.body;
+      
+      // Validate required fields
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+      
+      // Validate username format (alphanumeric, underscores, 3-50 chars)
+      if (!/^[a-zA-Z0-9_]{3,50}$/.test(username)) {
+        return res.status(400).json({ message: 'Username must be 3-50 characters and contain only letters, numbers, and underscores' });
+      }
+      
+      // Validate password strength (min 8 chars)
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters' });
+      }
+      
+      // Validate email format if provided
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+      }
+      
+      // Validate role exists
+      const validRole = role || 'warehouse_staff';
+      const [existingRole] = await db.select().from(roles).where(eq(roles.name, validRole));
+      if (!existingRole) {
+        return res.status(400).json({ message: 'Invalid role specified' });
+      }
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Username already exists' });
+      }
+      
+      // Hash password
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash(password, 12);
+      
+      // Create user
+      const user = await storage.createUserWithPassword({
+        username,
+        passwordHash,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        email: email || undefined,
+        role: validRole,
+      });
+      
+      res.status(201).json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Failed to create user' });
+    }
+  });
 
   // =====================================================
   // ROLES & PERMISSIONS MANAGEMENT API ENDPOINTS

@@ -212,7 +212,17 @@ export default function RolesSettings() {
   const { toast } = useToast();
   const isVietnamese = i18n.language === 'vi';
 
-  const [activeTab, setActiveTab] = useState("manage-roles");
+  const [activeTab, setActiveTab] = useState("users");
+  const [userSearch, setUserSearch] = useState("");
+  const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    role: "warehouse_staff"
+  });
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -340,6 +350,22 @@ export default function RolesSettings() {
         variant: "destructive",
       });
     },
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserData) => {
+      const res = await apiRequest("POST", "/api/admin/users", userData);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: t('settings:userCreated', 'User created successfully') });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsCreateUserDialogOpen(false);
+      setNewUserData({ username: "", email: "", password: "", firstName: "", lastName: "", role: "warehouse_staff" });
+    },
+    onError: (error: Error) => {
+      toast({ title: t('common:error', 'Error'), description: error.message, variant: "destructive" });
+    }
   });
 
   const resetForm = () => {
@@ -551,6 +577,17 @@ export default function RolesSettings() {
     return permissionsData ? Object.keys(permissionsData.grouped) : [];
   }, [permissionsData]);
 
+  const filteredUsers = useMemo(() => {
+    if (!userSearch.trim()) return users;
+    const search = userSearch.toLowerCase();
+    return users.filter(u => 
+      u.firstName?.toLowerCase().includes(search) ||
+      u.lastName?.toLowerCase().includes(search) ||
+      u.email?.toLowerCase().includes(search) ||
+      u.role?.toLowerCase().includes(search)
+    );
+  }, [users, userSearch]);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -604,25 +641,130 @@ export default function RolesSettings() {
         <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-2 h-auto sm:h-14 gap-1 p-1">
             <TabsTrigger
-              value="manage-roles"
+              value="users"
               className="h-10 sm:h-12 text-sm sm:text-base min-h-[40px] sm:min-h-[56px] px-3 sm:px-4 whitespace-nowrap"
-              data-testid="tab-manage-roles"
-            >
-              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              {t('settings:manageRoles', 'Manage Roles')}
-            </TabsTrigger>
-            <TabsTrigger
-              value="assign-users"
-              className="h-10 sm:h-12 text-sm sm:text-base min-h-[40px] sm:min-h-[56px] px-3 sm:px-4 whitespace-nowrap"
-              data-testid="tab-assign-users"
+              data-testid="tab-users"
             >
               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              {t('settings:assignUsers', 'Assign Users')}
+              {t('settings:users', 'Users')}
+            </TabsTrigger>
+            <TabsTrigger
+              value="roles"
+              className="h-10 sm:h-12 text-sm sm:text-base min-h-[40px] sm:min-h-[56px] px-3 sm:px-4 whitespace-nowrap"
+              data-testid="tab-roles"
+            >
+              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              {t('settings:roles', 'Roles')}
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="manage-roles" className="space-y-4">
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('settings:usersList', 'Users List')}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {t('settings:manageUsersDescription', 'Create and manage user accounts')}
+                </CardDescription>
+              </div>
+              <Button onClick={() => setIsCreateUserDialogOpen(true)} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                {t('settings:addUser', 'Add User')}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <Input
+                  placeholder={t('settings:searchUsers', 'Search users...')}
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+              {isLoadingUsers || isLoadingRoles ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t('settings:noUsersFound', 'No users found')}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('common:name', 'Name')}</TableHead>
+                        <TableHead className="hidden md:table-cell">{t('common:email', 'Email')}</TableHead>
+                        <TableHead>{t('settings:currentRole', 'Current Role')}</TableHead>
+                        <TableHead>{t('settings:assignRole', 'Assign Role')}</TableHead>
+                        <TableHead className="hidden lg:table-cell">{t('settings:memberSince', 'Member Since')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => {
+                        const userRole = roles.find(r => r.name === user.role);
+                        return (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">
+                              {formatUserName(user)}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell text-muted-foreground">
+                              {user.email || 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              {userRole ? getRoleBadge(userRole) : (
+                                <Badge variant="outline">{user.role}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={user.role}
+                                onValueChange={(newRole) => updateUserRoleMutation.mutate({ userId: user.id, role: newRole })}
+                                disabled={updateUserRoleMutation.isPending}
+                              >
+                                <SelectTrigger
+                                  className="w-full sm:w-[180px] min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+                                  data-testid={`select-role-${user.id}`}
+                                >
+                                  <SelectValue placeholder={t('settings:selectRole', 'Select Role')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {roles.map((role) => {
+                                    const Icon = getSectionIcon(role.icon || 'shield');
+                                    return (
+                                      <SelectItem key={role.name} value={role.name}>
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-4 h-4 rounded-full ${getRoleColorClass(role.color)}`} />
+                                          {getRoleDisplayName(role)}
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                              {formatDate(new Date(user.createdAt))}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="roles" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
               <div>
@@ -814,96 +956,6 @@ export default function RolesSettings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="assign-users" className="space-y-4">
-          <Card>
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Lock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                {t('settings:userRolesManagement', 'User Roles Management')}
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                {t('settings:assignRolesToControlAccess', 'Assign roles to control user access')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingUsers || isLoadingRoles ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('settings:noUsersFound', 'No users found')}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common:name', 'Name')}</TableHead>
-                        <TableHead className="hidden md:table-cell">{t('common:email', 'Email')}</TableHead>
-                        <TableHead>{t('settings:currentRole', 'Current Role')}</TableHead>
-                        <TableHead>{t('settings:assignRole', 'Assign Role')}</TableHead>
-                        <TableHead className="hidden lg:table-cell">{t('settings:memberSince', 'Member Since')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => {
-                        const userRole = roles.find(r => r.name === user.role);
-                        return (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">
-                              {formatUserName(user)}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-muted-foreground">
-                              {user.email || 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              {userRole ? getRoleBadge(userRole) : (
-                                <Badge variant="outline">{user.role}</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={user.role}
-                                onValueChange={(newRole) => updateUserRoleMutation.mutate({ userId: user.id, role: newRole })}
-                                disabled={updateUserRoleMutation.isPending}
-                              >
-                                <SelectTrigger
-                                  className="w-full sm:w-[180px] min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
-                                  data-testid={`select-role-${user.id}`}
-                                >
-                                  <SelectValue placeholder={t('settings:selectRole', 'Select Role')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {roles.map((role) => {
-                                    const Icon = getSectionIcon(role.icon || 'shield');
-                                    return (
-                                      <SelectItem key={role.name} value={role.name}>
-                                        <div className="flex items-center gap-2">
-                                          <div className={`w-4 h-4 rounded-full ${getRoleColorClass(role.color)}`} />
-                                          {getRoleDisplayName(role)}
-                                        </div>
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
-                              {formatDate(new Date(user.createdAt))}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
@@ -1361,6 +1413,56 @@ export default function RolesSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('settings:createUser', 'Create User')}</DialogTitle>
+            <DialogDescription>{t('settings:createUserDescription', 'Add a new user account')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t('common:username', 'Username')}</Label>
+              <Input value={newUserData.username} onChange={(e) => setNewUserData({...newUserData, username: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('common:firstName', 'First Name')}</Label>
+                <Input value={newUserData.firstName} onChange={(e) => setNewUserData({...newUserData, firstName: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common:lastName', 'Last Name')}</Label>
+                <Input value={newUserData.lastName} onChange={(e) => setNewUserData({...newUserData, lastName: e.target.value})} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common:email', 'Email')}</Label>
+              <Input type="email" value={newUserData.email} onChange={(e) => setNewUserData({...newUserData, email: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common:password', 'Password')}</Label>
+              <Input type="password" value={newUserData.password} onChange={(e) => setNewUserData({...newUserData, password: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('settings:role', 'Role')}</Label>
+              <Select value={newUserData.role} onValueChange={(val) => setNewUserData({...newUserData, role: val})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {roles.map(role => (
+                    <SelectItem key={role.name} value={role.name}>{getRoleDisplayName(role)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>{t('common:cancel', 'Cancel')}</Button>
+            <Button onClick={() => createUserMutation.mutate(newUserData)} disabled={createUserMutation.isPending || !newUserData.username || !newUserData.password}>
+              {createUserMutation.isPending ? t('common:creating', 'Creating...') : t('settings:createUser', 'Create User')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
