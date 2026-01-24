@@ -29450,7 +29450,7 @@ Other rules:
             name: p.name,
             sku: p.sku,
             quantity: 1,
-            yieldQuantity: 1,
+            yieldQuantity: Number(p.bomQuantityPerParent) || 1,
             source: 'parentField' as const,
             totalStock: p.quantity || 0,
             lowStockThreshold: p.lowStockThreshold || 5,
