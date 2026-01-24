@@ -11,6 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -30,7 +43,9 @@ import {
   Layers,
   Box,
   Search,
+  ChevronsUpDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
 
 interface ConsumedComponent {
@@ -97,7 +112,7 @@ export default function SimpleConversion() {
   const [historyTab, setHistoryTab] = useState<string>("week");
   const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
   const [stockSearch, setStockSearch] = useState("");
-  const [productSearch, setProductSearch] = useState("");
+  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
 
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
@@ -159,15 +174,6 @@ export default function SimpleConversion() {
     );
   }, [flattenedChildren, stockSearch]);
 
-  const filteredProducts = useMemo(() => {
-    if (!productSearch.trim()) return flattenedChildren;
-    const search = productSearch.toLowerCase();
-    return flattenedChildren.filter(child => 
-      child.name.toLowerCase().includes(search) ||
-      child.sku?.toLowerCase().includes(search) ||
-      child.parentName.toLowerCase().includes(search)
-    );
-  }, [flattenedChildren, productSearch]);
 
   const parentUnitsNeeded = useMemo(() => {
     if (!selectedChild || quantity <= 0) return 0;
@@ -350,57 +356,69 @@ export default function SimpleConversion() {
                 {t("noProductsWithParent", "No products with parent relationships found")}
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder={t("searchProducts", "Search products...")}
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    className="pl-10 h-12 text-lg"
-                  />
-                </div>
-                <Select
-                  value={selectedProductId}
-                  onValueChange={(val) => {
-                    setSelectedProductId(val);
-                    setSelectedLocationId("");
-                    setProductSearch("");
-                    const child = flattenedChildren.find(c => c.id === val);
-                    if (child) {
-                      setQuantity(child.yieldQuantity);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-14 sm:h-16 text-lg sm:text-xl">
-                    <SelectValue
-                      placeholder={t("selectProductToMake", "Select Product to Make")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredProducts.length === 0 ? (
-                      <div className="py-4 text-center text-muted-foreground">
-                        {t("noProductsFound", "No products found")}
+              <Popover open={productDropdownOpen} onOpenChange={setProductDropdownOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={productDropdownOpen}
+                    className="w-full h-14 sm:h-16 text-lg sm:text-xl justify-between"
+                  >
+                    {selectedProductId && selectedChild ? (
+                      <div className="flex flex-col items-start text-left">
+                        <span>{selectedChild.name}</span>
+                        <span className="text-sm text-muted-foreground font-normal">
+                          {selectedChild.yieldQuantity} {t("per", "per")} {selectedChild.parentName}
+                        </span>
                       </div>
                     ) : (
-                      filteredProducts.map((child) => (
-                        <SelectItem
-                          key={`${child.parentId}-${child.id}`}
-                          value={child.id}
-                          className="text-lg sm:text-xl py-3 sm:py-4"
-                        >
-                          <div className="flex flex-col">
-                            <span>{child.name}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {child.yieldQuantity} {t("per", "per")} {child.parentName}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))
+                      <span className="text-muted-foreground">
+                        {t("selectProductToMake", "Select Product to Make")}
+                      </span>
                     )}
-                  </SelectContent>
-                </Select>
-              </div>
+                    <ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder={t("searchProducts", "Search products...")} 
+                      className="h-12 text-lg"
+                    />
+                    <CommandList className="max-h-[300px]">
+                      <CommandEmpty>{t("noProductsFound", "No products found")}</CommandEmpty>
+                      <CommandGroup>
+                        {flattenedChildren.map((child) => (
+                          <CommandItem
+                            key={`${child.parentId}-${child.id}`}
+                            value={`${child.name} ${child.sku || ''} ${child.parentName}`}
+                            onSelect={() => {
+                              setSelectedProductId(child.id);
+                              setSelectedLocationId("");
+                              setQuantity(child.yieldQuantity);
+                              setProductDropdownOpen(false);
+                            }}
+                            className="py-3 text-lg cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedProductId === child.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{child.name}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {child.yieldQuantity} {t("per", "per")} {child.parentName}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </CardContent>
         </Card>
