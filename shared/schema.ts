@@ -3788,6 +3788,9 @@ export const manufacturingRuns = pgTable("manufacturing_runs", {
     .references(() => productVariants.id, { onDelete: "cascade" }), // Optional specific variant
   quantityProduced: integer("quantity_produced").notNull(), // How many finished products were made
   finishedLocationCode: varchar("finished_location_code"), // Where finished products are stored
+  sourceParentProductId: varchar("source_parent_product_id")
+    .references(() => products.id, { onDelete: "cascade" }), // Parent product consumed (inverted flow)
+  sourceParentQuantity: integer("source_parent_quantity"), // How many parent units consumed
   status: varchar("status").notNull().default("pending"), // pending, in_progress, completed, archived
   // Component consumption details stored as JSON for audit trail
   componentsConsumed: jsonb("components_consumed").$type<{
@@ -3814,6 +3817,8 @@ export const manufacturingRuns = pgTable("manufacturing_runs", {
 
 export const insertManufacturingRunSchema = createInsertSchema(manufacturingRuns, {
   quantityProduced: z.number().int().min(1, "Must produce at least 1"),
+  sourceParentProductId: z.string().uuid().optional(),
+  sourceParentQuantity: z.number().int().min(1).optional(),
   status: z.enum(["pending", "in_progress", "completed", "archived"]).default("pending"),
   componentsConsumed: z.array(z.object({
     productId: z.string(),

@@ -7425,7 +7425,7 @@ export class DatabaseStorage implements IStorage {
     if (!run) return undefined;
     if (run.status === 'completed' || run.status === 'archived') return run;
 
-    // Calculate components consumed from BOM if not already set
+    // Calculate components consumed
     let componentsConsumed = run.componentsConsumed as Array<{
       productId: string;
       productName: string;
@@ -7436,8 +7436,33 @@ export class DatabaseStorage implements IStorage {
       yieldQuantity: number;
     }> || [];
 
-    // If componentsConsumed is empty, calculate from BOM
-    if (componentsConsumed.length === 0) {
+    // NEW: Check if using inverted parent-child flow (sourceParentProductId set)
+    if (componentsConsumed.length === 0 && (run as any).sourceParentProductId && (run as any).sourceParentQuantity) {
+      const parentProductId = (run as any).sourceParentProductId;
+      const parentQuantity = (run as any).sourceParentQuantity;
+      
+      // Get parent product info
+      const [parentProduct] = await db.select().from(products).where(eq(products.id, parentProductId));
+      
+      // Get first available location for parent product
+      const [parentLocation] = await db.select().from(productLocations)
+        .where(eq(productLocations.productId, parentProductId))
+        .orderBy(desc(productLocations.quantity));
+      
+      if (parentProduct && parentLocation) {
+        componentsConsumed.push({
+          productId: parentProductId,
+          productName: parentProduct.name,
+          variantId: undefined,
+          variantName: undefined,
+          quantityConsumed: parentQuantity,
+          locationCode: parentLocation.locationCode,
+          yieldQuantity: Math.round(run.quantityProduced / parentQuantity), // Calculate yield
+        });
+      }
+    }
+    // LEGACY: If componentsConsumed is empty and no parent flow, calculate from BOM
+    else if (componentsConsumed.length === 0) {
       const bomEntries = await db.select({
         childProductId: billOfMaterials.childProductId,
         childVariantId: billOfMaterials.childVariantId,
@@ -7446,10 +7471,7 @@ export class DatabaseStorage implements IStorage {
       }).from(billOfMaterials).where(eq(billOfMaterials.parentProductId, run.finishedProductId));
 
       for (const bom of bomEntries) {
-        // Get product name
         const [childProduct] = await db.select().from(products).where(eq(products.id, bom.childProductId));
-        
-        // Get first available location for this product
         const [location] = await db.select().from(productLocations)
           .where(eq(productLocations.productId, bom.childProductId))
           .orderBy(desc(productLocations.quantity));

@@ -29,50 +29,9 @@ import {
   ChevronRight,
   Layers,
   Box,
-  Cloud,
   Search,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
-
-interface ProductWithBom {
-  id: string;
-  name: string;
-  sku: string;
-  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
-}
-
-interface ComponentRequirement {
-  ingredientProductId: string;
-  ingredientName: string;
-  ingredientSku: string;
-  requiredQty: number;
-  availableStock: number;
-  canFulfill: boolean;
-  productType?: 'standard' | 'physical_no_quantity' | 'virtual';
-}
-
-interface RequirementsResponse {
-  productId: string;
-  productName: string;
-  requestedQty: number;
-  maxBuildable: number;
-  canFullyBuild: boolean;
-  ingredients: ComponentRequirement[];
-}
-
-interface LocationCode {
-  id: string;
-  code: string;
-  name?: string;
-  stock?: number;
-}
 
 interface ConsumedComponent {
   productId: string;
@@ -132,46 +91,12 @@ export default function SimpleConversion() {
   const { t } = useTranslation(["inventory", "manufacturing"]);
   const { toast } = useToast();
 
-  const renderProductTypeBadge = (productType?: string) => {
-    if (productType === 'virtual') {
-      return (
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-violet-400 text-violet-600 dark:text-violet-400">
-          <Cloud className="h-2.5 w-2.5 mr-0.5" />
-          {t('manufacturing:virtual')}
-        </Badge>
-      );
-    }
-    if (productType === 'physical_no_quantity') {
-      return (
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-600 dark:text-blue-400">
-          <MapPin className="h-2.5 w-2.5 mr-0.5" />
-          {t('manufacturing:noQty')}
-        </Badge>
-      );
-    }
-    return null;
-  };
-
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const [historyTab, setHistoryTab] = useState<string>("week");
   const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
   const [stockSearch, setStockSearch] = useState("");
-
-  const { data: productsWithBom = [], isLoading: isLoadingProducts } = useQuery<ProductWithBom[]>({
-    queryKey: ["/api/manufacturing/products-with-bom"],
-  });
-
-  const { data: requirements, isLoading: isLoadingRequirements } = useQuery<RequirementsResponse>({
-    queryKey: ["/api/manufacturing/calculate-requirements", { productId: selectedProductId, quantity: quantity.toString() }],
-    enabled: !!selectedProductId && quantity > 0,
-  });
-
-  const { data: locations = [], isLoading: isLoadingLocations } = useQuery<LocationCode[]>({
-    queryKey: ["/api/manufacturing/locations", { productId: selectedProductId }],
-    enabled: true,
-  });
 
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
@@ -219,6 +144,10 @@ export default function SimpleConversion() {
     return children.sort((a, b) => a.totalStock - b.totalStock);
   }, [parentChildStock]);
 
+  const selectedChild = useMemo(() => {
+    return flattenedChildren.find(c => c.id === selectedProductId);
+  }, [flattenedChildren, selectedProductId]);
+
   const filteredChildren = useMemo(() => {
     if (!stockSearch.trim()) return flattenedChildren;
     const search = stockSearch.toLowerCase();
@@ -231,10 +160,16 @@ export default function SimpleConversion() {
 
   const manufacturingMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedChild) throw new Error("No product selected");
+      
+      const actualQuantityProduced = quantity * selectedChild.yieldQuantity;
+      
       const runRes = await apiRequest("POST", "/api/manufacturing/runs", {
         finishedProductId: selectedProductId,
-        quantityProduced: quantity,
+        quantityProduced: actualQuantityProduced,
         finishedLocationCode: selectedLocationId || undefined,
+        sourceParentProductId: selectedChild.parentId,
+        sourceParentQuantity: quantity,
       });
       const runData = await runRes.json();
 
@@ -264,25 +199,13 @@ export default function SimpleConversion() {
     },
   });
 
-  const handleQuantityChange = (delta: number) => {
-    setQuantity((prev) => Math.max(1, prev + delta));
-  };
+  const canSubmit = useMemo(() => {
+    if (!selectedProductId || !selectedChild || quantity <= 0) return false;
+    if (!selectedLocationId && selectedChild.locations.length > 0) return false;
+    return selectedChild.parentTotalStock >= quantity;
+  }, [selectedProductId, selectedChild, quantity, selectedLocationId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 1;
-    setQuantity(Math.max(1, value));
-  };
-
-  const hasNoIngredients = requirements && (!requirements.ingredients || requirements.ingredients.length === 0);
-  const canSubmit =
-    selectedProductId &&
-    quantity > 0 &&
-    selectedLocationId &&
-    (hasNoIngredients || requirements?.canFullyBuild);
-
-  const hasInsufficientStock = requirements?.ingredients?.some(
-    (ing) => !ing.canFulfill
-  ) && !hasNoIngredients;
+  const hasInsufficientStock = selectedChild && selectedChild.parentTotalStock < quantity;
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
@@ -364,17 +287,21 @@ export default function SimpleConversion() {
 
                     {expandedChildId === `${child.parentId}-${child.id}` && (
                       <div className="border-t p-4 bg-blue-50 dark:bg-blue-950/30">
-                        <div className="text-sm text-muted-foreground mb-1">{t("usedIn", "Used in")}:</div>
+                        <div className="text-sm text-muted-foreground mb-1">{t("madeFrom", "Made from")}:</div>
                         <div className="flex items-center justify-between flex-wrap gap-3">
                           <div>
                             <div className="font-semibold">{child.parentName}</div>
                             {child.parentSku && <div className="text-sm text-muted-foreground">SKU: {child.parentSku}</div>}
+                            <div className="text-sm text-muted-foreground">
+                              {t("yield", "Yield")}: {child.yieldQuantity} {child.name} {t("perUnit", "per unit")}
+                            </div>
                           </div>
                           <Button
                             size="sm"
                             onClick={() => {
-                              setSelectedProductId(child.parentId);
+                              setSelectedProductId(child.id);
                               setQuantity(1);
+                              setSelectedLocationId("");
                               setExpandedChildId(null);
                             }}
                             className="bg-green-600 hover:bg-green-700"
@@ -400,13 +327,13 @@ export default function SimpleConversion() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoadingProducts ? (
+            {isLoadingParentChild ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : productsWithBom.length === 0 ? (
+            ) : flattenedChildren.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-lg">
-                {t("noProductsWithBom", "No products with recipes found")}
+                {t("noProductsWithParent", "No products with parent relationships found")}
               </div>
             ) : (
               <Select
@@ -422,15 +349,17 @@ export default function SimpleConversion() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {productsWithBom.map((product) => (
+                  {flattenedChildren.map((child) => (
                     <SelectItem
-                      key={product.id}
-                      value={product.id}
+                      key={`${child.parentId}-${child.id}`}
+                      value={child.id}
                       className="text-lg sm:text-xl py-3 sm:py-4"
                     >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span>{product.name} ({product.sku})</span>
-                        {renderProductTypeBadge(product.productType)}
+                      <div className="flex flex-col">
+                        <span>{child.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {child.yieldQuantity} {t("per", "per")} {child.parentName}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -440,216 +369,132 @@ export default function SimpleConversion() {
           </CardContent>
         </Card>
 
-        {selectedProductId && productsWithBom.find(p => p.id === selectedProductId)?.productType === 'virtual' && (
-          <div className="p-4 bg-violet-50 dark:bg-violet-950/30 rounded-lg border border-violet-200 dark:border-violet-800">
-            <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
-              <AlertTriangle className="h-5 w-5" />
-              <span className="font-medium">{t('manufacturing:virtualCannotManufacture')}</span>
-            </div>
-          </div>
-        )}
-
-        {selectedProductId && productsWithBom.find(p => p.id === selectedProductId)?.productType === 'physical_no_quantity' && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <MapPin className="h-5 w-5" />
-              <span className="font-medium">{t('manufacturing:physicalNoQtyNote')}</span>
-            </div>
-          </div>
-        )}
-
-        {selectedProductId && (
+        {selectedProductId && selectedChild && (
           <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-3xl">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-3">
+                <Package className="h-6 w-6 text-green-600" />
                 {t("quantityToMake", "Quantity to Make")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center gap-4 sm:gap-6">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-16 w-16 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2"
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="h-8 w-8 sm:h-10 sm:w-10" />
-                </Button>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={handleInputChange}
-                  className="h-16 w-28 sm:h-20 sm:w-36 text-center text-3xl sm:text-4xl font-bold"
-                  min={1}
-                />
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-16 w-16 sm:h-20 sm:w-20 text-2xl sm:text-3xl font-bold border-2"
-                  onClick={() => handleQuantityChange(1)}
-                >
-                  <Plus className="h-8 w-8 sm:h-10 sm:w-10" />
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-16 w-16 text-2xl"
+                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-6 w-6" />
+                  </Button>
+                  <div className="text-center">
+                    <Input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-24 h-16 text-center text-3xl font-bold"
+                      min={1}
+                    />
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {selectedChild.parentName.length > 20 
+                        ? t("parentUnits", "parent units") 
+                        : selectedChild.parentName}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-16 w-16 text-2xl"
+                    onClick={() => setQuantity(prev => prev + 1)}
+                  >
+                    <Plus className="h-6 w-6" />
+                  </Button>
+                </div>
+                
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                    = {quantity * selectedChild.yieldQuantity} {selectedChild.name}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {t("from", "from")} {quantity}x {selectedChild.parentName}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {selectedProductId && (
+        {selectedProductId && selectedChild && (
           <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-3xl">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-3">
+                <Box className="h-6 w-6 text-orange-600" />
                 {t("componentsNeeded", "Components Needed")}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoadingRequirements ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : !requirements?.ingredients?.length ? (
-                <div className="text-center py-8 sm:py-10 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
-                  <Check className="h-10 w-10 sm:h-12 sm:w-12 text-green-600 mx-auto mb-3" />
-                  <p className="text-lg sm:text-xl font-semibold text-green-700 dark:text-green-400">
-                    {t("noComponents", "No components required")}
-                  </p>
-                  <p className="text-sm sm:text-base text-muted-foreground mt-2">
-                    {t("readyToManufacture", "Ready to manufacture - select a location below")}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="hidden sm:grid grid-cols-4 gap-2 text-sm font-semibold text-muted-foreground border-b pb-2">
-                    <div>{t("component", "Component")}</div>
-                    <div className="text-center">{t("requiredQty", "Required")}</div>
-                    <div className="text-center">{t("inStock", "In Stock")}</div>
-                    <div className="text-center">{t("status", "Status")}</div>
+              <div className="p-4 rounded-lg border bg-orange-50 dark:bg-orange-950/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-semibold">{selectedChild.parentName}</div>
+                    {selectedChild.parentSku && (
+                      <div className="text-sm text-muted-foreground">SKU: {selectedChild.parentSku}</div>
+                    )}
                   </div>
-                  {requirements.ingredients.map((component) => (
-                    <div
-                      key={component.ingredientProductId}
-                      className={`p-3 rounded-lg ${
-                        component.canFulfill
-                          ? "bg-green-50 dark:bg-green-950/30"
-                          : "bg-red-50 dark:bg-red-950/30"
-                      }`}
-                    >
-                      <div className="sm:hidden space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium text-base flex flex-wrap items-center gap-1">
-                            <span>{component.ingredientName}</span>
-                            {renderProductTypeBadge(component.productType)}
-                          </div>
-                          {component.canFulfill ? (
-                            <Check className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-red-600" />
-                          )}
-                        </div>
-                        <div className="flex gap-4 text-sm">
-                          <span>{t("requiredQty", "Required")}: <strong>{component.requiredQty}</strong></span>
-                          <span className={component.canFulfill ? "text-green-600" : "text-red-600"}>
-                            {t("inStock", "Stock")}: <strong>{component.availableStock}</strong>
-                          </span>
-                        </div>
-                      </div>
-                      <div className="hidden sm:grid grid-cols-4 gap-2 items-center">
-                        <div className="font-medium text-base">
-                          <div className="flex flex-wrap items-center gap-1">
-                            <span className="truncate">{component.ingredientName}</span>
-                            {renderProductTypeBadge(component.productType)}
-                            {component.productType === 'virtual' && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <AlertTriangle className="h-3.5 w-3.5 text-violet-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{t('manufacturing:virtualMaterialWarning')}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-center text-lg font-semibold">
-                          {component.requiredQty}
-                        </div>
-                        <div
-                          className={`text-center text-lg font-semibold ${
-                            component.canFulfill
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {component.availableStock}
-                        </div>
-                        <div className="flex justify-center">
-                          {component.canFulfill ? (
-                            <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                              <Check className="h-5 w-5" />
-                              <span className="text-sm">
-                                {t("sufficient", "Sufficient")}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                              <AlertTriangle className="h-5 w-5" />
-                              <span className="text-sm">
-                                {t("insufficient", "Insufficient")}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">{quantity}x</div>
+                    <div className="text-sm text-muted-foreground">
+                      {t("available", "Available")}: {selectedChild.parentTotalStock}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
+                <div className="mt-3">
+                  {selectedChild.parentTotalStock >= quantity ? (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <Check className="h-5 w-5" />
+                      <span>{t("sufficient", "Sufficient stock")}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="h-5 w-5" />
+                      <span>{t("insufficient", "Insufficient stock")} - {t("need", "need")} {quantity - selectedChild.parentTotalStock} {t("more", "more")}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {selectedProductId && (
+        {selectedProductId && selectedChild && (
           <Card className="shadow-md">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-3xl flex items-center gap-3">
-                <MapPin className="h-7 w-7 sm:h-8 sm:w-8 text-green-600" />
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-3">
+                <MapPin className="h-6 w-6 text-green-600" />
                 {t("storageLocation", "Storage Location")}
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {t("selectWhereToStore", "Select where to store the finished products")}
+              </p>
             </CardHeader>
             <CardContent>
-              {isLoadingLocations ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : locations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-lg">
-                  {t("noLocationsConfigured", "No warehouse locations configured")}
+              {selectedChild.locations.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  {t("noLocationsForProduct", "No existing locations for this product. The product will be added to a new location.")}
                 </div>
               ) : (
-                <Select
-                  value={selectedLocationId}
-                  onValueChange={setSelectedLocationId}
-                >
+                <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
                   <SelectTrigger className="h-14 sm:h-16 text-lg sm:text-xl">
-                    <SelectValue
-                      placeholder={t("storageLocation", "Select Storage Location")}
-                    />
+                    <SelectValue placeholder={t("selectLocation", "Select Location")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations.map((location) => (
-                      <SelectItem
-                        key={location.id}
-                        value={location.id}
-                        className="text-lg sm:text-xl py-3 sm:py-4"
-                      >
+                    {selectedChild.locations.map((loc) => (
+                      <SelectItem key={loc.locationCode} value={loc.locationCode} className="text-lg sm:text-xl py-3 sm:py-4">
                         <div className="flex justify-between items-center w-full gap-4">
-                          <span>{location.code}</span>
-                          <span className="text-muted-foreground">
-                            ({location.stock || 0} in stock)
-                          </span>
+                          <span className="font-medium">{loc.locationCode}</span>
+                          <span className="text-muted-foreground">({loc.quantity} {t("inStock", "in stock")})</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -660,7 +505,7 @@ export default function SimpleConversion() {
           </Card>
         )}
 
-        {selectedProductId && (
+        {selectedProductId && selectedChild && (
           <Button
             className="w-full py-6 sm:py-8 text-xl sm:text-2xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg"
             size="lg"
@@ -687,7 +532,7 @@ export default function SimpleConversion() {
             <p className="text-red-700 dark:text-red-300 text-base sm:text-lg">
               {t(
                 "insufficientStockWarning",
-                "Cannot start manufacturing - some components have insufficient stock"
+                "Cannot start manufacturing - parent product has insufficient stock"
               )}
             </p>
           </div>
