@@ -175,9 +175,9 @@ export default function SimpleConversion() {
   }, [flattenedChildren, stockSearch]);
 
 
-  const parentUnitsNeeded = useMemo(() => {
+  const finishedItemsProduced = useMemo(() => {
     if (!selectedChild || quantity <= 0) return 0;
-    return Math.ceil(quantity / selectedChild.yieldQuantity);
+    return quantity * selectedChild.yieldQuantity;
   }, [selectedChild, quantity]);
 
   const manufacturingMutation = useMutation({
@@ -186,10 +186,10 @@ export default function SimpleConversion() {
       
       const runRes = await apiRequest("POST", "/api/manufacturing/runs", {
         finishedProductId: selectedProductId,
-        quantityProduced: quantity,
+        quantityProduced: finishedItemsProduced,
         finishedLocationCode: selectedLocationId || undefined,
         sourceParentProductId: selectedChild.parentId,
-        sourceParentQuantity: parentUnitsNeeded,
+        sourceParentQuantity: quantity,
       });
       const runData = await runRes.json();
 
@@ -222,10 +222,10 @@ export default function SimpleConversion() {
   const canSubmit = useMemo(() => {
     if (!selectedProductId || !selectedChild || quantity <= 0) return false;
     if (!selectedLocationId && selectedChild.locations.length > 0) return false;
-    return selectedChild.parentTotalStock >= parentUnitsNeeded;
-  }, [selectedProductId, selectedChild, quantity, selectedLocationId, parentUnitsNeeded]);
+    return selectedChild.parentTotalStock >= quantity;
+  }, [selectedProductId, selectedChild, quantity, selectedLocationId]);
 
-  const hasInsufficientStock = selectedChild && selectedChild.parentTotalStock < parentUnitsNeeded;
+  const hasInsufficientStock = selectedChild && selectedChild.parentTotalStock < quantity;
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
@@ -395,7 +395,7 @@ export default function SimpleConversion() {
                             onSelect={() => {
                               setSelectedProductId(child.id);
                               setSelectedLocationId("");
-                              setQuantity(child.yieldQuantity);
+                              setQuantity(1);
                               setProductDropdownOpen(false);
                             }}
                             className="py-3 text-lg cursor-pointer"
@@ -437,7 +437,7 @@ export default function SimpleConversion() {
                   variant="outline"
                   size="lg"
                   className="h-14 w-14 text-xl"
-                  onClick={() => setQuantity(prev => Math.max(1, prev - selectedChild.yieldQuantity))}
+                  onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                   disabled={quantity <= 1}
                 >
                   <Minus className="h-5 w-5" />
@@ -453,17 +453,17 @@ export default function SimpleConversion() {
                   variant="outline"
                   size="lg"
                   className="h-14 w-14 text-xl"
-                  onClick={() => setQuantity(prev => prev + selectedChild.yieldQuantity)}
+                  onClick={() => setQuantity(prev => prev + 1)}
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
               </div>
               
               <div className="text-center text-lg">
-                <span className="font-semibold">{parentUnitsNeeded}x</span>{" "}
+                <span className="font-semibold">{quantity}x</span>{" "}
                 <span className="text-muted-foreground">{selectedChild.parentName}</span>{" "}
                 <span className="text-muted-foreground">→</span>{" "}
-                <span className="font-semibold text-green-600">{quantity} pcs</span>{" "}
+                <span className="font-semibold text-green-600">{finishedItemsProduced} pcs</span>{" "}
                 <span className="text-muted-foreground">{selectedChild.name}</span>
               </div>
 
@@ -482,13 +482,13 @@ export default function SimpleConversion() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold">{parentUnitsNeeded}x</div>
+                    <div className="font-semibold">{quantity}x</div>
                     <div className="text-xs text-muted-foreground">
                       {t("stock", "Stock")}: {selectedChild.parentTotalStock}
                     </div>
                   </div>
                 </div>
-                {selectedChild.parentTotalStock >= parentUnitsNeeded ? (
+                {selectedChild.parentTotalStock >= quantity ? (
                   <div className="flex items-center gap-2 text-green-600 text-sm mt-2">
                     <Check className="h-4 w-4" />
                     <span>{t("sufficient", "Sufficient stock")}</span>
@@ -496,7 +496,7 @@ export default function SimpleConversion() {
                 ) : (
                   <div className="flex items-center gap-2 text-red-600 text-sm mt-2">
                     <AlertTriangle className="h-4 w-4" />
-                    <span>{t("need", "Need")} {parentUnitsNeeded - selectedChild.parentTotalStock} {t("more", "more")}</span>
+                    <span>{t("need", "Need")} {quantity - selectedChild.parentTotalStock} {t("more", "more")}</span>
                   </div>
                 )}
               </div>
