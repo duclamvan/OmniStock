@@ -368,7 +368,7 @@ export default function SimpleConversion() {
                       <div className="flex flex-col items-start text-left">
                         <span>{selectedChild.name}</span>
                         <span className="text-sm text-muted-foreground font-normal">
-                          {selectedChild.yieldQuantity} {t("per", "per")} {selectedChild.parentName}
+                          1x {selectedChild.parentName} = {selectedChild.yieldQuantity} pcs
                         </span>
                       </div>
                     ) : (
@@ -409,7 +409,7 @@ export default function SimpleConversion() {
                             <div className="flex flex-col">
                               <span>{child.name}</span>
                               <span className="text-sm text-muted-foreground">
-                                {child.yieldQuantity} {t("per", "per")} {child.parentName}
+                                1x {child.parentName} = {child.yieldQuantity} pcs
                               </span>
                             </div>
                           </CommandItem>
