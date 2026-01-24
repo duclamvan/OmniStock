@@ -7563,34 +7563,77 @@ export class DatabaseStorage implements IStorage {
       }
 
 
-      // Calculate total material cost from consumed components
-      let totalMaterialCost = 0;
+      // Fetch live exchange rates for cost calculation
+      let exchangeRates: Record<string, number> = { EUR: 1, CZK: 25.2, USD: 1.08, VND: 27000, CNY: 7.8 };
+      try {
+        const exchangeRateResponse = await fetch('https://api.frankfurter.app/latest?from=EUR');
+        if (exchangeRateResponse.ok) {
+          const ratesData = await exchangeRateResponse.json();
+          if (ratesData.rates) {
+            exchangeRates = { EUR: 1, ...ratesData.rates };
+          }
+        }
+      } catch (e) {
+        console.warn('[Manufacturing] Failed to fetch exchange rates, using defaults');
+      }
+
+      // Calculate total material cost in EUR from consumed components
+      let totalMaterialCostEur = 0;
       for (const component of componentsConsumed) {
         const [componentProduct] = await tx.select().from(products).where(eq(products.id, component.productId));
         if (componentProduct) {
-          // Use landingCostEur as primary cost, fallback to other currencies
-          const unitCost = Number(componentProduct.landingCostEur) || 
-                          Number(componentProduct.landingCostCzk) / 25 || 
-                          Number(componentProduct.landingCostUsd) / 1.1 || 0;
-          totalMaterialCost += unitCost * component.quantityConsumed;
+          // Try to get cost from any available currency field and convert to EUR
+          let unitCostEur = 0;
+          if (componentProduct.landingCostEur && Number(componentProduct.landingCostEur) > 0) {
+            unitCostEur = Number(componentProduct.landingCostEur);
+          } else if (componentProduct.landingCostCzk && Number(componentProduct.landingCostCzk) > 0) {
+            unitCostEur = Number(componentProduct.landingCostCzk) / (exchangeRates.CZK || 25);
+          } else if (componentProduct.landingCostUsd && Number(componentProduct.landingCostUsd) > 0) {
+            unitCostEur = Number(componentProduct.landingCostUsd) / (exchangeRates.USD || 1.08);
+          } else if (componentProduct.landingCostVnd && Number(componentProduct.landingCostVnd) > 0) {
+            unitCostEur = Number(componentProduct.landingCostVnd) / (exchangeRates.VND || 27000);
+          } else if (componentProduct.landingCostCny && Number(componentProduct.landingCostCny) > 0) {
+            unitCostEur = Number(componentProduct.landingCostCny) / (exchangeRates.CNY || 7.8);
+          }
+          totalMaterialCostEur += unitCostEur * component.quantityConsumed;
         }
       }
       
-      // Calculate per-unit cost for the finished product
-      const perUnitCost = run.quantityProduced > 0 ? totalMaterialCost / run.quantityProduced : 0;
+      // Calculate per-unit cost in EUR for the finished product
+      const perUnitCostEur = run.quantityProduced > 0 ? totalMaterialCostEur / run.quantityProduced : 0;
       
-      // Update finished product with calculated landing cost
-      if (run.finishedProductId && perUnitCost > 0) {
+      // Update finished product with calculated landing costs in all currencies
+      if (run.finishedProductId && perUnitCostEur > 0) {
+        // Get existing product to calculate weighted average if it has existing stock with cost
+        const [existingProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
+        
+        let finalCostEur = perUnitCostEur;
+        
+        // Calculate weighted average if existing stock has landing cost
+        if (existingProduct) {
+          const existingQty = existingProduct.quantity || 0;
+          const existingCostEur = Number(existingProduct.landingCostEur) || 0;
+          
+          if (existingQty > 0 && existingCostEur > 0) {
+            // Weighted average: (existingQty * existingCost + newQty * newCost) / totalQty
+            const totalQty = existingQty + run.quantityProduced;
+            finalCostEur = (existingQty * existingCostEur + run.quantityProduced * perUnitCostEur) / totalQty;
+          }
+        }
+        
         await tx.update(products)
           .set({
-            landingCostEur: perUnitCost.toFixed(4),
-            landingCostCzk: (perUnitCost * 25).toFixed(2),
-            landingCostUsd: (perUnitCost * 1.1).toFixed(4),
+            landingCostEur: finalCostEur.toFixed(4),
+            landingCostCzk: (finalCostEur * (exchangeRates.CZK || 25)).toFixed(2),
+            landingCostUsd: (finalCostEur * (exchangeRates.USD || 1.08)).toFixed(4),
+            landingCostVnd: (finalCostEur * (exchangeRates.VND || 27000)).toFixed(0),
+            landingCostCny: (finalCostEur * (exchangeRates.CNY || 7.8)).toFixed(4),
+            quantity: (existingProduct?.quantity || 0) + run.quantityProduced,
             updatedAt: new Date(),
           })
           .where(eq(products.id, run.finishedProductId));
-        
-        // Also update the main product quantity
+      } else if (run.finishedProductId) {
+        // No cost to calculate, just update quantity
         const [finishedProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
         if (finishedProduct) {
           await tx.update(products)
