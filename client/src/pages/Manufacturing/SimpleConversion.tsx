@@ -425,98 +425,80 @@ export default function SimpleConversion() {
 
         {selectedProductId && selectedChild && (
           <Card className="shadow-md">
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-3">
               <CardTitle className="text-xl sm:text-2xl flex items-center gap-3">
                 <Package className="h-6 w-6 text-green-600" />
                 {t("quantityToMake", "Quantity to Make")}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-16 w-16 text-2xl"
-                    onClick={() => setQuantity(prev => Math.max(1, prev - selectedChild.yieldQuantity))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="h-6 w-6" />
-                  </Button>
-                  <div className="text-center">
-                    <Input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-24 h-16 text-center text-3xl font-bold"
-                      min={1}
-                    />
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {selectedChild.name.length > 20 
-                        ? t("items", "items") 
-                        : selectedChild.name}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-16 w-16 text-2xl"
-                    onClick={() => setQuantity(prev => prev + selectedChild.yieldQuantity)}
-                  >
-                    <Plus className="h-6 w-6" />
-                  </Button>
-                </div>
-                
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {t("using", "Using")} {parentUnitsNeeded}x {selectedChild.parentName}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    ({selectedChild.yieldQuantity} {t("perUnit", "per unit")})
-                  </div>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center gap-4">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-14 w-14 text-xl"
+                  onClick={() => setQuantity(prev => Math.max(1, prev - selectedChild.yieldQuantity))}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="h-5 w-5" />
+                </Button>
+                <Input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-20 h-14 text-center text-2xl font-bold"
+                  min={1}
+                />
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-14 w-14 text-xl"
+                  onClick={() => setQuantity(prev => prev + selectedChild.yieldQuantity)}
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              
+              <div className="text-center text-lg">
+                <span className="font-semibold">{parentUnitsNeeded}x</span>{" "}
+                <span className="text-muted-foreground">{selectedChild.parentName}</span>{" "}
+                <span className="text-muted-foreground">→</span>{" "}
+                <span className="font-semibold text-green-600">{quantity} pcs</span>{" "}
+                <span className="text-muted-foreground">{selectedChild.name}</span>
+              </div>
 
-        {selectedProductId && selectedChild && (
-          <Card className="shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl sm:text-2xl flex items-center gap-3">
-                <Box className="h-6 w-6 text-orange-600" />
-                {t("componentsNeeded", "Components Needed")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="p-4 rounded-lg border bg-orange-50 dark:bg-orange-950/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-lg font-semibold">{selectedChild.parentName}</div>
-                    {selectedChild.parentSku && (
-                      <div className="text-sm text-muted-foreground">SKU: {selectedChild.parentSku}</div>
-                    )}
+              <div className="border-t pt-4">
+                <div className="text-sm font-medium text-muted-foreground mb-2">
+                  {t("componentsNeeded", "Components Needed")}
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-3">
+                    <Box className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <div className="font-medium">{selectedChild.parentName}</div>
+                      {selectedChild.parentSku && (
+                        <div className="text-xs text-muted-foreground">{selectedChild.parentSku}</div>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">{parentUnitsNeeded}x</div>
-                    <div className="text-sm text-muted-foreground">
-                      {t("available", "Available")}: {selectedChild.parentTotalStock}
+                    <div className="font-semibold">{parentUnitsNeeded}x</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("stock", "Stock")}: {selectedChild.parentTotalStock}
                     </div>
                   </div>
                 </div>
-                <div className="mt-3">
-                  {selectedChild.parentTotalStock >= parentUnitsNeeded ? (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <Check className="h-5 w-5" />
-                      <span>{t("sufficient", "Sufficient stock")}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-red-600">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span>{t("insufficient", "Insufficient stock")} - {t("need", "need")} {parentUnitsNeeded - selectedChild.parentTotalStock} {t("more", "more")}</span>
-                    </div>
-                  )}
-                </div>
+                {selectedChild.parentTotalStock >= parentUnitsNeeded ? (
+                  <div className="flex items-center gap-2 text-green-600 text-sm mt-2">
+                    <Check className="h-4 w-4" />
+                    <span>{t("sufficient", "Sufficient stock")}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-red-600 text-sm mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{t("need", "Need")} {parentUnitsNeeded - selectedChild.parentTotalStock} {t("more", "more")}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
