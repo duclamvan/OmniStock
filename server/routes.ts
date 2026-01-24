@@ -29334,6 +29334,26 @@ Other rules:
       console.error('Error completing manufacturing run:', error);
       res.status(500).json({ message: 'Failed to complete manufacturing run' });
     }
+
+  // Revert a completed manufacturing run
+  app.post('/api/manufacturing/runs/:id/revert', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      const run = await storage.revertManufacturingRun(req.params.id, userId);
+      if (!run) {
+        return res.status(404).json({ message: 'Manufacturing run not found or already reverted' });
+      }
+      
+      res.json(run);
+    } catch (error) {
+      console.error('Error reverting manufacturing run:', error);
+      res.status(500).json({ message: 'Failed to revert manufacturing run' });
+    }
+  });
   });
 
   // Archive a completed manufacturing run

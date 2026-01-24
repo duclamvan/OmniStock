@@ -44,6 +44,7 @@ import {
   Box,
   Search,
   ChevronsUpDown,
+  Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isThisWeek, isThisMonth, isThisYear } from "date-fns";
@@ -206,6 +207,31 @@ export default function SimpleConversion() {
       setSelectedProductId("");
       setQuantity(1);
       setSelectedLocationId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/runs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/parent-child-stock"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: t("error", "Error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const revertMutation = useMutation({
+    mutationFn: async (runId: string) => {
+      const res = await apiRequest("POST", `/api/manufacturing/runs/${runId}/revert`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: t("revertSuccess", "Manufacturing run reverted successfully"),
+        variant: "default",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/runs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/manufacturing/parent-child-stock"] });
@@ -627,7 +653,7 @@ export default function SimpleConversion() {
                               key={run.id}
                               className="p-4 rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
                             >
-                              <div className="flex flex-col gap-2">
+                              <div className="flex flex-col gap-2 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-sm sm:text-base font-bold">
                                     {run.runNumber}
@@ -660,6 +686,20 @@ export default function SimpleConversion() {
                                   )}
                                 </div>
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-950"
+                                onClick={() => revertMutation.mutate(run.id)}
+                                disabled={revertMutation.isPending}
+                              >
+                                {revertMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Undo2 className="h-4 w-4" />
+                                )}
+                                <span className="ml-1">{t("revert", "Revert")}</span>
+                              </Button>
                             </div>
                           ))
                         )}

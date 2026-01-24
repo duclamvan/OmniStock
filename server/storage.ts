@@ -822,6 +822,7 @@ export interface IStorage {
   createManufacturingRun(run: InsertManufacturingRun): Promise<ManufacturingRun>;
   completeManufacturingRun(id: string, userId: string): Promise<ManufacturingRun | undefined>;
   archiveManufacturingRun(id: string): Promise<ManufacturingRun | undefined>;
+  revertManufacturingRun(id: string, userId: string): Promise<ManufacturingRun | undefined>;
   generateManufacturingRunNumber(): Promise<string>;
 
   // Manufacturing Notifications
@@ -7678,6 +7679,100 @@ export class DatabaseStorage implements IStorage {
       .where(eq(manufacturingRuns.id, id))
       .returning();
     return updated;
+  }
+
+  async revertManufacturingRun(id: string, userId: string): Promise<ManufacturingRun | undefined> {
+    const run = await this.getManufacturingRun(id);
+    if (!run) return undefined;
+    if (run.status !== 'completed') return undefined;
+
+    const componentsConsumed = run.componentsConsumed as Array<{
+      productId: string;
+      productName: string;
+      variantId?: string;
+      quantityConsumed: number;
+      locationCode: string;
+    }> || [];
+
+    await db.transaction(async (tx) => {
+      // Restore consumed components (add back what was consumed)
+      for (const component of componentsConsumed) {
+        const [location] = await tx.select().from(productLocations)
+          .where(and(
+            eq(productLocations.productId, component.productId),
+            eq(productLocations.locationCode, component.locationCode)
+          ));
+        
+        if (location) {
+          const previousQuantity = location.quantity || 0;
+          const newQuantity = previousQuantity + component.quantityConsumed;
+          
+          await tx.update(productLocations)
+            .set({ quantity: newQuantity, updatedAt: new Date() })
+            .where(eq(productLocations.id, location.id));
+          
+          await tx.insert(stockAdjustmentHistory).values({
+            productId: component.productId,
+            locationId: location.id,
+            adjustmentType: 'add',
+            previousQuantity,
+            adjustedQuantity: component.quantityConsumed,
+            newQuantity,
+            reason: `Manufacturing run ${run.runNumber}: REVERTED - restored consumed materials`,
+            source: 'manufacturing_revert',
+            referenceId: id,
+            adjustedBy: userId,
+          });
+        }
+      }
+
+      // Remove produced finished goods
+      if (run.finishedLocationCode && run.finishedProductId) {
+        const [finishedLocation] = await tx.select().from(productLocations)
+          .where(and(
+            eq(productLocations.productId, run.finishedProductId),
+            eq(productLocations.locationCode, run.finishedLocationCode)
+          ));
+        
+        if (finishedLocation) {
+          const previousQuantity = finishedLocation.quantity || 0;
+          const newQuantity = Math.max(0, previousQuantity - run.quantityProduced);
+          
+          await tx.update(productLocations)
+            .set({ quantity: newQuantity, updatedAt: new Date() })
+            .where(eq(productLocations.id, finishedLocation.id));
+          
+          await tx.insert(stockAdjustmentHistory).values({
+            productId: run.finishedProductId,
+            locationId: finishedLocation.id,
+            adjustmentType: 'remove',
+            previousQuantity,
+            adjustedQuantity: run.quantityProduced,
+            newQuantity,
+            reason: `Manufacturing run ${run.runNumber}: REVERTED - removed finished goods`,
+            source: 'manufacturing_revert',
+            referenceId: id,
+            adjustedBy: userId,
+          });
+        }
+
+        // Update the main product quantity
+        const [finishedProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
+        if (finishedProduct) {
+          await tx.update(products)
+            .set({
+              quantity: Math.max(0, (finishedProduct.quantity || 0) - run.quantityProduced),
+              updatedAt: new Date(),
+            })
+            .where(eq(products.id, run.finishedProductId));
+        }
+      }
+
+      // Delete the manufacturing run
+      await tx.delete(manufacturingRuns).where(eq(manufacturingRuns.id, id));
+    });
+
+    return run;
   }
 
   async generateManufacturingRunNumber(): Promise<string> {
