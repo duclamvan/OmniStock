@@ -169,18 +169,21 @@ export default function SimpleConversion() {
     );
   }, [flattenedChildren, productSearch]);
 
+  const parentUnitsNeeded = useMemo(() => {
+    if (!selectedChild || quantity <= 0) return 0;
+    return Math.ceil(quantity / selectedChild.yieldQuantity);
+  }, [selectedChild, quantity]);
+
   const manufacturingMutation = useMutation({
     mutationFn: async () => {
       if (!selectedChild) throw new Error("No product selected");
       
-      const actualQuantityProduced = quantity * selectedChild.yieldQuantity;
-      
       const runRes = await apiRequest("POST", "/api/manufacturing/runs", {
         finishedProductId: selectedProductId,
-        quantityProduced: actualQuantityProduced,
+        quantityProduced: quantity,
         finishedLocationCode: selectedLocationId || undefined,
         sourceParentProductId: selectedChild.parentId,
-        sourceParentQuantity: quantity,
+        sourceParentQuantity: parentUnitsNeeded,
       });
       const runData = await runRes.json();
 
@@ -213,10 +216,10 @@ export default function SimpleConversion() {
   const canSubmit = useMemo(() => {
     if (!selectedProductId || !selectedChild || quantity <= 0) return false;
     if (!selectedLocationId && selectedChild.locations.length > 0) return false;
-    return selectedChild.parentTotalStock >= quantity;
-  }, [selectedProductId, selectedChild, quantity, selectedLocationId]);
+    return selectedChild.parentTotalStock >= parentUnitsNeeded;
+  }, [selectedProductId, selectedChild, quantity, selectedLocationId, parentUnitsNeeded]);
 
-  const hasInsufficientStock = selectedChild && selectedChild.parentTotalStock < quantity;
+  const hasInsufficientStock = selectedChild && selectedChild.parentTotalStock < parentUnitsNeeded;
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
@@ -363,6 +366,10 @@ export default function SimpleConversion() {
                     setSelectedProductId(val);
                     setSelectedLocationId("");
                     setProductSearch("");
+                    const child = flattenedChildren.find(c => c.id === val);
+                    if (child) {
+                      setQuantity(child.yieldQuantity);
+                    }
                   }}
                 >
                   <SelectTrigger className="h-14 sm:h-16 text-lg sm:text-xl">
@@ -413,7 +420,7 @@ export default function SimpleConversion() {
                     variant="outline"
                     size="lg"
                     className="h-16 w-16 text-2xl"
-                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                    onClick={() => setQuantity(prev => Math.max(1, prev - selectedChild.yieldQuantity))}
                     disabled={quantity <= 1}
                   >
                     <Minus className="h-6 w-6" />
@@ -427,16 +434,16 @@ export default function SimpleConversion() {
                       min={1}
                     />
                     <div className="text-sm text-muted-foreground mt-1">
-                      {selectedChild.parentName.length > 20 
-                        ? t("parentUnits", "parent units") 
-                        : selectedChild.parentName}
+                      {selectedChild.name.length > 20 
+                        ? t("items", "items") 
+                        : selectedChild.name}
                     </div>
                   </div>
                   <Button
                     variant="outline"
                     size="lg"
                     className="h-16 w-16 text-2xl"
-                    onClick={() => setQuantity(prev => prev + 1)}
+                    onClick={() => setQuantity(prev => prev + selectedChild.yieldQuantity)}
                   >
                     <Plus className="h-6 w-6" />
                   </Button>
@@ -444,10 +451,10 @@ export default function SimpleConversion() {
                 
                 <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
                   <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    = {quantity * selectedChild.yieldQuantity} {selectedChild.name}
+                    {t("using", "Using")} {parentUnitsNeeded}x {selectedChild.parentName}
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {t("from", "from")} {quantity}x {selectedChild.parentName}
+                    ({selectedChild.yieldQuantity} {t("perUnit", "per unit")})
                   </div>
                 </div>
               </div>
@@ -473,14 +480,14 @@ export default function SimpleConversion() {
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">{quantity}x</div>
+                    <div className="text-2xl font-bold">{parentUnitsNeeded}x</div>
                     <div className="text-sm text-muted-foreground">
                       {t("available", "Available")}: {selectedChild.parentTotalStock}
                     </div>
                   </div>
                 </div>
                 <div className="mt-3">
-                  {selectedChild.parentTotalStock >= quantity ? (
+                  {selectedChild.parentTotalStock >= parentUnitsNeeded ? (
                     <div className="flex items-center gap-2 text-green-600">
                       <Check className="h-5 w-5" />
                       <span>{t("sufficient", "Sufficient stock")}</span>
@@ -488,7 +495,7 @@ export default function SimpleConversion() {
                   ) : (
                     <div className="flex items-center gap-2 text-red-600">
                       <AlertTriangle className="h-5 w-5" />
-                      <span>{t("insufficient", "Insufficient stock")} - {t("need", "need")} {quantity - selectedChild.parentTotalStock} {t("more", "more")}</span>
+                      <span>{t("insufficient", "Insufficient stock")} - {t("need", "need")} {parentUnitsNeeded - selectedChild.parentTotalStock} {t("more", "more")}</span>
                     </div>
                   )}
                 </div>
