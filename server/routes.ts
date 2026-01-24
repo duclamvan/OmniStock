@@ -29445,16 +29445,310 @@ Other rules:
         const fieldChildren = allProducts
           .filter(p => p.parentProductId === parentId)
           .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
-          .map(p => ({
-            id: p.id,
-            name: p.name,
-            sku: p.sku,
-            quantity: 1,
-            yieldQuantity: Number(p.bomQuantityPerParent) || 1,
-            source: 'parentField' as const,
-            totalStock: p.quantity || 0,
-            lowStockThreshold: p.lowStockThreshold || 5,
-          }));
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
+        // Get children via parentProductId field
+        const fieldChildren = allProducts
+          .filter(p => p.parentProductId === parentId)
+          .filter(p => !bomChildren.some(b => b.id === p.id)) // Dedupe
+          .map(p => {
+            // Calculate totalStock from locations instead of product.quantity
+            const childLocs = allLocations
+              .filter(l => l.productId === p.id)
+              .map(l => ({ locationCode: l.locationCode, quantity: l.quantity || 0 }));
+            const childTotalStock = childLocs.reduce((sum, l) => sum + l.quantity, 0);
+            return {
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              quantity: 1,
+              yieldQuantity: Number(p.bomQuantityPerParent) || 1,
+              source: 'parentField' as const,
+              totalStock: childTotalStock,
+              lowStockThreshold: p.lowStockThreshold || 5,
+              locations: childLocs,
+            };
+          });
         
         // Get children from product variants
         const variantChildren = allVariants
