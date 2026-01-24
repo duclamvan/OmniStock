@@ -97,6 +97,7 @@ export default function SimpleConversion() {
   const [historyTab, setHistoryTab] = useState<string>("week");
   const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
   const [stockSearch, setStockSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
 
   const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
@@ -157,6 +158,16 @@ export default function SimpleConversion() {
       child.parentName.toLowerCase().includes(search)
     );
   }, [flattenedChildren, stockSearch]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return flattenedChildren;
+    const search = productSearch.toLowerCase();
+    return flattenedChildren.filter(child => 
+      child.name.toLowerCase().includes(search) ||
+      child.sku?.toLowerCase().includes(search) ||
+      child.parentName.toLowerCase().includes(search)
+    );
+  }, [flattenedChildren, productSearch]);
 
   const manufacturingMutation = useMutation({
     mutationFn: async () => {
@@ -336,35 +347,53 @@ export default function SimpleConversion() {
                 {t("noProductsWithParent", "No products with parent relationships found")}
               </div>
             ) : (
-              <Select
-                value={selectedProductId}
-                onValueChange={(val) => {
-                  setSelectedProductId(val);
-                  setSelectedLocationId("");
-                }}
-              >
-                <SelectTrigger className="h-14 sm:h-16 text-lg sm:text-xl">
-                  <SelectValue
-                    placeholder={t("selectProductToMake", "Select Product to Make")}
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder={t("searchProducts", "Search products...")}
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="pl-10 h-12 text-lg"
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {flattenedChildren.map((child) => (
-                    <SelectItem
-                      key={`${child.parentId}-${child.id}`}
-                      value={child.id}
-                      className="text-lg sm:text-xl py-3 sm:py-4"
-                    >
-                      <div className="flex flex-col">
-                        <span>{child.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {child.yieldQuantity} {t("per", "per")} {child.parentName}
-                        </span>
+                </div>
+                <Select
+                  value={selectedProductId}
+                  onValueChange={(val) => {
+                    setSelectedProductId(val);
+                    setSelectedLocationId("");
+                    setProductSearch("");
+                  }}
+                >
+                  <SelectTrigger className="h-14 sm:h-16 text-lg sm:text-xl">
+                    <SelectValue
+                      placeholder={t("selectProductToMake", "Select Product to Make")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredProducts.length === 0 ? (
+                      <div className="py-4 text-center text-muted-foreground">
+                        {t("noProductsFound", "No products found")}
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    ) : (
+                      filteredProducts.map((child) => (
+                        <SelectItem
+                          key={`${child.parentId}-${child.id}`}
+                          value={child.id}
+                          className="text-lg sm:text-xl py-3 sm:py-4"
+                        >
+                          <div className="flex flex-col">
+                            <span>{child.name}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {child.yieldQuantity} {t("per", "per")} {child.parentName}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </CardContent>
         </Card>
