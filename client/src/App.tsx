@@ -109,6 +109,7 @@ import ProductLookup from "@/pages/Public/ProductLookup";
 import StockAdjustmentApprovals from "@/pages/Stock/StockAdjustmentApprovals";
 import StockInconsistencies from "@/pages/Stock/StockInconsistencies";
 import ProductionPlanner from "@/pages/Manufacturing/ProductionPlanner";
+import SimpleConversion from "@/pages/Manufacturing/SimpleConversion";
 // Legacy imports - some uncommmented for unified add/edit
 // import AllImports from "@/pages/Imports/AllImports";
 import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -478,6 +479,9 @@ function Router() {
           {() => <ProtectedRoute requireAdmin><Settings /></ProtectedRoute>}
         </Route>
         {/* Manufacturing Routes */}
+        <Route path="/manufacturing/simple-conversion">
+          {() => <ProtectedRoute><SimpleConversion /></ProtectedRoute>}
+        </Route>
         <Route path="/manufacturing/production-planner">
           {() => <ProtectedRoute requireAdmin><ProductionPlanner /></ProtectedRoute>}
         </Route>
