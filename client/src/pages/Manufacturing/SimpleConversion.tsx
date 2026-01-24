@@ -114,12 +114,14 @@ export default function SimpleConversion() {
   const [stockSearch, setStockSearch] = useState("");
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
 
-  const { data: manufacturingRuns = [], isLoading: isLoadingRuns } = useQuery<ManufacturingRun[]>({
+  const { data: manufacturingRuns = [], isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery<ManufacturingRun[]>({
     queryKey: ["/api/manufacturing/runs"],
+    refetchInterval: 10000,
   });
 
-  const { data: parentChildStock = [], isLoading: isLoadingParentChild } = useQuery<ParentChildStock[]>({
+  const { data: parentChildStock = [], isLoading: isLoadingParentChild, refetch: refetchStock } = useQuery<ParentChildStock[]>({
     queryKey: ["/api/manufacturing/parent-child-stock"],
+    refetchInterval: 10000,
   });
 
   const flattenedChildren = useMemo(() => {
