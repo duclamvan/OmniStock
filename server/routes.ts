@@ -29337,11 +29337,9 @@ Other rules:
       );
       const parentViaFieldIds = new Set(productsWithChildren.map(p => p.id));
       
-      // Find products that have variants (variant source)
-      const productIdsWithVariants = new Set(allVariants.map(v => v.productId));
-      
-      // Combine all sources
-      const allParentIds = new Set([...bomParentIds, ...parentViaFieldIds, ...productIdsWithVariants]);
+      // Only include BOM-based and parentField-based parent products (not variants)
+      // Simple Conversion is for manufacturing/producing items from components
+      const allParentIds = new Set([...bomParentIds, ...parentViaFieldIds]);
       
       // Get all product locations for stock data
       const allLocations = await db.select().from(productLocations);

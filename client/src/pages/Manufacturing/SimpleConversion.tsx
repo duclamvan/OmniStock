@@ -140,11 +140,12 @@ interface ChildProduct {
   sku?: string;
   quantity: number;
   yieldQuantity: number;
-  source: 'bom' | 'parentField' | 'variant';
+  source: 'bom' | 'parentField';
   totalStock: number;
   lowStockThreshold: number;
   isLowStock: boolean;
   locations: ParentChildLocation[];
+  landingCost?: number;
 }
 
 interface ParentChildStock {
@@ -157,7 +158,7 @@ interface ParentChildStock {
   isLowStock: boolean;
   locations: ParentChildLocation[];
   children: ChildProduct[];
-  source: 'bom' | 'parentField' | 'variant';
+  source: 'bom' | 'parentField';
 }
 
 export default function SimpleConversion() {
@@ -512,7 +513,7 @@ export default function SimpleConversion() {
                             </span>
                           )}
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs">
-                            {parent.source === 'bom' ? 'BOM' : parent.source === 'parentField' ? 'Child' : 'Variants'}
+                            {parent.source === 'bom' ? 'BOM' : 'Child'}
                           </span>
                         </div>
                         {parent.sku && (
