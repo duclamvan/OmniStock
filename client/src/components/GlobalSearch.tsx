@@ -533,7 +533,7 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       <div
         ref={resultsRef}
         className={cn(
-          "fixed sm:absolute left-0 right-0 sm:left-0 sm:right-0 top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:top-full w-full max-h-[60vh] sm:max-h-[70vh] overflow-y-auto z-[100] bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-b-xl shadow-xl dark:shadow-gray-900/30",
+          "fixed inset-x-0 top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:absolute sm:inset-x-auto sm:left-0 sm:right-0 sm:top-full w-screen sm:w-full max-h-[60vh] sm:max-h-[70vh] overflow-y-auto z-[100] bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-b-xl shadow-xl dark:shadow-gray-900/30",
           "transition-all duration-150 ease-out origin-top",
           showDropdown 
             ? "opacity-100 scale-y-100 pointer-events-auto border-b sm:border-x sm:border-b" 
