@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
@@ -529,18 +530,18 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
         </div>
       </div>
 
-      {/* Results dropdown with CSS transitions */}
-      <div
-        ref={resultsRef}
-        style={{ left: 0, right: 0 }}
-        className={cn(
-          "fixed top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:absolute sm:top-full !w-screen sm:!w-full max-h-[60vh] sm:max-h-[70vh] overflow-y-auto z-[100] bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-b-xl shadow-xl dark:shadow-gray-900/30",
-          "transition-all duration-150 ease-out origin-top",
-          showDropdown 
-            ? "opacity-100 scale-y-100 pointer-events-auto border-b sm:border-x sm:border-b" 
-            : "opacity-0 scale-y-95 pointer-events-none"
-        )}
-      >
+      {/* Results dropdown - rendered via portal on mobile for full width */}
+      {createPortal(
+        <div
+          ref={resultsRef}
+          className={cn(
+            "fixed left-0 right-0 top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] w-screen max-h-[60vh] overflow-y-auto z-[9999] bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700 shadow-xl dark:shadow-gray-900/30",
+            "transition-all duration-150 ease-out origin-top",
+            showDropdown 
+              ? "opacity-100 scale-y-100 pointer-events-auto" 
+              : "opacity-0 scale-y-95 pointer-events-none"
+          )}
+        >
         {isLoading ? (
           <div className="p-3 space-y-2">
             {[1, 2, 3].map((i) => (
@@ -661,7 +662,9 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
             )}
           </div>
         )}
-      </div>
+      </div>,
+      document.body
+    )}
     </div>
   );
 }
