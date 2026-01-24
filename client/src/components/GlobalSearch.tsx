@@ -1,63 +1,15 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useQuery, keepPreviousData, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Search, Package, Truck, User, ShoppingCart, Calendar, Loader2, Command } from 'lucide-react';
+import { Search, Package, Truck, User, ShoppingCart, Command } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { getCountryFlag, getCountryCodeByName, countryToIso } from '@/lib/countries';
+import { getCountryFlag, getCountryCodeByName } from '@/lib/countries';
 import { formatCurrency } from '@/lib/currencyUtils';
+import { cn } from '@/lib/utils';
 
-// Track if we've already preloaded search data (singleton across component remounts)
 let hasPreloadedSearch = false;
-
-// Framer Motion animation variants - simplified for reliability
-const dropdownVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: -8
-  },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-      duration: 0.15,
-      ease: 'easeOut',
-      staggerChildren: 0.02
-    }
-  },
-  exit: { 
-    opacity: 0, 
-    y: -4,
-    transition: { duration: 0.1, ease: 'easeOut' }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { duration: 0.1 }
-  }
-};
-
-const skeletonVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { duration: 0.1 }
-  }
-};
-
-const skeletonItemVariants = {
-  hidden: { opacity: 0.5 },
-  visible: { 
-    opacity: 1,
-    transition: { duration: 0.1 }
-  }
-};
 
 interface SearchResult {
   inventoryItems: Array<{
@@ -128,23 +80,207 @@ interface GlobalSearchProps {
   autoFocus?: boolean;
 }
 
-// Normalize text for matching (remove diacritics, lowercase)
 function normalizeForSearch(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'd');
 }
 
-// Check if item matches query
 function matchesQuery(text: string, query: string): boolean {
   if (!text || !query) return false;
   const normalizedText = normalizeForSearch(text);
   const normalizedQuery = normalizeForSearch(query);
   return normalizedText.includes(normalizedQuery);
 }
+
+const SearchResultItem = memo(({ 
+  result, 
+  isSelected, 
+  searchQuery, 
+  onSelect,
+  index 
+}: {
+  result: FlattenedResult;
+  isSelected: boolean;
+  searchQuery: string;
+  onSelect: () => void;
+  index: number;
+}) => {
+  const highlightMatch = useCallback((text: string, query: string) => {
+    if (!query || !text) return text;
+    const tokens = query.toLowerCase().split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
+    if (tokens.length === 0) return text;
+    let result = text;
+    tokens.forEach(token => {
+      const regex = new RegExp(`(${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      result = result.replace(regex, '<mark class="bg-yellow-200/80 dark:bg-yellow-600/40 rounded-sm px-0.5">$1</mark>');
+    });
+    return result;
+  }, []);
+
+  if (result.type === 'inventory') {
+    const item = result.data;
+    const available = item.availableQuantity ?? item.quantity;
+    const allocated = item.allocatedQuantity ?? 0;
+    return (
+      <button
+        data-index={index}
+        onClick={onSelect}
+        className={cn(
+          "w-full px-3 py-2.5 flex items-start gap-3 text-left transition-colors duration-100",
+          isSelected 
+            ? "bg-cyan-50 dark:bg-cyan-900/30" 
+            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        )}
+      >
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt="" className="h-11 w-11 object-cover rounded-lg flex-shrink-0" loading="lazy" />
+        ) : (
+          <div className="h-11 w-11 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Package className="h-5 w-5 text-emerald-500" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div 
+            className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate"
+            dangerouslySetInnerHTML={{ __html: highlightMatch(item.name, searchQuery) }}
+          />
+          <div className="flex items-center gap-2 mt-0.5">
+            <span 
+              className="font-mono text-xs text-gray-500 dark:text-gray-400"
+              dangerouslySetInnerHTML={{ __html: highlightMatch(item.sku, searchQuery) }}
+            />
+            <span className={cn(
+              "text-xs font-medium",
+              available > 10 ? "text-emerald-600 dark:text-emerald-400" : 
+              available > 0 ? "text-amber-600 dark:text-amber-400" : 
+              "text-red-600 dark:text-red-400"
+            )}>
+              {available} avail
+            </span>
+            {allocated > 0 && (
+              <span className="text-xs text-orange-500">({allocated} held)</span>
+            )}
+          </div>
+        </div>
+        {(item.priceEur || item.priceCzk) && (
+          <div className="text-right text-xs flex-shrink-0">
+            {item.priceEur && <div className="text-blue-600 dark:text-blue-400 font-medium">€{Number(item.priceEur).toFixed(2)}</div>}
+            {item.priceCzk && <div className="text-gray-500">{Number(item.priceCzk).toFixed(0)} Kč</div>}
+          </div>
+        )}
+      </button>
+    );
+  }
+
+  if (result.type === 'order') {
+    const order = result.data;
+    const statusColors: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      confirmed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      processing: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      shipped: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+      delivered: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+      cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    };
+    return (
+      <button
+        data-index={index}
+        onClick={onSelect}
+        className={cn(
+          "w-full px-3 py-2.5 flex items-center gap-3 text-left transition-colors duration-100",
+          isSelected ? "bg-cyan-50 dark:bg-cyan-900/30" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        )}
+      >
+        <div className="h-11 w-11 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+          <ShoppingCart className="h-5 w-5 text-blue-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
+            <span dangerouslySetInnerHTML={{ __html: highlightMatch(order.orderId, searchQuery) }} />
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+            {order.customerName}
+          </div>
+        </div>
+        <div className="flex-shrink-0 text-right">
+          <div className="font-medium text-sm">{formatCurrency(Number(order.grandTotal), order.currency)}</div>
+          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusColors[order.orderStatus] || '')}>
+            {order.orderStatus}
+          </Badge>
+        </div>
+      </button>
+    );
+  }
+
+  if (result.type === 'customer') {
+    const customer = result.data;
+    const countryCode = customer.shippingCountry ? getCountryCodeByName(customer.shippingCountry) : null;
+    return (
+      <button
+        data-index={index}
+        onClick={onSelect}
+        className={cn(
+          "w-full px-3 py-2.5 flex items-center gap-3 text-left transition-colors duration-100",
+          isSelected ? "bg-cyan-50 dark:bg-cyan-900/30" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        )}
+      >
+        <div className="h-11 w-11 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+          <User className="h-5 w-5 text-purple-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div 
+            className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate"
+            dangerouslySetInnerHTML={{ __html: highlightMatch(customer.name, searchQuery) }}
+          />
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {countryCode && <span>{getCountryFlag(countryCode)}</span>}
+            {customer.shippingCity && <span>{customer.shippingCity}</span>}
+            {customer.totalOrders > 0 && <span>• {customer.totalOrders} orders</span>}
+          </div>
+        </div>
+        {customer.preferredCurrency && (
+          <Badge variant="outline" className="text-[10px] px-1.5">{customer.preferredCurrency}</Badge>
+        )}
+      </button>
+    );
+  }
+
+  if (result.type === 'shipment') {
+    const item = result.data;
+    return (
+      <button
+        data-index={index}
+        onClick={onSelect}
+        className={cn(
+          "w-full px-3 py-2.5 flex items-center gap-3 text-left transition-colors duration-100",
+          isSelected ? "bg-cyan-50 dark:bg-cyan-900/30" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        )}
+      >
+        <div className="h-11 w-11 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Truck className="h-5 w-5 text-amber-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div 
+            className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate"
+            dangerouslySetInnerHTML={{ __html: highlightMatch(item.name, searchQuery) }}
+          />
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {item.quantity} incoming • PO #{item.purchaseOrderNumber}
+          </div>
+        </div>
+        <Badge variant="outline" className="text-[10px] px-1.5 capitalize">{item.status}</Badge>
+      </button>
+    );
+  }
+
+  return null;
+});
+
+SearchResultItem.displayName = 'SearchResultItem';
 
 export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps = {}) {
   const { t } = useTranslation();
@@ -157,102 +293,82 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  
-  // Auto-focus when requested
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     if (autoFocus && inputRef.current) {
       inputRef.current.focus();
     }
   }, [autoFocus]);
 
-  // Debounce for server query only (longer delay)
+  // Fast debounce - 120ms for responsive feel
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 250); // Server fetch delayed 250ms
-
+    }, 120);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const queryClient = useQueryClient();
-  
-  // Preload top products/customers on mount for instant local filtering
+  // Preload data on mount
   useEffect(() => {
     if (hasPreloadedSearch) return;
     hasPreloadedSearch = true;
     
-    const loadPreloadData = async () => {
-      try {
-        const response = await fetch('/api/search/preload');
-        if (response.ok) {
-          const data = await response.json();
+    fetch('/api/search/preload')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
           setPreloadedData(data);
           queryClient.setQueryData(['/api/search/preload'], data);
         }
-      } catch {
-        // Silently fail
-      }
-    };
-    
-    // Start immediately for instant search capability
-    loadPreloadData();
+      })
+      .catch(() => {});
   }, [queryClient]);
-  
-  // Instant local filtering of preloaded data (no server round-trip)
+
+  // Instant local filtering
   const localFilteredResults = useMemo((): SearchResult | null => {
     if (!preloadedData || searchQuery.trim().length < 1) return null;
-    
     const query = searchQuery.trim();
     
-    // Filter inventory items locally - exclude items with empty names
     const filteredInventory = preloadedData.inventoryItems?.filter(item => 
-      item.name?.trim() && (matchesQuery(item.name || '', query) || matchesQuery(item.sku || '', query))
-    ) || [];
+      item.name?.trim() && (matchesQuery(item.name, query) || matchesQuery(item.sku, query))
+    ).slice(0, 8) || [];
     
-    // Filter customers locally - exclude customers with empty names
     const filteredCustomers = preloadedData.customers?.filter(customer =>
       customer.name?.trim() && (
-        matchesQuery(customer.name || '', query) || 
+        matchesQuery(customer.name, query) || 
         matchesQuery(customer.email || '', query) ||
         matchesQuery(customer.company || '', query)
       )
-    ) || [];
+    ).slice(0, 4) || [];
     
-    // Return null if no local matches found - this allows loading skeleton to show
-    if (filteredInventory.length === 0 && filteredCustomers.length === 0) {
-      return null;
-    }
+    if (filteredInventory.length === 0 && filteredCustomers.length === 0) return null;
     
     return {
-      inventoryItems: filteredInventory.slice(0, 10),
+      inventoryItems: filteredInventory,
       shipmentItems: [],
-      customers: filteredCustomers.slice(0, 5),
+      customers: filteredCustomers,
       orders: []
     };
   }, [preloadedData, searchQuery]);
-  
-  // Server query for comprehensive results (runs with delay)
-  const { data: serverResults, isFetching, isPlaceholderData } = useQuery<SearchResult>({
+
+  // Server query
+  const { data: serverResults, isFetching } = useQuery<SearchResult>({
     queryKey: ['/api/search', debouncedQuery],
     queryFn: async ({ signal }) => {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, {
-        signal,
-      });
+      const response = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, { signal });
       if (!response.ok) throw new Error('Search failed');
       return response.json();
     },
-    enabled: debouncedQuery.trim().length >= 1, // Enable for 1+ characters
+    enabled: debouncedQuery.trim().length >= 1,
     staleTime: 60000,
     gcTime: 300000,
-    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     retry: false,
   });
+
+  const hasFreshServerResults = serverResults && debouncedQuery === searchQuery;
   
-  // Use server results only when they match current query (not placeholder from previous query)
-  const hasFreshServerResults = serverResults && debouncedQuery === searchQuery && !isPlaceholderData;
-  
-  // Clean server results to filter out empty names
   const cleanedServerResults = useMemo((): SearchResult | null => {
     if (!serverResults) return null;
     return {
@@ -262,53 +378,34 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
       orders: serverResults.orders?.filter(order => order.orderId?.trim() || order.customerName?.trim()) || [],
     };
   }, [serverResults]);
-  
-  const results = hasFreshServerResults ? cleanedServerResults : localFilteredResults;
-  
-  // Detect if debounce is pending (query changed but server hasn't fetched yet)
-  const isDebouncing = debouncedQuery !== searchQuery && searchQuery.trim().length >= 1;
-  
-  // Show loading skeleton when:
-  // 1. No local results AND (debounce pending OR server fetching OR no fresh server results)
-  const hasNoLocalResults = !localFilteredResults;
-  const isLoading = searchQuery.trim().length >= 1 && hasNoLocalResults && (isDebouncing || isFetching || !hasFreshServerResults);
-  
-  // Show subtle loading indicator when server is refining results (local results already showing)
-  const isRefining = (isDebouncing || isFetching) && results !== null;
 
-  // Limit items per section for cleaner dropdown
-  const MAX_ITEMS_PER_SECTION = 3;
-  
-  // Flatten results for keyboard navigation (order: Stock → Orders → Shipments → Customers)
+  const results = hasFreshServerResults ? cleanedServerResults : localFilteredResults;
+  const isLoading = searchQuery.trim().length >= 1 && !localFilteredResults && (isFetching || !hasFreshServerResults);
+  const isRefining = isFetching && results !== null;
+
+  const MAX_ITEMS = 4;
+
   const flattenedResults = useMemo((): FlattenedResult[] => {
     if (!results) return [];
-    
     const flat: FlattenedResult[] = [];
     
-    // 1. Current Stock (inventory items)
-    results.inventoryItems?.slice(0, MAX_ITEMS_PER_SECTION).forEach(item => {
+    results.inventoryItems?.slice(0, MAX_ITEMS).forEach(item => {
       flat.push({ type: 'inventory', id: item.id, data: item });
     });
-    
-    // 2. Orders with this item
-    results.orders?.slice(0, MAX_ITEMS_PER_SECTION).forEach(order => {
+    results.orders?.slice(0, MAX_ITEMS).forEach(order => {
       flat.push({ type: 'order', id: order.id, data: order });
     });
-    
-    // 3. Incoming shipments
-    results.shipmentItems?.slice(0, MAX_ITEMS_PER_SECTION).forEach(item => {
+    results.shipmentItems?.slice(0, MAX_ITEMS).forEach(item => {
       flat.push({ type: 'shipment', id: item.id, productId: item.productId, data: item });
     });
-    
-    // 4. Customers
-    results.customers?.slice(0, MAX_ITEMS_PER_SECTION).forEach(customer => {
+    results.customers?.slice(0, MAX_ITEMS).forEach(customer => {
       flat.push({ type: 'customer', id: customer.id, data: customer });
     });
     
     return flat;
   }, [results]);
 
-  // Close dropdown when clicking outside
+  // Click outside handler
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -316,12 +413,10 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
         setSelectedIndex(-1);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Show dropdown immediately when user types (even before results load)
   useEffect(() => {
     if (searchQuery.trim().length >= 1) {
       setShowResults(true);
@@ -333,16 +428,14 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
   }, [searchQuery]);
 
   const navigateToResult = useCallback((result: FlattenedResult) => {
-    if (result.type === 'inventory') {
-      setLocation(`/inventory/${result.id}`);
-    } else if (result.type === 'customer') {
-      setLocation(`/customers/${result.id}`);
-    } else if (result.type === 'shipment') {
-      if (result.productId) {
-        setLocation(`/inventory/${result.productId}`);
-      }
-    } else if (result.type === 'order') {
-      setLocation(`/orders/${result.id}`);
+    const routes: Record<string, string> = {
+      inventory: `/inventory/${result.id}`,
+      customer: `/customers/${result.id}`,
+      order: `/orders/${result.id}`,
+      shipment: result.productId ? `/inventory/${result.productId}` : '',
+    };
+    if (routes[result.type]) {
+      setLocation(routes[result.type]);
     }
     setSearchQuery('');
     setShowResults(false);
@@ -350,7 +443,6 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     inputRef.current?.blur();
   }, [setLocation]);
 
-  // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!showResults || flattenedResults.length === 0) {
       if (e.key === 'Escape') {
@@ -363,15 +455,11 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < flattenedResults.length - 1 ? prev + 1 : 0
-        );
+        setSelectedIndex(prev => prev < flattenedResults.length - 1 ? prev + 1 : 0);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev > 0 ? prev - 1 : flattenedResults.length - 1
-        );
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : flattenedResults.length - 1);
         break;
       case 'Enter':
         e.preventDefault();
@@ -388,46 +476,25 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
     }
   }, [showResults, flattenedResults, selectedIndex, navigateToResult]);
 
-  // Scroll selected item into view
+  // Scroll into view
   useEffect(() => {
     if (selectedIndex >= 0 && resultsRef.current) {
-      const selectedElement = resultsRef.current.querySelector(`[data-index="${selectedIndex}"]`);
-      if (selectedElement) {
-        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
+      const el = resultsRef.current.querySelector(`[data-index="${selectedIndex}"]`);
+      if (el) el.scrollIntoView({ block: 'nearest' });
     }
   }, [selectedIndex]);
-
-  // Highlight matching text
-  const highlightMatch = useCallback((text: string, query: string) => {
-    if (!query || !text) return text;
-    
-    const tokens = query.toLowerCase().split(/[\s\-_.,;:\/\\]+/).filter(t => t.length >= 2);
-    if (tokens.length === 0) return text;
-    
-    let result = text;
-    tokens.forEach(token => {
-      const regex = new RegExp(`(${token})`, 'gi');
-      result = result.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">$1</mark>');
-    });
-    
-    return result;
-  }, []);
 
   const totalResults = (results?.inventoryItems?.length || 0) + 
                        (results?.shipmentItems?.length || 0) + 
                        (results?.customers?.length || 0) +
                        (results?.orders?.length || 0);
 
-  const isSearching = isLoading || isFetching;
-
-  // Track current flat index for highlighting
-  let currentFlatIndex = -1;
+  const showDropdown = showResults && searchQuery.trim().length > 0;
 
   return (
     <div ref={searchRef} className="relative w-full sm:max-w-2xl">
       <div className="relative group">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-400 transition-colors group-focus-within:text-cyan-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-cyan-500" />
         <Input
           ref={inputRef}
           type="text"
@@ -436,379 +503,164 @@ export function GlobalSearch({ onFocus, onBlur, autoFocus }: GlobalSearchProps =
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (searchQuery.trim().length >= 2 && results) {
-              setShowResults(true);
-            }
+            if (searchQuery.trim().length >= 1 && results) setShowResults(true);
             onFocus?.();
           }}
-          onBlur={() => {
-            setTimeout(() => {
-              onBlur?.();
-            }, 200);
-          }}
+          onBlur={() => setTimeout(() => onBlur?.(), 150)}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="pl-10 pr-12 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
-          data-testid="input-global-search"
+          className="pl-10 pr-12 bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-colors"
         />
-        <AnimatePresence mode="wait">
-          {isSearching && (
-            <motion.div 
-              key="loader"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-3 top-0 bottom-0 flex items-center justify-center"
-            >
-              <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
-            </motion.div>
-          )}
-          {!isSearching && searchQuery.length === 0 && (
-            <motion.kbd 
-              key="shortcut"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute right-3 top-0 bottom-0 hidden sm:inline-flex items-center justify-center gap-1 rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-1.5 font-mono text-[10px] text-gray-500 dark:text-gray-400 h-5 my-auto"
-            >
+        
+        {/* Loading/shortcut indicator */}
+        <div className="absolute right-3 top-0 bottom-0 flex items-center">
+          {(isLoading || isRefining) ? (
+            <div className="relative h-4 w-4">
+              <div className="absolute inset-0 rounded-full border-2 border-cyan-200 dark:border-cyan-800" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-500 animate-spin" />
+            </div>
+          ) : searchQuery.length === 0 && (
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-1.5 font-mono text-[10px] text-gray-400 h-5">
               <Command className="h-2.5 w-2.5" />K
-            </motion.kbd>
+            </kbd>
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
-      <AnimatePresence>
-        {showResults && searchQuery.trim().length > 0 && (
-          <motion.div
-            ref={resultsRef}
-            variants={dropdownVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:top-full mt-0 sm:mt-2 w-screen sm:w-full max-h-[60vh] sm:max-h-[80vh] overflow-y-auto z-[100] shadow-2xl dark:shadow-gray-900/50 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-b sm:border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl"
-    transition={{ 
-      type: "spring", 
-      stiffness: 400, 
-      damping: 30,
-      opacity: { duration: 0.15 }
-    }}
-            style={{ originY: 0 }}
-          >
-            {isLoading || (!results && isFetching) ? (
-              <motion.div 
-                variants={skeletonVariants}
-                initial="hidden"
-                animate="visible"
-                className="p-4 space-y-3"
-              >
-                {/* Skeleton loading animation */}
-                {[1, 2, 3].map((i) => (
-                  <motion.div 
-                    key={i} 
-                    variants={skeletonItemVariants}
-                    className="flex items-center gap-3 px-3 py-2"
-                  >
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-3/4 rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
-                      <div className="h-3 w-1/2 rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse" />
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            ) : !results || totalResults === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="p-6 text-center text-sm text-muted-foreground dark:text-gray-400"
-              >
-                <motion.div
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    opacity: [0.3, 0.5, 0.3]
-                  }}
-                  transition={{ 
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                >
-                  <Search className="h-8 w-8 mx-auto mb-2" />
-                </motion.div>
-                {t('common:noResultsFoundFor', { query: searchQuery })}
-                <p className="text-xs mt-2 opacity-70">Try different keywords or check spelling</p>
-              </motion.div>
-            ) : (
-              <motion.div className="py-2">
-              {/* 1. Current Stock Section */}
-              {results && results.inventoryItems.length > 0 && (
-                <motion.div variants={itemVariants} className="mb-3">
-                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <Package className="h-3.5 w-3.5 text-emerald-500" />
-                    {t('common:currentStock')} ({Math.min(results.inventoryItems.length, MAX_ITEMS_PER_SECTION)}/{results.inventoryItems.length})
-                  </div>
-                  {results.inventoryItems.slice(0, MAX_ITEMS_PER_SECTION).map((item, idx) => {
-                    currentFlatIndex++;
-                    const isSelected = selectedIndex === currentFlatIndex;
-                    const available = item.availableQuantity ?? item.quantity;
-                    const allocated = item.allocatedQuantity ?? 0;
-                    return (
-                      <motion.button
-                        key={item.id}
-                        variants={itemVariants}
-                        data-index={currentFlatIndex}
-                        onClick={() => navigateToResult({ type: 'inventory', id: item.id, data: item })}
-                        className={`w-full px-3 py-3 rounded-xl flex items-start gap-4 text-left transition-all ${
-                          isSelected 
-                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50 shadow-sm' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                        }`}
-                        data-testid={`search-result-inventory-${item.id}`}
-                      >
-                        {/* Product Image */}
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="h-14 w-14 object-cover rounded-xl shadow-sm flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="h-14 w-14 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <Package className="h-7 w-7 text-emerald-500" />
-                          </div>
-                        )}
-                        
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div 
-                            className="font-semibold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(item.name, searchQuery) }}
-                          />
-                          <div 
-                            className="font-mono text-xs text-gray-500 dark:text-gray-400"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(item.sku, searchQuery) }}
-                          />
-                          {/* Prices */}
-                          <div className="flex gap-2 text-xs">
-                            {item.priceEur && (
-                              <span className="text-blue-600 dark:text-blue-400 font-medium">
-                                €{Number(item.priceEur).toFixed(2)}
-                              </span>
-                            )}
-                            {item.priceCzk && (
-                              <span className="text-gray-500 dark:text-gray-400">
-                                {Number(item.priceCzk).toFixed(0)} Kč
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Stock Badge */}
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className={`text-sm font-bold tabular-nums ${
-                            available <= 0 
-                              ? 'text-red-500' 
-                              : available <= 10 
-                                ? 'text-amber-500' 
-                                : 'text-emerald-600 dark:text-emerald-400'
-                          }`}>
-                            {available}
-                          </span>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-                            {t('common:available')}
-                          </span>
-                          {allocated > 0 && (
-                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                              +{allocated} {t('common:reserved')}
-                            </span>
-                          )}
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </motion.div>
-              )}
-
-              {/* 2. Orders Section */}
-              {results && results.orders?.length > 0 && (
-                <div className="mb-3">
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
-                    {t('common:orders')} ({Math.min(results.orders.length, MAX_ITEMS_PER_SECTION)}/{results.orders.length})
-                  </div>
-                  {results.orders.slice(0, MAX_ITEMS_PER_SECTION).map((order) => {
-                    currentFlatIndex++;
-                    const isSelected = selectedIndex === currentFlatIndex;
-                    return (
-                      <button
-                        key={order.id}
-                        data-index={currentFlatIndex}
-                        onClick={() => navigateToResult({ type: 'order', id: order.id, data: order })}
-                        className={`w-full px-3 py-2.5 rounded-lg flex items-center gap-3 text-left transition-all ${
-                          isSelected 
-                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                        }`}
-                        data-testid={`search-result-order-${order.id}`}
-                      >
-                        <div className="h-12 w-12 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <ShoppingCart className="h-6 w-6 text-orange-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div 
-                            className="font-medium truncate text-gray-900 dark:text-gray-100"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(`#${order.orderId}`, searchQuery) }}
-                          />
-                          <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
-                            {order.customerName}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">
-                            {formatCurrency(parseFloat(String(order.grandTotal || '0')), order.currency)}
-                          </div>
-                          <div className="text-xs text-muted-foreground dark:text-gray-400">
-                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('cs-CZ') : ''}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* 3. Incoming Shipments Section */}
-              {results && results.shipmentItems.length > 0 && (
-                <div className="mb-3">
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <Truck className="h-3.5 w-3.5 text-blue-500" />
-                    {t('common:upcomingShipments')} ({Math.min(results.shipmentItems.length, MAX_ITEMS_PER_SECTION)}/{results.shipmentItems.length})
-                  </div>
-                  {results.shipmentItems.slice(0, MAX_ITEMS_PER_SECTION).map((item) => {
-                    currentFlatIndex++;
-                    const isSelected = selectedIndex === currentFlatIndex;
-                    return (
-                      <button
-                        key={item.id}
-                        data-index={currentFlatIndex}
-                        onClick={() => navigateToResult({ type: 'shipment', id: item.id, productId: item.productId, data: item })}
-                        className={`w-full px-3 py-2.5 rounded-lg flex items-center gap-3 text-left transition-all ${
-                          isSelected 
-                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                        }`}
-                        data-testid={`search-result-shipment-${item.id}`}
-                      >
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="h-12 w-12 object-cover rounded-lg shadow-sm"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
-                            <Truck className="h-6 w-6 text-blue-500" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div 
-                            className="font-medium truncate text-gray-900 dark:text-gray-100"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(item.name, searchQuery) }}
-                          />
-                          <div className="text-sm text-muted-foreground dark:text-gray-400">
-                            PO: {item.purchaseOrderNumber} • Qty: {item.quantity}
-                          </div>
-                          {item.expectedDeliveryDate && (
-                            <div className="text-xs text-muted-foreground dark:text-gray-400">
-                              Expected: {new Date(item.expectedDeliveryDate).toLocaleDateString('cs-CZ')}
-                            </div>
-                          )}
-                        </div>
-                        <Badge variant={item.status === 'received' ? 'default' : 'secondary'} className="text-xs">
-                          {item.status}
-                        </Badge>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* 4. Customers Section */}
-              {results && results.customers.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <User className="h-3.5 w-3.5 text-purple-500" />
-                    Customers ({Math.min(results.customers.length, MAX_ITEMS_PER_SECTION)}/{results.customers.length})
-                  </div>
-                  {results.customers.slice(0, MAX_ITEMS_PER_SECTION).map((customer) => {
-                    currentFlatIndex++;
-                    const isSelected = selectedIndex === currentFlatIndex;
-                    const countryCode = customer.shippingCountry ? getCountryCodeByName(customer.shippingCountry) : '';
-                    const countryFlag = countryCode ? getCountryFlag(countryCode) : '';
-                    
-                    return (
-                      <button
-                        key={customer.id}
-                        data-index={currentFlatIndex}
-                        onClick={() => navigateToResult({ type: 'customer', id: customer.id, data: customer })}
-                        className={`w-full px-3 py-3 rounded-lg text-left transition-all ${
-                          isSelected 
-                            ? 'bg-cyan-50 dark:bg-cyan-900/30 ring-2 ring-cyan-500/50' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                        }`}
-                        data-testid={`search-result-customer-${customer.id}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="h-12 w-12 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-                            {countryFlag || '🌍'}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div 
-                              className="font-medium truncate text-gray-900 dark:text-gray-100"
-                              dangerouslySetInnerHTML={{ __html: highlightMatch(customer.name, searchQuery) }}
-                            />
-                            
-                            {(customer.shippingCity || customer.shippingCountry) && (
-                              <div className="text-sm text-muted-foreground dark:text-gray-400 truncate">
-                                {customer.shippingCity && customer.shippingCountry 
-                                  ? `${customer.shippingCity}, ${customer.shippingCountry}`
-                                  : customer.shippingCity || customer.shippingCountry
-                                }
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {customer.preferredCurrency && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {customer.preferredCurrency}
-                                </Badge>
-                              )}
-                              <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-600">
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                {customer.totalOrders}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs border-gray-200 dark:border-gray-600">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {customer.lastOrderText}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </motion.div>
-          )}
-          </motion.div>
+      {/* Results dropdown with CSS transitions */}
+      <div
+        ref={resultsRef}
+        className={cn(
+          "fixed sm:absolute left-0 right-0 sm:left-auto sm:right-auto top-[calc(var(--mobile-header-height-current,3.5rem)+env(safe-area-inset-top,0px))] sm:top-full sm:mt-1.5 w-screen sm:w-full max-h-[60vh] sm:max-h-[70vh] overflow-y-auto z-[100] bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 rounded-none sm:rounded-xl shadow-xl dark:shadow-gray-900/30",
+          "transition-all duration-150 ease-out origin-top",
+          showDropdown 
+            ? "opacity-100 scale-y-100 pointer-events-auto border-b sm:border" 
+            : "opacity-0 scale-y-95 pointer-events-none"
         )}
-      </AnimatePresence>
+      >
+        {isLoading ? (
+          <div className="p-3 space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2">
+                <div className="h-11 w-11 rounded-lg bg-gray-100 dark:bg-gray-700 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-3/4 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+                  <div className="h-3 w-1/2 rounded bg-gray-100 dark:bg-gray-700 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !results || totalResults === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            <Search className="h-6 w-6 mx-auto mb-2 opacity-30" />
+            {t('common:noResultsFoundFor', { query: searchQuery })}
+          </div>
+        ) : (
+          <div className="py-1">
+            {/* Refining indicator */}
+            {isRefining && (
+              <div className="h-0.5 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                <div className="h-full w-1/3 bg-cyan-500 animate-[shimmer_1s_ease-in-out_infinite]" 
+                     style={{ animation: 'shimmer 1s ease-in-out infinite' }} />
+              </div>
+            )}
+            
+            {/* Inventory section */}
+            {results.inventoryItems && results.inventoryItems.length > 0 && (
+              <div>
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package className="h-3 w-3 text-emerald-500" />
+                  Stock ({Math.min(results.inventoryItems.length, MAX_ITEMS)}/{results.inventoryItems.length})
+                </div>
+                {results.inventoryItems.slice(0, MAX_ITEMS).map((item, idx) => (
+                  <SearchResultItem
+                    key={item.id}
+                    result={{ type: 'inventory', id: item.id, data: item }}
+                    isSelected={selectedIndex === idx}
+                    searchQuery={searchQuery}
+                    onSelect={() => navigateToResult({ type: 'inventory', id: item.id, data: item })}
+                    index={idx}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Orders section */}
+            {results.orders && results.orders.length > 0 && (
+              <div>
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mt-1">
+                  <ShoppingCart className="h-3 w-3 text-blue-500" />
+                  Orders ({Math.min(results.orders.length, MAX_ITEMS)}/{results.orders.length})
+                </div>
+                {results.orders.slice(0, MAX_ITEMS).map((order, idx) => {
+                  const flatIdx = (results.inventoryItems?.slice(0, MAX_ITEMS).length || 0) + idx;
+                  return (
+                    <SearchResultItem
+                      key={order.id}
+                      result={{ type: 'order', id: order.id, data: order }}
+                      isSelected={selectedIndex === flatIdx}
+                      searchQuery={searchQuery}
+                      onSelect={() => navigateToResult({ type: 'order', id: order.id, data: order })}
+                      index={flatIdx}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Shipments section */}
+            {results.shipmentItems && results.shipmentItems.length > 0 && (
+              <div>
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mt-1">
+                  <Truck className="h-3 w-3 text-amber-500" />
+                  Incoming ({Math.min(results.shipmentItems.length, MAX_ITEMS)}/{results.shipmentItems.length})
+                </div>
+                {results.shipmentItems.slice(0, MAX_ITEMS).map((item, idx) => {
+                  const flatIdx = (results.inventoryItems?.slice(0, MAX_ITEMS).length || 0) + 
+                                  (results.orders?.slice(0, MAX_ITEMS).length || 0) + idx;
+                  return (
+                    <SearchResultItem
+                      key={item.id}
+                      result={{ type: 'shipment', id: item.id, productId: item.productId, data: item }}
+                      isSelected={selectedIndex === flatIdx}
+                      searchQuery={searchQuery}
+                      onSelect={() => navigateToResult({ type: 'shipment', id: item.id, productId: item.productId, data: item })}
+                      index={flatIdx}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Customers section */}
+            {results.customers && results.customers.length > 0 && (
+              <div>
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mt-1">
+                  <User className="h-3 w-3 text-purple-500" />
+                  Customers ({Math.min(results.customers.length, MAX_ITEMS)}/{results.customers.length})
+                </div>
+                {results.customers.slice(0, MAX_ITEMS).map((customer, idx) => {
+                  const flatIdx = (results.inventoryItems?.slice(0, MAX_ITEMS).length || 0) + 
+                                  (results.orders?.slice(0, MAX_ITEMS).length || 0) + 
+                                  (results.shipmentItems?.slice(0, MAX_ITEMS).length || 0) + idx;
+                  return (
+                    <SearchResultItem
+                      key={customer.id}
+                      result={{ type: 'customer', id: customer.id, data: customer }}
+                      isSelected={selectedIndex === flatIdx}
+                      searchQuery={searchQuery}
+                      onSelect={() => navigateToResult({ type: 'customer', id: customer.id, data: customer })}
+                      index={flatIdx}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
