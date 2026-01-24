@@ -634,7 +634,7 @@ export default function SimpleConversion() {
                                     {t("completed", "Completed")}
                                   </span>
                                   <span className="text-xs sm:text-sm text-muted-foreground">
-                                    {format(new Date(run.completedAt || run.createdAt), "PPp")}
+                                    {format(new Date(run.completedAt || run.createdAt), "EEEE, PPp")}
                                   </span>
                                 </div>
                                 <div className="text-base sm:text-lg font-semibold flex flex-wrap items-center gap-2">
