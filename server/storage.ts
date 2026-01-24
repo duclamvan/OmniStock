@@ -7540,6 +7540,46 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
+
+      // Calculate total material cost from consumed components
+      let totalMaterialCost = 0;
+      for (const component of componentsConsumed) {
+        const [componentProduct] = await tx.select().from(products).where(eq(products.id, component.productId));
+        if (componentProduct) {
+          // Use landingCostEur as primary cost, fallback to other currencies
+          const unitCost = Number(componentProduct.landingCostEur) || 
+                          Number(componentProduct.landingCostCzk) / 25 || 
+                          Number(componentProduct.landingCostUsd) / 1.1 || 0;
+          totalMaterialCost += unitCost * component.quantityConsumed;
+        }
+      }
+      
+      // Calculate per-unit cost for the finished product
+      const perUnitCost = run.quantityProduced > 0 ? totalMaterialCost / run.quantityProduced : 0;
+      
+      // Update finished product with calculated landing cost
+      if (run.finishedProductId && perUnitCost > 0) {
+        await tx.update(products)
+          .set({
+            landingCostEur: perUnitCost.toFixed(4),
+            landingCostCzk: (perUnitCost * 25).toFixed(2),
+            landingCostUsd: (perUnitCost * 1.1).toFixed(4),
+            updatedAt: new Date(),
+          })
+          .where(eq(products.id, run.finishedProductId));
+        
+        // Also update the main product quantity
+        const [finishedProduct] = await tx.select().from(products).where(eq(products.id, run.finishedProductId));
+        if (finishedProduct) {
+          await tx.update(products)
+            .set({
+              quantity: (finishedProduct.quantity || 0) + run.quantityProduced,
+              updatedAt: new Date(),
+            })
+            .where(eq(products.id, run.finishedProductId));
+        }
+      }
+
       await tx.update(manufacturingRuns)
         .set({
           status: 'completed',
