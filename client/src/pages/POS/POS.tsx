@@ -2510,7 +2510,7 @@ export default function POS() {
                     parseQuickVariantInput(quickVariantInput);
                   }
                 }}
-                placeholder="e.g. 1:2 3:5 or 1-10"
+                placeholder="e.g. 23,26,31x2,36x3 or S:2 M:3"
                 className="flex-1 font-mono text-xs md:text-sm h-9"
                 data-testid="input-pos-quick-variant"
               />
@@ -2526,7 +2526,7 @@ export default function POS() {
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground hidden sm:block">
-              Format: S:2 M:3 (qty) • 1-10 (range) • 23x5 (multiply)
+              Format: 23,26,31x2,36x3 • S:2 M:3 (qty) • 1-10 (range)
             </p>
           </div>
           

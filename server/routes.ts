@@ -8184,6 +8184,17 @@ Important:
     }
   });
 
+  // Get all product variants (global endpoint for POS and other views)
+  app.get('/api/variants', isAuthenticated, async (req: any, res) => {
+    try {
+      const allVariants = await db.select().from(productVariants);
+      res.json(allVariants);
+    } catch (error) {
+      console.error("Error fetching all variants:", error);
+      res.status(500).json({ message: "Failed to fetch variants" });
+    }
+  });
+
   // Product Variants
   app.get('/api/products/:productId/variants', isAuthenticated, async (req: any, res) => {
     try {
