@@ -210,6 +210,10 @@ export default function POS() {
   const [payLaterCustomerSearchQuery, setPayLaterCustomerSearchQuery] = useState('');
   const [showQRCodePreview, setShowQRCodePreview] = useState(false);
   
+  // Variant selection modal state
+  const [showVariantModal, setShowVariantModal] = useState(false);
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
+  
   // Custom Item state
   const [showCustomItemDialog, setShowCustomItemDialog] = useState(false);
   const [customItemName, setCustomItemName] = useState('');
@@ -538,6 +542,59 @@ export default function POS() {
       setFocusedCartItemId(newCartId);
     }
   };
+
+  // Get variants for a specific product
+  const getProductVariants = useCallback((productId: string) => {
+    return productVariants.filter((v: any) => v.productId === productId);
+  }, [productVariants]);
+
+  // Handle product click - check if product has variants
+  const handleProductClick = useCallback((product: any) => {
+    // Only check for variants on products (not already variants or bundles)
+    if (product.itemType === 'product' || !product.itemType) {
+      const variants = getProductVariants(product.id);
+      if (variants.length > 0) {
+        setSelectedProductForVariant(product);
+        setShowVariantModal(true);
+        return;
+      }
+    }
+    // No variants or is variant/bundle - add directly
+    addToCart(product);
+  }, [getProductVariants, addToCart]);
+
+  // Add variant to cart from the modal
+  const addVariantToCart = useCallback(async (variant: any) => {
+    if (!selectedProductForVariant) return;
+    
+    const price = currency === 'EUR' 
+      ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
+      : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
+    
+    const variantItem = {
+      ...variant,
+      name: `${selectedProductForVariant.name} - ${variant.name}`,
+      sku: variant.sku || selectedProductForVariant.sku,
+      barcode: variant.barcode || selectedProductForVariant.barcode,
+      priceEur: selectedProductForVariant.priceEur,
+      priceCzk: selectedProductForVariant.priceCzk,
+      imageUrl: variant.imageUrl || selectedProductForVariant.imageUrl,
+      productId: selectedProductForVariant.id,
+      itemType: 'variant',
+    };
+    
+    addToCart(variantItem);
+    
+    if (soundEnabled) await soundEffects.playSuccessBeep();
+    
+    toast({
+      title: t('financial:addedToCart'),
+      description: variantItem.name,
+    });
+    
+    setShowVariantModal(false);
+    setSelectedProductForVariant(null);
+  }, [selectedProductForVariant, currency, addToCart, soundEnabled, toast, t]);
 
   const updateQuantity = (cartId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -993,7 +1050,7 @@ export default function POS() {
                         "border-2 relative overflow-hidden",
                         isInCart ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/30"
                       )}
-                      onClick={() => addToCart(product)}
+                      onClick={() => handleProductClick(product)}
                       data-testid={`card-product-${product.id}`}
                     >
                       {product.itemType === 'variant' && (
@@ -1001,6 +1058,10 @@ export default function POS() {
                       )}
                       {product.itemType === 'bundle' && (
                         <Badge className="absolute top-2 left-2 z-10 bg-orange-600">B</Badge>
+                      )}
+                      {/* Indicator for products with variants */}
+                      {(!product.itemType || product.itemType === 'product') && getProductVariants(product.id).length > 0 && (
+                        <Badge className="absolute top-2 left-2 z-10 bg-indigo-600">+V</Badge>
                       )}
 
                       {isInCart && cartItem && (
@@ -1057,7 +1118,7 @@ export default function POS() {
                         "border-2",
                         isInCart ? "border-primary bg-primary/5" : "border-transparent hover:border-primary/30"
                       )}
-                      onClick={() => addToCart(product)}
+                      onClick={() => handleProductClick(product)}
                       data-testid={`card-product-list-${product.id}`}
                     >
                       <CardContent className="p-3 flex items-center gap-4">
@@ -2292,6 +2353,76 @@ export default function POS() {
             >
               <Plus className="h-4 w-4 mr-1" />
               {t('pos:addToCart', 'Add to Cart')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Variant Selection Modal */}
+      <Dialog open={showVariantModal} onOpenChange={(open) => {
+        setShowVariantModal(open);
+        if (!open) setSelectedProductForVariant(null);
+      }}>
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {t('pos:selectVariant', 'Select Variant')}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedProductForVariant?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 min-h-0 max-h-[60vh] pr-2">
+            <div className="space-y-2">
+              {selectedProductForVariant && getProductVariants(selectedProductForVariant.id).map((variant: any) => {
+                const variantPrice = currency === 'EUR' 
+                  ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
+                  : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
+                const stockQty = variant.availableQuantity ?? variant.quantity ?? 0;
+                
+                return (
+                  <div
+                    key={variant.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:border-primary hover:bg-primary/5 cursor-pointer transition-all active:scale-[0.98]"
+                    onClick={() => addVariantToCart(variant)}
+                    data-testid={`variant-row-${variant.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{variant.name}</p>
+                      {variant.sku && (
+                        <p className="text-xs text-muted-foreground font-mono">{variant.sku}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge 
+                        variant={stockQty > 10 ? "default" : stockQty > 0 ? "outline" : "destructive"}
+                        className="text-xs"
+                      >
+                        {stockQty}
+                      </Badge>
+                      <span className="text-sm font-bold text-primary min-w-[60px] text-right">
+                        {variantPrice.toFixed(2)} {currencySymbol}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+          
+          <DialogFooter className="pt-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowVariantModal(false);
+                setSelectedProductForVariant(null);
+              }}
+            >
+              {t('common:cancel', 'Cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
