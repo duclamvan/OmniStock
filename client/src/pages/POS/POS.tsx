@@ -868,102 +868,99 @@ export default function POS() {
         </div>
 
         {/* Unified Search & Scan Bar */}
-        <div className="bg-white dark:bg-gray-800 px-2 sm:px-4 py-2 sm:py-3 border-b flex flex-wrap sm:flex-nowrap items-center gap-2">
-          <form onSubmit={handleBarcodeSubmit} className="relative flex-1 min-w-0 order-1 w-full sm:w-auto">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
-              <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-              <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block" />
-              <Scan className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:block" />
-            </div>
-            <Input
-              ref={barcodeInputRef}
-              placeholder={t('pos:searchOrScan', 'Search or scan barcode...')}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-              }}
-              className={cn(
-                "pl-10 sm:pl-20 pr-10 h-10 sm:h-14 text-sm sm:text-base font-medium border-2 transition-all duration-200",
-                scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
-                scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
-                !scanFeedback && "border-gray-200 dark:border-gray-700"
+        <div className="bg-white dark:bg-gray-800 px-3 sm:px-4 py-3 border-b shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Search Input */}
+            <form onSubmit={handleBarcodeSubmit} className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={barcodeInputRef}
+                placeholder={t('pos:searchOrScan', 'Search or scan barcode...')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn(
+                  "pl-10 pr-10 h-11 text-base font-medium rounded-lg border-2 transition-all duration-200",
+                  scanFeedback === 'success' && "border-green-500 bg-green-50 dark:bg-green-900/20",
+                  scanFeedback === 'error' && "border-red-500 bg-red-50 dark:bg-red-900/20",
+                  !scanFeedback && "border-gray-200 dark:border-gray-700 focus:border-primary"
+                )}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-testid="input-search-scan"
+              />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              data-testid="input-search-scan"
-            />
-            {searchQuery && (
+            </form>
+            
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-32 sm:w-40 h-11 rounded-lg text-sm font-medium" data-testid="select-category">
+                <Grid3X3 className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat === 'all' ? t('inventory:allCategories') : cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Custom Item Button */}
+            <Button
+              variant="default"
+              className="h-11 px-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg shadow-sm"
+              onClick={() => setShowCustomItemDialog(true)}
+              data-testid="button-custom-item"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">{t('pos:customItem', 'Custom')}</span>
+              <span className="sm:hidden">{t('pos:customItem', 'Custom')}</span>
+            </Button>
+            
+            {/* View Toggle */}
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <Button
-                type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8"
-                onClick={() => setSearchQuery('')}
+                className={cn(
+                  "h-9 w-9 rounded-md transition-all",
+                  viewMode === 'grid' 
+                    ? "bg-white dark:bg-gray-600 text-primary shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setViewMode('grid')}
+                data-testid="button-view-grid"
               >
-                <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Grid3X3 className="h-4 w-4" />
               </Button>
-            )}
-          </form>
-          
-          {/* Category Filter */}
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-28 sm:w-36 h-10 sm:h-14 order-2 text-xs sm:text-sm" data-testid="select-category">
-              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat === 'all' ? t('inventory:allCategories') : cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Custom Item Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-10 sm:h-14 px-3 sm:px-4 order-3 bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-300"
-            onClick={() => setShowCustomItemDialog(true)}
-            data-testid="button-custom-item"
-          >
-            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">{t('pos:customItem', 'Custom')}</span>
-          </Button>
-          
-          {/* View Toggle */}
-          <div className="flex bg-muted rounded-xl p-1 order-4 shadow-inner">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9 sm:h-11 sm:w-11 rounded-lg transition-all duration-200",
-                viewMode === 'grid' 
-                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90" 
-                  : "hover:bg-muted-foreground/10 text-muted-foreground"
-              )}
-              onClick={() => setViewMode('grid')}
-              data-testid="button-view-grid"
-            >
-              <Grid3X3 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9 sm:h-11 sm:w-11 rounded-lg transition-all duration-200",
-                viewMode === 'list' 
-                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90" 
-                  : "hover:bg-muted-foreground/10 text-muted-foreground"
-              )}
-              onClick={() => setViewMode('list')}
-              data-testid="button-view-list"
-            >
-              <List className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-9 w-9 rounded-md transition-all",
+                  viewMode === 'list' 
+                    ? "bg-white dark:bg-gray-600 text-primary shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setViewMode('list')}
+                data-testid="button-view-list"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
