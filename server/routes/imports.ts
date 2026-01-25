@@ -15342,6 +15342,14 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
             
             const items: any[] = [];
             
+            // CRITICAL: Use totalPaid (in paymentCurrency) to calculate actual costs
+            // This is the real money spent, not the listed purchase currency prices
+            const totalPaid = parseFloat(purchase.totalPaid || '0');
+            const paymentCurrency = purchase.paymentCurrency || 'USD';
+            const paymentCurrencyRate = exchangeRates[paymentCurrency] || 1;
+            // Convert total paid to EUR
+            const totalPaidEur = paymentCurrency === 'EUR' ? totalPaid : totalPaid / paymentCurrencyRate;
+            
             // Calculate totals for allocation
             let totalChargeableWeight = 0;
             let totalShipmentValue = 0;
@@ -15401,31 +15409,42 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
               const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
               const landingCostPerUnit = itemQuantity > 0 ? totalAllocated / itemQuantity : 0;
               
-              // Get unit price in EUR
-              const itemPaymentCurrency = purchase.purchaseCurrency || 'USD';
-              const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
-              
+              // CRITICAL FIX: Calculate unit price from totalPaid (EUR) allocated proportionally
+              // totalPaid is what was actually paid, so we distribute it across items by allocation ratio
+              // This ensures the cost reflects actual money spent, not listed purchase currency prices
               let unitPriceEur: number;
-              if (variantAllocationsArray.length > 0) {
-                let totalVariantValueEur = 0;
-                let totalVariantQty = 0;
-                for (const va of variantAllocationsArray) {
-                  const vaQty = va.quantity || 0;
-                  const vaPrice = parseFloat(String(va.unitPrice || 0));
-                  const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
-                  const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
-                  const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
-                  totalVariantValueEur += vaPriceEur * vaQty;
-                  totalVariantQty += vaQty;
-                }
-                unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
-                if (unitPriceEur === 0) {
+              
+              if (totalPaidEur > 0 && totalUnits > 0) {
+                // Allocate the total paid amount proportionally to this item based on quantity ratio
+                // For simplicity, use quantity-based allocation for the product cost
+                const itemCostEur = (totalPaidEur * itemQuantity) / totalUnits;
+                unitPriceEur = itemQuantity > 0 ? itemCostEur / itemQuantity : 0;
+              } else {
+                // Fallback: convert from purchase currency if no totalPaid
+                const itemPaymentCurrency = purchase.purchaseCurrency || 'USD';
+                const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+                
+                if (variantAllocationsArray.length > 0) {
+                  let totalVariantValueEur = 0;
+                  let totalVariantQty = 0;
+                  for (const va of variantAllocationsArray) {
+                    const vaQty = va.quantity || 0;
+                    const vaPrice = parseFloat(String(va.unitPrice || 0));
+                    const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+                    const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+                    const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+                    totalVariantValueEur += vaPriceEur * vaQty;
+                    totalVariantQty += vaQty;
+                  }
+                  unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
+                  if (unitPriceEur === 0) {
+                    const itemUnitPrice = parseFloat(item.unitPrice || '0');
+                    unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
+                  }
+                } else {
                   const itemUnitPrice = parseFloat(item.unitPrice || '0');
                   unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
                 }
-              } else {
-                const itemUnitPrice = parseFloat(item.unitPrice || '0');
-                unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
               }
               
               // Convert variant allocations to EUR
@@ -15501,6 +15520,42 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
       .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+
+    // CRITICAL: Fetch source purchase orders for all items to get actual totalPaid
+    // This ensures costs reflect actual money paid, not listed purchase currency prices
+    const purchaseOrderIds = [...new Set(itemsWithCartons
+      .map(row => row.item.purchaseOrderId)
+      .filter((id): id is string => !!id))];
+    
+    const purchaseOrdersMap: Record<string, { totalPaid: number; paymentCurrency: string; totalQuantity: number }> = {};
+    
+    if (purchaseOrderIds.length > 0) {
+      const poData = await db
+        .select()
+        .from(importPurchases)
+        .where(inArray(importPurchases.id, purchaseOrderIds));
+      
+      for (const po of poData) {
+        // Get total quantity for this PO to calculate per-unit cost
+        const poItems = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, po.id));
+        
+        const totalQty = poItems.reduce((sum, item) => {
+          if (item.variantAllocations && Array.isArray(item.variantAllocations)) {
+            return sum + (item.variantAllocations as any[]).reduce((vSum, v) => vSum + (v.quantity || 0), 0);
+          }
+          return sum + item.quantity;
+        }, 0);
+        
+        purchaseOrdersMap[po.id] = {
+          totalPaid: parseFloat(po.totalPaid || '0'),
+          paymentCurrency: po.paymentCurrency || 'USD',
+          totalQuantity: totalQty
+        };
+      }
+    }
 
     const items: any[] = [];
     
@@ -15607,38 +15662,51 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         }
       }
 
-      // Calculate unit price IN EUR: use weighted average from variants if available, otherwise use item's unit price
-      // CRITICAL: Convert all prices to EUR to match landingCostPerUnit which is in EUR
-      // Get item's payment currency from purchase order or fall back to USD
-      const itemPaymentCurrency = (item as any).paymentCurrency || 'USD';
-      const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+      // CRITICAL FIX: Calculate unit price from source PO's totalPaid (converted to EUR)
+      // This ensures the cost reflects actual money spent, not listed purchase currency prices
+      let unitPriceEur: number = 0;
       
-      let unitPriceEur: number;
-      if (variantAllocationsArray.length > 0) {
-        // Calculate weighted average unit price from variant allocations, converting each to EUR
-        let totalVariantValueEur = 0;
-        let totalVariantQty = 0;
-        for (const va of variantAllocationsArray) {
-          const vaQty = va.quantity || 0;
-          const vaPrice = parseFloat(String(va.unitPrice || 0));
-          // Get variant's currency (falls back to item's payment currency)
-          const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
-          const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
-          // Convert to EUR: price / rate (since rate is EUR→currency)
-          const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
-          totalVariantValueEur += vaPriceEur * vaQty;
-          totalVariantQty += vaQty;
-        }
-        unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
-        // If no variant prices, fall back to item's unit price converted to EUR
-        if (unitPriceEur === 0) {
+      // Check if we have source purchase order data
+      const sourcePOId = item.purchaseOrderId;
+      const sourcePO = sourcePOId ? purchaseOrdersMap[sourcePOId] : null;
+      
+      if (sourcePO && sourcePO.totalPaid > 0 && sourcePO.totalQuantity > 0) {
+        // Use the source PO's totalPaid to calculate actual cost per unit
+        const paymentCurrencyRate = exchangeRates[sourcePO.paymentCurrency] || 1;
+        const totalPaidEur = sourcePO.paymentCurrency === 'EUR' 
+          ? sourcePO.totalPaid 
+          : sourcePO.totalPaid / paymentCurrencyRate;
+        
+        // Calculate this item's share of the total paid (proportional by quantity)
+        unitPriceEur = totalPaidEur / sourcePO.totalQuantity;
+      } else {
+        // Fallback: use source PO's paymentCurrency if available, else item's paymentCurrency
+        // This ensures we use the actual payment currency, not the listed purchase currency
+        const itemPaymentCurrency = (sourcePO?.paymentCurrency) || item.paymentCurrency || 'USD';
+        const itemCurrencyRate = exchangeRates[itemPaymentCurrency] || 1;
+        
+        if (variantAllocationsArray.length > 0) {
+          // Calculate weighted average unit price from variant allocations, converting each to EUR
+          let totalVariantValueEur = 0;
+          let totalVariantQty = 0;
+          for (const va of variantAllocationsArray) {
+            const vaQty = va.quantity || 0;
+            const vaPrice = parseFloat(String(va.unitPrice || 0));
+            const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+            const vaCurrencyRate = exchangeRates[vaCurrency] || 1;
+            const vaPriceEur = vaCurrency === 'EUR' ? vaPrice : vaPrice / vaCurrencyRate;
+            totalVariantValueEur += vaPriceEur * vaQty;
+            totalVariantQty += vaQty;
+          }
+          unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
+          if (unitPriceEur === 0) {
+            const itemUnitPrice = parseFloat(item.unitPrice || '0');
+            unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
+          }
+        } else {
           const itemUnitPrice = parseFloat(item.unitPrice || '0');
           unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
         }
-      } else {
-        // No variants - use item's unit price converted to EUR
-        const itemUnitPrice = parseFloat(item.unitPrice || '0');
-        unitPriceEur = itemPaymentCurrency === 'EUR' ? itemUnitPrice : itemUnitPrice / itemCurrencyRate;
       }
       // unitPrice is now in EUR to match landingCostPerUnit
       const unitPrice = unitPriceEur;
