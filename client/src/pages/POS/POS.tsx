@@ -66,6 +66,15 @@ import { soundEffects } from '@/utils/soundEffects';
 import { ThermalReceipt, type ReceiptData, type CompanyInfo } from '@/components/orders/ThermalReceipt';
 
 
+interface VariantSelection {
+  variantId: string;
+  variantName: string;
+  quantity: number;
+  sku?: string;
+  locationId?: string;
+  locationCode?: string;
+}
+
 interface CartItem {
   id: string;
   cartId: string;
@@ -75,13 +84,15 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  type: 'product' | 'variant' | 'bundle' | 'custom';
+  type: 'product' | 'variant' | 'bundle' | 'custom' | 'variant_group';
   sku?: string;
   barcode?: string;
   imageUrl?: string;
   discount?: number;
   cost?: number;
   profit?: number;
+  variantSelections?: VariantSelection[];
+  variantSummary?: string;
 }
 
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'bank_transfer_private' | 'bank_transfer_invoice' | 'pay_later' | 'qr_czk';
@@ -676,52 +687,71 @@ export default function POS() {
     setQuickVariantInput('');
   }, [selectedProductForVariant, getProductVariants, variantQuantities]);
 
-  // Add all selected variants to cart at once
+  // Add all selected variants to cart as ONE combined item
   const addSelectedVariantsToCart = useCallback(async () => {
     if (!selectedProductForVariant) return;
     
     const variants = getProductVariants(selectedProductForVariant.id);
-    let itemsAdded = 0;
+    const variantSelections: VariantSelection[] = [];
+    let totalQuantity = 0;
+    const summaryParts: string[] = [];
     
     for (const variant of variants) {
       const qty = variantQuantities[variant.id] || 0;
       if (qty > 0) {
-        const price = currency === 'EUR' 
-          ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
-          : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
-        
-        const variantItem = {
-          ...variant,
-          name: `${selectedProductForVariant.name} - ${variant.name}`,
+        variantSelections.push({
+          variantId: variant.id,
+          variantName: variant.name,
+          quantity: qty,
           sku: variant.sku || selectedProductForVariant.sku,
-          barcode: variant.barcode || selectedProductForVariant.barcode,
-          priceEur: selectedProductForVariant.priceEur,
-          priceCzk: selectedProductForVariant.priceCzk,
-          imageUrl: variant.imageUrl || selectedProductForVariant.imageUrl,
-          productId: selectedProductForVariant.id,
-          itemType: 'variant',
-        };
-        
-        for (let i = 0; i < qty; i++) {
-          addToCart(variantItem);
-          itemsAdded++;
-        }
+          locationId: variant.primaryLocationId || undefined,
+          locationCode: variant.locationCode || undefined,
+        });
+        totalQuantity += qty;
+        summaryParts.push(`${variant.name}:${qty}`);
       }
     }
     
-    if (itemsAdded > 0) {
-      if (soundEnabled) await soundEffects.playSuccessBeep();
-      toast({
-        title: t('financial:addedToCart'),
-        description: `${itemsAdded} ${t('pos:items', 'items')} added`,
-      });
-    }
+    if (variantSelections.length === 0) return;
+    
+    // Calculate price (use parent product price as base, variants inherit same price)
+    const price = currency === 'EUR' 
+      ? parseFloat(selectedProductForVariant.priceEur || '0') 
+      : parseFloat(selectedProductForVariant.priceCzk || '0');
+    
+    const variantSummary = summaryParts.join(', ');
+    const newCartId = `cart-${cartIdCounter}`;
+    setCartIdCounter(prev => prev + 1);
+    
+    const combinedItem: CartItem = {
+      id: selectedProductForVariant.id,
+      cartId: newCartId,
+      productId: selectedProductForVariant.id,
+      name: selectedProductForVariant.name,
+      price,
+      quantity: totalQuantity,
+      type: 'variant_group',
+      sku: selectedProductForVariant.sku,
+      barcode: selectedProductForVariant.barcode,
+      imageUrl: selectedProductForVariant.imageUrl,
+      variantSelections,
+      variantSummary,
+    };
+    
+    setCart(prev => [...prev, combinedItem]);
+    setFocusedCartItemId(newCartId);
+    
+    if (soundEnabled) await soundEffects.playSuccessBeep();
+    toast({
+      title: t('financial:addedToCart'),
+      description: `${totalQuantity} ${t('pos:items', 'items')} (${variantSelections.length} variants)`,
+    });
     
     setShowVariantModal(false);
     setSelectedProductForVariant(null);
     setVariantQuantities({});
     setQuickVariantInput('');
-  }, [selectedProductForVariant, getProductVariants, variantQuantities, currency, addToCart, soundEnabled, toast, t]);
+  }, [selectedProductForVariant, getProductVariants, variantQuantities, currency, soundEnabled, toast, t, cartIdCounter]);
 
   const updateQuantity = (cartId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -813,6 +843,50 @@ export default function POS() {
       }
 
       const isPayLater = paymentMethod === 'pay_later';
+      
+      // Expand variant_group items into individual variant order items for proper inventory tracking
+      const expandedItems: Array<{
+        productId?: string;
+        variantId?: string;
+        bundleId?: string;
+        quantity: number;
+        price: string;
+        productName: string;
+        sku: string;
+        image: string | null;
+        locationId?: string;
+      }> = [];
+      
+      for (const item of cart) {
+        if (item.type === 'variant_group' && item.variantSelections) {
+          // Expand variant group into individual variant items
+          for (const vs of item.variantSelections) {
+            expandedItems.push({
+              productId: item.productId,
+              variantId: vs.variantId,
+              quantity: vs.quantity,
+              price: item.price.toFixed(2),
+              productName: `${item.name} - ${vs.variantName}`,
+              sku: vs.sku || '',
+              image: item.imageUrl || null,
+              locationId: vs.locationId,
+            });
+          }
+        } else {
+          // Regular item
+          expandedItems.push({
+            productId: item.productId,
+            variantId: item.variantId,
+            bundleId: item.bundleId,
+            quantity: item.quantity,
+            price: item.price.toFixed(2),
+            productName: item.name,
+            sku: item.sku || '',
+            image: item.imageUrl || null,
+          });
+        }
+      }
+      
       const orderData = {
         customerId: selectedCustomerId || null,
         warehouseId: selectedWarehouse,
@@ -821,16 +895,7 @@ export default function POS() {
         paymentStatus: isPayLater ? 'unpaid' : 'paid',
         orderType: 'pos',
         channel: 'pos',
-        items: cart.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          bundleId: item.bundleId,
-          quantity: item.quantity,
-          price: item.price.toFixed(2),
-          productName: item.name, // Include product name for proper display
-          sku: item.sku || '', // Include SKU
-          image: item.imageUrl || null, // Include image
-        })),
+        items: expandedItems,
         subtotal: subtotal.toFixed(2),
         discount: discount.toFixed(2),
         total: total.toFixed(2),
@@ -839,7 +904,7 @@ export default function POS() {
         fulfillmentStage: 'completed',
         customerEmail: selectedCustomer?.email || 'walkin@pos.local',
         customerName: customerName,
-        customerPhone: selectedCustomer?.phone || '+420000000000',
+        customerPhone: selectedCustomer?.shippingTel || '+420000000000',
         notes: orderNotes || undefined,
       };
 
@@ -1419,8 +1484,16 @@ export default function POS() {
                               {t('financial:customItem')}
                             </Badge>
                           )}
+                          {item.type === 'variant_group' && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700">
+                              +V
+                            </Badge>
+                          )}
                         </div>
                         <h4 className="font-medium text-xs leading-tight line-clamp-2">{item.name}</h4>
+                        {item.variantSummary && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{item.variantSummary}</p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded p-0.5 shrink-0">
@@ -1755,6 +1828,9 @@ export default function POS() {
                         <td className="py-2 pr-2 align-top">
                           <div className="font-medium text-slate-700 dark:text-slate-200 leading-tight" style={{ maxWidth: '180px', wordBreak: 'break-word' }}>
                             {item.name}
+                            {item.variantSummary && (
+                              <div className="text-[10px] text-muted-foreground mt-0.5">{item.variantSummary}</div>
+                            )}
                           </div>
                         </td>
                         <td className="py-2 px-2 text-center text-muted-foreground whitespace-nowrap align-top">
