@@ -5068,14 +5068,16 @@ export default function AddOrder() {
                     }
 
                     // Create temporary customer object
+                    // All quick customer types need to be saved to the database
                     const tempCustomer = {
                       id: `temp-${quickCustomerType}-${Date.now()}`,
                       name: quickCustomerName,
                       email: quickCustomerType === 'msg' && quickCustomerSocialApp === 'email' ? quickCustomerPhone : "",
                       phone: quickCustomerType === 'tel' || (quickCustomerType === 'msg' && quickCustomerSocialApp !== 'email') ? quickCustomerPhone : "",
+                      shippingTel: quickCustomerType === 'tel' || (quickCustomerType === 'msg' && quickCustomerSocialApp !== 'email') ? quickCustomerPhone : "",
                       type: "regular",
-                      isTemporary: quickCustomerType === 'quick' || quickCustomerType === 'custom',
-                      needsSaving: quickCustomerType === 'tel' || quickCustomerType === 'msg',
+                      isTemporary: false,
+                      needsSaving: true,
                       socialMediaApp: quickCustomerType === 'msg' ? quickCustomerSocialApp : undefined
                     };
 
