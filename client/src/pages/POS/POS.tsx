@@ -268,13 +268,10 @@ export default function POS() {
     }
   }, [focusedCartItemId]);
 
-  // Reset cash input when dialog opens
+  // Reset cash state when dialog opens (input resets via key prop)
   useEffect(() => {
     if (showCashDialog) {
       setCashReceived('');
-      if (cashInputRef.current) {
-        cashInputRef.current.value = '';
-      }
     }
   }, [showCashDialog]);
 
@@ -1622,27 +1619,25 @@ export default function POS() {
               </Label>
               <div className="relative group">
                 <input
+                  key={showCashDialog ? 'open' : 'closed'}
                   ref={cashInputRef}
                   autoFocus
                   type="text"
                   inputMode="decimal"
                   defaultValue=""
-                  onInput={(e) => {
-                    const input = e.target as HTMLInputElement;
-                    // Replace comma with period for decimal
-                    if (input.value.includes(',')) {
-                      const pos = input.selectionStart || 0;
-                      input.value = input.value.replace(',', '.');
-                      input.setSelectionRange(pos, pos);
-                    }
-                    setCashReceived(input.value);
+                  onChange={(e) => {
+                    // Update state for real-time change display
+                    // Using defaultValue so state changes won't affect input
+                    setCashReceived(e.target.value.replace(',', '.'));
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      const val = (e.target as HTMLInputElement).value;
+                      const input = e.target as HTMLInputElement;
+                      let val = input.value.replace(',', '.');
                       if (parseDecimal(val || '0') >= total && !createOrderMutation.isPending) {
                         e.preventDefault();
-                        handleCashPayment();
+                        setCashReceived(val);
+                        setTimeout(() => handleCashPayment(), 0);
                       }
                     }
                   }}
