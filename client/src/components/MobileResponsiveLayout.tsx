@@ -203,9 +203,8 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
   const [openItems, setOpenItems] = useState<string[]>(() => 
     getLocalStorageArray<string>('sidebarOpenItems', [])
   );
-  const [openSections, setOpenSections] = useState<string[]>(() => 
-    getLocalStorageArray<string>('sidebarOpenSections', ['Warehouse Operations', 'Admin & Management'])
-  );
+  // No localStorage persistence for expanded sections - always start collapsed
+  const [openSections, setOpenSections] = useState<string[]>([]);
   
   // Language toggle mutation
   const languageMutation = useMutation({
@@ -327,10 +326,7 @@ export function MobileResponsiveLayout({ children, layoutWidth = 'default', noPa
     setLocalStorageItem('sidebarOpenItems', openItems);
   }, [openItems]);
 
-  // Save openSections to localStorage whenever they change
-  useEffect(() => {
-    setLocalStorageItem('sidebarOpenSections', openSections);
-  }, [openSections]);
+  // openSections no longer persisted to localStorage (per user request)
   
 
   // Save scroll position whenever user scrolls the desktop nav
