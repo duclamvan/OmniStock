@@ -28647,14 +28647,49 @@ Other rules:
       doc.fontSize(9).font('Receipt-Bold').text(t.items + ':', sideMargin, yPos, { lineGap: isVietnamese ? 3 : 1 });
       yPos += baseLineHeight;
 
+      // Smart abbreviation function for receipt item names
+      const abbreviateProductName = (name: string, maxLen: number = 20): string => {
+        if (name.length <= maxLen) return name;
+        
+        // Common abbreviations for multiple languages
+        const abbreviations: Record<string, string> = {
+          // Vietnamese / Common
+          'Thùng': 'Th.', 'Thung': 'Th.', 'Bột': 'B.', 'sáng': 's.', 'tối': 't.', 'vừa': 'v.',
+          // English
+          'Makeup': 'Mkp', 'Natural': 'Nat.', 'Crystal': 'Crys.', 'Ombre': 'Omb.',
+          'White': 'Wht', 'Pink': 'Pnk', 'Dark': 'Dk', 'Light': 'Lt', 'Quick': 'Qck',
+          'Dry': 'D.', 'Clear': 'Clr', 'Super': 'Sup.', 'Perfect': 'Prf.', 'matte': 'mat.',
+          'Peach': 'Pch', 'Professional': 'Pro.', 'Premium': 'Prem.', 'Original': 'Orig.',
+          'Special': 'Spec.', 'Collection': 'Coll.', 'Edition': 'Ed.', 'Classic': 'Clsc.',
+          // Czech
+          'Bílá': 'Bíl.', 'Růžová': 'Růž.', 'Černá': 'Čer.', 'Průhledná': 'Průh.',
+          // German
+          'Weiss': 'Ws.', 'Schwarz': 'Schw.', 'Natürlich': 'Nat.',
+          // Units
+          '11.34kg': '11kg', '5.67kg': '5.7kg',
+        };
+        
+        let abbreviated = name;
+        for (const [full, abbr] of Object.entries(abbreviations)) {
+          abbreviated = abbreviated.replace(new RegExp(full, 'gi'), abbr);
+        }
+        
+        // Truncate with ellipsis if still too long
+        if (abbreviated.length > maxLen) {
+          abbreviated = abbreviated.substring(0, maxLen - 2) + '..';
+        }
+        return abbreviated;
+      };
+
       doc.fontSize(8).font('Receipt');
-      const priceColumnWidth = 60; // Wider to fit large prices like "27 615.00 Kč"
+      const priceColumnWidth = 68; // Wider to fit prices with spacing
       for (const item of items) {
         if (!item || typeof item !== 'object') continue;
         
         const qtyRaw = Number(item.quantity);
         const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? qtyRaw : 1;
-        const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Item';
+        const rawName = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Item';
+        const name = abbreviateProductName(rawName, 18);
         const priceRaw = Number(item.price);
         const unitPrice = Number.isFinite(priceRaw) ? priceRaw : 0;
         const lineTotal = unitPrice * qty;
@@ -28667,7 +28702,7 @@ Other rules:
         
         doc.text(itemText, sideMargin, yPos, { width: nameWidth, lineGap: isVietnamese ? 3 : 1 });
         doc.fontSize(7).text(priceText, sideMargin + nameWidth, yPos, { width: priceColumnWidth, align: 'right' }); doc.fontSize(8);
-        yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 5;
+        yPos += Math.max(nameHeight, isVietnamese ? 13 : 11) + 3;
       }
 
       drawDashedLine(yPos);
