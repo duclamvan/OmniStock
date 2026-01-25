@@ -55,7 +55,7 @@ import {
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn, handleDecimalKeyDown, parseDecimal } from '@/lib/utils';
+import { cn, parseDecimal } from '@/lib/utils';
 import { fuzzySearch } from '@/lib/fuzzySearch';
 import type { Product, Customer, Category } from '@shared/schema';
 import { insertInvoiceSchema } from '@shared/schema';
@@ -1597,10 +1597,14 @@ export default function POS() {
                   type="text"
                   inputMode="decimal"
                   value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
+                  onChange={(e) => {
+                    // Convert comma to dot for decimal separator and update state
+                    const newValue = e.target.value.replace(',', '.');
+                    setCashReceived(newValue);
+                  }}
                   onFocus={(e) => e.target.select()}
                   onKeyDown={(e) => {
-                    handleDecimalKeyDown(e);
+                    // Handle Enter key for form submission - no DOM manipulation
                     if (e.key === 'Enter' && parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
                       e.preventDefault();
                       handleCashPayment();
@@ -2053,10 +2057,10 @@ export default function POS() {
             {/* Input with dynamic placeholder */}
             <div className="relative">
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={discountInput}
-                onChange={(e) => setDiscountInput(e.target.value)}
-                onKeyDown={handleDecimalKeyDown}
+                onChange={(e) => setDiscountInput(e.target.value.replace(',', '.'))}
                 placeholder={discountType === 'percentage' ? t('financial:enterPercentagePlaceholder') : `${t('common:enterAmount')} (e.g., 5.00)`}
                 className="h-14 text-xl text-center pr-12"
                 autoFocus
@@ -2170,13 +2174,11 @@ export default function POS() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('pos:price', 'Price')} ({currencySymbol}) *</label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0.00"
                   value={customItemPrice}
-                  onChange={(e) => setCustomItemPrice(e.target.value)}
-                  onKeyDown={handleDecimalKeyDown}
+                  onChange={(e) => setCustomItemPrice(e.target.value.replace(',', '.'))}
                   data-testid="input-custom-item-price"
                 />
               </div>
@@ -2184,13 +2186,11 @@ export default function POS() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('pos:cost', 'Cost')} ({currencySymbol})</label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0.00"
                   value={customItemCost}
-                  onChange={(e) => setCustomItemCost(e.target.value)}
-                  onKeyDown={handleDecimalKeyDown}
+                  onChange={(e) => setCustomItemCost(e.target.value.replace(',', '.'))}
                   data-testid="input-custom-item-cost"
                 />
               </div>
