@@ -104,7 +104,7 @@ interface ParentChildStock {
 }
 
 export default function SimpleConversion() {
-  const { t } = useTranslation(["inventory", "manufacturing"]);
+  const { t } = useTranslation(["manufacturing", "inventory"]);
   const { toast } = useToast();
 
   const [selectedProductId, setSelectedProductId] = useState<string>("");
