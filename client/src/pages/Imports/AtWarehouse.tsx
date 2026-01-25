@@ -1872,27 +1872,29 @@ export default function AtWarehouse() {
 
   return (
     <div className="pb-20 md:pb-4 overflow-x-hidden">
-      {/* Compact Header */}
-      <div className="sticky top-0 z-10 bg-background border-b md:border-0 mb-2 md:mb-3">
-        <div className="px-2 py-2 md:px-4 md:py-3">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg md:text-xl font-bold">{t('consolidation')}</h1>
-            <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-              {/* Location Filter */}
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger className="w-[140px] md:w-[150px] h-9" data-testid="select-location-filter">
-                  <SelectValue placeholder={t('allLocations')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allLocations')}</SelectItem>
-                  <SelectItem value="China">🇨🇳 {t('china')}</SelectItem>
-                  <SelectItem value="USA">🇺🇸 {t('usa')}</SelectItem>
-                  <SelectItem value="Vietnam">🇻🇳 {t('vietnam')}</SelectItem>
-                  <SelectItem value="Europe">🇪🇺 {t('europe')}</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <div className="flex gap-2">
+      {/* Mobile-First Header */}
+      <div className="sticky top-0 z-10 bg-background border-b mb-2">
+        <div className="px-3 py-3 space-y-3">
+          {/* Title Row */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold truncate">{t('consolidation')}</h1>
+            {/* Location Filter - Compact */}
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="w-[120px] h-8 text-sm" data-testid="select-location-filter">
+                <SelectValue placeholder={t('allLocations')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('allLocations')}</SelectItem>
+                <SelectItem value="China">🇨🇳 {t('china')}</SelectItem>
+                <SelectItem value="USA">🇺🇸 {t('usa')}</SelectItem>
+                <SelectItem value="Vietnam">🇻🇳 {t('vietnam')}</SelectItem>
+                <SelectItem value="Europe">🇪🇺 {t('europe')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Action Buttons Row */}
+          <div className="flex gap-2">
           <Dialog open={isAddCustomItemOpen} onOpenChange={setIsAddCustomItemOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" data-testid="button-add-custom-item" className="h-9">
@@ -2362,14 +2364,12 @@ export default function AtWarehouse() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
-      </div>
-      </div>
-      </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-2 md:px-3 space-y-2">
+      <div className="px-3 space-y-3">
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -2432,109 +2432,105 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {filteredOrders.map((order) => (
-                <Card key={order.id} className="shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">
-                            {order.location === 'Europe' && '🇪🇺'}
-                            {order.location === 'USA' && '🇺🇸'}
-                            {order.location === 'China' && '🇨🇳'}
-                            {order.location === 'Vietnam' && '🇻🇳'}
-                            {!order.location && '🌍'}
-                          </span>
-                          <h3 className="text-lg font-semibold">PO #{String(order.id).substring(0, 8).toUpperCase()} - {order.supplier}</h3>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <div className="text-muted-foreground">{t('items')}</div>
-                            <div className="font-medium">{order.items?.length || 0}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">{t('totalValue')}</div>
-                            <div className="font-medium">
-                              {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">{t('trackingNumber')}</div>
-                            <div className="font-mono text-xs">{order.trackingNumber || t('na')}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">{t('arrived')}</div>
-                            <div className="text-sm">
-                              {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : t('na')}
-                            </div>
-                          </div>
-                        </div>
-
-                        {order.items && order.items.length > 0 && (
-                          <div className="border rounded-lg p-3 bg-muted/30">
-                            <div className="text-sm font-medium mb-2">{t('orderItems')}:</div>
-                            <div className={`space-y-1 ${expandedOrders.has(order.id) && order.items.length > 10 ? 'max-h-[300px] overflow-y-auto pr-2' : ''}`}>
-                              {(expandedOrders.has(order.id) ? order.items : order.items.slice(0, 5)).map((item: any, index: number) => (
-                                <div key={index} className="text-sm flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    {item.name} {item.sku && `(${item.sku})`}
-                                  </span>
-                                  <span className="font-medium">{t('qty')}: {item.quantity}</span>
-                                </div>
-                              ))}
-                              {!expandedOrders.has(order.id) && order.items.length > 5 && (
-                                <button
-                                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer pt-1"
-                                  onClick={() => toggleOrderExpanded(order.id)}
-                                >
-                                  {t('andMoreItems', { count: order.items.length - 5 })}
-                                </button>
-                              )}
-                              {expandedOrders.has(order.id) && order.items.length > 5 && (
-                                <button
-                                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer pt-1"
-                                  onClick={() => toggleOrderExpanded(order.id)}
-                                >
-                                  {t('showLess')}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                <Card key={order.id} className="shadow-sm overflow-hidden">
+                  <CardContent className="p-3">
+                    {/* Header Row - Flag + Title */}
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-lg flex-shrink-0">
+                        {order.location === 'Europe' && '🇪🇺'}
+                        {order.location === 'USA' && '🇺🇸'}
+                        {order.location === 'China' && '🇨🇳'}
+                        {order.location === 'Vietnam' && '🇻🇳'}
+                        {!order.location && '🌍'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold truncate">
+                          PO #{String(order.id).substring(0, 8).toUpperCase()}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">{order.supplier}</p>
                       </div>
+                      {getStatusBadge(order.status)}
+                    </div>
+                    
+                    {/* Stats Grid - Compact 2x2 */}
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-3 bg-muted/30 rounded-lg p-2">
+                      <div>
+                        <span className="text-muted-foreground">{t('items')}: </span>
+                        <span className="font-medium">{order.items?.length || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('totalValue')}: </span>
+                        <span className="font-medium">{order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(0)}</span>
+                      </div>
+                      <div className="truncate">
+                        <span className="text-muted-foreground">{t('trackingNumber')}: </span>
+                        <span className="font-mono text-xs">{order.trackingNumber || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">{t('arrived')}: </span>
+                        <span>{order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd') : '-'}</span>
+                      </div>
+                    </div>
 
-                      <div className="flex gap-2 ml-4">
+                    {/* Order Items - Collapsible */}
+                    {order.items && order.items.length > 0 && (
+                      <div className="border rounded-lg p-2 bg-muted/20 mb-3">
+                        <div className="text-xs font-medium mb-1 text-muted-foreground">{t('orderItems')}:</div>
+                        <div className={`space-y-0.5 ${expandedOrders.has(order.id) && order.items.length > 10 ? 'max-h-[200px] overflow-y-auto' : ''}`}>
+                          {(expandedOrders.has(order.id) ? order.items : order.items.slice(0, 3)).map((item: any, index: number) => (
+                            <div key={index} className="text-xs flex justify-between gap-2">
+                              <span className="text-muted-foreground truncate flex-1">{item.name}</span>
+                              <span className="font-medium flex-shrink-0">×{item.quantity}</span>
+                            </div>
+                          ))}
+                          {order.items.length > 3 && (
+                            <button
+                              className="text-xs text-primary hover:underline pt-1"
+                              onClick={() => toggleOrderExpanded(order.id)}
+                            >
+                              {expandedOrders.has(order.id) 
+                                ? t('showLess') 
+                                : t('andMoreItems', { count: order.items.length - 3 })}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons - Full Width Stack on Mobile */}
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        className="h-10 flex-1"
+                        onClick={() => handleReceive(order)}
+                        data-testid={`button-receive-order-${order.id}`}
+                      >
+                        <Box className="h-4 w-4 mr-1" />
+                        {t('receive')}
+                      </Button>
+                      {order.status !== 'unpacked' && (
                         <Button 
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange('order', order.id, order.status)}
-                          data-testid={`button-status-order-${order.id}`}
+                          className="h-10 flex-1"
+                          onClick={() => handleUnpack(order)}
+                          data-testid={`button-unpack-order-${order.id}`}
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          <PackageOpen className="h-4 w-4 mr-1" />
+                          {t('unpack')}
                         </Button>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReceive(order)}
-                          data-testid={`button-receive-order-${order.id}`}
-                        >
-                          <Box className="h-4 w-4 mr-1" />
-                          {t('receive')}
-                        </Button>
-                        {order.status !== 'unpacked' && (
-                          <Button 
-                            size="sm"
-                            onClick={() => handleUnpack(order)}
-                            data-testid={`button-unpack-order-${order.id}`}
-                          >
-                            <PackageOpen className="h-4 w-4 mr-1" />
-                            {t('unpack')}
-                          </Button>
-                        )}
-                      </div>
+                      )}
+                      <Button 
+                        size="sm"
+                        variant="ghost"
+                        className="h-10 w-10 flex-shrink-0"
+                        onClick={() => handleStatusChange('order', order.id, order.status)}
+                        data-testid={`button-status-order-${order.id}`}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
