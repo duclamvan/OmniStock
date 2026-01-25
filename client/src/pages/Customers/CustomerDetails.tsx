@@ -68,6 +68,7 @@ import { Facebook } from "lucide-react";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { CustomerPrices } from "./CustomerPrices";
 import { fuzzySearch } from "@/lib/fuzzySearch";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, countryToIso, type SupportedLanguage } from '@shared/utils/countryNormalizer';
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
@@ -1105,7 +1106,7 @@ export default function CustomerDetails() {
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3 shrink-0" />
-                                    <span>{formatDate(order.createdAt)}</span>
+                                    <span>{formatRelativeTime(order.createdAt)}</span>
                                   </div>
                                   <span className="text-slate-300">•</span>
                                   <div className="flex items-center gap-1">

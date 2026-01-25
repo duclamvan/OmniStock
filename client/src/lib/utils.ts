@@ -1,8 +1,47 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, parseISO } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Formats a date string into a "smarter" relative time display.
+ * - x minutes/hours ago (for very recent)
+ * - "Today at HH:mm"
+ * - "Yesterday at HH:mm"
+ * - "Monday at HH:mm" (if within the last week)
+ * - "MMM d, yyyy" (for older dates)
+ */
+export function formatRelativeTime(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return "";
+  
+  const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+  if (isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+  // Within the last hour: "x minutes ago"
+  if (diffInMinutes < 60 && diffInMinutes >= 0) {
+    if (diffInMinutes < 1) return "just now";
+    return formatDistanceToNow(date, { addSuffix: true });
+  }
+
+  if (isToday(date)) {
+    return `Today at ${format(date, 'HH:mm')}`;
+  }
+
+  if (isYesterday(date)) {
+    return `Yesterday at ${format(date, 'HH:mm')}`;
+  }
+
+  if (isThisWeek(date)) {
+    return format(date, 'EEEE @ HH:mm');
+  }
+
+  return format(date, 'MMM d, yyyy');
 }
 
 /**

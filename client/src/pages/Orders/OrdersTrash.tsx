@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocalization } from "@/contexts/LocalizationContext";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -314,14 +315,14 @@ export default function OrdersTrash() {
                       <p>{order.customer?.name || t('orders:walkInCustomer')}</p>
                       <p className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{t('orders:orderDate')}: {formatDate(order.createdAt)}</span>
+                        <span>{t('orders:orderDate')}: {formatRelativeTime(order.createdAt)}</span>
                       </p>
                       <p>
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                           {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency || 'EUR')}
                         </span>
                         {' • '}
-                        {t('orders:deletedOn')}: {formatDate(order.updatedAt)}
+                        {t('orders:deletedOn')}: {formatRelativeTime(order.updatedAt)}
                       </p>
                     </div>
                     <OrderItemsList orderId={order.id} currency={order.currency || 'EUR'} />

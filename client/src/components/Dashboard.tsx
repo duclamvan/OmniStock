@@ -48,6 +48,7 @@ import { useLocalization } from "@/contexts/LocalizationContext";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { convertCurrency, type Currency } from "@/lib/currencyUtils";
 
 // Lazy load chart components
@@ -1297,7 +1298,7 @@ export function Dashboard() {
                             {activity.type === 'shipped' ? t('shipped') : t('added')}
                           </Badge>
                           <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                            {formatRelativeTime(activity.timestamp)}
                           </span>
                         </div>
                       </div>
@@ -2096,7 +2097,7 @@ export function Dashboard() {
                                 </span>
                               )}
                               <span>
-                                {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                                {formatRelativeTime(notif.createdAt)}
                               </span>
                             </div>
                           </div>

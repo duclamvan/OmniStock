@@ -29,8 +29,10 @@ import {
   BarChart3,
   Columns,
   Edit,
-  Eye
+  Eye,
+  Calendar
 } from "lucide-react";
+import { cn, formatRelativeTime } from "@/lib/utils";
 
 export default function AllImports() {
   const { t } = useTranslation('imports');
@@ -201,7 +203,7 @@ export default function AllImports() {
       sortable: true,
       cell: (order) => order.estimatedArrival ? (
         <div>
-          <div>{formatDate(order.estimatedArrival)}</div>
+          <div>{formatRelativeTime(order.estimatedArrival)}</div>
         </div>
       ) : '-',
     },
@@ -415,7 +417,7 @@ export default function AllImports() {
                     <div>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">{t('common:date', 'Date')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {order.orderDate ? formatDate(order.orderDate) : formatDate(order.createdAt)}
+                        {order.orderDate ? formatRelativeTime(order.orderDate) : formatRelativeTime(order.createdAt)}
                       </p>
                     </div>
                     <div>
@@ -451,7 +453,7 @@ export default function AllImports() {
                           <p className="text-gray-500 dark:text-gray-400 text-xs">{t('estimatedArrival')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
-                            {formatDate(order.estimatedArrival)}
+                            {formatRelativeTime(order.estimatedArrival)}
                           </p>
                         </div>
                       )}

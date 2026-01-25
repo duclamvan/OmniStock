@@ -92,7 +92,7 @@ import {
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { CustomerBadges } from '@/components/CustomerBadges';
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { exportToPDF, PDFColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -1087,7 +1087,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
               <div className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                <span>{formatDate(order.createdAt)}</span>
+                <span>{formatRelativeTime(order.createdAt)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" />
@@ -2838,7 +2838,7 @@ ${t('orders:status')}: ${orderStatusText} | ${t('orders:payment')}: ${paymentSta
               <div>
                 <Label className="text-sm text-slate-600 dark:text-slate-400">{t('orders:orderDateLabel')}</Label>
                 <p className="font-medium">
-                  {order?.createdAt && formatDate(order.createdAt)}
+                  {order?.createdAt && formatRelativeTime(order.createdAt)}
                 </p>
               </div>
               <div>

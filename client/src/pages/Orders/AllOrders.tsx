@@ -24,7 +24,7 @@ import { formatCompactNumber } from "@/lib/currencyUtils";
 import { useLocalization } from "@/contexts/LocalizationContext";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag, getLocalizedCountryName, normalizeCountryForStorage, type SupportedLanguage } from '@shared/utils/countryNormalizer';
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { exportToXLSX, exportToPDF, type PDFColumn } from "@/lib/exportUtils";
 import { Plus, Search, Filter, Download, FileDown, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal, Sparkles, RefreshCw, Heart, AlertTriangle, TrendingUp, ArrowUp, ArrowDown, MoreVertical, ShoppingCart, DollarSign, Users, User, Zap, Truck, Upload, Undo2, X, Calendar, CalendarDays, Copy, Link2 } from "lucide-react";
 import { getCarrierTrackingUrl } from "@/lib/carrierTracking";
@@ -255,7 +255,7 @@ function MobileOrderCard({
           </span>
         </div>
         <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
-          {formatDate(order.createdAt)}
+          {formatRelativeTime(order.createdAt)}
         </span>
       </div>
       
@@ -1138,7 +1138,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       sortKey: "createdAt",
       cell: (order) => (
         <div className="text-sm text-slate-600 dark:text-slate-400">
-          {formatDate(order.createdAt)}
+          {formatRelativeTime(order.createdAt)}
         </div>
       ),
     },
@@ -2819,7 +2819,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               return (
                                 <>
                                   <span className={`font-medium ${colorClass}`}>{customerName}</span>
-                                  <span className="text-slate-600 dark:text-slate-400"> • {formatDate(order.createdAt)}</span>
+                                  <span className="text-slate-600 dark:text-slate-400"> • {formatRelativeTime(order.createdAt)}</span>
                                 </>
                               );
                             })()}
