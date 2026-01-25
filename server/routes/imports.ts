@@ -15489,7 +15489,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       .map(row => row.item.purchaseOrderId)
       .filter((id): id is string => !!id))];
     
-    const purchaseOrdersMap: Record<string, { totalPaid: number; paymentCurrency: string; totalQuantity: number }> = {};
+    const purchaseOrdersMap: Record<string, { totalPaid: number; paymentCurrency: string; purchaseCurrency: string; totalQuantity: number }> = {};
     
     if (purchaseOrderIds.length > 0) {
       const poData = await db
@@ -15514,6 +15514,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         purchaseOrdersMap[po.id] = {
           totalPaid: parseFloat(po.totalPaid || '0'),
           paymentCurrency: po.paymentCurrency || 'USD',
+          purchaseCurrency: po.purchaseCurrency || 'USD', // Currency for listed prices (unitPrice)
           totalQuantity: totalQty
         };
       }
@@ -15550,10 +15551,13 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
     
     // Calculate total value (in EUR) and total units for fallback allocation methods
     // We need to convert item values to EUR for consistent value-based allocation
+    // Use source PO's purchaseCurrency (for listed prices) if available
     const totalShipmentValueEur = itemsWithCartons.reduce((sum, row) => {
       const item = row.item;
-      const itemPaymentCurrency = item.paymentCurrency || 'USD';
-      const itemUnitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, itemPaymentCurrency, exchangeRates);
+      const sourcePOId = item.purchaseOrderId;
+      const sourcePO = sourcePOId ? purchaseOrdersMap[sourcePOId] : null;
+      const itemPriceCurrency = sourcePO?.purchaseCurrency || item.paymentCurrency || 'USD';
+      const itemUnitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, itemPriceCurrency, exchangeRates);
       return sum + itemUnitPriceEur * item.quantity;
     }, 0);
     
@@ -15591,8 +15595,11 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
 
       // Calculate allocation ratio based on available data
       // Convert item value to EUR for consistent value-based allocation
-      const itemPaymentCurrency = item.paymentCurrency || 'USD';
-      const itemUnitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, itemPaymentCurrency, exchangeRates);
+      // Use source PO's purchaseCurrency (for listed prices) if available, else item.paymentCurrency
+      const sourcePOId = item.purchaseOrderId;
+      const sourcePOForAlloc = sourcePOId ? purchaseOrdersMap[sourcePOId] : null;
+      const itemPriceCurrency = sourcePOForAlloc?.purchaseCurrency || item.paymentCurrency || 'USD';
+      const itemUnitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, itemPriceCurrency, exchangeRates);
       const safeItemValueEur = itemUnitPriceEur * item.quantity;
       const safeChargeableWeight = isNaN(chargeableWeight) ? 0 : chargeableWeight;
       
@@ -15649,9 +15656,8 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       // This ensures the cost reflects actual money spent, not listed purchase currency prices
       let unitPriceEur: number = 0;
       
-      // Check if we have source purchase order data
-      const sourcePOId = item.purchaseOrderId;
-      const sourcePO = sourcePOId ? purchaseOrdersMap[sourcePOId] : null;
+      // Reuse sourcePOForAlloc (already looked up above for allocation calculation)
+      const sourcePO = sourcePOForAlloc;
       
       if (sourcePO && sourcePO.totalPaid > 0 && sourcePO.totalQuantity > 0) {
         // Use the source PO's totalPaid to calculate actual cost per unit
@@ -15660,9 +15666,9 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
         // Calculate this item's share of the total paid (proportional by quantity)
         unitPriceEur = totalPaidEur / sourcePO.totalQuantity;
       } else {
-        // Fallback: use source PO's paymentCurrency if available, else item's paymentCurrency
-        // This ensures we use the actual payment currency, not the listed purchase currency
-        const fallbackPaymentCurrency = (sourcePO?.paymentCurrency) || item.paymentCurrency || 'USD';
+        // Fallback: use source PO's purchaseCurrency for unitPrice conversion (listed prices currency)
+        // paymentCurrency is for totalPaid, purchaseCurrency is for item prices
+        const fallbackPurchaseCurrency = (sourcePO?.purchaseCurrency) || item.paymentCurrency || 'USD';
         
         if (variantAllocationsArray.length > 0) {
           // Calculate weighted average unit price from variant allocations, converting each to EUR
@@ -15670,17 +15676,17 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
           let totalVariantQty = 0;
           for (const va of variantAllocationsArray) {
             const vaQty = va.quantity || 0;
-            const vaCurrency = va.unitPriceCurrency || fallbackPaymentCurrency;
+            const vaCurrency = va.unitPriceCurrency || fallbackPurchaseCurrency;
             const vaPriceEur = fxConversionService.safeConvertToEur(va.unitPrice, vaCurrency, exchangeRates);
             totalVariantValueEur += vaPriceEur * vaQty;
             totalVariantQty += vaQty;
           }
           unitPriceEur = totalVariantQty > 0 ? totalVariantValueEur / totalVariantQty : 0;
           if (unitPriceEur === 0) {
-            unitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, fallbackPaymentCurrency, exchangeRates);
+            unitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, fallbackPurchaseCurrency, exchangeRates);
           }
         } else {
-          unitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, fallbackPaymentCurrency, exchangeRates);
+          unitPriceEur = fxConversionService.safeConvertToEur(item.unitPrice, fallbackPurchaseCurrency, exchangeRates);
         }
       }
       // unitPrice is now in EUR to match landingCostPerUnit
@@ -15735,8 +15741,9 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
       }
 
       // Convert variant allocations to EUR for consistent display
+      // Use source PO's purchaseCurrency as fallback for item prices
       const variantAllocationsEur = variantAllocationsArray.map(va => {
-        const vaCurrency = va.unitPriceCurrency || itemPaymentCurrency;
+        const vaCurrency = va.unitPriceCurrency || itemPriceCurrency;
         const vaPriceEur = fxConversionService.safeConvertToEur(va.unitPrice, vaCurrency, exchangeRates);
         return {
           ...va,
@@ -15747,7 +15754,7 @@ async function getItemAllocationBreakdown(shipmentId: string | number, costsByTy
 
       // Convert orderItems unitPrices to EUR for consistent display
       const orderItemsEur = orderItemsArray.map(oi => {
-        const oiCurrency = oi.unitPriceCurrency || itemPaymentCurrency;
+        const oiCurrency = oi.unitPriceCurrency || itemPriceCurrency;
         const oiPriceEur = fxConversionService.safeConvertToEur(oi.unitPrice, oiCurrency, exchangeRates);
         return {
           ...oi,
