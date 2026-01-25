@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { usePageTitle } from '@/hooks/use-page-title';
@@ -64,6 +64,69 @@ import { convertCurrency } from '@/lib/currencyUtils';
 import { useTranslation } from 'react-i18next';
 import { soundEffects } from '@/utils/soundEffects';
 import { ThermalReceipt, type ReceiptData, type CompanyInfo } from '@/components/orders/ThermalReceipt';
+
+// Stable input component that manages its own state to prevent cursor jumping
+interface StableInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onEnter?: () => void;
+  className?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
+  disabled?: boolean;
+}
+
+const StableInput = memo(function StableInput({ 
+  value, 
+  onChange, 
+  onEnter, 
+  className, 
+  placeholder,
+  autoFocus,
+  disabled
+}: StableInputProps) {
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Sync from parent only when the dialog opens (value goes from '' to something or vice versa)
+  useEffect(() => {
+    if (value === '' && localValue !== '') {
+      setLocalValue('');
+    } else if (value !== '' && localValue === '') {
+      setLocalValue(value);
+    }
+  }, [value]);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    // Convert comma to dot for decimal separator
+    if (val.includes(',')) {
+      val = val.replace(',', '.');
+    }
+    setLocalValue(val);
+    onChange(val);
+  };
+  
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      onChange={handleChange}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && onEnter) {
+          e.preventDefault();
+          onEnter();
+        }
+      }}
+      className={className}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+      disabled={disabled}
+    />
+  );
+});
 
 interface CartItem {
   id: string;
@@ -1609,27 +1672,20 @@ export default function POS() {
                 {t('pos:customerPays', 'Customer Pays')} / Khách đưa
               </Label>
               <div className="relative group">
-                <Input
+                <StableInput
                   autoFocus
-                  type="text"
-                  inputMode="decimal"
                   value={cashReceived}
-                  onChange={(e) => {
-                    // Only convert comma to dot if there's actually a comma
-                    const val = e.target.value;
-                    setCashReceived(val.includes(',') ? val.replace(',', '.') : val);
-                  }}
-                  onKeyDown={(e) => {
-                    // Handle Enter key for form submission
-                    if (e.key === 'Enter' && parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
-                      e.preventDefault();
+                  onChange={setCashReceived}
+                  onEnter={() => {
+                    if (parseDecimal(cashReceived || '0') >= total && !createOrderMutation.isPending) {
                       handleCashPayment();
                     }
                   }}
-                  className="h-20 text-4xl font-bold text-center border-2 focus-visible:ring-emerald-500 border-slate-200 dark:border-slate-700 rounded-xl transition-all"
+                  className="w-full h-20 text-4xl font-bold text-center border-2 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 border-slate-200 dark:border-slate-700 rounded-xl transition-all bg-white dark:bg-slate-800 outline-none"
                   placeholder="0.00"
+                  disabled={createOrderMutation.isPending}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground pointer-events-none">
                   {currencySymbol}
                 </div>
               </div>
