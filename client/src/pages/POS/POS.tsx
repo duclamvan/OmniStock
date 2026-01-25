@@ -369,19 +369,24 @@ export default function POS() {
 
   const allItems = useMemo(() => [
     ...products.map((p: any) => ({ ...p, itemType: 'product' as const })),
-    ...productVariants.map((v: any) => ({ 
-      id: v.id,
-      name: v.name,
-      sku: v.sku,
-      barcode: v.barcode,
-      priceEur: v.priceEur,
-      priceCzk: v.priceCzk,
-      imageUrl: v.imageUrl,
-      productId: v.productId,
-      variantId: v.id,
-      category: v.category,
-      itemType: 'variant' as const,
-    })),
+    ...productVariants.map((v: any) => {
+      const parentProduct = products.find((p: any) => p.id === v.productId);
+      const displayName = parentProduct ? `${parentProduct.name} - ${v.name}` : v.name;
+      return { 
+        id: v.id,
+        name: displayName,
+        originalVariantName: v.name,
+        sku: v.sku,
+        barcode: v.barcode,
+        priceEur: v.priceEur,
+        priceCzk: v.priceCzk,
+        imageUrl: v.imageUrl,
+        productId: v.productId,
+        variantId: v.id,
+        category: v.category,
+        itemType: 'variant' as const,
+      };
+    }),
     ...bundles.map((b: any) => ({
       id: b.id,
       name: b.name,
@@ -396,6 +401,11 @@ export default function POS() {
 
   const filteredItems = useMemo(() => {
     let items = allItems;
+    
+    // Hide variants unless searching - they are accessed via the variant modal on products
+    if (!searchQuery.trim()) {
+      items = items.filter((item: any) => item.itemType !== 'variant');
+    }
     
     if (selectedCategory !== 'all') {
       items = items.filter((item: any) => item.category === selectedCategory);
@@ -2561,14 +2571,14 @@ export default function POS() {
                       )}
                     </div>
                     
-                    <div className="text-center text-xs hidden md:block">
+                    <div className="text-center text-xs hidden md:block font-bold">
                       {variantPrice.toFixed(0)} {currencySymbol}
                     </div>
                     
                     <div className="text-center">
                       <Badge 
                         variant={stockQty > 10 ? "default" : stockQty > 0 ? "outline" : "destructive"}
-                        className="text-[10px] px-1.5"
+                        className="text-[10px] px-1.5 font-bold"
                       >
                         {stockQty}
                       </Badge>
@@ -2585,7 +2595,7 @@ export default function POS() {
                           [variant.id]: Math.max(0, parseInt(e.target.value) || 0)
                         }))}
                         onFocus={(e) => e.target.select()}
-                        className="text-center h-8 w-12 text-xs px-1"
+                        className="text-center h-8 w-12 text-xs px-1 font-bold"
                         data-testid={`input-variant-quantity-${variant.id}`}
                       />
                       <button
