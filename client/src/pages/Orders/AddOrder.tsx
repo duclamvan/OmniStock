@@ -1013,9 +1013,10 @@ export default function AddOrder() {
       if (customer) {
         setSelectedCustomer(customer);
         setCustomerSearch(customer.name);
+        form.setValue('customerId', customer.id);
       }
     }
-  }, [existingOrder?.id, existingOrder?.customerId, allCustomers, isEditMode]);
+  }, [existingOrder?.id, existingOrder?.customerId, allCustomers, isEditMode, form]);
 
   // Pre-fill shipping address when editing existing order
   useEffect(() => {
@@ -5080,6 +5081,7 @@ export default function AddOrder() {
 
                     setSelectedCustomer(tempCustomer);
                     setCustomerSearch(quickCustomerName);
+                    form.setValue('customerId', tempCustomer.id);
                   }}
                   data-testid="button-confirm-quick-customer"
                 >
@@ -6124,6 +6126,7 @@ export default function AddOrder() {
                               onClick={() => {
                                 // Select this customer instead of creating new
                                 setSelectedCustomer(duplicateCustomer);
+                                form.setValue('customerId', duplicateCustomer.id);
                                 setShowNewCustomerForm(false);
                                 setDuplicateCustomer(null);
                                 setNewCustomer({
