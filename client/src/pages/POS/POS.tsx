@@ -2559,8 +2559,8 @@ export default function POS() {
                 })
                 .map((variant: any) => {
                 const variantPrice = currency === 'EUR' 
-                  ? parseFloat(selectedProductForVariant.priceEur || variant.priceEur || '0') 
-                  : parseFloat(selectedProductForVariant.priceCzk || variant.priceCzk || '0');
+                  ? parseFloat(variant.priceEur || selectedProductForVariant.priceEur || '0') 
+                  : parseFloat(variant.priceCzk || selectedProductForVariant.priceCzk || '0');
                 const stockQty = variant.availableQuantity ?? variant.quantity ?? 0;
                 const currentQty = variantQuantities[variant.id] || 0;
                 
